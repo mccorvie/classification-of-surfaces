@@ -1,7 +1,827 @@
-% In this file you should put the actual content of the blueprint.
-% It will be used both by the web and the print version.
-% It should *not* include the \begin{document}
+% !TEX root = web.tex
+% Lean blueprint fragment for the Moise / PL-complex route.
+% Intended location: blueprint/src/content_moise_pl.tex
 %
-% If you want to split the blueprint content into several files then
-% the current file can be a simple sequence of \input. Otherwise It
-% can start with a \section or \chapter for instance.
+% This is a content.tex-style fragment: include it from content.tex with
+%   \input{content_moise_pl}
+% It assumes the usual leanblueprint macros are available: \lean, \uses,
+% \leanok, \mathlibok, \notready, and standard theorem environments.
+%
+% This file is written as an alternative complete route.  The Gallier--Xu and
+% quotient-space tail intentionally mirrors the Mohar--Thomassen route so the two
+% files can be evaluated independently.  In a combined blueprint, extract the
+% shared tail into one common file to avoid duplicate labels and declarations.
+
+\chapter{Route B: Moise via PL complexes}
+
+\section{Global interface for the classification project}
+
+\begin{definition}[Lean Eval compact surface with boundary]
+\label{moise:def:eval_surface}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EvalSurface}
+An \emph{Eval surface} is a type $S$ equipped with a topology such that $S$ is
+Hausdorff, connected, compact, charted over the Euclidean half-space
+$\mathbb H^2$, and is a $C^0$ manifold with corners for
+\texttt{modelWithCornersEuclideanHalfSpace 2}.  This definition packages exactly
+the hypotheses of the Lean Eval problem.
+\end{definition}
+
+\begin{definition}[Finite surface cell complex]
+\label{moise:def:surface_cell_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex}
+A \emph{finite surface cell complex} is a finite combinatorial presentation of a
+compact bordered surface by polygonal faces and oriented edge identifications.
+It contains finite types of faces, oriented darts, edge-pairing data, cyclic
+boundary words for faces, and incidence conditions ensuring that each vertex
+link is either a circle or an interval.
+\end{definition}
+
+\begin{definition}[Realization of a surface cell complex]
+\label{moise:def:cell_realization}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Realization}
+
+\uses{moise:def:surface_cell_complex}
+For a finite surface cell complex $K$, the realization $|K|$ is the quotient of
+the disjoint union of its standard polygonal faces by the equivalence relation
+identifying paired oriented boundary arcs.  It carries the quotient topology.
+\end{definition}
+
+\begin{theorem}[Topological bridge]
+\label{moise:thm:compact_surface_cellulable}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.compact_surface_homeomorphic_to_cell_complex}
+
+\uses{moise:def:eval_surface,moise:def:surface_cell_complex,moise:def:cell_realization,moise:thm:compact_eval_surface_finitely_triangulable,moise:thm:finite_triangulation_to_cell_complex}
+Every Eval surface $S$ is homeomorphic to the realization of some finite surface
+cell complex: there exists a finite surface cell complex $K$ and a homeomorphism
+$S\cong |K|$.
+\end{theorem}
+
+\begin{proof}
+\notready
+
+Use the Moise/Rado theorem, strengthened to compact manifolds with boundary, to
+obtain a finite triangulation of $S$.  Convert that triangulation to a finite
+surface cell complex and compose the homeomorphisms.
+\end{proof}
+
+\section{PL-complex foundations}
+
+\begin{definition}[Euclidean finite complex and support]
+\label{moise:def:euclidean_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.support}
+A Euclidean finite complex is a finite simplicial complex made of rectilinear
+simplexes in some Euclidean space.  Its support $|K|$ is the union of its
+simplexes with the subspace topology.
+\end{definition}
+
+\begin{definition}[Subdivision]
+\label{moise:def:subdivision}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision}
+
+\uses{moise:def:euclidean_complex}
+A subdivision $K'<K$ is a finite complex with the same support as $K$ such that
+every simplex of $K'$ is a rectilinear subsimplex of a simplex of $K$.
+\end{definition}
+
+\begin{definition}[PL map and PL homeomorphism]
+\label{moise:def:pl_map_homeomorphism}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph}
+
+\uses{moise:def:euclidean_complex,moise:def:subdivision}
+A map $f:|K|\to |L|$ is piecewise linear if, after subdividing $K$, its
+restriction to each simplex is affine into a simplex of $L$.  A PL homeomorphism
+is a homeomorphism whose map and inverse are PL after suitable subdivisions.
+\end{definition}
+
+\begin{lemma}[PL property is invariant under subdivision]
+\label{moise:lem:pl_invariant_under_subdivision}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_iff_pl_after_subdivision}
+
+\uses{moise:def:pl_map_homeomorphism,moise:def:subdivision}
+A homeomorphism is PL relative to $K$ and $L$ if and only if it is PL relative to
+any subdivision of the domain or target complex.
+\end{lemma}
+
+\begin{proof}
+
+Pass to a common subdivision of the complexes witnessing piecewise linearity.
+For target subdivisions, pull back a common subdivision of the image complex.
+\end{proof}
+
+\begin{definition}[Combinatorial two-manifold with boundary]
+\label{moise:def:combinatorial_surface}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoManifoldWithBoundary}
+
+\uses{moise:def:euclidean_complex}
+A two-dimensional complex $K$ is a combinatorial two-manifold with boundary if
+the link of every vertex is either a combinatorial circle or a combinatorial
+interval.  Its support is then a topological surface with boundary.
+\end{definition}
+
+\begin{definition}[Combinatorial two-cell]
+\label{moise:def:combinatorial_two_cell}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoCell}
+
+\uses{moise:def:euclidean_complex,moise:def:combinatorial_surface}
+A combinatorial two-cell is a complex PL-homeomorphic to a closed standard
+2-simplex, with boundary the corresponding combinatorial 1-sphere.
+\end{definition}
+
+\begin{lemma}[Polygonal disk is a combinatorial two-cell]
+\label{moise:lem:polygonal_disk_combinatorial_cell}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.polygonal_disk_is_combinatorial_two_cell}
+
+\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism}
+If $J$ is a polygonal simple closed curve in $\mathbb R^2$ and $I$ is its
+interior, then $\overline I$ has a triangulation making it a combinatorial
+two-cell.
+\end{lemma}
+
+\begin{proof}
+\notready
+Triangulate the polygonal disk and prove it is PL-homeomorphic to a standard
+closed triangle by repeatedly deleting free triangles or by an explicit fan
+triangulation after choosing an interior point.
+\end{proof}
+
+\begin{theorem}[PL Schoenflies for combinatorial two-cells]
+\label{moise:thm:pl_schoenflies_combinatorial_cell}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_schoenflies_combinatorial_two_cell}
+
+\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism}
+Every PL homeomorphism between the boundaries of two combinatorial two-cells
+extends to a PL homeomorphism between the two cells.
+\end{theorem}
+
+\begin{proof}
+
+Choose PL homeomorphisms from the standard 2-simplex onto the two cells.  Reduce
+to a PL homeomorphism of the boundary of the standard simplex and extend it over
+the simplex, then conjugate back.
+\end{proof}
+
+\section{PL approximation in dimension two}
+
+\begin{definition}[Strongly positive function]
+\label{moise:def:strongly_positive}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.StronglyPositive}
+A function $\varphi:X\to\mathbb R$ is strongly positive if $\varphi(x)>0$ for all
+$x$ and it has the lower-separation properties needed to make local approximation
+estimates uniform on compact simplexes.  In a metric formalization this may be
+implemented as a positive continuous function or as Moise's strongly positive
+notion.
+\end{definition}
+
+\begin{definition}[$\varphi$-approximation]
+\label{moise:def:phi_approximation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PhiApproximation}
+
+\uses{moise:def:strongly_positive}
+For maps $f,g:X\to Y$ into a metric space, $f$ is a $\varphi$-approximation of
+$g$ if $d(f(x),g(x))<\varphi(x)$ for every $x$.
+\end{definition}
+
+\begin{lemma}[PL approximation on the one-skeleton]
+\label{moise:lem:pl_approximation_one_skeleton}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_one_skeleton}
+
+\uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:def:pl_map_homeomorphism}
+Let $K$ be a combinatorial two-manifold with boundary, $h:|K|\to M\subseteq
+\mathbb R^2$ a homeomorphism, and $\varphi\gg 0$.  After a sufficiently fine
+subdivision, $h$ restricted to the one-skeleton has a PL embedding which is a
+$\varphi$-approximation and preserves the images of vertices.
+\end{lemma}
+
+\begin{proof}
+\notready
+Approximate each edge image by a broken line inside a sufficiently small
+neighborhood.  Choose the subdivision fine enough so that nonincident edge images
+remain separated and incident edges meet only at their common vertices.
+\end{proof}
+
+\begin{theorem}[Moise PL approximation theorem in the plane]
+\label{moise:thm:pl_approximation_plane}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_plane_combinatorial_surface}
+
+\uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:lem:pl_approximation_one_skeleton,moise:thm:pl_schoenflies_combinatorial_cell}
+Let $K$ be a combinatorial two-manifold with boundary, let $h:|K|\to M\subseteq
+\mathbb R^2$ be a homeomorphism, and let $\varphi\gg 0$.  There exists a PL
+homeomorphism $f:|K|\to\mathbb R^2$ which is a $\varphi$-approximation of $h$.
+\end{theorem}
+
+\begin{proof}
+\notready
+
+Subdivide $K$ finely so that the image of each 2-simplex under $h$ is much
+smaller than the local approximation tolerance.  Approximate $h$ on the
+one-skeleton by a PL embedding.  For each 2-simplex, extend the PL boundary map
+over the face by the PL Schoenflies theorem.  Prove interiors of distinct image
+triangles are disjoint using the chosen separation bounds.
+\end{proof}
+
+\begin{theorem}[PL approximation between combinatorial surfaces]
+\label{moise:thm:pl_approximation_between_surfaces}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_between_combinatorial_surfaces}
+
+\uses{moise:thm:pl_approximation_plane,moise:def:combinatorial_surface}
+If $K_1$ is a combinatorial two-manifold with boundary, $K_2$ is a combinatorial
+two-manifold, $h:|K_1|\to |K_2|$ is a homeomorphism, and $\varphi\gg0$, then $h$
+has a PL homeomorphic $\varphi$-approximation into $|K_2|$.
+\end{theorem}
+
+\begin{proof}
+\notready
+
+Work inside star neighborhoods in $K_2$ that are PL-homeomorphic to convex
+plane cells.  Apply the plane approximation theorem locally after subdividing
+$K_1$ so that each small star maps into one such chart, then glue the local PL
+extensions.
+\end{proof}
+
+\section{Open subcomplexes and PL complexes in a manifold}
+
+\begin{definition}[PL complex in a topological space]
+\label{moise:def:pl_complex_in_space}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace}
+
+\uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
+A PL complex in a topological space $M$ is a locally finite family of subsets of
+$M$ equipped with charts from Euclidean simplexes such that the induced abstract
+complex is PL-compatible on intersections.
+\end{definition}
+
+\begin{definition}[Interior subcomplex of a PL surface]
+\label{moise:def:pl_complex_interior_subcomplex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.interiorSubcomplex}
+
+\uses{moise:def:pl_complex_in_space,moise:def:combinatorial_surface}
+For a PL complex $\mathcal X$ whose support is a two-manifold with boundary,
+$\mathcal X^\circ$ is the set of simplexes whose image sets do not meet the
+boundary of the support.
+\end{definition}
+
+\begin{theorem}[Open subset of a finite complex is a complex]
+\label{moise:thm:open_subset_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.open_subset_of_finite_complex_is_complex}
+
+\uses{moise:def:euclidean_complex,moise:def:subdivision}
+If $K$ is a finite complex and $U\subseteq |K|$ is open, then there is a complex
+$K_U$ with $|K_U|=U$ such that every simplex of $K_U$ is a rectilinear subsimplex
+of a simplex of $K$.
+\end{theorem}
+
+\begin{proof}
+\notready
+Choose a sequence of subdivisions with mesh tending to zero.  Recursively select
+subcomplexes lying in $U$ whose supports exhaust $U$, using compact separation
+from $|K|\setminus U$.  Subdivide boundary layers compatibly so the union is a
+locally finite complex.
+\end{proof}
+
+\begin{lemma}[Locally finite compact support implies finite]
+\label{moise:lem:compact_locally_finite_complex_finite}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.locallyFiniteComplex_finite_of_compact_support}
+
+\uses{moise:def:pl_complex_in_space}
+A locally finite PL complex with compact support has only finitely many simplexes.
+\end{lemma}
+
+\begin{proof}
+
+Each point of the compact support has a neighborhood meeting only finitely many
+simplexes.  Extract a finite subcover and take the union of the corresponding
+finite sets of simplexes.
+\end{proof}
+
+\section{Moise--Rado triangulation}
+
+\begin{definition}[Moise topological two-manifold]
+\label{moise:def:moise_two_manifold}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold}
+A Moise two-manifold is a separable metric space locally homeomorphic to the open
+unit disk.  The bordered version is locally homeomorphic to either the open disk
+or the closed half-disk.
+\end{definition}
+
+\begin{lemma}[Chart pair exhaustion]
+\label{moise:lem:chart_pair_exhaustion}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.chart_pair_exhaustion}
+
+\uses{moise:def:moise_two_manifold}
+Every Moise two-manifold admits a countable sequence of chart pairs
+$(N_i,N'_i)$ such that $N'_i\subset N_i$, $N_i$ maps to the unit disk, $N'_i$ maps
+to the smaller disk, and the $N'_i$ cover the manifold.
+\end{lemma}
+
+\begin{proof}
+
+Choose nested disk charts at each point.  Use second countability of the
+separable metric topology to extract a countable subcover of the smaller chart
+neighborhoods.
+\end{proof}
+
+\begin{lemma}[Initial PL neighborhood]
+\label{moise:lem:initial_pl_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+
+\uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion}
+For the first chart pair of a two-manifold, there is a finite PL complex
+$\mathcal X_1$ in the manifold whose support is a compact two-manifold with
+boundary and whose interior subcomplex contains the smaller chart neighborhood.
+\end{lemma}
+
+\begin{proof}
+\notready
+Choose a polygonal disk inside the chart whose interior contains the smaller
+disk, triangulate it, and transport the resulting PL complex to the manifold by
+the chart homeomorphism.
+\end{proof}
+
+\begin{lemma}[Extend a PL complex across one chart]
+\label{moise:lem:extend_pl_complex_across_chart}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.extend_pl_complex_across_chart}
+
+\uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane}
+Suppose $\mathcal X_n$ is a PL complex in a two-manifold whose support is a
+compact two-manifold with boundary and whose interior contains the first $n$
+small chart neighborhoods.  Then there is a PL complex $\mathcal X_{n+1}$ with
+the same properties for the first $n+1$ chart neighborhoods and with
+$\mathcal X_n^\circ\subseteq\mathcal X_{n+1}^\circ$.
+\end{lemma}
+
+\begin{proof}
+\notready
+Use the boundary part of the old support lying in the next chart.  Pull a
+neighborhood of this boundary set back to a Euclidean complex, represent the open
+subset by a complex using the open-subset theorem, approximate the transition
+homeomorphism by a PL homeomorphism using the plane PL approximation theorem,
+fit this PL replacement to the old complex, add a finite triangulated disk in the
+chart to cover the new smaller chart neighborhood, and subdivide to make all
+pieces compatible.
+\end{proof}
+
+\begin{theorem}[Moise--Rado triangulation theorem]
+\label{moise:thm:rado_triangulation_moise_manifold}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_triangulation_moise_two_manifold}
+
+\uses{moise:def:moise_two_manifold,moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+Every Moise two-manifold admits a locally finite PL complex whose support is the
+whole manifold.
+\end{theorem}
+
+\begin{proof}
+\notready
+
+Construct an increasing sequence of PL complexes whose interior subcomplexes
+contain progressively more of the chart-pair cover.  The union of the increasing
+interior subcomplexes is a locally finite PL complex covering the whole manifold.
+\end{proof}
+
+\begin{theorem}[Compact Moise surface is finitely triangulable]
+\label{moise:thm:compact_moise_surface_finitely_triangulable}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finitely_triangulable}
+
+\uses{moise:thm:rado_triangulation_moise_manifold,moise:lem:compact_locally_finite_complex_finite}
+Every compact Moise two-manifold has a finite triangulation.
+\end{theorem}
+
+\begin{proof}
+
+Apply the Moise--Rado locally finite triangulation theorem.  The support is
+compact, so local finiteness implies that only finitely many simplexes occur.
+\end{proof}
+
+\section{Boundary surfaces in the Moise route}
+
+\begin{theorem}[Bordered PL approximation]
+\label{moise:thm:bordered_pl_approximation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.bordered_pl_approximation}
+
+\uses{moise:thm:pl_approximation_plane,moise:def:combinatorial_surface}
+The PL approximation theorem remains valid for local half-disk charts and
+combinatorial surfaces with boundary, with approximating PL homeomorphisms
+respecting the boundary half-plane.
+\end{theorem}
+
+\begin{proof}
+\notready
+Adapt the plane proof by working in half-plane charts near boundary points and
+requiring the one-skeleton approximation to carry boundary edges into the
+boundary line.  Interior faces use the ordinary PL Schoenflies argument; boundary
+faces use the relative version for half-disks.
+\end{proof}
+
+\begin{theorem}[Moise--Rado triangulation for bordered surfaces]
+\label{moise:thm:rado_bordered_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
+
+\uses{moise:def:moise_two_manifold,moise:thm:rado_triangulation_moise_manifold,moise:thm:bordered_pl_approximation}
+Every compact Moise two-manifold with boundary has a finite triangulation whose
+boundary is a subcomplex.
+\end{theorem}
+
+\begin{proof}
+\notready
+Either rerun the Rado induction using half-disk chart pairs and the bordered PL
+approximation theorem, or triangulate the double and restrict to one side after a
+relative subdivision making the boundary a subcomplex.  The direct half-disk
+version is the preferred statement because it produces a boundary subcomplex
+without an additional symmetry theorem.
+\end{proof}
+
+\begin{lemma}[Eval surface to Moise bordered surface]
+\label{moise:lem:eval_to_moise_bordered_surface}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.eval_surface_to_moise_bordered_surface}
+
+\uses{moise:def:eval_surface,moise:def:moise_two_manifold}
+Every compact Eval surface is a compact Moise two-manifold with boundary.
+\end{lemma}
+
+\begin{proof}
+\notready
+Use the half-space manifold charts to obtain local disk or half-disk models.
+Derive metrizability and second countability as needed from compactness plus the
+finite or countable chart structure available in the mathlib manifold framework.
+This is an interface lemma between mathlib's manifold API and Moise's classical
+hypotheses.
+\end{proof}
+
+\begin{definition}[Finite surface triangulation]
+\label{moise:def:finite_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation}
+
+\uses{moise:def:eval_surface,moise:def:euclidean_complex}
+A finite surface triangulation of a topological space $S$ is a finite
+combinatorial two-manifold with boundary together with a homeomorphism from its
+support to $S$.
+\end{definition}
+
+\begin{theorem}[Compact Eval surface is finitely triangulable]
+\label{moise:thm:compact_eval_surface_finitely_triangulable}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finitely_triangulable}
+
+\uses{moise:def:finite_surface_triangulation,moise:lem:eval_to_moise_bordered_surface,moise:thm:rado_bordered_surface_triangulation}
+Every compact connected Eval surface has a finite triangulation with boundary a
+subcomplex.
+\end{theorem}
+
+\begin{proof}
+\notready
+
+Convert the Eval hypotheses to Moise's bordered-surface hypotheses and apply the
+compact bordered Rado triangulation theorem.
+\end{proof}
+
+\section{From triangulations to cell complexes}
+
+\begin{definition}[Triangulation as a cell complex]
+\label{moise:def:triangulation_cell_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex}
+
+\uses{moise:def:finite_surface_triangulation,moise:def:surface_cell_complex}
+Given a finite surface triangulation, define a surface cell complex with one face
+for each triangle, one unoriented edge for each edge of the triangulation, paired
+or unpaired oriented darts according to whether the edge is interior or boundary,
+and boundary words of length three.
+\end{definition}
+
+\begin{lemma}[Triangulation realization matches cell-complex realization]
+\label{moise:lem:triangulation_to_cell_complex_realization}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic}
+
+\uses{moise:def:triangulation_cell_complex,moise:def:cell_realization}
+The support of a finite surface triangulation is homeomorphic to the realization
+of the associated surface cell complex.
+\end{lemma}
+
+\begin{proof}
+\notready
+Each triangle of the triangulation is identified with the corresponding standard
+polygonal face.  The simplicial gluing relation on triangle edges agrees with the
+cell-complex gluing relation on the associated darts, hence the two quotient
+realizations are homeomorphic.
+\end{proof}
+
+\begin{theorem}[Finite triangulation to finite cell complex]
+\label{moise:thm:finite_triangulation_to_cell_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.finite_triangulation_to_cell_complex}
+
+\uses{moise:def:finite_surface_triangulation,moise:def:triangulation_cell_complex,moise:lem:triangulation_to_cell_complex_realization}
+If $S$ has a finite surface triangulation, then $S$ is homeomorphic to the
+realization of a finite surface cell complex.
+\end{theorem}
+
+\begin{proof}
+
+Take the associated cell complex and compose the triangulation homeomorphism with
+the homeomorphism between triangulation support and cell-complex realization.
+\end{proof}
+
+\section{Quotient realizations and quotient homeomorphisms}
+
+\begin{definition}[Polygonal pre-realization]
+\label{moise:def:polygonal_prerealization}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.PreRealization}
+
+\uses{moise:def:surface_cell_complex}
+The pre-realization of $K$ is the finite disjoint union of closed standard
+polygons, one for each face of $K$, with marked oriented boundary arcs
+corresponding to the cyclic boundary word of that face.
+\end{definition}
+
+\begin{definition}[Gluing relation]
+\label{moise:def:gluing_relation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.GluingRel}
+
+\uses{moise:def:polygonal_prerealization}
+The gluing relation on the pre-realization is the least equivalence relation
+which identifies paired boundary arcs by orientation-reversing or
+orientation-preserving affine parametrizations according to the dart-pairing data
+of $K$.
+\end{definition}
+
+\begin{theorem}[Mathlib quotient congruence]
+\label{moise:thm:mathlib_quotient_congr}
+\lean{Homeomorph.Quotient.congr, Homeomorph.Quot.congrRight}
+\mathlibok
+If a homeomorphism between two spaces carries one quotient relation exactly to
+another, it descends to a homeomorphism between the quotient spaces.  If the
+underlying space is fixed and two quotient relations are equivalent, the quotient
+spaces are homeomorphic.
+\end{theorem}
+
+\begin{lemma}[Induced homeomorphism of cell realizations]
+\label{moise:lem:cell_realization_quotient_congr}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.realizationCongr}
+
+\uses{moise:def:cell_realization,moise:def:gluing_relation,moise:thm:mathlib_quotient_congr}
+A homeomorphism between polygonal pre-realizations which sends the gluing
+relation of $K$ to the gluing relation of $L$ induces a homeomorphism
+$|K|\cong |L|$.
+\end{lemma}
+
+\begin{proof}
+
+Apply the quotient congruence theorem from mathlib to the homeomorphism of
+pre-realizations and the proof that it respects exactly the two gluing relations.
+\end{proof}
+
+\begin{definition}[Elementary cell-complex moves]
+\label{moise:def:gx_elementary_moves}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.ElementarySubdivision, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Equivalent}
+
+\uses{moise:def:surface_cell_complex}
+The elementary moves are the Gallier--Xu operations: subdivide an edge by
+replacing $a,a^{-1}$ with $bc,c^{-1}b^{-1}$, and split a face by inserting a new
+diagonal edge.  Equivalence is the equivalence relation generated by these moves.
+\end{definition}
+
+\begin{lemma}[Elementary moves preserve realization]
+\label{moise:lem:elementary_moves_preserve_realization}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.elementarySubdivision_realization_homeomorphic}
+
+\uses{moise:def:gx_elementary_moves,moise:lem:cell_realization_quotient_congr}
+If $L$ is obtained from $K$ by one elementary Gallier--Xu subdivision move, then
+$|K|$ and $|L|$ are homeomorphic.
+\end{lemma}
+
+\begin{proof}
+
+For edge subdivision, use the identity on the underlying glued polygonal space
+with a reparametrization of the subdivided boundary arc.  For face subdivision,
+use the homeomorphism between one polygon and two polygons glued along the new
+diagonal.  In both cases, verify the gluing relations and descend by quotient
+congruence.
+\end{proof}
+
+\begin{theorem}[Equivalent cell complexes have homeomorphic realizations]
+\label{moise:thm:equivalent_cell_complexes_homeomorphic}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.equivalent_realization_homeomorphic}
+
+\uses{moise:def:gx_elementary_moves,moise:lem:elementary_moves_preserve_realization}
+If finite surface cell complexes $K$ and $L$ are equivalent in the Gallier--Xu
+sense, then $|K|\cong |L|$.
+\end{theorem}
+
+\begin{proof}
+
+Induct over the reflexive, symmetric, transitive closure generating equivalence,
+composing the homeomorphisms supplied by elementary moves and their inverses.
+\end{proof}
+
+\section{Gallier--Xu normal-form reduction}
+
+\begin{definition}[Orientability, contours, and Euler characteristic]
+\label{moise:def:gx_invariants}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Orientable, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Contours, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.eulerChar}
+
+\uses{moise:def:surface_cell_complex}
+For a finite surface cell complex, orientability is coherent orientation of
+faces, contours are cyclic boundary components, and the Euler characteristic is
+$n_0-n_1+n_2$ using the vertices, edges, and faces of the cell complex.
+\end{definition}
+
+\begin{lemma}[Elementary moves preserve invariants]
+\label{moise:lem:gx_moves_preserve_invariants}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.elementary_moves_preserve_invariants}
+
+\uses{moise:def:gx_elementary_moves,moise:def:gx_invariants}
+The Gallier--Xu elementary moves preserve orientability, the number of contours,
+and Euler characteristic.
+\end{lemma}
+
+\begin{proof}
+
+Check the two moves.  Edge subdivision increases both the number of vertices and
+edges by one.  Face subdivision increases both the number of edges and faces by
+one.  Coherent orientations and boundary contours are transported through the
+local rewrite.
+\end{proof}
+
+\begin{definition}[Canonical cell complexes]
+\label{moise:def:canonical_cell_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.CanonicalOrientable, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.CanonicalNonorientable}
+
+\uses{moise:def:surface_cell_complex}
+A canonical orientable complex has one face with word
+$a_1b_1a_1^{-1}b_1^{-1}\cdots a_pb_pa_p^{-1}b_p^{-1}c_1h_1c_1^{-1}\cdots c_qh_qc_q^{-1}$.
+A canonical nonorientable complex has one face with word
+$a_1a_1\cdots a_pa_pc_1h_1c_1^{-1}\cdots c_qh_qc_q^{-1}$, with $p\geq 1$.
+\end{definition}
+
+\begin{lemma}[Eliminate $aa^{-1}$ strings]
+\label{moise:lem:gx_eliminate_inverse_pairs}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.eliminate_inverse_pairs}
+
+\uses{moise:def:gx_elementary_moves}
+Every occurrence of a consecutive string $aa^{-1}$ in a boundary word can be
+removed by Gallier--Xu elementary moves.
+\end{lemma}
+
+\begin{proof}
+
+Split the face near $aa^{-1}$ using a new edge, contract the resulting length-two
+face by inverse edge subdivision, and then remove the redundant face by inverse
+face subdivision.
+\end{proof}
+
+\begin{lemma}[Vertex reduction]
+\label{moise:lem:gx_vertex_reduction}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.vertex_reduction}
+
+\uses{moise:lem:gx_eliminate_inverse_pairs}
+Every connected cell complex is equivalent to one with either a null inner vertex
+or exactly one inner vertex, and whose boundary vertices are loops of the form
+$(h,c,h^{-1})$.
+\end{lemma}
+
+\begin{proof}
+\notready
+
+Follow Gallier--Xu Lemma 6.1, Step 2.  Repeatedly shrink an inner vertex by
+eliminating an adjacent edge until only one inner vertex remains; then reduce each
+boundary vertex to a loop without disturbing already reduced loops.
+\end{proof}
+
+\begin{lemma}[Reduce to one face and introduce crosscaps]
+\label{moise:lem:gx_one_face_crosscaps}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.one_face_and_crosscaps}
+
+\uses{moise:lem:gx_vertex_reduction}
+After vertex reduction, every connected cell complex is equivalent to one with a
+single face, and repeated occurrences $aXaY$ may be replaced by adjacent
+crosscaps.
+\end{lemma}
+
+\begin{proof}
+\notready
+
+Use inverse face subdivision to merge adjacent faces sharing an edge until one
+face remains.  Then use the Gallier--Xu pseudo-rewrite
+$aXaY\simeq bbY^{-1}X$ to introduce crosscaps while preserving loops and the
+reduced vertex structure.
+\end{proof}
+
+\begin{lemma}[Introduce handles]
+\label{moise:lem:gx_introduce_handles}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.introduce_handles}
+
+\uses{moise:lem:gx_one_face_crosscaps}
+Boundary words containing interlaced inverse pairs $aUbVa^{-1}Xb^{-1}Y$ are
+equivalent to words containing a handle $cdc^{-1}d^{-1}$.
+\end{lemma}
+
+\begin{proof}
+\notready
+
+Formalize the pseudo-rewrite
+$aUVa^{-1}X\simeq bVUb^{-1}X$ and apply it twice to transform the interlaced pair
+into a handle block.
+\end{proof}
+
+\begin{lemma}[Handle plus crosscap becomes three crosscaps]
+\label{moise:lem:gx_handle_crosscap_to_crosscaps}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.handle_crosscap_to_three_crosscaps}
+
+\uses{moise:lem:gx_one_face_crosscaps,moise:lem:gx_introduce_handles}
+A word containing one crosscap and one handle is equivalent to a word containing
+three crosscaps instead.
+\end{lemma}
+
+\begin{proof}
+\notready
+
+Use the Gallier--Xu pseudo-rewrite $aaXY\simeq bYbX^{-1}$ repeatedly on the word
+$aaXbcb^{-1}c^{-1}Y$ to obtain three adjacent crosscap blocks.
+\end{proof}
+
+\begin{lemma}[Group boundary loops]
+\label{moise:lem:gx_group_loops}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.group_boundary_loops}
+
+\uses{moise:lem:gx_introduce_handles}
+All loop blocks $chc^{-1}$ can be moved to the end of the single boundary word
+without changing the handle or crosscap blocks.
+\end{lemma}
+
+\begin{proof}
+\notready
+
+Use the pseudo-rewrite $aUVa^{-1}X\simeq bVUb^{-1}X$ to commute any two loop
+blocks until all loops are grouped together.
+\end{proof}
+
+\begin{theorem}[Every cell complex has canonical normal form]
+\label{moise:thm:gx_normal_form}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.equivalent_canonical}
+
+\uses{moise:def:canonical_cell_complex,moise:lem:gx_vertex_reduction,moise:lem:gx_one_face_crosscaps,moise:lem:gx_introduce_handles,moise:lem:gx_handle_crosscap_to_crosscaps,moise:lem:gx_group_loops}
+Every finite connected surface cell complex is equivalent to a canonical
+orientable or canonical nonorientable cell complex.
+\end{theorem}
+
+\begin{proof}
+
+Apply the Gallier--Xu sequence of reductions: remove inverse pairs, reduce
+vertices, merge faces, introduce crosscaps, introduce handles, convert mixed
+handle-crosscap words to all-crosscap form, and group boundary loops.
+\end{proof}
+
+\section{Normal-form quotient representatives and final assembly}
+
+\begin{definition}[Eval quotient representatives]
+\label{moise:def:eval_quotient_representatives}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.OrientableRel, LeanEval.Topology.ClassificationOfSurfaces.NonOrientableRel}
+The Eval representatives are quotient spaces determined by the orientable and
+nonorientable normal-form polygon boundary relations.  They are the exact target
+spaces named in the Lean Eval classification statement.
+\end{definition}
+
+\begin{lemma}[Canonical realization equals Eval quotient]
+\label{moise:lem:canonical_realization_eval_quotient}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.canonical_realization_homeomorphic_eval_quotient}
+
+\uses{moise:def:canonical_cell_complex,moise:def:eval_quotient_representatives,moise:lem:cell_realization_quotient_congr}
+The realization of a canonical orientable or nonorientable cell complex is
+homeomorphic to the corresponding Eval quotient representative.
+\end{lemma}
+
+\begin{proof}
+
+Identify the one polygon used by the canonical cell complex with the polygon used
+in the Eval quotient definition and prove that the two generated boundary
+relations coincide.  Apply quotient congruence.
+\end{proof}
+
+\begin{theorem}[Cell-complex classification into Eval representatives]
+\label{moise:thm:cell_complex_has_eval_representative}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.cell_complex_has_eval_representative}
+
+\uses{moise:thm:equivalent_cell_complexes_homeomorphic,moise:thm:gx_normal_form,moise:lem:canonical_realization_eval_quotient}
+For every finite connected surface cell complex $K$, the realization $|K|$ is
+homeomorphic to the sphere representative, or to an orientable Eval quotient
+representative, or to a nonorientable Eval quotient representative.
+\end{theorem}
+
+\begin{proof}
+
+Choose a canonical cell complex equivalent to $K$.  Equivalent complexes have
+homeomorphic realizations, and canonical realizations are the Eval quotient
+representatives.
+\end{proof}
+
+\begin{theorem}[Topological classification of compact Eval surfaces]
+\label{moise:thm:eval_classification_of_surfaces}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.topological_classification_of_surfaces}
+
+\uses{moise:thm:compact_surface_cellulable,moise:thm:cell_complex_has_eval_representative}
+Every compact connected Hausdorff topological $2$-manifold with boundary in the
+Lean Eval sense is homeomorphic to one of the normal-form quotient spaces listed
+in the Eval problem.
+\end{theorem}
+
+\begin{proof}
+
+Apply the topological bridge to obtain $S\cong |K|$.  Apply the cell-complex
+classification to $K$.  Compose the resulting homeomorphisms.
+\end{proof}
