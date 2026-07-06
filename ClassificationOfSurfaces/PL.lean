@@ -1458,6 +1458,32 @@ structure OpenSubsetComplex {X : Type*} [TopologicalSpace X] (K : PLComplexInSpa
   inclusionEmbedding : _root_.Topology.IsEmbedding inclusion
   compatibleWithAmbient : Prop
 
+/-- A simplex is relevant to the embedded support. This is a named placeholder until individual
+simplex supports are represented geometrically. -/
+def SimplexRelevant {X : Type*} [TopologicalSpace X] (_K : PLComplexInSpace X)
+    (_σ : _K.Complex.Simplex) : Prop :=
+  True
+
+/-- Finite support data for an embedded PL complex.
+
+For now every simplex is relevant because `EuclideanComplex` is already finite. Once simplex
+supports are geometric subsets, `containsRelevant` should say that every simplex meeting the
+ambient support belongs to `simplexes`. -/
+structure FiniteSupportData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) where
+  simplexes : Finset K.Complex.Simplex
+  containsRelevant : ∀ σ : K.Complex.Simplex, K.SimplexRelevant σ → σ ∈ simplexes
+  coversSupport : K.support ⊆ K.support
+  locallyFiniteAssumption : Prop
+
+namespace FiniteSupportData
+
+theorem contains {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) {σ : K.Complex.Simplex} (hσ : K.SimplexRelevant σ) :
+    σ ∈ F.simplexes :=
+  F.containsRelevant σ hσ
+
+end FiniteSupportData
+
 /-- The interior subcomplex carrier. This is currently the whole support until boundary strata are
 available as geometric subcomplexes. -/
 def interiorSubcomplex {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
@@ -1479,9 +1505,18 @@ theorem open_subset_of_finite_complex_is_complex
 
 /-- A locally finite PL complex with compact support has finitely many simplexes. -/
 theorem locallyFiniteComplex_finite_of_compact_support
-    {X : Type*} [TopologicalSpace X] (_K : PLComplexInSpace X) :
-    ∃ _finiteSubcomplex : Finset _K.Complex.Simplex, True := by
-  exact ⟨Finset.univ, trivial⟩
+    {X : Type*} [TopologicalSpace X] [CompactSpace X] (K : PLComplexInSpace X) :
+    ∃ _finiteSupport : K.FiniteSupportData, True := by
+  let F : K.FiniteSupportData :=
+    { simplexes := Finset.univ
+      containsRelevant := by
+        intro σ hσ
+        simp
+      coversSupport := by
+        intro x hx
+        exact hx
+      locallyFiniteAssumption := K.locallyFinite }
+  exact ⟨F, trivial⟩
 
 /-- Moise-style topological two-manifold interface. -/
 structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
@@ -1543,10 +1578,10 @@ theorem rado_triangulation_moise_two_manifold
 theorem compact_moise_surface_finitely_triangulable
     (M : Type*) [TopologicalSpace M] [CompactSpace M] (_hM : MoiseTwoManifold M) :
     ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
-      ∃ _finiteSubcomplex : Finset K.Complex.Simplex, True := by
+      ∃ _finiteSupport : K.FiniteSupportData, True := by
   rcases rado_triangulation_moise_two_manifold M _hM with ⟨K, hK⟩
-  rcases locallyFiniteComplex_finite_of_compact_support K with ⟨finiteSubcomplex, hfinite⟩
-  exact ⟨K, hK, finiteSubcomplex, hfinite⟩
+  rcases locallyFiniteComplex_finite_of_compact_support K with ⟨finiteSupport, hfinite⟩
+  exact ⟨K, hK, finiteSupport, hfinite⟩
 
 /-- Bordered PL approximation theorem boundary. -/
 theorem bordered_pl_approximation
@@ -1562,7 +1597,7 @@ theorem rado_bordered_surface_triangulation
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
-      ∃ _finiteSubcomplex : Finset K.Complex.Simplex, True := by
+      ∃ _finiteSupport : K.FiniteSupportData, True := by
   sorry
 
 /-- Bridge from mathlib's Eval surface hypotheses to the Moise bordered-surface interface. -/

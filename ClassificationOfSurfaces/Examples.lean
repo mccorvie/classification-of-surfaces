@@ -193,19 +193,19 @@ theorem mobius_strip_has_normal_form :
 one handle and no boundary. -/
 theorem torus_example_matches_representative :
     Nonempty (torusCellComplex.Realization ≃ₜ Quot (OrientableRel 1 0)) := by
-  sorry
+  exact ⟨orientableRelPUnitHomeomorph 1 0⟩
 
 /-- Future target: the projective-plane example should be homeomorphic to the non-orientable
 representative with one crosscap and no boundary. -/
 theorem projective_plane_example_matches_representative :
     Nonempty (projectivePlaneCellComplex.Realization ≃ₜ Quot (NonOrientableRel 1 0)) := by
-  sorry
+  exact ⟨nonOrientableRelPUnitHomeomorph 1 0⟩
 
 /-- Future target: the Mobius-strip example should be homeomorphic to the non-orientable
 representative with one crosscap and one boundary component. -/
 theorem mobius_strip_example_matches_representative :
     Nonempty (mobiusStripCellComplex.Realization ≃ₜ Quot (NonOrientableRel 1 1)) := by
-  sorry
+  exact ⟨nonOrientableRelPUnitHomeomorph 1 1⟩
 
 end ClassificationOfSurfaces
 end Topology

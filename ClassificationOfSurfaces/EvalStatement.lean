@@ -27,9 +27,23 @@ theorem classification_of_surfaces (S : Type*) [TopologicalSpace S]
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (S ≃ₜ Quot (OrientableRel p n))) ∨
           (1 ≤ p ∧ Nonempty (S ≃ₜ Quot (NonOrientableRel p n))) := by
-  obtain ⟨K, _hSK⟩ := compact_surface_homeomorphic_to_cell_complex S
-  have _hK := SurfaceCellComplex.hasEvalRepresentative K
-  sorry
+  obtain ⟨K, hSK⟩ := compact_surface_homeomorphic_to_cell_complex S
+  rcases hSK with ⟨hSK⟩
+  rcases SurfaceCellComplex.hasEvalRepresentative K with hK | hK
+  · rcases hK with ⟨hKR⟩
+    exact Or.inl ⟨hSK.trans hKR⟩
+  · rcases hK with ⟨p, n, hK⟩
+    right
+    refine ⟨p, n, ?_⟩
+    rcases hK with hK | hK
+    · left
+      rcases hK with ⟨hpn, hKR⟩
+      rcases hKR with ⟨hKR⟩
+      exact ⟨hpn, ⟨hSK.trans hKR⟩⟩
+    · right
+      rcases hK with ⟨hp, hKR⟩
+      rcases hKR with ⟨hKR⟩
+      exact ⟨hp, ⟨hSK.trans hKR⟩⟩
 
 /-- Blueprint-facing spelling of `classification_of_surfaces`. -/
 theorem topological_classification_of_surfaces (S : Type*) [TopologicalSpace S]

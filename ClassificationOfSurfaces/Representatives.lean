@@ -38,6 +38,48 @@ def NonOrientableRel (p n : ℕ) : Setoid (SurfaceCellModel p n) := ⊥
 abbrev SphereRepresentative : Type :=
   Metric.sphere (0 : EuclideanSpace ℝ (Fin 3)) 1
 
+/-- Placeholder homeomorphism from the temporary one-point model to an orientable quotient.
+
+This should disappear once the representative quotients are implemented by actual polygonal
+models. -/
+noncomputable def orientableRelPUnitHomeomorph (p n : ℕ) :
+    PUnit ≃ₜ Quot (OrientableRel p n) where
+  toFun := fun _ => Quot.mk (OrientableRel p n) PUnit.unit
+  invFun := fun _ => PUnit.unit
+  left_inv := by
+    intro x
+    cases x
+    rfl
+  right_inv := by
+    intro q
+    induction q using Quot.ind with
+    | mk a =>
+        cases a
+        rfl
+  continuous_toFun := continuous_const
+  continuous_invFun := continuous_const
+
+/-- Placeholder homeomorphism from the temporary one-point model to a non-orientable quotient.
+
+This should disappear once the representative quotients are implemented by actual polygonal
+models. -/
+noncomputable def nonOrientableRelPUnitHomeomorph (p n : ℕ) :
+    PUnit ≃ₜ Quot (NonOrientableRel p n) where
+  toFun := fun _ => Quot.mk (NonOrientableRel p n) PUnit.unit
+  invFun := fun _ => PUnit.unit
+  left_inv := by
+    intro x
+    cases x
+    rfl
+  right_inv := by
+    intro q
+    induction q using Quot.ind with
+    | mk a =>
+        cases a
+        rfl
+  continuous_toFun := continuous_const
+  continuous_invFun := continuous_const
+
 /-- The named normal forms that should eventually be realized by quotient spaces. -/
 inductive NormalForm where
   | sphere

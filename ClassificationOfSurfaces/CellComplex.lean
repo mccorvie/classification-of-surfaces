@@ -253,7 +253,9 @@ theorem finite_triangulation_to_cell_complex
     {S : Type*} [TopologicalSpace S] (T : FiniteSurfaceTriangulation S) :
     ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
   refine ⟨T.toCellComplex, ?_⟩
-  sorry
+  rcases T.homeomorphSurface with ⟨hTS⟩
+  rcases T.toCellComplex_realization_homeomorphic with ⟨hTR⟩
+  exact ⟨hTS.symm.trans hTR⟩
 
 section EvalHypotheses
 

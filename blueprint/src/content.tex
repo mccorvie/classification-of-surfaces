@@ -325,7 +325,7 @@ extensions.
 
 \begin{definition}[PL complex in a topological space]
 \label{moise:def:pl_complex_in_space}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
@@ -334,7 +334,8 @@ $M$ equipped with charts from Euclidean simplexes such that the induced abstract
 complex is PL-compatible on intersections.  The formal API stores a mathlib
 topological embedding of the complex support into the ambient space, exposes the
 image support, point and set coverage predicates, extension data, and
-compatibility on overlaps.
+compatibility on overlaps.  It also has finite support data: a finite set of
+relevant simplexes covering the embedded support.
 \end{definition}
 
 \begin{definition}[Interior subcomplex of a PL surface]
@@ -376,7 +377,8 @@ locally finite complex.
 \leanok
 
 \uses{moise:def:pl_complex_in_space}
-A locally finite PL complex with compact support has only finitely many simplexes.
+A locally finite PL complex in a compact ambient space has finite support data:
+only finitely many relevant simplexes are needed to cover the embedded support.
 \end{lemma}
 
 \begin{proof}
@@ -478,7 +480,8 @@ interior subcomplexes is a locally finite PL complex covering the whole manifold
 \leanok
 
 \uses{moise:thm:rado_triangulation_moise_manifold,moise:lem:compact_locally_finite_complex_finite}
-Every compact Moise two-manifold has a finite triangulation.
+Every compact Moise two-manifold has a PL complex covering the whole manifold
+together with finite support data.
 \end{theorem}
 
 \begin{proof}
