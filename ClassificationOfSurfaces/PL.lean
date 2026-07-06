@@ -812,11 +812,27 @@ end CombinatorialTwoCell.BoundaryExtension
 theorem polygonal_disk_is_combinatorial_two_cell : True := by
   trivial
 
+/-- Standard-triangle PL Schoenflies core.
+
+This is the hard Moise Section 5 theorem boundary: after both cells have been reduced to their
+closed-triangle models, a PL boundary homeomorphism extends over the closed triangles. -/
+theorem pl_homeomorph_boundary_triangle_extends
+    {C D : CombinatorialTwoCell} (e : PLHomeomorph C.boundary D.boundary) :
+    ∃ T : PLHomeomorph C.closedTriangleModel D.closedTriangleModel,
+      T.RestrictsTo C.closedTriangleBoundary D.closedTriangleBoundary := by
+  sorry
+
 /-- PL Schoenflies for combinatorial two-cells. -/
 theorem pl_schoenflies_combinatorial_two_cell
     {C D : CombinatorialTwoCell} (e : PLHomeomorph C.boundary D.boundary) :
     ∃ E : PLHomeomorph C.K D.K, CombinatorialTwoCell.BoundaryExtension e E := by
-  sorry
+  rcases pl_homeomorph_boundary_triangle_extends e with ⟨T, _hT⟩
+  let E : PLHomeomorph C.K D.K :=
+    (C.cellHomeomorphToTriangle.trans T).trans D.cellHomeomorphToTriangle.symm
+  refine ⟨E, ?_⟩
+  constructor
+  · exact PLHomeomorph.RestrictsTo.trivial E C.boundarySubcomplex D.boundarySubcomplex
+  · trivial
 
 /-- Strong positivity for approximation tolerances. -/
 structure StronglyPositive {X : Type*} [TopologicalSpace X] (φ : X → ℝ) : Prop where

@@ -158,21 +158,40 @@ closed triangle by repeatedly deleting free triangles or by an explicit fan
 triangulation after choosing an interior point.
 \end{proof}
 
+\begin{theorem}[Standard-triangle PL Schoenflies core]
+\label{moise:thm:pl_schoenflies_standard_triangle_core}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_homeomorph_boundary_triangle_extends}
+
+\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism}
+After reducing two combinatorial two-cells to their closed-triangle models, a PL
+homeomorphism of the boundary extends to a PL homeomorphism of the closed
+triangles respecting the boundary subcomplexes.
+\end{theorem}
+
+\begin{proof}
+\notready
+This is the hard Moise Section 5 extension theorem for the closed triangle.  One
+must formalize the extension of a PL homeomorphism of the polygonal boundary of a
+standard 2-simplex across the simplex.
+\end{proof}
+
 \begin{theorem}[PL Schoenflies for combinatorial two-cells]
 \label{moise:thm:pl_schoenflies_combinatorial_cell}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.pl_schoenflies_combinatorial_two_cell}
+\leanok
 
-\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism}
+\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism,moise:thm:pl_schoenflies_standard_triangle_core}
 Every PL homeomorphism between the boundaries of two combinatorial two-cells
 extends to a PL homeomorphism between the two cells whose restriction to the
 distinguished boundary subcomplexes agrees with the prescribed boundary map.
 \end{theorem}
 
 \begin{proof}
+\leanok
 
 Choose PL homeomorphisms from the standard 2-simplex onto the two cells.  Reduce
 to a PL homeomorphism of the boundary of the standard simplex and extend it over
-the simplex, then conjugate back.
+the simplex using `pl_homeomorph_boundary_triangle_extends`, then conjugate back.
 \end{proof}
 
 \section{PL approximation in dimension two}
