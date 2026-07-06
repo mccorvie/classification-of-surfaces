@@ -99,7 +99,7 @@ Observed gap:
 Potential response:
 
 - Define a project-specific finite triangulation structure if the topological bridge needs it.
-- Keep the final interface at `CellComplex`, so this choice remains internal to
+- Keep the final interface at `SurfaceCellComplex`, so this choice remains internal to
   `Triangulation.lean`.
 
 ## Graphs and Combinatorics
@@ -121,8 +121,8 @@ For the near term:
 1. Use mathlib quotient topology for representative spaces.
 2. Build project-specific combinatorial cell complexes and cyclic words.
 3. Do not commit yet to CW complexes as the topological bridge target.
-4. Keep a theorem boundary from compact eval-surfaces to `CellComplex.Realization` while the
+4. Keep a theorem boundary from compact eval-surfaces to `SurfaceCellComplex.Realization` while the
    combinatorial representation stabilizes.
 
 The main risk is picking a topological interface too early. The combinatorial side should determine
-what data `CellComplex` must contain.
+what data `SurfaceCellComplex` must contain.

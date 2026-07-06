@@ -27,8 +27,20 @@ theorem classification_of_surfaces (S : Type*) [TopologicalSpace S]
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (S ≃ₜ Quot (OrientableRel p n))) ∨
           (1 ≤ p ∧ Nonempty (S ≃ₜ Quot (NonOrientableRel p n))) := by
-  have _htriangulable : Triangulable S := compact_surface_triangulable S
+  obtain ⟨K, _hSK⟩ := compact_surface_homeomorphic_to_cell_complex S
+  have _hK := SurfaceCellComplex.hasEvalRepresentative K
   sorry
+
+/-- Blueprint-facing spelling of `classification_of_surfaces`. -/
+theorem topological_classification_of_surfaces (S : Type*) [TopologicalSpace S]
+    [T2Space S] [ConnectedSpace S] [CompactSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    Nonempty (S ≃ₜ SphereRepresentative) ∨
+      ∃ p n,
+        ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (S ≃ₜ Quot (OrientableRel p n))) ∨
+          (1 ≤ p ∧ Nonempty (S ≃ₜ Quot (NonOrientableRel p n))) :=
+  classification_of_surfaces S
 
 end ClassificationOfSurfaces
 end Topology

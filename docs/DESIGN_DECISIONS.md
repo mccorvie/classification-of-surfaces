@@ -1,23 +1,30 @@
 # Design Decisions
 
-This file records project-level design decisions. Proposed changes should be discussed before large
-amounts of code depend on them.
+This file records project-level design decisions and open design questions. It is intentionally
+shorter and more stable than `codex_strategy_moise_pl.md`: use this file to see what choices are
+accepted, provisional, or still open before building new code on top of them.
+
+Not every item in this file is decided. The `Active Decisions` section records choices the current
+code and docs assume; the `Open Decisions` section records questions that still need resolution.
 
 ## Active Decisions
 
 ### D1. Main Interface Between Topology and Combinatorics
 
-Decision: the intended meeting point is a theorem producing a `CellComplex` whose realization is
+Decision: the intended meeting point is a theorem producing a `SurfaceCellComplex` whose realization is
 homeomorphic to the input surface.
 
 ```lean
-∃ K : CellComplex, Nonempty (S ≃ₜ K.Realization)
+∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization)
 ```
 
 Reason: Gallier-Xu's normal-form proof works on cell complexes, not directly on arbitrary
 triangulations. Triangulations should be internal to the topology bridge.
 
-Status: accepted provisionally.
+Status: accepted.
+
+Preferred Lean name: `SurfaceCellComplex`. The older `CellComplex` name remains as a compatibility
+alias for early scaffold code and should not be used in new declarations.
 
 ### D2. Direction of Development
 
@@ -25,9 +32,9 @@ Decision: develop the combinatorial objects from the bottom first, while keeping
 as a named theorem boundary.
 
 Reason: top-down decomposition often fails when the bottom definitions do not match the high-level
-interfaces. Here the clean split is useful only if `CellComplex` is the right concrete object.
+interfaces. Here the clean split is useful only if `SurfaceCellComplex` is the right concrete object.
 
-Status: accepted provisionally.
+Status: accepted.
 
 ### D3. Non-Homeomorphism of Normal Forms
 
@@ -53,18 +60,22 @@ Options:
 Current leaning: start with lists plus an explicit relation. Quotients may make rewriting painful too
 early.
 
+Status: open.
+
 ### O2. Boundary Components
 
 Options:
 
-- store boundary components explicitly in `CellComplex`;
+- store boundary components explicitly in `SurfaceCellComplex`;
 - derive them from unmatched boundary cycles;
 - avoid boundary-component data until normal forms.
 
 Current leaning: derive when possible, but keep normal-form parameters explicit because the eval
 statement uses `p n`.
 
-### O3. Realization of `CellComplex`
+Status: open.
+
+### O3. Realization of `SurfaceCellComplex`
 
 Options:
 
@@ -75,13 +86,17 @@ Options:
 Current leaning: polygon quotient is closest to the eval representatives, but requires quotient-map
 work. Keep placeholder until the combinatorial structure is clearer.
 
+Status: open.
+
 ### O4. Topological Bridge Target
 
 Options:
 
 - project-specific finite triangulations;
 - mathlib classical CW complexes;
-- theorem-boundary triangulation directly to `CellComplex`.
+- theorem-boundary triangulation directly to `SurfaceCellComplex`.
 
-Current leaning: keep the public bridge as `CellComplex`; investigate CW and finite triangulations
+Current leaning: keep the public bridge as `SurfaceCellComplex`; investigate CW and finite triangulations
 behind that boundary.
+
+Status: open.

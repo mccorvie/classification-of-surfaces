@@ -47,6 +47,12 @@ Use `noncomputable section` and `open Classical` freely where this simplifies fi
 
 These are the hinge points that both the Moise route and the Mohar--Thomassen route should share. They are the most important interfaces to stabilize early.
 
+Current Lean status: the project now has a compiling bottom-layer scaffold for these names. The
+preferred public names are `SurfaceCellComplex`, `FiniteSurfaceTriangulation`, and
+`SurfaceTriangulable`; legacy aliases `CellComplex`, `FiniteTriangulation`, and `Triangulable`
+remain only for compatibility with early scaffold code. See `ClassificationOfSurfaces/API.lean`
+for the current declaration map.
+
 ### API 0: Eval surface wrapper
 
 Blueprint label:
@@ -188,7 +194,7 @@ A second useful form is relation-only congruence on the same pre-space:
 theorem SurfaceCellComplex.realizationCongrRight
     {X : Type*} [TopologicalSpace X]
     {r s : Setoid X}
-    (h : ∀ x y, r.Rel x y ↔ s.Rel x y) :
+    (h : ∀ x y, r x y ↔ s x y) :
     Quotient r ≃ₜ Quotient s := by
   sorry
 ```
@@ -211,7 +217,7 @@ Proposed Lean names:
 ```lean
 FiniteSurfaceTriangulation
 FiniteSurfaceTriangulation.toCellComplex
-FiniteSurfaceTriangulation.realization_homeomorphic_to_toCellComplex
+FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic
 finite_triangulation_to_cell_complex
 ```
 
@@ -240,7 +246,7 @@ def FiniteSurfaceTriangulation.toCellComplex
     (T : FiniteSurfaceTriangulation S) : SurfaceCellComplex :=
   sorry
 
-theorem FiniteSurfaceTriangulation.realization_homeomorphic_to_toCellComplex
+theorem FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic
     (T : FiniteSurfaceTriangulation S) :
     Nonempty (T.realization ≃ₜ T.toCellComplex.Realization) := by
   sorry
@@ -337,7 +343,7 @@ theorem compact_surface_homeomorphic_to_cell_complex
     ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
   obtain ⟨T, hT⟩ := compact_eval_surface_finitely_triangulable S
   let K := T.toCellComplex
-  -- compose hT with T.realization_homeomorphic_to_toCellComplex
+  -- compose hT with T.toCellComplex_realization_homeomorphic
   sorry
 ```
 
@@ -678,7 +684,7 @@ theorem compact_surface_homeomorphic_to_cell_complex
     ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
   obtain ⟨T, hTS⟩ := compact_eval_surface_finitely_triangulable S
   refine ⟨T.toCellComplex, ?_⟩
-  -- compose hTS.symm with T.realization_homeomorphic_to_toCellComplex
+  -- compose hTS.symm with T.toCellComplex_realization_homeomorphic
   sorry
 ```
 
@@ -853,7 +859,7 @@ Owns:
 ```text
 FiniteSurfaceTriangulation
 toCellComplex
-realization_homeomorphic_to_toCellComplex
+toCellComplex_realization_homeomorphic
 ```
 
 Deliverable: any finite triangular surface presentation compiles into a `SurfaceCellComplex` with boundary words of length three.

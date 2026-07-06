@@ -9,10 +9,13 @@ quotient.
 
 ## Documents
 
-- `docs/PROOF_STRATEGY.md`: proof split, theorem interface, and work packages.
+- `ClassificationOfSurfaces/API.lean`: public Lean API map and preferred collaborator entry point.
+- `docs/ARCHITECTURE.md`: concise architecture overview and current next tasks.
+- `docs/AUTOFORMALIZATION_GUIDE.md`: operating rules for human-plus-agent formalization work.
+- `codex_strategy_moise_pl.md`: detailed Moise/PL triangulation route and work-package plan.
+- `blueprint/src/content.tex`: Lean blueprint for the Moise/PL route.
 - `docs/MATHLIB_SURVEY.md`: current mathlib starting points and gaps.
-- `docs/DESIGN_DECISIONS.md`: accepted and open design decisions.
-- `ROADMAP.md`: concise project roadmap and first contributor tasks.
+- `docs/DESIGN_DECISIONS.md`: accepted decisions and still-open design questions.
 - `CONTRIBUTING.md`: collaboration workflow.
 
 ## Build
@@ -23,3 +26,42 @@ lake build
 
 The current repository intentionally contains theorem-boundary `sorry`s while the project skeleton
 is being refined.
+
+## Architecture
+
+The project is organized around one shared handoff object:
+
+```lean
+SurfaceCellComplex
+SurfaceCellComplex.Realization
+```
+
+The topological route, currently planned through Moise/Rado PL triangulation, should produce:
+
+```lean
+FiniteSurfaceTriangulation S
+FiniteSurfaceTriangulation.toCellComplex
+compact_surface_homeomorphic_to_cell_complex
+```
+
+The Gallier-Xu normal-form route should consume only `SurfaceCellComplex` and prove:
+
+```lean
+SurfaceCellComplex.hasEvalRepresentative
+```
+
+The final theorem `classification_of_surfaces`, with blueprint-facing wrapper
+`topological_classification_of_surfaces`, should then be a short composition of these two bridges.
+Legacy aliases such as `CellComplex`, `FiniteTriangulation`, and `Triangulable` still compile for
+compatibility, but new code should use the preferred names above.
+
+## Current Status
+
+- The repository builds with `lake build`.
+- The bottom API has concrete finite combinatorial data:
+  `SurfaceCellComplex`, signed darts, oriented triangulation edges, one-face presentations, and a
+  data-preserving triangulation-to-cell-complex conversion.
+- Standard example boundary words for the disk, annulus, torus, projective plane, and Mobius strip
+  compile as `SurfaceCellComplex` values.
+- Quotient realizations, Moise/PL triangulation, and Gallier-Xu normal-form reductions are still
+  theorem boundaries marked by named `sorry`s.

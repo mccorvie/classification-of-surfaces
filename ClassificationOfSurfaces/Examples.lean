@@ -9,7 +9,9 @@ import ClassificationOfSurfaces.NormalForm
 # Standard examples
 
 This file names the small surfaces we should keep as regression tests while the definitions mature.
-For now most examples are stated as theorem boundaries over the placeholder representative spaces.
+The examples are concrete one-face boundary-word presentations in the shared `SurfaceCellComplex`
+API. Their realization theorems remain theorem boundaries until quotient realizations are
+implemented.
 -/
 
 namespace LeanEval
@@ -40,25 +42,127 @@ def projectivePlaneNormalForm : NormalForm :=
 def mobiusStripNormalForm : NormalForm :=
   NormalForm.nonOrientable 1 1
 
-/-- Placeholder cell complex for the disk example. -/
+/-- Edge names for the disk example. -/
+inductive DiskEdge where
+  | h
+deriving DecidableEq, Repr, Fintype
+
+/-- Edge names for the annulus example. -/
+inductive AnnulusEdge where
+  | c₀
+  | c₁
+deriving DecidableEq, Repr, Fintype
+
+/-- Edge names for the torus example. -/
+inductive TorusEdge where
+  | a
+  | b
+deriving DecidableEq, Repr, Fintype
+
+/-- Edge names for the projective-plane example. -/
+inductive ProjectivePlaneEdge where
+  | a
+deriving DecidableEq, Repr, Fintype
+
+/-- Edge names for the Mobius-strip example. -/
+inductive MobiusStripEdge where
+  | a
+  | h
+deriving DecidableEq, Repr, Fintype
+
+open SurfaceCellComplex.SignedDart
+
+/-- One-face boundary-word presentation for the disk. -/
 def diskCellComplex : CellComplex :=
-  CellComplex.sphere
+  SurfaceCellComplex.oneFacePresentation DiskEdge [pos DiskEdge.h] (fun _ => True)
 
-/-- Placeholder cell complex for the annulus example. -/
+/-- One-face boundary-word presentation for the annulus, with two boundary contours. -/
 def annulusCellComplex : CellComplex :=
-  CellComplex.sphere
+  SurfaceCellComplex.oneFacePresentation AnnulusEdge
+    [pos AnnulusEdge.c₀, pos AnnulusEdge.c₁] (fun _ => True)
 
-/-- Placeholder cell complex for the torus example. -/
+/-- One-face boundary-word presentation for the torus: `a b a⁻¹ b⁻¹`. -/
 def torusCellComplex : CellComplex :=
-  CellComplex.sphere
+  SurfaceCellComplex.oneFacePresentation TorusEdge
+    [pos TorusEdge.a, pos TorusEdge.b, neg TorusEdge.a, neg TorusEdge.b]
 
-/-- Placeholder cell complex for the projective-plane example. -/
+/-- One-face boundary-word presentation for the projective plane: `a a`. -/
 def projectivePlaneCellComplex : CellComplex :=
-  CellComplex.sphere
+  SurfaceCellComplex.oneFacePresentation ProjectivePlaneEdge
+    [pos ProjectivePlaneEdge.a, pos ProjectivePlaneEdge.a]
 
-/-- Placeholder cell complex for the Mobius-strip example. -/
+/-- One-face boundary-word presentation for the Mobius strip: `a a h`. -/
 def mobiusStripCellComplex : CellComplex :=
-  CellComplex.sphere
+  SurfaceCellComplex.oneFacePresentation MobiusStripEdge
+    [pos MobiusStripEdge.a, pos MobiusStripEdge.a, pos MobiusStripEdge.h]
+    (fun e => e = MobiusStripEdge.h)
+
+/-- Regression check: the torus example has the expected four-letter boundary word. -/
+example : torusCellComplex.faceBoundaryLength PUnit.unit = 4 := by
+  rfl
+
+/-- Regression check: the projective-plane example has the expected two-letter boundary word. -/
+example : projectivePlaneCellComplex.faceBoundaryLength PUnit.unit = 2 := by
+  rfl
+
+/-- Regression check: the Mobius-strip example has the expected three-letter boundary word. -/
+example : mobiusStripCellComplex.faceBoundaryLength PUnit.unit = 3 := by
+  rfl
+
+/-- A minimal one-triangle triangulation of `PUnit`, used only to test the data conversion API. -/
+def oneTriangleTriangulation : FiniteSurfaceTriangulation PUnit where
+  Vertex := Fin 3
+  Edge := Fin 3
+  Triangle := PUnit
+  vertexFintype := inferInstance
+  edgeFintype := inferInstance
+  triangleFintype := inferInstance
+  realization := PUnit
+  realizationTop := inferInstance
+  edgeSource := fun e => e
+  edgeTarget := fun e => ⟨(e.1 + 1) % 3, Nat.mod_lt _ (by decide)⟩
+  triangleBoundary := fun _ =>
+    [OrientedEdge.pos 0, OrientedEdge.pos 1, OrientedEdge.pos 2]
+  edgeIsBoundary := fun _ => True
+  isSurfaceTriangulation := True
+  homeomorphSurface := ⟨Homeomorph.refl PUnit⟩
+
+/-- Regression check: triangulation-to-cell-complex keeps triangles as faces. -/
+example : oneTriangleTriangulation.toCellComplex.numFaces = 1 := by
+  rfl
+
+/-- Regression check: triangulation-to-cell-complex keeps each geometric edge as two darts. -/
+example : oneTriangleTriangulation.toCellComplex.numDarts = 6 := by
+  rfl
+
+/-- Regression check: the triangle boundary word has length three. -/
+example :
+    oneTriangleTriangulation.toCellComplex.faceBoundaryLength PUnit.unit = 3 := by
+  rfl
+
+/-- A one-triangle fixture with one reversed side, used to test oriented conversion. -/
+def reversedSideTriangulation : FiniteSurfaceTriangulation PUnit where
+  Vertex := Fin 3
+  Edge := Fin 3
+  Triangle := PUnit
+  vertexFintype := inferInstance
+  edgeFintype := inferInstance
+  triangleFintype := inferInstance
+  realization := PUnit
+  realizationTop := inferInstance
+  edgeSource := fun e => e
+  edgeTarget := fun e => ⟨(e.1 + 1) % 3, Nat.mod_lt _ (by decide)⟩
+  triangleBoundary := fun _ =>
+    [OrientedEdge.pos 0, OrientedEdge.pos 1, OrientedEdge.neg 2]
+  edgeIsBoundary := fun _ => True
+  isSurfaceTriangulation := True
+  homeomorphSurface := ⟨Homeomorph.refl PUnit⟩
+
+/-- Regression check: triangulation-to-cell-complex preserves reversed triangle sides. -/
+example :
+    reversedSideTriangulation.toCellComplex.boundary PUnit.unit =
+      [pos (0 : Fin 3), pos (1 : Fin 3), neg (2 : Fin 3)] := by
+  rfl
 
 /-- Example target: the disk cell complex realizes the disk normal form. -/
 theorem disk_has_normal_form :
