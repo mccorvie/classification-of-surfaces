@@ -215,6 +215,20 @@ composition, precomposition, restriction, and suitable postcomposition.
 These are direct consequences of positivity and the metric triangle inequality.
 \end{proof}
 
+\begin{definition}[Half-plane boundary targets]
+\label{moise:def:half_plane_boundary_targets}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.HalfPlane, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneBoundary, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneRegion, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingMap, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingOneSkeletonApproximation}
+\leanok
+
+\uses{moise:def:combinatorial_surface,moise:def:phi_approximation}
+The direct bordered route uses the closed upper half-plane as the local target.
+A half-plane region records a plane subset contained in the half-plane together
+with its boundary part on the boundary line.  Boundary-respecting map predicates
+state that boundary vertices and boundary edges of a combinatorial surface map
+to this boundary line; the one-skeleton version combines this with the existing
+PL approximation predicate.
+\end{definition}
+
 \begin{lemma}[PL approximation on the one-skeleton]
 \label{moise:lem:pl_approximation_one_skeleton}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_one_skeleton}
@@ -251,9 +265,28 @@ These are the remaining planar topology and finite-family perturbation
 ingredients behind the formal one-skeleton approximation wrapper.
 \end{proof}
 
+\begin{lemma}[Bordered one-skeleton approximation boundaries]
+\label{moise:lem:bordered_one_skeleton_hard_boundaries}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.boundary_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.boundary_endpoint_preservation_for_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.boundary_edge_separation_control, LeanEval.Topology.ClassificationOfSurfaces.boundary_no_crossing_perturbation, LeanEval.Topology.ClassificationOfSurfaces.bordered_pl_approximation_one_skeleton}
+\leanok
+
+\uses{moise:def:half_plane_boundary_targets,moise:def:combinatorial_surface,moise:def:phi_approximation}
+The bordered one-skeleton approximation layer parallels the plane case but works
+in a half-plane region.  The theorem boundaries require polygonal approximation,
+endpoint preservation, finite separation, and no-crossing perturbations that
+keep boundary vertices and boundary edges on the boundary line.
+\end{lemma}
+
+\begin{proof}
+\leanok
+The wrapper theorem packages the boundary-aware no-crossing perturbation as a
+one-skeleton PL approximation together with the boundary-respecting map
+predicate.  The geometric perturbation results remain named theorem boundaries.
+\end{proof}
+
 \begin{definition}[Cellwise extension and gluing interfaces]
 \label{moise:def:cellwise_extension_gluing}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.CellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLHomeomorphFromCellwise, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLSurfaceApproximation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.CellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLHomeomorphFromCellwise, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLSurfaceApproximation, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.BoundaryGlobalPLSurfaceApproximation}
 \leanok
 
 \uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:lem:pl_approximation_one_skeleton}
@@ -261,18 +294,22 @@ A cellwise extension records a one-skeleton PL approximation, a global candidate
 map on the support, its $\varphi$-closeness to the original homeomorphism,
 finite two-cell extension data, and finite agreement conditions on shared
 boundaries.  The global gluing predicate packages the claim that compatible
-cellwise data assemble into a global PL surface approximation.
+cellwise data assemble into a global PL surface approximation.  The boundary
+versions additionally record boundary-respecting one-skeleton data, relative
+boundary-cell extension data, and a boundary-respecting global map.
 \end{definition}
 
 \begin{lemma}[Hard cellwise extension and gluing boundaries]
 \label{moise:lem:cellwise_extension_gluing_boundaries}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.cellwise_extension_by_pl_schoenflies, LeanEval.Topology.ClassificationOfSurfaces.global_pl_homeomorph_from_cellwise}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.cellwise_extension_by_pl_schoenflies, LeanEval.Topology.ClassificationOfSurfaces.global_pl_homeomorph_from_cellwise, LeanEval.Topology.ClassificationOfSurfaces.boundary_cellwise_extension_by_relative_pl_schoenflies, LeanEval.Topology.ClassificationOfSurfaces.boundary_global_pl_homeomorph_from_cellwise, LeanEval.Topology.ClassificationOfSurfaces.bordered_pl_approximation_halfplane}
 
 \uses{moise:def:cellwise_extension_gluing,moise:thm:pl_schoenflies_combinatorial_cell}
 The plane approximation proof is split into two theorem boundaries after the
 one-skeleton is controlled: extend each two-cell boundary map by PL Schoenflies,
 then glue the compatible finite family of cellwise extensions into a global PL
-homeomorphic approximation.
+homeomorphic approximation.  The bordered route uses the relative PL Schoenflies
+boundary for half-disks and a relative gluing boundary preserving the half-plane
+boundary line.
 \end{lemma}
 
 \begin{proof}
@@ -402,12 +439,14 @@ or the closed half-disk.
 
 \begin{lemma}[Chart pair exhaustion]
 \label{moise:lem:chart_pair_exhaustion}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.chart_pair_exhaustion}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.chart_pair_exhaustion}
 
 \uses{moise:def:moise_two_manifold}
 Every Moise two-manifold admits a countable sequence of chart pairs
 $(N_i,N'_i)$ such that $N'_i\subset N_i$, $N_i$ maps to the unit disk, $N'_i$ maps
-to the smaller disk, and the $N'_i$ cover the manifold.
+to the smaller disk or half-disk according to its chart kind, and the $N'_i$
+cover the manifold.  The formal exhaustion tracks interior and boundary chart
+coverage separately, with boundary cores for half-disk charts.
 \end{lemma}
 
 \begin{proof}
@@ -419,12 +458,14 @@ neighborhoods.
 
 \begin{lemma}[Initial PL neighborhood]
 \label{moise:lem:initial_pl_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
 
 \uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion}
 For the first chart pair of a two-manifold, there is a finite PL complex
 $\mathcal X_1$ in the manifold whose support is a compact two-manifold with
 boundary and whose interior subcomplex contains the smaller chart neighborhood.
+The induction state also records a boundary subcomplex and compatibility fields
+asserting that boundary chart cores are covered by this boundary subcomplex.
 \end{lemma}
 
 \begin{proof}
@@ -443,7 +484,9 @@ Suppose $\mathcal X_n$ is a PL complex in a two-manifold whose support is a
 compact two-manifold with boundary and whose interior contains the first $n$
 small chart neighborhoods.  Then there is a PL complex $\mathcal X_{n+1}$ with
 the same properties for the first $n+1$ chart neighborhoods and with
-$\mathcal X_n^\circ\subseteq\mathcal X_{n+1}^\circ$.
+$\mathcal X_n^\circ\subseteq\mathcal X_{n+1}^\circ$.  In the bordered route,
+the extension preserves the boundary subcomplex and its compatibility on
+overlaps.
 \end{lemma}
 
 \begin{proof}
@@ -498,7 +541,7 @@ compact, so local finiteness implies that only finitely many simplexes occur.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.bordered_pl_approximation}
 \leanok
 
-\uses{moise:thm:pl_approximation_plane,moise:def:combinatorial_surface}
+\uses{moise:def:half_plane_boundary_targets,moise:lem:bordered_one_skeleton_hard_boundaries,moise:lem:cellwise_extension_gluing_boundaries,moise:def:combinatorial_surface}
 The PL approximation theorem remains valid for local half-disk charts and
 combinatorial surfaces with boundary, with approximating PL homeomorphisms
 respecting the boundary half-plane.
@@ -506,19 +549,21 @@ respecting the boundary half-plane.
 
 \begin{proof}
 \leanok
-Adapt the plane proof by working in half-plane charts near boundary points and
-requiring the one-skeleton approximation to carry boundary edges into the
-boundary line.  Interior faces use the ordinary PL Schoenflies argument; boundary
+Apply the boundary-aware one-skeleton approximation in a half-plane region, then
+extend across two-cells using the relative PL Schoenflies boundary and glue the
+relative cellwise extensions.  Interior faces use the ordinary PL Schoenflies argument; boundary
 faces use the relative version for half-disks.
 \end{proof}
 
 \begin{theorem}[Moise--Rado triangulation for bordered surfaces]
 \label{moise:thm:rado_bordered_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
 
-\uses{moise:def:moise_two_manifold,moise:thm:rado_triangulation_moise_manifold,moise:thm:bordered_pl_approximation}
+\uses{moise:def:moise_two_manifold,moise:thm:rado_triangulation_moise_manifold,moise:thm:bordered_pl_approximation,moise:lem:compact_locally_finite_complex_finite}
 Every compact Moise two-manifold with boundary has a finite triangulation whose
-boundary is a subcomplex.
+support covers the manifold, whose relevant simplexes are finite, and whose
+boundary is carried by a boundary subcomplex compatible with the ambient PL
+complex.
 \end{theorem}
 
 \begin{proof}

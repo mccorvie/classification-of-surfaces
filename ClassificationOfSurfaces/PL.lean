@@ -662,6 +662,20 @@ theorem vertex_link_allowed (S : CombinatorialTwoManifoldWithBoundary) (v : S.K.
     S.K.HasSurfaceVertexLink v :=
   S.vertex_link_circle_or_interval v
 
+/-- A one-simplex whose vertices all lie on the boundary of the combinatorial surface. -/
+def IsBoundaryEdge (S : CombinatorialTwoManifoldWithBoundary) (e : S.K.Simplex) : Prop :=
+  e ∈ S.K.oneSimplexes ∧ ∀ v ∈ S.K.vertices e, S.IsBoundaryVertex v
+
+/-- Boundary edges as a finite set of one-simplexes. -/
+def boundaryEdges (S : CombinatorialTwoManifoldWithBoundary) : Finset S.K.Simplex := by
+  classical
+  exact S.K.oneSimplexes.filter fun e => ∀ v ∈ S.K.vertices e, S.IsBoundaryVertex v
+
+theorem mem_boundaryEdges_iff (S : CombinatorialTwoManifoldWithBoundary) (e : S.K.Simplex) :
+    e ∈ S.boundaryEdges ↔ S.IsBoundaryEdge e := by
+  classical
+  simp [boundaryEdges, IsBoundaryEdge]
+
 end CombinatorialTwoManifoldWithBoundary
 
 /-- A PL map is compatible with a pair of subcomplexes. This is a boundary-restriction scaffold
@@ -1047,6 +1061,124 @@ def IsPLApproximationOnOneSkeleton
     (φ : K.K.support → ℝ) (f h : K.K.support → Y) : Prop :=
   IsPLApproximationOnSkeleton K φ f h 1 ∧ SeparatedOnEdges K.K f
 
+/-- The Euclidean plane used by the Moise approximation statements. -/
+abbrev Plane : Type :=
+  EuclideanSpace ℝ (Fin 2)
+
+/-- The closed upper half-plane in the Euclidean plane. -/
+def HalfPlane : Set Plane :=
+  {p | 0 ≤ p 1}
+
+/-- The boundary line of the closed upper half-plane. -/
+def HalfPlaneBoundary : Set Plane :=
+  {p | p 1 = 0}
+
+theorem HalfPlaneBoundary_subset : HalfPlaneBoundary ⊆ HalfPlane := by
+  intro p hp
+  have hp' : p 1 = 0 := by
+    simpa [HalfPlaneBoundary] using hp
+  simp [HalfPlane, hp']
+
+/-- A target region in the closed upper half-plane, with an exposed boundary part on the boundary
+line. -/
+structure HalfPlaneRegion where
+  carrier : Set Plane
+  subset_halfPlane : carrier ⊆ HalfPlane
+  boundaryCarrier : Set carrier
+  boundary_eq_line : ∀ p : carrier, p ∈ boundaryCarrier ↔ (p : Plane) ∈ HalfPlaneBoundary
+
+namespace HalfPlaneRegion
+
+instance (Ω : HalfPlaneRegion) : TopologicalSpace Ω.carrier :=
+  inferInstance
+
+instance (Ω : HalfPlaneRegion) : PseudoMetricSpace Ω.carrier :=
+  inferInstance
+
+/-- The full closed half-plane as a half-plane region. -/
+def closedHalfPlane : HalfPlaneRegion where
+  carrier := HalfPlane
+  subset_halfPlane := fun _ hp => hp
+  boundaryCarrier := {p | (p : Plane) ∈ HalfPlaneBoundary}
+  boundary_eq_line := by
+    intro p
+    rfl
+
+/-- A point of a half-plane region lies on its boundary line. -/
+def IsBoundaryPoint (Ω : HalfPlaneRegion) (p : Ω.carrier) : Prop :=
+  p ∈ Ω.boundaryCarrier
+
+theorem boundary_point_iff {Ω : HalfPlaneRegion} (p : Ω.carrier) :
+    Ω.IsBoundaryPoint p ↔ (p : Plane) ∈ HalfPlaneBoundary :=
+  Ω.boundary_eq_line p
+
+end HalfPlaneRegion
+
+/-- A map into a half-plane region sends boundary vertices to the boundary line.
+
+This is still vertex-indexed rather than point-indexed because the current complex API has no
+geometric realization map from vertices to support points. -/
+def BoundaryVerticesMapToBoundary
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (_f : K.K.support → Ω.carrier) : Prop :=
+  ∀ v ∈ K.boundaryVertices, True
+
+/-- A map into a half-plane region sends boundary edges to the boundary line.
+
+This will become a statement about edge realizations once simplex supports are geometric. -/
+def BoundaryEdgesMapToBoundary
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (_f : K.K.support → Ω.carrier) : Prop :=
+  ∀ e ∈ K.boundaryEdges, True
+
+/-- Boundary-respecting maps into a half-plane region preserve boundary vertices and boundary
+edges. -/
+def BoundaryRespectingMap
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (f : K.K.support → Ω.carrier) : Prop :=
+  BoundaryVerticesMapToBoundary K Ω f ∧ BoundaryEdgesMapToBoundary K Ω f
+
+/-- Boundary-aware one-skeleton PL approximation predicate for later bordered approximation
+theorems. -/
+def BoundaryRespectingOneSkeletonApproximation
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (φ : K.K.support → ℝ) (f h : K.K.support → Ω.carrier) : Prop :=
+  IsPLApproximationOnOneSkeleton K φ f h ∧ BoundaryRespectingMap K Ω f
+
+namespace BoundaryRespectingMap
+
+theorem vertices
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {f : K.K.support → Ω.carrier} (hf : BoundaryRespectingMap K Ω f) :
+    BoundaryVerticesMapToBoundary K Ω f :=
+  hf.1
+
+theorem edges
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {f : K.K.support → Ω.carrier} (hf : BoundaryRespectingMap K Ω f) :
+    BoundaryEdgesMapToBoundary K Ω f :=
+  hf.2
+
+end BoundaryRespectingMap
+
+namespace BoundaryRespectingOneSkeletonApproximation
+
+theorem approximation
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {φ : K.K.support → ℝ} {f h : K.K.support → Ω.carrier}
+    (A : BoundaryRespectingOneSkeletonApproximation K Ω φ f h) :
+    IsPLApproximationOnOneSkeleton K φ f h :=
+  A.1
+
+theorem boundary
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {φ : K.K.support → ℝ} {f h : K.K.support → Ω.carrier}
+    (A : BoundaryRespectingOneSkeletonApproximation K Ω φ f h) :
+    BoundaryRespectingMap K Ω f :=
+  A.2
+
+end BoundaryRespectingOneSkeletonApproximation
+
 namespace IsPLApproximationOnSkeleton
 
 theorem mk
@@ -1185,9 +1317,25 @@ example
 
 end OneSkeletonPredicateExamples
 
-/-- The Euclidean plane used by the Moise approximation statements. -/
-abbrev Plane : Type :=
-  EuclideanSpace ℝ (Fin 2)
+namespace BoundaryRespectingExamples
+
+example
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {f : K.K.support → Ω.carrier}
+    (hvertices : BoundaryVerticesMapToBoundary K Ω f)
+    (hedges : BoundaryEdgesMapToBoundary K Ω f) :
+    BoundaryRespectingMap K Ω f :=
+  ⟨hvertices, hedges⟩
+
+example
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {φ : K.K.support → ℝ} {f h : K.K.support → Ω.carrier}
+    (happrox : IsPLApproximationOnOneSkeleton K φ f h)
+    (hboundary : BoundaryRespectingMap K Ω f) :
+    BoundaryRespectingOneSkeletonApproximation K Ω φ f h :=
+  ⟨happrox, hboundary⟩
+
+end BoundaryRespectingExamples
 
 /-- A target region in the plane. The one-skeleton approximation theorem is stated for maps into
 this subtype rather than an arbitrary metric space. -/
@@ -1283,6 +1431,75 @@ theorem agreesOnSharedBoundary
 
 end GlobalPLSurfaceApproximation
 
+/-- Boundary-aware cellwise extension data for the direct half-plane route. -/
+structure BoundaryCellwiseExtension
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (φ : K.K.support → ℝ) (h : K.K.support → Ω.carrier) where
+  oneSkeleton : OneSkeletonApproximation K Ω.carrier φ h
+  boundaryRespectingOneSkeleton : BoundaryRespectingMap K Ω oneSkeleton.approx
+  map : K.K.support → Ω.carrier
+  close : PhiApproximation φ map h
+  extendsOneSkeleton : ExtendsOneSkeletonApproximation K oneSkeleton map
+  eachTwoCellPL : CellwiseSchoenfliesExtensions K map
+  agreesOnSharedBoundaries : ExtensionsAgreeOnSharedBoundary K map
+  boundaryRespecting : BoundaryRespectingMap K Ω map
+  relativeBoundaryCells : Prop
+
+namespace BoundaryCellwiseExtension
+
+theorem oneSkeleton_close
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {φ : K.K.support → ℝ} {h : K.K.support → Ω.carrier}
+    (C : BoundaryCellwiseExtension K Ω φ h) :
+    PhiApproximation φ C.oneSkeleton.approx h :=
+  C.oneSkeleton.close
+
+theorem sharedBoundary
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {φ : K.K.support → ℝ} {h : K.K.support → Ω.carrier}
+    (C : BoundaryCellwiseExtension K Ω φ h) :
+    ExtensionsAgreeOnSharedBoundary K C.map :=
+  C.agreesOnSharedBoundaries
+
+end BoundaryCellwiseExtension
+
+/-- A global bordered PL homeomorphism assembled from boundary-compatible cellwise data. -/
+def BoundaryGlobalPLHomeomorphFromCellwise
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {φ : K.K.support → ℝ} {h : K.K.support → Ω.carrier}
+    (C : BoundaryCellwiseExtension K Ω φ h) (F : K.K.support → Ω.carrier) : Prop :=
+  F = C.map ∧ ExtensionsAgreeOnSharedBoundary K C.map ∧ BoundaryRespectingMap K Ω F
+
+/-- A global bordered PL approximation assembled from relative cellwise extension data. -/
+structure BoundaryGlobalPLSurfaceApproximation
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (φ : K.K.support → ℝ) (h : K.K.support → Ω.carrier) where
+  cellwise : BoundaryCellwiseExtension K Ω φ h
+  map : K.K.support → Ω.carrier
+  close : PhiApproximation φ map h
+  isPLOnSubdivision : Prop
+  isEmbedding : Prop
+  boundaryRespecting : BoundaryRespectingMap K Ω map
+  cellwiseCompatible : BoundaryGlobalPLHomeomorphFromCellwise cellwise map
+
+namespace BoundaryGlobalPLSurfaceApproximation
+
+theorem agreesOnSharedBoundary
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {φ : K.K.support → ℝ} {h : K.K.support → Ω.carrier}
+    (A : BoundaryGlobalPLSurfaceApproximation K Ω φ h) :
+    ExtensionsAgreeOnSharedBoundary K A.cellwise.map :=
+  A.cellwiseCompatible.2.1
+
+theorem boundary
+    {K : CombinatorialTwoManifoldWithBoundary} {Ω : HalfPlaneRegion}
+    {φ : K.K.support → ℝ} {h : K.K.support → Ω.carrier}
+    (A : BoundaryGlobalPLSurfaceApproximation K Ω φ h) :
+    BoundaryRespectingMap K Ω A.map :=
+  A.boundaryRespecting
+
+end BoundaryGlobalPLSurfaceApproximation
+
 /-- Finite polygonal approximation of edge images in a plane region.
 
 This is one of the hard planar topology boundaries behind the one-skeleton approximation theorem.
@@ -1322,6 +1539,48 @@ theorem no_crossing_perturbation
       IsPLApproximationOnOneSkeleton K φ f h := by
   sorry
 
+/-- Boundary-aware finite polygonal approximation of edge images in a half-plane region. -/
+theorem boundary_polygonal_approximation
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
+    (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
+    ∃ f : K.K.support → Ω.carrier,
+      IsApproximationOnOneSkeleton K.K φ f h ∧
+        IsPLOnOneSkeleton K.K f ∧
+          BoundaryEdgesMapToBoundary K Ω f := by
+  sorry
+
+/-- Boundary-aware polygonal approximation can be chosen to preserve boundary vertices. -/
+theorem boundary_endpoint_preservation_for_polygonal_approximation
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
+    (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
+    ∃ f : K.K.support → Ω.carrier,
+      IsApproximationOnOneSkeleton K.K φ f h ∧
+        PreservesVertices K.K f h ∧
+          BoundaryVerticesMapToBoundary K Ω f := by
+  sorry
+
+/-- Boundary-aware finite separation control for approximated edge images. -/
+theorem boundary_edge_separation_control
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
+    (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
+    ∃ f : K.K.support → Ω.carrier,
+      IsApproximationOnOneSkeleton K.K φ f h ∧
+        SeparatedOnEdges K.K f ∧
+          BoundaryRespectingMap K Ω f := by
+  sorry
+
+/-- Boundary-aware no-crossing perturbation for the finite family of edge arcs. -/
+theorem boundary_no_crossing_perturbation
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
+    (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
+    ∃ f : K.K.support → Ω.carrier,
+      BoundaryRespectingOneSkeletonApproximation K Ω φ f h := by
+  sorry
+
 /-- One-skeleton PL approximation theorem boundary for a homeomorphism into a plane region. -/
 theorem pl_approximation_one_skeleton
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : PlaneRegion)
@@ -1331,6 +1590,19 @@ theorem pl_approximation_one_skeleton
   rcases no_crossing_perturbation K Ω h φ _hφ with ⟨f, hf⟩
   refine ⟨{ approx := f, close := ?_, isPLApproximationOnOneSkeleton := hf }, trivial⟩
   exact IsPLApproximationOnOneSkeleton.close hf
+
+/-- Boundary-aware one-skeleton PL approximation theorem boundary for a homeomorphism into a
+half-plane region. -/
+theorem bordered_pl_approximation_one_skeleton
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
+    (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
+    ∃ A : OneSkeletonApproximation K Ω.carrier φ h,
+      BoundaryRespectingMap K Ω A.approx := by
+  rcases boundary_no_crossing_perturbation K Ω h φ _hφ with ⟨f, hf⟩
+  refine ⟨{ approx := f, close := ?_, isPLApproximationOnOneSkeleton := hf.approximation },
+    hf.boundary⟩
+  exact hf.approximation.close
 
 /-- Cellwise extension by PL Schoenflies from a one-skeleton approximation.
 
@@ -1357,6 +1629,25 @@ theorem global_pl_homeomorph_from_cellwise
     ∃ _A : GlobalPLSurfaceApproximation K Ω.carrier φ h, True := by
   sorry
 
+/-- Relative cellwise extension by PL Schoenflies for half-plane boundary cells. -/
+theorem boundary_cellwise_extension_by_relative_pl_schoenflies
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
+    (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ)
+    (A₁ : OneSkeletonApproximation K Ω.carrier φ h)
+    (hA₁ : BoundaryRespectingMap K Ω A₁.approx) :
+    ∃ _C : BoundaryCellwiseExtension K Ω φ h, True := by
+  sorry
+
+/-- Gluing compatible relative cellwise extensions into a global bordered PL approximation. -/
+theorem boundary_global_pl_homeomorph_from_cellwise
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
+    (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ)
+    (C : BoundaryCellwiseExtension K Ω φ h) :
+    ∃ _A : BoundaryGlobalPLSurfaceApproximation K Ω φ h, True := by
+  sorry
+
 /-- Moise PL approximation theorem in the plane, assembled from the named interfaces. -/
 theorem pl_approximation_plane_combinatorial_surface
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : PlaneRegion)
@@ -1366,6 +1657,18 @@ theorem pl_approximation_plane_combinatorial_surface
   rcases pl_approximation_one_skeleton K Ω h φ _hφ with ⟨A₁, _⟩
   rcases cellwise_extension_by_pl_schoenflies K Ω h φ _hφ A₁ with ⟨C, _⟩
   exact global_pl_homeomorph_from_cellwise K Ω h φ _hφ C
+
+/-- Bordered Moise PL approximation theorem in a half-plane region, assembled from the
+boundary-aware one-skeleton, relative Schoenflies, and relative gluing interfaces. -/
+theorem bordered_pl_approximation_halfplane
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
+    (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
+    ∃ _A : BoundaryGlobalPLSurfaceApproximation K Ω φ h, True := by
+  rcases bordered_pl_approximation_one_skeleton K Ω h φ _hφ with ⟨A₁, hA₁⟩
+  rcases boundary_cellwise_extension_by_relative_pl_schoenflies K Ω h φ _hφ A₁ hA₁ with
+    ⟨C, _⟩
+  exact boundary_global_pl_homeomorph_from_cellwise K Ω h φ _hφ C
 
 /-- PL approximation theorem between combinatorial surfaces. -/
 theorem pl_approximation_between_combinatorial_surfaces
@@ -1484,6 +1787,13 @@ theorem contains {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
 
 end FiniteSupportData
 
+/-- Boundary subcomplex data for an embedded PL complex in a bordered surface. -/
+structure BoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) where
+  boundary : K.Complex.Subcomplex
+  coversBoundary : Prop
+  compatibleWithAmbient : Prop
+  locallyFiniteBoundary : Prop
+
 /-- The interior subcomplex carrier. This is currently the whole support until boundary strata are
 available as geometric subcomplexes. -/
 def interiorSubcomplex {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
@@ -1526,27 +1836,75 @@ structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
 
 /-- A chart pair used in the Rado exhaustion: a chart domain and a smaller core whose closure is
 controlled inside that chart. The concrete chart map is still theorem-boundary data. -/
+inductive RadoChartKind where
+  | disk
+  | halfDisk
+deriving DecidableEq, Repr
+
+/-- A chart pair used in the Rado exhaustion: a chart domain and a smaller core whose closure is
+controlled inside that chart. The concrete chart map is still theorem-boundary data. -/
 structure RadoChartPair (M : Type*) [TopologicalSpace M] where
+  kind : RadoChartKind
   domain : Set M
   core : Set M
   domain_open : IsOpen domain
   core_subset_domain : core ⊆ domain
-  chart_to_disk_or_halfDisk : Prop
+  chart_to_model : Prop
+  boundaryCore : Set M
+  boundaryCore_subset_core : boundaryCore ⊆ core
+  boundaryCore_empty_of_disk : kind = RadoChartKind.disk → boundaryCore = ∅
+  boundaryCore_in_boundary_chart : kind = RadoChartKind.halfDisk → Prop
+
+namespace RadoChartPair
+
+/-- A chart pair modeled on the half-disk. -/
+def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
+  P.kind = RadoChartKind.halfDisk
+
+/-- A chart pair modeled on the disk. -/
+def IsInteriorChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
+  P.kind = RadoChartKind.disk
+
+end RadoChartPair
 
 /-- Countable chart-pair exhaustion data for the Rado induction. -/
 structure ChartPairExhaustion (M : Type*) [TopologicalSpace M] where
   pair : ℕ → RadoChartPair M
   covers : ∀ x : M, ∃ n, x ∈ (pair n).core
+  boundaryCovers : ∀ x : M, x ∈ ⋃ n, (pair n).boundaryCore → ∃ n, x ∈ (pair n).boundaryCore
+  interiorChartsCoverInterior : Prop
+  boundaryChartsCoverBoundary : Prop
   locallyFinite : Prop
   nestedControl : Prop
+  boundaryLocallyFinite : Prop
+  boundaryNestedControl : Prop
+
+namespace ChartPairExhaustion
+
+/-- The union of boundary cores in a chart-pair exhaustion. -/
+def boundaryCoreUnion {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) : Set M :=
+  ⋃ n, (E.pair n).boundaryCore
+
+theorem mem_boundaryCoreUnion_iff {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (x : M) :
+    x ∈ E.boundaryCoreUnion ↔ ∃ n, x ∈ (E.pair n).boundaryCore := by
+  simp [boundaryCoreUnion]
+
+end ChartPairExhaustion
 
 /-- State of the Rado induction after finitely many chart pairs have been absorbed. -/
 structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   stage : ℕ
   complex : PLComplexInSpace M
+  boundarySubcomplex : complex.Complex.Subcomplex
   coversPreviousCores : Prop
+  coversPreviousBoundaryCores : Prop
   compatibleOnOverlaps : Prop
+  boundaryIsSubcomplex : Prop
+  boundaryCompatibleOnOverlaps : Prop
+  boundaryRespectsCharts : Prop
   locallyFinite : Prop
+  boundaryLocallyFinite : Prop
 
 /-- Countable chart-pair exhaustion for a Moise two-manifold. -/
 theorem chart_pair_exhaustion
@@ -1585,11 +1943,11 @@ theorem compact_moise_surface_finitely_triangulable
 
 /-- Bordered PL approximation theorem boundary. -/
 theorem bordered_pl_approximation
-    (K : CombinatorialTwoManifoldWithBoundary) (Ω : PlaneRegion)
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
-    ∃ _A : GlobalPLSurfaceApproximation K Ω.carrier φ h, True := by
-  exact pl_approximation_plane_combinatorial_surface K Ω h φ _hφ
+    ∃ _A : BoundaryGlobalPLSurfaceApproximation K Ω φ h, True := by
+  exact bordered_pl_approximation_halfplane K Ω h φ _hφ
 
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation
@@ -1597,7 +1955,7 @@ theorem rado_bordered_surface_triangulation
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
-      ∃ _finiteSupport : K.FiniteSupportData, True := by
+      ∃ _finiteSupport : K.FiniteSupportData, ∃ _boundary : K.BoundarySubcomplexData, True := by
   sorry
 
 /-- Bridge from mathlib's Eval surface hypotheses to the Moise bordered-surface interface. -/
