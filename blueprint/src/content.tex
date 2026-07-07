@@ -396,7 +396,7 @@ global compatibility data.
 
 \begin{definition}[PL complex in a topological space]
 \label{moise:def:pl_complex_in_space}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
@@ -406,7 +406,9 @@ complex is PL-compatible on intersections.  The formal API stores a mathlib
 topological embedding of the complex support into the ambient space, exposes the
 image support, point and set coverage predicates, extension data, and
 compatibility on overlaps.  It also has finite support data: a finite set of
-relevant simplexes covering the embedded support.  `FinitePLTriangulationData`
+relevant simplexes covering the embedded support.  At the current finite
+`EuclideanComplex` level, `fullFiniteSupportData` gives this package by taking
+all simplexes of the complex.  `FinitePLTriangulationData`
 packages an embedded PL complex covering the ambient space together with finite
 support data and boundary-subcomplex data.
 \end{definition}
@@ -446,20 +448,21 @@ subtype to $U$ together with the subtype embedding into the ambient support.
 
 \begin{lemma}[Locally finite compact support implies finite]
 \label{moise:lem:compact_locally_finite_complex_finite}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.locallyFiniteComplex_finite_of_compact_support}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.locallyFiniteComplex_finite_of_compact_support}
 \leanok
 
 \uses{moise:def:pl_complex_in_space}
-A locally finite PL complex in a compact ambient space has finite support data:
-only finitely many relevant simplexes are needed to cover the embedded support.
+A locally finite PL complex in a compact ambient space has finite support data.
+In the present finite-complex API this data is already available by taking all
+simplexes of the underlying finite `EuclideanComplex`.
 \end{lemma}
 
 \begin{proof}
 \leanok
 
-Each point of the compact support has a neighborhood meeting only finitely many
-simplexes.  Extract a finite subcover and take the union of the corresponding
-finite sets of simplexes.
+Use `PLComplexInSpace.fullFiniteSupportData`, whose finite set of simplexes is
+`Finset.univ`.  The compact/local-finite theorem name remains as the public
+Moise-facing wrapper.
 \end{proof}
 
 \section{Moise--Rado triangulation}

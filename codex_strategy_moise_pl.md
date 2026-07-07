@@ -719,6 +719,10 @@ The PL-to-triangulation bridge uses finite support data as the combinatorial han
 `PLComplexInSpace.FiniteSupportData.OneSimplex` supplies triangulation edges,
 `TwoSimplex` supplies triangles, and `triangleBoundaryWord` records the supported
 codimension-one faces of a two-simplex as the current scaffold boundary word.
+Because the current `EuclideanComplex` API has finite simplex types,
+`PLComplexInSpace.fullFiniteSupportData` is the named finite-support package taking all simplexes;
+`locallyFiniteComplex_finite_of_compact_support` is now the Moise-facing wrapper around that
+package rather than the source of the finite data.
 `PLComplexInSpace.toFiniteSurfaceTriangulation` is the named construction behind the public
 existential theorem.  `FinitePLTriangulationData` is the named Rado-output package for a covering
 embedded PL complex, finite support data, and boundary-subcomplex data; the bordered Rado theorem

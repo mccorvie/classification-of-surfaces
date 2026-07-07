@@ -2415,6 +2415,32 @@ theorem twoSimplex_mem_complex_twoSimplexes
 
 end FiniteSupportData
 
+/-- The finite support data containing every simplex of an embedded PL complex.
+
+At the current `EuclideanComplex` level the simplex type is already finite, so finite-support
+extraction is an explicit package rather than a compactness argument. -/
+def fullFiniteSupportData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
+    K.FiniteSupportData where
+  simplexes := Finset.univ
+  containsRelevant := by
+    intro σ _hσ
+    simp
+  coversSupport := by
+    intro x hx
+    exact hx
+  locallyFiniteAssumption := K.locallyFinite
+
+@[simp] theorem fullFiniteSupportData_simplexes
+    {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
+    K.fullFiniteSupportData.simplexes = Finset.univ := by
+  rfl
+
+theorem mem_fullFiniteSupportData_simplexes
+    {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X)
+    (σ : K.Complex.Simplex) :
+    σ ∈ K.fullFiniteSupportData.simplexes := by
+  simp
+
 /-- Boundary subcomplex data for an embedded PL complex in a bordered surface. -/
 structure BoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) where
   boundary : K.Complex.Subcomplex
@@ -2497,16 +2523,7 @@ theorem open_subset_of_finite_complex_is_complex
 theorem locallyFiniteComplex_finite_of_compact_support
     {X : Type*} [TopologicalSpace X] [CompactSpace X] (K : PLComplexInSpace X) :
     ∃ _finiteSupport : K.FiniteSupportData, True := by
-  let F : K.FiniteSupportData :=
-    { simplexes := Finset.univ
-      containsRelevant := by
-        intro σ hσ
-        simp
-      coversSupport := by
-        intro x hx
-        exact hx
-      locallyFiniteAssumption := K.locallyFinite }
-  exact ⟨F, trivial⟩
+  exact ⟨K.fullFiniteSupportData, trivial⟩
 
 /-- A chart pair used in the Rado exhaustion: a chart domain and a smaller core whose closure is
 controlled inside that chart. The concrete chart map is still theorem-boundary data. -/
@@ -4517,17 +4534,16 @@ theorem finiteStagePLComplex_support
 /-- Finite PL triangulation data obtained from the finite terminal Rado stage, avoiding the
 countable support-union complex once compactness has produced a finite chart cover. -/
 noncomputable def finiteStagePLTriangulationData
-    {M : Type*} [TopologicalSpace M] [CompactSpace M] (D : MoiseExtractionData M) :
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
     FinitePLTriangulationData M :=
   let K := D.finiteStagePLComplex
-  let finiteSupport := Classical.choose (locallyFiniteComplex_finite_of_compact_support K)
   { K := K
     covers := D.finiteStagePLComplex_support
-    finiteSupport := finiteSupport
+    finiteSupport := K.fullFiniteSupportData
     boundary := K.fullBoundarySubcomplexData }
 
 @[simp] theorem finiteStagePLTriangulationData_K
-    {M : Type*} [TopologicalSpace M] [CompactSpace M] (D : MoiseExtractionData M) :
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
     D.finiteStagePLTriangulationData.K = D.finiteStagePLComplex := by
   rfl
 
