@@ -563,20 +563,23 @@ cores.
 
 \begin{definition}[Moise extraction data]
 \label{moise:def:moise_extraction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.toMoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.moise_two_manifold_of_extraction_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.toMoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStage, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.moise_two_manifold_of_extraction_data}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:moise_two_manifold}
 Moise extraction data is the finite chart-pair cover and local Rado induction
 data extracted from a compact mathlib bordered surface before packaging it as a
-`MoiseTwoManifold`.
+`MoiseTwoManifold`.  Because the cover is finite, it also has a named terminal
+Rado stage and finite-stage PL triangulation package.
 \end{definition}
 
 \begin{proof}
 \leanok
 Convert the finite chart-pair cover to a countable chart-pair exhaustion and
 use the stored local Rado induction data to fill the fields of the
-`MoiseTwoManifold` interface.
+`MoiseTwoManifold` interface.  At the extraction-data level, stage
+`Fintype.card finiteCover.Index` already covers every chart core, so the
+finite-stage PL complex can be used directly for triangulation data.
 \end{proof}
 
 \begin{lemma}[Chart pair exhaustion]
@@ -693,7 +696,7 @@ all finite stages.
 
 \begin{lemma}[Rado stage supports cover the manifold]
 \label{moise:lem:rado_support_union_covers}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_core_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.union_complex_covers_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_covers_univ}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_core_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_core_subset_stage_card, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_boundaryCore_subset_stage_card, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_stage_card_support_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.union_complex_covers_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_covers_univ}
 \leanok
 
 \uses{moise:def:rado_inductive_sequence,moise:lem:chart_pair_exhaustion}
@@ -708,7 +711,9 @@ The $n$th chart core is contained in the support of the $n$th induction stage,
 and extension monotonicity implies that later stages still cover every earlier
 core and boundary core.  Hence each chart core is contained in the union of all
 stage supports.  Since the chart cores cover the manifold by the exhaustion
-hypothesis, the support union is all of `Set.univ`.
+hypothesis, the support union is all of `Set.univ`.  For an exhaustion coming
+from a finite chart-pair cover, the stronger endpoint lemma shows that the
+single recursive stage at `Fintype.card C.Index` already covers `Set.univ`.
 \end{proof}
 
 \begin{lemma}[Rado induction local data exists]
@@ -748,7 +753,7 @@ the resulting sequence are proved by induction over the natural number.
 
 \begin{definition}[Finite Rado induction geometry]
 \label{moise:def:finite_rado_induction_geometry}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.toRadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.initialData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.emptyChart, LeanEval.Topology.ClassificationOfSurfaces.rado_induction_data_of_finite_geometry}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.toRadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.finalState, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.finalState_support_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.initialData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.emptyChart, LeanEval.Topology.ClassificationOfSurfaces.rado_induction_data_of_finite_geometry}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
@@ -758,7 +763,9 @@ chart disk, a successor chart-extension package at every finite stage, and the
 global compatibility/local-finiteness assertions for the union.  Finite chart
 polygonal disk data has named `initialData`, `stepData`, and
 `toFiniteRadoInductionGeometry` constructors; once finite Rado geometry is
-supplied, it packages formally as `RadoInductionData`.
+supplied, it packages formally as `RadoInductionData`.  Its `finalState` is the
+finite terminal induction state after all chart pairs in the finite cover have
+been absorbed.
 \end{definition}
 
 \begin{proof}
@@ -863,10 +870,11 @@ the ambient PL complex.
 
 \begin{proof}
 \leanok
-Convert the mathlib bordered-surface hypotheses to the Moise chart-pair
-interface and apply compact finite triangulability for Moise surfaces.  The
-named construction `mathlib_bordered_surface_finitePLTriangulationData` packages
-the resulting complex, support equality, finite support data, and boundary data;
+Extract the finite chart-pair cover and local Rado induction data from the
+mathlib bordered-surface hypotheses, then use the finite terminal Rado stage at
+`Fintype.card finiteCover.Index`.  The named construction
+`mathlib_bordered_surface_finitePLTriangulationData` packages that finite-stage
+complex, support equality, finite support data, and boundary data;
 `rado_bordered_surface_triangulation` is the public existential wrapper.
 \end{proof}
 

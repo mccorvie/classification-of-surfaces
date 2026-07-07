@@ -692,14 +692,23 @@ Proved finite/combinatorial bridge:
 10. `FiniteRadoInductionGeometry.toRadoInductionData` and
    `rado_induction_data_of_finite_geometry`:
    once the local polygonal chart geometry is supplied over a finite cover, the recursive
-   `RadoInductionData` is pure packaging.
+   `RadoInductionData` is pure packaging.  The finite-cover endpoint API
+   `RadoInductionData.finiteCover_core_subset_stage_card`,
+   `RadoInductionData.finiteCover_boundaryCore_subset_stage_card`, and
+   `RadoInductionData.finiteCover_stage_card_support_eq_univ` proves that stage
+   `Fintype.card C.Index` already covers the whole space for an exhaustion coming from a finite
+   chart-pair cover.
 11. `mathlib_bordered_surface_rado_induction_data`:
    finite Rado geometry packages as Rado induction data.
 12. `LocalChartPolygonalDiskData.toMoiseExtractionData`,
    `mathlib_bordered_surface_moiseExtractionData`, and
    `mathlib_bordered_surface_moise_extraction_data`:
    finite cover extraction plus local Rado induction data packages as named `MoiseExtractionData`;
-   the theorem with the original public name is now the existential wrapper.
+   the theorem with the original public name is now the existential wrapper.  At this level,
+   `MoiseExtractionData.finiteStage`, `MoiseExtractionData.finiteStagePLComplex`, and
+   `MoiseExtractionData.finiteStagePLTriangulationData` use the finite terminal Rado stage
+   directly, avoiding the countable support-union complex after compactness has produced a finite
+   cover.
 13. `mathlib_bordered_surface_moiseTwoManifold`,
    `mathlib_bordered_surface_to_moise_two_manifold`, and
    `moise_two_manifold_of_extraction_data`:
@@ -713,7 +722,8 @@ codimension-one faces of a two-simplex as the current scaffold boundary word.
 `PLComplexInSpace.toFiniteSurfaceTriangulation` is the named construction behind the public
 existential theorem.  `FinitePLTriangulationData` is the named Rado-output package for a covering
 embedded PL complex, finite support data, and boundary-subcomplex data; the bordered Rado theorem
-now wraps `mathlib_bordered_surface_finitePLTriangulationData`.
+now wraps `mathlib_bordered_surface_finitePLTriangulationData`, which is built from the finite
+terminal Rado stage in `MoiseExtractionData`.
 `mathlib_bordered_surface_finiteSurfaceTriangulation` and
 `compact_eval_surface_finiteSurfaceTriangulation` are the named finite triangulation objects used
 by the public existential wrappers

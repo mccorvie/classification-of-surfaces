@@ -4028,6 +4028,51 @@ theorem covers_boundaryCore_of_le
         have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
         exact (ih hmn').trans (D.support_subset_succ n)
 
+/-- In a finite chart-pair cover, the recursive stage at the cardinality of the cover still
+covers the core of every indexed chart. -/
+theorem finiteCover_core_subset_stage_card
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) (i : C.Index) :
+    (C.pair i).core ⊆ (D.stage (Fintype.card C.Index)).complex.support := by
+  intro x hx
+  let n : ℕ := (Fintype.equivFin C.Index i).1
+  have hnle : n ≤ Fintype.card C.Index :=
+    Nat.le_of_lt (Fintype.equivFin C.Index i).2
+  have hpair : C.toChartPairExhaustion.pair n = C.pair i := by
+    change C.natPair n = C.pair i
+    simpa [n] using C.natPair_of_index i
+  have hx' : x ∈ (C.toChartPairExhaustion.pair n).core := by
+    rwa [hpair]
+  exact D.covers_core_of_le hnle hx'
+
+/-- In a finite chart-pair cover, the recursive stage at the cardinality of the cover still
+covers the boundary core of every indexed chart. -/
+theorem finiteCover_boundaryCore_subset_stage_card
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) (i : C.Index) :
+    (C.pair i).boundaryCore ⊆ (D.stage (Fintype.card C.Index)).complex.support := by
+  intro x hx
+  let n : ℕ := (Fintype.equivFin C.Index i).1
+  have hnle : n ≤ Fintype.card C.Index :=
+    Nat.le_of_lt (Fintype.equivFin C.Index i).2
+  have hpair : C.toChartPairExhaustion.pair n = C.pair i := by
+    change C.natPair n = C.pair i
+    simpa [n] using C.natPair_of_index i
+  have hx' : x ∈ (C.toChartPairExhaustion.pair n).boundaryCore := by
+    rwa [hpair]
+  exact D.covers_boundaryCore_of_le hnle hx'
+
+/-- For a finite chart-pair cover, no countable union is needed: after `card C.Index` recursive
+steps the current finite Rado state covers the whole space. -/
+theorem finiteCover_stage_card_support_eq_univ
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) :
+    (D.stage (Fintype.card C.Index)).complex.support = Set.univ := by
+  apply Set.eq_univ_iff_forall.mpr
+  intro x
+  rcases C.covers x with ⟨i, hi⟩
+  exact D.finiteCover_core_subset_stage_card i hi
+
 /-- Every recursive Rado stage covers all chart cores up to its stage index. -/
 theorem stage_coversCoresUpTo
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -4295,6 +4340,19 @@ def toRadoInductionData
   locallyFiniteUnion := G.locallyFiniteUnion
   boundaryCompatibleUnion := G.boundaryCompatibleUnion
 
+/-- The finite terminal Rado state after all chart pairs in a finite cover have been absorbed. -/
+def finalState
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (G : FiniteRadoInductionGeometry C) : RadoInductionState M :=
+  G.toRadoInductionData.stage (Fintype.card C.Index)
+
+/-- The finite terminal Rado state for a finite chart cover already covers the whole space. -/
+theorem finalState_support_eq_univ
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (G : FiniteRadoInductionGeometry C) :
+    G.finalState.complex.support = Set.univ :=
+  G.toRadoInductionData.finiteCover_stage_card_support_eq_univ
+
 end FiniteRadoInductionGeometry
 
 namespace FiniteChartPolygonalDiskData
@@ -4435,6 +4493,42 @@ def toMoiseTwoManifold {M : Type*} [TopologicalSpace M] [T2Space M]
 @[simp] theorem toMoiseTwoManifold_chartPairExhaustion
     {M : Type*} [TopologicalSpace M] [T2Space M] (D : MoiseExtractionData M) :
     D.toMoiseTwoManifold.chartPairExhaustion = D.finiteCover.toChartPairExhaustion := by
+  rfl
+
+/-- The finite Rado stage obtained after absorbing every chart pair in the extracted finite cover.
+-/
+def finiteStage
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
+    RadoInductionState M :=
+  D.radoInductionData.stage (Fintype.card D.finiteCover.Index)
+
+/-- The finite-stage PL complex obtained from extracted Moise data. -/
+noncomputable def finiteStagePLComplex
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
+    PLComplexInSpace M :=
+  D.finiteStage.complex
+
+/-- The finite-stage PL complex from extracted Moise data covers the whole space. -/
+theorem finiteStagePLComplex_support
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
+    D.finiteStagePLComplex.support = Set.univ :=
+  D.radoInductionData.finiteCover_stage_card_support_eq_univ
+
+/-- Finite PL triangulation data obtained from the finite terminal Rado stage, avoiding the
+countable support-union complex once compactness has produced a finite chart cover. -/
+noncomputable def finiteStagePLTriangulationData
+    {M : Type*} [TopologicalSpace M] [CompactSpace M] (D : MoiseExtractionData M) :
+    FinitePLTriangulationData M :=
+  let K := D.finiteStagePLComplex
+  let finiteSupport := Classical.choose (locallyFiniteComplex_finite_of_compact_support K)
+  { K := K
+    covers := D.finiteStagePLComplex_support
+    finiteSupport := finiteSupport
+    boundary := K.fullBoundarySubcomplexData }
+
+@[simp] theorem finiteStagePLTriangulationData_K
+    {M : Type*} [TopologicalSpace M] [CompactSpace M] (D : MoiseExtractionData M) :
+    D.finiteStagePLTriangulationData.K = D.finiteStagePLComplex := by
   rfl
 
 end MoiseExtractionData
@@ -4908,7 +5002,7 @@ noncomputable def mathlib_bordered_surface_finitePLTriangulationData
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     FinitePLTriangulationData M :=
-  (mathlib_bordered_surface_moiseTwoManifold M).finitePLTriangulationData
+  (mathlib_bordered_surface_moiseExtractionData M).finiteStagePLTriangulationData
 
 /-- Mathlib bordered surfaces produce finite PL triangulation data via the Moise--Rado route. -/
 theorem mathlib_bordered_surface_finite_pl_triangulation_data
