@@ -472,7 +472,7 @@ boundary-control fields from the `MoiseTwoManifold` structure as a
 
 \begin{lemma}[Initial PL neighborhood]
 \label{moise:lem:initial_pl_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:polygonal_disk_combinatorial_cell}
@@ -492,7 +492,7 @@ build the stage-zero Rado induction state.
 
 \begin{lemma}[Extend a PL complex across one chart]
 \label{moise:lem:extend_pl_complex_across_chart}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData, LeanEval.Topology.ClassificationOfSurfaces.extend_pl_complex_across_chart}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState, LeanEval.Topology.ClassificationOfSurfaces.extend_pl_complex_across_chart}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:lem:pl_invariant_under_subdivision,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane,moise:lem:polygonal_disk_combinatorial_cell}
@@ -511,6 +511,17 @@ Given `RadoStepExtensionData`, package the supplied next complex,
 boundary subcomplex, extension proof, and next-core coverage fields into the
 successor Rado induction state.
 \end{proof}
+
+\begin{definition}[Rado induction local data]
+\label{moise:def:rado_induction_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.toInductiveSequence}
+\leanok
+
+\uses{moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+Rado induction data consists of one initial chart-disk package and a successor
+chart-extension package for each finite stage.  It recursively determines all
+finite-stage induction states and packages them as a Rado induction sequence.
+\end{definition}
 
 \begin{definition}[Rado induction sequence]
 \label{moise:def:rado_inductive_sequence}
@@ -543,13 +554,13 @@ cover the manifold by the exhaustion hypothesis, the support union is all of
 `Set.univ`.
 \end{proof}
 
-\begin{lemma}[Rado induction sequence exists]
-\label{moise:lem:rado_inductive_sequence_exists}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_inductive_sequence_exists}
+\begin{lemma}[Rado induction local data exists]
+\label{moise:lem:rado_induction_data_exists}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_induction_data_exists}
 
-\uses{moise:def:rado_inductive_sequence,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
-For every Moise chart-pair exhaustion, the finite-stage Rado induction can be
-carried out.
+\uses{moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+For every Moise chart-pair exhaustion, the local initial and successor data
+needed to run every finite stage of the Rado induction exists.
 \end{lemma}
 
 \begin{proof}
@@ -557,6 +568,24 @@ carried out.
 Start from the initial PL neighborhood.  At successor stages, use the
 chart-extension theorem and the local PL approximation machinery to absorb the
 next chart core while preserving compatibility with earlier stages.
+\end{proof}
+
+\begin{lemma}[Rado induction sequence exists]
+\label{moise:lem:rado_inductive_sequence_exists}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_inductive_sequence_exists}
+\leanok
+
+\uses{moise:def:rado_induction_data,moise:def:rado_inductive_sequence,moise:lem:rado_induction_data_exists}
+For every Moise chart-pair exhaustion, the finite-stage Rado induction can be
+carried out.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Given local Rado induction data, recursively construct the finite stage at each
+natural number.  The stage-index, extension, and chart-core coverage fields of
+the resulting sequence are proved by induction over the natural number.  The
+existence of the local data remains the hard theorem boundary.
 \end{proof}
 
 \begin{lemma}[Rado union is a PL complex]

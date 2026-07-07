@@ -2436,6 +2436,89 @@ structure RadoStepExtensionData
   boundaryCompatibleOnOverlaps : Prop
   boundaryRespectsCharts : Prop
 
+namespace InitialPLNeighborhoodData
+
+/-- The stage-zero Rado induction state determined by initial chart-disk data. -/
+def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) : RadoInductionState M :=
+  { stage := 0
+    complex := D.chartDisk.toPLComplexInSpace
+    boundarySubcomplex := D.chartDisk.disk.boundarySubcomplex
+    coversPreviousCores := (E.pair 0).core ⊆ D.chartDisk.toPLComplexInSpace.support
+    coversPreviousBoundaryCores :=
+      (E.pair 0).boundaryCore ⊆ D.chartDisk.toPLComplexInSpace.support
+    compatibleOnOverlaps := True
+    boundaryIsSubcomplex := D.boundarySubcomplexCompatible
+    boundaryCompatibleOnOverlaps := True
+    boundaryRespectsCharts := D.chartDisk.respectsChartModel
+    locallyFinite := D.chartDisk.toPLComplexInSpace.locallyFinite
+    boundaryLocallyFinite := True }
+
+@[simp] theorem toState_stage
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    D.toState.stage = 0 := by
+  rfl
+
+theorem core_subset_toState_support
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    (E.pair 0).core ⊆ D.toState.complex.support :=
+  D.coversInitialCore
+
+theorem boundaryCore_subset_toState_support
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    (E.pair 0).boundaryCore ⊆ D.toState.complex.support :=
+  D.coversInitialBoundaryCore
+
+end InitialPLNeighborhoodData
+
+namespace RadoStepExtensionData
+
+/-- The successor Rado induction state determined by one chart-extension data package. -/
+def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
+    RadoInductionState M :=
+  { stage := S.stage + 1
+    complex := D.nextComplex
+    boundarySubcomplex := D.boundarySubcomplex
+    coversPreviousCores := (E.pair (S.stage + 1)).core ⊆ D.nextComplex.support
+    coversPreviousBoundaryCores :=
+      (E.pair (S.stage + 1)).boundaryCore ⊆ D.nextComplex.support
+    compatibleOnOverlaps := D.compatibleOnOverlaps
+    boundaryIsSubcomplex := True
+    boundaryCompatibleOnOverlaps := D.boundaryCompatibleOnOverlaps
+    boundaryRespectsCharts := D.boundaryRespectsCharts
+    locallyFinite := D.nextComplex.locallyFinite
+    boundaryLocallyFinite := True }
+
+@[simp] theorem toState_stage
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
+    D.toState.stage = S.stage + 1 := by
+  rfl
+
+theorem toState_extends_old
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
+    PLComplexInSpace.Extends D.toState.complex S.complex :=
+  D.extends_old
+
+theorem core_subset_toState_support
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
+    (E.pair (S.stage + 1)).core ⊆ D.toState.complex.support :=
+  D.coversNextCore
+
+theorem boundaryCore_subset_toState_support
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
+    (E.pair (S.stage + 1)).boundaryCore ⊆ D.toState.complex.support :=
+  D.coversNextBoundaryCore
+
+end RadoStepExtensionData
+
 /-- Countable chart-pair exhaustion for a Moise two-manifold. -/
 theorem chart_pair_exhaustion
     {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
@@ -2457,20 +2540,7 @@ theorem initial_pl_neighborhood
     {M : Type*} [TopologicalSpace M] (_hM : MoiseTwoManifold M)
     (E : ChartPairExhaustion M) (D : InitialPLNeighborhoodData E) :
     ∃ S : RadoInductionState M, S.stage = 0 := by
-  let K := D.chartDisk.toPLComplexInSpace
-  let S : RadoInductionState M :=
-    { stage := 0
-      complex := K
-      boundarySubcomplex := D.chartDisk.disk.boundarySubcomplex
-      coversPreviousCores := (E.pair 0).core ⊆ K.support
-      coversPreviousBoundaryCores := (E.pair 0).boundaryCore ⊆ K.support
-      compatibleOnOverlaps := True
-      boundaryIsSubcomplex := D.boundarySubcomplexCompatible
-      boundaryCompatibleOnOverlaps := True
-      boundaryRespectsCharts := D.chartDisk.respectsChartModel
-      locallyFinite := K.locallyFinite
-      boundaryLocallyFinite := True }
-  exact ⟨S, rfl⟩
+  exact ⟨D.toState, D.toState_stage⟩
 
 /-- Extend a PL complex across one chart in the Rado induction. -/
 theorem extend_pl_complex_across_chart
@@ -2478,20 +2548,86 @@ theorem extend_pl_complex_across_chart
     (S : RadoInductionState M) (D : RadoStepExtensionData E S) :
     ∃ S' : RadoInductionState M, S'.stage = S.stage + 1 ∧
       PLComplexInSpace.Extends S'.complex S.complex := by
-  let S' : RadoInductionState M :=
-    { stage := S.stage + 1
-      complex := D.nextComplex
-      boundarySubcomplex := D.boundarySubcomplex
-      coversPreviousCores := (E.pair (S.stage + 1)).core ⊆ D.nextComplex.support
-      coversPreviousBoundaryCores :=
-        (E.pair (S.stage + 1)).boundaryCore ⊆ D.nextComplex.support
-      compatibleOnOverlaps := D.compatibleOnOverlaps
-      boundaryIsSubcomplex := True
-      boundaryCompatibleOnOverlaps := D.boundaryCompatibleOnOverlaps
-      boundaryRespectsCharts := D.boundaryRespectsCharts
-      locallyFinite := D.nextComplex.locallyFinite
-      boundaryLocallyFinite := True }
-  exact ⟨S', rfl, D.extends_old⟩
+  exact ⟨D.toState, D.toState_stage, D.toState_extends_old⟩
+
+/-- Local data sufficient to run every finite stage of the Rado induction.
+
+This separates the recursive construction of a sequence from the hard geometric problem of
+producing the initial chart disk and the successor chart-extension data. -/
+structure RadoInductionData
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) where
+  initial : InitialPLNeighborhoodData E
+  step : ∀ (_n : ℕ) (S : RadoInductionState M), RadoStepExtensionData E S
+  compatibleStages : Prop
+  locallyFiniteUnion : Prop
+  boundaryCompatibleUnion : Prop
+
+namespace RadoInductionData
+
+/-- The `n`th finite-stage state obtained by recursion from Rado induction data. -/
+def stage {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) : ℕ → RadoInductionState M :=
+  Nat.rec D.initial.toState fun n S => (D.step n S).toState
+
+@[simp] theorem stage_zero
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    D.stage 0 = D.initial.toState := by
+  rfl
+
+@[simp] theorem stage_succ
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) (n : ℕ) :
+    D.stage (n + 1) = (D.step n (D.stage n)).toState := by
+  rfl
+
+/-- The recursive Rado stage has the expected stage index. -/
+theorem stage_stage_eq
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    ∀ n, (D.stage n).stage = n
+  | 0 => by
+      change D.initial.toState.stage = 0
+      rfl
+  | n + 1 => by
+      change ((D.step n (D.stage n)).toState).stage = n + 1
+      rw [RadoStepExtensionData.toState_stage]
+      rw [stage_stage_eq D n]
+
+/-- Successive recursively built stages extend one another. -/
+theorem extends_succ
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) (n : ℕ) :
+    PLComplexInSpace.Extends (D.stage (n + 1)).complex (D.stage n).complex := by
+  simpa [stage] using (D.step n (D.stage n)).toState_extends_old
+
+/-- The recursively built `n`th stage covers the `n`th chart core. -/
+theorem covers_core
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    ∀ n, (E.pair n).core ⊆ (D.stage n).complex.support
+  | 0 => by
+      simpa [stage] using D.initial.core_subset_toState_support
+  | n + 1 => by
+      have hstage : (D.stage n).stage = n := D.stage_stage_eq n
+      have h := (D.step n (D.stage n)).core_subset_toState_support
+      rw [hstage] at h
+      simpa [stage] using h
+
+/-- The recursively built `n`th stage covers the `n`th boundary chart core. -/
+theorem covers_boundaryCore
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    ∀ n, (E.pair n).boundaryCore ⊆ (D.stage n).complex.support
+  | 0 => by
+      simpa [stage] using D.initial.boundaryCore_subset_toState_support
+  | n + 1 => by
+      have hstage : (D.stage n).stage = n := D.stage_stage_eq n
+      have h := (D.step n (D.stage n)).boundaryCore_subset_toState_support
+      rw [hstage] at h
+      simpa [stage] using h
+
+end RadoInductionData
 
 /-- A completed Rado induction sequence over a fixed chart-pair exhaustion.
 
@@ -2553,6 +2689,26 @@ theorem union_complex_covers_univ
 
 end RadoInductiveSequence
 
+/-- Convert recursive Rado induction data into a completed induction sequence. -/
+def RadoInductionData.toInductiveSequence
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) : RadoInductiveSequence E where
+  stage := D.stage
+  stage_eq := D.stage_stage_eq
+  extends_succ := D.extends_succ
+  covers_core := D.covers_core
+  covers_boundaryCore := D.covers_boundaryCore
+  compatibleStages := D.compatibleStages
+  locallyFiniteUnion := D.locallyFiniteUnion
+  boundaryCompatibleUnion := D.boundaryCompatibleUnion
+
+/-- Hard theorem boundary: local chart-disk and extension data exist at every Rado stage. -/
+theorem rado_induction_data_exists
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M)
+    (E : ChartPairExhaustion M) :
+    ∃ _D : RadoInductionData E, True := by
+  sorry
+
 /-- Hard theorem boundary: the finite-stage Rado induction can be carried out over an exhaustion.
 
 The proof uses the initial PL neighborhood, the chart-extension step, and PL approximation on each
@@ -2561,7 +2717,8 @@ theorem rado_inductive_sequence_exists
     {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M)
     (E : ChartPairExhaustion M) :
     ∃ _S : RadoInductiveSequence E, True := by
-  sorry
+  rcases rado_induction_data_exists hM E with ⟨D, _⟩
+  exact ⟨D.toInductiveSequence, trivial⟩
 
 /-- Hard theorem boundary: the locally finite union of a Rado induction sequence is a PL complex. -/
 theorem rado_union_complex
