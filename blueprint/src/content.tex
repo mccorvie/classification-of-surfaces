@@ -985,17 +985,49 @@ coordinate point.
 \begin{lemma}[Half-plane open neighborhoods contain polygonal neighborhoods]
 \label{moise:lem:euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood}
+\leanok
 
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood,moise:lem:euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood}
 Every neighborhood of a point in the Euclidean half-plane contains an embedded
 polygonal disk or half-disk whose image is a neighborhood of that point.
 \end{lemma}
 
 \begin{proof}
+\leanok
+Split on whether the first coordinate is zero.  Boundary points use the
+half-disk theorem; otherwise nonnegativity in `EuclideanHalfSpace` promotes to
+strict positivity and the interior disk theorem applies.
+\end{proof}
+
+\begin{lemma}[Interior half-plane neighborhoods contain polygonal disks]
+\label{moise:lem:euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood}
+
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+Every neighborhood of an interior point of the Euclidean half-plane contains an
+embedded polygonal disk whose image is a neighborhood of that point.
+\end{lemma}
+
+\begin{proof}
 \notready
-Shrink the neighborhood in the model half-plane to a small polygonal disk in the
-interior case or a polygonal half-disk at boundary points, then triangulate that
-polygonal region.  This is now independent of the manifold chart bookkeeping.
+Shrink to a small polygonal disk contained in the open half-plane and in the
+given neighborhood, then triangulate that disk.
+\end{proof}
+
+\begin{lemma}[Boundary half-plane neighborhoods contain polygonal half-disks]
+\label{moise:lem:euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood}
+
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+Every neighborhood of a boundary-line point of the Euclidean half-plane contains
+an embedded polygonal half-disk whose image is a neighborhood of that point.
+\end{lemma}
+
+\begin{proof}
+\notready
+Shrink to a small polygonal half-disk contained in the given relative
+neighborhood of the closed half-plane, then triangulate that half-disk with its
+diameter on the boundary line.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface local Rado induction data]

@@ -3526,13 +3526,36 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
-/-- Hard Euclidean half-plane boundary: an open neighborhood in the model half-plane contains an
-embedded polygonal disk or half-disk whose image is a neighborhood of the chosen point. -/
+/-- Hard Euclidean interior case: an open neighborhood of an interior point in the model half-plane
+contains an embedded polygonal disk whose image is a neighborhood of the point. -/
+theorem euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
+    (hy : 0 < y.1 0) :
+    ∃ hyU : y.1 ∈ (Subtype.val '' U),
+      ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+  sorry
+
+/-- Hard Euclidean boundary case: an open neighborhood of a boundary-line point in the model
+half-plane contains an embedded polygonal half-disk whose image is a neighborhood of the point. -/
+theorem euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
+    (hy : y.1 0 = 0) :
+    ∃ hyU : y.1 ∈ (Subtype.val '' U),
+      ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+  sorry
+
+/-- An open neighborhood in the model half-plane contains an embedded polygonal disk or half-disk
+whose image is a neighborhood of the chosen point. -/
 theorem euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y) :
     ∃ hy : y.1 ∈ (Subtype.val '' U),
-      ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hy⟩, True := by
-  sorry
+      ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hy⟩, True := by
+  by_cases hboundary : y.1 0 = 0
+  · exact euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood
+      U y hU hboundary
+  · have hinterior : 0 < y.1 0 := lt_of_le_of_ne y.2 (Ne.symm hboundary)
+    exact euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood
+      U y hU hinterior
 
 /-- The model region of the preferred chart at a point contains an embedded polygonal disk or
 half-disk whose image is a neighborhood of the chart coordinate. -/

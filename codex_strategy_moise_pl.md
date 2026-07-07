@@ -682,18 +682,28 @@ Proved finite/combinatorial bridge:
 Remaining hard coordinate-local bridge:
 
 ```lean
-theorem euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood
-    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y) :
+theorem euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
+    (hy : 0 < y.1 0) :
     ∃ hy : y.1 ∈ (Subtype.val '' U),
       ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hy⟩, True := by
+  sorry
+
+theorem euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
+    (hy : y.1 0 = 0) :
+    ∃ hyU : y.1 ∈ (Subtype.val '' U),
+      ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
   sorry
 ```
 
 This is now the place where the actual half-plane geometry has to be proved: shrink an arbitrary
-neighborhood in `EuclideanHalfSpace 2` to a polygonal disk or half-disk whose image remains a
-neighborhood of the point.  `PlaneRegionPolygonalNeighborhood` packages this chart-free coordinate
-object, and `PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk` converts it to the
-chart-pair API.  The topological pullback from a model-neighborhood statement to a
+neighborhood in `EuclideanHalfSpace 2` to a polygonal disk in the interior case, or a polygonal
+half-disk in the boundary case, whose image remains a neighborhood of the point.  The combined
+`euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood` theorem is now a proved
+case split on whether `y.1 0 = 0`.  `PlaneRegionPolygonalNeighborhood` packages this chart-free
+coordinate object, and `PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk` converts it to
+the chart-pair API.  The topological pullback from a model-neighborhood statement to a
 manifold-neighborhood statement is proved by
 `ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds`.  The transport of disk data
 through the mathlib chart atlas is formalized by `ModelChartPolygonalDisk.toChartPolygonalDisk`,
