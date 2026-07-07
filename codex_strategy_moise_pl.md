@@ -668,7 +668,9 @@ Proved finite/combinatorial bridge:
    `rado_step_extension_from_chart_polygonal_disk`:
    the current scaffold can extend a Rado stage by taking the union of the old support and the
    next chart-disk support.  The finite chart step selector now calls the named constructors
-   directly rather than choosing witnesses from existential theorem wrappers.
+   directly rather than choosing witnesses from existential theorem wrappers, and
+   `RadoStepExtensionData.fromChartPolygonalDisk_nextComplex_support` exposes the support
+   computation for later induction proofs.
 6. `finite_chart_polygonal_disk_data_of_local`:
    compactness extracts a finite chart-pair cover while carrying pointwise polygonal disk data
    along the selected finite indices.

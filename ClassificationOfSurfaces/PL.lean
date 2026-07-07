@@ -3808,6 +3808,31 @@ noncomputable def fromChartPolygonalDisk
       boundaryCompatibleOnOverlaps := True
       boundaryRespectsCharts := D.respectsChartModel }
 
+@[simp] theorem fromChartPolygonalDisk_nextComplex
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M) (D : ChartPolygonalDisk M)
+    (hD : D.chart = E.pair (S.stage + 1)) :
+    (fromChartPolygonalDisk S D hD).nextComplex = chartUnionPLComplex S D := by
+  unfold fromChartPolygonalDisk
+  rfl
+
+@[simp] theorem fromChartPolygonalDisk_nextChartDisk
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M) (D : ChartPolygonalDisk M)
+    (hD : D.chart = E.pair (S.stage + 1)) :
+    (fromChartPolygonalDisk S D hD).nextChartDisk = some D := by
+  unfold fromChartPolygonalDisk
+  rfl
+
+/-- The named chart-disk step has support equal to old support union chart-disk image. -/
+theorem fromChartPolygonalDisk_nextComplex_support
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M) (D : ChartPolygonalDisk M)
+    (hD : D.chart = E.pair (S.stage + 1)) :
+    (fromChartPolygonalDisk S D hD).nextComplex.support =
+      S.complex.support ∪ Set.range D.embed := by
+  simpa using chartUnionPLComplex_support S D
+
 /-- Named extension data for an out-of-range empty chart pair. -/
 def emptyChart
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -3832,6 +3857,20 @@ def emptyChart
     compatibleOnOverlaps := S.compatibleOnOverlaps
     boundaryCompatibleOnOverlaps := S.boundaryCompatibleOnOverlaps
     boundaryRespectsCharts := S.boundaryRespectsCharts }
+
+@[simp] theorem emptyChart_nextComplex
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M)
+    (hEmpty : E.pair (S.stage + 1) = RadoChartPair.empty M) :
+    (emptyChart S hEmpty).nextComplex = S.complex := by
+  rfl
+
+@[simp] theorem emptyChart_nextChartDisk
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M)
+    (hEmpty : E.pair (S.stage + 1) = RadoChartPair.empty M) :
+    (emptyChart S hEmpty).nextChartDisk = none := by
+  rfl
 
 end RadoStepExtensionData
 
