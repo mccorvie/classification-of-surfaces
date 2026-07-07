@@ -663,9 +663,12 @@ Proved finite/combinatorial bridge:
    compact bordered surface has a finite chart-pair cover.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
-5. `rado_step_extension_from_chart_polygonal_disk`:
+5. `RadoStepExtensionData.chartUnionPLComplexData`,
+   `RadoStepExtensionData.fromChartPolygonalDisk`, `RadoStepExtensionData.emptyChart`, and
+   `rado_step_extension_from_chart_polygonal_disk`:
    the current scaffold can extend a Rado stage by taking the union of the old support and the
-   next chart-disk support.
+   next chart-disk support.  The finite chart step selector now calls the named constructors
+   directly rather than choosing witnesses from existential theorem wrappers.
 6. `finite_chart_polygonal_disk_data_of_local`:
    compactness extracts a finite chart-pair cover while carrying pointwise polygonal disk data
    along the selected finite indices.
@@ -677,8 +680,8 @@ Proved finite/combinatorial bridge:
    `FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry`,
    `finite_rado_geometry_of_chart_polygonal_disk_data`, and
    `mathlib_bordered_surface_finite_rado_geometry`:
-   finite chart polygonal disk data plus the one-step extension theorem packages as
-   `FiniteRadoInductionGeometry`; the theorem wrappers now expose the named constructor rather than
+   finite chart polygonal disk data plus the named one-step constructors packages as
+   `FiniteRadoInductionGeometry`; the theorem wrappers expose the named constructor rather than
    rebuilding this package inline.
 10. `FiniteRadoInductionGeometry.toRadoInductionData` and
    `rado_induction_data_of_finite_geometry`:

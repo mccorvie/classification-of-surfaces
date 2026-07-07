@@ -3698,32 +3698,11 @@ theorem toState_coversBoundaryCoresUpTo
     have hnS : n ≤ S.stage := Nat.le_of_lt_succ hlt
     exact (hS n hnS).trans D.extends_old.1
 
-end RadoStepExtensionData
-
-/-- Initial PL neighborhood in the Rado induction. -/
-theorem initial_pl_neighborhood
-    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
-    (D : InitialPLNeighborhoodData E) :
-    ∃ S : RadoInductionState M, S.stage = 0 := by
-  exact ⟨D.toState, D.toState_stage⟩
-
-/-- Extend a PL complex across one chart in the Rado induction. -/
-theorem extend_pl_complex_across_chart
-    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
-    (S : RadoInductionState M) (D : RadoStepExtensionData E S) :
-    ∃ S' : RadoInductionState M, S'.stage = S.stage + 1 ∧
-      PLComplexInSpace.Extends S'.complex S.complex := by
-  exact ⟨D.toState, D.toState_stage, D.toState_extends_old⟩
-
-/-- Hard one-step Rado extension boundary from one polygonal chart disk.
-
-This is the local geometric part of the induction step: enlarge the old PL complex across the next
-chart disk while preserving overlap and boundary compatibility. -/
-theorem rado_step_extension_from_chart_polygonal_disk
-    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
-    (S : RadoInductionState M) (D : ChartPolygonalDisk M)
-    (hD : D.chart = E.pair (S.stage + 1)) :
-    ∃ _Dstep : RadoStepExtensionData E S, True := by
+/-- The scaffold PL complex obtained by adjoining one chart polygonal disk to a Rado stage. -/
+noncomputable def chartUnionPLComplexData
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) :
+    { K : PLComplexInSpace M // K.support = S.complex.support ∪ Set.range D.embed } := by
   let U : Set M := S.complex.support ∪ Set.range D.embed
   haveI : Small.{0} U := by
     infer_instance
@@ -3763,17 +3742,41 @@ theorem rado_step_extension_from_chart_polygonal_disk
       isEmbedding := hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
       locallyFinite := True
       compatibleCharts := True }
-  have hKsupport : K.support = U := by
-    ext x
-    constructor
-    · intro hx
-      rcases hx with ⟨p, rfl⟩
-      exact ((equivShrink.{0} U).symm p.1).2
-    · intro hx
-      let p : Shrink.{0} U := equivShrink.{0} U ⟨x, hx⟩
-      refine ⟨⟨p, trivial⟩, ?_⟩
-      simp [K, carrierMap, p]
-  let step : RadoStepExtensionData E S :=
+  refine ⟨K, ?_⟩
+  ext x
+  constructor
+  · intro hx
+    rcases hx with ⟨p, rfl⟩
+    exact ((equivShrink.{0} U).symm p.1).2
+  · intro hx
+    let p : Shrink.{0} U := equivShrink.{0} U ⟨x, hx⟩
+    refine ⟨⟨p, trivial⟩, ?_⟩
+    simp [K, carrierMap, p]
+
+/-- The named scaffold PL complex obtained by adjoining one chart polygonal disk to a Rado stage.
+-/
+noncomputable def chartUnionPLComplex
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) : PLComplexInSpace M :=
+  (chartUnionPLComplexData S D).1
+
+/-- The chart-union scaffold has support equal to old support union chart-disk image. -/
+theorem chartUnionPLComplex_support
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) :
+    (chartUnionPLComplex S D).support = S.complex.support ∪ Set.range D.embed :=
+  (chartUnionPLComplexData S D).2
+
+/-- Named one-step Rado extension data from a polygonal chart disk. -/
+noncomputable def fromChartPolygonalDisk
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M) (D : ChartPolygonalDisk M)
+    (hD : D.chart = E.pair (S.stage + 1)) :
+    RadoStepExtensionData E S := by
+  let K : PLComplexInSpace M := chartUnionPLComplex S D
+  have hKsupport : K.support = S.complex.support ∪ Set.range D.embed :=
+    chartUnionPLComplex_support S D
+  exact
     { nextComplex := K
       boundarySubcomplex := EuclideanComplex.Subcomplex.full K.Complex
       nextChartDisk := some D
@@ -3804,7 +3807,59 @@ theorem rado_step_extension_from_chart_polygonal_disk
       compatibleOnOverlaps := True
       boundaryCompatibleOnOverlaps := True
       boundaryRespectsCharts := D.respectsChartModel }
-  exact ⟨step, trivial⟩
+
+/-- Named extension data for an out-of-range empty chart pair. -/
+def emptyChart
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M)
+    (hEmpty : E.pair (S.stage + 1) = RadoChartPair.empty M) :
+    RadoStepExtensionData E S :=
+  { nextComplex := S.complex
+    boundarySubcomplex := S.boundarySubcomplex
+    nextChartDisk := none
+    next_chart_eq := by
+      intro D hD
+      cases hD
+    extends_old := S.complex.extends_refl
+    coversNextCore := by
+      intro x hx
+      rw [hEmpty] at hx
+      simp [RadoChartPair.empty] at hx
+    coversNextBoundaryCore := by
+      intro x hx
+      rw [hEmpty] at hx
+      simp [RadoChartPair.empty] at hx
+    compatibleOnOverlaps := S.compatibleOnOverlaps
+    boundaryCompatibleOnOverlaps := S.boundaryCompatibleOnOverlaps
+    boundaryRespectsCharts := S.boundaryRespectsCharts }
+
+end RadoStepExtensionData
+
+/-- Initial PL neighborhood in the Rado induction. -/
+theorem initial_pl_neighborhood
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (D : InitialPLNeighborhoodData E) :
+    ∃ S : RadoInductionState M, S.stage = 0 := by
+  exact ⟨D.toState, D.toState_stage⟩
+
+/-- Extend a PL complex across one chart in the Rado induction. -/
+theorem extend_pl_complex_across_chart
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (S : RadoInductionState M) (D : RadoStepExtensionData E S) :
+    ∃ S' : RadoInductionState M, S'.stage = S.stage + 1 ∧
+      PLComplexInSpace.Extends S'.complex S.complex := by
+  exact ⟨D.toState, D.toState_stage, D.toState_extends_old⟩
+
+/-- Hard one-step Rado extension boundary from one polygonal chart disk.
+
+This is the local geometric part of the induction step: enlarge the old PL complex across the next
+chart disk while preserving overlap and boundary compatibility. -/
+theorem rado_step_extension_from_chart_polygonal_disk
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (S : RadoInductionState M) (D : ChartPolygonalDisk M)
+    (hD : D.chart = E.pair (S.stage + 1)) :
+    ∃ _Dstep : RadoStepExtensionData E S, True := by
+  exact ⟨RadoStepExtensionData.fromChartPolygonalDisk S D hD, trivial⟩
 
 /-- Extending across an out-of-range empty chart pair leaves the current stage unchanged. -/
 theorem rado_step_extension_empty_chart
@@ -3812,26 +3867,7 @@ theorem rado_step_extension_empty_chart
     (S : RadoInductionState M)
     (hEmpty : E.pair (S.stage + 1) = RadoChartPair.empty M) :
     ∃ _Dstep : RadoStepExtensionData E S, True := by
-  let step : RadoStepExtensionData E S :=
-    { nextComplex := S.complex
-      boundarySubcomplex := S.boundarySubcomplex
-      nextChartDisk := none
-      next_chart_eq := by
-        intro D hD
-        cases hD
-      extends_old := S.complex.extends_refl
-      coversNextCore := by
-        intro x hx
-        rw [hEmpty] at hx
-        simp [RadoChartPair.empty] at hx
-      coversNextBoundaryCore := by
-        intro x hx
-        rw [hEmpty] at hx
-        simp [RadoChartPair.empty] at hx
-      compatibleOnOverlaps := S.compatibleOnOverlaps
-      boundaryCompatibleOnOverlaps := S.boundaryCompatibleOnOverlaps
-      boundaryRespectsCharts := S.boundaryRespectsCharts }
-  exact ⟨step, trivial⟩
+  exact ⟨RadoStepExtensionData.emptyChart S hEmpty, trivial⟩
 
 /-- Local data sufficient to run every finite stage of the Rado induction.
 
@@ -4244,14 +4280,12 @@ noncomputable def stepData
     let i : C.Index := (Fintype.equivFin C.Index).symm ⟨S.stage + 1, h⟩
     have hi : (D.disk i).chart = C.toChartPairExhaustion.pair (S.stage + 1) := by
       exact (D.chart_eq i).trans (C.toChartPairExhaustion_pair_of_lt h).symm
-    Classical.choose
-      (rado_step_extension_from_chart_polygonal_disk C.toChartPairExhaustion S (D.disk i) hi)
+    RadoStepExtensionData.fromChartPolygonalDisk S (D.disk i) hi
   else
     have hEmpty :
         C.toChartPairExhaustion.pair (S.stage + 1) = RadoChartPair.empty M :=
       C.toChartPairExhaustion_pair_of_not_lt h
-    Classical.choose
-      (rado_step_extension_empty_chart C.toChartPairExhaustion S hEmpty)
+    RadoStepExtensionData.emptyChart S hEmpty
 
 /-- Polygonal disk data over a finite chart-pair cover as finite Rado induction geometry. -/
 noncomputable def toFiniteRadoInductionGeometry
