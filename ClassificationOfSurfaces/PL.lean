@@ -3526,23 +3526,50 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
-/-- Hard Euclidean interior case: an open neighborhood of an interior point in the model half-plane
-contains an embedded polygonal disk whose image is a neighborhood of the point. -/
+/-- A neighborhood of a point in the half-plane contains that point, hence its image under the
+half-plane inclusion contains the ambient coordinate point. -/
+theorem euclideanHalfSpace_point_mem_image_of_mem_nhds
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y) :
+    y.1 ∈ (Subtype.val '' U) := by
+  exact ⟨y, mem_of_mem_nhds hU, rfl⟩
+
+/-- Hard Euclidean interior geometry at a fixed image point: construct a polygonal disk
+neighborhood inside the given half-plane neighborhood. -/
+theorem euclideanHalfSpace_interior_polygonal_neighborhood_at
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
+    (hy : 0 < y.1 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
+    ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+  sorry
+
+/-- An open neighborhood of an interior point in the model half-plane contains an embedded
+polygonal disk whose image is a neighborhood of the point. -/
 theorem euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : 0 < y.1 0) :
     ∃ hyU : y.1 ∈ (Subtype.val '' U),
-      ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+      ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+  let hyU := euclideanHalfSpace_point_mem_image_of_mem_nhds U y hU
+  rcases euclideanHalfSpace_interior_polygonal_neighborhood_at U y hU hy hyU with ⟨N, hN⟩
+  exact ⟨hyU, N, hN⟩
+
+/-- Hard Euclidean boundary geometry at a fixed image point: construct a polygonal half-disk
+neighborhood inside the given half-plane neighborhood. -/
+theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
+    (hy : y.1 0 = 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
+    ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
   sorry
 
-/-- Hard Euclidean boundary case: an open neighborhood of a boundary-line point in the model
-half-plane contains an embedded polygonal half-disk whose image is a neighborhood of the point. -/
+/-- An open neighborhood of a boundary-line point in the model half-plane contains an embedded
+polygonal half-disk whose image is a neighborhood of the point. -/
 theorem euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : y.1 0 = 0) :
     ∃ hyU : y.1 ∈ (Subtype.val '' U),
-      ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
-  sorry
+      ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+  let hyU := euclideanHalfSpace_point_mem_image_of_mem_nhds U y hU
+  rcases euclideanHalfSpace_boundary_polygonal_neighborhood_at U y hU hy hyU with ⟨N, hN⟩
+  exact ⟨hyU, N, hN⟩
 
 /-- An open neighborhood in the model half-plane contains an embedded polygonal disk or half-disk
 whose image is a neighborhood of the chosen point. -/

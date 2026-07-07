@@ -1002,10 +1002,27 @@ strict positivity and the interior disk theorem applies.
 \begin{lemma}[Interior half-plane neighborhoods contain polygonal disks]
 \label{moise:lem:euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood}
+\leanok
 
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:euclideanHalfSpace_interior_polygonal_neighborhood_at,moise:lem:euclideanHalfSpace_point_mem_image_of_mem_nhds}
 Every neighborhood of an interior point of the Euclidean half-plane contains an
 embedded polygonal disk whose image is a neighborhood of that point.
+\end{lemma}
+
+\begin{proof}
+\leanok
+First prove that the ambient coordinate point belongs to the image of the
+half-plane neighborhood.  Then apply the fixed-point interior polygonal
+neighborhood theorem.
+\end{proof}
+
+\begin{lemma}[Interior fixed-point polygonal neighborhood]
+\label{moise:lem:euclideanHalfSpace_interior_polygonal_neighborhood_at}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_polygonal_neighborhood_at}
+
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+Given an interior point already packaged as a point of the image of a half-plane
+neighborhood, construct a polygonal disk neighborhood at that point.
 \end{lemma}
 
 \begin{proof}
@@ -1017,10 +1034,28 @@ given neighborhood, then triangulate that disk.
 \begin{lemma}[Boundary half-plane neighborhoods contain polygonal half-disks]
 \label{moise:lem:euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood}
+\leanok
 
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:euclideanHalfSpace_boundary_polygonal_neighborhood_at,moise:lem:euclideanHalfSpace_point_mem_image_of_mem_nhds}
 Every neighborhood of a boundary-line point of the Euclidean half-plane contains
 an embedded polygonal half-disk whose image is a neighborhood of that point.
+\end{lemma}
+
+\begin{proof}
+\leanok
+First prove that the ambient coordinate point belongs to the image of the
+half-plane neighborhood.  Then apply the fixed-point boundary polygonal
+neighborhood theorem.
+\end{proof}
+
+\begin{lemma}[Boundary fixed-point polygonal neighborhood]
+\label{moise:lem:euclideanHalfSpace_boundary_polygonal_neighborhood_at}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_boundary_polygonal_neighborhood_at}
+
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+Given a boundary-line point already packaged as a point of the image of a
+half-plane neighborhood, construct a polygonal half-disk neighborhood at that
+point.
 \end{lemma}
 
 \begin{proof}
@@ -1028,6 +1063,22 @@ an embedded polygonal half-disk whose image is a neighborhood of that point.
 Shrink to a small polygonal half-disk contained in the given relative
 neighborhood of the closed half-plane, then triangulate that half-disk with its
 diameter on the boundary line.
+\end{proof}
+
+\begin{lemma}[Half-plane neighborhood point belongs to image]
+\label{moise:lem:euclideanHalfSpace_point_mem_image_of_mem_nhds}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_point_mem_image_of_mem_nhds}
+\leanok
+
+If `U` is a neighborhood of `y` in the Euclidean half-plane, then the ambient
+coordinate point `y.1` belongs to the image of `U` under the half-plane
+inclusion.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Use `mem_of_mem_nhds` to see `y ∈ U`, then take its image under subtype
+coercion.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface local Rado induction data]
