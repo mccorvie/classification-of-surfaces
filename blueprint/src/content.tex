@@ -464,14 +464,15 @@ finite sets of simplexes.
 
 \begin{definition}[Moise topological two-manifold]
 \label{moise:def:moise_two_manifold}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoSequence, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex_support}
 \leanok
 A Moise two-manifold is a separable metric space locally homeomorphic to the open
 unit disk.  The bordered version is locally homeomorphic to either the open disk
 or the closed half-disk.  The formal interface also stores the countable
 disk/half-disk chart-pair exhaustion used by the Rado induction, together with
 the local initial and successor data needed to run Rado's finite-stage
-construction over such exhaustions.
+construction over such exhaustions.  From this stored data there is a named
+Rado induction sequence and a named PL complex covering the whole manifold.
 \end{definition}
 
 \begin{definition}[Finite chart-pair cover]
@@ -780,7 +781,7 @@ that inclusion.  The construction is packaged as
 
 \begin{theorem}[Moise--Rado triangulation theorem]
 \label{moise:thm:rado_triangulation_moise_manifold}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_triangulation_moise_two_manifold}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.rado_triangulation_moise_two_manifold}
 \leanok
 
 \uses{moise:def:moise_two_manifold,moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:rado_inductive_sequence_exists,moise:lem:rado_union_complex,moise:lem:rado_support_union_covers}
@@ -790,10 +791,10 @@ whole manifold.
 
 \begin{proof}
 \leanok
-Choose the stored chart-pair exhaustion, construct a Rado induction sequence
-over it, and form the locally finite union PL complex.  The stage-support
-coverage lemma shows that this union covers every chart core, hence the whole
-manifold.
+The `MoiseTwoManifold` interface stores the Rado induction data.  Its
+`radoSequence` field packages this data as a completed induction sequence, and
+`radoPLComplex` is the named union complex associated to that sequence.  The
+support theorem for this named complex is exactly the desired conclusion.
 \end{proof}
 
 \begin{theorem}[Compact Moise surface is finitely triangulable]

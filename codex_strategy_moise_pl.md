@@ -843,6 +843,9 @@ Expected Rado induction shape:
    `RadoInductiveSequence.unionPLComplex`, `RadoInductiveSequence.unionPLComplex_support`, and
    `RadoInductiveSequence.unionPLComplex_covers_univ`; `rado_union_complex` remains as the public
    existential wrapper.
+   At the Moise interface level, `MoiseTwoManifold.radoSequence`,
+   `MoiseTwoManifold.radoPLComplex`, and `MoiseTwoManifold.radoPLComplex_support` are the preferred
+   API for using the completed construction.
 6. For compact `M`, reduce locally finite countable triangulation to finite triangulation.
 
 ### Moise work package M8: boundary adaptation

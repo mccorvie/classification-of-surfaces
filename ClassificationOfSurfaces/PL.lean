@@ -4109,6 +4109,27 @@ structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
   chartPairExhaustion : ChartPairExhaustion M
   radoInductionData : RadoInductionData chartPairExhaustion
 
+namespace MoiseTwoManifold
+
+/-- The completed Rado induction sequence stored by the Moise two-manifold interface. -/
+def radoSequence
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
+    RadoInductiveSequence hM.chartPairExhaustion :=
+  hM.radoInductionData.toInductiveSequence
+
+/-- The named PL complex produced by the Rado induction data stored in the Moise interface. -/
+noncomputable def radoPLComplex
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) : PLComplexInSpace M :=
+  hM.radoSequence.unionPLComplex
+
+/-- The Rado PL complex stored by the Moise interface covers the whole manifold. -/
+theorem radoPLComplex_support
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
+    hM.radoPLComplex.support = Set.univ :=
+  hM.radoSequence.unionPLComplex_covers_univ
+
+end MoiseTwoManifold
+
 /-- Data extracted from a compact mathlib bordered surface before it is packaged as the Moise
 interface used by Rado's theorem. -/
 structure MoiseExtractionData (M : Type*) [TopologicalSpace M] where
@@ -4161,8 +4182,7 @@ successive chart. -/
 theorem rado_inductive_sequence_exists
     {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
     ∃ _S : RadoInductiveSequence hM.chartPairExhaustion, True := by
-  rcases rado_induction_data_exists hM with ⟨D, _⟩
-  exact ⟨D.toInductiveSequence, trivial⟩
+  exact ⟨hM.radoSequence, trivial⟩
 
 /-- The locally finite union of a Rado induction sequence is a PL complex. -/
 theorem rado_union_complex
@@ -4175,11 +4195,7 @@ theorem rado_union_complex
 theorem rado_triangulation_moise_two_manifold
     (M : Type*) [TopologicalSpace M] (hM : MoiseTwoManifold M) :
     ∃ K : PLComplexInSpace M, K.support = Set.univ := by
-  rcases chart_pair_exhaustion hM with ⟨E, hE⟩
-  subst E
-  rcases rado_inductive_sequence_exists hM with ⟨S, _⟩
-  rcases rado_union_complex hM.chartPairExhaustion S with ⟨K, hK⟩
-  exact ⟨K, S.union_complex_covers_univ hK⟩
+  exact ⟨hM.radoPLComplex, hM.radoPLComplex_support⟩
 
 /-- Compact Moise surfaces are finitely triangulable. -/
 theorem compact_moise_surface_finitely_triangulable
