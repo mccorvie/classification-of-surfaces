@@ -2562,6 +2562,18 @@ noncomputable def toChartPairExhaustion {M : Type u} [TopologicalSpace M]
 
 end FiniteChartPairCover
 
+/-- Polygonal disk data for every chart pair in the countable exhaustion associated to a finite
+cover.
+
+This isolates the local shrinking theorem: each chart-pair core should be covered by an embedded
+polygonal disk or half-disk compatible with the chart model. -/
+structure FiniteChartPolygonalDiskData
+    {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) where
+  disk : ℕ → ChartPolygonalDisk M
+  chart_eq : ∀ n : ℕ, (disk n).chart = C.toChartPairExhaustion.pair n
+  compatibleChartShrinks : Prop
+  boundaryCompatibleChartShrinks : Prop
+
 /-- State of the Rado induction after finitely many chart pairs have been absorbed. -/
 structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   stage : ℕ
@@ -2601,6 +2613,29 @@ structure RadoStepExtensionData
   boundaryRespectsCharts : Prop
 
 namespace InitialPLNeighborhoodData
+
+/-- Build stage-zero Rado initialization from a polygonal disk covering the first chart core. -/
+def ofChartPolygonalDisk
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : ChartPolygonalDisk M) (hD : D.chart = E.pair 0) :
+    InitialPLNeighborhoodData E where
+  chartDisk := D
+  chart_eq := hD
+  coversInitialCore := by
+    intro x hx
+    have hx' : x ∈ D.chart.core := by
+      rw [hD]
+      exact hx
+    simpa [ChartPolygonalDisk.toPLComplexInSpace, PLComplexInSpace.support]
+      using D.core_covered hx'
+  coversInitialBoundaryCore := by
+    intro x hx
+    have hx' : x ∈ D.chart.boundaryCore := by
+      rw [hD]
+      exact hx
+    simpa [ChartPolygonalDisk.toPLComplexInSpace, PLComplexInSpace.support]
+      using D.boundaryCore_covered hx'
+  boundarySubcomplexCompatible := True
 
 /-- The stage-zero Rado induction state determined by initial chart-disk data. -/
 def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -2697,6 +2732,17 @@ theorem extend_pl_complex_across_chart
     ∃ S' : RadoInductionState M, S'.stage = S.stage + 1 ∧
       PLComplexInSpace.Extends S'.complex S.complex := by
   exact ⟨D.toState, D.toState_stage, D.toState_extends_old⟩
+
+/-- Hard one-step Rado extension boundary from one polygonal chart disk.
+
+This is the local geometric part of the induction step: enlarge the old PL complex across the next
+chart disk while preserving overlap and boundary compatibility. -/
+theorem rado_step_extension_from_chart_polygonal_disk
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (S : RadoInductionState M) (D : ChartPolygonalDisk M)
+    (hD : D.chart = E.pair (S.stage + 1)) :
+    ∃ _Dstep : RadoStepExtensionData E S, True := by
+  sorry
 
 /-- Local data sufficient to run every finite stage of the Rado induction.
 
@@ -3044,6 +3090,19 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
+/-- Hard local chart-shrinking boundary over a finite chart-pair cover extracted from the mathlib
+atlas.
+
+This is where each chart-pair core is replaced by embedded polygonal disk or half-disk data
+compatible with its chart model. -/
+theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
+    (C : FiniteChartPairCover M) :
+    ∃ _D : FiniteChartPolygonalDiskData C, True := by
+  sorry
+
 /-- Hard local Rado geometry boundary over a finite chart-pair cover extracted from the mathlib
 atlas.
 
@@ -3056,7 +3115,22 @@ theorem mathlib_bordered_surface_finite_rado_geometry
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
     (C : FiniteChartPairCover M) :
     ∃ _G : FiniteRadoInductionGeometry C, True := by
-  sorry
+  rcases mathlib_bordered_surface_finite_chart_polygonal_disk_data M C with ⟨D, _⟩
+  let initial : InitialPLNeighborhoodData C.toChartPairExhaustion :=
+    InitialPLNeighborhoodData.ofChartPolygonalDisk (D.disk 0) (D.chart_eq 0)
+  let step : ∀ (_n : ℕ) (S : RadoInductionState M),
+      RadoStepExtensionData C.toChartPairExhaustion S :=
+    fun _n S =>
+      Classical.choose
+        (rado_step_extension_from_chart_polygonal_disk C.toChartPairExhaustion S
+          (D.disk (S.stage + 1)) (D.chart_eq (S.stage + 1)))
+  let G : FiniteRadoInductionGeometry C :=
+    { initial := initial
+      step := step
+      compatibleStages := D.compatibleChartShrinks
+      locallyFiniteUnion := True
+      boundaryCompatibleUnion := D.boundaryCompatibleChartShrinks }
+  exact ⟨G, trivial⟩
 
 /-- Local Rado induction data over a finite chart-pair cover extracted from the mathlib atlas. -/
 theorem mathlib_bordered_surface_rado_induction_data

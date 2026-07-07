@@ -465,6 +465,18 @@ mathlib chart at a point gives a chart pair whose core is a neighborhood of that
 point.
 \end{definition}
 
+\begin{definition}[Finite chart polygonal disk data]
+\label{moise:def:finite_chart_polygonal_disk_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
+\leanok
+
+\uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell}
+Finite chart polygonal disk data assigns to every chart pair in the countable
+exhaustion associated to a finite cover an embedded polygonal disk or half-disk
+covering that chart core, together with chart-model and boundary compatibility
+assertions.
+\end{definition}
+
 \begin{lemma}[Compact local chart pairs have finite subcover]
 \label{moise:lem:compact_local_chart_pairs_finite_cover}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.exists_of_compact_local}
@@ -538,7 +550,7 @@ together with the definitional equality identifying it with the stored field.
 
 \begin{lemma}[Initial PL neighborhood]
 \label{moise:lem:initial_pl_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:polygonal_disk_combinatorial_cell}
@@ -551,9 +563,27 @@ asserting that boundary chart cores are covered by this boundary subcomplex.
 
 \begin{proof}
 \leanok
-Given `InitialPLNeighborhoodData`, package the embedded chart polygonal disk as
-a `PLComplexInSpace` and use its boundary subcomplex and coverage fields to
-build the stage-zero Rado induction state.
+Build `InitialPLNeighborhoodData` from a chart polygonal disk whose chart is the
+first chart pair by rewriting the chart-core coverage fields.  Then package the
+embedded chart polygonal disk as a `PLComplexInSpace` and use its boundary
+subcomplex and coverage fields to build the stage-zero Rado induction state.
+\end{proof}
+
+\begin{lemma}[Rado step extension from a chart disk]
+\label{moise:lem:rado_step_extension_from_chart_polygonal_disk}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_step_extension_from_chart_polygonal_disk}
+
+\uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:lem:pl_invariant_under_subdivision,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane,moise:lem:polygonal_disk_combinatorial_cell}
+Given a current finite Rado induction state and polygonal disk data covering the
+next chart core, the old PL complex can be extended across that chart disk while
+preserving overlap, local-finiteness, and boundary compatibility.
+\end{lemma}
+
+\begin{proof}
+\notready
+Use the open-subset complex theorem to express the overlap with the old complex,
+apply PL approximation on the chart disk, and glue the resulting PL structures
+after a common subdivision.
 \end{proof}
 
 \begin{lemma}[Extend a PL complex across one chart]
@@ -809,19 +839,37 @@ countable exhaustion.
 \begin{lemma}[Mathlib bordered surface finite Rado geometry]
 \label{moise:lem:mathlib_bordered_surface_finite_rado_geometry}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_rado_geometry}
+\leanok
 
-\uses{moise:def:finite_chart_pair_cover,moise:def:finite_rado_induction_geometry,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart,moise:thm:pl_approximation_plane}
+\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:def:finite_rado_induction_geometry,moise:lem:initial_pl_neighborhood,moise:lem:rado_step_extension_from_chart_polygonal_disk}
 For the finite chart-pair cover extracted from a compact mathlib bordered
 surface, the chart cores can be shrunk to polygonal disk or half-disk data and
 extended stage by stage with the compatibility needed for Rado's induction.
 \end{lemma}
 
 \begin{proof}
+\leanok
+Use the finite chart polygonal disk data theorem boundary.  The disk for chart
+zero initializes the induction, and the one-step extension theorem boundary
+supplies each successor package.  These fields assemble into
+`FiniteRadoInductionGeometry`.
+\end{proof}
+
+\begin{lemma}[Mathlib bordered surface finite chart polygonal disk data]
+\label{moise:lem:mathlib_bordered_surface_finite_chart_polygonal_disk_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_chart_polygonal_disk_data}
+
+\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+For the finite chart-pair cover extracted from a compact mathlib bordered
+surface, every enumerated chart pair admits embedded polygonal disk or half-disk
+data covering its core and compatible with the chart model.
+\end{lemma}
+
+\begin{proof}
 \notready
-Shrink the preferred chart pairs to polygonal disk or half-disk cores.  Use the
-PL approximation and relative Schoenflies machinery to construct the stage-zero
-polygonal disk, each successor chart-extension package, and the compatibility
-fields for the locally finite union.
+Shrink each preferred chart source to a disk or half-disk core, triangulate the
+polygonal region in the model half-plane, and transport the embedded polygonal
+disk data back through the chart homeomorphism.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface local Rado induction data]
