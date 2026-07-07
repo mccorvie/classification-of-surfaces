@@ -679,26 +679,33 @@ Proved finite/combinatorial bridge:
 13. `moise_two_manifold_of_extraction_data`:
    extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
 
-Remaining hard local bridge:
+Remaining hard coordinate-local bridge:
 
 ```lean
-theorem mathlib_chartAt_contains_polygonal_disk_core
+theorem mathlib_chartAt_contains_model_polygonal_disk_core
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
-    ∃ D : ChartPolygonalDisk M,
-      D.chart.Refines (RadoChartPair.fromChartAt M x) ∧ D.chart.core ∈ 𝓝 x := by
+    ∃ D : ModelChartPolygonalDisk (RadoChartPair.fromChartAt M x),
+      D.pulledCore ∈ 𝓝 x := by
   sorry
 ```
 
-This is now the place where the actual chart-core shrinking, polygonal disk triangulation, and
-transport of disk data through the mathlib chart atlas have to be proved.  Compact finite-subcover
-extraction is proved separately by `finite_chart_polygonal_disk_data_of_local`, and pointwise data
-is packaged into local function-valued data by `local_chart_polygonal_disk_data_of_pointwise`.
+This is now the place where the actual chart-core shrinking and polygonal disk triangulation in the
+coordinate half-plane have to be proved.  The transport of disk data through the mathlib chart atlas
+is formalized by `ModelChartPolygonalDisk.toChartPolygonalDisk`, and core refinement is formalized
+by `RadoChartPair.withCore_refines`.  The public theorem
+`mathlib_chartAt_contains_polygonal_disk_core` is a proved wrapper around the coordinate-local
+boundary: it pulls the model disk back through the chart homeomorphism and proves that the resulting
+chart pair refines `RadoChartPair.fromChartAt`.
+
+Compact finite-subcover extraction is proved separately by `finite_chart_polygonal_disk_data_of_local`,
+and pointwise data is packaged into local function-valued data by
+`local_chart_polygonal_disk_data_of_pointwise`.
 The formerly broad `mathlib_bordered_surface_rado_induction_data`,
 `mathlib_bordered_surface_finite_rado_geometry`, finite chart-disk extraction, local chart-disk
 data, point chart-disk data, and one-step extension theorems are proved wrappers around this
-sharper chart-contained polygonal-core boundary.
+sharper coordinate-local polygonal-core boundary.
 
 The Rado theorem boundary:
 

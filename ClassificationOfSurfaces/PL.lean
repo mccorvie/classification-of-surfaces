@@ -2425,6 +2425,64 @@ shrunk inside a preferred mathlib chart. -/
 def Refines {M : Type*} [TopologicalSpace M] (P Q : RadoChartPair M) : Prop :=
   P.domain ⊆ Q.domain ∧ P.core ⊆ Q.core
 
+/-- Replace the core of a chart pair by a smaller one while keeping the ambient chart data. -/
+def withCore {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
+    (core boundaryCore : Set M) (hcore : core ⊆ P.domain)
+    (hboundary : boundaryCore ⊆ core)
+    (hboundary_disk : P.kind = RadoChartKind.disk → boundaryCore = ∅) :
+    RadoChartPair M where
+  kind := P.kind
+  domain := P.domain
+  core := core
+  domain_open := P.domain_open
+  core_subset_domain := hcore
+  modelRegion := P.modelRegion
+  chartHomeomorph := P.chartHomeomorph
+  model_matches_kind := P.model_matches_kind
+  chart_to_model := P.chart_to_model
+  boundaryCore := boundaryCore
+  boundaryCore_subset_core := hboundary
+  boundaryCore_empty_of_disk := hboundary_disk
+  boundaryCore_in_boundary_chart := by
+    intro h
+    exact P.boundaryCore_in_boundary_chart h
+
+@[simp] theorem withCore_kind
+    {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
+    (core boundaryCore : Set M) (hcore hboundary hboundary_disk) :
+    (P.withCore core boundaryCore hcore hboundary hboundary_disk).kind = P.kind := by
+  rfl
+
+@[simp] theorem withCore_domain
+    {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
+    (core boundaryCore : Set M) (hcore hboundary hboundary_disk) :
+    (P.withCore core boundaryCore hcore hboundary hboundary_disk).domain = P.domain := by
+  rfl
+
+@[simp] theorem withCore_core
+    {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
+    (core boundaryCore : Set M) (hcore hboundary hboundary_disk) :
+    (P.withCore core boundaryCore hcore hboundary hboundary_disk).core = core := by
+  rfl
+
+@[simp] theorem withCore_boundaryCore
+    {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
+    (core boundaryCore : Set M) (hcore hboundary hboundary_disk) :
+    (P.withCore core boundaryCore hcore hboundary hboundary_disk).boundaryCore =
+      boundaryCore := by
+  rfl
+
+/-- A chart pair obtained by shrinking the core refines the original chart pair exactly when the
+new core lies in the old core. -/
+theorem withCore_refines
+    {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
+    (core boundaryCore : Set M) (hcoreDomain : core ⊆ P.domain)
+    (hboundary : boundaryCore ⊆ core)
+    (hboundary_disk : P.kind = RadoChartKind.disk → boundaryCore = ∅)
+    (hcore : core ⊆ P.core) :
+    (P.withCore core boundaryCore hcoreDomain hboundary hboundary_disk).Refines P := by
+  exact ⟨subset_rfl, hcore⟩
+
 end RadoChartPair
 
 /-- A finite family of Rado chart pairs whose cores cover the whole space. -/
@@ -2528,6 +2586,101 @@ def toPLComplexInSpace {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk 
   rfl
 
 end ChartPolygonalDisk
+
+/-- A polygonal disk embedded in the model region of a Rado chart pair.
+
+This is the coordinate-side local geometry object.  Pulling it back through the stored chart
+homeomorphism produces an actual `ChartPolygonalDisk` in the manifold. -/
+structure ModelChartPolygonalDisk {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) where
+  disk : PolygonalDisk
+  embed : disk.K.support → P.modelRegion
+  isEmbedding : _root_.Topology.IsEmbedding embed
+  respectsChartModel : Prop
+
+namespace ModelChartPolygonalDisk
+
+variable {M : Type*} [TopologicalSpace M] {P : RadoChartPair M}
+
+/-- Pull a coordinate-model polygonal disk back into the manifold. -/
+def toManifoldEmbed (D : ModelChartPolygonalDisk P) : D.disk.K.support → M :=
+  fun p => (P.chartHomeomorph.symm (D.embed p)).1
+
+/-- The manifold core covered by the pulled-back model disk. -/
+def pulledCore (D : ModelChartPolygonalDisk P) : Set M :=
+  Set.range D.toManifoldEmbed
+
+theorem pulledCore_subset_domain (D : ModelChartPolygonalDisk P) :
+    D.pulledCore ⊆ P.domain := by
+  rintro _ ⟨p, rfl⟩
+  exact (P.chartHomeomorph.symm (D.embed p)).2
+
+theorem toManifoldEmbed_isEmbedding (D : ModelChartPolygonalDisk P) :
+    _root_.Topology.IsEmbedding D.toManifoldEmbed := by
+  have hSubtype :
+      _root_.Topology.IsEmbedding ((Subtype.val : P.domain → M)) :=
+    _root_.Topology.IsEmbedding.subtypeVal
+  have hChart : _root_.Topology.IsEmbedding P.chartHomeomorph.symm :=
+    P.chartHomeomorph.symm.isEmbedding
+  change _root_.Topology.IsEmbedding
+    (fun p : D.disk.K.support => (P.chartHomeomorph.symm (D.embed p)).1)
+  simpa [Function.comp_def] using hSubtype.comp (hChart.comp D.isEmbedding)
+
+/-- The Rado chart pair obtained by using the pulled-back model disk as the smaller core. -/
+def toChartPair (D : ModelChartPolygonalDisk P) : RadoChartPair M :=
+  P.withCore D.pulledCore ∅ D.pulledCore_subset_domain (by
+    intro y hy
+    simp at hy) (by
+    intro _h
+    rfl)
+
+@[simp] theorem toChartPair_domain (D : ModelChartPolygonalDisk P) :
+    D.toChartPair.domain = P.domain := by
+  rfl
+
+@[simp] theorem toChartPair_core (D : ModelChartPolygonalDisk P) :
+    D.toChartPair.core = D.pulledCore := by
+  rfl
+
+@[simp] theorem toChartPair_boundaryCore (D : ModelChartPolygonalDisk P) :
+    D.toChartPair.boundaryCore = ∅ := by
+  rfl
+
+/-- Pulling back a model polygonal disk gives a chart polygonal disk in the manifold. -/
+def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M where
+  chart := D.toChartPair
+  disk := D.disk
+  embed := D.toManifoldEmbed
+  isEmbedding := D.toManifoldEmbed_isEmbedding
+  support_subset_domain := by
+    intro y hy
+    exact D.pulledCore_subset_domain hy
+  core_covered := by
+    intro y hy
+    simpa [toChartPair, RadoChartPair.withCore, pulledCore] using hy
+  boundaryCore_covered := by
+    intro y hy
+    simp [toChartPair, RadoChartPair.withCore] at hy
+  respectsChartModel := D.respectsChartModel
+
+@[simp] theorem toChartPolygonalDisk_chart_core (D : ModelChartPolygonalDisk P) :
+    D.toChartPolygonalDisk.chart.core = D.pulledCore := by
+  rfl
+
+/-- A pulled-back model disk refines its ambient chart pair whenever its pulled-back core lies in
+the ambient core. -/
+theorem toChartPair_refines (D : ModelChartPolygonalDisk P)
+    (hcore : D.pulledCore ⊆ P.core) :
+    D.toChartPair.Refines P := by
+  exact RadoChartPair.withCore_refines P D.pulledCore ∅ D.pulledCore_subset_domain
+    (by
+      intro y hy
+      simp at hy)
+    (by
+      intro _h
+      rfl)
+    hcore
+
+end ModelChartPolygonalDisk
 
 namespace RadoChartPair
 
@@ -3285,15 +3438,32 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
-/-- Hard local chart-shrinking boundary: the preferred mathlib chart at a point contains a
-polygonal disk or half-disk chart core around that point. -/
+/-- Hard coordinate-local boundary: in the model region of the preferred chart at a point, there is
+a polygonal disk or half-disk whose pullback is a neighborhood core of the point. -/
+theorem mathlib_chartAt_contains_model_polygonal_disk_core
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
+    ∃ D : ModelChartPolygonalDisk (RadoChartPair.fromChartAt M x),
+      D.pulledCore ∈ 𝓝 x := by
+  sorry
+
+/-- The preferred mathlib chart at a point contains a smaller Rado chart pair whose core is covered
+by a pulled-back polygonal disk or half-disk. -/
 theorem mathlib_chartAt_contains_polygonal_disk_core
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
     ∃ D : ChartPolygonalDisk M,
       D.chart.Refines (RadoChartPair.fromChartAt M x) ∧ D.chart.core ∈ 𝓝 x := by
-  sorry
+  rcases mathlib_chartAt_contains_model_polygonal_disk_core M x with ⟨D, hD⟩
+  refine ⟨D.toChartPolygonalDisk, ?_, ?_⟩
+  · exact D.toChartPair_refines (by
+      intro y hy
+      have hydomain : y ∈ (RadoChartPair.fromChartAt M x).domain :=
+        D.pulledCore_subset_domain hy
+      simpa [RadoChartPair.fromChartAt] using hydomain)
+  · simpa using hD
 
 /-- Pointwise chart-polygonal-disk data from a polygonal core inside the preferred mathlib chart.
 -/

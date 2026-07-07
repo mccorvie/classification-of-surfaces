@@ -456,7 +456,7 @@ construction over such exhaustions.
 
 \begin{definition}[Finite chart-pair cover]
 \label{moise:def:finite_chart_pair_cover}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore_refines, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion}
 \leanok
 
 A finite chart-pair cover is a finite family of Rado chart pairs whose smaller
@@ -464,12 +464,14 @@ cores cover the ambient space.  It can be enumerated by natural numbers, using
 the empty chart pair outside the finite range, and hence packaged as the
 countable chart-pair exhaustion used by Rado's induction.  The preferred
 mathlib chart at a point gives a chart pair whose core is a neighborhood of that
-point.
+point.  The chart-pair API also includes core refinement: `withCore` replaces a
+chart-pair core by a smaller core while keeping the surrounding chart and model
+map fixed.
 \end{definition}
 
 \begin{definition}[Finite chart polygonal disk data]
 \label{moise:def:finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPair_refines, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell}
@@ -478,7 +480,9 @@ or half-disk around each point.  Finite chart polygonal disk data records the
 same disk data for each selected index in a finite chart-pair cover, together
 with chart-model and boundary compatibility assertions.  The API includes the
 standard geometric triangle as a concrete `ChartPolygonalDisk` in the coordinate
-plane.
+plane.  A coordinate-side `ModelChartPolygonalDisk` can be transported through
+the chart homeomorphism to produce an embedded chart polygonal disk in the
+manifold.
 \end{definition}
 
 \begin{lemma}[Compact local chart pairs have finite subcover]
@@ -915,19 +919,40 @@ it as `PointChartPolygonalDiskData`.
 
 \begin{lemma}[Mathlib chart contains polygonal disk core]
 \label{moise:lem:mathlib_chartAt_contains_polygonal_disk_core}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_contains_polygonal_disk_core}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_contains_polygonal_disk_core}
+\leanok
 
-\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_chartAt_contains_model_polygonal_disk_core}
 The preferred mathlib chart at a point contains a smaller Rado chart pair whose
 core is a neighborhood of the point and is covered by an embedded polygonal
 disk or half-disk compatible with the chart model.
 \end{lemma}
 
 \begin{proof}
+\leanok
+Use the model polygonal disk supplied in the chart coordinates.  Pull it back
+through the chart homeomorphism to obtain a `ChartPolygonalDisk`; its core is
+the pulled-back image of the model disk.  The `withCore_refines` API proves that
+this smaller chart pair refines the preferred chart pair, since the preferred
+chart pair's core is its whole chart source.
+\end{proof}
+
+\begin{lemma}[Mathlib chart contains model polygonal disk core]
+\label{moise:lem:mathlib_chartAt_contains_model_polygonal_disk_core}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_contains_model_polygonal_disk_core}
+
+\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+In the coordinate model region of the preferred chart at a point, there is a
+polygonal disk or half-disk whose pullback through the chart homeomorphism is a
+neighborhood core of the point.
+\end{lemma}
+
+\begin{proof}
 \notready
 Shrink the preferred chart source to a disk or half-disk core in the model
-half-plane, triangulate that polygonal region, and transport the embedded
-polygonal disk data back through the chart homeomorphism.
+half-plane and triangulate that polygonal region.  The transport of the
+coordinate polygonal disk back through the chart homeomorphism is now formal
+in `ModelChartPolygonalDisk.toChartPolygonalDisk`.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface local Rado induction data]
