@@ -454,13 +454,15 @@ construction over such exhaustions.
 
 \begin{definition}[Finite chart-pair cover]
 \label{moise:def:finite_chart_pair_cover}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion}
 \leanok
 
 A finite chart-pair cover is a finite family of Rado chart pairs whose smaller
 cores cover the ambient space.  It can be enumerated by natural numbers, using
 the empty chart pair outside the finite range, and hence packaged as the
-countable chart-pair exhaustion used by Rado's induction.
+countable chart-pair exhaustion used by Rado's induction.  The preferred
+mathlib chart at a point gives a chart pair whose core is a neighborhood of that
+point.
 \end{definition}
 
 \begin{lemma}[Compact local chart pairs have finite subcover]
@@ -478,6 +480,23 @@ the whole space.
 \leanok
 Apply `CompactSpace.elim_nhds_subcover` to the family of chart-pair cores and
 index the resulting finite cover by the finite subtype of selected points.
+\end{proof}
+
+\begin{lemma}[Mathlib bordered surface has finite chart-pair cover]
+\label{moise:lem:mathlib_bordered_surface_finite_chart_pair_cover}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_chart_pair_cover}
+\leanok
+
+\uses{moise:def:finite_chart_pair_cover,moise:lem:compact_local_chart_pairs_finite_cover}
+A compact mathlib bordered surface admits a finite cover by preferred
+chart-pair cores.
+\end{lemma}
+
+\begin{proof}
+\leanok
+For each point, use the preferred chart from `chartAt`; its source is a
+neighborhood of the point.  Compactness extracts finitely many such chart-pair
+cores.
 \end{proof}
 
 \begin{definition}[Moise extraction data]
@@ -753,17 +772,35 @@ Package the extracted finite chart-pair cover and Rado local data as a
 \begin{lemma}[Mathlib bordered surface extraction data]
 \label{moise:lem:mathlib_bordered_surface_moise_extraction_data}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moise_extraction_data}
+\leanok
 
-\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:compact_local_chart_pairs_finite_cover}
+\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_finite_chart_pair_cover,moise:lem:mathlib_bordered_surface_rado_induction_data}
 The mathlib bordered-surface atlas supplies the finite chart-pair cover and
 local Rado induction data needed to build the Moise interface.
 \end{lemma}
 
 \begin{proof}
+\leanok
+Extract a finite chart-pair cover from the preferred mathlib charts and
+compactness.  Then package the local Rado induction data over the corresponding
+countable exhaustion.
+\end{proof}
+
+\begin{lemma}[Mathlib bordered surface local Rado induction data]
+\label{moise:lem:mathlib_bordered_surface_rado_induction_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_rado_induction_data}
+
+\uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+For the finite chart-pair cover extracted from a compact mathlib bordered
+surface, the initial polygonal disk and successor chart-extension data needed
+for Rado's induction exist.
+\end{lemma}
+
+\begin{proof}
 \notready
-Choose chart neighborhoods from the mathlib `ChartedSpace` atlas, shrink them to
-nested disk or half-disk chart pairs, use compactness to extract a finite
-subcover, and build the local Rado induction data for the resulting exhaustion.
+Shrink the preferred chart pairs to polygonal disk or half-disk cores.  Use the
+PL approximation and relative Schoenflies machinery to construct the stage-zero
+polygonal disk and each successor chart-extension package.
 \end{proof}
 
 \begin{lemma}[Eval surface to Moise bordered surface]

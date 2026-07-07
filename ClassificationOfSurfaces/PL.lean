@@ -2361,6 +2361,46 @@ def empty (M : Type*) [TopologicalSpace M] : RadoChartPair M where
     intro _h
     exact True
 
+/-- The chart pair supplied by the preferred mathlib chart at a point of a bordered surface.
+
+At this API level the core is the whole chart source. Later geometric refinements should replace
+this by a smaller disk or half-disk core with closure control. -/
+noncomputable def fromChartAt
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    (x : M) : RadoChartPair M where
+  kind := RadoChartKind.halfDisk
+  domain := (chartAt (EuclideanHalfSpace 2) x).source
+  core := (chartAt (EuclideanHalfSpace 2) x).source
+  domain_open := (chartAt (EuclideanHalfSpace 2) x).open_source
+  core_subset_domain := subset_rfl
+  modelRegion :=
+    (Subtype.val : EuclideanHalfSpace 2 → Plane) ''
+      (chartAt (EuclideanHalfSpace 2) x).target
+  chartHomeomorph :=
+    (chartAt (EuclideanHalfSpace 2) x).toHomeomorphSourceTarget.trans
+      ((Topology.IsEmbedding.subtypeVal :
+          Topology.IsEmbedding (Subtype.val : EuclideanHalfSpace 2 → Plane)).homeomorphImage
+        (chartAt (EuclideanHalfSpace 2) x).target)
+  model_matches_kind := True
+  chart_to_model := True
+  boundaryCore := ∅
+  boundaryCore_subset_core := by
+    intro y hy
+    simp at hy
+  boundaryCore_empty_of_disk := by
+    intro h
+    cases h
+  boundaryCore_in_boundary_chart := by
+    intro _h
+    exact True
+
+/-- The preferred mathlib chart pair has a core neighborhood of its center point. -/
+theorem fromChartAt_core_mem_nhds
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    (x : M) :
+    (fromChartAt M x).core ∈ 𝓝 x := by
+  exact chart_source_mem_nhds (EuclideanHalfSpace 2) x
+
 /-- A chart pair modeled on the half-disk. -/
 def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
   P.kind = RadoChartKind.halfDisk
@@ -2959,6 +2999,27 @@ theorem bordered_pl_approximation
     ∃ _A : BoundaryGlobalPLSurfaceApproximation K Ω φ h, True := by
   exact bordered_pl_approximation_halfplane K Ω h φ _hφ
 
+/-- A compact mathlib bordered surface admits a finite cover by preferred chart-pair cores. -/
+theorem mathlib_bordered_surface_finite_chart_pair_cover
+    (M : Type*) [TopologicalSpace M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M] :
+    ∃ _C : FiniteChartPairCover M, True := by
+  exact FiniteChartPairCover.exists_of_compact_local
+    (fun x : M => RadoChartPair.fromChartAt M x)
+    (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
+
+/-- Hard local Rado data boundary over a finite chart-pair cover extracted from the mathlib atlas.
+
+This is the point where one proves the polygonal disk initialization and chart-extension steps for
+the finite cover. -/
+theorem mathlib_bordered_surface_rado_induction_data
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
+    (C : FiniteChartPairCover M) :
+    ∃ _D : RadoInductionData C.toChartPairExhaustion, True := by
+  sorry
+
 /-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
 Moise chart-pair interface.
 
@@ -2969,7 +3030,14 @@ theorem mathlib_bordered_surface_moise_extraction_data
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ _D : MoiseExtractionData M, True := by
-  sorry
+  rcases mathlib_bordered_surface_finite_chart_pair_cover M with ⟨C, _⟩
+  rcases mathlib_bordered_surface_rado_induction_data M C with ⟨D, _⟩
+  let E : MoiseExtractionData M :=
+    { finiteCover := C
+      local_disk_or_half_disk := True
+      secondCountable_or_separable_metric := True
+      radoInductionData := D }
+  exact ⟨E, trivial⟩
 
 /-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
 Moise chart-pair interface.

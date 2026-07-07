@@ -612,22 +612,29 @@ Proved finite/combinatorial bridge:
    compactness.
 2. `FiniteChartPairCover.toChartPairExhaustion`:
    a finite chart-pair cover can be enumerated by `ℕ` and used as the Rado chart-pair exhaustion.
-3. `moise_two_manifold_of_extraction_data`:
+3. `RadoChartPair.fromChartAt` and `mathlib_bordered_surface_finite_chart_pair_cover`:
+   the preferred mathlib chart at each point gives a chart pair whose core is a neighborhood, so a
+   compact bordered surface has a finite chart-pair cover.
+4. `mathlib_bordered_surface_moise_extraction_data`:
+   finite cover extraction plus local Rado induction data packages as `MoiseExtractionData`.
+5. `moise_two_manifold_of_extraction_data`:
    extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
 
 Remaining hard bridge:
 
 ```lean
-theorem mathlib_bordered_surface_moise_extraction_data
+theorem mathlib_bordered_surface_rado_induction_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ _D : MoiseExtractionData M, True := by
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
+    (C : FiniteChartPairCover M) :
+    ∃ _D : RadoInductionData C.toChartPairExhaustion, True := by
   sorry
 ```
 
-This is now the place where the actual atlas shrinking, disk/half-disk chart-pair construction,
-and local Rado induction geometry have to be proved.
+This is now the place where the actual chart-core shrinking, polygonal disk initialization,
+successor extension construction, PL approximation, and relative Schoenflies geometry have to be
+proved.
 
 The Rado theorem boundary:
 
