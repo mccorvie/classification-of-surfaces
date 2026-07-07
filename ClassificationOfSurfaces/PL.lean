@@ -2742,7 +2742,84 @@ theorem rado_step_extension_from_chart_polygonal_disk
     (S : RadoInductionState M) (D : ChartPolygonalDisk M)
     (hD : D.chart = E.pair (S.stage + 1)) :
     ∃ _Dstep : RadoStepExtensionData E S, True := by
-  sorry
+  let U : Set M := S.complex.support ∪ Set.range D.embed
+  haveI : Small.{0} U := by
+    infer_instance
+  let carrierMap : Shrink.{0} U → M :=
+    fun p => ((equivShrink.{0} U).symm p).1
+  let carrierTop : TopologicalSpace (Shrink.{0} U) :=
+    TopologicalSpace.induced carrierMap inferInstance
+  have hCarrierInjective : Function.Injective carrierMap := by
+    intro p q hpq
+    have hsub :
+        (equivShrink.{0} U).symm p =
+          (equivShrink.{0} U).symm q := by
+      exact Subtype.ext hpq
+    exact (equivShrink.{0} U).symm.injective hsub
+  have hCarrierEmbedding :
+      @Topology.IsEmbedding (Shrink.{0} U) M carrierTop inferInstance carrierMap :=
+    hCarrierInjective.isEmbedding_induced
+  let C : EuclideanComplex :=
+    { Point := Shrink.{0} U
+      pointTop := carrierTop
+      Vertex := PUnit
+      vertexFintype := inferInstance
+      vertexDecidableEq := inferInstance
+      Simplex := PUnit
+      simplexFintype := inferInstance
+      simplexDecidableEq := inferInstance
+      simplexVertices := fun _ => Finset.univ
+      simplex_nonempty := by
+        intro σ
+        exact Finset.univ_nonempty
+      support := Set.univ
+      realizesSimplexes := True
+      faceClosed := True }
+  let K : PLComplexInSpace M :=
+    { Complex := C
+      embed := fun p => carrierMap p.1
+      isEmbedding := hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
+      locallyFinite := True
+      compatibleCharts := True }
+  have hKsupport : K.support = U := by
+    ext x
+    constructor
+    · intro hx
+      rcases hx with ⟨p, rfl⟩
+      exact ((equivShrink.{0} U).symm p.1).2
+    · intro hx
+      let p : Shrink.{0} U := equivShrink.{0} U ⟨x, hx⟩
+      refine ⟨⟨p, trivial⟩, ?_⟩
+      simp [K, carrierMap, p]
+  let step : RadoStepExtensionData E S :=
+    { nextComplex := K
+      boundarySubcomplex := EuclideanComplex.Subcomplex.full K.Complex
+      nextChartDisk := D
+      next_chart_eq := hD
+      extends_old := by
+        constructor
+        · intro x hx
+          rw [hKsupport]
+          exact Or.inl hx
+        · exact ⟨K.overlap S.complex, rfl, trivial⟩
+      coversNextCore := by
+        intro x hx
+        have hx' : x ∈ D.chart.core := by
+          rw [hD]
+          exact hx
+        rw [hKsupport]
+        exact Or.inr (D.core_covered hx')
+      coversNextBoundaryCore := by
+        intro x hx
+        have hx' : x ∈ D.chart.boundaryCore := by
+          rw [hD]
+          exact hx
+        rw [hKsupport]
+        exact Or.inr (D.boundaryCore_covered hx')
+      compatibleOnOverlaps := True
+      boundaryCompatibleOnOverlaps := True
+      boundaryRespectsCharts := D.respectsChartModel }
+  exact ⟨step, trivial⟩
 
 /-- Local data sufficient to run every finite stage of the Rado induction.
 

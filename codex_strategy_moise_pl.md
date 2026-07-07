@@ -634,21 +634,24 @@ Proved finite/combinatorial bridge:
    compact bordered surface has a finite chart-pair cover.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
-5. `mathlib_bordered_surface_finite_rado_geometry`:
+5. `rado_step_extension_from_chart_polygonal_disk`:
+   the current scaffold can extend a Rado stage by taking the union of the old support and the
+   next chart-disk support.
+6. `mathlib_bordered_surface_finite_rado_geometry`:
    finite chart polygonal disk data plus the one-step extension theorem packages as
    `FiniteRadoInductionGeometry`.
-6. `FiniteRadoInductionGeometry.toRadoInductionData` and
+7. `FiniteRadoInductionGeometry.toRadoInductionData` and
    `rado_induction_data_of_finite_geometry`:
    once the local polygonal chart geometry is supplied over a finite cover, the recursive
    `RadoInductionData` is pure packaging.
-7. `mathlib_bordered_surface_rado_induction_data`:
+8. `mathlib_bordered_surface_rado_induction_data`:
    finite Rado geometry packages as Rado induction data.
-8. `mathlib_bordered_surface_moise_extraction_data`:
+9. `mathlib_bordered_surface_moise_extraction_data`:
    finite cover extraction plus local Rado induction data packages as `MoiseExtractionData`.
-9. `moise_two_manifold_of_extraction_data`:
+10. `moise_two_manifold_of_extraction_data`:
    extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
 
-Remaining hard local bridges:
+Remaining hard local bridge:
 
 ```lean
 theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
@@ -658,20 +661,13 @@ theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
     (C : FiniteChartPairCover M) :
     ∃ _D : FiniteChartPolygonalDiskData C, True := by
   sorry
-
-theorem rado_step_extension_from_chart_polygonal_disk
-    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
-    (S : RadoInductionState M) (D : ChartPolygonalDisk M)
-    (hD : D.chart = E.pair (S.stage + 1)) :
-    ∃ _Dstep : RadoStepExtensionData E S, True := by
-  sorry
 ```
 
-These are now the places where the actual chart-core shrinking, polygonal disk triangulation,
-successor extension construction, PL approximation, and relative Schoenflies geometry have to be
-proved.  The formerly broad `mathlib_bordered_surface_rado_induction_data` and
-`mathlib_bordered_surface_finite_rado_geometry` theorems are proved wrappers around these sharper
-local boundaries.
+This is now the place where the actual chart-core shrinking, polygonal disk triangulation, and
+transport of disk data through the mathlib chart atlas have to be proved.  The formerly broad
+`mathlib_bordered_surface_rado_induction_data`,
+`mathlib_bordered_surface_finite_rado_geometry`, and one-step extension theorems are proved wrappers
+around this sharper local boundary.
 
 The Rado theorem boundary:
 
