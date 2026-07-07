@@ -355,6 +355,17 @@ inductive TriangleSimplex where
   | face
 deriving DecidableEq, Repr, Fintype
 
+/-- The ambient coordinate plane used by the example geometric triangle. -/
+abbrev TrianglePlane : Type :=
+  EuclideanSpace ℝ (Fin 2)
+
+/-- The closed standard 2-simplex in the coordinate plane. -/
+def closedTriangleSupport : Set TrianglePlane :=
+  {p | 0 ≤ p 0 ∧ 0 ≤ p 1 ∧ p 0 + p 1 ≤ 1}
+
+theorem zero_mem_closedTriangleSupport : (0 : TrianglePlane) ∈ closedTriangleSupport := by
+  simp [closedTriangleSupport]
+
 /-- The one-point finite complex. -/
 def point : EuclideanComplex where
   Point := PUnit
@@ -396,7 +407,7 @@ def segment : EuclideanComplex where
 
 /-- The standard filled triangle as a finite complex. -/
 def triangle : EuclideanComplex where
-  Point := PUnit
+  Point := TrianglePlane
   pointTop := inferInstance
   Vertex := Fin 3
   vertexFintype := inferInstance
@@ -415,7 +426,7 @@ def triangle : EuclideanComplex where
   simplex_nonempty := by
     intro σ
     cases σ <;> simp
-  support := Set.univ
+  support := closedTriangleSupport
   realizesSimplexes := True
   faceClosed := True
 
@@ -1079,9 +1090,7 @@ open EuclideanComplex.Examples
 
 /-- The toy segment support mapped into the toy triangle support. -/
 def segmentToTriangle : PLMap segment triangle where
-  toFun := fun _ => ⟨PUnit.unit, by
-    change PUnit.unit ∈ Set.univ
-    trivial⟩
+  toFun := fun _ => ⟨(0 : TrianglePlane), zero_mem_closedTriangleSupport⟩
   continuous_toFun := continuous_const
   exists_subdivision_linear := True
 

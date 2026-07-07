@@ -408,6 +408,10 @@ structure EuclideanComplex.Subdivision (K : EuclideanComplex) where
 
 If mathlib's abstract or geometric simplicial complexes can be used cleanly, wrap them. If not, define a project-specific `EuclideanComplex` with the fields needed for Moise. Avoid getting blocked by the perfect general abstraction.
 
+Current scaffold note: the standard combinatorial triangle keeps finite vertex/simplex data, but
+its support is now the geometric closed triangle in `EuclideanSpace ℝ (Fin 2)`. This avoids the
+old one-point triangle carrier, which made genuine embedded chart disks impossible.
+
 Required theorem boundary:
 
 ```lean

@@ -136,16 +136,18 @@ boundary.
 
 \begin{definition}[Combinatorial two-cell]
 \label{moise:def:combinatorial_two_cell}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoCell, LeanEval.Topology.ClassificationOfSurfaces.PolygonalDisk}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.TrianglePlane, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoCell, LeanEval.Topology.ClassificationOfSurfaces.PolygonalDisk}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:combinatorial_surface}
 A combinatorial two-cell is a finite two-dimensional complex with a distinguished
 boundary subcomplex, a boundary inclusion map, and PL homeomorphism data to a
-closed triangle model respecting the boundary subcomplex.  A polygonal disk
-records the triangulation data produced by Moise's polygon theorem: a boundary
-complex, boundary subcomplex, PL inclusion, and PL homeomorphism to the standard
-closed triangle.
+closed triangle model respecting the boundary subcomplex.  The standard closed
+triangle now has geometric support in `EuclideanSpace ℝ (Fin 2)`, while its
+finite vertices and simplexes still provide the combinatorial triangle API.  A
+polygonal disk records the triangulation data produced by Moise's polygon
+theorem: a boundary complex, boundary subcomplex, PL inclusion, and PL
+homeomorphism to the standard closed triangle.
 \end{definition}
 
 \begin{lemma}[Polygonal disk is a combinatorial two-cell]
