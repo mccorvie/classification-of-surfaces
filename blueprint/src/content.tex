@@ -446,12 +446,14 @@ finite sets of simplexes.
 \leanok
 A Moise two-manifold is a separable metric space locally homeomorphic to the open
 unit disk.  The bordered version is locally homeomorphic to either the open disk
-or the closed half-disk.
+or the closed half-disk.  The formal interface also stores the countable
+disk/half-disk chart-pair cover used by the Rado induction.
 \end{definition}
 
 \begin{lemma}[Chart pair exhaustion]
 \label{moise:lem:chart_pair_exhaustion}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.chart_pair_exhaustion}
+\leanok
 
 \uses{moise:def:moise_two_manifold}
 Every Moise two-manifold admits a countable sequence of chart pairs
@@ -462,11 +464,10 @@ coverage separately, with boundary cores for half-disk charts.
 \end{lemma}
 
 \begin{proof}
-\notready
-Choose nested disk or half-disk charts at each point and use second countability
-to extract a countable locally finite chart-pair cover.  The Lean interface now
-stores actual chart homeomorphisms to plane regions, so this is a genuine
-manifold theorem boundary rather than the former constant-cover scaffold.
+\leanok
+Package the chart-pair cover and its coverage, local-finiteness, nesting, and
+boundary-control fields from the `MoiseTwoManifold` structure as a
+`ChartPairExhaustion`.
 \end{proof}
 
 \begin{lemma}[Initial PL neighborhood]
@@ -571,7 +572,7 @@ faces use the relative version for half-disks.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
 \leanok
 
-\uses{moise:def:moise_two_manifold,moise:thm:compact_moise_surface_finitely_triangulable}
+\uses{moise:lem:mathlib_bordered_surface_to_moise_two_manifold,moise:thm:compact_moise_surface_finitely_triangulable}
 Every compact Moise two-manifold with boundary has a finite triangulation whose
 support covers the manifold, whose relevant simplexes are finite, and whose
 boundary is carried by a boundary subcomplex compatible with the ambient PL
@@ -580,11 +581,28 @@ complex.
 
 \begin{proof}
 \leanok
-Package the bordered Eval hypotheses as the current Moise two-manifold
+Convert the mathlib bordered-surface hypotheses to the Moise chart-pair
 interface and apply compact finite triangulability for Moise surfaces.  The
 present boundary API stores boundary compatibility propositionally, so the full
 subcomplex supplies boundary-subcomplex data until boundary strata are made
 geometric.
+\end{proof}
+
+\begin{lemma}[Mathlib bordered surface to Moise chart-pair interface]
+\label{moise:lem:mathlib_bordered_surface_to_moise_two_manifold}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_to_moise_two_manifold}
+
+\uses{moise:def:eval_surface,moise:def:moise_two_manifold}
+A compact mathlib surface with boundary admits the strengthened Moise
+two-manifold package, including a countable disk/half-disk chart-pair
+exhaustion.
+\end{lemma}
+
+\begin{proof}
+\notready
+Choose chart neighborhoods from the mathlib `ChartedSpace` atlas, shrink them to
+nested disk or half-disk chart pairs, and use compactness or second countability
+to extract a countable locally finite cover with the required boundary control.
 \end{proof}
 
 \begin{lemma}[Eval surface to Moise bordered surface]
@@ -592,14 +610,14 @@ geometric.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.eval_surface_to_moise_bordered_surface}
 \leanok
 
-\uses{moise:def:eval_surface,moise:def:moise_two_manifold}
+\uses{moise:def:eval_surface,moise:lem:mathlib_bordered_surface_to_moise_two_manifold}
 Every compact Eval surface is a compact Moise two-manifold with boundary.
 \end{lemma}
 
 \begin{proof}
 \leanok
-Package the available `T2Space` instance and the current propositional Moise
-manifold fields.
+Apply the mathlib-bordered-surface-to-Moise theorem boundary; connectedness is
+an extra Eval hypothesis not needed for the chart-pair package.
 \end{proof}
 
 \begin{definition}[Finite surface triangulation]

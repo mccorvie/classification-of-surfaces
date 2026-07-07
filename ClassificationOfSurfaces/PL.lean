@@ -2284,12 +2284,6 @@ theorem locallyFiniteComplex_finite_of_compact_support
       locallyFiniteAssumption := K.locallyFinite }
   exact ⟨F, trivial⟩
 
-/-- Moise-style topological two-manifold interface. -/
-structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
-  t2 : T2Space M
-  local_disk_or_half_disk : Prop
-  secondCountable_or_separable_metric : Prop
-
 /-- A chart pair used in the Rado exhaustion: a chart domain and a smaller core whose closure is
 controlled inside that chart. The concrete chart map is still theorem-boundary data. -/
 inductive RadoChartKind where
@@ -2383,6 +2377,27 @@ theorem mem_boundaryCoreUnion_iff {M : Type*} [TopologicalSpace M] (E : ChartPai
 
 end ChartPairExhaustion
 
+/-- Moise-style topological two-manifold interface.
+
+The hard local chart and countability theorem is represented by the supplied chart-pair cover.
+`chart_pair_exhaustion` packages these fields into the Rado induction object; constructing this
+structure from mathlib manifold hypotheses is a separate theorem boundary. -/
+structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
+  t2 : T2Space M
+  local_disk_or_half_disk : Prop
+  secondCountable_or_separable_metric : Prop
+  chartPairCover : ℕ → RadoChartPair M
+  chartPairCover_covers : ∀ x : M, ∃ n, x ∈ (chartPairCover n).core
+  chartPairCover_boundaryCovers :
+    ∀ x : M, x ∈ ⋃ n, (chartPairCover n).boundaryCore →
+      ∃ n, x ∈ (chartPairCover n).boundaryCore
+  chartPairCover_interiorChartsCoverInterior : Prop
+  chartPairCover_boundaryChartsCoverBoundary : Prop
+  chartPairCover_locallyFinite : Prop
+  chartPairCover_nestedControl : Prop
+  chartPairCover_boundaryLocallyFinite : Prop
+  chartPairCover_boundaryNestedControl : Prop
+
 /-- State of the Rado induction after finitely many chart pairs have been absorbed. -/
 structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   stage : ℕ
@@ -2423,9 +2438,19 @@ structure RadoStepExtensionData
 
 /-- Countable chart-pair exhaustion for a Moise two-manifold. -/
 theorem chart_pair_exhaustion
-    {M : Type*} [TopologicalSpace M] (_hM : MoiseTwoManifold M) :
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
     ∃ _E : ChartPairExhaustion M, True := by
-  sorry
+  let E : ChartPairExhaustion M :=
+    { pair := hM.chartPairCover
+      covers := hM.chartPairCover_covers
+      boundaryCovers := hM.chartPairCover_boundaryCovers
+      interiorChartsCoverInterior := hM.chartPairCover_interiorChartsCoverInterior
+      boundaryChartsCoverBoundary := hM.chartPairCover_boundaryChartsCoverBoundary
+      locallyFinite := hM.chartPairCover_locallyFinite
+      nestedControl := hM.chartPairCover_nestedControl
+      boundaryLocallyFinite := hM.chartPairCover_boundaryLocallyFinite
+      boundaryNestedControl := hM.chartPairCover_boundaryNestedControl }
+  exact ⟨E, trivial⟩
 
 /-- Initial PL neighborhood in the Rado induction. -/
 theorem initial_pl_neighborhood
@@ -2491,6 +2516,18 @@ theorem bordered_pl_approximation
     ∃ _A : BoundaryGlobalPLSurfaceApproximation K Ω φ h, True := by
   exact bordered_pl_approximation_halfplane K Ω h φ _hφ
 
+/-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
+Moise chart-pair interface.
+
+This is where one proves that the mathlib manifold atlas admits a countable disk/half-disk chart
+pair exhaustion with the local finiteness and nesting properties needed by Rado's induction. -/
+theorem mathlib_bordered_surface_to_moise_two_manifold
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    ∃ _hM : MoiseTwoManifold M, True := by
+  sorry
+
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
@@ -2498,10 +2535,7 @@ theorem rado_bordered_surface_triangulation
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
       ∃ _finiteSupport : K.FiniteSupportData, ∃ _boundary : K.BoundarySubcomplexData, True := by
-  let hM : MoiseTwoManifold M :=
-    { t2 := inferInstance
-      local_disk_or_half_disk := True
-      secondCountable_or_separable_metric := True }
+  rcases mathlib_bordered_surface_to_moise_two_manifold M with ⟨hM, _⟩
   rcases compact_moise_surface_finitely_triangulable M hM with ⟨K, hK, finiteSupport, _⟩
   let boundary : K.BoundarySubcomplexData :=
     { boundary := EuclideanComplex.Subcomplex.full K.Complex
@@ -2516,11 +2550,7 @@ theorem eval_surface_to_moise_bordered_surface
     [ChartedSpace (EuclideanHalfSpace 2) S]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
     ∃ _hM : MoiseTwoManifold S, True := by
-  let hM : MoiseTwoManifold S :=
-    { t2 := inferInstance
-      local_disk_or_half_disk := True
-      secondCountable_or_separable_metric := True }
-  exact ⟨hM, trivial⟩
+  exact mathlib_bordered_surface_to_moise_two_manifold S
 
 end
 

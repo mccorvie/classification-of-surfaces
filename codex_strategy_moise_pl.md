@@ -578,11 +578,17 @@ Define a Moise-style 2-manifold interface if needed:
 ```lean
 structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
   t2 : T2Space M
+  local_disk_or_half_disk : Prop
   secondCountable_or_separable_metric : Prop
-  charts_to_plane : Prop
+  chartPairCover : ℕ → RadoChartPair M
+  chartPairCover_covers : ∀ x : M, ∃ n, x ∈ (chartPairCover n).core
+  -- local finiteness, nesting, interior coverage, and boundary coverage fields
 ```
 
-For the Eval problem, this is not the final interface. It is an intermediate bridge from mathlib's charted-space manifold to Moise's hypotheses.
+For the Eval problem, this is not the final interface. It is an intermediate bridge from
+mathlib's charted-space manifold to Moise's hypotheses. The hard extraction from mathlib's
+`ChartedSpace` atlas to this countable chart-pair cover is isolated in
+`mathlib_bordered_surface_to_moise_two_manifold`.
 
 The Rado theorem boundary:
 
