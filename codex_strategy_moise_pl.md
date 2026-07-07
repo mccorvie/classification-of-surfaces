@@ -580,15 +580,14 @@ structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
   t2 : T2Space M
   local_disk_or_half_disk : Prop
   secondCountable_or_separable_metric : Prop
-  chartPairCover : ℕ → RadoChartPair M
-  chartPairCover_covers : ∀ x : M, ∃ n, x ∈ (chartPairCover n).core
-  -- local finiteness, nesting, interior coverage, and boundary coverage fields
+  chartPairExhaustion : ChartPairExhaustion M
+  radoInductionData : RadoInductionData chartPairExhaustion
 ```
 
 For the Eval problem, this is not the final interface. It is an intermediate bridge from
 mathlib's charted-space manifold to Moise's hypotheses. The hard extraction from mathlib's
-`ChartedSpace` atlas to this countable chart-pair cover is isolated in
-`mathlib_bordered_surface_to_moise_two_manifold`.
+`ChartedSpace` atlas to a countable chart-pair exhaustion and the associated local Rado
+induction data is isolated in `mathlib_bordered_surface_to_moise_two_manifold`.
 
 The Rado theorem boundary:
 
@@ -614,12 +613,14 @@ theorem compact_moise_surface_finitely_triangulable
 
 Expected Rado induction shape:
 
-1. Choose a countable or finite chart exhaustion.
+1. Choose the chart exhaustion stored in `MoiseTwoManifold`.
 2. Produce `RadoInductionData` over the exhaustion:
    - stage `0` comes from the initial PL neighborhood;
    - stage `n+1` uses PL approximation in a chart to make the overlap compatible with the
      previous complex;
-   - this local-data existence theorem is the next hard Rado induction boundary.
+   - in the current scaffold this local-data package is part of the strengthened
+     `MoiseTwoManifold` interface for its stored exhaustion, so the hard proof obligation has
+     moved to constructing that interface from the mathlib manifold atlas.
 3. Build a `RadoInductiveSequence` by recursion from `RadoInductionData`:
    - the `n`th stage covers the `n`th chart core.
 4. Prove the union of stage supports covers `Set.univ`; this is now a Lean proof from the

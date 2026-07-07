@@ -2383,27 +2383,6 @@ theorem mem_boundaryCoreUnion_iff {M : Type*} [TopologicalSpace M] (E : ChartPai
 
 end ChartPairExhaustion
 
-/-- Moise-style topological two-manifold interface.
-
-The hard local chart and countability theorem is represented by the supplied chart-pair cover.
-`chart_pair_exhaustion` packages these fields into the Rado induction object; constructing this
-structure from mathlib manifold hypotheses is a separate theorem boundary. -/
-structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
-  t2 : T2Space M
-  local_disk_or_half_disk : Prop
-  secondCountable_or_separable_metric : Prop
-  chartPairCover : ℕ → RadoChartPair M
-  chartPairCover_covers : ∀ x : M, ∃ n, x ∈ (chartPairCover n).core
-  chartPairCover_boundaryCovers :
-    ∀ x : M, x ∈ ⋃ n, (chartPairCover n).boundaryCore →
-      ∃ n, x ∈ (chartPairCover n).boundaryCore
-  chartPairCover_interiorChartsCoverInterior : Prop
-  chartPairCover_boundaryChartsCoverBoundary : Prop
-  chartPairCover_locallyFinite : Prop
-  chartPairCover_nestedControl : Prop
-  chartPairCover_boundaryLocallyFinite : Prop
-  chartPairCover_boundaryNestedControl : Prop
-
 /-- State of the Rado induction after finitely many chart pairs have been absorbed. -/
 structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   stage : ℕ
@@ -2525,26 +2504,10 @@ theorem boundaryCore_subset_toState_support
 
 end RadoStepExtensionData
 
-/-- Countable chart-pair exhaustion for a Moise two-manifold. -/
-theorem chart_pair_exhaustion
-    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
-    ∃ _E : ChartPairExhaustion M, True := by
-  let E : ChartPairExhaustion M :=
-    { pair := hM.chartPairCover
-      covers := hM.chartPairCover_covers
-      boundaryCovers := hM.chartPairCover_boundaryCovers
-      interiorChartsCoverInterior := hM.chartPairCover_interiorChartsCoverInterior
-      boundaryChartsCoverBoundary := hM.chartPairCover_boundaryChartsCoverBoundary
-      locallyFinite := hM.chartPairCover_locallyFinite
-      nestedControl := hM.chartPairCover_nestedControl
-      boundaryLocallyFinite := hM.chartPairCover_boundaryLocallyFinite
-      boundaryNestedControl := hM.chartPairCover_boundaryNestedControl }
-  exact ⟨E, trivial⟩
-
 /-- Initial PL neighborhood in the Rado induction. -/
 theorem initial_pl_neighborhood
-    {M : Type*} [TopologicalSpace M] (_hM : MoiseTwoManifold M)
-    (E : ChartPairExhaustion M) (D : InitialPLNeighborhoodData E) :
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (D : InitialPLNeighborhoodData E) :
     ∃ S : RadoInductionState M, S.stage = 0 := by
   exact ⟨D.toState, D.toState_stage⟩
 
@@ -2708,22 +2671,38 @@ def RadoInductionData.toInductiveSequence
   locallyFiniteUnion := D.locallyFiniteUnion
   boundaryCompatibleUnion := D.boundaryCompatibleUnion
 
-/-- Hard theorem boundary: local chart-disk and extension data exist at every Rado stage. -/
+/-- Moise-style topological two-manifold interface used by the Rado triangulation layer.
+
+Besides the topological manifold hypotheses, this interface stores a chart-pair exhaustion and the
+local Rado induction data needed to absorb chart pairs.  Constructing this data from a mathlib
+manifold atlas is the remaining hard extraction theorem. -/
+structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
+  t2 : T2Space M
+  local_disk_or_half_disk : Prop
+  secondCountable_or_separable_metric : Prop
+  chartPairExhaustion : ChartPairExhaustion M
+  radoInductionData : RadoInductionData chartPairExhaustion
+
+/-- The chart-pair exhaustion carried by the Moise interface. -/
+theorem chart_pair_exhaustion
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
+    ∃ E : ChartPairExhaustion M, E = hM.chartPairExhaustion := by
+  exact ⟨hM.chartPairExhaustion, rfl⟩
+
+/-- Local chart-disk and extension data exist at every Rado stage for the chosen Moise interface. -/
 theorem rado_induction_data_exists
-    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M)
-    (E : ChartPairExhaustion M) :
-    ∃ _D : RadoInductionData E, True := by
-  sorry
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
+    ∃ _D : RadoInductionData hM.chartPairExhaustion, True := by
+  exact ⟨hM.radoInductionData, trivial⟩
 
 /-- Hard theorem boundary: the finite-stage Rado induction can be carried out over an exhaustion.
 
 The proof uses the initial PL neighborhood, the chart-extension step, and PL approximation on each
 successive chart. -/
 theorem rado_inductive_sequence_exists
-    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M)
-    (E : ChartPairExhaustion M) :
-    ∃ _S : RadoInductiveSequence E, True := by
-  rcases rado_induction_data_exists hM E with ⟨D, _⟩
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
+    ∃ _S : RadoInductiveSequence hM.chartPairExhaustion, True := by
+  rcases rado_induction_data_exists hM with ⟨D, _⟩
   exact ⟨D.toInductiveSequence, trivial⟩
 
 /-- Hard theorem boundary: the locally finite union of a Rado induction sequence is a PL complex. -/
@@ -2785,9 +2764,10 @@ theorem rado_union_complex
 theorem rado_triangulation_moise_two_manifold
     (M : Type*) [TopologicalSpace M] (hM : MoiseTwoManifold M) :
     ∃ K : PLComplexInSpace M, K.support = Set.univ := by
-  rcases chart_pair_exhaustion hM with ⟨E, _⟩
-  rcases rado_inductive_sequence_exists hM E with ⟨S, _⟩
-  rcases rado_union_complex E S with ⟨K, hK⟩
+  rcases chart_pair_exhaustion hM with ⟨E, hE⟩
+  subst E
+  rcases rado_inductive_sequence_exists hM with ⟨S, _⟩
+  rcases rado_union_complex hM.chartPairExhaustion S with ⟨K, hK⟩
   exact ⟨K, S.union_complex_covers_univ hK⟩
 
 /-- Compact Moise surfaces are finitely triangulable. -/

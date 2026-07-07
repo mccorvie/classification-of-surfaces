@@ -447,7 +447,9 @@ finite sets of simplexes.
 A Moise two-manifold is a separable metric space locally homeomorphic to the open
 unit disk.  The bordered version is locally homeomorphic to either the open disk
 or the closed half-disk.  The formal interface also stores the countable
-disk/half-disk chart-pair cover used by the Rado induction.
+disk/half-disk chart-pair exhaustion used by the Rado induction, together with
+the local initial and successor data needed to run Rado's finite-stage
+construction over such exhaustions.
 \end{definition}
 
 \begin{lemma}[Chart pair exhaustion]
@@ -465,9 +467,8 @@ coverage separately, with boundary cores for half-disk charts.
 
 \begin{proof}
 \leanok
-Package the chart-pair cover and its coverage, local-finiteness, nesting, and
-boundary-control fields from the `MoiseTwoManifold` structure as a
-`ChartPairExhaustion`.
+Return the `ChartPairExhaustion` stored in the `MoiseTwoManifold` interface,
+together with the definitional equality identifying it with the stored field.
 \end{proof}
 
 \begin{lemma}[Initial PL neighborhood]
@@ -557,17 +558,19 @@ cover the manifold by the exhaustion hypothesis, the support union is all of
 \begin{lemma}[Rado induction local data exists]
 \label{moise:lem:rado_induction_data_exists}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.rado_induction_data_exists}
+\leanok
 
-\uses{moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
-For every Moise chart-pair exhaustion, the local initial and successor data
-needed to run every finite stage of the Rado induction exists.
+\uses{moise:def:moise_two_manifold,moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+For the chart-pair exhaustion stored in the Moise interface, the local initial
+and successor data needed to run every finite stage of the Rado induction
+exists.
 \end{lemma}
 
 \begin{proof}
-\notready
-Start from the initial PL neighborhood.  At successor stages, use the
-chart-extension theorem and the local PL approximation machinery to absorb the
-next chart core while preserving compatibility with earlier stages.
+\leanok
+The strengthened `MoiseTwoManifold` interface packages the local Rado induction
+data.  The remaining hard geometric work is now isolated in the theorem that
+constructs this Moise interface from mathlib's bordered-manifold hypotheses.
 \end{proof}
 
 \begin{lemma}[Rado induction sequence exists]
@@ -575,17 +578,16 @@ next chart core while preserving compatibility with earlier stages.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.rado_inductive_sequence_exists}
 \leanok
 
-\uses{moise:def:rado_induction_data,moise:def:rado_inductive_sequence,moise:lem:rado_induction_data_exists}
-For every Moise chart-pair exhaustion, the finite-stage Rado induction can be
-carried out.
+\uses{moise:def:moise_two_manifold,moise:def:rado_induction_data,moise:def:rado_inductive_sequence,moise:lem:rado_induction_data_exists}
+For the chart-pair exhaustion stored in the Moise interface, the finite-stage
+Rado induction can be carried out.
 \end{lemma}
 
 \begin{proof}
 \leanok
 Given local Rado induction data, recursively construct the finite stage at each
 natural number.  The stage-index, extension, and chart-core coverage fields of
-the resulting sequence are proved by induction over the natural number.  The
-existence of the local data remains the hard theorem boundary.
+the resulting sequence are proved by induction over the natural number.
 \end{proof}
 
 \begin{lemma}[Rado union is a PL complex]
@@ -620,9 +622,10 @@ whole manifold.
 
 \begin{proof}
 \leanok
-Choose a chart-pair exhaustion, construct a Rado induction sequence over it, and
-form the locally finite union PL complex.  The stage-support coverage lemma
-shows that this union covers every chart core, hence the whole manifold.
+Choose the stored chart-pair exhaustion, construct a Rado induction sequence
+over it, and form the locally finite union PL complex.  The stage-support
+coverage lemma shows that this union covers every chart core, hence the whole
+manifold.
 \end{proof}
 
 \begin{theorem}[Compact Moise surface is finitely triangulable]
