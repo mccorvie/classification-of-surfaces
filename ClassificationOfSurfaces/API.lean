@@ -37,6 +37,9 @@ Gallier-Xu normal-form proof.
 
 * `OrientedEdge`
 * `FiniteSurfaceTriangulation`
+* `PLComplexInSpace.FiniteSupportData.OneSimplex`
+* `PLComplexInSpace.FiniteSupportData.TwoSimplex`
+* `PLComplexInSpace.FiniteSupportData.triangleBoundaryWord`
 * `FiniteSurfaceTriangulation.toCellComplex`
 * `FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic`
 * `finite_triangulation_to_cell_complex`

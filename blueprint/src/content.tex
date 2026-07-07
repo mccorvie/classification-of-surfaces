@@ -1241,7 +1241,7 @@ support to $S$.
 
 \begin{theorem}[Finite PL complex to finite surface triangulation]
 \label{moise:thm:finite_pl_complex_to_finite_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.finite_pl_complex_to_finite_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.oneSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.twoSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.OneSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.TwoSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.triangleBoundaryWord, LeanEval.Topology.ClassificationOfSurfaces.finite_pl_complex_to_finite_surface_triangulation}
 \leanok
 
 \uses{moise:def:finite_surface_triangulation,moise:thm:rado_bordered_surface_triangulation}
@@ -1252,11 +1252,13 @@ triangulation of the ambient surface.
 
 \begin{proof}
 \leanok
-Use the finite vertex type and finite simplex type of the embedded PL complex as
-the scaffold triangulation data.  Since the embedding has image equal to the
-whole surface, the embedding is surjective; an embedding that is surjective is a
-homeomorphism onto the ambient surface.  This supplies the realization
-homeomorphism required by the current `FiniteSurfaceTriangulation` API.
+Use the finite vertex type of the embedded PL complex, the supported
+one-simplexes as edges, and the supported two-simplexes as triangles.  Boundary
+words are assembled from codimension-one boundary simplexes that are present as
+supported one-simplexes, and boundary edges are read from the supplied boundary
+subcomplex.  Since the embedding has image equal to the whole surface, the
+embedding is surjective; an embedding that is surjective is a homeomorphism onto
+the ambient surface.
 \end{proof}
 
 \begin{theorem}[Compact Eval surface is finitely triangulable]

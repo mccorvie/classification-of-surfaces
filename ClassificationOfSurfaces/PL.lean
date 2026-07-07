@@ -2344,6 +2344,75 @@ theorem contains {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
     σ ∈ F.simplexes :=
   F.containsRelevant σ hσ
 
+/-- Supported simplexes of a specified dimension. -/
+def simplexesOfDim {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) (n : ℕ) : Finset K.Complex.Simplex :=
+  F.simplexes.filter fun σ => K.Complex.simplexDim σ = n
+
+/-- Supported zero-simplexes. -/
+def zeroSimplexes {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) : Finset K.Complex.Simplex :=
+  F.simplexesOfDim 0
+
+/-- Supported one-simplexes, used as triangulation edges. -/
+def oneSimplexes {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) : Finset K.Complex.Simplex :=
+  F.simplexesOfDim 1
+
+/-- Supported two-simplexes, used as triangulation triangles. -/
+def twoSimplexes {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) : Finset K.Complex.Simplex :=
+  F.simplexesOfDim 2
+
+/-- A supported one-simplex. -/
+abbrev OneSimplex {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) : Type :=
+  { σ : K.Complex.Simplex // σ ∈ F.oneSimplexes }
+
+/-- A supported two-simplex. -/
+abbrev TwoSimplex {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) : Type :=
+  { σ : K.Complex.Simplex // σ ∈ F.twoSimplexes }
+
+theorem mem_simplexesOfDim_iff {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) (σ : K.Complex.Simplex) (n : ℕ) :
+    σ ∈ F.simplexesOfDim n ↔ σ ∈ F.simplexes ∧ K.Complex.simplexDim σ = n := by
+  simp [simplexesOfDim]
+
+theorem mem_oneSimplexes_iff {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) (σ : K.Complex.Simplex) :
+    σ ∈ F.oneSimplexes ↔ σ ∈ F.simplexes ∧ σ ∈ K.Complex.oneSimplexes := by
+  simp [oneSimplexes, simplexesOfDim, EuclideanComplex.oneSimplexes,
+    EuclideanComplex.simplexesOfDim]
+
+theorem mem_twoSimplexes_iff {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) (σ : K.Complex.Simplex) :
+    σ ∈ F.twoSimplexes ↔ σ ∈ F.simplexes ∧ σ ∈ K.Complex.twoSimplexes := by
+  simp [twoSimplexes, simplexesOfDim, EuclideanComplex.twoSimplexes,
+    EuclideanComplex.simplexesOfDim]
+
+theorem oneSimplex_mem_simplexes {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    {F : K.FiniteSupportData} (e : F.OneSimplex) :
+    e.1 ∈ F.simplexes :=
+  (F.mem_oneSimplexes_iff e.1).mp e.2 |>.1
+
+theorem oneSimplex_mem_complex_oneSimplexes
+    {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    {F : K.FiniteSupportData} (e : F.OneSimplex) :
+    e.1 ∈ K.Complex.oneSimplexes :=
+  (F.mem_oneSimplexes_iff e.1).mp e.2 |>.2
+
+theorem twoSimplex_mem_simplexes {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    {F : K.FiniteSupportData} (σ : F.TwoSimplex) :
+    σ.1 ∈ F.simplexes :=
+  (F.mem_twoSimplexes_iff σ.1).mp σ.2 |>.1
+
+theorem twoSimplex_mem_complex_twoSimplexes
+    {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    {F : K.FiniteSupportData} (σ : F.TwoSimplex) :
+    σ.1 ∈ K.Complex.twoSimplexes :=
+  (F.mem_twoSimplexes_iff σ.1).mp σ.2 |>.2
+
 end FiniteSupportData
 
 /-- Boundary subcomplex data for an embedded PL complex in a bordered surface. -/

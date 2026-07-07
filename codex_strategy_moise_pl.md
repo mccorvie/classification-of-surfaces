@@ -691,6 +691,11 @@ Proved finite/combinatorial bridge:
 13. `moise_two_manifold_of_extraction_data`:
    extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
 
+The PL-to-triangulation bridge uses finite support data as the combinatorial handoff:
+`PLComplexInSpace.FiniteSupportData.OneSimplex` supplies triangulation edges,
+`TwoSimplex` supplies triangles, and `triangleBoundaryWord` records the supported
+codimension-one faces of a two-simplex as the current scaffold boundary word.
+
 Closed coordinate-local bridge:
 
 ```lean

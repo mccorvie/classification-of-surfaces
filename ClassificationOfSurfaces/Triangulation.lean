@@ -95,6 +95,21 @@ def orientedEdgeTarget {S : Type*} [TopologicalSpace S] (T : FiniteSurfaceTriang
 
 end FiniteSurfaceTriangulation
 
+namespace PLComplexInSpace.FiniteSupportData
+
+/-- Boundary word for a supported two-simplex, retaining codimension-one faces that are supported
+one-simplexes.  Orientations are still scaffold data, so every retained edge is recorded with the
+positive orientation. -/
+noncomputable def triangleBoundaryWord {S : Type*} [TopologicalSpace S] {K : PLComplexInSpace S}
+    (F : K.FiniteSupportData) (σ : F.TwoSimplex) : List (OrientedEdge F.OneSimplex) :=
+  (K.Complex.boundarySimplexes σ.1).toList.filterMap fun τ =>
+    if hτ : τ ∈ F.oneSimplexes then
+      some (OrientedEdge.pos ⟨τ, hτ⟩)
+    else
+      none
+
+end PLComplexInSpace.FiniteSupportData
+
 /-- A space is triangulable if it has a finite surface triangulation in the project sense. -/
 def SurfaceTriangulable (S : Type*) [TopologicalSpace S] : Prop :=
   ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S)
@@ -116,26 +131,26 @@ subcomplex, and identify the PL realization with the ambient surface by the cove
 homeomorphism. -/
 theorem finite_pl_complex_to_finite_surface_triangulation
     (S : Type*) [TopologicalSpace S] (K : PLComplexInSpace S)
-    (_covers : K.support = Set.univ) (_finiteSupport : K.FiniteSupportData)
-    (_boundary : K.BoundarySubcomplexData) :
+    (covers : K.support = Set.univ) (finiteSupport : K.FiniteSupportData)
+    (boundary : K.BoundarySubcomplexData) :
     ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
   classical
   have hsurj : Function.Surjective K.embed := by
     rw [← Set.range_eq_univ]
-    exact _covers
+    exact covers
   let T : FiniteSurfaceTriangulation S :=
     { Vertex := K.Complex.Vertex
-      Edge := K.Complex.Simplex
-      Triangle := K.Complex.Simplex
+      Edge := finiteSupport.OneSimplex
+      Triangle := finiteSupport.TwoSimplex
       vertexFintype := inferInstance
       edgeFintype := inferInstance
       triangleFintype := inferInstance
       realization := K.Complex.support
       realizationTop := inferInstance
-      edgeSource := fun e => (K.Complex.simplex_nonempty e).choose
-      edgeTarget := fun e => (K.Complex.simplex_nonempty e).choose
-      triangleBoundary := fun _ => []
-      edgeIsBoundary := fun _ => False
+      edgeSource := fun e => (K.Complex.simplex_nonempty e.1).choose
+      edgeTarget := fun e => (K.Complex.simplex_nonempty e.1).choose
+      triangleBoundary := finiteSupport.triangleBoundaryWord
+      edgeIsBoundary := fun e => e.1 ∈ boundary.boundary.simplexes
       isSurfaceTriangulation := True
       homeomorphSurface := ⟨K.isEmbedding.toHomeomorphOfSurjective hsurj⟩ }
   exact ⟨T, T.homeomorphSurface⟩
