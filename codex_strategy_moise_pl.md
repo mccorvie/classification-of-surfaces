@@ -655,6 +655,9 @@ Proved finite/combinatorial bridge:
    compactness.
 2. `FiniteChartPairCover.toChartPairExhaustion`:
    a finite chart-pair cover can be enumerated by `ℕ` and used as the Rado chart-pair exhaustion.
+   The helper API `zeroIndex`, `toChartPairExhaustion_pair_of_lt`,
+   `toChartPairExhaustion_pair_of_not_lt`, and `toChartPairExhaustion_pair_zero` names the first
+   finite chart and the in-range/out-of-range enumeration cases.
 3. `RadoChartPair.fromChartAt` and `mathlib_bordered_surface_finite_chart_pair_cover`:
    the preferred mathlib chart at each point gives a chart pair whose core is a neighborhood, so a
    compact bordered surface has a finite chart-pair cover.
@@ -670,11 +673,13 @@ Proved finite/combinatorial bridge:
    pointwise chart-disk data packages into the local function-valued data used for compactness.
 8. `mathlib_bordered_surface_point_chart_polygonal_disk_data`:
    a polygonal disk core inside the preferred mathlib chart packages as pointwise chart-disk data.
-9. `finite_rado_geometry_of_chart_polygonal_disk_data` and
+9. `FiniteChartPolygonalDiskData.initialData`, `FiniteChartPolygonalDiskData.stepData`,
+   `FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry`,
+   `finite_rado_geometry_of_chart_polygonal_disk_data`, and
    `mathlib_bordered_surface_finite_rado_geometry`:
    finite chart polygonal disk data plus the one-step extension theorem packages as
-   `FiniteRadoInductionGeometry`; the mathlib wrapper first extracts the finite cover with this
-   disk data.
+   `FiniteRadoInductionGeometry`; the theorem wrappers now expose the named constructor rather than
+   rebuilding this package inline.
 10. `FiniteRadoInductionGeometry.toRadoInductionData` and
    `rado_induction_data_of_finite_geometry`:
    once the local polygonal chart geometry is supplied over a finite cover, the recursive

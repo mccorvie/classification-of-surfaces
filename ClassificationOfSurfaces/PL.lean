@@ -3327,6 +3327,39 @@ noncomputable def toChartPairExhaustion {M : Type u} [TopologicalSpace M]
   boundaryLocallyFinite := C.boundaryLocallyFinite
   boundaryNestedControl := C.boundaryNestedControl
 
+/-- A finite chart-pair cover of a nonempty space has a nonempty index type. -/
+theorem index_nonempty {M : Type u} [TopologicalSpace M] [Nonempty M]
+    (C : FiniteChartPairCover M) : Nonempty C.Index := by
+  rcases C.covers (Classical.choice ‹Nonempty M›) with ⟨i, _hi⟩
+  exact ⟨i⟩
+
+/-- A finite chart-pair cover of a nonempty space has positive index cardinality. -/
+theorem index_card_pos {M : Type u} [TopologicalSpace M] [Nonempty M]
+    (C : FiniteChartPairCover M) : 0 < Fintype.card C.Index := by
+  letI : Nonempty C.Index := C.index_nonempty
+  exact Fintype.card_pos
+
+/-- The first index in the natural-number enumeration of a nonempty finite chart-pair cover. -/
+noncomputable def zeroIndex {M : Type u} [TopologicalSpace M] [Nonempty M]
+    (C : FiniteChartPairCover M) : C.Index :=
+  (Fintype.equivFin C.Index).symm ⟨0, C.index_card_pos⟩
+
+theorem toChartPairExhaustion_pair_of_lt {M : Type u} [TopologicalSpace M]
+    (C : FiniteChartPairCover M) {n : ℕ} (hn : n < Fintype.card C.Index) :
+    C.toChartPairExhaustion.pair n =
+      C.pair ((Fintype.equivFin C.Index).symm ⟨n, hn⟩) := by
+  simp [toChartPairExhaustion, natPair, hn]
+
+theorem toChartPairExhaustion_pair_of_not_lt {M : Type u} [TopologicalSpace M]
+    (C : FiniteChartPairCover M) {n : ℕ} (hn : ¬ n < Fintype.card C.Index) :
+    C.toChartPairExhaustion.pair n = RadoChartPair.empty M := by
+  simp [toChartPairExhaustion, natPair, hn]
+
+theorem toChartPairExhaustion_pair_zero {M : Type u} [TopologicalSpace M] [Nonempty M]
+    (C : FiniteChartPairCover M) :
+    C.toChartPairExhaustion.pair 0 = C.pair C.zeroIndex :=
+  C.toChartPairExhaustion_pair_of_lt C.index_card_pos
+
 end FiniteChartPairCover
 
 /-- Polygonal disk data for every chart pair in the countable exhaustion associated to a finite
@@ -4090,6 +4123,61 @@ def toRadoInductionData
 
 end FiniteRadoInductionGeometry
 
+namespace FiniteChartPolygonalDiskData
+
+/-- The initial Rado neighborhood produced from the first disk in a finite chart-pair cover. -/
+noncomputable def initialData
+    {M : Type u} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) :
+    InitialPLNeighborhoodData C.toChartPairExhaustion :=
+  InitialPLNeighborhoodData.ofChartPolygonalDisk (D.disk C.zeroIndex) (by
+    exact (D.chart_eq C.zeroIndex).trans C.toChartPairExhaustion_pair_zero.symm)
+
+/-- The successor Rado step produced from the finite chart selected by the next stage index.
+
+When the next stage index is beyond the finite cover, this returns the empty-chart extension data
+that leaves the current complex unchanged. -/
+noncomputable def stepData
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) (S : RadoInductionState M) :
+    RadoStepExtensionData C.toChartPairExhaustion S :=
+  if h : S.stage + 1 < Fintype.card C.Index then
+    let i : C.Index := (Fintype.equivFin C.Index).symm ⟨S.stage + 1, h⟩
+    have hi : (D.disk i).chart = C.toChartPairExhaustion.pair (S.stage + 1) := by
+      exact (D.chart_eq i).trans (C.toChartPairExhaustion_pair_of_lt h).symm
+    Classical.choose
+      (rado_step_extension_from_chart_polygonal_disk C.toChartPairExhaustion S (D.disk i) hi)
+  else
+    have hEmpty :
+        C.toChartPairExhaustion.pair (S.stage + 1) = RadoChartPair.empty M :=
+      C.toChartPairExhaustion_pair_of_not_lt h
+    Classical.choose
+      (rado_step_extension_empty_chart C.toChartPairExhaustion S hEmpty)
+
+/-- Polygonal disk data over a finite chart-pair cover as finite Rado induction geometry. -/
+noncomputable def toFiniteRadoInductionGeometry
+    {M : Type u} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) : FiniteRadoInductionGeometry C where
+  initial := D.initialData
+  step := fun _n S => D.stepData S
+  compatibleStages := D.compatibleChartShrinks
+  locallyFiniteUnion := True
+  boundaryCompatibleUnion := D.boundaryCompatibleChartShrinks
+
+@[simp] theorem toFiniteRadoInductionGeometry_initial
+    {M : Type u} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) :
+    D.toFiniteRadoInductionGeometry.initial = D.initialData := by
+  rfl
+
+@[simp] theorem toFiniteRadoInductionGeometry_step
+    {M : Type u} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) (n : ℕ) (S : RadoInductionState M) :
+    D.toFiniteRadoInductionGeometry.step n S = D.stepData S := by
+  rfl
+
+end FiniteChartPolygonalDiskData
+
 /-- Finite Rado geometry packages as recursive Rado induction data. -/
 theorem rado_induction_data_of_finite_geometry
     {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
@@ -4503,42 +4591,7 @@ theorem finite_rado_geometry_of_chart_polygonal_disk_data
     {M : Type*} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}
     (D : FiniteChartPolygonalDiskData C) :
     ∃ _G : FiniteRadoInductionGeometry C, True := by
-  have hIndexNonempty : Nonempty C.Index := by
-    rcases C.covers (Classical.choice ‹Nonempty M›) with ⟨i, _hi⟩
-    exact ⟨i⟩
-  letI : Nonempty C.Index := hIndexNonempty
-  have hcard : 0 < Fintype.card C.Index := Fintype.card_pos
-  let i0 : C.Index := (Fintype.equivFin C.Index).symm ⟨0, hcard⟩
-  have h0 : (D.disk i0).chart = C.toChartPairExhaustion.pair 0 := by
-    have hpair : C.toChartPairExhaustion.pair 0 = C.pair i0 := by
-      simp [FiniteChartPairCover.toChartPairExhaustion, FiniteChartPairCover.natPair, i0, hcard]
-    exact (D.chart_eq i0).trans hpair.symm
-  let initial : InitialPLNeighborhoodData C.toChartPairExhaustion :=
-    InitialPLNeighborhoodData.ofChartPolygonalDisk (D.disk i0) h0
-  let step : ∀ (_n : ℕ) (S : RadoInductionState M),
-      RadoStepExtensionData C.toChartPairExhaustion S :=
-    fun _n S =>
-      if h : S.stage + 1 < Fintype.card C.Index then
-        let i : C.Index := (Fintype.equivFin C.Index).symm ⟨S.stage + 1, h⟩
-        have hi : (D.disk i).chart = C.toChartPairExhaustion.pair (S.stage + 1) := by
-          have hpair : C.toChartPairExhaustion.pair (S.stage + 1) = C.pair i := by
-            simp [FiniteChartPairCover.toChartPairExhaustion, FiniteChartPairCover.natPair, i, h]
-          exact (D.chart_eq i).trans hpair.symm
-        Classical.choose
-          (rado_step_extension_from_chart_polygonal_disk C.toChartPairExhaustion S (D.disk i) hi)
-      else
-        have hEmpty :
-            C.toChartPairExhaustion.pair (S.stage + 1) = RadoChartPair.empty M := by
-          simp [FiniteChartPairCover.toChartPairExhaustion, FiniteChartPairCover.natPair, h]
-        Classical.choose
-          (rado_step_extension_empty_chart C.toChartPairExhaustion S hEmpty)
-  let G : FiniteRadoInductionGeometry C :=
-    { initial := initial
-      step := step
-      compatibleStages := D.compatibleChartShrinks
-      locallyFiniteUnion := True
-      boundaryCompatibleUnion := D.boundaryCompatibleChartShrinks }
-  exact ⟨G, trivial⟩
+  exact ⟨D.toFiniteRadoInductionGeometry, trivial⟩
 
 /-- Local Rado geometry over a finite chart-pair cover extracted from the mathlib atlas. -/
 theorem mathlib_bordered_surface_finite_rado_geometry
