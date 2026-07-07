@@ -1020,15 +1020,17 @@ neighborhood theorem.
 \label{moise:lem:euclideanHalfSpace_interior_polygonal_neighborhood_at}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_polygonal_neighborhood_at}
 
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell,moise:lem:euclideanHalfSpace_interior_image_mem_nhds}
 Given an interior point already packaged as a point of the image of a half-plane
 neighborhood, construct a polygonal disk neighborhood at that point.
 \end{lemma}
 
 \begin{proof}
 \notready
-Shrink to a small polygonal disk contained in the open half-plane and in the
-given neighborhood, then triangulate that disk.
+The formal boundary now first turns the half-plane neighborhood into an ordinary
+ambient Euclidean neighborhood of `y.1`.  The remaining geometric task is to
+shrink to a small polygonal disk contained in that ambient neighborhood and in
+the open half-plane, then triangulate that disk.
 \end{proof}
 
 \begin{lemma}[Boundary half-plane neighborhoods contain polygonal half-disks]
@@ -1052,7 +1054,7 @@ neighborhood theorem.
 \label{moise:lem:euclideanHalfSpace_boundary_polygonal_neighborhood_at}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_boundary_polygonal_neighborhood_at}
 
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell,moise:lem:euclideanHalfSpace_image_mem_nhdsWithin_halfspace}
 Given a boundary-line point already packaged as a point of the image of a
 half-plane neighborhood, construct a polygonal half-disk neighborhood at that
 point.
@@ -1060,9 +1062,11 @@ point.
 
 \begin{proof}
 \notready
-Shrink to a small polygonal half-disk contained in the given relative
-neighborhood of the closed half-plane, then triangulate that half-disk with its
-diameter on the boundary line.
+The formal boundary now first records that the image of the half-plane
+neighborhood is a relative ambient neighborhood in the closed half-plane.
+The remaining geometric task is to shrink to a small polygonal half-disk
+contained in that relative neighborhood, then triangulate that half-disk with
+its diameter on the boundary line.
 \end{proof}
 
 \begin{lemma}[Half-plane neighborhood point belongs to image]
@@ -1079,6 +1083,70 @@ inclusion.
 \leanok
 Use `mem_of_mem_nhds` to see `y ∈ U`, then take its image under subtype
 coercion.
+\end{proof}
+
+\begin{lemma}[Interior half-space is a neighborhood]
+\label{moise:lem:euclideanHalfSpace_interior_halfspace_mem_nhds}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_halfspace_mem_nhds}
+\leanok
+
+At an interior point of the Euclidean half-space, the ambient closed half-space
+is an ordinary Euclidean neighborhood.
+\end{lemma}
+
+\begin{proof}
+\leanok
+The open coordinate half-space `0 < p 0` is a neighborhood of the point and is
+contained in the closed half-space.
+\end{proof}
+
+\begin{lemma}[Interior half-space subtype neighborhoods are ambient neighborhoods]
+\label{moise:lem:euclideanHalfSpace_interior_map_nhds_eq}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_map_nhds_eq}
+\leanok
+
+\uses{moise:lem:euclideanHalfSpace_interior_halfspace_mem_nhds}
+At an interior point, mapping the half-space subtype neighborhood filter along
+the inclusion gives the ordinary ambient Euclidean neighborhood filter.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Apply mathlib's subtype-neighborhood theorem using the fact that the closed
+half-space is a neighborhood of the point.
+\end{proof}
+
+\begin{lemma}[Half-space neighborhoods map to relative ambient neighborhoods]
+\label{moise:lem:euclideanHalfSpace_image_mem_nhdsWithin_halfspace}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_image_mem_nhdsWithin_halfspace}
+\leanok
+
+The image of a neighborhood in `EuclideanHalfSpace 2` under the subtype
+inclusion is a relative neighborhood of the ambient coordinate point within the
+closed half-space.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Use the embedding API for `Subtype.val`; its map of neighborhood filters is the
+relative neighborhood filter on the range, and mathlib identifies that range
+with the closed half-space.
+\end{proof}
+
+\begin{lemma}[Interior half-space neighborhoods map to ambient neighborhoods]
+\label{moise:lem:euclideanHalfSpace_interior_image_mem_nhds}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_image_mem_nhds}
+\leanok
+
+\uses{moise:lem:euclideanHalfSpace_interior_map_nhds_eq}
+The image of a neighborhood of an interior half-space point under the subtype
+inclusion is an ordinary ambient Euclidean neighborhood.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Rewrite the mapped neighborhood filter using the interior subtype-neighborhood
+equality, then use `Filter.image_mem_map`.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface local Rado induction data]

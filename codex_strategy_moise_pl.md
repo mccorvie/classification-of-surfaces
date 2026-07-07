@@ -702,6 +702,28 @@ half-disk in the boundary case, whose image remains a neighborhood of the point.
 case split on whether `y.1 0 = 0`; the public interior/boundary wrappers now also prove the
 point-membership bookkeeping via `euclideanHalfSpace_point_mem_image_of_mem_nhds`.  The remaining
 fixed-point constructors receive `hyU : y.1 ∈ Subtype.val '' U` explicitly.
+
+The subtype-neighborhood bookkeeping below those constructors is now proved:
+
+1. `euclideanHalfSpace_interior_halfspace_mem_nhds`:
+   at a strict interior point, the ambient closed half-space is a neighborhood.
+2. `euclideanHalfSpace_interior_map_nhds_eq`:
+   at such a point, the half-space subtype neighborhood filter maps to the ordinary ambient
+   Euclidean neighborhood filter.
+3. `euclideanHalfSpace_image_mem_nhdsWithin_halfspace`:
+   the image of any half-space neighborhood is a relative ambient neighborhood in the closed
+   half-space.
+4. `euclideanHalfSpace_interior_image_mem_nhds`:
+   in the interior case, the image of a half-space neighborhood is an ordinary ambient
+   neighborhood.
+
+Consequently, `euclideanHalfSpace_interior_polygonal_neighborhood_at` now begins from an ambient
+plane-neighborhood hypothesis, while
+`euclideanHalfSpace_boundary_polygonal_neighborhood_at` begins from a relative-neighborhood
+hypothesis in the closed half-plane.  The remaining work is the geometric construction of a small
+polygonal disk or boundary half-disk and its triangulated `PlaneRegionPolygonalNeighborhood`
+package.
+
 `PlaneRegionPolygonalNeighborhood` packages this chart-free coordinate object, and
 `PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk` converts it to the chart-pair API.
 The topological pullback from a model-neighborhood statement to a

@@ -3533,12 +3533,60 @@ theorem euclideanHalfSpace_point_mem_image_of_mem_nhds
     y.1 ∈ (Subtype.val '' U) := by
   exact ⟨y, mem_of_mem_nhds hU, rfl⟩
 
+/-- At an interior point of the model half-plane, the ambient closed half-plane itself is a
+neighborhood. -/
+theorem euclideanHalfSpace_interior_halfspace_mem_nhds
+    (y : EuclideanHalfSpace 2) (hy : 0 < y.1 0) :
+    {p : Plane | 0 ≤ p 0} ∈ 𝓝 y.1 := by
+  have hOpen : IsOpen {p : Plane | 0 < p 0} := by
+    exact isOpen_lt continuous_const
+      (PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (0 : Fin 2))
+  exact Filter.mem_of_superset (hOpen.mem_nhds hy) (by
+    intro p hp
+    exact le_of_lt (show 0 < p 0 from hp))
+
+/-- At an interior point, the half-plane subtype neighborhood filter is the ordinary ambient
+Euclidean neighborhood filter. -/
+theorem euclideanHalfSpace_interior_map_nhds_eq
+    (y : EuclideanHalfSpace 2) (hy : 0 < y.1 0) :
+    Filter.map (Subtype.val : EuclideanHalfSpace 2 → Plane) (𝓝 y) = 𝓝 y.1 := by
+  simpa using
+    (map_nhds_subtype_coe_eq_nhds
+      (p := fun p : Plane => 0 ≤ p 0) (x := y.1) y.2
+      (euclideanHalfSpace_interior_halfspace_mem_nhds y hy))
+
+/-- The image of a half-plane neighborhood is a relative ambient neighborhood in the closed
+half-plane. -/
+theorem euclideanHalfSpace_image_mem_nhdsWithin_halfspace
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y) :
+    (Subtype.val '' U : Set Plane) ∈ 𝓝[{p : Plane | 0 ≤ p 0}] y.1 := by
+  change (Subtype.val '' U : Set (EuclideanSpace ℝ (Fin 2))) ∈
+    𝓝[{p : EuclideanSpace ℝ (Fin 2) | 0 ≤ p 0}] y.1
+  rw [← range_euclideanHalfSpace 2]
+  have hEmbedding :
+      _root_.Topology.IsEmbedding
+        (Subtype.val : EuclideanHalfSpace 2 → EuclideanSpace ℝ (Fin 2)) :=
+    _root_.Topology.IsEmbedding.subtypeVal
+  have hmap := hEmbedding.map_nhds_eq y
+  rw [← hmap]
+  exact Filter.image_mem_map hU
+
+/-- The image of an interior half-plane neighborhood is an ordinary ambient plane neighborhood. -/
+theorem euclideanHalfSpace_interior_image_mem_nhds
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
+    (hy : 0 < y.1 0) :
+    (Subtype.val '' U : Set Plane) ∈ 𝓝 y.1 := by
+  rw [← euclideanHalfSpace_interior_map_nhds_eq y hy]
+  exact Filter.image_mem_map hU
+
 /-- Hard Euclidean interior geometry at a fixed image point: construct a polygonal disk
 neighborhood inside the given half-plane neighborhood. -/
 theorem euclideanHalfSpace_interior_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : 0 < y.1 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
     ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+  have hAmbient : (Subtype.val '' U : Set Plane) ∈ 𝓝 y.1 :=
+    euclideanHalfSpace_interior_image_mem_nhds U y hU hy
   sorry
 
 /-- An open neighborhood of an interior point in the model half-plane contains an embedded
@@ -3558,6 +3606,9 @@ theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : y.1 0 = 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
     ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+  have hRelative : (Subtype.val '' U : Set Plane) ∈ 𝓝[{p : Plane | 0 ≤ p 0}] y.1 :=
+    euclideanHalfSpace_image_mem_nhdsWithin_halfspace U y hU
+  have hBoundary : y.1 0 = 0 := hy
   sorry
 
 /-- An open neighborhood of a boundary-line point in the model half-plane contains an embedded
