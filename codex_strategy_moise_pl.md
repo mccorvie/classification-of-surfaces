@@ -682,12 +682,6 @@ Proved finite/combinatorial bridge:
 Remaining hard coordinate-local bridge:
 
 ```lean
-theorem euclideanHalfSpace_interior_polygonal_neighborhood_at
-    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
-    (hy : 0 < y.1 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
-    ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
-  sorry
-
 theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : y.1 0 = 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
@@ -695,13 +689,13 @@ theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
   sorry
 ```
 
-This is now the place where the actual half-plane geometry has to be proved: shrink an arbitrary
-neighborhood in `EuclideanHalfSpace 2` to a polygonal disk in the interior case, or a polygonal
-half-disk in the boundary case, whose image remains a neighborhood of the point.  The combined
+The remaining coordinate-local theorem boundary is now the boundary half-disk case.  The interior
+case is proved by shrinking an arbitrary interior half-plane neighborhood to a sufficiently small
+centered copy of the standard triangle whose image remains a neighborhood of the point.  The combined
 `euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood` theorem is now a proved
 case split on whether `y.1 0 = 0`; the public interior/boundary wrappers now also prove the
 point-membership bookkeeping via `euclideanHalfSpace_point_mem_image_of_mem_nhds`.  The remaining
-fixed-point constructors receive `hyU : y.1 ∈ Subtype.val '' U` explicitly.
+boundary fixed-point constructor receives `hyU : y.1 ∈ Subtype.val '' U` explicitly.
 
 The subtype-neighborhood bookkeeping below those constructors is now proved:
 
@@ -730,17 +724,21 @@ The standard-triangle part of the interior construction is also factored:
 2. `EuclideanComplex.Examples.closedTriangleSupport_mem_nhds_centroid` proves that the closed
    standard triangle is a neighborhood of that centroid, using the strict inequalities
    `0 < p 0`, `0 < p 1`, and `p 0 + p 1 < 1`.
-3. `PlaneRegionTriangleCopy` records a plane homeomorphism taking that centroid to the target
+3. `EuclideanComplex.Examples.dist_centroid_le_three_of_mem_closedTriangleSupport` gives a coarse
+   uniform distance bound for all points of the standard triangle.
+4. `PlaneRegionTriangleCopy` records a plane homeomorphism taking that centroid to the target
    region point and sending the standard closed triangle into the region.
-4. `PlaneRegionTriangleCopy.centeredHomothety` is the explicit translation and nonzero scaling
+5. `PlaneRegionTriangleCopy.centeredHomothety` is the explicit translation and nonzero scaling
    about the centroid; `PlaneRegionTriangleCopy.ofCenteredHomothety` packages it as a
    `PlaneRegionTriangleCopy` once the scaled triangle is known to lie in the region.
-5. `PlaneRegionPolygonalNeighborhood.ofTriangleCopy` converts such a copy into the
+6. `PlaneRegionTriangleCopy.dist_center_centeredHomothety` records the metric scaling formula.
+7. `PlaneRegionTriangleCopy.exists_centeredHomothety_image_subset_of_mem_nhds` proves that every
+   ambient plane neighborhood contains a sufficiently small centered triangle.
+8. `PlaneRegionPolygonalNeighborhood.ofTriangleCopy` converts such a copy into the
    `PlaneRegionPolygonalNeighborhood` object, proving the embedding and neighborhood fields.
 
-Thus the interior fixed-point constructor can be attacked by producing a small affine
-homeomorphism of the plane whose triangle image lies inside the ambient neighborhood.  The
-boundary case should get the analogous half-triangle copy API next.
+Thus `euclideanHalfSpace_interior_polygonal_neighborhood_at` is proved.  The boundary case should
+get the analogous half-triangle copy API next.
 
 `PlaneRegionPolygonalNeighborhood` packages this chart-free coordinate object, and
 `PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk` converts it to the chart-pair API.

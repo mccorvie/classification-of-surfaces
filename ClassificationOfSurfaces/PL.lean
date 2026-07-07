@@ -401,6 +401,24 @@ theorem closedTriangleSupport_mem_nhds_centroid :
     rcases hp with ⟨⟨hp0, hp1⟩, hpsum⟩
     exact ⟨le_of_lt hp0, le_of_lt hp1, le_of_lt hpsum⟩)
 
+theorem dist_centroid_le_three_of_mem_closedTriangleSupport
+    {p : TrianglePlane} (hp : p ∈ closedTriangleSupport) :
+    dist closedTriangleCentroid p ≤ 3 := by
+  rcases hp with ⟨hp0, hp1, hpsum⟩
+  have hp0_le_one : p 0 ≤ 1 := by linarith
+  have hp1_le_one : p 1 ≤ 1 := by linarith
+  have h0sq : (p 0 - (1 : ℝ) / 3) ^ 2 ≤ 1 := by nlinarith
+  have h1sq : (p 1 - (1 : ℝ) / 3) ^ 2 ≤ 1 := by nlinarith
+  have hnormsq :
+      ‖p - closedTriangleCentroid‖ ^ 2 =
+        (p 0 - (1 : ℝ) / 3) ^ 2 + (p 1 - (1 : ℝ) / 3) ^ 2 := by
+    rw [EuclideanSpace.real_norm_sq_eq]
+    norm_num [closedTriangleCentroid, Fin.sum_univ_two]
+  rw [dist_comm, dist_eq_norm]
+  have hsq : ‖p - closedTriangleCentroid‖ ^ 2 ≤ 9 := by
+    nlinarith [h0sq, h1sq]
+  nlinarith [sq_nonneg (‖p - closedTriangleCentroid‖ - 3)]
+
 /-- The one-point finite complex. -/
 def point : EuclideanComplex where
   Point := PUnit
@@ -2804,6 +2822,19 @@ def centeredHomothety (center : Plane) (scale : ℝ) (hscale : scale ≠ 0) :
       EuclideanComplex.Examples.closedTriangleCentroid = center := by
   simp [centeredHomothety]
 
+theorem dist_center_centeredHomothety
+    (center : Plane) (scale : ℝ) (hscale : scale ≠ 0) (p : Plane) :
+    dist (centeredHomothety center scale hscale p) center =
+      |scale| * dist p EuclideanComplex.Examples.closedTriangleCentroid := by
+  rw [dist_eq_norm, dist_eq_norm]
+  have harg :
+      centeredHomothety center scale hscale p - center =
+        scale • (p - EuclideanComplex.Examples.closedTriangleCentroid) := by
+    ext i
+    simp [centeredHomothety, sub_eq_add_neg, smul_add, add_comm, add_left_comm]
+  rw [harg, norm_smul]
+  rfl
+
 /-- Build a region triangle copy from a centered nonzero homothety whose triangle image lies in the
 region. -/
 def ofCenteredHomothety {Ω : Set Plane} {y : Ω} (scale : ℝ) (hscale : scale ≠ 0)
@@ -2814,6 +2845,36 @@ def ofCenteredHomothety {Ω : Set Plane} {y : Ω} (scale : ℝ) (hscale : scale 
   homeomorph := centeredHomothety y.1 scale hscale
   centroid_eq := centeredHomothety_centroid y.1 scale hscale
   image_subset := hsubset
+
+/-- Every ambient neighborhood of a plane point contains a sufficiently small centered copy of the
+standard triangle. -/
+theorem exists_centeredHomothety_image_subset_of_mem_nhds
+    {Ω : Set Plane} {center : Plane} (hΩ : Ω ∈ 𝓝 center) :
+    ∃ scale : ℝ, ∃ hscale : scale ≠ 0,
+      centeredHomothety center scale hscale ''
+          EuclideanComplex.Examples.closedTriangleSupport ⊆ Ω := by
+  rcases Metric.mem_nhds_iff.mp hΩ with ⟨ε, hε, hball⟩
+  let scale : ℝ := ε / 6
+  have hscale_pos : 0 < scale := by
+    positivity
+  have hscale : scale ≠ 0 := ne_of_gt hscale_pos
+  refine ⟨scale, hscale, ?_⟩
+  intro z hz
+  rcases hz with ⟨p, hp, rfl⟩
+  apply hball
+  rw [Metric.mem_ball]
+  calc
+    dist (centeredHomothety center scale hscale p) center
+        = |scale| * dist p EuclideanComplex.Examples.closedTriangleCentroid :=
+      dist_center_centeredHomothety center scale hscale p
+    _ ≤ scale * 3 := by
+      rw [abs_of_pos hscale_pos]
+      gcongr
+      simpa [dist_comm] using
+        EuclideanComplex.Examples.dist_centroid_le_three_of_mem_closedTriangleSupport hp
+    _ < ε := by
+      dsimp [scale]
+      nlinarith
 
 end PlaneRegionTriangleCopy
 
@@ -3714,10 +3775,15 @@ neighborhood inside the given half-plane neighborhood. -/
 theorem euclideanHalfSpace_interior_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : 0 < y.1 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
-    ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+    ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
   have hAmbient : (Subtype.val '' U : Set Plane) ∈ 𝓝 y.1 :=
     euclideanHalfSpace_interior_image_mem_nhds U y hU hy
-  sorry
+  rcases PlaneRegionTriangleCopy.exists_centeredHomothety_image_subset_of_mem_nhds
+      (Ω := (Subtype.val '' U : Set Plane)) hAmbient with
+    ⟨scale, hscale, hsubset⟩
+  let T : PlaneRegionTriangleCopy (Subtype.val '' U) ⟨y.1, hyU⟩ :=
+    PlaneRegionTriangleCopy.ofCenteredHomothety scale hscale hsubset
+  exact ⟨PlaneRegionPolygonalNeighborhood.ofTriangleCopy T, trivial⟩
 
 /-- An open neighborhood of an interior point in the model half-plane contains an embedded
 polygonal disk whose image is a neighborhood of the point. -/

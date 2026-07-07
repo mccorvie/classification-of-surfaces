@@ -152,12 +152,13 @@ homeomorphism to the standard closed triangle.
 
 \begin{lemma}[Standard triangle support is a centroid neighborhood]
 \label{moise:lem:standard_triangle_centroid_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleCentroid, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleCentroid_mem_closedTriangleSupport, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport_mem_nhds_centroid}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleCentroid, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleCentroid_mem_closedTriangleSupport, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport_mem_nhds_centroid, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.dist_centroid_le_three_of_mem_closedTriangleSupport}
 \leanok
 
 \uses{moise:def:combinatorial_two_cell}
-The centroid of the standard closed triangle lies in the triangle support, and
-the triangle support is an ambient Euclidean neighborhood of that centroid.
+The centroid of the standard closed triangle lies in the triangle support, the
+triangle support is an ambient Euclidean neighborhood of that centroid, and the
+whole triangle lies within a fixed bounded distance of the centroid.
 \end{lemma}
 
 \begin{proof}
@@ -165,7 +166,8 @@ the triangle support is an ambient Euclidean neighborhood of that centroid.
 The centroid has both coordinates `1 / 3`, so it satisfies the three defining
 closed-triangle inequalities strictly.  The open set cut out by the strict
 inequalities is contained in the closed triangle and is a neighborhood of the
-centroid.
+centroid.  The coarse distance bound uses the coordinate inequalities defining
+the closed triangle and the Euclidean norm formula.
 \end{proof}
 
 \begin{lemma}[Polygonal disk is a combinatorial two-cell]
@@ -489,7 +491,7 @@ map fixed.
 
 \begin{definition}[Finite chart polygonal disk data]
 \label{moise:def:finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.centeredHomothety, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.centeredHomothety_centroid, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.ofCenteredHomothety, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.standardTriangle_support_eq, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.ofTriangleCopy, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.standardTriangleInModel, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPair_refines, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.centeredHomothety, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.centeredHomothety_centroid, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.dist_center_centeredHomothety, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.ofCenteredHomothety, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.exists_centeredHomothety_image_subset_of_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.standardTriangle_support_eq, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.ofTriangleCopy, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.standardTriangleInModel, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPair_refines, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell,moise:lem:standard_triangle_centroid_neighborhood}
@@ -505,7 +507,10 @@ standard triangle whose centroid maps to the chosen point and whose image lies
 in the region.  The `centeredHomothety` helper is the explicit translation and
 nonzero scaling about the centroid; `ofCenteredHomothety` turns a containment
 proof for such a scaled triangle into a `PlaneRegionTriangleCopy`, and
-`ofTriangleCopy` turns that data into a `PlaneRegionPolygonalNeighborhood`.
+`exists_centeredHomothety_image_subset_of_mem_nhds` proves that every ambient
+neighborhood of a plane point contains such a sufficiently small scaled
+triangle.  `ofTriangleCopy` turns that data into a
+`PlaneRegionPolygonalNeighborhood`.
 Such a neighborhood can be converted to a `ModelChartPolygonalDisk`, then
 transported through the chart homeomorphism to produce an embedded chart
 polygonal disk in the manifold.  If the model disk image is a neighborhood of
@@ -1043,6 +1048,7 @@ neighborhood theorem.
 \begin{lemma}[Interior fixed-point polygonal neighborhood]
 \label{moise:lem:euclideanHalfSpace_interior_polygonal_neighborhood_at}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_polygonal_neighborhood_at}
+\leanok
 
 \uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell,moise:lem:euclideanHalfSpace_interior_image_mem_nhds}
 Given an interior point already packaged as a point of the image of a half-plane
@@ -1050,11 +1056,11 @@ neighborhood, construct a polygonal disk neighborhood at that point.
 \end{lemma}
 
 \begin{proof}
-\notready
-The formal boundary now first turns the half-plane neighborhood into an ordinary
-ambient Euclidean neighborhood of `y.1`.  The remaining geometric task is to
-shrink to a small polygonal disk contained in that ambient neighborhood and in
-the open half-plane, then triangulate that disk.
+\leanok
+First turn the half-plane neighborhood into an ordinary ambient Euclidean
+neighborhood of `y.1`.  Then choose a sufficiently small centered homothetic
+copy of the standard triangle inside that ambient neighborhood and convert the
+triangle copy to a `PlaneRegionPolygonalNeighborhood`.
 \end{proof}
 
 \begin{lemma}[Boundary half-plane neighborhoods contain polygonal half-disks]
