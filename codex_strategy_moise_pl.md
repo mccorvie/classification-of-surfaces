@@ -411,6 +411,9 @@ If mathlib's abstract or geometric simplicial complexes can be used cleanly, wra
 Current scaffold note: the standard combinatorial triangle keeps finite vertex/simplex data, but
 its support is now the geometric closed triangle in `EuclideanSpace ℝ (Fin 2)`. This avoids the
 old one-point triangle carrier, which made genuine embedded chart disks impossible.
+`RadoChartPair.standardTrianglePlaneCore` and
+`ChartPolygonalDisk.standardTriangleInPlane` provide the concrete model chart disk in the
+coordinate plane.
 
 Required theorem boundary:
 

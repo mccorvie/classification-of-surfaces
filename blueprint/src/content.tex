@@ -469,14 +469,16 @@ point.
 
 \begin{definition}[Finite chart polygonal disk data]
 \label{moise:def:finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell}
 Local chart polygonal disk data assigns a chart pair and embedded polygonal disk
 or half-disk around each point.  Finite chart polygonal disk data records the
 same disk data for each selected index in a finite chart-pair cover, together
-with chart-model and boundary compatibility assertions.
+with chart-model and boundary compatibility assertions.  The API includes the
+standard geometric triangle as a concrete `ChartPolygonalDisk` in the coordinate
+plane.
 \end{definition}
 
 \begin{lemma}[Compact local chart pairs have finite subcover]

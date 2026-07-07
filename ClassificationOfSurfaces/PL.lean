@@ -2529,6 +2529,63 @@ def toPLComplexInSpace {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk 
 
 end ChartPolygonalDisk
 
+namespace RadoChartPair
+
+/-- The standard geometric closed triangle as a chart-pair core in the plane. -/
+def standardTrianglePlaneCore : RadoChartPair Plane where
+  kind := RadoChartKind.disk
+  domain := Set.univ
+  core := EuclideanComplex.Examples.closedTriangleSupport
+  domain_open := isOpen_univ
+  core_subset_domain := by
+    intro p hp
+    trivial
+  modelRegion := Set.univ
+  chartHomeomorph := Homeomorph.refl (Set.univ : Set Plane)
+  model_matches_kind := True
+  chart_to_model := True
+  boundaryCore := ∅
+  boundaryCore_subset_core := by
+    intro p hp
+    simp at hp
+  boundaryCore_empty_of_disk := by
+    intro _h
+    rfl
+  boundaryCore_in_boundary_chart := by
+    intro _h
+    exact True
+
+end RadoChartPair
+
+namespace ChartPolygonalDisk
+
+/-- The standard geometric triangle embedded in the coordinate plane. -/
+def standardTriangleInPlane : ChartPolygonalDisk Plane where
+  chart := RadoChartPair.standardTrianglePlaneCore
+  disk := PolygonalDiskExamples.standardTriangle
+  embed := fun p => p.1
+  isEmbedding := _root_.Topology.IsEmbedding.subtypeVal
+  support_subset_domain := by
+    intro p hp
+    trivial
+  core_covered := by
+    intro p hp
+    exact ⟨⟨p, hp⟩, rfl⟩
+  boundaryCore_covered := by
+    intro p hp
+    simp [RadoChartPair.standardTrianglePlaneCore] at hp
+  respectsChartModel := True
+
+@[simp] theorem standardTriangleInPlane_chart :
+    standardTriangleInPlane.chart = RadoChartPair.standardTrianglePlaneCore := by
+  rfl
+
+theorem standardTriangleInPlane_covers_core :
+    standardTriangleInPlane.chart.core ⊆ Set.range standardTriangleInPlane.embed :=
+  standardTriangleInPlane.core_covered
+
+end ChartPolygonalDisk
+
 /-- Countable chart-pair exhaustion data for the Rado induction. -/
 structure ChartPairExhaustion (M : Type*) [TopologicalSpace M] where
   pair : ℕ → RadoChartPair M
