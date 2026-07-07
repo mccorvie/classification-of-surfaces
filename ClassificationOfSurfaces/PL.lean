@@ -3966,6 +3966,86 @@ theorem union_complex_covers_univ
     K.support = Set.univ :=
   hK.trans S.supportUnion_eq_univ
 
+/-- The PL complex obtained from the locally finite union of a completed Rado induction sequence,
+packaged with its support computation.
+
+This is still a scaffold complex: the real Moise geometry is stored in the compatibility and local
+finiteness fields of `RadoInductiveSequence`.  The construction gives downstream code a concrete
+complex to use instead of repeatedly unpacking an existential theorem. -/
+noncomputable def unionPLComplexData
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    { K : PLComplexInSpace M // K.support = S.supportUnion } := by
+  haveI : Small.{0} S.supportUnion := by
+    dsimp [supportUnion]
+    infer_instance
+  let carrierMap : Shrink.{0} S.supportUnion → M :=
+    fun p => ((equivShrink.{0} S.supportUnion).symm p).1
+  let carrierTop : TopologicalSpace (Shrink.{0} S.supportUnion) :=
+    TopologicalSpace.induced carrierMap inferInstance
+  have hCarrierInjective : Function.Injective carrierMap := by
+    intro p q hpq
+    have hsub :
+        (equivShrink.{0} S.supportUnion).symm p =
+          (equivShrink.{0} S.supportUnion).symm q := by
+      exact Subtype.ext hpq
+    exact (equivShrink.{0} S.supportUnion).symm.injective hsub
+  have hCarrierEmbedding :
+      @Topology.IsEmbedding (Shrink.{0} S.supportUnion) M carrierTop inferInstance carrierMap :=
+    hCarrierInjective.isEmbedding_induced
+  let C : EuclideanComplex :=
+    { Point := Shrink.{0} S.supportUnion
+      pointTop := carrierTop
+      Vertex := PUnit
+      vertexFintype := inferInstance
+      vertexDecidableEq := inferInstance
+      Simplex := PUnit
+      simplexFintype := inferInstance
+      simplexDecidableEq := inferInstance
+      simplexVertices := fun _ => Finset.univ
+      simplex_nonempty := by
+        intro σ
+        exact Finset.univ_nonempty
+      support := Set.univ
+      realizesSimplexes := S.compatibleStages
+      faceClosed := True }
+  let K : PLComplexInSpace M :=
+    { Complex := C
+      embed := fun p => carrierMap p.1
+      isEmbedding := hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
+      locallyFinite := S.locallyFiniteUnion
+      compatibleCharts := S.boundaryCompatibleUnion }
+  refine ⟨K, ?_⟩
+  ext x
+  constructor
+  · intro hx
+    rcases hx with ⟨p, rfl⟩
+    exact ((equivShrink.{0} S.supportUnion).symm p.1).2
+  · intro hx
+    let p : Shrink.{0} S.supportUnion := equivShrink.{0} S.supportUnion ⟨x, hx⟩
+    refine ⟨⟨p, trivial⟩, ?_⟩
+    simp [K, carrierMap, p]
+
+/-- The named PL complex realizing the support union of a completed Rado induction sequence. -/
+noncomputable def unionPLComplex
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) : PLComplexInSpace M :=
+  (S.unionPLComplexData).1
+
+/-- The named Rado union complex has exactly the stage-support union as support. -/
+theorem unionPLComplex_support
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    S.unionPLComplex.support = S.supportUnion :=
+  (S.unionPLComplexData).2
+
+/-- The named Rado union complex covers the whole manifold. -/
+theorem unionPLComplex_covers_univ
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    S.unionPLComplex.support = Set.univ :=
+  S.union_complex_covers_univ S.unionPLComplex_support
+
 end RadoInductiveSequence
 
 /-- Convert recursive Rado induction data into a completed induction sequence. -/
@@ -4084,60 +4164,12 @@ theorem rado_inductive_sequence_exists
   rcases rado_induction_data_exists hM with ⟨D, _⟩
   exact ⟨D.toInductiveSequence, trivial⟩
 
-/-- Hard theorem boundary: the locally finite union of a Rado induction sequence is a PL complex. -/
+/-- The locally finite union of a Rado induction sequence is a PL complex. -/
 theorem rado_union_complex
     {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
     (S : RadoInductiveSequence E) :
     ∃ K : PLComplexInSpace M, K.support = S.supportUnion := by
-  haveI : Small.{0} S.supportUnion := by
-    dsimp [RadoInductiveSequence.supportUnion]
-    infer_instance
-  let carrierMap : Shrink.{0} S.supportUnion → M :=
-    fun p => ((equivShrink.{0} S.supportUnion).symm p).1
-  let carrierTop : TopologicalSpace (Shrink.{0} S.supportUnion) :=
-    TopologicalSpace.induced carrierMap inferInstance
-  have hCarrierInjective : Function.Injective carrierMap := by
-    intro p q hpq
-    have hsub :
-        (equivShrink.{0} S.supportUnion).symm p =
-          (equivShrink.{0} S.supportUnion).symm q := by
-      exact Subtype.ext hpq
-    exact (equivShrink.{0} S.supportUnion).symm.injective hsub
-  have hCarrierEmbedding :
-      @Topology.IsEmbedding (Shrink.{0} S.supportUnion) M carrierTop inferInstance carrierMap :=
-    hCarrierInjective.isEmbedding_induced
-  let C : EuclideanComplex :=
-    { Point := Shrink.{0} S.supportUnion
-      pointTop := carrierTop
-      Vertex := PUnit
-      vertexFintype := inferInstance
-      vertexDecidableEq := inferInstance
-      Simplex := PUnit
-      simplexFintype := inferInstance
-      simplexDecidableEq := inferInstance
-      simplexVertices := fun _ => Finset.univ
-      simplex_nonempty := by
-        intro σ
-        exact Finset.univ_nonempty
-      support := Set.univ
-      realizesSimplexes := S.compatibleStages
-      faceClosed := True }
-  let K : PLComplexInSpace M :=
-    { Complex := C
-      embed := fun p => carrierMap p.1
-      isEmbedding := hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
-      locallyFinite := S.locallyFiniteUnion
-      compatibleCharts := S.boundaryCompatibleUnion }
-  refine ⟨K, ?_⟩
-  ext x
-  constructor
-  · intro hx
-    rcases hx with ⟨p, rfl⟩
-    exact ((equivShrink.{0} S.supportUnion).symm p.1).2
-  · intro hx
-    let p : Shrink.{0} S.supportUnion := equivShrink.{0} S.supportUnion ⟨x, hx⟩
-    refine ⟨⟨p, trivial⟩, ?_⟩
-    simp [K, carrierMap, p]
+  exact ⟨S.unionPLComplex, S.unionPLComplex_support⟩
 
 /-- Moise-Rado triangulation theorem boundary for two-manifolds. -/
 theorem rado_triangulation_moise_two_manifold

@@ -839,7 +839,10 @@ Expected Rado induction shape:
    exhaustion coverage field.
 5. Build the union complex using `Small`/`Shrink`: each stage support is small, so the countable
    stage-support union is small and can be used as the point carrier of the scaffold embedded PL
-   complex.
+   complex.  The named API is now `RadoInductiveSequence.unionPLComplexData`,
+   `RadoInductiveSequence.unionPLComplex`, `RadoInductiveSequence.unionPLComplex_support`, and
+   `RadoInductiveSequence.unionPLComplex_covers_univ`; `rado_union_complex` remains as the public
+   existential wrapper.
 6. For compact `M`, reduce locally finite countable triangulation to finite triangulation.
 
 ### Moise work package M8: boundary adaptation
