@@ -695,6 +695,8 @@ The PL-to-triangulation bridge uses finite support data as the combinatorial han
 `PLComplexInSpace.FiniteSupportData.OneSimplex` supplies triangulation edges,
 `TwoSimplex` supplies triangles, and `triangleBoundaryWord` records the supported
 codimension-one faces of a two-simplex as the current scaffold boundary word.
+`PLComplexInSpace.toFiniteSurfaceTriangulation` is the named construction behind the public
+existential theorem.
 
 Closed coordinate-local bridge:
 

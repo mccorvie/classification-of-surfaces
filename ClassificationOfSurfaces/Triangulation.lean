@@ -110,6 +110,37 @@ noncomputable def triangleBoundaryWord {S : Type*} [TopologicalSpace S] {K : PLC
 
 end PLComplexInSpace.FiniteSupportData
 
+namespace PLComplexInSpace
+
+/-- Convert a finite embedded PL complex covering the ambient surface into the current project
+triangulation object.  The vertex type is the complex vertex type, edges are supported
+one-simplexes, and triangles are supported two-simplexes. -/
+noncomputable def toFiniteSurfaceTriangulation {S : Type*} [TopologicalSpace S]
+    (K : PLComplexInSpace S) (covers : K.support = Set.univ)
+    (finiteSupport : K.FiniteSupportData) (boundary : K.BoundarySubcomplexData) :
+    FiniteSurfaceTriangulation S := by
+  classical
+  have hsurj : Function.Surjective K.embed := by
+    rw [← Set.range_eq_univ]
+    exact covers
+  exact
+    { Vertex := K.Complex.Vertex
+      Edge := finiteSupport.OneSimplex
+      Triangle := finiteSupport.TwoSimplex
+      vertexFintype := inferInstance
+      edgeFintype := inferInstance
+      triangleFintype := inferInstance
+      realization := K.Complex.support
+      realizationTop := inferInstance
+      edgeSource := fun e => (K.Complex.simplex_nonempty e.1).choose
+      edgeTarget := fun e => (K.Complex.simplex_nonempty e.1).choose
+      triangleBoundary := finiteSupport.triangleBoundaryWord
+      edgeIsBoundary := fun e => e.1 ∈ boundary.boundary.simplexes
+      isSurfaceTriangulation := True
+      homeomorphSurface := ⟨K.isEmbedding.toHomeomorphOfSurjective hsurj⟩ }
+
+end PLComplexInSpace
+
 /-- A space is triangulable if it has a finite surface triangulation in the project sense. -/
 def SurfaceTriangulable (S : Type*) [TopologicalSpace S] : Prop :=
   ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S)
@@ -134,25 +165,8 @@ theorem finite_pl_complex_to_finite_surface_triangulation
     (covers : K.support = Set.univ) (finiteSupport : K.FiniteSupportData)
     (boundary : K.BoundarySubcomplexData) :
     ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
-  classical
-  have hsurj : Function.Surjective K.embed := by
-    rw [← Set.range_eq_univ]
-    exact covers
   let T : FiniteSurfaceTriangulation S :=
-    { Vertex := K.Complex.Vertex
-      Edge := finiteSupport.OneSimplex
-      Triangle := finiteSupport.TwoSimplex
-      vertexFintype := inferInstance
-      edgeFintype := inferInstance
-      triangleFintype := inferInstance
-      realization := K.Complex.support
-      realizationTop := inferInstance
-      edgeSource := fun e => (K.Complex.simplex_nonempty e.1).choose
-      edgeTarget := fun e => (K.Complex.simplex_nonempty e.1).choose
-      triangleBoundary := finiteSupport.triangleBoundaryWord
-      edgeIsBoundary := fun e => e.1 ∈ boundary.boundary.simplexes
-      isSurfaceTriangulation := True
-      homeomorphSurface := ⟨K.isEmbedding.toHomeomorphOfSurjective hsurj⟩ }
+    K.toFiniteSurfaceTriangulation covers finiteSupport boundary
   exact ⟨T, T.homeomorphSurface⟩
 
 section EvalHypotheses

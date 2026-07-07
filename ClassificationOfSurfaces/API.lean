@@ -40,6 +40,7 @@ Gallier-Xu normal-form proof.
 * `PLComplexInSpace.FiniteSupportData.OneSimplex`
 * `PLComplexInSpace.FiniteSupportData.TwoSimplex`
 * `PLComplexInSpace.FiniteSupportData.triangleBoundaryWord`
+* `PLComplexInSpace.toFiniteSurfaceTriangulation`
 * `FiniteSurfaceTriangulation.toCellComplex`
 * `FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic`
 * `finite_triangulation_to_cell_complex`
