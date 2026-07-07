@@ -624,8 +624,9 @@ Expected Rado induction shape:
    - the `n`th stage covers the `n`th chart core.
 4. Prove the union of stage supports covers `Set.univ`; this is now a Lean proof from the
    exhaustion coverage field.
-5. Prove the hard union theorem `rado_union_complex`: the locally finite compatible union of the
-   finite-stage PL complexes is an embedded PL complex.
+5. Build the union complex using `Small`/`Shrink`: each stage support is small, so the countable
+   stage-support union is small and can be used as the point carrier of the scaffold embedded PL
+   complex.
 6. For compact `M`, reduce locally finite countable triangulation to finite triangulation.
 
 ### Moise work package M8: boundary adaptation

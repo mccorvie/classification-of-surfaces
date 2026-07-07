@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.Surface
+import Mathlib.Logic.Small.Set
 
 /-!
 # PL foundations for the Moise route
@@ -2126,6 +2127,11 @@ namespace PLComplexInSpace
 def support {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) : Set X :=
   Set.range K.embed
 
+instance small_support {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
+    Small.{0} K.support := by
+  rw [support]
+  infer_instance
+
 /-- The embedding map of a PL complex is continuous. -/
 theorem continuous_embed {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
     Continuous K.embed :=
@@ -2725,7 +2731,55 @@ theorem rado_union_complex
     {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
     (S : RadoInductiveSequence E) :
     ∃ K : PLComplexInSpace M, K.support = S.supportUnion := by
-  sorry
+  haveI : Small.{0} S.supportUnion := by
+    dsimp [RadoInductiveSequence.supportUnion]
+    infer_instance
+  let carrierMap : Shrink.{0} S.supportUnion → M :=
+    fun p => ((equivShrink.{0} S.supportUnion).symm p).1
+  let carrierTop : TopologicalSpace (Shrink.{0} S.supportUnion) :=
+    TopologicalSpace.induced carrierMap inferInstance
+  have hCarrierInjective : Function.Injective carrierMap := by
+    intro p q hpq
+    have hsub :
+        (equivShrink.{0} S.supportUnion).symm p =
+          (equivShrink.{0} S.supportUnion).symm q := by
+      exact Subtype.ext hpq
+    exact (equivShrink.{0} S.supportUnion).symm.injective hsub
+  have hCarrierEmbedding :
+      @Topology.IsEmbedding (Shrink.{0} S.supportUnion) M carrierTop inferInstance carrierMap :=
+    hCarrierInjective.isEmbedding_induced
+  let C : EuclideanComplex :=
+    { Point := Shrink.{0} S.supportUnion
+      pointTop := carrierTop
+      Vertex := PUnit
+      vertexFintype := inferInstance
+      vertexDecidableEq := inferInstance
+      Simplex := PUnit
+      simplexFintype := inferInstance
+      simplexDecidableEq := inferInstance
+      simplexVertices := fun _ => Finset.univ
+      simplex_nonempty := by
+        intro σ
+        exact Finset.univ_nonempty
+      support := Set.univ
+      realizesSimplexes := S.compatibleStages
+      faceClosed := True }
+  let K : PLComplexInSpace M :=
+    { Complex := C
+      embed := fun p => carrierMap p.1
+      isEmbedding := hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
+      locallyFinite := S.locallyFiniteUnion
+      compatibleCharts := S.boundaryCompatibleUnion }
+  refine ⟨K, ?_⟩
+  ext x
+  constructor
+  · intro hx
+    rcases hx with ⟨p, rfl⟩
+    exact ((equivShrink.{0} S.supportUnion).symm p.1).2
+  · intro hx
+    let p : Shrink.{0} S.supportUnion := equivShrink.{0} S.supportUnion ⟨x, hx⟩
+    refine ⟨⟨p, trivial⟩, ?_⟩
+    simp [K, carrierMap, p]
 
 /-- Moise-Rado triangulation theorem boundary for two-manifolds. -/
 theorem rado_triangulation_moise_two_manifold

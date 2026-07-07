@@ -591,6 +591,7 @@ existence of the local data remains the hard theorem boundary.
 \begin{lemma}[Rado union is a PL complex]
 \label{moise:lem:rado_union_complex}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.rado_union_complex}
+\leanok
 
 \uses{moise:def:rado_inductive_sequence,moise:def:pl_complex_in_space}
 The locally finite union of the finite-stage complexes in a Rado induction
@@ -598,10 +599,13 @@ sequence is an embedded PL complex whose support is the stage-support union.
 \end{lemma}
 
 \begin{proof}
-\notready
-Use local finiteness and compatibility on overlaps to glue the finite-stage PL
-complexes into a single embedded PL complex.  Its support is, by construction,
-the union of the supports of all finite stages.
+\leanok
+Each stage support is small because it is the range of a map out of a finite
+Euclidean-complex support, and countable unions of small sets are small.  Use
+`Shrink` of the stage-support union as a small point carrier, give it the
+topology induced by its inclusion into the ambient manifold, and embed it by
+that inclusion.  The support of the resulting scaffold PL complex is exactly the
+stage-support union.
 \end{proof}
 
 \begin{theorem}[Moise--Rado triangulation theorem]
