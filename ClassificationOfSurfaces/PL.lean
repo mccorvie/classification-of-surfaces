@@ -2789,6 +2789,34 @@ structure PlaneRegionTriangleCopy (Ω : Set Plane) (y : Ω) where
   image_subset :
     homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ⊆ Ω
 
+namespace PlaneRegionTriangleCopy
+
+/-- The plane homeomorphism that scales the standard triangle about its centroid and then
+translates that centroid to `center`. -/
+def centeredHomothety (center : Plane) (scale : ℝ) (hscale : scale ≠ 0) :
+    Plane ≃ₜ Plane :=
+  (Homeomorph.addRight (-EuclideanComplex.Examples.closedTriangleCentroid)).trans
+    ((Homeomorph.smulOfNeZero scale hscale).trans (Homeomorph.addLeft center))
+
+@[simp] theorem centeredHomothety_centroid
+    (center : Plane) (scale : ℝ) (hscale : scale ≠ 0) :
+    centeredHomothety center scale hscale
+      EuclideanComplex.Examples.closedTriangleCentroid = center := by
+  simp [centeredHomothety]
+
+/-- Build a region triangle copy from a centered nonzero homothety whose triangle image lies in the
+region. -/
+def ofCenteredHomothety {Ω : Set Plane} {y : Ω} (scale : ℝ) (hscale : scale ≠ 0)
+    (hsubset :
+      centeredHomothety y.1 scale hscale ''
+          EuclideanComplex.Examples.closedTriangleSupport ⊆ Ω) :
+    PlaneRegionTriangleCopy Ω y where
+  homeomorph := centeredHomothety y.1 scale hscale
+  centroid_eq := centeredHomothety_centroid y.1 scale hscale
+  image_subset := hsubset
+
+end PlaneRegionTriangleCopy
+
 namespace PlaneRegionPolygonalNeighborhood
 
 /-- The standard triangle support used by `PolygonalDiskExamples.standardTriangle`. -/

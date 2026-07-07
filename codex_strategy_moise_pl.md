@@ -732,7 +732,10 @@ The standard-triangle part of the interior construction is also factored:
    `0 < p 0`, `0 < p 1`, and `p 0 + p 1 < 1`.
 3. `PlaneRegionTriangleCopy` records a plane homeomorphism taking that centroid to the target
    region point and sending the standard closed triangle into the region.
-4. `PlaneRegionPolygonalNeighborhood.ofTriangleCopy` converts such a copy into the
+4. `PlaneRegionTriangleCopy.centeredHomothety` is the explicit translation and nonzero scaling
+   about the centroid; `PlaneRegionTriangleCopy.ofCenteredHomothety` packages it as a
+   `PlaneRegionTriangleCopy` once the scaled triangle is known to lie in the region.
+5. `PlaneRegionPolygonalNeighborhood.ofTriangleCopy` converts such a copy into the
    `PlaneRegionPolygonalNeighborhood` object, proving the embedding and neighborhood fields.
 
 Thus the interior fixed-point constructor can be attacked by producing a small affine
