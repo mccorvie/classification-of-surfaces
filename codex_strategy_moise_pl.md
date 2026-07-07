@@ -587,7 +587,47 @@ structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
 For the Eval problem, this is not the final interface. It is an intermediate bridge from
 mathlib's charted-space manifold to Moise's hypotheses. The hard extraction from mathlib's
 `ChartedSpace` atlas to a countable chart-pair exhaustion and the associated local Rado
-induction data is isolated in `mathlib_bordered_surface_to_moise_two_manifold`.
+induction data is isolated in `mathlib_bordered_surface_moise_extraction_data`.
+
+Current extraction layer:
+
+```lean
+structure FiniteChartPairCover (M : Type*) [TopologicalSpace M] where
+  Index : Type*
+  indexFintype : Fintype Index
+  pair : Index → RadoChartPair M
+  covers : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
+
+structure MoiseExtractionData (M : Type*) [TopologicalSpace M] where
+  finiteCover : FiniteChartPairCover M
+  local_disk_or_half_disk : Prop
+  secondCountable_or_separable_metric : Prop
+  radoInductionData : RadoInductionData finiteCover.toChartPairExhaustion
+```
+
+Proved finite/combinatorial bridge:
+
+1. `FiniteChartPairCover.exists_of_compact_local`:
+   local chart-pair cores that are neighborhoods of their points admit a finite subcover by
+   compactness.
+2. `FiniteChartPairCover.toChartPairExhaustion`:
+   a finite chart-pair cover can be enumerated by `ℕ` and used as the Rado chart-pair exhaustion.
+3. `moise_two_manifold_of_extraction_data`:
+   extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
+
+Remaining hard bridge:
+
+```lean
+theorem mathlib_bordered_surface_moise_extraction_data
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    ∃ _D : MoiseExtractionData M, True := by
+  sorry
+```
+
+This is now the place where the actual atlas shrinking, disk/half-disk chart-pair construction,
+and local Rado induction geometry have to be proved.
 
 The Rado theorem boundary:
 

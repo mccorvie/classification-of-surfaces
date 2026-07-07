@@ -14,13 +14,15 @@ intentionally skeletal for now: the first milestone is a stable API surface that
 PL, quotient, and Gallier-Xu work can target.
 -/
 
-open scoped Manifold
+open scoped Manifold Topology
 
 namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
 
 noncomputable section
+
+universe u
 
 /-- A finite Euclidean-style simplicial complex API for the Moise route.
 
@@ -2316,6 +2318,49 @@ structure RadoChartPair (M : Type*) [TopologicalSpace M] where
 
 namespace RadoChartPair
 
+/-- The empty homeomorphism between two empty subspaces. -/
+def emptyHomeomorph (α β : Type*) [TopologicalSpace α] [TopologicalSpace β] :
+    (∅ : Set α) ≃ₜ (∅ : Set β) := by
+  letI : IsEmpty (∅ : Set α) := Subtype.isEmpty_of_false (by simp)
+  letI : IsEmpty (∅ : Set β) := Subtype.isEmpty_of_false (by simp)
+  exact
+    { toFun := fun x => isEmptyElim x
+      invFun := fun x => isEmptyElim x
+      left_inv := fun x => isEmptyElim x
+      right_inv := fun x => isEmptyElim x
+      continuous_toFun := by
+        rw [continuous_iff_continuousAt]
+        intro x
+        exact isEmptyElim x
+      continuous_invFun := by
+        rw [continuous_iff_continuousAt]
+        intro x
+        exact isEmptyElim x }
+
+/-- The empty chart pair, useful as a harmless fallback when enumerating finite covers by `ℕ`. -/
+def empty (M : Type*) [TopologicalSpace M] : RadoChartPair M where
+  kind := RadoChartKind.disk
+  domain := ∅
+  core := ∅
+  domain_open := isOpen_empty
+  core_subset_domain := by
+    intro x hx
+    simp at hx
+  modelRegion := ∅
+  chartHomeomorph := emptyHomeomorph M Plane
+  model_matches_kind := True
+  chart_to_model := True
+  boundaryCore := ∅
+  boundaryCore_subset_core := by
+    intro x hx
+    simp at hx
+  boundaryCore_empty_of_disk := by
+    intro _h
+    rfl
+  boundaryCore_in_boundary_chart := by
+    intro _h
+    exact True
+
 /-- A chart pair modeled on the half-disk. -/
 def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
   P.kind = RadoChartKind.halfDisk
@@ -2325,6 +2370,76 @@ def IsInteriorChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Pro
   P.kind = RadoChartKind.disk
 
 end RadoChartPair
+
+/-- A finite family of Rado chart pairs whose cores cover the whole space. -/
+structure FiniteChartPairCover (M : Type u) [TopologicalSpace M] where
+  Index : Type u
+  indexFintype : Fintype Index
+  pair : Index → RadoChartPair M
+  covers : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
+  boundaryCovers : ∀ x : M, (∃ i : Index, x ∈ (pair i).boundaryCore) →
+    ∃ i : Index, x ∈ (pair i).boundaryCore
+  interiorChartsCoverInterior : Prop
+  boundaryChartsCoverBoundary : Prop
+  locallyFinite : Prop
+  nestedControl : Prop
+  boundaryLocallyFinite : Prop
+  boundaryNestedControl : Prop
+
+attribute [instance] FiniteChartPairCover.indexFintype
+
+namespace FiniteChartPairCover
+
+/-- Enumerate a finite chart-pair cover by natural numbers, using the empty chart pair outside the
+finite range. -/
+noncomputable def natPair {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) :
+    ℕ → RadoChartPair M :=
+  fun n =>
+    if h : n < Fintype.card C.Index then
+      C.pair ((Fintype.equivFin C.Index).symm ⟨n, h⟩)
+    else
+      RadoChartPair.empty M
+
+theorem natPair_of_index {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M)
+    (i : C.Index) :
+    C.natPair ((Fintype.equivFin C.Index i).1) = C.pair i := by
+  classical
+  simp [natPair]
+
+/-- Compactness turns local chart-pair cores into a finite chart-pair cover. -/
+theorem exists_of_compact_local
+    {M : Type u} [TopologicalSpace M] [CompactSpace M]
+    (pairAt : M → RadoChartPair M)
+    (hcore : ∀ x : M, (pairAt x).core ∈ 𝓝 x) :
+    ∃ _C : FiniteChartPairCover M, True := by
+  classical
+  rcases CompactSpace.elim_nhds_subcover (fun x : M => (pairAt x).core) hcore with
+    ⟨t, ht⟩
+  let C : FiniteChartPairCover M :=
+    { Index := {x : M // x ∈ t}
+      indexFintype := inferInstance
+      pair := fun x => pairAt x.1
+      covers := by
+        intro y
+        have hy : y ∈ ⋃ x ∈ t, (pairAt x).core := by
+          rw [ht]
+          trivial
+        simp only [Set.mem_iUnion] at hy
+        rcases hy with ⟨x, hx⟩
+        rcases hx with ⟨hxt, hyx⟩
+        exact ⟨⟨x, hxt⟩, hyx⟩
+      boundaryCovers := by
+        intro x hx
+        exact hx
+      interiorChartsCoverInterior := True
+      boundaryChartsCoverBoundary := True
+      locallyFinite := True
+      nestedControl := True
+      boundaryLocallyFinite := True
+      boundaryNestedControl := True }
+  exact ⟨C, trivial⟩
+
+end FiniteChartPairCover
 
 /-- A polygonal disk embedded in a Rado chart and covering the chart core.
 
@@ -2382,6 +2497,30 @@ theorem mem_boundaryCoreUnion_iff {M : Type*} [TopologicalSpace M] (E : ChartPai
   simp [boundaryCoreUnion]
 
 end ChartPairExhaustion
+
+namespace FiniteChartPairCover
+
+/-- A finite chart-pair cover gives the countable chart-pair exhaustion consumed by Rado's
+induction. -/
+noncomputable def toChartPairExhaustion {M : Type u} [TopologicalSpace M]
+    (C : FiniteChartPairCover M) : ChartPairExhaustion M where
+  pair := C.natPair
+  covers := by
+    intro x
+    rcases C.covers x with ⟨i, hi⟩
+    exact ⟨(Fintype.equivFin C.Index i).1, by simpa [C.natPair_of_index i] using hi⟩
+  boundaryCovers := by
+    intro x hx
+    rcases Set.mem_iUnion.mp hx with ⟨n, hn⟩
+    exact ⟨n, hn⟩
+  interiorChartsCoverInterior := C.interiorChartsCoverInterior
+  boundaryChartsCoverBoundary := C.boundaryChartsCoverBoundary
+  locallyFinite := C.locallyFinite
+  nestedControl := C.nestedControl
+  boundaryLocallyFinite := C.boundaryLocallyFinite
+  boundaryNestedControl := C.boundaryNestedControl
+
+end FiniteChartPairCover
 
 /-- State of the Rado induction after finitely many chart pairs have been absorbed. -/
 structure RadoInductionState (M : Type*) [TopologicalSpace M] where
@@ -2683,6 +2822,39 @@ structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
   chartPairExhaustion : ChartPairExhaustion M
   radoInductionData : RadoInductionData chartPairExhaustion
 
+/-- Data extracted from a compact mathlib bordered surface before it is packaged as the Moise
+interface used by Rado's theorem. -/
+structure MoiseExtractionData (M : Type*) [TopologicalSpace M] where
+  finiteCover : FiniteChartPairCover M
+  local_disk_or_half_disk : Prop
+  secondCountable_or_separable_metric : Prop
+  radoInductionData : RadoInductionData finiteCover.toChartPairExhaustion
+
+namespace MoiseExtractionData
+
+/-- Package extracted finite chart-pair and local Rado data as a `MoiseTwoManifold`. -/
+def toMoiseTwoManifold {M : Type*} [TopologicalSpace M] [T2Space M]
+    (D : MoiseExtractionData M) : MoiseTwoManifold M where
+  t2 := inferInstance
+  local_disk_or_half_disk := D.local_disk_or_half_disk
+  secondCountable_or_separable_metric := D.secondCountable_or_separable_metric
+  chartPairExhaustion := D.finiteCover.toChartPairExhaustion
+  radoInductionData := D.radoInductionData
+
+@[simp] theorem toMoiseTwoManifold_chartPairExhaustion
+    {M : Type*} [TopologicalSpace M] [T2Space M] (D : MoiseExtractionData M) :
+    D.toMoiseTwoManifold.chartPairExhaustion = D.finiteCover.toChartPairExhaustion := by
+  rfl
+
+end MoiseExtractionData
+
+/-- Extracted Moise data gives the Rado-facing Moise interface. -/
+theorem moise_two_manifold_of_extraction_data
+    {M : Type*} [TopologicalSpace M] [T2Space M] (D : MoiseExtractionData M) :
+    ∃ hM : MoiseTwoManifold M,
+      hM.chartPairExhaustion = D.finiteCover.toChartPairExhaustion := by
+  exact ⟨D.toMoiseTwoManifold, rfl⟩
+
 /-- The chart-pair exhaustion carried by the Moise interface. -/
 theorem chart_pair_exhaustion
     {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
@@ -2792,12 +2964,26 @@ Moise chart-pair interface.
 
 This is where one proves that the mathlib manifold atlas admits a countable disk/half-disk chart
 pair exhaustion with the local finiteness and nesting properties needed by Rado's induction. -/
+theorem mathlib_bordered_surface_moise_extraction_data
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    ∃ _D : MoiseExtractionData M, True := by
+  sorry
+
+/-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
+Moise chart-pair interface.
+
+This packages the extracted finite chart-pair cover and local Rado induction data into the
+Rado-facing `MoiseTwoManifold` structure. -/
 theorem mathlib_bordered_surface_to_moise_two_manifold
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ _hM : MoiseTwoManifold M, True := by
-  sorry
+  rcases mathlib_bordered_surface_moise_extraction_data M with ⟨D, _⟩
+  rcases moise_two_manifold_of_extraction_data D with ⟨hM, _⟩
+  exact ⟨hM, trivial⟩
 
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation

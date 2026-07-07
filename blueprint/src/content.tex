@@ -452,6 +452,52 @@ the local initial and successor data needed to run Rado's finite-stage
 construction over such exhaustions.
 \end{definition}
 
+\begin{definition}[Finite chart-pair cover]
+\label{moise:def:finite_chart_pair_cover}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion}
+\leanok
+
+A finite chart-pair cover is a finite family of Rado chart pairs whose smaller
+cores cover the ambient space.  It can be enumerated by natural numbers, using
+the empty chart pair outside the finite range, and hence packaged as the
+countable chart-pair exhaustion used by Rado's induction.
+\end{definition}
+
+\begin{lemma}[Compact local chart pairs have finite subcover]
+\label{moise:lem:compact_local_chart_pairs_finite_cover}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.exists_of_compact_local}
+\leanok
+
+\uses{moise:def:finite_chart_pair_cover}
+If every point of a compact space has a Rado chart pair whose core is a
+neighborhood of that point, then finitely many of those chart-pair cores cover
+the whole space.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Apply `CompactSpace.elim_nhds_subcover` to the family of chart-pair cores and
+index the resulting finite cover by the finite subtype of selected points.
+\end{proof}
+
+\begin{definition}[Moise extraction data]
+\label{moise:def:moise_extraction_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.toMoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.moise_two_manifold_of_extraction_data}
+\leanok
+
+\uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:moise_two_manifold}
+Moise extraction data is the finite chart-pair cover and local Rado induction
+data extracted from a compact mathlib bordered surface before packaging it as a
+`MoiseTwoManifold`.
+\end{definition}
+
+\begin{proof}
+\leanok
+Convert the finite chart-pair cover to a countable chart-pair exhaustion and
+use the stored local Rado induction data to fill the fields of the
+`MoiseTwoManifold` interface.
+\end{proof}
+
 \begin{lemma}[Chart pair exhaustion]
 \label{moise:lem:chart_pair_exhaustion}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.chart_pair_exhaustion}
@@ -690,18 +736,34 @@ geometric.
 \begin{lemma}[Mathlib bordered surface to Moise chart-pair interface]
 \label{moise:lem:mathlib_bordered_surface_to_moise_two_manifold}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_to_moise_two_manifold}
+\leanok
 
-\uses{moise:def:eval_surface,moise:def:moise_two_manifold}
+\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_moise_extraction_data}
 A compact mathlib surface with boundary admits the strengthened Moise
 two-manifold package, including a countable disk/half-disk chart-pair
 exhaustion.
 \end{lemma}
 
 \begin{proof}
+\leanok
+Package the extracted finite chart-pair cover and Rado local data as a
+`MoiseTwoManifold`.
+\end{proof}
+
+\begin{lemma}[Mathlib bordered surface extraction data]
+\label{moise:lem:mathlib_bordered_surface_moise_extraction_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moise_extraction_data}
+
+\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:compact_local_chart_pairs_finite_cover}
+The mathlib bordered-surface atlas supplies the finite chart-pair cover and
+local Rado induction data needed to build the Moise interface.
+\end{lemma}
+
+\begin{proof}
 \notready
 Choose chart neighborhoods from the mathlib `ChartedSpace` atlas, shrink them to
-nested disk or half-disk chart pairs, and use compactness or second countability
-to extract a countable locally finite cover with the required boundary control.
+nested disk or half-disk chart pairs, use compactness to extract a finite
+subcover, and build the local Rado induction data for the resulting exhaustion.
 \end{proof}
 
 \begin{lemma}[Eval surface to Moise bordered surface]
