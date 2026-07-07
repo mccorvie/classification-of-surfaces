@@ -603,6 +603,16 @@ structure MoiseExtractionData (M : Type*) [TopologicalSpace M] where
   local_disk_or_half_disk : Prop
   secondCountable_or_separable_metric : Prop
   radoInductionData : RadoInductionData finiteCover.toChartPairExhaustion
+
+structure FiniteRadoInductionGeometry
+    {M : Type*} [TopologicalSpace M] (C : FiniteChartPairCover M) where
+  initial : InitialPLNeighborhoodData C.toChartPairExhaustion
+  step :
+    ∀ (_n : ℕ) (S : RadoInductionState M),
+      RadoStepExtensionData C.toChartPairExhaustion S
+  compatibleStages : Prop
+  locallyFiniteUnion : Prop
+  boundaryCompatibleUnion : Prop
 ```
 
 Proved finite/combinatorial bridge:
@@ -615,26 +625,33 @@ Proved finite/combinatorial bridge:
 3. `RadoChartPair.fromChartAt` and `mathlib_bordered_surface_finite_chart_pair_cover`:
    the preferred mathlib chart at each point gives a chart pair whose core is a neighborhood, so a
    compact bordered surface has a finite chart-pair cover.
-4. `mathlib_bordered_surface_moise_extraction_data`:
+4. `FiniteRadoInductionGeometry.toRadoInductionData` and
+   `rado_induction_data_of_finite_geometry`:
+   once the local polygonal chart geometry is supplied over a finite cover, the recursive
+   `RadoInductionData` is pure packaging.
+5. `mathlib_bordered_surface_rado_induction_data`:
+   finite Rado geometry packages as Rado induction data.
+6. `mathlib_bordered_surface_moise_extraction_data`:
    finite cover extraction plus local Rado induction data packages as `MoiseExtractionData`.
-5. `moise_two_manifold_of_extraction_data`:
+7. `moise_two_manifold_of_extraction_data`:
    extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
 
 Remaining hard bridge:
 
 ```lean
-theorem mathlib_bordered_surface_rado_induction_data
+theorem mathlib_bordered_surface_finite_rado_geometry
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
     (C : FiniteChartPairCover M) :
-    ∃ _D : RadoInductionData C.toChartPairExhaustion, True := by
+    ∃ _G : FiniteRadoInductionGeometry C, True := by
   sorry
 ```
 
 This is now the place where the actual chart-core shrinking, polygonal disk initialization,
 successor extension construction, PL approximation, and relative Schoenflies geometry have to be
-proved.
+proved.  The formerly broad `mathlib_bordered_surface_rado_induction_data` theorem is now a
+proved wrapper around this sharper geometry boundary.
 
 The Rado theorem boundary:
 

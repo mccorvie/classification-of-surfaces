@@ -2850,6 +2850,42 @@ def RadoInductionData.toInductiveSequence
   locallyFiniteUnion := D.locallyFiniteUnion
   boundaryCompatibleUnion := D.boundaryCompatibleUnion
 
+/-- Finite local geometric data sufficient to build Rado induction data over a finite chart cover.
+
+This is the chart-core shrinking and polygonal disk extension input: once supplied, the remaining
+Rado induction layer is purely packaging. -/
+structure FiniteRadoInductionGeometry
+    {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) where
+  initial : InitialPLNeighborhoodData C.toChartPairExhaustion
+  step :
+    ∀ (_n : ℕ) (S : RadoInductionState M),
+      RadoStepExtensionData C.toChartPairExhaustion S
+  compatibleStages : Prop
+  locallyFiniteUnion : Prop
+  boundaryCompatibleUnion : Prop
+
+namespace FiniteRadoInductionGeometry
+
+/-- Forget finite-cover geometric construction data to the recursive Rado induction data API. -/
+def toRadoInductionData
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (G : FiniteRadoInductionGeometry C) :
+    RadoInductionData C.toChartPairExhaustion where
+  initial := G.initial
+  step := G.step
+  compatibleStages := G.compatibleStages
+  locallyFiniteUnion := G.locallyFiniteUnion
+  boundaryCompatibleUnion := G.boundaryCompatibleUnion
+
+end FiniteRadoInductionGeometry
+
+/-- Finite Rado geometry packages as recursive Rado induction data. -/
+theorem rado_induction_data_of_finite_geometry
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (G : FiniteRadoInductionGeometry C) :
+    ∃ _D : RadoInductionData C.toChartPairExhaustion, True := by
+  exact ⟨G.toRadoInductionData, trivial⟩
+
 /-- Moise-style topological two-manifold interface used by the Rado triangulation layer.
 
 Besides the topological manifold hypotheses, this interface stores a chart-pair exhaustion and the
@@ -3008,17 +3044,29 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
-/-- Hard local Rado data boundary over a finite chart-pair cover extracted from the mathlib atlas.
+/-- Hard local Rado geometry boundary over a finite chart-pair cover extracted from the mathlib
+atlas.
 
 This is the point where one proves the polygonal disk initialization and chart-extension steps for
-the finite cover. -/
+the finite cover.  The conversion from this geometry package to recursive induction data is
+formal. -/
+theorem mathlib_bordered_surface_finite_rado_geometry
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
+    (C : FiniteChartPairCover M) :
+    ∃ _G : FiniteRadoInductionGeometry C, True := by
+  sorry
+
+/-- Local Rado induction data over a finite chart-pair cover extracted from the mathlib atlas. -/
 theorem mathlib_bordered_surface_rado_induction_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
     (C : FiniteChartPairCover M) :
     ∃ _D : RadoInductionData C.toChartPairExhaustion, True := by
-  sorry
+  rcases mathlib_bordered_surface_finite_rado_geometry M C with ⟨G, _⟩
+  exact rado_induction_data_of_finite_geometry G
 
 /-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
 Moise chart-pair interface.

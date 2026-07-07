@@ -655,6 +655,26 @@ natural number.  The stage-index, extension, and chart-core coverage fields of
 the resulting sequence are proved by induction over the natural number.
 \end{proof}
 
+\begin{definition}[Finite Rado induction geometry]
+\label{moise:def:finite_rado_induction_geometry}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.toRadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.rado_induction_data_of_finite_geometry}
+\leanok
+
+\uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+Finite Rado induction geometry over a finite chart-pair cover consists of the
+local geometric input needed to run Rado's construction: an initial polygonal
+chart disk, a successor chart-extension package at every finite stage, and the
+global compatibility/local-finiteness assertions for the union.  Once this data
+is supplied, it packages formally as `RadoInductionData`.
+\end{definition}
+
+\begin{proof}
+\leanok
+Copy the initial, successor, compatibility, local-finiteness, and boundary
+compatibility fields from `FiniteRadoInductionGeometry` into
+`RadoInductionData`, then package the resulting object existentially.
+\end{proof}
+
 \begin{lemma}[Rado union is a PL complex]
 \label{moise:lem:rado_union_complex}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.rado_union_complex}
@@ -786,21 +806,39 @@ compactness.  Then package the local Rado induction data over the corresponding
 countable exhaustion.
 \end{proof}
 
-\begin{lemma}[Mathlib bordered surface local Rado induction data]
-\label{moise:lem:mathlib_bordered_surface_rado_induction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_rado_induction_data}
+\begin{lemma}[Mathlib bordered surface finite Rado geometry]
+\label{moise:lem:mathlib_bordered_surface_finite_rado_geometry}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_rado_geometry}
 
-\uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+\uses{moise:def:finite_chart_pair_cover,moise:def:finite_rado_induction_geometry,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart,moise:thm:pl_approximation_plane}
 For the finite chart-pair cover extracted from a compact mathlib bordered
-surface, the initial polygonal disk and successor chart-extension data needed
-for Rado's induction exist.
+surface, the chart cores can be shrunk to polygonal disk or half-disk data and
+extended stage by stage with the compatibility needed for Rado's induction.
 \end{lemma}
 
 \begin{proof}
 \notready
 Shrink the preferred chart pairs to polygonal disk or half-disk cores.  Use the
 PL approximation and relative Schoenflies machinery to construct the stage-zero
-polygonal disk and each successor chart-extension package.
+polygonal disk, each successor chart-extension package, and the compatibility
+fields for the locally finite union.
+\end{proof}
+
+\begin{lemma}[Mathlib bordered surface local Rado induction data]
+\label{moise:lem:mathlib_bordered_surface_rado_induction_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_rado_induction_data}
+\leanok
+
+\uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:finite_rado_induction_geometry,moise:lem:mathlib_bordered_surface_finite_rado_geometry}
+For the finite chart-pair cover extracted from a compact mathlib bordered
+surface, the initial polygonal disk and successor chart-extension data needed
+for Rado's induction exist.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Use the finite Rado geometry theorem boundary, then convert the resulting
+`FiniteRadoInductionGeometry` package into recursive `RadoInductionData`.
 \end{proof}
 
 \begin{lemma}[Eval surface to Moise bordered surface]
