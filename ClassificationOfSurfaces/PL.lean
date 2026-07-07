@@ -2734,6 +2734,42 @@ def standardTriangleInModel (P : RadoChartPair M)
 
 end ModelChartPolygonalDisk
 
+/-- A polygonal disk whose image is a neighborhood of a chosen point in a plane region.
+
+This is the chart-free Euclidean object needed by the local Rado shrinking theorem. -/
+structure PlaneRegionPolygonalNeighborhood (Ω : Set Plane) (y : Ω) where
+  disk : PolygonalDisk
+  embed : disk.K.support → Ω
+  isEmbedding : _root_.Topology.IsEmbedding embed
+  range_mem_nhds : Set.range embed ∈ 𝓝 y
+  respectsChartModel : Prop
+
+namespace PlaneRegionPolygonalNeighborhood
+
+/-- Regard a chart-free plane-region polygonal neighborhood as a model chart disk. -/
+def toModelChartPolygonalDisk
+    {M : Type*} [TopologicalSpace M] {P : RadoChartPair M} {y : P.modelRegion}
+    (N : PlaneRegionPolygonalNeighborhood P.modelRegion y) :
+    ModelChartPolygonalDisk P where
+  disk := N.disk
+  embed := N.embed
+  isEmbedding := N.isEmbedding
+  respectsChartModel := N.respectsChartModel
+
+@[simp] theorem toModelChartPolygonalDisk_embed
+    {M : Type*} [TopologicalSpace M] {P : RadoChartPair M} {y : P.modelRegion}
+    (N : PlaneRegionPolygonalNeighborhood P.modelRegion y) :
+    N.toModelChartPolygonalDisk.embed = N.embed := by
+  rfl
+
+theorem toModelChartPolygonalDisk_range_mem_nhds
+    {M : Type*} [TopologicalSpace M] {P : RadoChartPair M} {y : P.modelRegion}
+    (N : PlaneRegionPolygonalNeighborhood P.modelRegion y) :
+    Set.range N.toModelChartPolygonalDisk.embed ∈ 𝓝 y := by
+  exact N.range_mem_nhds
+
+end PlaneRegionPolygonalNeighborhood
+
 namespace RadoChartPair
 
 /-- The standard geometric closed triangle as a chart-pair core in the plane. -/
@@ -3490,8 +3526,16 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
-/-- Hard coordinate-local boundary: the model region of the preferred chart at a point contains an
-embedded polygonal disk or half-disk whose image is a neighborhood of the chart coordinate. -/
+/-- Hard Euclidean half-plane boundary: an open neighborhood in the model half-plane contains an
+embedded polygonal disk or half-disk whose image is a neighborhood of the chosen point. -/
+theorem euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y) :
+    ∃ hy : y.1 ∈ (Subtype.val '' U),
+      ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hy⟩, True := by
+  sorry
+
+/-- The model region of the preferred chart at a point contains an embedded polygonal disk or
+half-disk whose image is a neighborhood of the chart coordinate. -/
 theorem mathlib_chartAt_model_region_contains_polygonal_neighborhood
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
@@ -3500,7 +3544,28 @@ theorem mathlib_chartAt_model_region_contains_polygonal_neighborhood
       Set.range D.embed ∈
         𝓝 ((RadoChartPair.fromChartAt M x).chartHomeomorph
           ⟨x, RadoChartPair.fromChartAt_mem_domain M x⟩) := by
-  sorry
+  let U : Set (EuclideanHalfSpace 2) := (chartAt (EuclideanHalfSpace 2) x).target
+  let y : EuclideanHalfSpace 2 := chartAt (EuclideanHalfSpace 2) x x
+  have hU : U ∈ 𝓝 y := by
+    simpa [U, y] using chart_target_mem_nhds (EuclideanHalfSpace 2) x
+  rcases euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood U y hU with
+    ⟨hy, N, _⟩
+  let D : ModelChartPolygonalDisk (RadoChartPair.fromChartAt M x) :=
+    N.toModelChartPolygonalDisk
+  refine ⟨D, ?_⟩
+  have hcoord :
+      ((RadoChartPair.fromChartAt M x).chartHomeomorph
+        ⟨x, RadoChartPair.fromChartAt_mem_domain M x⟩).1 = y.1 := by
+    rfl
+  have hpoint :
+      (RadoChartPair.fromChartAt M x).chartHomeomorph
+          ⟨x, RadoChartPair.fromChartAt_mem_domain M x⟩ =
+        (⟨y.1, hy⟩ :
+          (RadoChartPair.fromChartAt M x).modelRegion) := by
+    exact Subtype.ext hcoord
+  rw [hpoint]
+  change Set.range N.embed ∈ 𝓝 (⟨y.1, hy⟩ : Subtype.val '' U)
+  exact N.range_mem_nhds
 
 /-- In the model region of the preferred chart at a point, there is a polygonal disk or half-disk
 whose pullback is a neighborhood core of the point. -/

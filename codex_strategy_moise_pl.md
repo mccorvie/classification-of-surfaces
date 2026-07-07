@@ -682,26 +682,25 @@ Proved finite/combinatorial bridge:
 Remaining hard coordinate-local bridge:
 
 ```lean
-theorem mathlib_chartAt_model_region_contains_polygonal_neighborhood
-    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
-    [ChartedSpace (EuclideanHalfSpace 2) M]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
-    ∃ D : ModelChartPolygonalDisk (RadoChartPair.fromChartAt M x),
-      Set.range D.embed ∈
-        𝓝 ((RadoChartPair.fromChartAt M x).chartHomeomorph
-          ⟨x, RadoChartPair.fromChartAt_mem_domain M x⟩) := by
+theorem euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood
+    (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y) :
+    ∃ hy : y.1 ∈ (Subtype.val '' U),
+      ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hy⟩, True := by
   sorry
 ```
 
-This is now the place where the actual chart-core shrinking and polygonal disk triangulation in the
-coordinate half-plane have to be proved: produce a model polygonal disk whose image is a
-neighborhood of the chart coordinate.  The topological pullback from a model-neighborhood statement
-to a manifold-neighborhood statement is proved by
+This is now the place where the actual half-plane geometry has to be proved: shrink an arbitrary
+neighborhood in `EuclideanHalfSpace 2` to a polygonal disk or half-disk whose image remains a
+neighborhood of the point.  `PlaneRegionPolygonalNeighborhood` packages this chart-free coordinate
+object, and `PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk` converts it to the
+chart-pair API.  The topological pullback from a model-neighborhood statement to a
+manifold-neighborhood statement is proved by
 `ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds`.  The transport of disk data
 through the mathlib chart atlas is formalized by `ModelChartPolygonalDisk.toChartPolygonalDisk`,
 and core refinement is formalized by `RadoChartPair.withCore_refines`.  The helper
 `ModelChartPolygonalDisk.standardTriangleInModel` supplies a concrete model disk whenever the chart
 model region contains the standard simplex.  The public theorems
+`mathlib_chartAt_model_region_contains_polygonal_neighborhood`,
 `mathlib_chartAt_contains_model_polygonal_disk_core` and
 `mathlib_chartAt_contains_polygonal_disk_core` are proved wrappers around the coordinate-local
 boundary.
