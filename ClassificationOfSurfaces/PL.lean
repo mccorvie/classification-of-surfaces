@@ -2583,6 +2583,11 @@ structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
   compatibleChartShrinks : Prop
   boundaryCompatibleChartShrinks : Prop
 
+/-- Pointwise local chart-polygonal-disk data at one point. -/
+structure PointChartPolygonalDiskData (M : Type*) [TopologicalSpace M] (x : M) where
+  disk : ChartPolygonalDisk M
+  core_mem_nhds : disk.chart.core ∈ 𝓝 x
+
 /-- State of the Rado induction after finitely many chart pairs have been absorbed. -/
 structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   stage : ℕ
@@ -3207,17 +3212,43 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
-/-- Hard local chart-shrinking boundary producing a finite chart-pair cover from the mathlib
-atlas.
+/-- Hard pointwise chart-shrinking boundary from the mathlib atlas. -/
+theorem mathlib_bordered_surface_point_chart_polygonal_disk_data
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
+    ∃ _D : PointChartPolygonalDiskData M x, True := by
+  sorry
 
-This is where each chart-pair core is replaced by embedded polygonal disk or half-disk data
-compatible with its chart model. -/
+/-- Pointwise chart-polygonal-disk data packages as local chart-polygonal-disk data. -/
+theorem local_chart_polygonal_disk_data_of_pointwise
+    {M : Type*} [TopologicalSpace M]
+    (h : ∀ x : M, ∃ _D : PointChartPolygonalDiskData M x, True) :
+    ∃ _L : LocalChartPolygonalDiskData M, True := by
+  classical
+  let diskAt : M → ChartPolygonalDisk M :=
+    fun x => (Classical.choose (h x)).disk
+  let L : LocalChartPolygonalDiskData M :=
+    { pairAt := fun x => (diskAt x).chart
+      diskAt := diskAt
+      chart_eq := by
+        intro x
+        rfl
+      core_mem_nhds := by
+        intro x
+        exact (Classical.choose (h x)).core_mem_nhds
+      compatibleChartShrinks := True
+      boundaryCompatibleChartShrinks := True }
+  exact ⟨L, trivial⟩
+
+/-- Local chart-polygonal-disk data extracted pointwise from the mathlib atlas. -/
 theorem mathlib_bordered_surface_local_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ _D : LocalChartPolygonalDiskData M, True := by
-  sorry
+  exact local_chart_polygonal_disk_data_of_pointwise
+    (fun x => mathlib_bordered_surface_point_chart_polygonal_disk_data M x)
 
 /-- Compactness promotes pointwise local chart-polygonal-disk data to a finite chart-pair cover
 carrying indexed polygonal disk data. -/

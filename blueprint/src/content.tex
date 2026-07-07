@@ -467,7 +467,7 @@ point.
 
 \begin{definition}[Finite chart polygonal disk data]
 \label{moise:def:finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell}
@@ -877,11 +877,28 @@ finite subcover indices to carry the corresponding polygonal disk data.
 
 \begin{lemma}[Mathlib bordered surface local chart polygonal disk data]
 \label{moise:lem:mathlib_bordered_surface_local_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_local_chart_polygonal_disk_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.local_chart_polygonal_disk_data_of_pointwise, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_local_chart_polygonal_disk_data}
+\leanok
 
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_bordered_surface_point_chart_polygonal_disk_data}
 Around every point of a compact mathlib bordered surface, there is a chart pair
 whose core is a neighborhood of the point and whose core is covered by embedded
+polygonal disk or half-disk data compatible with the chart model.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Choose pointwise chart-polygonal-disk data at every point and package the chosen
+chart and disk functions as `LocalChartPolygonalDiskData`.
+\end{proof}
+
+\begin{lemma}[Mathlib bordered surface point chart polygonal disk data]
+\label{moise:lem:mathlib_bordered_surface_point_chart_polygonal_disk_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_point_chart_polygonal_disk_data}
+
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+At every point of a compact mathlib bordered surface, there is a chart pair
+whose core is a neighborhood of that point and whose core is covered by embedded
 polygonal disk or half-disk data compatible with the chart model.
 \end{lemma}
 
