@@ -724,6 +724,21 @@ hypothesis in the closed half-plane.  The remaining work is the geometric constr
 polygonal disk or boundary half-disk and its triangulated `PlaneRegionPolygonalNeighborhood`
 package.
 
+The standard-triangle part of the interior construction is also factored:
+
+1. `EuclideanComplex.Examples.closedTriangleCentroid` is the point `(1 / 3, 1 / 3)`.
+2. `EuclideanComplex.Examples.closedTriangleSupport_mem_nhds_centroid` proves that the closed
+   standard triangle is a neighborhood of that centroid, using the strict inequalities
+   `0 < p 0`, `0 < p 1`, and `p 0 + p 1 < 1`.
+3. `PlaneRegionTriangleCopy` records a plane homeomorphism taking that centroid to the target
+   region point and sending the standard closed triangle into the region.
+4. `PlaneRegionPolygonalNeighborhood.ofTriangleCopy` converts such a copy into the
+   `PlaneRegionPolygonalNeighborhood` object, proving the embedding and neighborhood fields.
+
+Thus the interior fixed-point constructor can be attacked by producing a small affine
+homeomorphism of the plane whose triangle image lies inside the ambient neighborhood.  The
+boundary case should get the analogous half-triangle copy API next.
+
 `PlaneRegionPolygonalNeighborhood` packages this chart-free coordinate object, and
 `PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk` converts it to the chart-pair API.
 The topological pullback from a model-neighborhood statement to a

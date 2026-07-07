@@ -363,8 +363,43 @@ abbrev TrianglePlane : Type :=
 def closedTriangleSupport : Set TrianglePlane :=
   {p | 0 ≤ p 0 ∧ 0 ≤ p 1 ∧ p 0 + p 1 ≤ 1}
 
+/-- The centroid of the standard closed 2-simplex. -/
+def closedTriangleCentroid : TrianglePlane :=
+  !₂[(1 : ℝ) / 3, (1 : ℝ) / 3]
+
 theorem zero_mem_closedTriangleSupport : (0 : TrianglePlane) ∈ closedTriangleSupport := by
   simp [closedTriangleSupport]
+
+theorem closedTriangleCentroid_mem_closedTriangleSupport :
+    closedTriangleCentroid ∈ closedTriangleSupport := by
+  norm_num [closedTriangleCentroid, closedTriangleSupport]
+
+theorem closedTriangleSupport_mem_nhds_centroid :
+    closedTriangleSupport ∈ 𝓝 closedTriangleCentroid := by
+  have h0 : IsOpen {p : TrianglePlane | 0 < p 0} := by
+    exact isOpen_lt continuous_const
+      (PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (0 : Fin 2))
+  have h1 : IsOpen {p : TrianglePlane | 0 < p 1} := by
+    exact isOpen_lt continuous_const
+      (PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (1 : Fin 2))
+  have hsum : IsOpen {p : TrianglePlane | p 0 + p 1 < 1} := by
+    exact isOpen_lt
+      ((PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (0 : Fin 2)).add
+        (PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (1 : Fin 2)))
+      continuous_const
+  have hOpen :
+      IsOpen ({p : TrianglePlane | 0 < p 0} ∩ {p : TrianglePlane | 0 < p 1} ∩
+        {p : TrianglePlane | p 0 + p 1 < 1}) :=
+    (h0.inter h1).inter hsum
+  have hmem :
+      closedTriangleCentroid ∈
+        ({p : TrianglePlane | 0 < p 0} ∩ {p : TrianglePlane | 0 < p 1} ∩
+          {p : TrianglePlane | p 0 + p 1 < 1}) := by
+    norm_num [closedTriangleCentroid]
+  exact Filter.mem_of_superset (hOpen.mem_nhds hmem) (by
+    intro p hp
+    rcases hp with ⟨⟨hp0, hp1⟩, hpsum⟩
+    exact ⟨le_of_lt hp0, le_of_lt hp1, le_of_lt hpsum⟩)
 
 /-- The one-point finite complex. -/
 def point : EuclideanComplex where
@@ -2744,7 +2779,74 @@ structure PlaneRegionPolygonalNeighborhood (Ω : Set Plane) (y : Ω) where
   range_mem_nhds : Set.range embed ∈ 𝓝 y
   respectsChartModel : Prop
 
+/-- A copy of the standard closed triangle in a plane region, centered at the chosen point.
+
+The remaining interior coordinate geometry in Rado's proof is to construct such a copy by a small
+translation and dilation inside a given ambient neighborhood. -/
+structure PlaneRegionTriangleCopy (Ω : Set Plane) (y : Ω) where
+  homeomorph : Plane ≃ₜ Plane
+  centroid_eq : homeomorph EuclideanComplex.Examples.closedTriangleCentroid = y.1
+  image_subset :
+    homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ⊆ Ω
+
 namespace PlaneRegionPolygonalNeighborhood
+
+/-- The standard triangle support used by `PolygonalDiskExamples.standardTriangle`. -/
+theorem standardTriangle_support_eq :
+    PolygonalDiskExamples.standardTriangle.K.support =
+      EuclideanComplex.Examples.closedTriangleSupport := by
+  rfl
+
+/-- A centered homeomorphic copy of the standard triangle in a region gives a polygonal
+neighborhood of the center. -/
+def ofTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionTriangleCopy Ω y) :
+    PlaneRegionPolygonalNeighborhood Ω y where
+  disk := PolygonalDiskExamples.standardTriangle
+  embed := fun p =>
+    ⟨T.homeomorph p.1, T.image_subset ⟨p.1, by
+      simp [standardTriangle_support_eq] at p ⊢, rfl⟩⟩
+  isEmbedding := by
+    have hCodomain :
+        _root_.Topology.IsEmbedding ((Subtype.val : Ω → Plane)) :=
+      _root_.Topology.IsEmbedding.subtypeVal
+    have hDomain :
+        _root_.Topology.IsEmbedding
+          (fun p : PolygonalDiskExamples.standardTriangle.K.support => T.homeomorph p.1) :=
+      T.homeomorph.isEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
+    refine (hCodomain.of_comp_iff).mp ?_
+    change _root_.Topology.IsEmbedding
+      (fun p : PolygonalDiskExamples.standardTriangle.K.support => T.homeomorph p.1)
+    exact hDomain
+  range_mem_nhds := by
+    have hImage :
+        T.homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ∈
+          𝓝 (T.homeomorph EuclideanComplex.Examples.closedTriangleCentroid) := by
+      rw [← T.homeomorph.map_nhds_eq EuclideanComplex.Examples.closedTriangleCentroid]
+      exact Filter.image_mem_map
+        EuclideanComplex.Examples.closedTriangleSupport_mem_nhds_centroid
+    have hImageAtY :
+        T.homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ∈ 𝓝 y.1 := by
+      simpa [T.centroid_eq] using hImage
+    rw [mem_nhds_subtype_iff_nhdsWithin]
+    have hRelative :
+        T.homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ∈ 𝓝[Ω] y.1 :=
+      mem_nhdsWithin_of_mem_nhds hImageAtY
+    convert hRelative using 1
+    ext z
+    constructor
+    · intro hz
+      rcases hz with ⟨q, hq, rfl⟩
+      rcases hq with ⟨p, rfl⟩
+      exact ⟨p.1, by simp [standardTriangle_support_eq] at p ⊢, rfl⟩
+    · intro hz
+      rcases hz with ⟨p, hp, rfl⟩
+      let p' : PolygonalDiskExamples.standardTriangle.K.support :=
+        ⟨p, by
+          change p ∈ PolygonalDiskExamples.standardTriangle.K.support
+          rwa [standardTriangle_support_eq]⟩
+      refine ⟨⟨T.homeomorph p, T.image_subset ⟨p, hp, rfl⟩⟩, ?_, rfl⟩
+      exact ⟨p', rfl⟩
+  respectsChartModel := True
 
 /-- Regard a chart-free plane-region polygonal neighborhood as a model chart disk. -/
 def toModelChartPolygonalDisk

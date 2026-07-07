@@ -150,6 +150,24 @@ theorem: a boundary complex, boundary subcomplex, PL inclusion, and PL
 homeomorphism to the standard closed triangle.
 \end{definition}
 
+\begin{lemma}[Standard triangle support is a centroid neighborhood]
+\label{moise:lem:standard_triangle_centroid_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleCentroid, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleCentroid_mem_closedTriangleSupport, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport_mem_nhds_centroid}
+\leanok
+
+\uses{moise:def:combinatorial_two_cell}
+The centroid of the standard closed triangle lies in the triangle support, and
+the triangle support is an ambient Euclidean neighborhood of that centroid.
+\end{lemma}
+
+\begin{proof}
+\leanok
+The centroid has both coordinates `1 / 3`, so it satisfies the three defining
+closed-triangle inequalities strictly.  The open set cut out by the strict
+inequalities is contained in the closed triangle and is a neighborhood of the
+centroid.
+\end{proof}
+
 \begin{lemma}[Polygonal disk is a combinatorial two-cell]
 \label{moise:lem:polygonal_disk_combinatorial_cell}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.PolygonalDisk.toCombinatorialTwoCell, LeanEval.Topology.ClassificationOfSurfaces.polygonal_disk_is_combinatorial_two_cell}
@@ -471,10 +489,10 @@ map fixed.
 
 \begin{definition}[Finite chart polygonal disk data]
 \label{moise:def:finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.standardTriangleInModel, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPair_refines, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.standardTriangle_support_eq, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.ofTriangleCopy, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.standardTriangleInModel, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPair_refines, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
 \leanok
 
-\uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell,moise:lem:standard_triangle_centroid_neighborhood}
 Local chart polygonal disk data assigns a chart pair and embedded polygonal disk
 or half-disk around each point.  Finite chart polygonal disk data records the
 same disk data for each selected index in a finite chart-pair cover, together
@@ -482,13 +500,16 @@ with chart-model and boundary compatibility assertions.  The API includes the
 standard geometric triangle as a concrete `ChartPolygonalDisk` in the coordinate
 plane.  `PlaneRegionPolygonalNeighborhood` is the chart-free coordinate object:
 a polygonal disk embedded in a plane region with image a neighborhood of a
-chosen point.  It can be converted to a `ModelChartPolygonalDisk`, then
-transported through the chart homeomorphism to produce an embedded chart
-polygonal disk in the manifold.  If the model disk image is a neighborhood of
-the chart coordinate, then `pulledCore_mem_nhds_of_range_mem_nhds` proves that
-its pulled-back core is a neighborhood in the manifold.  When the model region
-contains the standard simplex, the constructor `standardTriangleInModel` gives a
-concrete model disk.
+chosen point.  `PlaneRegionTriangleCopy` packages a homeomorphic copy of the
+standard triangle whose centroid maps to the chosen point and whose image lies
+in the region; `ofTriangleCopy` turns that data into a
+`PlaneRegionPolygonalNeighborhood`.  Such a neighborhood can be converted to a
+`ModelChartPolygonalDisk`, then transported through the chart homeomorphism to
+produce an embedded chart polygonal disk in the manifold.  If the model disk
+image is a neighborhood of the chart coordinate, then
+`pulledCore_mem_nhds_of_range_mem_nhds` proves that its pulled-back core is a
+neighborhood in the manifold.  When the model region contains the standard
+simplex, the constructor `standardTriangleInModel` gives a concrete model disk.
 \end{definition}
 
 \begin{lemma}[Compact local chart pairs have finite subcover]
