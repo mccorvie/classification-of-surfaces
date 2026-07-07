@@ -688,7 +688,12 @@ Proved finite/combinatorial bridge:
    `mathlib_bordered_surface_finite_rado_geometry`:
    finite chart polygonal disk data plus the named one-step constructors packages as
    `FiniteRadoInductionGeometry`; the theorem wrappers expose the named constructor rather than
-   rebuilding this package inline.
+   rebuilding this package inline.  The selector lemmas
+   `FiniteChartPolygonalDiskData.stepData_nextChartDisk_of_lt`,
+   `FiniteChartPolygonalDiskData.stepData_nextChartDisk_of_not_lt`,
+   `FiniteChartPolygonalDiskData.stepData_nextComplex_support_of_lt`, and
+   `FiniteChartPolygonalDiskData.stepData_nextComplex_of_not_lt` make the finite in-range and
+   out-of-range branches explicit.
 10. `FiniteRadoInductionGeometry.toRadoInductionData` and
    `rado_induction_data_of_finite_geometry`:
    once the local polygonal chart geometry is supplied over a finite cover, the recursive

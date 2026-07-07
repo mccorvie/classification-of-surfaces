@@ -4401,6 +4401,48 @@ noncomputable def stepData
       C.toChartPairExhaustion_pair_of_not_lt h
     RadoStepExtensionData.emptyChart S hEmpty
 
+@[simp] theorem stepData_nextChartDisk_of_lt
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) (S : RadoInductionState M)
+    (h : S.stage + 1 < Fintype.card C.Index) :
+    (D.stepData S).nextChartDisk =
+      some (D.disk ((Fintype.equivFin C.Index).symm ⟨S.stage + 1, h⟩)) := by
+  unfold stepData
+  simp [h]
+
+@[simp] theorem stepData_nextChartDisk_of_not_lt
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) (S : RadoInductionState M)
+    (h : ¬ S.stage + 1 < Fintype.card C.Index) :
+    (D.stepData S).nextChartDisk = none := by
+  unfold stepData
+  simp [h]
+
+/-- While the next stage is inside the finite cover, the step selector adjoins precisely the
+selected chart disk to the old support. -/
+theorem stepData_nextComplex_support_of_lt
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) (S : RadoInductionState M)
+    (h : S.stage + 1 < Fintype.card C.Index) :
+    (D.stepData S).nextComplex.support =
+      S.complex.support ∪
+        Set.range (D.disk ((Fintype.equivFin C.Index).symm ⟨S.stage + 1, h⟩)).embed := by
+  have hsupport :=
+    RadoStepExtensionData.chartUnionPLComplex_support S
+      (D.disk ((Fintype.equivFin C.Index).symm ⟨S.stage + 1, h⟩))
+  unfold stepData
+  simpa [h] using hsupport
+
+/-- Once the finite cover is exhausted, the step selector is the empty-chart extension and leaves
+the complex unchanged. -/
+@[simp] theorem stepData_nextComplex_of_not_lt
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) (S : RadoInductionState M)
+    (h : ¬ S.stage + 1 < Fintype.card C.Index) :
+    (D.stepData S).nextComplex = S.complex := by
+  unfold stepData
+  simp [h]
+
 /-- Polygonal disk data over a finite chart-pair cover as finite Rado induction geometry. -/
 noncomputable def toFiniteRadoInductionGeometry
     {M : Type u} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}
