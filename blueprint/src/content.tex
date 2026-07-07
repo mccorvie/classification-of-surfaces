@@ -851,7 +851,7 @@ faces use the relative version for half-disks.
 
 \begin{theorem}[Moise--Rado triangulation for bordered surfaces]
 \label{moise:thm:rado_bordered_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_pl_triangulation_data, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_pl_triangulation_data, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
 \leanok
 
 \uses{moise:lem:mathlib_bordered_surface_to_moise_two_manifold,moise:thm:compact_moise_surface_finitely_triangulable}
@@ -865,7 +865,7 @@ the ambient PL complex.
 \leanok
 Convert the mathlib bordered-surface hypotheses to the Moise chart-pair
 interface and apply compact finite triangulability for Moise surfaces.  The
-named theorem `mathlib_bordered_surface_finite_pl_triangulation_data` packages
+named construction `mathlib_bordered_surface_finitePLTriangulationData` packages
 the resulting complex, support equality, finite support data, and boundary data;
 `rado_bordered_surface_triangulation` is the public existential wrapper.
 \end{proof}
@@ -1279,7 +1279,7 @@ surjective is a homeomorphism onto the ambient surface.
 
 \begin{theorem}[Compact Eval surface is finitely triangulable]
 \label{moise:thm:compact_eval_surface_finitely_triangulable}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finitely_triangulable}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteSurfaceTriangulation_homeomorphSurface, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finiteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finiteSurfaceTriangulation_homeomorphSurface, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finitely_triangulable}
 \leanok
 
 \uses{moise:def:finite_surface_triangulation,moise:lem:eval_to_moise_bordered_surface,moise:thm:rado_bordered_surface_triangulation,moise:thm:finite_pl_complex_to_finite_surface_triangulation}
@@ -1291,8 +1291,10 @@ subcomplex.
 \leanok
 Apply the named mathlib-bordered triangulation theorem, which obtains finite PL
 triangulation data from the Moise--Rado route and converts it to the project
-`FiniteSurfaceTriangulation` object.  The Eval theorem is the connected-surface
-specialization of this wrapper.
+`FiniteSurfaceTriangulation` object.  The named constructions
+`mathlib_bordered_surface_finiteSurfaceTriangulation` and
+`compact_eval_surface_finiteSurfaceTriangulation` carry the actual objects; the
+theorem statements are existential wrappers.
 \end{proof}
 
 \section{From triangulations to cell complexes}

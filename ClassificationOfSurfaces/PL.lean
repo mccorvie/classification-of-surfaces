@@ -4902,14 +4902,21 @@ theorem mathlib_bordered_surface_to_moise_two_manifold
     ∃ _hM : MoiseTwoManifold M, True := by
   exact ⟨mathlib_bordered_surface_moiseTwoManifold M, trivial⟩
 
+/-- Named finite PL triangulation data built from the mathlib bordered-surface atlas. -/
+noncomputable def mathlib_bordered_surface_finitePLTriangulationData
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    FinitePLTriangulationData M :=
+  (mathlib_bordered_surface_moiseTwoManifold M).finitePLTriangulationData
+
 /-- Mathlib bordered surfaces produce finite PL triangulation data via the Moise--Rado route. -/
 theorem mathlib_bordered_surface_finite_pl_triangulation_data
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ _D : FinitePLTriangulationData M, True := by
-  rcases mathlib_bordered_surface_to_moise_two_manifold M with ⟨hM, _⟩
-  exact compact_moise_surface_finite_pl_triangulation_data M hM
+  exact ⟨mathlib_bordered_surface_finitePLTriangulationData M, trivial⟩
 
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation
@@ -4918,7 +4925,7 @@ theorem rado_bordered_surface_triangulation
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
       ∃ _finiteSupport : K.FiniteSupportData, ∃ _boundary : K.BoundarySubcomplexData, True := by
-  rcases mathlib_bordered_surface_finite_pl_triangulation_data M with ⟨D, _⟩
+  let D := mathlib_bordered_surface_finitePLTriangulationData M
   exact ⟨D.K, D.covers, D.finiteSupport, D.boundary, trivial⟩
 
 /-- Bridge from mathlib's Eval surface hypotheses to the Moise bordered-surface interface. -/

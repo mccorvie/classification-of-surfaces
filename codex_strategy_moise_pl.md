@@ -713,9 +713,12 @@ codimension-one faces of a two-simplex as the current scaffold boundary word.
 `PLComplexInSpace.toFiniteSurfaceTriangulation` is the named construction behind the public
 existential theorem.  `FinitePLTriangulationData` is the named Rado-output package for a covering
 embedded PL complex, finite support data, and boundary-subcomplex data; the bordered Rado theorem
-now wraps `mathlib_bordered_surface_finite_pl_triangulation_data`.
-`mathlib_bordered_surface_finitely_triangulable` is the direct finite-surface-triangulation wrapper
-used by `compact_eval_surface_finitely_triangulable`.
+now wraps `mathlib_bordered_surface_finitePLTriangulationData`.
+`mathlib_bordered_surface_finiteSurfaceTriangulation` and
+`compact_eval_surface_finiteSurfaceTriangulation` are the named finite triangulation objects used
+by the public existential wrappers
+`mathlib_bordered_surface_finitely_triangulable` and
+`compact_eval_surface_finitely_triangulable`.
 
 Closed coordinate-local bridge:
 

@@ -193,12 +193,24 @@ variable [Nonempty S] [T2Space S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 
+/-- The named finite surface triangulation produced by the Moise--Rado route for a compact
+mathlib bordered surface. -/
+noncomputable def mathlib_bordered_surface_finiteSurfaceTriangulation :
+    FiniteSurfaceTriangulation S :=
+  (mathlib_bordered_surface_finitePLTriangulationData S).toFiniteSurfaceTriangulation
+
+/-- The named mathlib bordered-surface triangulation realizes the ambient surface. -/
+theorem mathlib_bordered_surface_finiteSurfaceTriangulation_homeomorphSurface :
+    Nonempty ((mathlib_bordered_surface_finiteSurfaceTriangulation S).realization ≃ₜ S) := by
+  let D := mathlib_bordered_surface_finitePLTriangulationData S
+  exact D.toFiniteSurfaceTriangulation_homeomorphSurface
+
 /-- Mathlib bordered-surface hypotheses produce a finite surface triangulation through the
 Moise--Rado finite PL triangulation data package. -/
 theorem mathlib_bordered_surface_finitely_triangulable :
     ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
-  rcases mathlib_bordered_surface_finite_pl_triangulation_data S with ⟨D, _⟩
-  exact ⟨D.toFiniteSurfaceTriangulation, D.toFiniteSurfaceTriangulation_homeomorphSurface⟩
+  exact ⟨mathlib_bordered_surface_finiteSurfaceTriangulation S,
+    mathlib_bordered_surface_finiteSurfaceTriangulation_homeomorphSurface S⟩
 
 end MathlibBorderedSurface
 
@@ -211,10 +223,21 @@ variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 
+/-- The named finite surface triangulation produced for a compact Eval surface. -/
+noncomputable def compact_eval_surface_finiteSurfaceTriangulation :
+    FiniteSurfaceTriangulation S :=
+  mathlib_bordered_surface_finiteSurfaceTriangulation S
+
+/-- The named compact Eval surface triangulation realizes the ambient surface. -/
+theorem compact_eval_surface_finiteSurfaceTriangulation_homeomorphSurface :
+    Nonempty ((compact_eval_surface_finiteSurfaceTriangulation S).realization ≃ₜ S) :=
+  mathlib_bordered_surface_finiteSurfaceTriangulation_homeomorphSurface S
+
 /-- Moise/PL theorem boundary: compact Eval surfaces admit finite triangulations. -/
 theorem compact_eval_surface_finitely_triangulable :
     ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
-  exact mathlib_bordered_surface_finitely_triangulable S
+  exact ⟨compact_eval_surface_finiteSurfaceTriangulation S,
+    compact_eval_surface_finiteSurfaceTriangulation_homeomorphSurface S⟩
 
 /-- Compatibility theorem for the initial scaffold name. -/
 theorem compact_surface_triangulable : Triangulable S :=
