@@ -29,6 +29,7 @@ project skeleton and documents the intended handoff points between teams.
 * `PLComplexInSpace`
 * `FinitePLTriangulationData`
 * `MoiseTwoManifold`
+* `MoiseTwoManifold.finitePLTriangulationData`
 * `mathlib_bordered_surface_finitely_triangulable`
 * `compact_eval_surface_finitely_triangulable`
 

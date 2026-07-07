@@ -861,7 +861,9 @@ Expected Rado induction shape:
    existential wrapper.
    At the Moise interface level, `MoiseTwoManifold.radoSequence`,
    `MoiseTwoManifold.radoPLComplex`, and `MoiseTwoManifold.radoPLComplex_support` are the preferred
-   API for using the completed construction.
+   API for using the completed construction.  For compact Moise surfaces,
+   `MoiseTwoManifold.finitePLTriangulationData` is the named finite-support/boundary package built
+   from the Rado complex.
 6. For compact `M`, reduce locally finite countable triangulation to finite triangulation.
 
 ### Moise work package M8: boundary adaptation

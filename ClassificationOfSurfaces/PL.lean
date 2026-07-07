@@ -4315,6 +4315,29 @@ theorem radoPLComplex_support
     hM.radoPLComplex.support = Set.univ :=
   hM.radoSequence.unionPLComplex_covers_univ
 
+/-- The finite PL triangulation data produced from the Rado complex stored in a compact Moise
+two-manifold. -/
+noncomputable def finitePLTriangulationData
+    {M : Type*} [TopologicalSpace M] [CompactSpace M] (hM : MoiseTwoManifold M) :
+    FinitePLTriangulationData M :=
+  let finiteSupport :=
+    Classical.choose (locallyFiniteComplex_finite_of_compact_support hM.radoPLComplex)
+  { K := hM.radoPLComplex
+    covers := hM.radoPLComplex_support
+    finiteSupport := finiteSupport
+    boundary := hM.radoPLComplex.fullBoundarySubcomplexData }
+
+@[simp] theorem finitePLTriangulationData_K
+    {M : Type*} [TopologicalSpace M] [CompactSpace M] (hM : MoiseTwoManifold M) :
+    hM.finitePLTriangulationData.K = hM.radoPLComplex := by
+  rfl
+
+/-- The finite PL triangulation data carried by a compact Moise two-manifold covers the space. -/
+theorem finitePLTriangulationData_support
+    {M : Type*} [TopologicalSpace M] [CompactSpace M] (hM : MoiseTwoManifold M) :
+    hM.finitePLTriangulationData.K.support = Set.univ :=
+  hM.finitePLTriangulationData.covers
+
 end MoiseTwoManifold
 
 /-- Data extracted from a compact mathlib bordered surface before it is packaged as the Moise
@@ -4389,22 +4412,14 @@ theorem compact_moise_surface_finitely_triangulable
     (M : Type*) [TopologicalSpace M] [CompactSpace M] (_hM : MoiseTwoManifold M) :
     ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
       ∃ _finiteSupport : K.FiniteSupportData, True := by
-  rcases rado_triangulation_moise_two_manifold M _hM with ⟨K, hK⟩
-  rcases locallyFiniteComplex_finite_of_compact_support K with ⟨finiteSupport, hfinite⟩
-  exact ⟨K, hK, finiteSupport, hfinite⟩
+  let D := _hM.finitePLTriangulationData
+  exact ⟨D.K, D.covers, D.finiteSupport, trivial⟩
 
 /-- Compact Moise surfaces produce finite PL triangulation data. -/
 theorem compact_moise_surface_finite_pl_triangulation_data
     (M : Type*) [TopologicalSpace M] [CompactSpace M] (_hM : MoiseTwoManifold M) :
     ∃ _D : FinitePLTriangulationData M, True := by
-  rcases compact_moise_surface_finitely_triangulable M _hM with
-    ⟨K, hK, finiteSupport, _⟩
-  let D : FinitePLTriangulationData M :=
-    { K := K
-      covers := hK
-      finiteSupport := finiteSupport
-      boundary := K.fullBoundarySubcomplexData }
-  exact ⟨D, trivial⟩
+  exact ⟨_hM.finitePLTriangulationData, trivial⟩
 
 /-- Bordered PL approximation theorem boundary. -/
 theorem bordered_pl_approximation
