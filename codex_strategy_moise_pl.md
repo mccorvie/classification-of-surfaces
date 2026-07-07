@@ -818,7 +818,12 @@ Expected Rado induction shape:
      `MoiseTwoManifold` interface for its stored exhaustion, so the hard proof obligation has
      moved to constructing that interface from the mathlib manifold atlas.
 3. Build a `RadoInductiveSequence` by recursion from `RadoInductionData`:
-   - the `n`th stage covers the `n`th chart core.
+   - the `n`th stage covers the `n`th chart core;
+   - `RadoInductionData.covers_core_of_le`,
+     `RadoInductionData.covers_boundaryCore_of_le`,
+     `RadoInductiveSequence.core_subset_stage_of_le`, and
+     `RadoInductiveSequence.boundaryCore_subset_stage_of_le` now prove the cumulative invariant:
+     every later stage still covers every earlier chart core and boundary core.
 4. Prove the union of stage supports covers `Set.univ`; this is now a Lean proof from the
    exhaustion coverage field.
 5. Build the union complex using `Small`/`Shrink`: each stage support is small, so the countable

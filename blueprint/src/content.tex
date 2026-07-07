@@ -678,7 +678,7 @@ all finite stages.
 
 \begin{lemma}[Rado stage supports cover the manifold]
 \label{moise:lem:rado_support_union_covers}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.union_complex_covers_univ}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_core_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.union_complex_covers_univ}
 \leanok
 
 \uses{moise:def:rado_inductive_sequence,moise:lem:chart_pair_exhaustion}
@@ -690,9 +690,10 @@ union has support equal to the whole manifold.
 \begin{proof}
 \leanok
 The $n$th chart core is contained in the support of the $n$th induction stage,
-so it is contained in the union of all stage supports.  Since the chart cores
-cover the manifold by the exhaustion hypothesis, the support union is all of
-`Set.univ`.
+and extension monotonicity implies that later stages still cover every earlier
+core and boundary core.  Hence each chart core is contained in the union of all
+stage supports.  Since the chart cores cover the manifold by the exhaustion
+hypothesis, the support union is all of `Set.univ`.
 \end{proof}
 
 \begin{lemma}[Rado induction local data exists]

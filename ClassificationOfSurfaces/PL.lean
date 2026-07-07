@@ -3697,6 +3697,31 @@ theorem covers_core
       rw [hstage] at h
       simpa [stage] using h
 
+/-- The recursive Rado stage supports are monotone under successor stages. -/
+theorem support_subset_succ
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) (n : ℕ) :
+    (D.stage n).complex.support ⊆ (D.stage (n + 1)).complex.support :=
+  (D.extends_succ n).1
+
+/-- Later recursive Rado stages still cover earlier chart cores. -/
+theorem covers_core_of_le
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) {m n : ℕ} (hmn : m ≤ n) :
+    (E.pair m).core ⊆ (D.stage n).complex.support := by
+  induction n with
+  | zero =>
+      have hm : m = 0 := Nat.eq_zero_of_le_zero hmn
+      subst m
+      exact D.covers_core 0
+  | succ n ih =>
+      by_cases hm : m = n + 1
+      · subst m
+        exact D.covers_core (n + 1)
+      · have hlt : m < n + 1 := lt_of_le_of_ne hmn hm
+        have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
+        exact (ih hmn').trans (D.support_subset_succ n)
+
 /-- The recursively built `n`th stage covers the `n`th boundary chart core. -/
 theorem covers_boundaryCore
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -3709,6 +3734,24 @@ theorem covers_boundaryCore
       have h := (D.step n (D.stage n)).boundaryCore_subset_toState_support
       rw [hstage] at h
       simpa [stage] using h
+
+/-- Later recursive Rado stages still cover earlier boundary chart cores. -/
+theorem covers_boundaryCore_of_le
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) {m n : ℕ} (hmn : m ≤ n) :
+    (E.pair m).boundaryCore ⊆ (D.stage n).complex.support := by
+  induction n with
+  | zero =>
+      have hm : m = 0 := Nat.eq_zero_of_le_zero hmn
+      subst m
+      exact D.covers_boundaryCore 0
+  | succ n ih =>
+      by_cases hm : m = n + 1
+      · subst m
+        exact D.covers_boundaryCore (n + 1)
+      · have hlt : m < n + 1 := lt_of_le_of_ne hmn hm
+        have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
+        exact (ih hmn').trans (D.support_subset_succ n)
 
 end RadoInductionData
 
@@ -3751,6 +3794,49 @@ theorem boundaryCore_subset_supportUnion
     (E.pair n).boundaryCore ⊆ S.supportUnion := by
   intro x hx
   exact Set.mem_iUnion.mpr ⟨n, S.covers_boundaryCore n hx⟩
+
+/-- The supports in a completed Rado induction sequence are monotone under successor stages. -/
+theorem support_subset_succ
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (n : ℕ) :
+    (S.stage n).complex.support ⊆ (S.stage (n + 1)).complex.support :=
+  (S.extends_succ n).1
+
+/-- Later stages in a completed Rado sequence still cover earlier chart cores. -/
+theorem core_subset_stage_of_le
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) {m n : ℕ} (hmn : m ≤ n) :
+    (E.pair m).core ⊆ (S.stage n).complex.support := by
+  induction n with
+  | zero =>
+      have hm : m = 0 := Nat.eq_zero_of_le_zero hmn
+      subst m
+      exact S.covers_core 0
+  | succ n ih =>
+      by_cases hm : m = n + 1
+      · subst m
+        exact S.covers_core (n + 1)
+      · have hlt : m < n + 1 := lt_of_le_of_ne hmn hm
+        have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
+        exact (ih hmn').trans (S.support_subset_succ n)
+
+/-- Later stages in a completed Rado sequence still cover earlier boundary chart cores. -/
+theorem boundaryCore_subset_stage_of_le
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) {m n : ℕ} (hmn : m ≤ n) :
+    (E.pair m).boundaryCore ⊆ (S.stage n).complex.support := by
+  induction n with
+  | zero =>
+      have hm : m = 0 := Nat.eq_zero_of_le_zero hmn
+      subst m
+      exact S.covers_boundaryCore 0
+  | succ n ih =>
+      by_cases hm : m = n + 1
+      · subst m
+        exact S.covers_boundaryCore (n + 1)
+      · have hlt : m < n + 1 := lt_of_le_of_ne hmn hm
+        have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
+        exact (ih hmn').trans (S.support_subset_succ n)
 
 /-- The Rado stage-support union covers the whole manifold because chart cores cover it. -/
 theorem supportUnion_eq_univ
