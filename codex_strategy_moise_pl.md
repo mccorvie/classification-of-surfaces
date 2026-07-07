@@ -694,7 +694,9 @@ theorem mathlib_chartAt_contains_model_polygonal_disk_core
 This is now the place where the actual chart-core shrinking and polygonal disk triangulation in the
 coordinate half-plane have to be proved.  The transport of disk data through the mathlib chart atlas
 is formalized by `ModelChartPolygonalDisk.toChartPolygonalDisk`, and core refinement is formalized
-by `RadoChartPair.withCore_refines`.  The public theorem
+by `RadoChartPair.withCore_refines`.  The helper
+`ModelChartPolygonalDisk.standardTriangleInModel` supplies a concrete model disk whenever the chart
+model region contains the standard simplex.  The public theorem
 `mathlib_chartAt_contains_polygonal_disk_core` is a proved wrapper around the coordinate-local
 boundary: it pulls the model disk back through the chart homeomorphism and proves that the resulting
 chart pair refines `RadoChartPair.fromChartAt`.

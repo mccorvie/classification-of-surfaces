@@ -2680,6 +2680,26 @@ theorem toChartPair_refines (D : ModelChartPolygonalDisk P)
       rfl)
     hcore
 
+/-- The standard coordinate triangle as a model disk in any chart model region containing it. -/
+def standardTriangleInModel (P : RadoChartPair M)
+    (hregion : EuclideanComplex.Examples.closedTriangleSupport ⊆ P.modelRegion) :
+    ModelChartPolygonalDisk P where
+  disk := PolygonalDiskExamples.standardTriangle
+  embed := fun p => ⟨p.1, hregion p.2⟩
+  isEmbedding := by
+    have hCodomain :
+        _root_.Topology.IsEmbedding ((Subtype.val : P.modelRegion → Plane)) :=
+      _root_.Topology.IsEmbedding.subtypeVal
+    have hDomain :
+        _root_.Topology.IsEmbedding
+          ((Subtype.val : PolygonalDiskExamples.standardTriangle.K.support → Plane)) :=
+      _root_.Topology.IsEmbedding.subtypeVal
+    refine (hCodomain.of_comp_iff).mp ?_
+    change _root_.Topology.IsEmbedding
+      (fun p : PolygonalDiskExamples.standardTriangle.K.support => (p.1 : Plane))
+    simpa [Function.comp_def] using hDomain
+  respectsChartModel := True
+
 end ModelChartPolygonalDisk
 
 namespace RadoChartPair
