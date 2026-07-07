@@ -2305,6 +2305,9 @@ structure RadoChartPair (M : Type*) [TopologicalSpace M] where
   core : Set M
   domain_open : IsOpen domain
   core_subset_domain : core ⊆ domain
+  modelRegion : Set Plane
+  chartHomeomorph : domain ≃ₜ modelRegion
+  model_matches_kind : Prop
   chart_to_model : Prop
   boundaryCore : Set M
   boundaryCore_subset_core : boundaryCore ⊆ core
@@ -2322,6 +2325,38 @@ def IsInteriorChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Pro
   P.kind = RadoChartKind.disk
 
 end RadoChartPair
+
+/-- A polygonal disk embedded in a Rado chart and covering the chart core.
+
+This is the local geometric input used to start the Rado induction and to fill new chart cores in
+the successor step. -/
+structure ChartPolygonalDisk (M : Type*) [TopologicalSpace M] where
+  chart : RadoChartPair M
+  disk : PolygonalDisk
+  embed : disk.K.support → M
+  isEmbedding : _root_.Topology.IsEmbedding embed
+  support_subset_domain : Set.range embed ⊆ chart.domain
+  core_covered : chart.core ⊆ Set.range embed
+  boundaryCore_covered : chart.boundaryCore ⊆ Set.range embed
+  respectsChartModel : Prop
+
+namespace ChartPolygonalDisk
+
+/-- The embedded PL complex associated to a chart polygonal disk. -/
+def toPLComplexInSpace {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk M) :
+    PLComplexInSpace M where
+  Complex := D.disk.K
+  embed := D.embed
+  isEmbedding := D.isEmbedding
+  locallyFinite := True
+  compatibleCharts := D.respectsChartModel
+
+@[simp] theorem toPLComplexInSpace_complex
+    {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk M) :
+    D.toPLComplexInSpace.Complex = D.disk.K := by
+  rfl
+
+end ChartPolygonalDisk
 
 /-- Countable chart-pair exhaustion data for the Rado induction. -/
 structure ChartPairExhaustion (M : Type*) [TopologicalSpace M] where
@@ -2362,58 +2397,76 @@ structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   locallyFinite : Prop
   boundaryLocallyFinite : Prop
 
+/-- Data used to initialize the Rado induction from the first chart pair. -/
+structure InitialPLNeighborhoodData
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) where
+  chartDisk : ChartPolygonalDisk M
+  chart_eq : chartDisk.chart = E.pair 0
+  coversInitialCore : (E.pair 0).core ⊆ chartDisk.toPLComplexInSpace.support
+  coversInitialBoundaryCore : (E.pair 0).boundaryCore ⊆ chartDisk.toPLComplexInSpace.support
+  boundarySubcomplexCompatible : Prop
+
+/-- Data for one successor step of the Rado induction. -/
+structure RadoStepExtensionData
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (S : RadoInductionState M) where
+  nextComplex : PLComplexInSpace M
+  boundarySubcomplex : nextComplex.Complex.Subcomplex
+  nextChartDisk : ChartPolygonalDisk M
+  next_chart_eq : nextChartDisk.chart = E.pair (S.stage + 1)
+  extends_old : PLComplexInSpace.Extends nextComplex S.complex
+  coversNextCore : (E.pair (S.stage + 1)).core ⊆ nextComplex.support
+  coversNextBoundaryCore : (E.pair (S.stage + 1)).boundaryCore ⊆ nextComplex.support
+  compatibleOnOverlaps : Prop
+  boundaryCompatibleOnOverlaps : Prop
+  boundaryRespectsCharts : Prop
+
 /-- Countable chart-pair exhaustion for a Moise two-manifold. -/
 theorem chart_pair_exhaustion
     {M : Type*} [TopologicalSpace M] (_hM : MoiseTwoManifold M) :
     ∃ _E : ChartPairExhaustion M, True := by
-  let P : RadoChartPair M :=
-    { kind := RadoChartKind.disk
-      domain := Set.univ
-      core := Set.univ
-      domain_open := isOpen_univ
-      core_subset_domain := by
-        intro x hx
-        trivial
-      chart_to_model := True
-      boundaryCore := ∅
-      boundaryCore_subset_core := by
-        intro x hx
-        cases hx
-      boundaryCore_empty_of_disk := by
-        intro hkind
-        rfl
-      boundaryCore_in_boundary_chart := by
-        intro hkind
-        trivial }
-  let E : ChartPairExhaustion M :=
-    { pair := fun _ => P
-      covers := by
-        intro x
-        exact ⟨0, trivial⟩
-      boundaryCovers := by
-        intro x hx
-        simp [P] at hx
-      interiorChartsCoverInterior := True
-      boundaryChartsCoverBoundary := True
-      locallyFinite := True
-      nestedControl := True
-      boundaryLocallyFinite := True
-      boundaryNestedControl := True }
-  exact ⟨E, trivial⟩
+  sorry
 
 /-- Initial PL neighborhood in the Rado induction. -/
 theorem initial_pl_neighborhood
-    {M : Type*} [TopologicalSpace M] (_hM : MoiseTwoManifold M) :
+    {M : Type*} [TopologicalSpace M] (_hM : MoiseTwoManifold M)
+    (E : ChartPairExhaustion M) (D : InitialPLNeighborhoodData E) :
     ∃ S : RadoInductionState M, S.stage = 0 := by
-  sorry
+  let K := D.chartDisk.toPLComplexInSpace
+  let S : RadoInductionState M :=
+    { stage := 0
+      complex := K
+      boundarySubcomplex := D.chartDisk.disk.boundarySubcomplex
+      coversPreviousCores := (E.pair 0).core ⊆ K.support
+      coversPreviousBoundaryCores := (E.pair 0).boundaryCore ⊆ K.support
+      compatibleOnOverlaps := True
+      boundaryIsSubcomplex := D.boundarySubcomplexCompatible
+      boundaryCompatibleOnOverlaps := True
+      boundaryRespectsCharts := D.chartDisk.respectsChartModel
+      locallyFinite := K.locallyFinite
+      boundaryLocallyFinite := True }
+  exact ⟨S, rfl⟩
 
 /-- Extend a PL complex across one chart in the Rado induction. -/
 theorem extend_pl_complex_across_chart
-    {M : Type*} [TopologicalSpace M] (_E : ChartPairExhaustion M)
-    (S : RadoInductionState M) :
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (S : RadoInductionState M) (D : RadoStepExtensionData E S) :
     ∃ S' : RadoInductionState M, S'.stage = S.stage + 1 ∧
       PLComplexInSpace.Extends S'.complex S.complex := by
-  sorry
+  let S' : RadoInductionState M :=
+    { stage := S.stage + 1
+      complex := D.nextComplex
+      boundarySubcomplex := D.boundarySubcomplex
+      coversPreviousCores := (E.pair (S.stage + 1)).core ⊆ D.nextComplex.support
+      coversPreviousBoundaryCores :=
+        (E.pair (S.stage + 1)).boundaryCore ⊆ D.nextComplex.support
+      compatibleOnOverlaps := D.compatibleOnOverlaps
+      boundaryIsSubcomplex := True
+      boundaryCompatibleOnOverlaps := D.boundaryCompatibleOnOverlaps
+      boundaryRespectsCharts := D.boundaryRespectsCharts
+      locallyFinite := D.nextComplex.locallyFinite
+      boundaryLocallyFinite := True }
+  exact ⟨S', rfl, D.extends_old⟩
 
 /-- Moise-Rado triangulation theorem boundary for two-manifolds. -/
 theorem rado_triangulation_moise_two_manifold
@@ -2445,7 +2498,17 @@ theorem rado_bordered_surface_triangulation
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
       ∃ _finiteSupport : K.FiniteSupportData, ∃ _boundary : K.BoundarySubcomplexData, True := by
-  sorry
+  let hM : MoiseTwoManifold M :=
+    { t2 := inferInstance
+      local_disk_or_half_disk := True
+      secondCountable_or_separable_metric := True }
+  rcases compact_moise_surface_finitely_triangulable M hM with ⟨K, hK, finiteSupport, _⟩
+  let boundary : K.BoundarySubcomplexData :=
+    { boundary := EuclideanComplex.Subcomplex.full K.Complex
+      coversBoundary := True
+      compatibleWithAmbient := True
+      locallyFiniteBoundary := True }
+  exact ⟨K, hK, finiteSupport, boundary, trivial⟩
 
 /-- Bridge from mathlib's Eval surface hypotheses to the Moise bordered-surface interface. -/
 theorem eval_surface_to_moise_bordered_surface

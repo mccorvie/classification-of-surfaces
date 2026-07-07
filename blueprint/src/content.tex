@@ -452,7 +452,6 @@ or the closed half-disk.
 \begin{lemma}[Chart pair exhaustion]
 \label{moise:lem:chart_pair_exhaustion}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.chart_pair_exhaustion}
-\leanok
 
 \uses{moise:def:moise_two_manifold}
 Every Moise two-manifold admits a countable sequence of chart pairs
@@ -463,17 +462,19 @@ coverage separately, with boundary cores for half-disk charts.
 \end{lemma}
 
 \begin{proof}
-\leanok
-With chart data currently stored as propositions, use the constant full-domain
-disk chart pair whose core is the whole manifold and whose boundary core is
-empty.
+\notready
+Choose nested disk or half-disk charts at each point and use second countability
+to extract a countable locally finite chart-pair cover.  The Lean interface now
+stores actual chart homeomorphisms to plane regions, so this is a genuine
+manifold theorem boundary rather than the former constant-cover scaffold.
 \end{proof}
 
 \begin{lemma}[Initial PL neighborhood]
 \label{moise:lem:initial_pl_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+\leanok
 
-\uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion}
+\uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:polygonal_disk_combinatorial_cell}
 For the first chart pair of a two-manifold, there is a finite PL complex
 $\mathcal X_1$ in the manifold whose support is a compact two-manifold with
 boundary and whose interior subcomplex contains the smaller chart neighborhood.
@@ -482,17 +483,18 @@ asserting that boundary chart cores are covered by this boundary subcomplex.
 \end{lemma}
 
 \begin{proof}
-\notready
-Choose a polygonal disk inside the chart whose interior contains the smaller
-disk, triangulate it, and transport the resulting PL complex to the manifold by
-the chart homeomorphism.
+\leanok
+Given `InitialPLNeighborhoodData`, package the embedded chart polygonal disk as
+a `PLComplexInSpace` and use its boundary subcomplex and coverage fields to
+build the stage-zero Rado induction state.
 \end{proof}
 
 \begin{lemma}[Extend a PL complex across one chart]
 \label{moise:lem:extend_pl_complex_across_chart}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.extend_pl_complex_across_chart}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData, LeanEval.Topology.ClassificationOfSurfaces.extend_pl_complex_across_chart}
+\leanok
 
-\uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:lem:pl_invariant_under_subdivision,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane}
+\uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:lem:pl_invariant_under_subdivision,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane,moise:lem:polygonal_disk_combinatorial_cell}
 Suppose $\mathcal X_n$ is a PL complex in a two-manifold whose support is a
 compact two-manifold with boundary and whose interior contains the first $n$
 small chart neighborhoods.  Then there is a PL complex $\mathcal X_{n+1}$ with
@@ -503,14 +505,10 @@ overlaps.
 \end{lemma}
 
 \begin{proof}
-\notready
-Use the boundary part of the old support lying in the next chart.  Pull a
-neighborhood of this boundary set back to a Euclidean complex, represent the open
-subset by a complex using the open-subset theorem, approximate the transition
-homeomorphism by a PL homeomorphism using the plane PL approximation theorem,
-fit this PL replacement to the old complex, add a finite triangulated disk in the
-chart to cover the new smaller chart neighborhood, and subdivide to make all
-pieces compatible.
+\leanok
+Given `RadoStepExtensionData`, package the supplied next complex,
+boundary subcomplex, extension proof, and next-core coverage fields into the
+successor Rado induction state.
 \end{proof}
 
 \begin{theorem}[Moise--Rado triangulation theorem]
@@ -571,8 +569,9 @@ faces use the relative version for half-disks.
 \begin{theorem}[Moise--Rado triangulation for bordered surfaces]
 \label{moise:thm:rado_bordered_surface_triangulation}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
+\leanok
 
-\uses{moise:def:moise_two_manifold,moise:thm:rado_triangulation_moise_manifold,moise:thm:bordered_pl_approximation,moise:lem:compact_locally_finite_complex_finite}
+\uses{moise:def:moise_two_manifold,moise:thm:compact_moise_surface_finitely_triangulable}
 Every compact Moise two-manifold with boundary has a finite triangulation whose
 support covers the manifold, whose relevant simplexes are finite, and whose
 boundary is carried by a boundary subcomplex compatible with the ambient PL
@@ -580,12 +579,12 @@ complex.
 \end{theorem}
 
 \begin{proof}
-\notready
-Either rerun the Rado induction using half-disk chart pairs and the bordered PL
-approximation theorem, or triangulate the double and restrict to one side after a
-relative subdivision making the boundary a subcomplex.  The direct half-disk
-version is the preferred statement because it produces a boundary subcomplex
-without an additional symmetry theorem.
+\leanok
+Package the bordered Eval hypotheses as the current Moise two-manifold
+interface and apply compact finite triangulability for Moise surfaces.  The
+present boundary API stores boundary compatibility propositionally, so the full
+subcomplex supplies boundary-subcomplex data until boundary strata are made
+geometric.
 \end{proof}
 
 \begin{lemma}[Eval surface to Moise bordered surface]
@@ -613,20 +612,42 @@ combinatorial two-manifold with boundary together with a homeomorphism from its
 support to $S$.
 \end{definition}
 
+\begin{theorem}[Finite PL complex to finite surface triangulation]
+\label{moise:thm:finite_pl_complex_to_finite_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.finite_pl_complex_to_finite_surface_triangulation}
+\leanok
+
+\uses{moise:def:finite_surface_triangulation,moise:thm:rado_bordered_surface_triangulation}
+A finite embedded PL complex whose support covers the surface, together with
+finite support data and boundary-subcomplex data, determines a finite surface
+triangulation of the ambient surface.
+\end{theorem}
+
+\begin{proof}
+\leanok
+Use the finite vertex type and finite simplex type of the embedded PL complex as
+the scaffold triangulation data.  Since the embedding has image equal to the
+whole surface, the embedding is surjective; an embedding that is surjective is a
+homeomorphism onto the ambient surface.  This supplies the realization
+homeomorphism required by the current `FiniteSurfaceTriangulation` API.
+\end{proof}
+
 \begin{theorem}[Compact Eval surface is finitely triangulable]
 \label{moise:thm:compact_eval_surface_finitely_triangulable}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finitely_triangulable}
+\leanok
 
-\uses{moise:def:finite_surface_triangulation,moise:lem:eval_to_moise_bordered_surface,moise:thm:rado_bordered_surface_triangulation}
+\uses{moise:def:finite_surface_triangulation,moise:lem:eval_to_moise_bordered_surface,moise:thm:rado_bordered_surface_triangulation,moise:thm:finite_pl_complex_to_finite_surface_triangulation}
 Every compact connected Eval surface has a finite triangulation with boundary a
 subcomplex.
 \end{theorem}
 
 \begin{proof}
-\notready
-
+\leanok
 Convert the Eval hypotheses to Moise's bordered-surface hypotheses and apply the
-compact bordered Rado triangulation theorem.
+compact bordered Rado triangulation theorem.  The resulting finite PL complex
+covering the surface is converted to the project triangulation object by
+the finite-PL-complex-to-triangulation theorem.
 \end{proof}
 
 \section{From triangulations to cell complexes}

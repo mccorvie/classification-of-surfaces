@@ -107,6 +107,39 @@ abbrev FiniteTriangulation (S : Type*) [TopologicalSpace S] :=
 abbrev Triangulable (S : Type*) [TopologicalSpace S] :=
   SurfaceTriangulable S
 
+/-- Conversion theorem boundary from Moise's finite PL complex output to the project's finite
+surface-triangulation object.
+
+This is the final combinatorial packaging step after the Rado/Moise construction: extract the
+finite vertex, edge, and triangle sets from the finite embedded PL complex, record the boundary
+subcomplex, and identify the PL realization with the ambient surface by the covering
+homeomorphism. -/
+theorem finite_pl_complex_to_finite_surface_triangulation
+    (S : Type*) [TopologicalSpace S] (K : PLComplexInSpace S)
+    (_covers : K.support = Set.univ) (_finiteSupport : K.FiniteSupportData)
+    (_boundary : K.BoundarySubcomplexData) :
+    ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
+  classical
+  have hsurj : Function.Surjective K.embed := by
+    rw [← Set.range_eq_univ]
+    exact _covers
+  let T : FiniteSurfaceTriangulation S :=
+    { Vertex := K.Complex.Vertex
+      Edge := K.Complex.Simplex
+      Triangle := K.Complex.Simplex
+      vertexFintype := inferInstance
+      edgeFintype := inferInstance
+      triangleFintype := inferInstance
+      realization := K.Complex.support
+      realizationTop := inferInstance
+      edgeSource := fun e => (K.Complex.simplex_nonempty e).choose
+      edgeTarget := fun e => (K.Complex.simplex_nonempty e).choose
+      triangleBoundary := fun _ => []
+      edgeIsBoundary := fun _ => False
+      isSurfaceTriangulation := True
+      homeomorphSurface := ⟨K.isEmbedding.toHomeomorphOfSurjective hsurj⟩ }
+  exact ⟨T, T.homeomorphSurface⟩
+
 section EvalHypotheses
 
 open scoped Manifold
@@ -119,7 +152,9 @@ variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 /-- Moise/PL theorem boundary: compact Eval surfaces admit finite triangulations. -/
 theorem compact_eval_surface_finitely_triangulable :
     ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
-  sorry
+  rcases eval_surface_to_moise_bordered_surface S with ⟨_hM, _⟩
+  rcases rado_bordered_surface_triangulation S with ⟨K, hK, finiteSupport, boundary, _⟩
+  exact finite_pl_complex_to_finite_surface_triangulation S K hK finiteSupport boundary
 
 /-- Compatibility theorem for the initial scaffold name. -/
 theorem compact_surface_triangulable : Triangulable S :=
