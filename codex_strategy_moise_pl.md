@@ -819,6 +819,17 @@ Expected Rado induction shape:
      moved to constructing that interface from the mathlib manifold atlas.
 3. Build a `RadoInductiveSequence` by recursion from `RadoInductionData`:
    - the `n`th stage covers the `n`th chart core;
+   - `RadoInductionState.CoversCoresUpTo` and
+     `RadoInductionState.CoversBoundaryCoresUpTo` are the named state-level predicates for
+     cumulative coverage through a finite stage;
+   - `InitialPLNeighborhoodData.toState_coversCoresUpTo` and
+     `InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo` prove the base case;
+   - `RadoStepExtensionData.toState_coversCoresUpTo` and
+     `RadoStepExtensionData.toState_coversBoundaryCoresUpTo` prove the induction step from the
+     extension relation;
+   - `RadoInductionData.stage_coversCoresUpTo` and
+     `RadoInductionData.stage_coversBoundaryCoresUpTo` prove the cumulative invariant for the
+     recursively generated stages;
    - `RadoInductionData.covers_core_of_le`,
      `RadoInductionData.covers_boundaryCore_of_le`,
      `RadoInductiveSequence.core_subset_stage_of_le`, and

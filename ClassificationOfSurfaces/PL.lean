@@ -3369,6 +3369,22 @@ structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   locallyFinite : Prop
   boundaryLocallyFinite : Prop
 
+namespace RadoInductionState
+
+/-- A Rado induction state covers every chart core up to its stage index. -/
+def CoversCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M) : Prop :=
+  ∀ n, n ≤ S.stage → (E.pair n).core ⊆ S.complex.support
+
+/-- A Rado induction state covers every boundary chart core up to its stage index. -/
+def CoversBoundaryCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M) : Prop :=
+  ∀ n, n ≤ S.stage → (E.pair n).boundaryCore ⊆ S.complex.support
+
+end RadoInductionState
+
 /-- Data used to initialize the Rado induction from the first chart pair. -/
 structure InitialPLNeighborhoodData
     {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) where
@@ -3453,6 +3469,26 @@ theorem boundaryCore_subset_toState_support
     (E.pair 0).boundaryCore ⊆ D.toState.complex.support :=
   D.coversInitialBoundaryCore
 
+/-- The initial Rado state covers every chart core up to stage zero. -/
+theorem toState_coversCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    D.toState.CoversCoresUpTo (E := E) := by
+  intro n hn
+  have hn0 : n = 0 := Nat.eq_zero_of_le_zero hn
+  subst n
+  exact D.core_subset_toState_support
+
+/-- The initial Rado state covers every boundary chart core up to stage zero. -/
+theorem toState_coversBoundaryCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    D.toState.CoversBoundaryCoresUpTo (E := E) := by
+  intro n hn
+  have hn0 : n = 0 := Nat.eq_zero_of_le_zero hn
+  subst n
+  exact D.boundaryCore_subset_toState_support
+
 end InitialPLNeighborhoodData
 
 namespace RadoStepExtensionData
@@ -3497,6 +3533,38 @@ theorem boundaryCore_subset_toState_support
     {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
     (E.pair (S.stage + 1)).boundaryCore ⊆ D.toState.complex.support :=
   D.coversNextBoundaryCore
+
+/-- A Rado successor step preserves cumulative chart-core coverage. -/
+theorem toState_coversCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S)
+    (hS : S.CoversCoresUpTo (E := E)) :
+    D.toState.CoversCoresUpTo (E := E) := by
+  intro n hn
+  change (E.pair n).core ⊆ D.nextComplex.support
+  change n ≤ S.stage + 1 at hn
+  by_cases hlast : n = S.stage + 1
+  · subst n
+    exact D.coversNextCore
+  · have hlt : n < S.stage + 1 := lt_of_le_of_ne hn hlast
+    have hnS : n ≤ S.stage := Nat.le_of_lt_succ hlt
+    exact (hS n hnS).trans D.extends_old.1
+
+/-- A Rado successor step preserves cumulative boundary-chart-core coverage. -/
+theorem toState_coversBoundaryCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S)
+    (hS : S.CoversBoundaryCoresUpTo (E := E)) :
+    D.toState.CoversBoundaryCoresUpTo (E := E) := by
+  intro n hn
+  change (E.pair n).boundaryCore ⊆ D.nextComplex.support
+  change n ≤ S.stage + 1 at hn
+  by_cases hlast : n = S.stage + 1
+  · subst n
+    exact D.coversNextBoundaryCore
+  · have hlt : n < S.stage + 1 := lt_of_le_of_ne hn hlast
+    have hnS : n ≤ S.stage := Nat.le_of_lt_succ hlt
+    exact (hS n hnS).trans D.extends_old.1
 
 end RadoStepExtensionData
 
@@ -3753,6 +3821,28 @@ theorem covers_boundaryCore_of_le
         have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
         exact (ih hmn').trans (D.support_subset_succ n)
 
+/-- Every recursive Rado stage covers all chart cores up to its stage index. -/
+theorem stage_coversCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    ∀ n, (D.stage n).CoversCoresUpTo (E := E)
+  | 0 => by
+      exact D.initial.toState_coversCoresUpTo
+  | n + 1 => by
+      exact (D.step n (D.stage n)).toState_coversCoresUpTo
+        (D.stage_coversCoresUpTo n)
+
+/-- Every recursive Rado stage covers all boundary chart cores up to its stage index. -/
+theorem stage_coversBoundaryCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    ∀ n, (D.stage n).CoversBoundaryCoresUpTo (E := E)
+  | 0 => by
+      exact D.initial.toState_coversBoundaryCoresUpTo
+  | n + 1 => by
+      exact (D.step n (D.stage n)).toState_coversBoundaryCoresUpTo
+        (D.stage_coversBoundaryCoresUpTo n)
+
 end RadoInductionData
 
 /-- A completed Rado induction sequence over a fixed chart-pair exhaustion.
@@ -3837,6 +3927,26 @@ theorem boundaryCore_subset_stage_of_le
       · have hlt : m < n + 1 := lt_of_le_of_ne hmn hm
         have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
         exact (ih hmn').trans (S.support_subset_succ n)
+
+/-- Every stage of a completed Rado sequence covers all chart cores up to that stage. -/
+theorem stage_coversCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (n : ℕ) :
+    (S.stage n).CoversCoresUpTo (E := E) := by
+  intro m hm
+  have hmn : m ≤ n := by
+    simpa [S.stage_eq n] using hm
+  exact S.core_subset_stage_of_le hmn
+
+/-- Every stage of a completed Rado sequence covers all boundary chart cores up to that stage. -/
+theorem stage_coversBoundaryCoresUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (n : ℕ) :
+    (S.stage n).CoversBoundaryCoresUpTo (E := E) := by
+  intro m hm
+  have hmn : m ≤ n := by
+    simpa [S.stage_eq n] using hm
+  exact S.boundaryCore_subset_stage_of_le hmn
 
 /-- The Rado stage-support union covers the whole manifold because chart cores cover it. -/
 theorem supportUnion_eq_univ
