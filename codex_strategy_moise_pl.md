@@ -671,9 +671,13 @@ Proved finite/combinatorial bridge:
    directly rather than choosing witnesses from existential theorem wrappers, and
    `RadoStepExtensionData.fromChartPolygonalDisk_nextComplex_support` exposes the support
    computation for later induction proofs.
-6. `finite_chart_polygonal_disk_data_of_local`:
+6. `LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData`,
+   `LocalChartPolygonalDiskData.finiteChartPairCover`,
+   `LocalChartPolygonalDiskData.finiteChartPolygonalDiskData`, and
+   `finite_chart_polygonal_disk_data_of_local`:
    compactness extracts a finite chart-pair cover while carrying pointwise polygonal disk data
-   along the selected finite indices.
+   along the selected finite indices.  The sigma-valued construction is the reusable data
+   extraction; the theorem with the original public name is now only the existential wrapper.
 7. `local_chart_polygonal_disk_data_of_pointwise`:
    pointwise chart-disk data packages into the local function-valued data used for compactness.
 8. `mathlib_bordered_surface_point_chart_polygonal_disk_data`:
@@ -798,8 +802,9 @@ model region contains the standard simplex.  The public theorems
 `mathlib_chartAt_contains_polygonal_disk_core` are proved wrappers around the coordinate-local
 boundary.
 
-Compact finite-subcover extraction is proved separately by `finite_chart_polygonal_disk_data_of_local`,
-and pointwise data is packaged into local function-valued data by
+Compact finite-subcover extraction is packaged by
+`LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData` and exposed through
+`finite_chart_polygonal_disk_data_of_local`, and pointwise data is packaged into local function-valued data by
 `local_chart_polygonal_disk_data_of_pointwise`.
 The formerly broad `mathlib_bordered_surface_rado_induction_data`,
 `mathlib_bordered_surface_finite_rado_geometry`, finite chart-disk extraction, local chart-disk

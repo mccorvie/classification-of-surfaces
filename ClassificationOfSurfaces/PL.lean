@@ -4737,16 +4737,21 @@ theorem mathlib_bordered_surface_local_chart_polygonal_disk_data
   exact local_chart_polygonal_disk_data_of_pointwise
     (fun x => mathlib_bordered_surface_point_chart_polygonal_disk_data M x)
 
-/-- Compactness promotes pointwise local chart-polygonal-disk data to a finite chart-pair cover
-carrying indexed polygonal disk data. -/
-theorem finite_chart_polygonal_disk_data_of_local
+namespace LocalChartPolygonalDiskData
+
+/-- Compactness promotes local chart-polygonal-disk data to a finite chart-pair cover with
+matching polygonal disk data. -/
+noncomputable def toFiniteChartPolygonalDiskData
     {M : Type u} [TopologicalSpace M] [CompactSpace M]
     (L : LocalChartPolygonalDiskData M) :
-    ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
+    Σ C : FiniteChartPairCover M, FiniteChartPolygonalDiskData C := by
   classical
-  rcases CompactSpace.elim_nhds_subcover (fun x : M => (L.pairAt x).core)
-      L.core_mem_nhds with
-    ⟨t, ht⟩
+  let t : Finset M :=
+    Classical.choose (CompactSpace.elim_nhds_subcover (fun x : M => (L.pairAt x).core)
+      L.core_mem_nhds)
+  have ht : ⋃ x ∈ t, (L.pairAt x).core = ⊤ :=
+    Classical.choose_spec (CompactSpace.elim_nhds_subcover (fun x : M => (L.pairAt x).core)
+      L.core_mem_nhds)
   let C : FiniteChartPairCover M :=
     { Index := {x : M // x ∈ t}
       indexFintype := inferInstance
@@ -4774,7 +4779,31 @@ theorem finite_chart_polygonal_disk_data_of_local
       chart_eq := fun i => L.chart_eq i.1
       compatibleChartShrinks := L.compatibleChartShrinks
       boundaryCompatibleChartShrinks := L.boundaryCompatibleChartShrinks }
-  exact ⟨C, D, trivial⟩
+  exact ⟨C, D⟩
+
+/-- The finite chart-pair cover extracted from local chart-polygonal-disk data. -/
+noncomputable def finiteChartPairCover
+    {M : Type u} [TopologicalSpace M] [CompactSpace M]
+    (L : LocalChartPolygonalDiskData M) : FiniteChartPairCover M :=
+  (L.toFiniteChartPolygonalDiskData).1
+
+/-- The finite polygonal disk data extracted from local chart-polygonal-disk data. -/
+noncomputable def finiteChartPolygonalDiskData
+    {M : Type u} [TopologicalSpace M] [CompactSpace M]
+    (L : LocalChartPolygonalDiskData M) :
+    FiniteChartPolygonalDiskData L.finiteChartPairCover :=
+  (L.toFiniteChartPolygonalDiskData).2
+
+end LocalChartPolygonalDiskData
+
+/-- Compactness promotes pointwise local chart-polygonal-disk data to a finite chart-pair cover
+carrying indexed polygonal disk data. -/
+theorem finite_chart_polygonal_disk_data_of_local
+    {M : Type u} [TopologicalSpace M] [CompactSpace M]
+    (L : LocalChartPolygonalDiskData M) :
+    ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
+  let P := L.toFiniteChartPolygonalDiskData
+  exact ⟨P.1, P.2, trivial⟩
 
 /-- A compact mathlib bordered surface admits a finite chart-pair cover carrying polygonal disk
 data on every selected chart pair. -/

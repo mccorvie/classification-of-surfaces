@@ -927,7 +927,7 @@ the finite cover with polygonal disk data.
 
 \begin{lemma}[Mathlib bordered surface finite chart polygonal disk data]
 \label{moise:lem:mathlib_bordered_surface_finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.finite_chart_polygonal_disk_data_of_local, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_chart_polygonal_disk_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.finiteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.finiteChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.finite_chart_polygonal_disk_data_of_local, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_chart_polygonal_disk_data}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_bordered_surface_local_chart_polygonal_disk_data}
@@ -939,7 +939,11 @@ covering its core and compatible with the chart model.
 \begin{proof}
 \leanok
 Apply compactness to the pointwise family of local chart cores and use the
-finite subcover indices to carry the corresponding polygonal disk data.
+finite subcover indices to carry the corresponding polygonal disk data.  The
+named construction
+`LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData` packages the
+chosen finite cover and indexed disks; the public theorem is the existential
+wrapper used by downstream Rado statements.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface local chart polygonal disk data]
