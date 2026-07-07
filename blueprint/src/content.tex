@@ -826,35 +826,35 @@ Package the extracted finite chart-pair cover and Rado local data as a
 \lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moise_extraction_data}
 \leanok
 
-\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_finite_chart_pair_cover,moise:lem:mathlib_bordered_surface_rado_induction_data}
+\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_rado_induction_data}
 The mathlib bordered-surface atlas supplies the finite chart-pair cover and
 local Rado induction data needed to build the Moise interface.
 \end{lemma}
 
 \begin{proof}
 \leanok
-Extract a finite chart-pair cover from the preferred mathlib charts and
-compactness.  Then package the local Rado induction data over the corresponding
-countable exhaustion.
+Extract a finite chart-pair cover together with local Rado induction data over
+the corresponding countable exhaustion, then package both as
+`MoiseExtractionData`.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface finite Rado geometry]
 \label{moise:lem:mathlib_bordered_surface_finite_rado_geometry}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_rado_geometry}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.finite_rado_geometry_of_chart_polygonal_disk_data, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_rado_geometry}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:def:finite_rado_induction_geometry,moise:lem:initial_pl_neighborhood,moise:lem:rado_step_extension_from_chart_polygonal_disk}
-For the finite chart-pair cover extracted from a compact mathlib bordered
-surface, the chart cores can be shrunk to polygonal disk or half-disk data and
-extended stage by stage with the compatibility needed for Rado's induction.
+For the finite chart-pair cover with polygonal disk data extracted from a
+compact mathlib bordered surface, the chart cores initialize and extend Rado's
+induction stage by stage with the compatibility needed for the construction.
 \end{lemma}
 
 \begin{proof}
 \leanok
-Use the finite chart polygonal disk data theorem boundary.  The disk for chart
-zero initializes the induction, and the one-step extension theorem boundary
-supplies each successor package.  These fields assemble into
-`FiniteRadoInductionGeometry`.
+The disk for chart zero initializes the induction, and the one-step extension
+theorem supplies each successor package.  These fields assemble into
+`FiniteRadoInductionGeometry`; the mathlib wrapper first extracts the finite
+cover with polygonal disk data.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface finite chart polygonal disk data]
@@ -862,9 +862,9 @@ supplies each successor package.  These fields assemble into
 \lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_chart_polygonal_disk_data}
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
-For the finite chart-pair cover extracted from a compact mathlib bordered
-surface, every enumerated chart pair admits embedded polygonal disk or half-disk
-data covering its core and compatible with the chart model.
+A compact mathlib bordered surface admits a finite chart-pair cover such that
+every enumerated chart pair carries embedded polygonal disk or half-disk data
+covering its core and compatible with the chart model.
 \end{lemma}
 
 \begin{proof}
@@ -880,9 +880,9 @@ disk data back through the chart homeomorphism.
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:finite_rado_induction_geometry,moise:lem:mathlib_bordered_surface_finite_rado_geometry}
-For the finite chart-pair cover extracted from a compact mathlib bordered
-surface, the initial polygonal disk and successor chart-extension data needed
-for Rado's induction exist.
+A compact mathlib bordered surface admits a finite chart-pair cover carrying the
+initial polygonal disk and successor chart-extension data needed for Rado's
+induction.
 \end{lemma}
 
 \begin{proof}

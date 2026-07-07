@@ -637,9 +637,11 @@ Proved finite/combinatorial bridge:
 5. `rado_step_extension_from_chart_polygonal_disk`:
    the current scaffold can extend a Rado stage by taking the union of the old support and the
    next chart-disk support.
-6. `mathlib_bordered_surface_finite_rado_geometry`:
+6. `finite_rado_geometry_of_chart_polygonal_disk_data` and
+   `mathlib_bordered_surface_finite_rado_geometry`:
    finite chart polygonal disk data plus the one-step extension theorem packages as
-   `FiniteRadoInductionGeometry`.
+   `FiniteRadoInductionGeometry`; the mathlib wrapper first extracts the finite cover with this
+   disk data.
 7. `FiniteRadoInductionGeometry.toRadoInductionData` and
    `rado_induction_data_of_finite_geometry`:
    once the local polygonal chart geometry is supplied over a finite cover, the recursive
@@ -657,15 +659,15 @@ Remaining hard local bridge:
 theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
-    (C : FiniteChartPairCover M) :
-    ∃ _D : FiniteChartPolygonalDiskData C, True := by
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
   sorry
 ```
 
-This is now the place where the actual chart-core shrinking, polygonal disk triangulation, and
-transport of disk data through the mathlib chart atlas have to be proved.  The formerly broad
-`mathlib_bordered_surface_rado_induction_data`,
+This is now the place where the actual chart-core shrinking, polygonal disk triangulation, finite
+subcover extraction, and transport of disk data through the mathlib chart atlas have to be proved.
+It deliberately produces the finite cover together with disk data; an arbitrary finite cover need
+not have polygonal chart cores.  The formerly broad `mathlib_bordered_surface_rado_induction_data`,
 `mathlib_bordered_surface_finite_rado_geometry`, and one-step extension theorems are proved wrappers
 around this sharper local boundary.
 

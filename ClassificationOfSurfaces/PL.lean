@@ -3167,7 +3167,7 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
-/-- Hard local chart-shrinking boundary over a finite chart-pair cover extracted from the mathlib
+/-- Hard local chart-shrinking boundary producing a finite chart-pair cover from the mathlib
 atlas.
 
 This is where each chart-pair core is replaced by embedded polygonal disk or half-disk data
@@ -3175,24 +3175,15 @@ compatible with its chart model. -/
 theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
-    (C : FiniteChartPairCover M) :
-    ∃ _D : FiniteChartPolygonalDiskData C, True := by
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
   sorry
 
-/-- Hard local Rado geometry boundary over a finite chart-pair cover extracted from the mathlib
-atlas.
-
-This is the point where one proves the polygonal disk initialization and chart-extension steps for
-the finite cover.  The conversion from this geometry package to recursive induction data is
-formal. -/
-theorem mathlib_bordered_surface_finite_rado_geometry
-    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
-    [ChartedSpace (EuclideanHalfSpace 2) M]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
-    (C : FiniteChartPairCover M) :
+/-- Polygonal disk data over a finite chart-pair cover packages as finite Rado geometry. -/
+theorem finite_rado_geometry_of_chart_polygonal_disk_data
+    {M : Type*} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) :
     ∃ _G : FiniteRadoInductionGeometry C, True := by
-  rcases mathlib_bordered_surface_finite_chart_polygonal_disk_data M C with ⟨D, _⟩
   let initial : InitialPLNeighborhoodData C.toChartPairExhaustion :=
     InitialPLNeighborhoodData.ofChartPolygonalDisk (D.disk 0) (D.chart_eq 0)
   let step : ∀ (_n : ℕ) (S : RadoInductionState M),
@@ -3209,15 +3200,26 @@ theorem mathlib_bordered_surface_finite_rado_geometry
       boundaryCompatibleUnion := D.boundaryCompatibleChartShrinks }
   exact ⟨G, trivial⟩
 
+/-- Local Rado geometry over a finite chart-pair cover extracted from the mathlib atlas. -/
+theorem mathlib_bordered_surface_finite_rado_geometry
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    ∃ C : FiniteChartPairCover M, ∃ _G : FiniteRadoInductionGeometry C, True := by
+  rcases mathlib_bordered_surface_finite_chart_polygonal_disk_data M with ⟨C, D, _⟩
+  rcases finite_rado_geometry_of_chart_polygonal_disk_data D with ⟨G, _⟩
+  exact ⟨C, G, trivial⟩
+
 /-- Local Rado induction data over a finite chart-pair cover extracted from the mathlib atlas. -/
 theorem mathlib_bordered_surface_rado_induction_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
-    (C : FiniteChartPairCover M) :
-    ∃ _D : RadoInductionData C.toChartPairExhaustion, True := by
-  rcases mathlib_bordered_surface_finite_rado_geometry M C with ⟨G, _⟩
-  exact rado_induction_data_of_finite_geometry G
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    ∃ C : FiniteChartPairCover M,
+      ∃ _D : RadoInductionData C.toChartPairExhaustion, True := by
+  rcases mathlib_bordered_surface_finite_rado_geometry M with ⟨C, G, _⟩
+  rcases rado_induction_data_of_finite_geometry G with ⟨D, _⟩
+  exact ⟨C, D, trivial⟩
 
 /-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
 Moise chart-pair interface.
@@ -3229,8 +3231,7 @@ theorem mathlib_bordered_surface_moise_extraction_data
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ _D : MoiseExtractionData M, True := by
-  rcases mathlib_bordered_surface_finite_chart_pair_cover M with ⟨C, _⟩
-  rcases mathlib_bordered_surface_rado_induction_data M C with ⟨D, _⟩
+  rcases mathlib_bordered_surface_rado_induction_data M with ⟨C, D, _⟩
   let E : MoiseExtractionData M :=
     { finiteCover := C
       local_disk_or_half_disk := True
