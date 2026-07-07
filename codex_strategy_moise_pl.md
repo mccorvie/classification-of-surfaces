@@ -682,24 +682,29 @@ Proved finite/combinatorial bridge:
 Remaining hard coordinate-local bridge:
 
 ```lean
-theorem mathlib_chartAt_contains_model_polygonal_disk_core
+theorem mathlib_chartAt_model_region_contains_polygonal_neighborhood
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
     ∃ D : ModelChartPolygonalDisk (RadoChartPair.fromChartAt M x),
-      D.pulledCore ∈ 𝓝 x := by
+      Set.range D.embed ∈
+        𝓝 ((RadoChartPair.fromChartAt M x).chartHomeomorph
+          ⟨x, RadoChartPair.fromChartAt_mem_domain M x⟩) := by
   sorry
 ```
 
 This is now the place where the actual chart-core shrinking and polygonal disk triangulation in the
-coordinate half-plane have to be proved.  The transport of disk data through the mathlib chart atlas
-is formalized by `ModelChartPolygonalDisk.toChartPolygonalDisk`, and core refinement is formalized
-by `RadoChartPair.withCore_refines`.  The helper
+coordinate half-plane have to be proved: produce a model polygonal disk whose image is a
+neighborhood of the chart coordinate.  The topological pullback from a model-neighborhood statement
+to a manifold-neighborhood statement is proved by
+`ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds`.  The transport of disk data
+through the mathlib chart atlas is formalized by `ModelChartPolygonalDisk.toChartPolygonalDisk`,
+and core refinement is formalized by `RadoChartPair.withCore_refines`.  The helper
 `ModelChartPolygonalDisk.standardTriangleInModel` supplies a concrete model disk whenever the chart
-model region contains the standard simplex.  The public theorem
-`mathlib_chartAt_contains_polygonal_disk_core` is a proved wrapper around the coordinate-local
-boundary: it pulls the model disk back through the chart homeomorphism and proves that the resulting
-chart pair refines `RadoChartPair.fromChartAt`.
+model region contains the standard simplex.  The public theorems
+`mathlib_chartAt_contains_model_polygonal_disk_core` and
+`mathlib_chartAt_contains_polygonal_disk_core` are proved wrappers around the coordinate-local
+boundary.
 
 Compact finite-subcover extraction is proved separately by `finite_chart_polygonal_disk_data_of_local`,
 and pointwise data is packaged into local function-valued data by

@@ -456,7 +456,7 @@ construction over such exhaustions.
 
 \begin{definition}[Finite chart-pair cover]
 \label{moise:def:finite_chart_pair_cover}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore_refines, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_mem_domain, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore_refines, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion}
 \leanok
 
 A finite chart-pair cover is a finite family of Rado chart pairs whose smaller
@@ -471,7 +471,7 @@ map fixed.
 
 \begin{definition}[Finite chart polygonal disk data]
 \label{moise:def:finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.standardTriangleInModel, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPair_refines, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.standardTriangleInModel, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPair_refines, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell}
@@ -482,8 +482,10 @@ with chart-model and boundary compatibility assertions.  The API includes the
 standard geometric triangle as a concrete `ChartPolygonalDisk` in the coordinate
 plane.  A coordinate-side `ModelChartPolygonalDisk` can be transported through
 the chart homeomorphism to produce an embedded chart polygonal disk in the
-manifold; when the model region contains the standard simplex, the constructor
-`standardTriangleInModel` gives a concrete model disk.
+manifold.  If the model disk image is a neighborhood of the chart coordinate,
+then `pulledCore_mem_nhds_of_range_mem_nhds` proves that its pulled-back core is
+a neighborhood in the manifold.  When the model region contains the standard
+simplex, the constructor `standardTriangleInModel` gives a concrete model disk.
 \end{definition}
 
 \begin{lemma}[Compact local chart pairs have finite subcover]
@@ -941,19 +943,38 @@ chart pair's core is its whole chart source.
 \begin{lemma}[Mathlib chart contains model polygonal disk core]
 \label{moise:lem:mathlib_chartAt_contains_model_polygonal_disk_core}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_contains_model_polygonal_disk_core}
+\leanok
 
-\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_chartAt_model_region_contains_polygonal_neighborhood}
 In the coordinate model region of the preferred chart at a point, there is a
 polygonal disk or half-disk whose pullback through the chart homeomorphism is a
 neighborhood core of the point.
 \end{lemma}
 
 \begin{proof}
+\leanok
+Apply the coordinate-neighborhood theorem to obtain a model polygonal disk whose
+image is a neighborhood of the chart coordinate.  The theorem
+`ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds` transports that
+neighborhood statement back through the chart homeomorphism.
+\end{proof}
+
+\begin{lemma}[Mathlib chart model region contains polygonal neighborhood]
+\label{moise:lem:mathlib_chartAt_model_region_contains_polygonal_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_model_region_contains_polygonal_neighborhood}
+
+\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+In the coordinate model region of the preferred chart at a point, there is an
+embedded polygonal disk or half-disk whose image is a neighborhood of the chart
+coordinate.
+\end{lemma}
+
+\begin{proof}
 \notready
 Shrink the preferred chart source to a disk or half-disk core in the model
-half-plane and triangulate that polygonal region.  The transport of the
-coordinate polygonal disk back through the chart homeomorphism is now formal
-in `ModelChartPolygonalDisk.toChartPolygonalDisk`.
+half-plane and triangulate that polygonal region.  The transport of coordinate
+neighborhoods back through the chart homeomorphism is now formal in
+`ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds`.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface local Rado induction data]

@@ -2410,6 +2410,13 @@ theorem fromChartAt_core_mem_nhds
     (fromChartAt M x).core ∈ 𝓝 x := by
   exact chart_source_mem_nhds (EuclideanHalfSpace 2) x
 
+/-- The center point belongs to the source of its preferred mathlib chart pair. -/
+theorem fromChartAt_mem_domain
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    (x : M) :
+    x ∈ (fromChartAt M x).domain := by
+  simp [fromChartAt, mem_chart_source]
+
 /-- A chart pair modeled on the half-disk. -/
 def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
   P.kind = RadoChartKind.halfDisk
@@ -2613,6 +2620,31 @@ theorem pulledCore_subset_domain (D : ModelChartPolygonalDisk P) :
     D.pulledCore ⊆ P.domain := by
   rintro _ ⟨p, rfl⟩
   exact (P.chartHomeomorph.symm (D.embed p)).2
+
+/-- If the model image of a polygonal disk is a neighborhood of a chart coordinate, then its
+pullback is a neighborhood of the corresponding manifold point. -/
+theorem pulledCore_mem_nhds_of_range_mem_nhds (D : ModelChartPolygonalDisk P)
+    {x : M} (hx : x ∈ P.domain)
+    (hD : Set.range D.embed ∈ 𝓝 (P.chartHomeomorph ⟨x, hx⟩)) :
+    D.pulledCore ∈ 𝓝 x := by
+  let s : Set P.domain := P.chartHomeomorph ⁻¹' Set.range D.embed
+  have hs : s ∈ 𝓝 (⟨x, hx⟩ : P.domain) := by
+    rw [P.chartHomeomorph.nhds_eq_comap]
+    exact Filter.preimage_mem_comap hD
+  have himage : ((Subtype.val : P.domain → M) '' s) = D.pulledCore := by
+    ext y
+    constructor
+    · rintro ⟨z, hz, rfl⟩
+      rcases hz with ⟨p, hp⟩
+      refine ⟨p, ?_⟩
+      change (P.chartHomeomorph.symm (D.embed p)).1 = z.1
+      rw [hp, P.chartHomeomorph.symm_apply_apply]
+    · rintro ⟨p, rfl⟩
+      refine ⟨P.chartHomeomorph.symm (D.embed p), ?_, rfl⟩
+      exact ⟨p, by simp⟩
+  rw [← himage]
+  rw [← map_nhds_subtype_coe_eq_nhds hx (P.domain_open.mem_nhds hx)]
+  exact Filter.image_mem_map hs
 
 theorem toManifoldEmbed_isEmbedding (D : ModelChartPolygonalDisk P) :
     _root_.Topology.IsEmbedding D.toManifoldEmbed := by
@@ -3458,15 +3490,29 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
-/-- Hard coordinate-local boundary: in the model region of the preferred chart at a point, there is
-a polygonal disk or half-disk whose pullback is a neighborhood core of the point. -/
+/-- Hard coordinate-local boundary: the model region of the preferred chart at a point contains an
+embedded polygonal disk or half-disk whose image is a neighborhood of the chart coordinate. -/
+theorem mathlib_chartAt_model_region_contains_polygonal_neighborhood
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
+    ∃ D : ModelChartPolygonalDisk (RadoChartPair.fromChartAt M x),
+      Set.range D.embed ∈
+        𝓝 ((RadoChartPair.fromChartAt M x).chartHomeomorph
+          ⟨x, RadoChartPair.fromChartAt_mem_domain M x⟩) := by
+  sorry
+
+/-- In the model region of the preferred chart at a point, there is a polygonal disk or half-disk
+whose pullback is a neighborhood core of the point. -/
 theorem mathlib_chartAt_contains_model_polygonal_disk_core
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
     ∃ D : ModelChartPolygonalDisk (RadoChartPair.fromChartAt M x),
       D.pulledCore ∈ 𝓝 x := by
-  sorry
+  rcases mathlib_chartAt_model_region_contains_polygonal_neighborhood M x with ⟨D, hD⟩
+  exact ⟨D, D.pulledCore_mem_nhds_of_range_mem_nhds
+    (RadoChartPair.fromChartAt_mem_domain M x) hD⟩
 
 /-- The preferred mathlib chart at a point contains a smaller Rado chart pair whose core is covered
 by a pulled-back polygonal disk or half-disk. -/
