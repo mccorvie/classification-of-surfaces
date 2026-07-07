@@ -1268,7 +1268,7 @@ surjective is a homeomorphism onto the ambient surface.
 
 \begin{theorem}[Compact Eval surface is finitely triangulable]
 \label{moise:thm:compact_eval_surface_finitely_triangulable}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finitely_triangulable}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finitely_triangulable}
 \leanok
 
 \uses{moise:def:finite_surface_triangulation,moise:lem:eval_to_moise_bordered_surface,moise:thm:rado_bordered_surface_triangulation,moise:thm:finite_pl_complex_to_finite_surface_triangulation}
@@ -1278,10 +1278,10 @@ subcomplex.
 
 \begin{proof}
 \leanok
-Convert the Eval hypotheses to Moise's bordered-surface hypotheses and apply the
-compact bordered Rado triangulation theorem.  The resulting finite PL complex
-covering the surface is converted to the project triangulation object by
-the finite-PL-complex-to-triangulation theorem.
+Apply the named mathlib-bordered triangulation theorem, which obtains finite PL
+triangulation data from the Moise--Rado route and converts it to the project
+`FiniteSurfaceTriangulation` object.  The Eval theorem is the connected-surface
+specialization of this wrapper.
 \end{proof}
 
 \section{From triangulations to cell complexes}

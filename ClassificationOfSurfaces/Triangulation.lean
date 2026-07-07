@@ -184,6 +184,24 @@ theorem finite_pl_complex_to_finite_surface_triangulation
     K.toFiniteSurfaceTriangulation covers finiteSupport boundary
   exact ⟨T, T.homeomorphSurface⟩
 
+section MathlibBorderedSurface
+
+open scoped Manifold
+
+variable (S : Type*) [TopologicalSpace S]
+variable [Nonempty S] [T2Space S] [CompactSpace S]
+variable [ChartedSpace (EuclideanHalfSpace 2) S]
+variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+
+/-- Mathlib bordered-surface hypotheses produce a finite surface triangulation through the
+Moise--Rado finite PL triangulation data package. -/
+theorem mathlib_bordered_surface_finitely_triangulable :
+    ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
+  rcases mathlib_bordered_surface_finite_pl_triangulation_data S with ⟨D, _⟩
+  exact ⟨D.toFiniteSurfaceTriangulation, D.toFiniteSurfaceTriangulation_homeomorphSurface⟩
+
+end MathlibBorderedSurface
+
 section EvalHypotheses
 
 open scoped Manifold
@@ -196,9 +214,7 @@ variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 /-- Moise/PL theorem boundary: compact Eval surfaces admit finite triangulations. -/
 theorem compact_eval_surface_finitely_triangulable :
     ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
-  rcases eval_surface_to_moise_bordered_surface S with ⟨_hM, _⟩
-  rcases rado_bordered_surface_triangulation S with ⟨K, hK, finiteSupport, boundary, _⟩
-  exact finite_pl_complex_to_finite_surface_triangulation S K hK finiteSupport boundary
+  exact mathlib_bordered_surface_finitely_triangulable S
 
 /-- Compatibility theorem for the initial scaffold name. -/
 theorem compact_surface_triangulable : Triangulable S :=

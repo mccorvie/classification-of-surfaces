@@ -699,6 +699,8 @@ codimension-one faces of a two-simplex as the current scaffold boundary word.
 existential theorem.  `FinitePLTriangulationData` is the named Rado-output package for a covering
 embedded PL complex, finite support data, and boundary-subcomplex data; the bordered Rado theorem
 now wraps `mathlib_bordered_surface_finite_pl_triangulation_data`.
+`mathlib_bordered_surface_finitely_triangulable` is the direct finite-surface-triangulation wrapper
+used by `compact_eval_surface_finitely_triangulable`.
 
 Closed coordinate-local bridge:
 
