@@ -884,6 +884,13 @@ Expected Rado induction shape:
    - `RadoInductionData.stage_coversCoresUpTo` and
      `RadoInductionData.stage_coversBoundaryCoresUpTo` prove the cumulative invariant for the
      recursively generated stages;
+   - `InitialPLNeighborhoodData.toState_coversPreviousCores`,
+     `InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores`,
+     `RadoStepExtensionData.toState_coversPreviousCores`,
+     `RadoStepExtensionData.toState_coversPreviousBoundaryCores`,
+     `RadoInductionData.stage_coversPreviousCores`, and
+     `RadoInductionData.stage_coversPreviousBoundaryCores` connect the stored state fields to the
+     real cumulative coverage predicates;
    - `RadoInductionData.covers_core_of_le`,
      `RadoInductionData.covers_boundaryCore_of_le`,
      `RadoInductiveSequence.core_subset_stage_of_le`, and

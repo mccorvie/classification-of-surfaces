@@ -606,7 +606,7 @@ together with the definitional equality identifying it with the stored field.
 
 \begin{lemma}[Initial PL neighborhood]
 \label{moise:lem:initial_pl_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:polygonal_disk_combinatorial_cell}
@@ -624,7 +624,8 @@ first chart pair by rewriting the chart-core coverage fields.  Then package the
 embedded chart polygonal disk as a `PLComplexInSpace` and use its boundary
 subcomplex and coverage fields to build the stage-zero Rado induction state.
 The resulting state satisfies the up-to-stage core and boundary-core coverage
-predicates.
+predicates, and its stored `coversPreviousCores` fields are definitionally the
+same cumulative predicates.
 \end{proof}
 
 \begin{lemma}[Rado step extension from a chart disk]
@@ -650,7 +651,7 @@ the public theorem is an existential wrapper around that constructor.
 
 \begin{lemma}[Extend a PL complex across one chart]
 \label{moise:lem:extend_pl_complex_across_chart}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.extend_pl_complex_across_chart}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.extend_pl_complex_across_chart}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:lem:pl_invariant_under_subdivision,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane,moise:lem:polygonal_disk_combinatorial_cell}
@@ -669,20 +670,20 @@ Given `RadoStepExtensionData`, package the supplied next complex,
 boundary subcomplex, extension proof, and next-core coverage fields into the
 successor Rado induction state.  If the previous state covers all chart cores
 and boundary cores up to its stage, the successor state covers all such cores up
-to its new stage.
+to its new stage and stores those cumulative predicates in its state fields.
 \end{proof}
 
 \begin{definition}[Rado induction local data]
 \label{moise:def:rado_induction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.toInductiveSequence}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.toInductiveSequence}
 \leanok
 
 \uses{moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
 Rado induction data consists of one initial chart-disk package and a successor
 chart-extension package for each finite stage.  It recursively determines all
 finite-stage induction states, proves the cumulative core and boundary-core
-coverage predicates at every stage, and packages the stages as a Rado induction
-sequence.
+coverage predicates at every stage, stores those predicates in each state, and
+packages the stages as a Rado induction sequence.
 \end{definition}
 
 \begin{definition}[Rado induction sequence]

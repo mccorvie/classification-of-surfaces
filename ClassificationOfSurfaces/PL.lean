@@ -3590,9 +3590,10 @@ def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
   { stage := 0
     complex := D.chartDisk.toPLComplexInSpace
     boundarySubcomplex := D.chartDisk.disk.boundarySubcomplex
-    coversPreviousCores := (E.pair 0).core ⊆ D.chartDisk.toPLComplexInSpace.support
+    coversPreviousCores :=
+      ∀ n, n ≤ 0 → (E.pair n).core ⊆ D.chartDisk.toPLComplexInSpace.support
     coversPreviousBoundaryCores :=
-      (E.pair 0).boundaryCore ⊆ D.chartDisk.toPLComplexInSpace.support
+      ∀ n, n ≤ 0 → (E.pair n).boundaryCore ⊆ D.chartDisk.toPLComplexInSpace.support
     compatibleOnOverlaps := True
     boundaryIsSubcomplex := D.boundarySubcomplexCompatible
     boundaryCompatibleOnOverlaps := True
@@ -3618,6 +3619,19 @@ theorem boundaryCore_subset_toState_support
     (E.pair 0).boundaryCore ⊆ D.toState.complex.support :=
   D.coversInitialBoundaryCore
 
+theorem toState_coversPreviousCores_iff
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    D.toState.coversPreviousCores ↔ D.toState.CoversCoresUpTo (E := E) :=
+  Iff.rfl
+
+theorem toState_coversPreviousBoundaryCores_iff
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    D.toState.coversPreviousBoundaryCores ↔
+      D.toState.CoversBoundaryCoresUpTo (E := E) :=
+  Iff.rfl
+
 /-- The initial Rado state covers every chart core up to stage zero. -/
 theorem toState_coversCoresUpTo
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -3628,6 +3642,13 @@ theorem toState_coversCoresUpTo
   subst n
   exact D.core_subset_toState_support
 
+theorem toState_coversPreviousCores
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    D.toState.coversPreviousCores := by
+  rw [D.toState_coversPreviousCores_iff]
+  exact D.toState_coversCoresUpTo
+
 /-- The initial Rado state covers every boundary chart core up to stage zero. -/
 theorem toState_coversBoundaryCoresUpTo
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -3637,6 +3658,13 @@ theorem toState_coversBoundaryCoresUpTo
   have hn0 : n = 0 := Nat.eq_zero_of_le_zero hn
   subst n
   exact D.boundaryCore_subset_toState_support
+
+theorem toState_coversPreviousBoundaryCores
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    D.toState.coversPreviousBoundaryCores := by
+  rw [D.toState_coversPreviousBoundaryCores_iff]
+  exact D.toState_coversBoundaryCoresUpTo
 
 end InitialPLNeighborhoodData
 
@@ -3649,9 +3677,10 @@ def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
   { stage := S.stage + 1
     complex := D.nextComplex
     boundarySubcomplex := D.boundarySubcomplex
-    coversPreviousCores := (E.pair (S.stage + 1)).core ⊆ D.nextComplex.support
+    coversPreviousCores :=
+      ∀ n, n ≤ S.stage + 1 → (E.pair n).core ⊆ D.nextComplex.support
     coversPreviousBoundaryCores :=
-      (E.pair (S.stage + 1)).boundaryCore ⊆ D.nextComplex.support
+      ∀ n, n ≤ S.stage + 1 → (E.pair n).boundaryCore ⊆ D.nextComplex.support
     compatibleOnOverlaps := D.compatibleOnOverlaps
     boundaryIsSubcomplex := True
     boundaryCompatibleOnOverlaps := D.boundaryCompatibleOnOverlaps
@@ -3683,6 +3712,19 @@ theorem boundaryCore_subset_toState_support
     (E.pair (S.stage + 1)).boundaryCore ⊆ D.toState.complex.support :=
   D.coversNextBoundaryCore
 
+theorem toState_coversPreviousCores_iff
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
+    D.toState.coversPreviousCores ↔ D.toState.CoversCoresUpTo (E := E) :=
+  Iff.rfl
+
+theorem toState_coversPreviousBoundaryCores_iff
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
+    D.toState.coversPreviousBoundaryCores ↔
+      D.toState.CoversBoundaryCoresUpTo (E := E) :=
+  Iff.rfl
+
 /-- A Rado successor step preserves cumulative chart-core coverage. -/
 theorem toState_coversCoresUpTo
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -3699,6 +3741,14 @@ theorem toState_coversCoresUpTo
     have hnS : n ≤ S.stage := Nat.le_of_lt_succ hlt
     exact (hS n hnS).trans D.extends_old.1
 
+theorem toState_coversPreviousCores
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S)
+    (hS : S.CoversCoresUpTo (E := E)) :
+    D.toState.coversPreviousCores := by
+  rw [D.toState_coversPreviousCores_iff]
+  exact D.toState_coversCoresUpTo hS
+
 /-- A Rado successor step preserves cumulative boundary-chart-core coverage. -/
 theorem toState_coversBoundaryCoresUpTo
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -3714,6 +3764,14 @@ theorem toState_coversBoundaryCoresUpTo
   · have hlt : n < S.stage + 1 := lt_of_le_of_ne hn hlast
     have hnS : n ≤ S.stage := Nat.le_of_lt_succ hlt
     exact (hS n hnS).trans D.extends_old.1
+
+theorem toState_coversPreviousBoundaryCores
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S)
+    (hS : S.CoversBoundaryCoresUpTo (E := E)) :
+    D.toState.coversPreviousBoundaryCores := by
+  rw [D.toState_coversPreviousBoundaryCores_iff]
+  exact D.toState_coversBoundaryCoresUpTo hS
 
 /-- The scaffold PL complex obtained by adjoining one chart polygonal disk to a Rado stage. -/
 noncomputable def chartUnionPLComplexData
@@ -4110,6 +4168,33 @@ theorem stage_coversBoundaryCoresUpTo
       exact D.initial.toState_coversBoundaryCoresUpTo
   | n + 1 => by
       exact (D.step n (D.stage n)).toState_coversBoundaryCoresUpTo
+        (D.stage_coversBoundaryCoresUpTo n)
+
+/-- Every recursively built stage stores the cumulative chart-core coverage proposition. -/
+theorem stage_coversPreviousCores
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    ∀ n, (D.stage n).coversPreviousCores
+  | 0 => by
+      change D.initial.toState.coversPreviousCores
+      exact D.initial.toState_coversPreviousCores
+  | n + 1 => by
+      change ((D.step n (D.stage n)).toState).coversPreviousCores
+      exact (D.step n (D.stage n)).toState_coversPreviousCores
+        (D.stage_coversCoresUpTo n)
+
+/-- Every recursively built stage stores the cumulative boundary-chart-core coverage
+proposition. -/
+theorem stage_coversPreviousBoundaryCores
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    ∀ n, (D.stage n).coversPreviousBoundaryCores
+  | 0 => by
+      change D.initial.toState.coversPreviousBoundaryCores
+      exact D.initial.toState_coversPreviousBoundaryCores
+  | n + 1 => by
+      change ((D.step n (D.stage n)).toState).coversPreviousBoundaryCores
+      exact (D.step n (D.stage n)).toState_coversPreviousBoundaryCores
         (D.stage_coversBoundaryCoresUpTo n)
 
 end RadoInductionData
