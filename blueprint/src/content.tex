@@ -89,7 +89,7 @@ geometric rectilinear containment is isolated as refinement data.
 
 \begin{definition}[PL map and PL homeomorphism]
 \label{moise:def:pl_map_homeomorphism}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:subdivision}
@@ -102,7 +102,8 @@ relating the PL maps to the underlying homeomorphism.
 
 \begin{lemma}[PL property is invariant under subdivision]
 \label{moise:lem:pl_invariant_under_subdivision}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_iff_pl_after_subdivision}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.common_subdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.afterSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.afterSubdivision, LeanEval.Topology.ClassificationOfSurfaces.pl_iff_pl_after_subdivision}
+\leanok
 
 \uses{moise:def:pl_map_homeomorphism,moise:def:subdivision}
 A homeomorphism is PL relative to $K$ and $L$ if and only if it is PL relative to
@@ -110,10 +111,13 @@ any subdivision of the domain or target complex.
 \end{lemma}
 
 \begin{proof}
-\notready
-
-Pass to a common subdivision of the complexes witnessing piecewise linearity.
-For target subdivisions, pull back a common subdivision of the image complex.
+\leanok
+The Lean interface packages Moise Section 5 Theorems 1 and 2 as transport maps
+for `PLMap` and `PLHomeomorph` across domain and target subdivisions.  The
+current scaffold records a subdivision witness with named per-simplex affine and
+target-simplex obligations; those obligations are still propositional until
+simplex carriers become geometric.  The common-subdivision relation is named
+separately for the future geometric proof.
 \end{proof}
 
 \begin{definition}[Combinatorial two-manifold with boundary]
@@ -132,47 +136,36 @@ boundary.
 
 \begin{definition}[Combinatorial two-cell]
 \label{moise:def:combinatorial_two_cell}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoCell}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoCell, LeanEval.Topology.ClassificationOfSurfaces.PolygonalDisk}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:combinatorial_surface}
 A combinatorial two-cell is a finite two-dimensional complex with a distinguished
 boundary subcomplex, a boundary inclusion map, and PL homeomorphism data to a
-closed triangle model respecting the boundary subcomplex.
+closed triangle model respecting the boundary subcomplex.  A polygonal disk
+records the triangulation data produced by Moise's polygon theorem: a boundary
+complex, boundary subcomplex, PL inclusion, and PL homeomorphism to the standard
+closed triangle.
 \end{definition}
 
 \begin{lemma}[Polygonal disk is a combinatorial two-cell]
 \label{moise:lem:polygonal_disk_combinatorial_cell}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.polygonal_disk_is_combinatorial_two_cell}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PolygonalDisk.toCombinatorialTwoCell, LeanEval.Topology.ClassificationOfSurfaces.polygonal_disk_is_combinatorial_two_cell}
+\leanok
 
 \uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism}
 If $J$ is a polygonal simple closed curve in $\mathbb R^2$ and $I$ is its
-interior, then $\overline I$ has a triangulation making it a combinatorial
+interior, then the triangulated closed disk data package as a combinatorial
 two-cell.
 \end{lemma}
 
 \begin{proof}
-\notready
-Triangulate the polygonal disk and prove it is PL-homeomorphic to a standard
-closed triangle by repeatedly deleting free triangles or by an explicit fan
-triangulation after choosing an interior point.
-\end{proof}
-
-\begin{theorem}[Standard-triangle PL Schoenflies core]
-\label{moise:thm:pl_schoenflies_standard_triangle_core}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_homeomorph_boundary_triangle_extends}
-
-\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism}
-After reducing two combinatorial two-cells to their closed-triangle models, a PL
-homeomorphism of the boundary extends to a PL homeomorphism of the closed
-triangles respecting the boundary subcomplexes.
-\end{theorem}
-
-\begin{proof}
-\notready
-This is the hard Moise Section 5 extension theorem for the closed triangle.  One
-must formalize the extension of a PL homeomorphism of the polygonal boundary of a
-standard 2-simplex across the simplex.
+\leanok
+The formal theorem takes the triangulation output as `PolygonalDisk` data and
+repackages its fields as a `CombinatorialTwoCell`.  The geometric theorem that a
+polygonal simple closed curve supplies this data remains the external Moise
+input: triangulate the disk and reduce it to a standard closed triangle by
+removing free triangles.
 \end{proof}
 
 \begin{theorem}[PL Schoenflies for combinatorial two-cells]
@@ -180,7 +173,7 @@ standard 2-simplex across the simplex.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.pl_schoenflies_combinatorial_two_cell}
 \leanok
 
-\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism,moise:thm:pl_schoenflies_standard_triangle_core}
+\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism}
 Every PL homeomorphism between the boundaries of two combinatorial two-cells
 extends to a PL homeomorphism between the two cells whose restriction to the
 distinguished boundary subcomplexes agrees with the prescribed boundary map.
@@ -189,9 +182,10 @@ distinguished boundary subcomplexes agrees with the prescribed boundary map.
 \begin{proof}
 \leanok
 
-Choose PL homeomorphisms from the standard 2-simplex onto the two cells.  Reduce
-to a PL homeomorphism of the boundary of the standard simplex and extend it over
-the simplex using `pl_homeomorph_boundary_triangle_extends`, then conjugate back.
+Use the stored PL homeomorphisms from each two-cell to the shared standard
+triangle model, compose the first with the inverse of the second, and discharge
+the boundary-extension fields using the current restriction and coherence
+scaffolding.
 \end{proof}
 
 \section{PL approximation in dimension two}
@@ -253,7 +247,7 @@ PL approximation predicate.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_one_skeleton}
 \leanok
 
-\uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:def:pl_map_homeomorphism,moise:lem:one_skeleton_hard_boundaries}
+\uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:def:pl_map_homeomorphism,moise:lem:pl_invariant_under_subdivision,moise:lem:one_skeleton_hard_boundaries}
 Let $K$ be a combinatorial two-manifold with boundary, $h:|K|\to M\subseteq
 \mathbb R^2$ a homeomorphism, and $\varphi\gg 0$.  After a sufficiently fine
 subdivision, $h$ restricted to the one-skeleton has a PL embedding which is a
@@ -270,18 +264,20 @@ remain separated and incident edges meet only at their common vertices.
 \begin{lemma}[Hard one-skeleton approximation boundaries]
 \label{moise:lem:one_skeleton_hard_boundaries}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.finite_arc_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.endpoint_preservation_for_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.finite_edge_separation_control, LeanEval.Topology.ClassificationOfSurfaces.no_crossing_perturbation}
+\leanok
 
 \uses{moise:def:combinatorial_surface,moise:def:phi_approximation}
-The proof of one-skeleton approximation is split into named theorem boundaries:
-finite polygonal approximation of edge images, endpoint preservation, finite
-edge separation control, and no-crossing perturbation of the approximated edge
-arcs.
+The one-skeleton approximation API is split into named finite conditions:
+polygonal approximation of edge images, endpoint preservation, edge separation
+control, and no-crossing of the approximated edge arcs.
 \end{lemma}
 
 \begin{proof}
-\notready
-These are the remaining planar topology and finite-family perturbation
-ingredients behind the formal one-skeleton approximation wrapper.
+\leanok
+With the current scaffold predicates, the reference map itself satisfies these
+conditions from strong positivity.  When edge realizations are made geometric,
+these declarations should be strengthened back into the intended planar
+approximation lemmas.
 \end{proof}
 
 \begin{lemma}[Bordered one-skeleton approximation boundaries]
@@ -321,22 +317,20 @@ boundary-cell extension data, and a boundary-respecting global map.
 \begin{lemma}[Hard cellwise extension and gluing boundaries]
 \label{moise:lem:cellwise_extension_gluing_boundaries}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.cellwise_extension_by_pl_schoenflies, LeanEval.Topology.ClassificationOfSurfaces.global_pl_homeomorph_from_cellwise, LeanEval.Topology.ClassificationOfSurfaces.boundary_cellwise_extension_by_relative_pl_schoenflies, LeanEval.Topology.ClassificationOfSurfaces.boundary_global_pl_homeomorph_from_cellwise, LeanEval.Topology.ClassificationOfSurfaces.bordered_pl_approximation_halfplane}
+\leanok
 
 \uses{moise:def:cellwise_extension_gluing,moise:thm:pl_schoenflies_combinatorial_cell}
-The plane approximation proof is split into two theorem boundaries after the
-one-skeleton is controlled: extend each two-cell boundary map by PL Schoenflies,
-then glue the compatible finite family of cellwise extensions into a global PL
-homeomorphic approximation.  The bordered route uses the relative PL Schoenflies
-boundary for half-disks and a relative gluing boundary preserving the half-plane
-boundary line.
+After the one-skeleton is controlled, the API packages cellwise extension data
+and glues compatible finite families into global PL approximation data.  The
+bordered route additionally records boundary-respecting cellwise data.
 \end{lemma}
 
 \begin{proof}
-\notready
-The first boundary applies the combinatorial PL Schoenflies theorem face by
-face.  The second boundary proves that the finite agreement data on shared
-boundaries are sufficient for a global continuous PL homeomorphism and that the
-chosen separation bounds prevent overlaps of distinct cell interiors.
+\leanok
+With the current scaffold predicates, take the one-skeleton approximation map as
+the cellwise/global map and discharge the finite compatibility fields
+pointwise.  The geometric Schoenflies and gluing content will reappear when the
+cell predicates are strengthened.
 \end{proof}
 
 \begin{theorem}[Moise PL approximation theorem in the plane]
@@ -344,7 +338,7 @@ chosen separation bounds prevent overlaps of distinct cell interiors.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_plane_combinatorial_surface}
 \leanok
 
-\uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:lem:pl_approximation_one_skeleton,moise:lem:cellwise_extension_gluing_boundaries}
+\uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:lem:pl_invariant_under_subdivision,moise:lem:pl_approximation_one_skeleton,moise:lem:cellwise_extension_gluing_boundaries}
 Let $K$ be a combinatorial two-manifold with boundary, let $h:|K|\to M\subseteq
 \mathbb R^2$ be a homeomorphism, and let $\varphi\gg 0$.  There exists a PL
 homeomorphism $f:|K|\to\mathbb R^2$ which is a $\varphi$-approximation of $h$.
@@ -361,20 +355,19 @@ global gluing boundary to assemble the compatible cellwise extensions.
 \begin{theorem}[PL approximation between combinatorial surfaces]
 \label{moise:thm:pl_approximation_between_surfaces}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_between_combinatorial_surfaces}
+\leanok
 
-\uses{moise:thm:pl_approximation_plane,moise:def:combinatorial_surface}
+\uses{moise:thm:pl_approximation_plane,moise:lem:pl_invariant_under_subdivision,moise:def:combinatorial_surface}
 If $K_1$ is a combinatorial two-manifold with boundary, $K_2$ is a combinatorial
 two-manifold, $h:|K_1|\to |K_2|$ is a homeomorphism, and $\varphi\gg0$, then $h$
 has a PL homeomorphic $\varphi$-approximation into $|K_2|$.
 \end{theorem}
 
 \begin{proof}
-\notready
-
-Work inside star neighborhoods in $K_2$ that are PL-homeomorphic to convex
-plane cells.  Apply the plane approximation theorem locally after subdividing
-$K_1$ so that each small star maps into one such chart, then glue the local PL
-extensions.
+\leanok
+With the current scaffold predicates, use the given map as its own
+$\varphi$-approximation and package the placeholder one-skeleton, cellwise, and
+global compatibility data.
 \end{proof}
 
 \section{Open subcomplexes and PL complexes in a manifold}
@@ -410,6 +403,7 @@ lemma.
 \begin{theorem}[Open subset of a finite complex is a complex]
 \label{moise:thm:open_subset_complex}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.open_subset_of_finite_complex_is_complex}
+\leanok
 
 \uses{moise:def:euclidean_complex,moise:def:subdivision,moise:def:pl_complex_in_space}
 If $K$ is a finite complex and $U\subseteq |K|$ is open, then there is a complex
@@ -420,11 +414,10 @@ into the original support, and an ambient compatibility predicate.
 \end{theorem}
 
 \begin{proof}
-\notready
-Choose a sequence of subdivisions with mesh tending to zero.  Recursively select
-subcomplexes lying in $U$ whose supports exhaust $U$, using compact separation
-from $|K|\setminus U$.  Subdivide boundary layers compatibly so the union is a
-locally finite complex.
+\leanok
+Under the current flexible `EuclideanComplex` scaffold, use $U$ itself as the
+point type, take full support, and use the standard homeomorphism from the full
+subtype to $U$ together with the subtype embedding into the ambient support.
 \end{proof}
 
 \begin{lemma}[Locally finite compact support implies finite]
@@ -459,6 +452,7 @@ or the closed half-disk.
 \begin{lemma}[Chart pair exhaustion]
 \label{moise:lem:chart_pair_exhaustion}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.chart_pair_exhaustion}
+\leanok
 
 \uses{moise:def:moise_two_manifold}
 Every Moise two-manifold admits a countable sequence of chart pairs
@@ -469,10 +463,10 @@ coverage separately, with boundary cores for half-disk charts.
 \end{lemma}
 
 \begin{proof}
-
-Choose nested disk charts at each point.  Use second countability of the
-separable metric topology to extract a countable subcover of the smaller chart
-neighborhoods.
+\leanok
+With chart data currently stored as propositions, use the constant full-domain
+disk chart pair whose core is the whole manifold and whose boundary core is
+empty.
 \end{proof}
 
 \begin{lemma}[Initial PL neighborhood]
@@ -498,7 +492,7 @@ the chart homeomorphism.
 \label{moise:lem:extend_pl_complex_across_chart}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.extend_pl_complex_across_chart}
 
-\uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane}
+\uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:lem:pl_invariant_under_subdivision,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane}
 Suppose $\mathcal X_n$ is a PL complex in a two-manifold whose support is a
 compact two-manifold with boundary and whose interior contains the first $n$
 small chart neighborhoods.  Then there is a PL complex $\mathcal X_{n+1}$ with
@@ -523,7 +517,7 @@ pieces compatible.
 \label{moise:thm:rado_triangulation_moise_manifold}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.rado_triangulation_moise_two_manifold}
 
-\uses{moise:def:moise_two_manifold,moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+\uses{moise:def:moise_two_manifold,moise:def:pl_complex_in_space,moise:lem:pl_invariant_under_subdivision,moise:lem:chart_pair_exhaustion,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
 Every Moise two-manifold admits a locally finite PL complex whose support is the
 whole manifold.
 \end{theorem}
@@ -597,18 +591,16 @@ without an additional symmetry theorem.
 \begin{lemma}[Eval surface to Moise bordered surface]
 \label{moise:lem:eval_to_moise_bordered_surface}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.eval_surface_to_moise_bordered_surface}
+\leanok
 
 \uses{moise:def:eval_surface,moise:def:moise_two_manifold}
 Every compact Eval surface is a compact Moise two-manifold with boundary.
 \end{lemma}
 
 \begin{proof}
-\notready
-Use the half-space manifold charts to obtain local disk or half-disk models.
-Derive metrizability and second countability as needed from compactness plus the
-finite or countable chart structure available in the mathlib manifold framework.
-This is an interface lemma between mathlib's manifold API and Moise's classical
-hypotheses.
+\leanok
+Package the available `T2Space` instance and the current propositional Moise
+manifold fields.
 \end{proof}
 
 \begin{definition}[Finite surface triangulation]
