@@ -606,8 +606,16 @@ structure MoiseExtractionData (M : Type*) [TopologicalSpace M] where
 
 structure FiniteChartPolygonalDiskData
     {M : Type*} [TopologicalSpace M] (C : FiniteChartPairCover M) where
-  disk : ℕ → ChartPolygonalDisk M
-  chart_eq : ∀ n : ℕ, (disk n).chart = C.toChartPairExhaustion.pair n
+  disk : C.Index → ChartPolygonalDisk M
+  chart_eq : ∀ i : C.Index, (disk i).chart = C.pair i
+  compatibleChartShrinks : Prop
+  boundaryCompatibleChartShrinks : Prop
+
+structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
+  pairAt : M → RadoChartPair M
+  diskAt : M → ChartPolygonalDisk M
+  chart_eq : ∀ x : M, (diskAt x).chart = pairAt x
+  core_mem_nhds : ∀ x : M, (pairAt x).core ∈ 𝓝 x
   compatibleChartShrinks : Prop
   boundaryCompatibleChartShrinks : Prop
 
@@ -637,39 +645,42 @@ Proved finite/combinatorial bridge:
 5. `rado_step_extension_from_chart_polygonal_disk`:
    the current scaffold can extend a Rado stage by taking the union of the old support and the
    next chart-disk support.
-6. `finite_rado_geometry_of_chart_polygonal_disk_data` and
+6. `finite_chart_polygonal_disk_data_of_local`:
+   compactness extracts a finite chart-pair cover while carrying pointwise polygonal disk data
+   along the selected finite indices.
+7. `finite_rado_geometry_of_chart_polygonal_disk_data` and
    `mathlib_bordered_surface_finite_rado_geometry`:
    finite chart polygonal disk data plus the one-step extension theorem packages as
    `FiniteRadoInductionGeometry`; the mathlib wrapper first extracts the finite cover with this
    disk data.
-7. `FiniteRadoInductionGeometry.toRadoInductionData` and
+8. `FiniteRadoInductionGeometry.toRadoInductionData` and
    `rado_induction_data_of_finite_geometry`:
    once the local polygonal chart geometry is supplied over a finite cover, the recursive
    `RadoInductionData` is pure packaging.
-8. `mathlib_bordered_surface_rado_induction_data`:
+9. `mathlib_bordered_surface_rado_induction_data`:
    finite Rado geometry packages as Rado induction data.
-9. `mathlib_bordered_surface_moise_extraction_data`:
+10. `mathlib_bordered_surface_moise_extraction_data`:
    finite cover extraction plus local Rado induction data packages as `MoiseExtractionData`.
-10. `moise_two_manifold_of_extraction_data`:
+11. `moise_two_manifold_of_extraction_data`:
    extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
 
 Remaining hard local bridge:
 
 ```lean
-theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
+theorem mathlib_bordered_surface_local_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
+    ∃ _D : LocalChartPolygonalDiskData M, True := by
   sorry
 ```
 
-This is now the place where the actual chart-core shrinking, polygonal disk triangulation, finite
-subcover extraction, and transport of disk data through the mathlib chart atlas have to be proved.
-It deliberately produces the finite cover together with disk data; an arbitrary finite cover need
-not have polygonal chart cores.  The formerly broad `mathlib_bordered_surface_rado_induction_data`,
-`mathlib_bordered_surface_finite_rado_geometry`, and one-step extension theorems are proved wrappers
-around this sharper local boundary.
+This is now the place where the actual chart-core shrinking, polygonal disk triangulation, and
+transport of disk data through the mathlib chart atlas have to be proved.  Compact finite-subcover
+extraction is proved separately by `finite_chart_polygonal_disk_data_of_local`.  The formerly broad
+`mathlib_bordered_surface_rado_induction_data`,
+`mathlib_bordered_surface_finite_rado_geometry`, finite chart-disk extraction, and one-step
+extension theorems are proved wrappers around this sharper local boundary.
 
 The Rado theorem boundary:
 

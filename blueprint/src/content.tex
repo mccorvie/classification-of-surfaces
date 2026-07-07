@@ -467,14 +467,14 @@ point.
 
 \begin{definition}[Finite chart polygonal disk data]
 \label{moise:def:finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell}
-Finite chart polygonal disk data assigns to every chart pair in the countable
-exhaustion associated to a finite cover an embedded polygonal disk or half-disk
-covering that chart core, together with chart-model and boundary compatibility
-assertions.
+Local chart polygonal disk data assigns a chart pair and embedded polygonal disk
+or half-disk around each point.  Finite chart polygonal disk data records the
+same disk data for each selected index in a finite chart-pair cover, together
+with chart-model and boundary compatibility assertions.
 \end{definition}
 
 \begin{lemma}[Compact local chart pairs have finite subcover]
@@ -789,10 +789,10 @@ faces use the relative version for half-disks.
 \leanok
 
 \uses{moise:lem:mathlib_bordered_surface_to_moise_two_manifold,moise:thm:compact_moise_surface_finitely_triangulable}
-Every compact Moise two-manifold with boundary has a finite triangulation whose
-support covers the manifold, whose relevant simplexes are finite, and whose
-boundary is carried by a boundary subcomplex compatible with the ambient PL
-complex.
+Every nonempty compact Moise two-manifold with boundary has a finite
+triangulation whose support covers the manifold, whose relevant simplexes are
+finite, and whose boundary is carried by a boundary subcomplex compatible with
+the ambient PL complex.
 \end{theorem}
 
 \begin{proof}
@@ -810,7 +810,7 @@ geometric.
 \leanok
 
 \uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_moise_extraction_data}
-A compact mathlib surface with boundary admits the strengthened Moise
+A nonempty compact mathlib surface with boundary admits the strengthened Moise
 two-manifold package, including a countable disk/half-disk chart-pair
 exhaustion.
 \end{lemma}
@@ -827,8 +827,8 @@ Package the extracted finite chart-pair cover and Rado local data as a
 \leanok
 
 \uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_rado_induction_data}
-The mathlib bordered-surface atlas supplies the finite chart-pair cover and
-local Rado induction data needed to build the Moise interface.
+The nonempty mathlib bordered-surface atlas supplies the finite chart-pair cover
+and local Rado induction data needed to build the Moise interface.
 \end{lemma}
 
 \begin{proof}
@@ -845,8 +845,9 @@ the corresponding countable exhaustion, then package both as
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:def:finite_rado_induction_geometry,moise:lem:initial_pl_neighborhood,moise:lem:rado_step_extension_from_chart_polygonal_disk}
 For the finite chart-pair cover with polygonal disk data extracted from a
-compact mathlib bordered surface, the chart cores initialize and extend Rado's
-induction stage by stage with the compatibility needed for the construction.
+nonempty compact mathlib bordered surface, the chart cores initialize and
+extend Rado's induction stage by stage with the compatibility needed for the
+construction.
 \end{lemma}
 
 \begin{proof}
@@ -859,17 +860,34 @@ cover with polygonal disk data.
 
 \begin{lemma}[Mathlib bordered surface finite chart polygonal disk data]
 \label{moise:lem:mathlib_bordered_surface_finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_chart_polygonal_disk_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.finite_chart_polygonal_disk_data_of_local, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_chart_polygonal_disk_data}
+\leanok
 
-\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_bordered_surface_local_chart_polygonal_disk_data}
 A compact mathlib bordered surface admits a finite chart-pair cover such that
 every enumerated chart pair carries embedded polygonal disk or half-disk data
 covering its core and compatible with the chart model.
 \end{lemma}
 
 \begin{proof}
+\leanok
+Apply compactness to the pointwise family of local chart cores and use the
+finite subcover indices to carry the corresponding polygonal disk data.
+\end{proof}
+
+\begin{lemma}[Mathlib bordered surface local chart polygonal disk data]
+\label{moise:lem:mathlib_bordered_surface_local_chart_polygonal_disk_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_local_chart_polygonal_disk_data}
+
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+Around every point of a compact mathlib bordered surface, there is a chart pair
+whose core is a neighborhood of the point and whose core is covered by embedded
+polygonal disk or half-disk data compatible with the chart model.
+\end{lemma}
+
+\begin{proof}
 \notready
-Shrink each preferred chart source to a disk or half-disk core, triangulate the
+Shrink the preferred chart source to a disk or half-disk core, triangulate the
 polygonal region in the model half-plane, and transport the embedded polygonal
 disk data back through the chart homeomorphism.
 \end{proof}
@@ -880,9 +898,9 @@ disk data back through the chart homeomorphism.
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:finite_rado_induction_geometry,moise:lem:mathlib_bordered_surface_finite_rado_geometry}
-A compact mathlib bordered surface admits a finite chart-pair cover carrying the
-initial polygonal disk and successor chart-extension data needed for Rado's
-induction.
+A nonempty compact mathlib bordered surface admits a finite chart-pair cover
+carrying the initial polygonal disk and successor chart-extension data needed
+for Rado's induction.
 \end{lemma}
 
 \begin{proof}

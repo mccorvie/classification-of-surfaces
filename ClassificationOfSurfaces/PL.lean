@@ -2569,8 +2569,17 @@ This isolates the local shrinking theorem: each chart-pair core should be covere
 polygonal disk or half-disk compatible with the chart model. -/
 structure FiniteChartPolygonalDiskData
     {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) where
-  disk : ℕ → ChartPolygonalDisk M
-  chart_eq : ∀ n : ℕ, (disk n).chart = C.toChartPairExhaustion.pair n
+  disk : C.Index → ChartPolygonalDisk M
+  chart_eq : ∀ i : C.Index, (disk i).chart = C.pair i
+  compatibleChartShrinks : Prop
+  boundaryCompatibleChartShrinks : Prop
+
+/-- Pointwise local chart-polygonal-disk data before compactness extracts a finite subcover. -/
+structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
+  pairAt : M → RadoChartPair M
+  diskAt : M → ChartPolygonalDisk M
+  chart_eq : ∀ x : M, (diskAt x).chart = pairAt x
+  core_mem_nhds : ∀ x : M, (pairAt x).core ∈ 𝓝 x
   compatibleChartShrinks : Prop
   boundaryCompatibleChartShrinks : Prop
 
@@ -2603,8 +2612,9 @@ structure RadoStepExtensionData
     (S : RadoInductionState M) where
   nextComplex : PLComplexInSpace M
   boundarySubcomplex : nextComplex.Complex.Subcomplex
-  nextChartDisk : ChartPolygonalDisk M
-  next_chart_eq : nextChartDisk.chart = E.pair (S.stage + 1)
+  nextChartDisk : Option (ChartPolygonalDisk M)
+  next_chart_eq : ∀ D : ChartPolygonalDisk M,
+    nextChartDisk = some D → D.chart = E.pair (S.stage + 1)
   extends_old : PLComplexInSpace.Extends nextComplex S.complex
   coversNextCore : (E.pair (S.stage + 1)).core ⊆ nextComplex.support
   coversNextBoundaryCore : (E.pair (S.stage + 1)).boundaryCore ⊆ nextComplex.support
@@ -2794,8 +2804,11 @@ theorem rado_step_extension_from_chart_polygonal_disk
   let step : RadoStepExtensionData E S :=
     { nextComplex := K
       boundarySubcomplex := EuclideanComplex.Subcomplex.full K.Complex
-      nextChartDisk := D
-      next_chart_eq := hD
+      nextChartDisk := some D
+      next_chart_eq := by
+        intro D' hD'
+        cases hD'
+        exact hD
       extends_old := by
         constructor
         · intro x hx
@@ -2819,6 +2832,33 @@ theorem rado_step_extension_from_chart_polygonal_disk
       compatibleOnOverlaps := True
       boundaryCompatibleOnOverlaps := True
       boundaryRespectsCharts := D.respectsChartModel }
+  exact ⟨step, trivial⟩
+
+/-- Extending across an out-of-range empty chart pair leaves the current stage unchanged. -/
+theorem rado_step_extension_empty_chart
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (S : RadoInductionState M)
+    (hEmpty : E.pair (S.stage + 1) = RadoChartPair.empty M) :
+    ∃ _Dstep : RadoStepExtensionData E S, True := by
+  let step : RadoStepExtensionData E S :=
+    { nextComplex := S.complex
+      boundarySubcomplex := S.boundarySubcomplex
+      nextChartDisk := none
+      next_chart_eq := by
+        intro D hD
+        cases hD
+      extends_old := S.complex.extends_refl
+      coversNextCore := by
+        intro x hx
+        rw [hEmpty] at hx
+        simp [RadoChartPair.empty] at hx
+      coversNextBoundaryCore := by
+        intro x hx
+        rw [hEmpty] at hx
+        simp [RadoChartPair.empty] at hx
+      compatibleOnOverlaps := S.compatibleOnOverlaps
+      boundaryCompatibleOnOverlaps := S.boundaryCompatibleOnOverlaps
+      boundaryRespectsCharts := S.boundaryRespectsCharts }
   exact ⟨step, trivial⟩
 
 /-- Local data sufficient to run every finite stage of the Rado induction.
@@ -3172,26 +3212,96 @@ atlas.
 
 This is where each chart-pair core is replaced by embedded polygonal disk or half-disk data
 compatible with its chart model. -/
+theorem mathlib_bordered_surface_local_chart_polygonal_disk_data
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    ∃ _D : LocalChartPolygonalDiskData M, True := by
+  sorry
+
+/-- Compactness promotes pointwise local chart-polygonal-disk data to a finite chart-pair cover
+carrying indexed polygonal disk data. -/
+theorem finite_chart_polygonal_disk_data_of_local
+    {M : Type u} [TopologicalSpace M] [CompactSpace M]
+    (L : LocalChartPolygonalDiskData M) :
+    ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
+  classical
+  rcases CompactSpace.elim_nhds_subcover (fun x : M => (L.pairAt x).core)
+      L.core_mem_nhds with
+    ⟨t, ht⟩
+  let C : FiniteChartPairCover M :=
+    { Index := {x : M // x ∈ t}
+      indexFintype := inferInstance
+      pair := fun x => L.pairAt x.1
+      covers := by
+        intro y
+        have hy : y ∈ ⋃ x ∈ t, (L.pairAt x).core := by
+          rw [ht]
+          trivial
+        simp only [Set.mem_iUnion] at hy
+        rcases hy with ⟨x, hx⟩
+        rcases hx with ⟨hxt, hyx⟩
+        exact ⟨⟨x, hxt⟩, hyx⟩
+      boundaryCovers := by
+        intro x hx
+        exact hx
+      interiorChartsCoverInterior := True
+      boundaryChartsCoverBoundary := True
+      locallyFinite := True
+      nestedControl := True
+      boundaryLocallyFinite := True
+      boundaryNestedControl := True }
+  let D : FiniteChartPolygonalDiskData C :=
+    { disk := fun i => L.diskAt i.1
+      chart_eq := fun i => L.chart_eq i.1
+      compatibleChartShrinks := L.compatibleChartShrinks
+      boundaryCompatibleChartShrinks := L.boundaryCompatibleChartShrinks }
+  exact ⟨C, D, trivial⟩
+
+/-- A compact mathlib bordered surface admits a finite chart-pair cover carrying polygonal disk
+data on every selected chart pair. -/
 theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
-  sorry
+  rcases mathlib_bordered_surface_local_chart_polygonal_disk_data M with ⟨L, _⟩
+  exact finite_chart_polygonal_disk_data_of_local L
 
 /-- Polygonal disk data over a finite chart-pair cover packages as finite Rado geometry. -/
 theorem finite_rado_geometry_of_chart_polygonal_disk_data
-    {M : Type*} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    {M : Type*} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}
     (D : FiniteChartPolygonalDiskData C) :
     ∃ _G : FiniteRadoInductionGeometry C, True := by
+  have hIndexNonempty : Nonempty C.Index := by
+    rcases C.covers (Classical.choice ‹Nonempty M›) with ⟨i, _hi⟩
+    exact ⟨i⟩
+  letI : Nonempty C.Index := hIndexNonempty
+  have hcard : 0 < Fintype.card C.Index := Fintype.card_pos
+  let i0 : C.Index := (Fintype.equivFin C.Index).symm ⟨0, hcard⟩
+  have h0 : (D.disk i0).chart = C.toChartPairExhaustion.pair 0 := by
+    have hpair : C.toChartPairExhaustion.pair 0 = C.pair i0 := by
+      simp [FiniteChartPairCover.toChartPairExhaustion, FiniteChartPairCover.natPair, i0, hcard]
+    exact (D.chart_eq i0).trans hpair.symm
   let initial : InitialPLNeighborhoodData C.toChartPairExhaustion :=
-    InitialPLNeighborhoodData.ofChartPolygonalDisk (D.disk 0) (D.chart_eq 0)
+    InitialPLNeighborhoodData.ofChartPolygonalDisk (D.disk i0) h0
   let step : ∀ (_n : ℕ) (S : RadoInductionState M),
       RadoStepExtensionData C.toChartPairExhaustion S :=
     fun _n S =>
-      Classical.choose
-        (rado_step_extension_from_chart_polygonal_disk C.toChartPairExhaustion S
-          (D.disk (S.stage + 1)) (D.chart_eq (S.stage + 1)))
+      if h : S.stage + 1 < Fintype.card C.Index then
+        let i : C.Index := (Fintype.equivFin C.Index).symm ⟨S.stage + 1, h⟩
+        have hi : (D.disk i).chart = C.toChartPairExhaustion.pair (S.stage + 1) := by
+          have hpair : C.toChartPairExhaustion.pair (S.stage + 1) = C.pair i := by
+            simp [FiniteChartPairCover.toChartPairExhaustion, FiniteChartPairCover.natPair, i, h]
+          exact (D.chart_eq i).trans hpair.symm
+        Classical.choose
+          (rado_step_extension_from_chart_polygonal_disk C.toChartPairExhaustion S (D.disk i) hi)
+      else
+        have hEmpty :
+            C.toChartPairExhaustion.pair (S.stage + 1) = RadoChartPair.empty M := by
+          simp [FiniteChartPairCover.toChartPairExhaustion, FiniteChartPairCover.natPair, h]
+        Classical.choose
+          (rado_step_extension_empty_chart C.toChartPairExhaustion S hEmpty)
   let G : FiniteRadoInductionGeometry C :=
     { initial := initial
       step := step
@@ -3202,7 +3312,7 @@ theorem finite_rado_geometry_of_chart_polygonal_disk_data
 
 /-- Local Rado geometry over a finite chart-pair cover extracted from the mathlib atlas. -/
 theorem mathlib_bordered_surface_finite_rado_geometry
-    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ C : FiniteChartPairCover M, ∃ _G : FiniteRadoInductionGeometry C, True := by
@@ -3212,7 +3322,7 @@ theorem mathlib_bordered_surface_finite_rado_geometry
 
 /-- Local Rado induction data over a finite chart-pair cover extracted from the mathlib atlas. -/
 theorem mathlib_bordered_surface_rado_induction_data
-    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ C : FiniteChartPairCover M,
@@ -3227,7 +3337,7 @@ Moise chart-pair interface.
 This is where one proves that the mathlib manifold atlas admits a countable disk/half-disk chart
 pair exhaustion with the local finiteness and nesting properties needed by Rado's induction. -/
 theorem mathlib_bordered_surface_moise_extraction_data
-    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ _D : MoiseExtractionData M, True := by
@@ -3245,7 +3355,7 @@ Moise chart-pair interface.
 This packages the extracted finite chart-pair cover and local Rado induction data into the
 Rado-facing `MoiseTwoManifold` structure. -/
 theorem mathlib_bordered_surface_to_moise_two_manifold
-    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ _hM : MoiseTwoManifold M, True := by
@@ -3255,7 +3365,7 @@ theorem mathlib_bordered_surface_to_moise_two_manifold
 
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation
-    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
