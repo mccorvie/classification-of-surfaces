@@ -27,6 +27,7 @@ project skeleton and documents the intended handoff points between teams.
 * `CombinatorialTwoManifoldWithBoundary`
 * `CombinatorialTwoCell`
 * `PLComplexInSpace`
+* `FinitePLTriangulationData`
 * `MoiseTwoManifold`
 * `compact_eval_surface_finitely_triangulable`
 
@@ -41,6 +42,7 @@ Gallier-Xu normal-form proof.
 * `PLComplexInSpace.FiniteSupportData.TwoSimplex`
 * `PLComplexInSpace.FiniteSupportData.triangleBoundaryWord`
 * `PLComplexInSpace.toFiniteSurfaceTriangulation`
+* `FinitePLTriangulationData.toFiniteSurfaceTriangulation`
 * `FiniteSurfaceTriangulation.toCellComplex`
 * `FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic`
 * `finite_triangulation_to_cell_complex`

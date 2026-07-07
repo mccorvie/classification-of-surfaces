@@ -141,6 +141,21 @@ noncomputable def toFiniteSurfaceTriangulation {S : Type*} [TopologicalSpace S]
 
 end PLComplexInSpace
 
+namespace FinitePLTriangulationData
+
+/-- Convert finite PL triangulation data into the public finite surface triangulation object. -/
+noncomputable def toFiniteSurfaceTriangulation {S : Type*} [TopologicalSpace S]
+    (D : FinitePLTriangulationData S) : FiniteSurfaceTriangulation S :=
+  D.K.toFiniteSurfaceTriangulation D.covers D.finiteSupport D.boundary
+
+/-- The finite surface triangulation converted from finite PL data realizes the ambient space. -/
+theorem toFiniteSurfaceTriangulation_homeomorphSurface
+    {S : Type*} [TopologicalSpace S] (D : FinitePLTriangulationData S) :
+    Nonempty (D.toFiniteSurfaceTriangulation.realization ≃ₜ S) :=
+  D.toFiniteSurfaceTriangulation.homeomorphSurface
+
+end FinitePLTriangulationData
+
 /-- A space is triangulable if it has a finite surface triangulation in the project sense. -/
 def SurfaceTriangulable (S : Type*) [TopologicalSpace S] : Prop :=
   ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S)

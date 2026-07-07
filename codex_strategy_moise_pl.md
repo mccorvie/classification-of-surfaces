@@ -696,7 +696,9 @@ The PL-to-triangulation bridge uses finite support data as the combinatorial han
 `TwoSimplex` supplies triangles, and `triangleBoundaryWord` records the supported
 codimension-one faces of a two-simplex as the current scaffold boundary word.
 `PLComplexInSpace.toFiniteSurfaceTriangulation` is the named construction behind the public
-existential theorem.
+existential theorem.  `FinitePLTriangulationData` is the named Rado-output package for a covering
+embedded PL complex, finite support data, and boundary-subcomplex data; the bordered Rado theorem
+now wraps `mathlib_bordered_surface_finite_pl_triangulation_data`.
 
 Closed coordinate-local bridge:
 

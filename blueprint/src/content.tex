@@ -396,7 +396,7 @@ global compatibility data.
 
 \begin{definition}[PL complex in a topological space]
 \label{moise:def:pl_complex_in_space}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
@@ -406,7 +406,9 @@ complex is PL-compatible on intersections.  The formal API stores a mathlib
 topological embedding of the complex support into the ambient space, exposes the
 image support, point and set coverage predicates, extension data, and
 compatibility on overlaps.  It also has finite support data: a finite set of
-relevant simplexes covering the embedded support.
+relevant simplexes covering the embedded support.  `FinitePLTriangulationData`
+packages an embedded PL complex covering the ambient space together with finite
+support data and boundary-subcomplex data.
 \end{definition}
 
 \begin{definition}[Interior subcomplex of a PL surface]
@@ -804,12 +806,13 @@ support theorem for this named complex is exactly the desired conclusion.
 
 \begin{theorem}[Compact Moise surface is finitely triangulable]
 \label{moise:thm:compact_moise_surface_finitely_triangulable}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finitely_triangulable}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finite_pl_triangulation_data}
 \leanok
 
 \uses{moise:thm:rado_triangulation_moise_manifold,moise:lem:compact_locally_finite_complex_finite}
 Every compact Moise two-manifold has a PL complex covering the whole manifold
-together with finite support data.
+together with finite support data.  The named data-package version also records
+the boundary subcomplex data needed by the bordered triangulation handoff.
 \end{theorem}
 
 \begin{proof}
@@ -817,6 +820,7 @@ together with finite support data.
 
 Apply the Moise--Rado locally finite triangulation theorem.  The support is
 compact, so local finiteness implies that only finitely many simplexes occur.
+The data-package version adds the current full-subcomplex boundary package.
 \end{proof}
 
 \section{Boundary surfaces in the Moise route}
@@ -842,7 +846,7 @@ faces use the relative version for half-disks.
 
 \begin{theorem}[Moise--Rado triangulation for bordered surfaces]
 \label{moise:thm:rado_bordered_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_pl_triangulation_data, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
 \leanok
 
 \uses{moise:lem:mathlib_bordered_surface_to_moise_two_manifold,moise:thm:compact_moise_surface_finitely_triangulable}
@@ -856,9 +860,9 @@ the ambient PL complex.
 \leanok
 Convert the mathlib bordered-surface hypotheses to the Moise chart-pair
 interface and apply compact finite triangulability for Moise surfaces.  The
-present boundary API stores boundary compatibility propositionally, so the full
-subcomplex supplies boundary-subcomplex data until boundary strata are made
-geometric.
+named theorem `mathlib_bordered_surface_finite_pl_triangulation_data` packages
+the resulting complex, support equality, finite support data, and boundary data;
+`rado_bordered_surface_triangulation` is the public existential wrapper.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface to Moise chart-pair interface]
@@ -1241,7 +1245,7 @@ support to $S$.
 
 \begin{theorem}[Finite PL complex to finite surface triangulation]
 \label{moise:thm:finite_pl_complex_to_finite_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.oneSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.twoSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.OneSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.TwoSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.triangleBoundaryWord, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.toFiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.finite_pl_complex_to_finite_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.oneSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.twoSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.OneSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.TwoSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.triangleBoundaryWord, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.toFiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData.toFiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.finite_pl_complex_to_finite_surface_triangulation}
 \leanok
 
 \uses{moise:def:finite_surface_triangulation,moise:thm:rado_bordered_surface_triangulation}

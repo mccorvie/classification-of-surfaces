@@ -2422,6 +2422,36 @@ structure BoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplex
   compatibleWithAmbient : Prop
   locallyFiniteBoundary : Prop
 
+/-- Default boundary data using the full subcomplex.  This is the scaffold boundary package used
+until boundary strata are represented as geometric subcomplexes. -/
+def fullBoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
+    K.BoundarySubcomplexData where
+  boundary := EuclideanComplex.Subcomplex.full K.Complex
+  coversBoundary := True
+  compatibleWithAmbient := True
+  locallyFiniteBoundary := True
+
+end PLComplexInSpace
+
+/-- Finite PL triangulation data produced by the Moise--Rado route before conversion to the
+project's `FiniteSurfaceTriangulation` object. -/
+structure FinitePLTriangulationData (X : Type*) [TopologicalSpace X] where
+  K : PLComplexInSpace X
+  covers : K.support = Set.univ
+  finiteSupport : K.FiniteSupportData
+  boundary : K.BoundarySubcomplexData
+
+namespace FinitePLTriangulationData
+
+/-- The embedded PL complex carried by finite PL triangulation data covers the whole space. -/
+theorem support_eq_univ {X : Type*} [TopologicalSpace X]
+    (D : FinitePLTriangulationData X) : D.K.support = Set.univ :=
+  D.covers
+
+end FinitePLTriangulationData
+
+namespace PLComplexInSpace
+
 /-- The interior subcomplex carrier. This is currently the whole support until boundary strata are
 available as geometric subcomplexes. -/
 def interiorSubcomplex {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
@@ -4363,6 +4393,19 @@ theorem compact_moise_surface_finitely_triangulable
   rcases locallyFiniteComplex_finite_of_compact_support K with ⟨finiteSupport, hfinite⟩
   exact ⟨K, hK, finiteSupport, hfinite⟩
 
+/-- Compact Moise surfaces produce finite PL triangulation data. -/
+theorem compact_moise_surface_finite_pl_triangulation_data
+    (M : Type*) [TopologicalSpace M] [CompactSpace M] (_hM : MoiseTwoManifold M) :
+    ∃ _D : FinitePLTriangulationData M, True := by
+  rcases compact_moise_surface_finitely_triangulable M _hM with
+    ⟨K, hK, finiteSupport, _⟩
+  let D : FinitePLTriangulationData M :=
+    { K := K
+      covers := hK
+      finiteSupport := finiteSupport
+      boundary := K.fullBoundarySubcomplexData }
+  exact ⟨D, trivial⟩
+
 /-- Bordered PL approximation theorem boundary. -/
 theorem bordered_pl_approximation
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
@@ -4715,6 +4758,15 @@ theorem mathlib_bordered_surface_to_moise_two_manifold
   rcases moise_two_manifold_of_extraction_data D with ⟨hM, _⟩
   exact ⟨hM, trivial⟩
 
+/-- Mathlib bordered surfaces produce finite PL triangulation data via the Moise--Rado route. -/
+theorem mathlib_bordered_surface_finite_pl_triangulation_data
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    ∃ _D : FinitePLTriangulationData M, True := by
+  rcases mathlib_bordered_surface_to_moise_two_manifold M with ⟨hM, _⟩
+  exact compact_moise_surface_finite_pl_triangulation_data M hM
+
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
@@ -4722,14 +4774,8 @@ theorem rado_bordered_surface_triangulation
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
       ∃ _finiteSupport : K.FiniteSupportData, ∃ _boundary : K.BoundarySubcomplexData, True := by
-  rcases mathlib_bordered_surface_to_moise_two_manifold M with ⟨hM, _⟩
-  rcases compact_moise_surface_finitely_triangulable M hM with ⟨K, hK, finiteSupport, _⟩
-  let boundary : K.BoundarySubcomplexData :=
-    { boundary := EuclideanComplex.Subcomplex.full K.Complex
-      coversBoundary := True
-      compatibleWithAmbient := True
-      locallyFiniteBoundary := True }
-  exact ⟨K, hK, finiteSupport, boundary, trivial⟩
+  rcases mathlib_bordered_surface_finite_pl_triangulation_data M with ⟨D, _⟩
+  exact ⟨D.K, D.covers, D.finiteSupport, D.boundary, trivial⟩
 
 /-- Bridge from mathlib's Eval surface hypotheses to the Moise bordered-surface interface. -/
 theorem eval_surface_to_moise_bordered_surface
