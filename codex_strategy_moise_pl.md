@@ -654,30 +654,33 @@ Proved finite/combinatorial bridge:
    along the selected finite indices.
 7. `local_chart_polygonal_disk_data_of_pointwise`:
    pointwise chart-disk data packages into the local function-valued data used for compactness.
-8. `finite_rado_geometry_of_chart_polygonal_disk_data` and
+8. `mathlib_bordered_surface_point_chart_polygonal_disk_data`:
+   a polygonal disk core inside the preferred mathlib chart packages as pointwise chart-disk data.
+9. `finite_rado_geometry_of_chart_polygonal_disk_data` and
    `mathlib_bordered_surface_finite_rado_geometry`:
    finite chart polygonal disk data plus the one-step extension theorem packages as
    `FiniteRadoInductionGeometry`; the mathlib wrapper first extracts the finite cover with this
    disk data.
-9. `FiniteRadoInductionGeometry.toRadoInductionData` and
+10. `FiniteRadoInductionGeometry.toRadoInductionData` and
    `rado_induction_data_of_finite_geometry`:
    once the local polygonal chart geometry is supplied over a finite cover, the recursive
    `RadoInductionData` is pure packaging.
-10. `mathlib_bordered_surface_rado_induction_data`:
+11. `mathlib_bordered_surface_rado_induction_data`:
    finite Rado geometry packages as Rado induction data.
-11. `mathlib_bordered_surface_moise_extraction_data`:
+12. `mathlib_bordered_surface_moise_extraction_data`:
    finite cover extraction plus local Rado induction data packages as `MoiseExtractionData`.
-12. `moise_two_manifold_of_extraction_data`:
+13. `moise_two_manifold_of_extraction_data`:
    extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
 
 Remaining hard local bridge:
 
 ```lean
-theorem mathlib_bordered_surface_point_chart_polygonal_disk_data
+theorem mathlib_chartAt_contains_polygonal_disk_core
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
-    ∃ _D : PointChartPolygonalDiskData M x, True := by
+    ∃ D : ChartPolygonalDisk M,
+      D.chart.Refines (RadoChartPair.fromChartAt M x) ∧ D.chart.core ∈ 𝓝 x := by
   sorry
 ```
 
@@ -687,7 +690,8 @@ extraction is proved separately by `finite_chart_polygonal_disk_data_of_local`, 
 is packaged into local function-valued data by `local_chart_polygonal_disk_data_of_pointwise`.
 The formerly broad `mathlib_bordered_surface_rado_induction_data`,
 `mathlib_bordered_surface_finite_rado_geometry`, finite chart-disk extraction, local chart-disk
-data, and one-step extension theorems are proved wrappers around this sharper pointwise boundary.
+data, point chart-disk data, and one-step extension theorems are proved wrappers around this
+sharper chart-contained polygonal-core boundary.
 
 The Rado theorem boundary:
 

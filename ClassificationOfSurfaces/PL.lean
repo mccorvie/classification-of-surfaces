@@ -2409,6 +2409,13 @@ def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Pro
 def IsInteriorChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
   P.kind = RadoChartKind.disk
 
+/-- One chart pair refines another if its domain and core lie in the larger chart pair.
+
+For the local Rado construction this records that a polygonal disk or half-disk core has been
+shrunk inside a preferred mathlib chart. -/
+def Refines {M : Type*} [TopologicalSpace M] (P Q : RadoChartPair M) : Prop :=
+  P.domain ⊆ Q.domain ∧ P.core ⊆ Q.core
+
 end RadoChartPair
 
 /-- A finite family of Rado chart pairs whose cores cover the whole space. -/
@@ -3212,13 +3219,25 @@ theorem mathlib_bordered_surface_finite_chart_pair_cover
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
 
-/-- Hard pointwise chart-shrinking boundary from the mathlib atlas. -/
+/-- Hard local chart-shrinking boundary: the preferred mathlib chart at a point contains a
+polygonal disk or half-disk chart core around that point. -/
+theorem mathlib_chartAt_contains_polygonal_disk_core
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
+    ∃ D : ChartPolygonalDisk M,
+      D.chart.Refines (RadoChartPair.fromChartAt M x) ∧ D.chart.core ∈ 𝓝 x := by
+  sorry
+
+/-- Pointwise chart-polygonal-disk data from a polygonal core inside the preferred mathlib chart.
+-/
 theorem mathlib_bordered_surface_point_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
     ∃ _D : PointChartPolygonalDiskData M x, True := by
-  sorry
+  rcases mathlib_chartAt_contains_polygonal_disk_core M x with ⟨D, _hrefines, hcore⟩
+  exact ⟨{ disk := D, core_mem_nhds := hcore }, trivial⟩
 
 /-- Pointwise chart-polygonal-disk data packages as local chart-polygonal-disk data. -/
 theorem local_chart_polygonal_disk_data_of_pointwise

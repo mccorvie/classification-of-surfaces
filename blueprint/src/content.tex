@@ -895,18 +895,35 @@ chart and disk functions as `LocalChartPolygonalDiskData`.
 \begin{lemma}[Mathlib bordered surface point chart polygonal disk data]
 \label{moise:lem:mathlib_bordered_surface_point_chart_polygonal_disk_data}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_point_chart_polygonal_disk_data}
+\leanok
 
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_chartAt_contains_polygonal_disk_core}
 At every point of a compact mathlib bordered surface, there is a chart pair
 whose core is a neighborhood of that point and whose core is covered by embedded
 polygonal disk or half-disk data compatible with the chart model.
 \end{lemma}
 
 \begin{proof}
+\leanok
+Use the polygonal disk core contained in the preferred mathlib chart and package
+it as `PointChartPolygonalDiskData`.
+\end{proof}
+
+\begin{lemma}[Mathlib chart contains polygonal disk core]
+\label{moise:lem:mathlib_chartAt_contains_polygonal_disk_core}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_contains_polygonal_disk_core}
+
+\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell}
+The preferred mathlib chart at a point contains a smaller Rado chart pair whose
+core is a neighborhood of the point and is covered by an embedded polygonal
+disk or half-disk compatible with the chart model.
+\end{lemma}
+
+\begin{proof}
 \notready
-Shrink the preferred chart source to a disk or half-disk core, triangulate the
-polygonal region in the model half-plane, and transport the embedded polygonal
-disk data back through the chart homeomorphism.
+Shrink the preferred chart source to a disk or half-disk core in the model
+half-plane, triangulate that polygonal region, and transport the embedded
+polygonal disk data back through the chart homeomorphism.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface local Rado induction data]
