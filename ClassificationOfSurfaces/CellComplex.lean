@@ -180,10 +180,9 @@ noncomputable def realizationCongr {K L : SurfaceCellComplex}
 
 /-- Relation-only quotient congruence on a fixed pre-space. -/
 noncomputable def realizationCongrRight {X : Type*} [TopologicalSpace X]
-    {r s : Setoid X} [TopologicalSpace (Quotient r)] [TopologicalSpace (Quotient s)]
-    (_h : ∀ x y, r x y ↔ s x y) :
+    {r s : Setoid X} (_h : ∀ x y, r x y ↔ s x y) :
     Quotient r ≃ₜ Quotient s := by
-  sorry
+  exact Homeomorph.Quotient.congrRight _h
 
 end SurfaceCellComplex
 

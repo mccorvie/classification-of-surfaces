@@ -38,7 +38,10 @@ The final theorem should be a short assembly proof using those two bridge theore
 
 ## Current Baseline
 
-The repository currently builds with named theorem-boundary `sorry`s. The bottom API is in place:
+The repository currently builds with a named theorem-boundary `sorry` in the
+triangulation-to-cell-complex realization bridge. Several theorem-boundary fields are still
+intentionally propositional scaffold data, especially in the Rado and quotient realization layers.
+The bottom API is in place:
 
 - `EvalSurface` packages the Lean Eval hypotheses.
 - `OrientedEdge` records oriented triangle sides.

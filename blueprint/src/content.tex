@@ -1302,7 +1302,6 @@ realization of a finite surface cell complex.
 \end{theorem}
 
 \begin{proof}
-
 Take the associated cell complex and compose the triangulation homeomorphism with
 the homeomorphism between triangulation support and cell-complex realization.
 \end{proof}
@@ -1332,7 +1331,7 @@ of $K$.
 
 \begin{theorem}[Mathlib quotient congruence]
 \label{moise:thm:mathlib_quotient_congr}
-\lean{Homeomorph.Quotient.congr, Homeomorph.Quot.congrRight}
+\lean{Homeomorph.Quotient.congr, Homeomorph.Quotient.congrRight, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.realizationCongrRight}
 \mathlibok
 If a homeomorphism between two spaces carries one quotient relation exactly to
 another, it descends to a homeomorphism between the quotient spaces.  If the
@@ -1351,7 +1350,6 @@ $|K|\cong |L|$.
 \end{lemma}
 
 \begin{proof}
-
 Apply the quotient congruence theorem from mathlib to the homeomorphism of
 pre-realizations and the proof that it respects exactly the two gluing relations.
 \end{proof}

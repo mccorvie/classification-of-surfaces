@@ -186,7 +186,12 @@ theorem SurfaceCellComplex.realizationCongr
   sorry
 ```
 
-This theorem is the engine behind all elementary cut/glue moves. The quotient team should own it. The Gallier--Xu team should not reprove quotient topology facts for every move.
+Current Lean status: `SurfaceCellComplex.Realization` and `PreRealization` are still placeholder
+one-point carriers, so `realizationCongr` is routine at the scaffold level.  Once
+`PreRealization` becomes the disjoint union of polygons and `Realization` becomes the quotient,
+this theorem should switch to mathlib's quotient homeomorphism API.  It remains the intended engine
+behind all elementary cut/glue moves. The quotient team should own that final upgrade; the
+Gallier--Xu team should not reprove quotient topology facts for every move.
 
 A second useful form is relation-only congruence on the same pre-space:
 
@@ -196,7 +201,7 @@ theorem SurfaceCellComplex.realizationCongrRight
     {r s : Setoid X}
     (h : ∀ x y, r x y ↔ s x y) :
     Quotient r ≃ₜ Quotient s := by
-  sorry
+  exact Homeomorph.Quotient.congrRight h
 ```
 
 Use mathlib's quotient homeomorphism lemmas where possible. Do not build a custom quotient topology theory unless mathlib lacks a needed API.
@@ -252,7 +257,9 @@ theorem FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic
   sorry
 ```
 
-For a triangular complex, each triangle becomes a face whose boundary word has length three. Each geometric edge gives a dart-pair. Vertices are inherited from the triangulation.
+For a triangular complex, each triangle becomes a face whose boundary word has length three. Each
+geometric edge gives a dart-pair. Vertices are inherited from the triangulation.  The realization
+comparison remains a theorem boundary until the shared quotient realization model is expanded.
 
 This conversion is conceptually routine but Lean-heavy. It should be developed by the common infrastructure team, not by the Moise topology team.
 
