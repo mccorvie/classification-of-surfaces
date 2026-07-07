@@ -1083,6 +1083,7 @@ neighborhood theorem.
 \begin{lemma}[Boundary fixed-point polygonal neighborhood]
 \label{moise:lem:euclideanHalfSpace_boundary_polygonal_neighborhood_at}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_boundary_polygonal_neighborhood_at}
+\leanok
 
 \uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell,moise:lem:euclideanHalfSpace_image_mem_nhdsWithin_halfspace}
 Given a boundary-line point already packaged as a point of the image of a
@@ -1091,12 +1092,14 @@ point.
 \end{lemma}
 
 \begin{proof}
-\notready
-The formal boundary now first records that the image of the half-plane
-neighborhood is a relative ambient neighborhood in the closed half-plane.
-The remaining geometric task is to shrink to a small polygonal half-disk
-contained in that relative neighborhood, then triangulate that half-disk with
-its diameter on the boundary line.
+\leanok
+The image of the half-plane neighborhood is a relative ambient neighborhood in
+the closed coordinate half-plane.  Choose a sufficiently small positive
+homothetic copy of the standard triangle anchored at a point in the relative
+interior of its boundary edge.  Positivity and the boundary-coordinate equation
+keep the homothety inside the closed half-plane, while the standard triangle is
+a relative neighborhood of its anchor.  Convert the resulting boundary triangle
+copy to a `PlaneRegionPolygonalNeighborhood`.
 \end{proof}
 
 \begin{lemma}[Half-plane neighborhood point belongs to image]

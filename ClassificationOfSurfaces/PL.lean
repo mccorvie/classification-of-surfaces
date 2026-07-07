@@ -367,12 +367,21 @@ def closedTriangleSupport : Set TrianglePlane :=
 def closedTriangleCentroid : TrianglePlane :=
   !₂[(1 : ℝ) / 3, (1 : ℝ) / 3]
 
+/-- A point in the relative interior of the standard triangle edge on the model half-plane
+boundary. -/
+def closedTriangleBoundaryAnchor : TrianglePlane :=
+  !₂[(0 : ℝ), (1 : ℝ) / 3]
+
 theorem zero_mem_closedTriangleSupport : (0 : TrianglePlane) ∈ closedTriangleSupport := by
   simp [closedTriangleSupport]
 
 theorem closedTriangleCentroid_mem_closedTriangleSupport :
     closedTriangleCentroid ∈ closedTriangleSupport := by
   norm_num [closedTriangleCentroid, closedTriangleSupport]
+
+theorem closedTriangleBoundaryAnchor_mem_closedTriangleSupport :
+    closedTriangleBoundaryAnchor ∈ closedTriangleSupport := by
+  norm_num [closedTriangleBoundaryAnchor, closedTriangleSupport]
 
 theorem closedTriangleSupport_mem_nhds_centroid :
     closedTriangleSupport ∈ 𝓝 closedTriangleCentroid := by
@@ -418,6 +427,52 @@ theorem dist_centroid_le_three_of_mem_closedTriangleSupport
   have hsq : ‖p - closedTriangleCentroid‖ ^ 2 ≤ 9 := by
     nlinarith [h0sq, h1sq]
   nlinarith [sq_nonneg (‖p - closedTriangleCentroid‖ - 3)]
+
+theorem closedTriangleSupport_mem_nhdsWithin_halfspace_boundaryAnchor :
+    closedTriangleSupport ∈ 𝓝[{p : TrianglePlane | 0 ≤ p 0}]
+      closedTriangleBoundaryAnchor := by
+  let O : Set TrianglePlane :=
+    {p | p 0 < (1 : ℝ) / 3 ∧ 0 < p 1 ∧ p 0 + p 1 < 1}
+  have hOpen : IsOpen O := by
+    have h0 : IsOpen {p : TrianglePlane | p 0 < (1 : ℝ) / 3} := by
+      exact isOpen_lt
+        (PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (0 : Fin 2))
+        continuous_const
+    have h1 : IsOpen {p : TrianglePlane | 0 < p 1} := by
+      exact isOpen_lt continuous_const
+        (PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (1 : Fin 2))
+    have hsum : IsOpen {p : TrianglePlane | p 0 + p 1 < 1} := by
+      exact isOpen_lt
+        ((PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (0 : Fin 2)).add
+          (PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (1 : Fin 2)))
+        continuous_const
+    exact h0.inter (h1.inter hsum)
+  have hmem : closedTriangleBoundaryAnchor ∈ O := by
+    norm_num [O, closedTriangleBoundaryAnchor]
+  exact Filter.mem_of_superset
+    (inter_mem_nhdsWithin {p : TrianglePlane | 0 ≤ p 0} (hOpen.mem_nhds hmem)) (by
+      intro p hp
+      rcases hp with ⟨hpHalf, hpO⟩
+      rcases hpO with ⟨_hp0lt, hp1, hpsum⟩
+      exact ⟨hpHalf, le_of_lt hp1, le_of_lt hpsum⟩)
+
+theorem dist_boundaryAnchor_le_three_of_mem_closedTriangleSupport
+    {p : TrianglePlane} (hp : p ∈ closedTriangleSupport) :
+    dist closedTriangleBoundaryAnchor p ≤ 3 := by
+  rcases hp with ⟨hp0, hp1, hpsum⟩
+  have hp0_le_one : p 0 ≤ 1 := by linarith
+  have hp1_le_one : p 1 ≤ 1 := by linarith
+  have h0sq : (p 0) ^ 2 ≤ 1 := by nlinarith
+  have h1sq : (p 1 - (1 : ℝ) / 3) ^ 2 ≤ 1 := by nlinarith
+  have hnormsq :
+      ‖p - closedTriangleBoundaryAnchor‖ ^ 2 =
+        (p 0) ^ 2 + (p 1 - (1 : ℝ) / 3) ^ 2 := by
+    rw [EuclideanSpace.real_norm_sq_eq]
+    norm_num [closedTriangleBoundaryAnchor, Fin.sum_univ_two]
+  rw [dist_comm, dist_eq_norm]
+  have hsq : ‖p - closedTriangleBoundaryAnchor‖ ^ 2 ≤ 9 := by
+    nlinarith [h0sq, h1sq]
+  nlinarith [sq_nonneg (‖p - closedTriangleBoundaryAnchor‖ - 3)]
 
 /-- The one-point finite complex. -/
 def point : EuclideanComplex where
@@ -2878,6 +2933,174 @@ theorem exists_centeredHomothety_image_subset_of_mem_nhds
 
 end PlaneRegionTriangleCopy
 
+/-- A copy of the standard closed triangle anchored at a boundary-line point of a plane region.
+
+The anchor is a point in the relative interior of the standard triangle edge lying on the model
+half-plane boundary.  This is the Euclidean local model needed at boundary chart points: the image
+of the triangle is required to be a relative neighborhood inside the target region, not an ambient
+plane neighborhood. -/
+structure PlaneRegionBoundaryTriangleCopy (Ω : Set Plane) (y : Ω) where
+  homeomorph : Plane ≃ₜ Plane
+  anchor_eq : homeomorph EuclideanComplex.Examples.closedTriangleBoundaryAnchor = y.1
+  image_subset :
+    homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ⊆ Ω
+  image_mem_nhdsWithin :
+    homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ∈ 𝓝[Ω] y.1
+
+namespace PlaneRegionBoundaryTriangleCopy
+
+/-- The plane homeomorphism that scales the standard triangle about its boundary anchor and then
+translates that anchor to `center`. -/
+def boundaryAnchoredHomothety (center : Plane) (scale : ℝ) (hscale : scale ≠ 0) :
+    Plane ≃ₜ Plane :=
+  (Homeomorph.addRight (-EuclideanComplex.Examples.closedTriangleBoundaryAnchor)).trans
+    ((Homeomorph.smulOfNeZero scale hscale).trans (Homeomorph.addLeft center))
+
+@[simp] theorem boundaryAnchoredHomothety_anchor
+    (center : Plane) (scale : ℝ) (hscale : scale ≠ 0) :
+    boundaryAnchoredHomothety center scale hscale
+      EuclideanComplex.Examples.closedTriangleBoundaryAnchor = center := by
+  simp [boundaryAnchoredHomothety]
+
+theorem dist_center_boundaryAnchoredHomothety
+    (center : Plane) (scale : ℝ) (hscale : scale ≠ 0) (p : Plane) :
+    dist (boundaryAnchoredHomothety center scale hscale p) center =
+      |scale| * dist p EuclideanComplex.Examples.closedTriangleBoundaryAnchor := by
+  rw [dist_eq_norm, dist_eq_norm]
+  have harg :
+      boundaryAnchoredHomothety center scale hscale p - center =
+        scale • (p - EuclideanComplex.Examples.closedTriangleBoundaryAnchor) := by
+    ext i
+    simp [boundaryAnchoredHomothety, sub_eq_add_neg, smul_add, add_comm, add_left_comm]
+  rw [harg, norm_smul]
+  rfl
+
+/-- A positive boundary-anchored homothety with boundary-line center preserves the closed
+coordinate-0 half-plane. -/
+theorem boundaryAnchoredHomothety_mem_coordHalfspace_of_mem
+    {center : Plane} {scale : ℝ} {hscale : scale ≠ 0}
+    (hcenter : center 0 = 0) (hscale_pos : 0 < scale) {p : Plane}
+    (hp : 0 ≤ p 0) :
+    0 ≤ (boundaryAnchoredHomothety center scale hscale p) 0 := by
+  have hcoord :
+      (boundaryAnchoredHomothety center scale hscale p) 0 =
+        scale * p 0 := by
+    simp [boundaryAnchoredHomothety, EuclideanComplex.Examples.closedTriangleBoundaryAnchor,
+      hcenter, smul_eq_mul]
+  rw [hcoord]
+  exact mul_nonneg (le_of_lt hscale_pos) hp
+
+/-- A positive boundary-anchored homothety with boundary-line center maps the closed coordinate-0
+half-plane onto itself. -/
+theorem boundaryAnchoredHomothety_image_coordHalfspace_eq
+    {center : Plane} {scale : ℝ} {hscale : scale ≠ 0}
+    (hcenter : center 0 = 0) (hscale_pos : 0 < scale) :
+    boundaryAnchoredHomothety center scale hscale '' {p : Plane | 0 ≤ p 0} =
+      {p : Plane | 0 ≤ p 0} := by
+  ext z
+  constructor
+  · rintro ⟨p, hp, rfl⟩
+    exact boundaryAnchoredHomothety_mem_coordHalfspace_of_mem hcenter hscale_pos hp
+  · intro hz
+    let f := boundaryAnchoredHomothety center scale hscale
+    refine ⟨f.symm z, ?_, by simp [f]⟩
+    have hpre :
+        z 0 = (boundaryAnchoredHomothety center scale hscale (f.symm z)) 0 := by
+      simp [f]
+    change 0 ≤ (f.symm z) 0
+    have hpre_coord : (f.symm z) 0 = z 0 / scale := by
+      have hcoord :
+          (boundaryAnchoredHomothety center scale hscale (f.symm z)) 0 =
+            scale * (f.symm z) 0 := by
+        simp [boundaryAnchoredHomothety, EuclideanComplex.Examples.closedTriangleBoundaryAnchor,
+          hcenter, smul_eq_mul]
+      rw [hcoord] at hpre
+      exact (eq_div_iff hscale).mpr (by simpa [mul_comm] using hpre.symm)
+    rw [hpre_coord]
+    exact div_nonneg hz (le_of_lt hscale_pos)
+
+/-- The image of the standard triangle under a positive boundary-anchored homothety is a relative
+neighborhood of the boundary-line center in the closed coordinate-0 half-plane. -/
+theorem boundaryAnchoredHomothety_closedTriangleSupport_mem_nhdsWithin_coordHalfspace
+    {center : Plane} {scale : ℝ} {hscale : scale ≠ 0}
+    (hcenter : center 0 = 0) (hscale_pos : 0 < scale) :
+    boundaryAnchoredHomothety center scale hscale ''
+        EuclideanComplex.Examples.closedTriangleSupport ∈
+      𝓝[{p : Plane | 0 ≤ p 0}] center := by
+  let f := boundaryAnchoredHomothety center scale hscale
+  have hImage :
+      f '' EuclideanComplex.Examples.closedTriangleSupport ∈
+        𝓝[f '' {p : Plane | 0 ≤ p 0}]
+          (f EuclideanComplex.Examples.closedTriangleBoundaryAnchor) := by
+    rw [← f.isEmbedding.map_nhdsWithin_eq
+      {p : Plane | 0 ≤ p 0} EuclideanComplex.Examples.closedTriangleBoundaryAnchor]
+    exact Filter.image_mem_map
+      EuclideanComplex.Examples.closedTriangleSupport_mem_nhdsWithin_halfspace_boundaryAnchor
+  simpa [f, boundaryAnchoredHomothety_image_coordHalfspace_eq hcenter hscale_pos] using hImage
+
+/-- Build a boundary triangle copy from a positive anchored homothety whose triangle image lies in
+the region and is a relative neighborhood there. -/
+def ofBoundaryAnchoredHomothety {Ω : Set Plane} {y : Ω}
+    (scale : ℝ) (hscale : scale ≠ 0)
+    (hsubset :
+      boundaryAnchoredHomothety y.1 scale hscale ''
+          EuclideanComplex.Examples.closedTriangleSupport ⊆ Ω)
+    (hnhds :
+      boundaryAnchoredHomothety y.1 scale hscale ''
+          EuclideanComplex.Examples.closedTriangleSupport ∈ 𝓝[Ω] y.1) :
+    PlaneRegionBoundaryTriangleCopy Ω y where
+  homeomorph := boundaryAnchoredHomothety y.1 scale hscale
+  anchor_eq := boundaryAnchoredHomothety_anchor y.1 scale hscale
+  image_subset := hsubset
+  image_mem_nhdsWithin := hnhds
+
+/-- Every relative neighborhood of a boundary point in the coordinate-0 half-plane contains a
+sufficiently small positive boundary-anchored copy of the standard triangle. -/
+theorem exists_boundaryAnchoredHomothety_image_subset_of_mem_nhdsWithin
+    {Ω : Set Plane} {center : Plane}
+    (hΩ : Ω ∈ 𝓝[{p : Plane | 0 ≤ p 0}] center)
+    (hΩ_subset : Ω ⊆ {p : Plane | 0 ≤ p 0})
+    (hcenter : center 0 = 0) :
+    ∃ scale : ℝ, ∃ hscale : scale ≠ 0,
+      boundaryAnchoredHomothety center scale hscale ''
+          EuclideanComplex.Examples.closedTriangleSupport ⊆ Ω ∧
+        boundaryAnchoredHomothety center scale hscale ''
+          EuclideanComplex.Examples.closedTriangleSupport ∈ 𝓝[Ω] center := by
+  rcases Metric.mem_nhdsWithin_iff.mp hΩ with ⟨ε, hε, hball⟩
+  let scale : ℝ := ε / 6
+  have hscale_pos : 0 < scale := by
+    positivity
+  have hscale : scale ≠ 0 := ne_of_gt hscale_pos
+  refine ⟨scale, hscale, ?_, ?_⟩
+  · intro z hz
+    rcases hz with ⟨p, hp, rfl⟩
+    apply hball
+    constructor
+    · rw [Metric.mem_ball]
+      calc
+        dist (boundaryAnchoredHomothety center scale hscale p) center
+            = |scale| * dist p EuclideanComplex.Examples.closedTriangleBoundaryAnchor :=
+          dist_center_boundaryAnchoredHomothety center scale hscale p
+        _ ≤ scale * 3 := by
+          rw [abs_of_pos hscale_pos]
+          gcongr
+          simpa [dist_comm] using
+            EuclideanComplex.Examples.dist_boundaryAnchor_le_three_of_mem_closedTriangleSupport hp
+        _ < ε := by
+          dsimp [scale]
+          nlinarith
+    · exact boundaryAnchoredHomothety_mem_coordHalfspace_of_mem
+        hcenter hscale_pos hp.1
+  · have hImageWithinHalfspace :
+        boundaryAnchoredHomothety center scale hscale ''
+            EuclideanComplex.Examples.closedTriangleSupport ∈
+          𝓝[{p : Plane | 0 ≤ p 0}] center :=
+      boundaryAnchoredHomothety_closedTriangleSupport_mem_nhdsWithin_coordHalfspace
+        hcenter hscale_pos
+    exact nhdsWithin_mono center hΩ_subset hImageWithinHalfspace
+
+end PlaneRegionBoundaryTriangleCopy
+
 namespace PlaneRegionPolygonalNeighborhood
 
 /-- The standard triangle support used by `PolygonalDiskExamples.standardTriangle`. -/
@@ -2921,6 +3144,45 @@ def ofTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionTriangleCopy Ω y) 
         T.homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ∈ 𝓝[Ω] y.1 :=
       mem_nhdsWithin_of_mem_nhds hImageAtY
     convert hRelative using 1
+    ext z
+    constructor
+    · intro hz
+      rcases hz with ⟨q, hq, rfl⟩
+      rcases hq with ⟨p, rfl⟩
+      exact ⟨p.1, by simp [standardTriangle_support_eq] at p ⊢, rfl⟩
+    · intro hz
+      rcases hz with ⟨p, hp, rfl⟩
+      let p' : PolygonalDiskExamples.standardTriangle.K.support :=
+        ⟨p, by
+          change p ∈ PolygonalDiskExamples.standardTriangle.K.support
+          rwa [standardTriangle_support_eq]⟩
+      refine ⟨⟨T.homeomorph p, T.image_subset ⟨p, hp, rfl⟩⟩, ?_, rfl⟩
+      exact ⟨p', rfl⟩
+  respectsChartModel := True
+
+/-- A boundary-anchored homeomorphic copy of the standard triangle in a region gives a polygonal
+neighborhood of the boundary point, using the relative-neighborhood field of the copy. -/
+def ofBoundaryTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionBoundaryTriangleCopy Ω y) :
+    PlaneRegionPolygonalNeighborhood Ω y where
+  disk := PolygonalDiskExamples.standardTriangle
+  embed := fun p =>
+    ⟨T.homeomorph p.1, T.image_subset ⟨p.1, by
+      simp [standardTriangle_support_eq] at p ⊢, rfl⟩⟩
+  isEmbedding := by
+    have hCodomain :
+        _root_.Topology.IsEmbedding ((Subtype.val : Ω → Plane)) :=
+      _root_.Topology.IsEmbedding.subtypeVal
+    have hDomain :
+        _root_.Topology.IsEmbedding
+          (fun p : PolygonalDiskExamples.standardTriangle.K.support => T.homeomorph p.1) :=
+      T.homeomorph.isEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
+    refine (hCodomain.of_comp_iff).mp ?_
+    change _root_.Topology.IsEmbedding
+      (fun p : PolygonalDiskExamples.standardTriangle.K.support => T.homeomorph p.1)
+    exact hDomain
+  range_mem_nhds := by
+    rw [mem_nhds_subtype_iff_nhdsWithin]
+    convert T.image_mem_nhdsWithin using 1
     ext z
     constructor
     · intro hz
@@ -3770,8 +4032,8 @@ theorem euclideanHalfSpace_interior_image_mem_nhds
   rw [← euclideanHalfSpace_interior_map_nhds_eq y hy]
   exact Filter.image_mem_map hU
 
-/-- Hard Euclidean interior geometry at a fixed image point: construct a polygonal disk
-neighborhood inside the given half-plane neighborhood. -/
+/-- Euclidean interior geometry at a fixed image point: construct a polygonal disk neighborhood
+inside the given half-plane neighborhood. -/
 theorem euclideanHalfSpace_interior_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : 0 < y.1 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
@@ -3796,16 +4058,26 @@ theorem euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighbo
   rcases euclideanHalfSpace_interior_polygonal_neighborhood_at U y hU hy hyU with ⟨N, hN⟩
   exact ⟨hyU, N, hN⟩
 
-/-- Hard Euclidean boundary geometry at a fixed image point: construct a polygonal half-disk
+/-- Euclidean boundary geometry at a fixed image point: construct a polygonal half-disk
 neighborhood inside the given half-plane neighborhood. -/
 theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : y.1 0 = 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
-    ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+    ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
   have hRelative : (Subtype.val '' U : Set Plane) ∈ 𝓝[{p : Plane | 0 ≤ p 0}] y.1 :=
     euclideanHalfSpace_image_mem_nhdsWithin_halfspace U y hU
   have hBoundary : y.1 0 = 0 := hy
-  sorry
+  have hSubsetHalfspace : (Subtype.val '' U : Set Plane) ⊆ {p : Plane | 0 ≤ p 0} := by
+    intro p hp
+    rcases hp with ⟨q, _hq, rfl⟩
+    exact q.2
+  rcases
+    PlaneRegionBoundaryTriangleCopy.exists_boundaryAnchoredHomothety_image_subset_of_mem_nhdsWithin
+      (Ω := (Subtype.val '' U : Set Plane)) hRelative hSubsetHalfspace hBoundary with
+    ⟨scale, hscale, hsubset, hnhds⟩
+  let T : PlaneRegionBoundaryTriangleCopy (Subtype.val '' U) ⟨y.1, hyU⟩ :=
+    PlaneRegionBoundaryTriangleCopy.ofBoundaryAnchoredHomothety scale hscale hsubset hnhds
+  exact ⟨PlaneRegionPolygonalNeighborhood.ofBoundaryTriangleCopy T, trivial⟩
 
 /-- An open neighborhood of a boundary-line point in the model half-plane contains an embedded
 polygonal half-disk whose image is a neighborhood of the point. -/

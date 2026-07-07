@@ -679,23 +679,23 @@ Proved finite/combinatorial bridge:
 13. `moise_two_manifold_of_extraction_data`:
    extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
 
-Remaining hard coordinate-local bridge:
+Closed coordinate-local bridge:
 
 ```lean
 theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : y.1 0 = 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
-    ∃ N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
-  sorry
+    ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True
 ```
 
-The remaining coordinate-local theorem boundary is now the boundary half-disk case.  The interior
-case is proved by shrinking an arbitrary interior half-plane neighborhood to a sufficiently small
-centered copy of the standard triangle whose image remains a neighborhood of the point.  The combined
-`euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood` theorem is now a proved
-case split on whether `y.1 0 = 0`; the public interior/boundary wrappers now also prove the
-point-membership bookkeeping via `euclideanHalfSpace_point_mem_image_of_mem_nhds`.  The remaining
-boundary fixed-point constructor receives `hyU : y.1 ∈ Subtype.val '' U` explicitly.
+The coordinate-local boundary half-disk case is now proved.  The interior case shrinks an arbitrary
+interior half-plane neighborhood to a sufficiently small centered copy of the standard triangle.
+The boundary case shrinks a relative neighborhood in the closed coordinate half-plane to a small
+positive homothetic copy of the standard triangle anchored at
+`EuclideanComplex.Examples.closedTriangleBoundaryAnchor`.  The combined
+`euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood` theorem is a proved case
+split on whether `y.1 0 = 0`; the public interior/boundary wrappers also prove the point-membership
+bookkeeping via `euclideanHalfSpace_point_mem_image_of_mem_nhds`.
 
 The subtype-neighborhood bookkeeping below those constructors is now proved:
 
@@ -714,9 +714,8 @@ The subtype-neighborhood bookkeeping below those constructors is now proved:
 Consequently, `euclideanHalfSpace_interior_polygonal_neighborhood_at` now begins from an ambient
 plane-neighborhood hypothesis, while
 `euclideanHalfSpace_boundary_polygonal_neighborhood_at` begins from a relative-neighborhood
-hypothesis in the closed half-plane.  The remaining work is the geometric construction of a small
-polygonal disk or boundary half-disk and its triangulated `PlaneRegionPolygonalNeighborhood`
-package.
+hypothesis in the closed half-plane.  Both constructors now build the required triangulated
+`PlaneRegionPolygonalNeighborhood` package.
 
 The standard-triangle part of the interior construction is also factored:
 
@@ -738,7 +737,24 @@ The standard-triangle part of the interior construction is also factored:
    `PlaneRegionPolygonalNeighborhood` object, proving the embedding and neighborhood fields.
 
 Thus `euclideanHalfSpace_interior_polygonal_neighborhood_at` is proved.  The boundary case should
-get the analogous half-triangle copy API next.
+is factored through the analogous anchored triangle API:
+
+1. `EuclideanComplex.Examples.closedTriangleBoundaryAnchor` is the point `(0, 1 / 3)`.
+2. `EuclideanComplex.Examples.closedTriangleSupport_mem_nhdsWithin_halfspace_boundaryAnchor`
+   proves that the closed standard triangle is a relative neighborhood of that anchor in the
+   closed coordinate-0 half-plane.
+3. `EuclideanComplex.Examples.dist_boundaryAnchor_le_three_of_mem_closedTriangleSupport` gives
+   the coarse metric bound needed for shrinking.
+4. `PlaneRegionBoundaryTriangleCopy` records a plane homeomorphism taking the boundary anchor to
+   the target point, sending the triangle into the region, and making the image a relative
+   neighborhood there.
+5. `PlaneRegionBoundaryTriangleCopy.boundaryAnchoredHomothety` is the explicit positive scaling
+   about the boundary anchor followed by translation to the target boundary point.
+6. `PlaneRegionBoundaryTriangleCopy.exists_boundaryAnchoredHomothety_image_subset_of_mem_nhdsWithin`
+   proves that every relative half-plane neighborhood of a boundary-line point contains such a
+   small anchored triangle.
+7. `PlaneRegionPolygonalNeighborhood.ofBoundaryTriangleCopy` converts the anchored copy into the
+   `PlaneRegionPolygonalNeighborhood` object.
 
 `PlaneRegionPolygonalNeighborhood` packages this chart-free coordinate object, and
 `PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk` converts it to the chart-pair API.
