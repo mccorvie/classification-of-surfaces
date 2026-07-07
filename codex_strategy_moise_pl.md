@@ -695,10 +695,16 @@ Proved finite/combinatorial bridge:
    `RadoInductionData` is pure packaging.
 11. `mathlib_bordered_surface_rado_induction_data`:
    finite Rado geometry packages as Rado induction data.
-12. `mathlib_bordered_surface_moise_extraction_data`:
-   finite cover extraction plus local Rado induction data packages as `MoiseExtractionData`.
-13. `moise_two_manifold_of_extraction_data`:
-   extracted finite cover plus local Rado data packages as `MoiseTwoManifold`.
+12. `LocalChartPolygonalDiskData.toMoiseExtractionData`,
+   `mathlib_bordered_surface_moiseExtractionData`, and
+   `mathlib_bordered_surface_moise_extraction_data`:
+   finite cover extraction plus local Rado induction data packages as named `MoiseExtractionData`;
+   the theorem with the original public name is now the existential wrapper.
+13. `mathlib_bordered_surface_moiseTwoManifold`,
+   `mathlib_bordered_surface_to_moise_two_manifold`, and
+   `moise_two_manifold_of_extraction_data`:
+   extracted finite cover plus local Rado data packages as the named `MoiseTwoManifold` object used
+   by the Rado theorem wrappers.
 
 The PL-to-triangulation bridge uses finite support data as the combinatorial handoff:
 `PLComplexInSpace.FiniteSupportData.OneSimplex` supplies triangulation edges,

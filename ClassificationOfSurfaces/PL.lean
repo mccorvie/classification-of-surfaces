@@ -4794,6 +4794,23 @@ noncomputable def finiteChartPolygonalDiskData
     FiniteChartPolygonalDiskData L.finiteChartPairCover :=
   (L.toFiniteChartPolygonalDiskData).2
 
+/-- Local chart-polygonal-disk data on a compact space packages all Rado-facing Moise extraction
+data. -/
+noncomputable def toMoiseExtractionData
+    {M : Type u} [TopologicalSpace M] [CompactSpace M] [Nonempty M]
+    (L : LocalChartPolygonalDiskData M) : MoiseExtractionData M :=
+  let P := L.toFiniteChartPolygonalDiskData
+  { finiteCover := P.1
+    local_disk_or_half_disk := True
+    secondCountable_or_separable_metric := True
+    radoInductionData := P.2.toFiniteRadoInductionGeometry.toRadoInductionData }
+
+@[simp] theorem toMoiseExtractionData_finiteCover
+    {M : Type u} [TopologicalSpace M] [CompactSpace M] [Nonempty M]
+    (L : LocalChartPolygonalDiskData M) :
+    L.toMoiseExtractionData.finiteCover = L.finiteChartPairCover := by
+  rfl
+
 end LocalChartPolygonalDiskData
 
 /-- Compactness promotes pointwise local chart-polygonal-disk data to a finite chart-pair cover
@@ -4814,6 +4831,24 @@ theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
     ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
   rcases mathlib_bordered_surface_local_chart_polygonal_disk_data M with ⟨L, _⟩
   exact finite_chart_polygonal_disk_data_of_local L
+
+/-- Named Moise extraction data built from the mathlib bordered-surface atlas. -/
+noncomputable def mathlib_bordered_surface_moiseExtractionData
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    MoiseExtractionData M :=
+  let L : LocalChartPolygonalDiskData M :=
+    Classical.choose (mathlib_bordered_surface_local_chart_polygonal_disk_data M)
+  L.toMoiseExtractionData
+
+/-- Named Moise two-manifold package built from the mathlib bordered-surface atlas. -/
+noncomputable def mathlib_bordered_surface_moiseTwoManifold
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    MoiseTwoManifold M :=
+  (mathlib_bordered_surface_moiseExtractionData M).toMoiseTwoManifold
 
 /-- Polygonal disk data over a finite chart-pair cover packages as finite Rado geometry. -/
 theorem finite_rado_geometry_of_chart_polygonal_disk_data
@@ -4853,13 +4888,7 @@ theorem mathlib_bordered_surface_moise_extraction_data
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ _D : MoiseExtractionData M, True := by
-  rcases mathlib_bordered_surface_rado_induction_data M with ⟨C, D, _⟩
-  let E : MoiseExtractionData M :=
-    { finiteCover := C
-      local_disk_or_half_disk := True
-      secondCountable_or_separable_metric := True
-      radoInductionData := D }
-  exact ⟨E, trivial⟩
+  exact ⟨mathlib_bordered_surface_moiseExtractionData M, trivial⟩
 
 /-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
 Moise chart-pair interface.
@@ -4871,9 +4900,7 @@ theorem mathlib_bordered_surface_to_moise_two_manifold
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     ∃ _hM : MoiseTwoManifold M, True := by
-  rcases mathlib_bordered_surface_moise_extraction_data M with ⟨D, _⟩
-  rcases moise_two_manifold_of_extraction_data D with ⟨hM, _⟩
-  exact ⟨hM, trivial⟩
+  exact ⟨mathlib_bordered_surface_moiseTwoManifold M, trivial⟩
 
 /-- Mathlib bordered surfaces produce finite PL triangulation data via the Moise--Rado route. -/
 theorem mathlib_bordered_surface_finite_pl_triangulation_data

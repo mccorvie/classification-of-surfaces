@@ -872,7 +872,7 @@ the resulting complex, support equality, finite support data, and boundary data;
 
 \begin{lemma}[Mathlib bordered surface to Moise chart-pair interface]
 \label{moise:lem:mathlib_bordered_surface_to_moise_two_manifold}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_to_moise_two_manifold}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_to_moise_two_manifold}
 \leanok
 
 \uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_moise_extraction_data}
@@ -883,24 +883,26 @@ exhaustion.
 
 \begin{proof}
 \leanok
-Package the extracted finite chart-pair cover and Rado local data as a
-`MoiseTwoManifold`.
+Package the named extracted finite chart-pair cover and Rado local data as a
+`MoiseTwoManifold`; the public theorem is the existential wrapper around
+`mathlib_bordered_surface_moiseTwoManifold`.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface extraction data]
 \label{moise:lem:mathlib_bordered_surface_moise_extraction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moise_extraction_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.toMoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moise_extraction_data}
 \leanok
 
-\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_rado_induction_data}
+\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_local_chart_polygonal_disk_data}
 The nonempty mathlib bordered-surface atlas supplies the finite chart-pair cover
 and local Rado induction data needed to build the Moise interface.
 \end{lemma}
 
 \begin{proof}
 \leanok
-Extract a finite chart-pair cover together with local Rado induction data over
-the corresponding countable exhaustion, then package both as
+Choose local chart-polygonal-disk data from the mathlib atlas, extract the
+finite subcover with indexed disks by compactness, convert the resulting finite
+polygonal disk package into Rado induction data, and package the named result as
 `MoiseExtractionData`.
 \end{proof}
 
