@@ -2493,11 +2493,91 @@ theorem extend_pl_complex_across_chart
       boundaryLocallyFinite := True }
   exact ⟨S', rfl, D.extends_old⟩
 
+/-- A completed Rado induction sequence over a fixed chart-pair exhaustion.
+
+This is the finite-stage part of Rado's argument: each stage is a PL complex in the ambient
+manifold, successive stages extend previous ones, and the `n`th stage covers the `n`th chart core.
+The construction of such a sequence from PL approximation is a separate hard theorem boundary. -/
+structure RadoInductiveSequence
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) where
+  stage : ℕ → RadoInductionState M
+  stage_eq : ∀ n, (stage n).stage = n
+  extends_succ :
+    ∀ n, PLComplexInSpace.Extends (stage (n + 1)).complex (stage n).complex
+  covers_core : ∀ n, (E.pair n).core ⊆ (stage n).complex.support
+  covers_boundaryCore : ∀ n, (E.pair n).boundaryCore ⊆ (stage n).complex.support
+  compatibleStages : Prop
+  locallyFiniteUnion : Prop
+  boundaryCompatibleUnion : Prop
+
+namespace RadoInductiveSequence
+
+/-- The ambient support covered by all finite stages of a Rado induction sequence. -/
+def supportUnion {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) : Set M :=
+  ⋃ n, (S.stage n).complex.support
+
+/-- Every chart core is contained in the union of stage supports. -/
+theorem core_subset_supportUnion
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (n : ℕ) :
+    (E.pair n).core ⊆ S.supportUnion := by
+  intro x hx
+  exact Set.mem_iUnion.mpr ⟨n, S.covers_core n hx⟩
+
+/-- Every boundary chart core is contained in the union of stage supports. -/
+theorem boundaryCore_subset_supportUnion
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (n : ℕ) :
+    (E.pair n).boundaryCore ⊆ S.supportUnion := by
+  intro x hx
+  exact Set.mem_iUnion.mpr ⟨n, S.covers_boundaryCore n hx⟩
+
+/-- The Rado stage-support union covers the whole manifold because chart cores cover it. -/
+theorem supportUnion_eq_univ
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    S.supportUnion = Set.univ := by
+  apply Set.eq_univ_iff_forall.mpr
+  intro x
+  rcases E.covers x with ⟨n, hx⟩
+  exact S.core_subset_supportUnion n hx
+
+/-- If a PL complex realizes the Rado stage-support union, then it covers the whole manifold. -/
+theorem union_complex_covers_univ
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) {K : PLComplexInSpace M}
+    (hK : K.support = S.supportUnion) :
+    K.support = Set.univ :=
+  hK.trans S.supportUnion_eq_univ
+
+end RadoInductiveSequence
+
+/-- Hard theorem boundary: the finite-stage Rado induction can be carried out over an exhaustion.
+
+The proof uses the initial PL neighborhood, the chart-extension step, and PL approximation on each
+successive chart. -/
+theorem rado_inductive_sequence_exists
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M)
+    (E : ChartPairExhaustion M) :
+    ∃ _S : RadoInductiveSequence E, True := by
+  sorry
+
+/-- Hard theorem boundary: the locally finite union of a Rado induction sequence is a PL complex. -/
+theorem rado_union_complex
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (S : RadoInductiveSequence E) :
+    ∃ K : PLComplexInSpace M, K.support = S.supportUnion := by
+  sorry
+
 /-- Moise-Rado triangulation theorem boundary for two-manifolds. -/
 theorem rado_triangulation_moise_two_manifold
-    (M : Type*) [TopologicalSpace M] (_hM : MoiseTwoManifold M) :
+    (M : Type*) [TopologicalSpace M] (hM : MoiseTwoManifold M) :
     ∃ K : PLComplexInSpace M, K.support = Set.univ := by
-  sorry
+  rcases chart_pair_exhaustion hM with ⟨E, _⟩
+  rcases rado_inductive_sequence_exists hM E with ⟨S, _⟩
+  rcases rado_union_complex E S with ⟨K, hK⟩
+  exact ⟨K, S.union_complex_covers_univ hK⟩
 
 /-- Compact Moise surfaces are finitely triangulable. -/
 theorem compact_moise_surface_finitely_triangulable

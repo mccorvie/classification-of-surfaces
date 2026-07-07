@@ -615,11 +615,16 @@ theorem compact_moise_surface_finitely_triangulable
 Expected Rado induction shape:
 
 1. Choose a countable or finite chart exhaustion.
-2. Build an initial PL neighborhood.
-3. At stage `n`, use PL approximation in a chart to make the overlap compatible with the previous complex.
-4. Add a finite PL complex inside the chart.
-5. Prove the union remains a PL complex and expands the covered region.
-6. For compact `M`, reduce locally finite countable triangulation to finite triangulation.
+2. Build a `RadoInductiveSequence` over the exhaustion:
+   - stage `0` comes from the initial PL neighborhood;
+   - stage `n+1` uses PL approximation in a chart to make the overlap compatible with the
+     previous complex;
+   - the `n`th stage covers the `n`th chart core.
+3. Prove the union of stage supports covers `Set.univ`; this is now a Lean proof from the
+   exhaustion coverage field.
+4. Prove the hard union theorem `rado_union_complex`: the locally finite compatible union of the
+   finite-stage PL complexes is an embedded PL complex.
+5. For compact `M`, reduce locally finite countable triangulation to finite triangulation.
 
 ### Moise work package M8: boundary adaptation
 

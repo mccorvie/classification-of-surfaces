@@ -512,21 +512,84 @@ boundary subcomplex, extension proof, and next-core coverage fields into the
 successor Rado induction state.
 \end{proof}
 
+\begin{definition}[Rado induction sequence]
+\label{moise:def:rado_inductive_sequence}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion}
+\leanok
+
+\uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion}
+A Rado induction sequence over a chart-pair exhaustion is a sequence of finite
+stage PL complexes, each extending the previous one, such that the $n$th stage
+covers the $n$th chart core.  Its support union is the union of the supports of
+all finite stages.
+\end{definition}
+
+\begin{lemma}[Rado stage supports cover the manifold]
+\label{moise:lem:rado_support_union_covers}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.union_complex_covers_univ}
+\leanok
+
+\uses{moise:def:rado_inductive_sequence,moise:lem:chart_pair_exhaustion}
+The union of the stage supports in a Rado induction sequence covers every chart
+core, hence covers the whole manifold.  Therefore any PL complex realizing this
+union has support equal to the whole manifold.
+\end{lemma}
+
+\begin{proof}
+\leanok
+The $n$th chart core is contained in the support of the $n$th induction stage,
+so it is contained in the union of all stage supports.  Since the chart cores
+cover the manifold by the exhaustion hypothesis, the support union is all of
+`Set.univ`.
+\end{proof}
+
+\begin{lemma}[Rado induction sequence exists]
+\label{moise:lem:rado_inductive_sequence_exists}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_inductive_sequence_exists}
+
+\uses{moise:def:rado_inductive_sequence,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+For every Moise chart-pair exhaustion, the finite-stage Rado induction can be
+carried out.
+\end{lemma}
+
+\begin{proof}
+\notready
+Start from the initial PL neighborhood.  At successor stages, use the
+chart-extension theorem and the local PL approximation machinery to absorb the
+next chart core while preserving compatibility with earlier stages.
+\end{proof}
+
+\begin{lemma}[Rado union is a PL complex]
+\label{moise:lem:rado_union_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_union_complex}
+
+\uses{moise:def:rado_inductive_sequence,moise:def:pl_complex_in_space}
+The locally finite union of the finite-stage complexes in a Rado induction
+sequence is an embedded PL complex whose support is the stage-support union.
+\end{lemma}
+
+\begin{proof}
+\notready
+Use local finiteness and compatibility on overlaps to glue the finite-stage PL
+complexes into a single embedded PL complex.  Its support is, by construction,
+the union of the supports of all finite stages.
+\end{proof}
+
 \begin{theorem}[Moise--Rado triangulation theorem]
 \label{moise:thm:rado_triangulation_moise_manifold}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.rado_triangulation_moise_two_manifold}
+\leanok
 
-\uses{moise:def:moise_two_manifold,moise:def:pl_complex_in_space,moise:lem:pl_invariant_under_subdivision,moise:lem:chart_pair_exhaustion,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
+\uses{moise:def:moise_two_manifold,moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:rado_inductive_sequence_exists,moise:lem:rado_union_complex,moise:lem:rado_support_union_covers}
 Every Moise two-manifold admits a locally finite PL complex whose support is the
 whole manifold.
 \end{theorem}
 
 \begin{proof}
-\notready
-
-Construct an increasing sequence of PL complexes whose interior subcomplexes
-contain progressively more of the chart-pair cover.  The union of the increasing
-interior subcomplexes is a locally finite PL complex covering the whole manifold.
+\leanok
+Choose a chart-pair exhaustion, construct a Rado induction sequence over it, and
+form the locally finite union PL complex.  The stage-support coverage lemma
+shows that this union covers every chart core, hence the whole manifold.
 \end{proof}
 
 \begin{theorem}[Compact Moise surface is finitely triangulable]
