@@ -3699,6 +3699,21 @@ theorem fromChartAt_mem_boundaryCore_of_manifold_boundary
   rw [frontier_range_modelWithCornersEuclideanHalfSpace] at hxfrontier
   simpa [extChartAt, modelWithCornersEuclideanHalfSpace] using hxfrontier.symm
 
+/-- C0 chart-boundary invariance for preferred half-space charts.
+
+Mathlib currently exposes the corresponding arbitrary-chart criterion as
+`ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas` under positive differentiability.  The Moise
+route needs the topological version: if a point is a manifold boundary point and lies in the source
+of another preferred half-space chart, then that chart sends it to the coordinate boundary line.
+-/
+theorem fromChartAt_chart_coord_zero_of_manifold_boundary
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
+    (x : M) {y : (fromChartAt M x).domain}
+    (hy : (y : M) ∈ (modelWithCornersEuclideanHalfSpace 2).boundary M) :
+    ((fromChartAt M x).chartHomeomorph y : Plane) 0 = 0 := by
+  sorry
+
 /-- A chart pair modeled on the half-disk. -/
 def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
   P.kind = RadoChartKind.halfDisk
@@ -3803,6 +3818,8 @@ structure FiniteChartPairCover (M : Type u) [TopologicalSpace M] where
   indexFintype : Fintype Index
   pair : Index → RadoChartPair M
   boundaryCarrier : Set M
+  boundarySet : Set M
+  boundarySet_subset_boundaryCarrier : boundarySet ⊆ boundaryCarrier
   covers : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
   boundaryCovers : ∀ x : M, x ∈ boundaryCarrier →
     ∃ i : Index, x ∈ (pair i).boundaryCore
@@ -3855,6 +3872,15 @@ theorem boundaryCarrier_eq_iUnion_boundaryCore {M : Type u} [TopologicalSpace M]
     rcases Set.mem_iUnion.mp hx with ⟨i, hi⟩
     exact C.boundaryCore_subset_boundaryCarrier i hi
 
+/-- The intended boundary set of a finite chart-pair cover is contained in the union of selected
+boundary cores. -/
+theorem boundarySet_subset_iUnion_boundaryCore {M : Type u} [TopologicalSpace M]
+    (C : FiniteChartPairCover M) :
+    C.boundarySet ⊆ ⋃ i : C.Index, (C.pair i).boundaryCore := by
+  intro x hx
+  rw [← C.boundaryCarrier_eq_iUnion_boundaryCore]
+  exact C.boundarySet_subset_boundaryCarrier hx
+
 /-- Enumerate a finite chart-pair cover by natural numbers, using the empty chart pair outside the
 finite range. -/
 noncomputable def natPair {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) :
@@ -3885,6 +3911,8 @@ theorem exists_of_compact_local
       indexFintype := inferInstance
       pair := fun x => pairAt x.1
       boundaryCarrier := ⋃ x : {x : M // x ∈ t}, (pairAt x.1).boundaryCore
+      boundarySet := ⋃ x : {x : M // x ∈ t}, (pairAt x.1).boundaryCore
+      boundarySet_subset_boundaryCarrier := subset_rfl
       covers := by
         intro y
         have hy : y ∈ ⋃ x ∈ t, (pairAt x).core := by
@@ -4950,6 +4978,8 @@ end ChartPolygonalDisk
 structure ChartPairExhaustion (M : Type*) [TopologicalSpace M] where
   pair : ℕ → RadoChartPair M
   boundaryCarrier : Set M
+  boundarySet : Set M
+  boundarySet_subset_boundaryCarrier : boundarySet ⊆ boundaryCarrier
   covers : ∀ x : M, ∃ n, x ∈ (pair n).core
   boundaryCovers : ∀ x : M, x ∈ boundaryCarrier → ∃ n, x ∈ (pair n).boundaryCore
   interiorChartsCoverInterior : ∀ x : M, ∃ n, x ∈ (pair n).core
@@ -5009,6 +5039,15 @@ theorem boundaryCarrier_eq_boundaryCoreUnion
     rcases (E.mem_boundaryCoreUnion_iff x).1 hx with ⟨n, hn⟩
     exact E.boundaryCore_subset_boundaryCarrier n hn
 
+/-- The intended boundary set of a chart-pair exhaustion is contained in the union of selected
+boundary cores. -/
+theorem boundarySet_subset_boundaryCoreUnion
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) :
+    E.boundarySet ⊆ E.boundaryCoreUnion := by
+  intro x hx
+  rw [← E.boundaryCarrier_eq_boundaryCoreUnion]
+  exact E.boundarySet_subset_boundaryCarrier hx
+
 end ChartPairExhaustion
 
 namespace FiniteChartPairCover
@@ -5019,6 +5058,8 @@ noncomputable def toChartPairExhaustion {M : Type u} [TopologicalSpace M]
     (C : FiniteChartPairCover M) : ChartPairExhaustion M where
   pair := C.natPair
   boundaryCarrier := C.boundaryCarrier
+  boundarySet := C.boundarySet
+  boundarySet_subset_boundaryCarrier := C.boundarySet_subset_boundaryCarrier
   covers := by
     intro x
     rcases C.covers x with ⟨i, hi⟩
@@ -5123,6 +5164,11 @@ theorem toChartPairExhaustion_pair_zero {M : Type u} [TopologicalSpace M] [Nonem
     C.toChartPairExhaustion.boundaryCarrier = C.boundaryCarrier := by
   rfl
 
+@[simp] theorem toChartPairExhaustion_boundarySet
+    {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) :
+    C.toChartPairExhaustion.boundarySet = C.boundarySet := by
+  rfl
+
 end FiniteChartPairCover
 
 /-- Polygonal disk data for every chart pair in the countable exhaustion associated to a finite
@@ -5160,6 +5206,7 @@ end FiniteChartPolygonalDiskData
 
 /-- Pointwise local chart-polygonal-disk data before compactness extracts a finite subcover. -/
 structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
+  boundarySet : Set M
   pairAt : M → RadoChartPair M
   diskAt : M → ChartPolygonalDisk M
   chart_eq : ∀ x : M, (diskAt x).chart = pairAt x
@@ -5168,12 +5215,17 @@ structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
   boundaryCompatibleChartShrinks :
     ∀ x : M, (diskAt x).chart.boundaryCore ⊆ (pairAt x).boundaryCore
   boundaryFaithful : ∀ x : M, (diskAt x).BoundaryFaithful
+  boundarySet_subset_boundaryCore :
+    ∀ x : M, boundarySet ∩ (pairAt x).core ⊆ (pairAt x).boundaryCore
 
 /-- Pointwise local chart-polygonal-disk data at one point. -/
-structure PointChartPolygonalDiskData (M : Type*) [TopologicalSpace M] (x : M) where
+structure PointChartPolygonalDiskData (M : Type*) [TopologicalSpace M]
+    (boundarySet : Set M) (x : M) where
   disk : ChartPolygonalDisk M
   core_mem_nhds : disk.chart.core ∈ 𝓝 x
   boundaryFaithful : disk.BoundaryFaithful
+  boundarySet_subset_boundaryCore :
+    boundarySet ∩ disk.chart.core ⊆ disk.chart.boundaryCore
 
 /-- The concrete face-closure condition carried by a boundary subcomplex. -/
 def BoundarySubcomplexFaceClosed (K : EuclideanComplex) (A : K.Subcomplex) : Prop :=
@@ -7404,6 +7456,15 @@ theorem finiteStagePLTriangulationData_boundaryCarrier_subset
   simpa [finiteStagePLTriangulationData] using
     D.radoInductionData.finiteStagePLTriangulationData_boundaryCarrier_subset
 
+/-- The finite-stage triangulation extracted from compact Moise data carries the finite cover's
+intended boundary set in its stored boundary support. -/
+theorem finiteStagePLTriangulationData_boundarySet_subset
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
+    D.finiteCover.boundarySet ⊆
+      D.finiteStagePLTriangulationData.boundary.boundarySupport :=
+  D.finiteCover.boundarySet_subset_boundaryCarrier.trans
+    D.finiteStagePLTriangulationData_boundaryCarrier_subset
+
 end MoiseExtractionData
 
 /-- Extracted Moise data gives the Rado-facing Moise interface. -/
@@ -7674,9 +7735,11 @@ theorem mathlib_chartAt_contains_polygonal_disk_core
     ∃ D : ChartPolygonalDisk M,
       D.chart.Refines (RadoChartPair.fromChartAt M x) ∧
         D.chart.boundaryCore ⊆ (RadoChartPair.fromChartAt M x).boundaryCore ∧
-          D.chart.core ∈ 𝓝 x ∧ D.BoundaryFaithful := by
+          D.chart.core ∈ 𝓝 x ∧ D.BoundaryFaithful ∧
+            (modelWithCornersEuclideanHalfSpace 2).boundary M ∩ D.chart.core ⊆
+              D.chart.boundaryCore := by
   rcases mathlib_chartAt_contains_model_polygonal_disk_core M x with ⟨D, hD⟩
-  refine ⟨D.toChartPolygonalDisk, ?_, ?_, ?_, ?_⟩
+  refine ⟨D.toChartPolygonalDisk, ?_, ?_, ?_, ?_, ?_⟩
   · exact D.toChartPair_refines (by
       intro y hy
       have hydomain : y ∈ (RadoChartPair.fromChartAt M x).domain :=
@@ -7693,6 +7756,27 @@ theorem mathlib_chartAt_contains_polygonal_disk_core
         simpa using hline)
   · simpa using hD
   · exact D.toChartPolygonalDisk_boundaryFaithful
+  · intro y hy
+    rcases hy with ⟨hyBoundary, hyCore⟩
+    have hyPulled : y ∈ D.pulledCore := by
+      simpa [ModelChartPolygonalDisk.toChartPolygonalDisk,
+        ModelChartPolygonalDisk.toChartPair, RadoChartPair.withCore] using hyCore
+    have hyDomain : y ∈ (RadoChartPair.fromChartAt M x).domain :=
+      D.pulledCore_subset_domain hyPulled
+    have hlineFromChartAt :
+        (((RadoChartPair.fromChartAt M x).chartHomeomorph ⟨y, hyDomain⟩ : Plane) 0 = 0) :=
+      RadoChartPair.fromChartAt_chart_coord_zero_of_manifold_boundary
+        (M := M) x (y := ⟨y, hyDomain⟩) hyBoundary
+    have hline :
+        ((D.toChartPolygonalDisk.chart.chartHomeomorph
+            ⟨y, D.toChartPolygonalDisk.chart.core_subset_domain hyCore⟩ : Plane) 0 = 0) := by
+      change (((RadoChartPair.fromChartAt M x).chartHomeomorph ⟨y, _⟩ : Plane) 0 = 0)
+      simpa using hlineFromChartAt
+    exact D.toChartPolygonalDisk_boundaryFaithful
+      (by
+        simp [ModelChartPolygonalDisk.toChartPolygonalDisk,
+          ModelChartPolygonalDisk.toChartPair, RadoChartPair.withCore])
+      y hyCore hline
 
 /-- Pointwise chart-polygonal-disk data from a polygonal core inside the preferred mathlib chart.
 -/
@@ -7700,21 +7784,27 @@ theorem mathlib_bordered_surface_point_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
-    Nonempty (PointChartPolygonalDiskData M x) := by
+    Nonempty (PointChartPolygonalDiskData M
+      ((modelWithCornersEuclideanHalfSpace 2).boundary M) x) := by
   rcases mathlib_chartAt_contains_polygonal_disk_core M x with
-    ⟨D, _hrefines, _hboundary, hcore, hfaithful⟩
-  exact ⟨{ disk := D, core_mem_nhds := hcore, boundaryFaithful := hfaithful }⟩
+    ⟨D, _hrefines, _hboundary, hcore, hfaithful, hboundarySet⟩
+  exact
+    ⟨{ disk := D
+       core_mem_nhds := hcore
+       boundaryFaithful := hfaithful
+       boundarySet_subset_boundaryCore := hboundarySet }⟩
 
 /-- Pointwise chart-polygonal-disk data packages as local chart-polygonal-disk data. -/
-theorem local_chart_polygonal_disk_data_of_pointwise
-    {M : Type*} [TopologicalSpace M]
-    (h : ∀ x : M, Nonempty (PointChartPolygonalDiskData M x)) :
-    Nonempty (LocalChartPolygonalDiskData M) := by
+noncomputable def localChartPolygonalDiskDataOfPointwise
+    {M : Type*} [TopologicalSpace M] (boundarySet : Set M)
+    (h : ∀ x : M, Nonempty (PointChartPolygonalDiskData M boundarySet x)) :
+    LocalChartPolygonalDiskData M := by
   classical
   let diskAt : M → ChartPolygonalDisk M :=
     fun x => (Classical.choice (h x)).disk
-  let L : LocalChartPolygonalDiskData M :=
-    { pairAt := fun x => (diskAt x).chart
+  exact
+    { boundarySet := boundarySet
+      pairAt := fun x => (diskAt x).chart
       diskAt := diskAt
       chart_eq := by
         intro x
@@ -7730,8 +7820,17 @@ theorem local_chart_polygonal_disk_data_of_pointwise
         exact subset_rfl
       boundaryFaithful := by
         intro x
-        exact (Classical.choice (h x)).boundaryFaithful }
-  exact ⟨L⟩
+        exact (Classical.choice (h x)).boundaryFaithful
+      boundarySet_subset_boundaryCore := by
+        intro x
+        exact (Classical.choice (h x)).boundarySet_subset_boundaryCore }
+
+/-- Pointwise chart-polygonal-disk data packages as local chart-polygonal-disk data. -/
+theorem local_chart_polygonal_disk_data_of_pointwise
+    {M : Type*} [TopologicalSpace M] (boundarySet : Set M)
+    (h : ∀ x : M, Nonempty (PointChartPolygonalDiskData M boundarySet x)) :
+    Nonempty (LocalChartPolygonalDiskData M) := by
+  exact ⟨localChartPolygonalDiskDataOfPointwise boundarySet h⟩
 
 /-- Local chart-polygonal-disk data extracted pointwise from the mathlib atlas. -/
 theorem mathlib_bordered_surface_local_chart_polygonal_disk_data
@@ -7740,7 +7839,26 @@ theorem mathlib_bordered_surface_local_chart_polygonal_disk_data
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     Nonempty (LocalChartPolygonalDiskData M) := by
   exact local_chart_polygonal_disk_data_of_pointwise
+    ((modelWithCornersEuclideanHalfSpace 2).boundary M)
     (fun x => mathlib_bordered_surface_point_chart_polygonal_disk_data M x)
+
+/-- Named local chart-polygonal-disk data extracted from a compact mathlib bordered surface. -/
+noncomputable def mathlib_bordered_surface_localChartPolygonalDiskData
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    LocalChartPolygonalDiskData M :=
+  localChartPolygonalDiskDataOfPointwise
+    ((modelWithCornersEuclideanHalfSpace 2).boundary M)
+    (fun x => mathlib_bordered_surface_point_chart_polygonal_disk_data M x)
+
+@[simp] theorem mathlib_bordered_surface_localChartPolygonalDiskData_boundarySet
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    (mathlib_bordered_surface_localChartPolygonalDiskData M).boundarySet =
+      (modelWithCornersEuclideanHalfSpace 2).boundary M := by
+  rfl
 
 namespace LocalChartPolygonalDiskData
 
@@ -7762,6 +7880,17 @@ noncomputable def toFiniteChartPolygonalDiskData
       indexFintype := inferInstance
       pair := fun x => L.pairAt x.1
       boundaryCarrier := ⋃ x : {x : M // x ∈ t}, (L.pairAt x.1).boundaryCore
+      boundarySet := L.boundarySet
+      boundarySet_subset_boundaryCarrier := by
+        intro y hyBoundary
+        have hyCover : y ∈ ⋃ x ∈ t, (L.pairAt x).core := by
+          rw [ht]
+          trivial
+        simp only [Set.mem_iUnion] at hyCover
+        rcases hyCover with ⟨x, hx⟩
+        rcases hx with ⟨hxt, hyCore⟩
+        exact Set.mem_iUnion.mpr
+          ⟨⟨x, hxt⟩, L.boundarySet_subset_boundaryCore x ⟨hyBoundary, hyCore⟩⟩
       covers := by
         intro y
         have hy : y ∈ ⋃ x ∈ t, (L.pairAt x).core := by
@@ -7823,6 +7952,12 @@ noncomputable def finiteChartPairCover
     (L : LocalChartPolygonalDiskData M) : FiniteChartPairCover M :=
   (L.toFiniteChartPolygonalDiskData).1
 
+@[simp] theorem finiteChartPairCover_boundarySet
+    {M : Type u} [TopologicalSpace M] [CompactSpace M]
+    (L : LocalChartPolygonalDiskData M) :
+    L.finiteChartPairCover.boundarySet = L.boundarySet := by
+  rfl
+
 /-- The finite polygonal disk data extracted from local chart-polygonal-disk data. -/
 noncomputable def finiteChartPolygonalDiskData
     {M : Type u} [TopologicalSpace M] [CompactSpace M]
@@ -7847,6 +7982,12 @@ noncomputable def toMoiseExtractionData
     L.toMoiseExtractionData.finiteCover = L.finiteChartPairCover := by
   rfl
 
+@[simp] theorem toMoiseExtractionData_finiteCover_boundarySet
+    {M : Type u} [TopologicalSpace M] [CompactSpace M] [Nonempty M]
+    (L : LocalChartPolygonalDiskData M) :
+    L.toMoiseExtractionData.finiteCover.boundarySet = L.boundarySet := by
+  rfl
+
 end LocalChartPolygonalDiskData
 
 /-- Compactness promotes pointwise local chart-polygonal-disk data to a finite chart-pair cover
@@ -7865,7 +8006,7 @@ theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     Nonempty (Σ C : FiniteChartPairCover M, FiniteChartPolygonalDiskData C) := by
-  rcases mathlib_bordered_surface_local_chart_polygonal_disk_data M with ⟨L⟩
+  let L := mathlib_bordered_surface_localChartPolygonalDiskData M
   exact finite_chart_polygonal_disk_data_of_local L
 
 /-- Named Moise extraction data built from the mathlib bordered-surface atlas. -/
@@ -7874,9 +8015,7 @@ noncomputable def mathlib_bordered_surface_moiseExtractionData
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     MoiseExtractionData M :=
-  let L : LocalChartPolygonalDiskData M :=
-    Classical.choice (mathlib_bordered_surface_local_chart_polygonal_disk_data M)
-  L.toMoiseExtractionData
+  (mathlib_bordered_surface_localChartPolygonalDiskData M).toMoiseExtractionData
 
 /-- Named Moise two-manifold package built from the mathlib bordered-surface atlas. -/
 noncomputable def mathlib_bordered_surface_moiseTwoManifold
@@ -7964,6 +8103,23 @@ theorem mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary
   let D := mathlib_bordered_surface_moiseExtractionData M
   simpa [mathlib_bordered_surface_finitePLTriangulationData] using
     D.finiteStagePLTriangulationData_boundaryCarrier_subset
+
+/-- The actual mathlib manifold boundary is carried by the boundary package of the finite PL
+triangulation data produced from the bordered-surface atlas. -/
+theorem mathlib_bordered_surface_manifoldBoundary_subset_finitePL_boundary
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    (modelWithCornersEuclideanHalfSpace 2).boundary M ⊆
+      (mathlib_bordered_surface_finitePLTriangulationData M).boundary.boundarySupport := by
+  let D := mathlib_bordered_surface_moiseExtractionData M
+  have hBoundarySet :
+      D.finiteCover.boundarySet = (modelWithCornersEuclideanHalfSpace 2).boundary M := by
+    rfl
+  intro x hx
+  rw [← hBoundarySet] at hx
+  simpa [mathlib_bordered_surface_finitePLTriangulationData, D] using
+    D.finiteStagePLTriangulationData_boundarySet_subset hx
 
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation

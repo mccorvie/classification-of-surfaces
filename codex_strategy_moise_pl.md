@@ -804,6 +804,8 @@ structure FiniteChartPairCover (M : Type*) [TopologicalSpace M] where
   indexFintype : Fintype Index
   pair : Index → RadoChartPair M
   boundaryCarrier : Set M
+  boundarySet : Set M
+  boundarySet_subset_boundaryCarrier : boundarySet ⊆ boundaryCarrier
   covers : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
   boundaryCovers :
     ∀ x : M, x ∈ boundaryCarrier → ∃ i : Index, x ∈ (pair i).boundaryCore
@@ -832,6 +834,7 @@ structure FiniteChartPolygonalDiskData
   boundaryFaithful : ∀ i : C.Index, (disk i).BoundaryFaithful
 
 structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
+  boundarySet : Set M
   pairAt : M → RadoChartPair M
   diskAt : M → ChartPolygonalDisk M
   chart_eq : ∀ x : M, (diskAt x).chart = pairAt x
@@ -840,10 +843,16 @@ structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
   boundaryCompatibleChartShrinks :
     ∀ x : M, (diskAt x).chart.boundaryCore ⊆ (pairAt x).boundaryCore
   boundaryFaithful : ∀ x : M, (diskAt x).BoundaryFaithful
+  boundarySet_subset_boundaryCore :
+    ∀ x : M, boundarySet ∩ (pairAt x).core ⊆ (pairAt x).boundaryCore
 
-structure PointChartPolygonalDiskData (M : Type*) [TopologicalSpace M] (x : M) where
+structure PointChartPolygonalDiskData
+    (M : Type*) [TopologicalSpace M] (boundarySet : Set M) (x : M) where
   disk : ChartPolygonalDisk M
   core_mem_nhds : disk.chart.core ∈ 𝓝 x
+  boundaryFaithful : disk.BoundaryFaithful
+  boundarySet_subset_boundaryCore :
+    boundarySet ∩ disk.chart.core ⊆ disk.chart.boundaryCore
   boundaryFaithful : disk.BoundaryFaithful
 
 structure FiniteRadoInductionGeometry
@@ -878,9 +887,13 @@ Proved finite/combinatorial bridge:
    the countable enumeration uses `Finset.range (Fintype.card C.Index)` because all out-of-range
    chart pairs are empty.  The boundary side now carries a named `boundaryCarrier`; the fields
    `boundaryCovers` and `boundaryCore_subset_boundaryCarrier` prove that this carrier is exactly
-   the union of boundary cores.  The named equality APIs are
+   the union of boundary cores.  A separate `boundarySet` records the intended ambient boundary,
+   and `boundarySet_subset_boundaryCarrier` proves it lands in the selected carrier.  The named
+   APIs are
    `FiniteChartPairCover.boundaryCarrier_eq_iUnion_boundaryCore` and
-   `ChartPairExhaustion.boundaryCarrier_eq_boundaryCoreUnion`.
+   `FiniteChartPairCover.boundarySet_subset_iUnion_boundaryCore`, together with
+   `ChartPairExhaustion.boundaryCarrier_eq_boundaryCoreUnion` and
+   `ChartPairExhaustion.boundarySet_subset_boundaryCoreUnion`.
 3. `RadoChartPair.fromChartAt` and `mathlib_bordered_surface_finite_chart_pair_cover`:
    the preferred mathlib chart at each point gives a chart pair whose core is a neighborhood, so a
    compact bordered surface has a finite chart-pair cover.  Its boundary core is now the part of
@@ -889,7 +902,9 @@ Proved finite/combinatorial bridge:
    `fromChartAt_mem_boundaryCore_of_chart_coord_zero`, instead of the old empty-core placeholder.
    `fromChartAt_mem_boundaryCore_of_manifold_boundary` connects mathlib's
    `ModelWithCorners.boundary` to this preferred-chart boundary core using the frontier of
-   `EuclideanHalfSpace`.
+   `EuclideanHalfSpace`.  The finite-cover route needs the corresponding arbitrary-chart C0
+   boundary-invariance statement; this is isolated as the hard theorem boundary
+   `fromChartAt_chart_coord_zero_of_manifold_boundary`.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
    `ChartPolygonalDisk` now carries explicit simplex-carrier data for its embedded PL complex,
@@ -1022,7 +1037,9 @@ embedded PL complex, finite support data, and boundary-subcomplex data; the bord
 now wraps `mathlib_bordered_surface_finitePLTriangulationData`, which is built from the finite
 terminal Rado stage in `MoiseExtractionData` and carries that stage's boundary subcomplex data.
 The theorem `mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary` exposes that the
-finite cover's selected boundary carrier lies in the packaged finite PL boundary support.
+finite cover's selected boundary carrier lies in the packaged finite PL boundary support, and
+`mathlib_bordered_surface_manifoldBoundary_subset_finitePL_boundary` specializes this to the
+actual mathlib manifold boundary set.
 `mathlib_bordered_surface_finiteSurfaceTriangulation` and
 `compact_eval_surface_finiteSurfaceTriangulation` are the named finite triangulation objects used
 by the public existential wrappers
@@ -1123,12 +1140,13 @@ model region contains the standard simplex.  The public theorems
 `mathlib_chartAt_contains_model_polygonal_disk_core` and
 `mathlib_chartAt_contains_polygonal_disk_core` are proved wrappers around the coordinate-local
 boundary.  The last wrapper now returns boundary-core compatibility with the preferred chart as
-well as ordinary core refinement.
+well as ordinary core refinement, boundary faithfulness, and the statement that manifold-boundary
+points in the local core lie in the local boundary core.
 
 Compact finite-subcover extraction is packaged by
 `LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData` and exposed through
 `finite_chart_polygonal_disk_data_of_local`, and pointwise data is packaged into local function-valued data by
-`local_chart_polygonal_disk_data_of_pointwise`.
+`localChartPolygonalDiskDataOfPointwise` / `local_chart_polygonal_disk_data_of_pointwise`.
 The formerly broad `mathlib_bordered_surface_rado_induction_data`,
 `mathlib_bordered_surface_finite_rado_geometry`, finite chart-disk extraction, local chart-disk
 data, point chart-disk data, and one-step extension theorems are proved wrappers around this
