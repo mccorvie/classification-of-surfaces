@@ -925,7 +925,9 @@ Proved finite/combinatorial bridge:
    `RadoInductionData.finiteCover_boundaryCore_subset_stage_card`, and
    `RadoInductionData.finiteCover_stage_card_support_eq_univ` proves that stage
    `Fintype.card C.Index` already covers the whole space for an exhaustion coming from a finite
-   chart-pair cover.
+   chart-pair cover.  `RadoInductionData.finiteStagePLTriangulationData` is now the reusable
+   compact-case exit from the Rado layer: it packages that terminal state as finite PL
+   triangulation data, including the terminal state's stored boundary subcomplex.
 11. `mathlib_bordered_surface_rado_induction_data`:
    finite Rado geometry packages as Rado induction data.
 12. `LocalChartPolygonalDiskData.toMoiseExtractionData`,
@@ -936,9 +938,9 @@ Proved finite/combinatorial bridge:
    `MoiseExtractionData.finiteStage`, `MoiseExtractionData.finiteStagePLComplex`, and
    `MoiseExtractionData.finiteStagePLTriangulationData` use the finite terminal Rado stage
    directly, avoiding the countable support-union complex after compactness has produced a finite
-   cover.  `finiteStagePLTriangulationData` now uses
-   `RadoInductionState.boundarySubcomplexData`, so the boundary package comes from the terminal
-   Rado state's stored boundary subcomplex rather than `fullBoundarySubcomplexData`.
+   cover.  The extraction wrapper delegates to
+   `RadoInductionData.finiteStagePLTriangulationData`, so the boundary package comes from the
+   terminal Rado state's stored boundary subcomplex rather than `fullBoundarySubcomplexData`.
 13. `mathlib_bordered_surface_moiseTwoManifold`,
    `mathlib_bordered_surface_to_moise_two_manifold`, and
    `moise_two_manifold_of_extraction_data`:

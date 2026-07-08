@@ -5710,6 +5710,35 @@ theorem finiteCover_stage_card_support_eq_univ
   rcases C.covers x with ⟨i, hi⟩
   exact D.finiteCover_core_subset_stage_card i hi
 
+/-- Finite PL triangulation data obtained from the terminal Rado stage of a finite chart cover.
+
+This is the compact-case exit from Rado induction: once compactness has supplied a finite
+chart-pair cover, the terminal finite stage already covers the whole space, so no countable
+support-union complex is needed. -/
+noncomputable def finiteStagePLTriangulationData
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) :
+    FinitePLTriangulationData M :=
+  let S := D.stage (Fintype.card C.Index)
+  { K := S.complex
+    covers := D.finiteCover_stage_card_support_eq_univ
+    finiteSupport := S.complex.fullFiniteSupportData
+    boundary := S.boundarySubcomplexData }
+
+@[simp] theorem finiteStagePLTriangulationData_K
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) :
+    D.finiteStagePLTriangulationData.K =
+      (D.stage (Fintype.card C.Index)).complex := by
+  rfl
+
+@[simp] theorem finiteStagePLTriangulationData_covers
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) :
+    D.finiteStagePLTriangulationData.covers =
+      D.finiteCover_stage_card_support_eq_univ := by
+  rfl
+
 /-- Every recursive Rado stage covers all chart cores up to its stage index. -/
 theorem stage_coversCoresUpTo
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -6278,11 +6307,7 @@ countable support-union complex once compactness has produced a finite chart cov
 noncomputable def finiteStagePLTriangulationData
     {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
     FinitePLTriangulationData M :=
-  let K := D.finiteStagePLComplex
-  { K := K
-    covers := D.finiteStagePLComplex_support
-    finiteSupport := K.fullFiniteSupportData
-    boundary := D.finiteStage.boundarySubcomplexData }
+  D.radoInductionData.finiteStagePLTriangulationData
 
 @[simp] theorem finiteStagePLTriangulationData_K
     {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
