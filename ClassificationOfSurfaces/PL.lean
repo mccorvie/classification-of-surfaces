@@ -4091,6 +4091,10 @@ def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M 
     D.toChartPolygonalDisk.chart.core = D.pulledCore := by
   rfl
 
+@[simp] theorem toChartPolygonalDisk_chart_boundaryCore (D : ModelChartPolygonalDisk P) :
+    D.toChartPolygonalDisk.chart.boundaryCore = D.pulledBoundaryCore := by
+  rfl
+
 @[simp] theorem toChartPolygonalDisk_simplexCarrier (D : ModelChartPolygonalDisk P)
     (σ : D.disk.K.Simplex) :
     D.toChartPolygonalDisk.simplexCarrier σ =
@@ -4102,17 +4106,7 @@ the ambient core. -/
 theorem toChartPair_refines (D : ModelChartPolygonalDisk P)
     (hcore : D.pulledCore ⊆ P.core) :
     D.toChartPair.Refines P := by
-  exact RadoChartPair.withCore_refines P D.pulledCore ∅ D.pulledCore_subset_domain
-    (by
-      intro y hy
-      simp at hy)
-    (by
-      intro _h
-      rfl)
-    (by
-      intro _h y hy
-      simp at hy)
-    hcore
+  exact ⟨subset_rfl, hcore⟩
 
 /-- The standard coordinate triangle as a model disk in any chart model region containing it. -/
 def standardTriangleInModel (P : RadoChartPair M)
