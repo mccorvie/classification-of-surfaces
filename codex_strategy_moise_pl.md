@@ -517,8 +517,32 @@ structure CombinatorialTwoManifoldWithBoundary where
 structure CombinatorialTwoCell where
   K : EuclideanComplex
   boundary : EuclideanComplex
-  pl_homeomorphic_to_closed_triangle : Prop
+  boundarySubcomplex : K.Subcomplex
+  boundaryInclusion : PLMap boundary K
+  boundary_embeds_in_cell : CellBoundaryEmbeddingData boundarySubcomplex boundaryInclusion
+  frontier_covered_by_boundary : FrontierCoveredByBoundary K boundarySubcomplex
+  closedTriangleBoundary : EuclideanComplex.Examples.triangle.Subcomplex
+  closedTriangleModel_is_triangle : ClosedTriangleBoundaryModel closedTriangleBoundary
+  cellHomeomorphToTriangle : PLHomeomorph K EuclideanComplex.Examples.triangle
+  cellHomeomorph_respects_boundary :
+    cellHomeomorphToTriangle.RestrictsTo boundarySubcomplex closedTriangleBoundary
+  pl_homeomorphic_to_closed_triangle :
+    Nonempty (PLHomeomorph K EuclideanComplex.Examples.triangle)
 ```
+
+Current status: the two-cell and polygonal-disk fields that used to be `True` have been split into
+named proof-bearing records:
+
+- `CellBoundaryEmbeddingData` records PL boundary inclusion and subcomplex respect.
+- `FrontierCoveredByBoundary` records that codimension-one faces of two-simplexes land in the
+  distinguished boundary subcomplex.
+- `ClosedTriangleBoundaryModel` records that the standard triangle boundary contains the top
+  simplex boundary faces and excludes the interior face.
+- `PolygonalBoundaryData` and `ClosedInteriorTriangulationData` package the polygonal-disk
+  boundary and closed-interior triangulation obligations.
+
+The standard triangle example now uses `EuclideanComplex.Examples.triangleBoundarySubcomplex`
+instead of the full triangle as its boundary subcomplex.
 
 Useful theorem boundaries:
 

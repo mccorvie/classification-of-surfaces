@@ -145,20 +145,21 @@ boundary.
 
 \begin{definition}[Combinatorial two-cell]
 \label{moise:def:combinatorial_two_cell}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.TrianglePlane, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoCell, LeanEval.Topology.ClassificationOfSurfaces.PolygonalDisk}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.TrianglePlane, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.triangleBoundarySubcomplex, LeanEval.Topology.ClassificationOfSurfaces.CellBoundaryEmbeddingData, LeanEval.Topology.ClassificationOfSurfaces.FrontierCoveredByBoundary, LeanEval.Topology.ClassificationOfSurfaces.ClosedTriangleBoundaryModel, LeanEval.Topology.ClassificationOfSurfaces.PolygonalBoundaryData, LeanEval.Topology.ClassificationOfSurfaces.ClosedInteriorTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoCell, LeanEval.Topology.ClassificationOfSurfaces.PolygonalDisk}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:combinatorial_surface}
 A combinatorial two-cell is a finite two-dimensional complex with a distinguished
 boundary subcomplex, a boundary inclusion map, and PL homeomorphism data to a
 closed triangle model respecting the boundary subcomplex.  The boundary
-subcomplex is now required to be nonempty so that restriction data has a genuine
-target simplex.  The standard closed triangle now has geometric support in
+subcomplex is now required to be nonempty and carries proof-bearing boundary
+embedding data, frontier coverage for the codimension-one faces of two-simplexes,
+and a closed-triangle boundary model excluding the interior face.  The standard
+closed triangle now has geometric support in
 `EuclideanSpace ℝ (Fin 2)`, while its finite vertices and simplexes still
-provide the combinatorial triangle API.  A polygonal disk records the
-triangulation data produced by Moise's polygon theorem: a boundary complex,
-boundary subcomplex, PL inclusion, and PL homeomorphism to the standard closed
-triangle.
+provide the combinatorial triangle API.  A polygonal disk records Moise's
+polygon theorem output as named boundary, closed-interior triangulation, and
+free-triangle-reduction data instead of arbitrary truth fields.
 \end{definition}
 
 \begin{lemma}[Standard triangle support is a centroid neighborhood]
@@ -217,8 +218,8 @@ distinguished boundary subcomplexes agrees with the prescribed boundary map.
 
 Use the stored PL homeomorphisms from each two-cell to the shared standard
 triangle model, compose the first with the inverse of the second, and discharge
-the boundary-extension fields using the current restriction and coherence
-scaffolding.
+the boundary-extension fields using the restriction data and the PL witnesses
+carried by the boundary and cell homeomorphisms.
 \end{proof}
 
 \section{PL approximation in dimension two}

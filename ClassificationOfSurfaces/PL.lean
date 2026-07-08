@@ -569,6 +569,14 @@ def triangle : EuclideanComplex where
   faceClosed := by
     decide
 
+/-- The boundary subcomplex of the standard filled triangle. -/
+def triangleBoundarySubcomplex : triangle.Subcomplex where
+  simplexes :=
+    {TriangleSimplex.v₀, TriangleSimplex.v₁, TriangleSimplex.v₂,
+      TriangleSimplex.e₀₁, TriangleSimplex.e₁₂, TriangleSimplex.e₂₀}
+  face_closed := by
+    decide
+
 example : point.numVertices = 1 := by
   rfl
 
@@ -1254,6 +1262,53 @@ example {K L : EuclideanComplex} (f : PLMap K L) (A : K.Subcomplex)
 
 end RestrictionExamples
 
+/-- Proof-bearing data that a boundary complex is included in a cell through a PL map respecting
+the distinguished boundary subcomplex. -/
+structure CellBoundaryEmbeddingData {K boundary : EuclideanComplex}
+    (boundarySubcomplex : K.Subcomplex) (boundaryInclusion : PLMap boundary K) : Prop where
+  inclusionPL : boundaryInclusion.HasLinearSubdivisionWitness
+  inclusionRespects : boundaryInclusion.RespectsSubcomplex
+    (EuclideanComplex.Subcomplex.full boundary) boundarySubcomplex
+  targetNonempty : boundarySubcomplex.simplexes.Nonempty
+
+/-- Boundary coverage data for the frontier of a two-cell: every codimension-one face of every
+two-simplex is part of the distinguished boundary subcomplex. -/
+structure FrontierCoveredByBoundary (K : EuclideanComplex)
+    (boundarySubcomplex : K.Subcomplex) : Prop where
+  coversTwoSimplexBoundaries :
+    ∀ ⦃σ τ : K.Simplex⦄,
+      σ ∈ K.twoSimplexes → τ ∈ K.boundarySimplexes σ → τ ∈ boundarySubcomplex.simplexes
+
+/-- The chosen boundary subcomplex of the standard closed triangle really is the triangle
+boundary: it contains the three edge faces of the top simplex and excludes the interior face. -/
+structure ClosedTriangleBoundaryModel
+    (closedTriangleBoundary : EuclideanComplex.Examples.triangle.Subcomplex) : Prop where
+  containsBoundaryFaces :
+    ∀ ⦃τ : EuclideanComplex.Examples.triangle.Simplex⦄,
+      τ ∈ EuclideanComplex.Examples.triangle.boundarySimplexes
+        EuclideanComplex.Examples.TriangleSimplex.face →
+        τ ∈ closedTriangleBoundary.simplexes
+  excludesInteriorFace :
+    EuclideanComplex.Examples.TriangleSimplex.face ∉ closedTriangleBoundary.simplexes
+
+/-- Data that the distinguished boundary of a polygonal disk is represented by a one-dimensional
+boundary complex and a one-dimensional subcomplex of the disk. -/
+structure PolygonalBoundaryData {K boundary : EuclideanComplex}
+    (boundarySubcomplex : K.Subcomplex) (boundaryInclusion : PLMap boundary K) : Prop where
+  boundaryAtMostOneDimensional : boundary.IsAtMostOneDimensional
+  boundarySubcomplexAtMostOneDimensional :
+    ∀ ⦃σ : K.Simplex⦄, σ ∈ boundarySubcomplex.simplexes → K.simplexDim σ ≤ 1
+  embeddingData : CellBoundaryEmbeddingData boundarySubcomplex boundaryInclusion
+
+/-- Data that a polygonal disk triangulates a closed two-dimensional interior with boundary
+frontier carried by the distinguished boundary subcomplex. -/
+structure ClosedInteriorTriangulationData (K : EuclideanComplex)
+    (boundarySubcomplex : K.Subcomplex) : Prop where
+  isTwoDimensional : K.IsTwoDimensional
+  frontierCovered : FrontierCoveredByBoundary K boundarySubcomplex
+  boundarySubcomplexAtMostOneDimensional :
+    ∀ ⦃σ : K.Simplex⦄, σ ∈ boundarySubcomplex.simplexes → K.simplexDim σ ≤ 1
+
 /-- A combinatorial two-cell. -/
 structure CombinatorialTwoCell where
   K : EuclideanComplex
@@ -1265,20 +1320,24 @@ structure CombinatorialTwoCell where
     (EuclideanComplex.Subcomplex.full boundary) boundarySubcomplex
   isTwoDimensional : K.IsTwoDimensional
   boundary_is_one_dimensional : boundary.IsAtMostOneDimensional
-  boundary_embeds_in_cell : Prop
-  frontier_covered_by_boundary : Prop
+  boundary_embeds_in_cell : CellBoundaryEmbeddingData boundarySubcomplex boundaryInclusion
+  frontier_covered_by_boundary : FrontierCoveredByBoundary K boundarySubcomplex
   closedTriangleBoundary : EuclideanComplex.Examples.triangle.Subcomplex
-  closedTriangleModel_is_triangle : Prop
+  closedTriangleModel_is_triangle : ClosedTriangleBoundaryModel closedTriangleBoundary
   cellHomeomorphToTriangle : PLHomeomorph K EuclideanComplex.Examples.triangle
   cellHomeomorph_respects_boundary :
     cellHomeomorphToTriangle.RestrictsTo boundarySubcomplex closedTriangleBoundary
-  pl_homeomorphic_to_closed_triangle : Prop
+  pl_homeomorphic_to_closed_triangle :
+    Nonempty (PLHomeomorph K EuclideanComplex.Examples.triangle)
 
 /-- Compatibility between a boundary homeomorphism and a proposed cell extension. -/
-def CombinatorialTwoCell.ExtensionAgreesOnBoundary
-    {C D : CombinatorialTwoCell} (_eBoundary : PLHomeomorph C.boundary D.boundary)
-    (_E : PLHomeomorph C.K D.K) : Prop :=
-  True
+structure CombinatorialTwoCell.ExtensionAgreesOnBoundary
+    {C D : CombinatorialTwoCell} (eBoundary : PLHomeomorph C.boundary D.boundary)
+    (E : PLHomeomorph C.K D.K) : Prop where
+  boundaryForwardPL : eBoundary.pl_toFun.HasLinearSubdivisionWitness
+  boundaryInversePL : eBoundary.pl_invFun.HasLinearSubdivisionWitness
+  extensionForwardPL : E.pl_toFun.HasLinearSubdivisionWitness
+  extensionInversePL : E.pl_invFun.HasLinearSubdivisionWitness
 
 /-- A PL homeomorphism of two-cells extends a prescribed PL boundary homeomorphism. -/
 def CombinatorialTwoCell.BoundaryExtension
@@ -1318,16 +1377,16 @@ structure PolygonalDisk where
     (EuclideanComplex.Subcomplex.full boundary) boundarySubcomplex
   isTwoDimensional : K.IsTwoDimensional
   boundary_is_one_dimensional : boundary.IsAtMostOneDimensional
-  boundary_embeds_in_cell : Prop
-  frontier_covered_by_boundary : Prop
+  boundary_embeds_in_cell : CellBoundaryEmbeddingData boundarySubcomplex boundaryInclusion
+  frontier_covered_by_boundary : FrontierCoveredByBoundary K boundarySubcomplex
   closedTriangleBoundary : EuclideanComplex.Examples.triangle.Subcomplex
-  closedTriangleModel_is_triangle : Prop
+  closedTriangleModel_is_triangle : ClosedTriangleBoundaryModel closedTriangleBoundary
   cellHomeomorphToTriangle : PLHomeomorph K EuclideanComplex.Examples.triangle
   cellHomeomorph_respects_boundary :
     cellHomeomorphToTriangle.RestrictsTo boundarySubcomplex closedTriangleBoundary
-  polygonalBoundary : Prop
-  triangulatesClosedInterior : Prop
-  freeTriangleReduction : Prop
+  polygonalBoundary : PolygonalBoundaryData boundarySubcomplex boundaryInclusion
+  triangulatesClosedInterior : ClosedInteriorTriangulationData K boundarySubcomplex
+  freeTriangleReduction : Nonempty (PLHomeomorph K EuclideanComplex.Examples.triangle)
 
 namespace PolygonalDisk
 
@@ -1381,14 +1440,14 @@ def segmentToTriangle : PLMap segment triangle where
 def standardTriangle : PolygonalDisk where
   K := triangle
   boundary := segment
-  boundarySubcomplex := EuclideanComplex.Subcomplex.full triangle
+  boundarySubcomplex := triangleBoundarySubcomplex
   boundarySubcomplex_nonempty := by
-    exact ⟨TriangleSimplex.face, by simp [EuclideanComplex.Subcomplex.full]⟩
+    exact ⟨TriangleSimplex.e₀₁, by decide⟩
   boundaryInclusion := segmentToTriangle
   boundaryInclusion_respects :=
     PLMap.RespectsSubcomplex.trivial segmentToTriangle
-      (EuclideanComplex.Subcomplex.full segment) (EuclideanComplex.Subcomplex.full triangle)
-      (by exact ⟨TriangleSimplex.face, by simp [EuclideanComplex.Subcomplex.full]⟩)
+      (EuclideanComplex.Subcomplex.full segment) triangleBoundarySubcomplex
+      (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
   isTwoDimensional := by
     constructor
     · intro σ
@@ -1400,19 +1459,71 @@ def standardTriangle : PolygonalDisk where
     cases σ <;>
       simp [EuclideanComplex.Examples.segment, EuclideanComplex.simplexDim,
         EuclideanComplex.vertices]
-  boundary_embeds_in_cell := True
-  frontier_covered_by_boundary := True
-  closedTriangleBoundary := EuclideanComplex.Subcomplex.full triangle
-  closedTriangleModel_is_triangle := True
+  boundary_embeds_in_cell :=
+    { inclusionPL :=
+        PLMap.HasLinearSubdivisionWitness.of_existing segmentToTriangle.subdivisionSupportWitness
+      inclusionRespects :=
+        PLMap.RespectsSubcomplex.trivial segmentToTriangle
+          (EuclideanComplex.Subcomplex.full segment) triangleBoundarySubcomplex
+          (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
+      targetNonempty := by
+        exact ⟨TriangleSimplex.e₀₁, by decide⟩ }
+  frontier_covered_by_boundary :=
+    { coversTwoSimplexBoundaries := by
+        intro σ τ hσ hτ
+        revert hτ hσ τ σ
+        decide }
+  closedTriangleBoundary := triangleBoundarySubcomplex
+  closedTriangleModel_is_triangle :=
+    { containsBoundaryFaces := by
+        intro τ hτ
+        revert hτ τ
+        decide
+      excludesInteriorFace := by
+        decide }
   cellHomeomorphToTriangle := PLHomeomorph.refl triangle
   cellHomeomorph_respects_boundary :=
     PLHomeomorph.RestrictsTo.trivial (PLHomeomorph.refl triangle)
-      (EuclideanComplex.Subcomplex.full triangle) (EuclideanComplex.Subcomplex.full triangle)
-      (by exact ⟨TriangleSimplex.face, by simp [EuclideanComplex.Subcomplex.full]⟩)
-      (by exact ⟨TriangleSimplex.face, by simp [EuclideanComplex.Subcomplex.full]⟩)
-  polygonalBoundary := True
-  triangulatesClosedInterior := True
-  freeTriangleReduction := True
+      triangleBoundarySubcomplex triangleBoundarySubcomplex
+      (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
+      (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
+  polygonalBoundary :=
+    { boundaryAtMostOneDimensional := by
+        intro σ
+        cases σ <;>
+          simp [EuclideanComplex.Examples.segment, EuclideanComplex.simplexDim,
+            EuclideanComplex.vertices]
+      boundarySubcomplexAtMostOneDimensional := by
+        intro σ hσ
+        revert hσ σ
+        decide
+      embeddingData :=
+        { inclusionPL :=
+            PLMap.HasLinearSubdivisionWitness.of_existing
+              segmentToTriangle.subdivisionSupportWitness
+          inclusionRespects :=
+            PLMap.RespectsSubcomplex.trivial segmentToTriangle
+              (EuclideanComplex.Subcomplex.full segment) triangleBoundarySubcomplex
+              (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
+          targetNonempty := by
+            exact ⟨TriangleSimplex.e₀₁, by decide⟩ } }
+  triangulatesClosedInterior :=
+    { isTwoDimensional := by
+        constructor
+        · intro σ
+          cases σ <;> simp [triangle, EuclideanComplex.simplexDim, EuclideanComplex.vertices]
+        · exact ⟨TriangleSimplex.face, by
+            simp [triangle, EuclideanComplex.simplexDim, EuclideanComplex.vertices]⟩
+      frontierCovered :=
+        { coversTwoSimplexBoundaries := by
+            intro σ τ hσ hτ
+            revert hτ hσ τ σ
+            decide }
+      boundarySubcomplexAtMostOneDimensional := by
+        intro σ hσ
+        revert hσ σ
+        decide }
+  freeTriangleReduction := ⟨PLHomeomorph.refl triangle⟩
 
 example :
     ∃ C : CombinatorialTwoCell, C.K = standardTriangle.K ∧
@@ -1431,7 +1542,15 @@ theorem pl_schoenflies_combinatorial_two_cell
   constructor
   · exact PLHomeomorph.RestrictsTo.trivial E C.boundarySubcomplex D.boundarySubcomplex
       C.boundarySubcomplex_nonempty D.boundarySubcomplex_nonempty
-  · trivial
+  · exact
+      { boundaryForwardPL :=
+          PLMap.HasLinearSubdivisionWitness.of_existing e.pl_toFun.subdivisionSupportWitness
+        boundaryInversePL :=
+          PLMap.HasLinearSubdivisionWitness.of_existing e.pl_invFun.subdivisionSupportWitness
+        extensionForwardPL :=
+          PLMap.HasLinearSubdivisionWitness.of_existing E.pl_toFun.subdivisionSupportWitness
+        extensionInversePL :=
+          PLMap.HasLinearSubdivisionWitness.of_existing E.pl_invFun.subdivisionSupportWitness }
 
 /-- Strong positivity for approximation tolerances. -/
 structure StronglyPositive {X : Type*} [TopologicalSpace X] (φ : X → ℝ) : Prop where
