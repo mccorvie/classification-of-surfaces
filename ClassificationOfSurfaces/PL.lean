@@ -277,7 +277,7 @@ structure Subdivision (K : EuclideanComplex) where
   simplex_refines : ∀ _ : K'.Simplex, Prop
   dimension_le : ∀ σ' : K'.Simplex, K'.simplexDim σ' ≤ K.simplexDim (carrier σ')
   face_refines : ∀ {τ' σ' : K'.Simplex}, K'.IsFace τ' σ' → K.IsFace (carrier τ') (carrier σ')
-  covers_old_simplexes : Prop
+  covers_old_simplexes : ∀ σ : K.Simplex, ∃ σ' : K'.Simplex, carrier σ' = σ
 
 namespace Subdivision
 
@@ -289,6 +289,11 @@ def refinedComplex {K : EuclideanComplex} (S : K.Subdivision) : EuclideanComplex
 def carrierSimplex {K : EuclideanComplex} (S : K.Subdivision) (σ' : S.K'.Simplex) :
     K.Simplex :=
   S.carrier σ'
+
+/-- Every coarse simplex has a fine simplex whose carrier is it. -/
+theorem exists_carrier_eq {K : EuclideanComplex} (S : K.Subdivision) (σ : K.Simplex) :
+    ∃ σ' : S.K'.Simplex, S.carrier σ' = σ :=
+  S.covers_old_simplexes σ
 
 /-- The identity subdivision. -/
 protected def refl (K : EuclideanComplex) : K.Subdivision where
@@ -302,7 +307,9 @@ protected def refl (K : EuclideanComplex) : K.Subdivision where
   face_refines := by
     intro τ σ h
     exact h
-  covers_old_simplexes := True
+  covers_old_simplexes := by
+    intro σ
+    exact ⟨σ, rfl⟩
 
 /-- Composition of subdivisions. -/
 protected def trans {K : EuclideanComplex} (S : K.Subdivision) (T : S.K'.Subdivision) :
@@ -317,7 +324,11 @@ protected def trans {K : EuclideanComplex} (S : K.Subdivision) (T : S.K'.Subdivi
   face_refines := by
     intro τ'' σ'' hface
     exact S.face_refines (T.face_refines hface)
-  covers_old_simplexes := T.covers_old_simplexes ∧ S.covers_old_simplexes
+  covers_old_simplexes := by
+    intro σ
+    rcases S.exists_carrier_eq σ with ⟨σ', hσ'⟩
+    rcases T.exists_carrier_eq σ' with ⟨σ'', hσ''⟩
+    exact ⟨σ'', by simp [hσ'', hσ']⟩
 
 @[simp] theorem refl_carrier (K : EuclideanComplex) (σ : K.Simplex) :
     (Subdivision.refl K).carrier σ = σ := by

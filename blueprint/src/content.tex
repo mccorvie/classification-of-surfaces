@@ -80,14 +80,15 @@ least two vertices produces the vertex set of another simplex.
 
 \begin{definition}[Subdivision]
 \label{moise:def:subdivision}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.exists_carrier_eq}
 \leanok
 
 \uses{moise:def:euclidean_complex}
 A subdivision $K'<K$ is a finite complex with homeomorphic support and a carrier
 map sending each simplex of $K'$ to a simplex of $K$.  The formal API records
-dimension monotonicity, face compatibility, and coarse coverage data; the
-geometric rectilinear containment is isolated as refinement data.
+dimension monotonicity, face compatibility, and proof-bearing coarse coverage:
+every coarse simplex has a fine simplex carried to it.  The geometric
+rectilinear containment is isolated as refinement data.
 \end{definition}
 
 \begin{definition}[PL map and PL homeomorphism]

@@ -419,6 +419,9 @@ vertex set, exposed by `EuclideanComplex.realizesSimplex_nonempty`.  The face-cl
 a codimension-one face witness: if a simplex has at least two vertices, then erasing any vertex
 from that simplex gives the vertex set of another simplex.  The helper
 `EuclideanComplex.exists_erase_vertex_face` exposes this data.
+`EuclideanComplex.Subdivision.covers_old_simplexes` is also proof-bearing carrier-surjectivity:
+every coarse simplex has a fine simplex carried to it, exposed by
+`EuclideanComplex.Subdivision.exists_carrier_eq`.
 
 If mathlib's abstract or geometric simplicial complexes can be used cleanly, wrap them. If not, define a project-specific `EuclideanComplex` with the fields needed for Moise. Avoid getting blocked by the perfect general abstraction.
 
