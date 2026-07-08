@@ -4896,6 +4896,9 @@ structure RadoStepExtensionData
   compatibleOnOverlaps : nextComplex.compatibleOnOverlap S.complex
   boundaryCompatibleOnOverlaps :
     BoundaryCompatibleOnOverlap nextComplex S.complex boundarySubcomplex
+  preservesOldBoundarySupport :
+    S.boundarySupport ⊆
+      {x | ∃ σ ∈ boundarySubcomplex.simplexes, x ∈ nextComplex.simplexCarrier σ}
   boundaryRespectsCharts : ChartModelCompatibilityData nextComplex
 
 namespace InitialPLNeighborhoodData
@@ -5045,6 +5048,12 @@ theorem toState_extends_old
     {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
     PLComplexInSpace.Extends D.toState.complex S.complex :=
   D.extends_old
+
+theorem oldBoundarySupport_subset_toState_boundarySupport
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
+    S.boundarySupport ⊆ D.toState.boundarySupport :=
+  D.preservesOldBoundarySupport
 
 theorem core_subset_toState_support
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -5523,6 +5532,12 @@ noncomputable def fromChartPolygonalDisk
         · exact K.compatibleOnOverlap_of_embedded_overlap S.complex
         · intro τ σ hσ hface
           exact (chartUnionBoundarySubcomplex S D).face_closed hσ hface
+      preservesOldBoundarySupport := by
+        intro x hx
+        rcases hx with ⟨σ, hσ, hxσ⟩
+        refine ⟨(show K.Complex.Simplex from Sum.inl σ), ?_, ?_⟩
+        · exact (chartUnionBoundarySubcomplex_left_mem S D σ).2 hσ
+        · simpa [K] using hxσ
       boundaryRespectsCharts := by
         refine S.boundaryRespectsCharts.extendWithChart D ?_ ?_
         · intro x hx
@@ -5581,6 +5596,9 @@ def emptyChart
       simp [RadoChartPair.empty] at hx
     compatibleOnOverlaps := S.complex.compatibleOnOverlap_self
     boundaryCompatibleOnOverlaps := S.boundaryCompatibleOnOverlaps
+    preservesOldBoundarySupport := by
+      intro x hx
+      exact hx
     boundaryRespectsCharts := S.boundaryRespectsCharts }
 
 @[simp] theorem emptyChart_nextComplex

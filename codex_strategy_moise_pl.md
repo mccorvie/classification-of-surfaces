@@ -892,8 +892,11 @@ Proved finite/combinatorial bridge:
    `chartUnionPLComplex_old_vertices`, and `chartUnionPLComplex_new_vertices` expose this API.
    The successor boundary subcomplex is now `chartUnionBoundarySubcomplex`, the finite disjoint
    sum of the previous boundary subcomplex and the chart-disk boundary subcomplex; the old/right
-   membership lemmas expose the two summands.  The finite chart step selector now calls the named
-   constructors directly rather than choosing witnesses from existential theorem wrappers, and
+   membership lemmas expose the two summands.  `RadoStepExtensionData.preservesOldBoundarySupport`
+   and `oldBoundarySupport_subset_toState_boundarySupport` record that a successor step really
+   carries the previous boundary support into the next boundary support.  The finite chart step
+   selector now calls the named constructors directly rather than choosing witnesses from
+   existential theorem wrappers, and
    `RadoStepExtensionData.fromChartPolygonalDisk_nextComplex_support` exposes the support
    computation for later induction proofs.
 6. `LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData`,
