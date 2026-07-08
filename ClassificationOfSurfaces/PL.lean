@@ -583,6 +583,12 @@ theorem closedTriangleSupport_covered_by_simplexCarrier {p : TrianglePlane}
     ∃ σ : TriangleSimplex, p ∈ closedTriangleSimplexCarrier σ := by
   exact ⟨TriangleSimplex.face, hp⟩
 
+/-- The standard boundary edge `e₂₀` lies on the coordinate boundary line. -/
+theorem closedTriangleSimplexCarrier_e₂₀_coord_zero {p : TrianglePlane}
+    (hp : p ∈ closedTriangleSimplexCarrier TriangleSimplex.e₂₀) :
+    p 0 = 0 :=
+  hp.1
+
 theorem closedTriangleSupport_mem_nhds_centroid :
     closedTriangleSupport ∈ 𝓝 closedTriangleCentroid := by
   have h0 : IsOpen {p : TrianglePlane | 0 < p 0} := by
@@ -3934,6 +3940,13 @@ structure ModelChartPolygonalDisk {M : Type*} [TopologicalSpace M] (P : RadoChar
   simplexCarrier_subset : ∀ σ, simplexCarrier σ ⊆ Set.range embed
   support_covered_by_simplexCarrier :
     ∀ x ∈ Set.range embed, ∃ σ : disk.K.Simplex, x ∈ simplexCarrier σ
+  modelBoundaryCore : Set P.modelRegion
+  modelBoundaryCore_subset_range : modelBoundaryCore ⊆ Set.range embed
+  modelBoundaryCore_empty_of_disk : P.kind = RadoChartKind.disk → modelBoundaryCore = ∅
+  modelBoundaryCore_in_boundary_chart :
+    P.kind = RadoChartKind.halfDisk → ∀ q ∈ modelBoundaryCore, (q : Plane) 0 = 0
+  modelBoundaryCore_covered_by_boundary :
+    ∀ q ∈ modelBoundaryCore, ∃ σ ∈ disk.boundarySubcomplex.simplexes, q ∈ simplexCarrier σ
   respectsChartModel : ∀ p : disk.K.support, (embed p : Plane) ∈ P.modelRegion
 
 namespace ModelChartPolygonalDisk
@@ -3947,6 +3960,10 @@ def toManifoldEmbed (D : ModelChartPolygonalDisk P) : D.disk.K.support → M :=
 /-- The manifold core covered by the pulled-back model disk. -/
 def pulledCore (D : ModelChartPolygonalDisk P) : Set M :=
   Set.range D.toManifoldEmbed
+
+/-- The manifold boundary core obtained by pulling back the model boundary core. -/
+def pulledBoundaryCore (D : ModelChartPolygonalDisk P) : Set M :=
+  (fun q : P.modelRegion => (P.chartHomeomorph.symm q).1) '' D.modelBoundaryCore
 
 theorem pulledCore_subset_domain (D : ModelChartPolygonalDisk P) :
     D.pulledCore ⊆ P.domain := by
@@ -3991,13 +4008,27 @@ theorem toManifoldEmbed_isEmbedding (D : ModelChartPolygonalDisk P) :
 
 /-- The Rado chart pair obtained by using the pulled-back model disk as the smaller core. -/
 def toChartPair (D : ModelChartPolygonalDisk P) : RadoChartPair M :=
-  P.withCore D.pulledCore ∅ D.pulledCore_subset_domain (by
+  P.withCore D.pulledCore D.pulledBoundaryCore D.pulledCore_subset_domain (by
     intro y hy
-    simp at hy) (by
-    intro _h
-    rfl) (by
-    intro _h y hy
-    simp at hy)
+    rcases hy with ⟨q, hq, rfl⟩
+    rcases D.modelBoundaryCore_subset_range hq with ⟨p, hp⟩
+    refine ⟨p, ?_⟩
+    simpa [toManifoldEmbed] using congrArg (fun q : P.modelRegion => (P.chartHomeomorph.symm q).1)
+      hp) (by
+    intro h
+    ext y
+    constructor
+    · rintro ⟨q, hq, rfl⟩
+      have : q ∈ (∅ : Set P.modelRegion) := by
+        rw [D.modelBoundaryCore_empty_of_disk h] at hq
+        exact hq
+      simp at this
+    · intro hy
+      simp at hy) (by
+    intro h y hy
+    rcases hy with ⟨q, hq, hyq⟩
+    have hy_eq : y = P.chartHomeomorph.symm q := Subtype.ext hyq.symm
+    simpa [hy_eq] using D.modelBoundaryCore_in_boundary_chart h q hq)
 
 @[simp] theorem toChartPair_domain (D : ModelChartPolygonalDisk P) :
     D.toChartPair.domain = P.domain := by
@@ -4008,7 +4039,7 @@ def toChartPair (D : ModelChartPolygonalDisk P) : RadoChartPair M :=
   rfl
 
 @[simp] theorem toChartPair_boundaryCore (D : ModelChartPolygonalDisk P) :
-    D.toChartPair.boundaryCore = ∅ := by
+    D.toChartPair.boundaryCore = D.pulledBoundaryCore := by
   rfl
 
 /-- Pulling back a model polygonal disk gives a chart polygonal disk in the manifold. -/
@@ -4025,7 +4056,12 @@ def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M 
     simpa [toChartPair, RadoChartPair.withCore, pulledCore] using hy
   boundaryCore_covered := by
     intro y hy
-    simp [toChartPair, RadoChartPair.withCore] at hy
+    change y ∈ D.pulledBoundaryCore at hy
+    rcases hy with ⟨q, hq, rfl⟩
+    rcases D.modelBoundaryCore_subset_range hq with ⟨p, hp⟩
+    refine ⟨p, ?_⟩
+    simpa [toManifoldEmbed] using congrArg (fun q : P.modelRegion => (P.chartHomeomorph.symm q).1)
+      hp
   simplexCarrier := fun σ =>
     (fun q : P.modelRegion => (P.chartHomeomorph.symm q).1) '' D.simplexCarrier σ
   simplexCarrier_subset := by
@@ -4042,7 +4078,10 @@ def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M 
     exact ⟨σ, ⟨D.embed p, hσ, rfl⟩⟩
   boundaryCore_covered_by_boundary := by
     intro y hy
-    simp [toChartPair, RadoChartPair.withCore] at hy
+    change y ∈ D.pulledBoundaryCore at hy
+    rcases hy with ⟨q, hq, rfl⟩
+    rcases D.modelBoundaryCore_covered_by_boundary q hq with ⟨σ, hσ, hqσ⟩
+    exact ⟨σ, hσ, ⟨q, hqσ, rfl⟩⟩
   respectsChartModel := by
     intro p
     exact D.toChartPair.chart_to_model
@@ -4104,6 +4143,52 @@ def standardTriangleInModel (P : RadoChartPair M)
     intro x hx
     rcases hx with ⟨p, rfl⟩
     exact ⟨EuclideanComplex.Examples.TriangleSimplex.face, p.2⟩
+  modelBoundaryCore :=
+    match P.kind with
+    | RadoChartKind.disk => ∅
+    | RadoChartKind.halfDisk =>
+        {q : P.modelRegion |
+          (q : Plane) ∈
+            EuclideanComplex.Examples.closedTriangleSimplexCarrier
+              EuclideanComplex.Examples.TriangleSimplex.e₂₀}
+  modelBoundaryCore_subset_range := by
+    intro q hq
+    cases hkind : P.kind
+    · rw [hkind] at hq
+      change q ∈ (∅ : Set P.modelRegion) at hq
+      cases hq
+    · rw [hkind] at hq
+      change (q : Plane) ∈
+        EuclideanComplex.Examples.closedTriangleSimplexCarrier
+          EuclideanComplex.Examples.TriangleSimplex.e₂₀ at hq
+      refine ⟨⟨q.1, ?_⟩, ?_⟩
+      · exact EuclideanComplex.Examples.closedTriangleSimplexCarrier_subset_support
+          EuclideanComplex.Examples.TriangleSimplex.e₂₀ hq
+      · exact Subtype.ext rfl
+  modelBoundaryCore_empty_of_disk := by
+    intro h
+    simp [h]
+  modelBoundaryCore_in_boundary_chart := by
+    intro h q hq
+    cases hkind : P.kind
+    · rw [hkind] at h
+      cases h
+    · rw [hkind] at hq
+      change (q : Plane) ∈
+        EuclideanComplex.Examples.closedTriangleSimplexCarrier
+          EuclideanComplex.Examples.TriangleSimplex.e₂₀ at hq
+      exact EuclideanComplex.Examples.closedTriangleSimplexCarrier_e₂₀_coord_zero hq
+  modelBoundaryCore_covered_by_boundary := by
+    intro q hq
+    cases hkind : P.kind
+    · rw [hkind] at hq
+      change q ∈ (∅ : Set P.modelRegion) at hq
+      cases hq
+    · rw [hkind] at hq
+      change (q : Plane) ∈
+        EuclideanComplex.Examples.closedTriangleSimplexCarrier
+          EuclideanComplex.Examples.TriangleSimplex.e₂₀ at hq
+      exact ⟨EuclideanComplex.Examples.TriangleSimplex.e₂₀, by decide, hq⟩
   respectsChartModel := by
     intro p
     exact (⟨p.1, hregion p.2⟩ : P.modelRegion).2
@@ -4121,6 +4206,11 @@ structure PlaneRegionPolygonalNeighborhood (Ω : Set Plane) (y : Ω) where
   simplexCarrier_subset : ∀ σ, simplexCarrier σ ⊆ Set.range embed
   support_covered_by_simplexCarrier :
     ∀ x ∈ Set.range embed, ∃ σ : disk.K.Simplex, x ∈ simplexCarrier σ
+  boundaryCarrier : Set Ω
+  boundaryCarrier_subset_range : boundaryCarrier ⊆ Set.range embed
+  boundaryCarrier_in_coordBoundary : ∀ q ∈ boundaryCarrier, (q : Plane) 0 = 0
+  boundaryCarrier_covered_by_boundary :
+    ∀ q ∈ boundaryCarrier, ∃ σ ∈ disk.boundarySubcomplex.simplexes, q ∈ simplexCarrier σ
   range_mem_nhds : Set.range embed ∈ 𝓝 y
   respectsChartModel : ∀ p : disk.K.support, (embed p : Plane) ∈ Ω
 
@@ -4218,6 +4308,11 @@ structure PlaneRegionBoundaryTriangleCopy (Ω : Set Plane) (y : Ω) where
     homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ⊆ Ω
   image_mem_nhdsWithin :
     homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ∈ 𝓝[Ω] y.1
+  maps_boundary_edge_to_boundary_line :
+    ∀ p ∈
+      EuclideanComplex.Examples.closedTriangleSimplexCarrier
+        EuclideanComplex.Examples.TriangleSimplex.e₂₀,
+      (homeomorph p) 0 = 0
 
 namespace PlaneRegionBoundaryTriangleCopy
 
@@ -4313,7 +4408,7 @@ theorem boundaryAnchoredHomothety_closedTriangleSupport_mem_nhdsWithin_coordHalf
 /-- Build a boundary triangle copy from a positive anchored homothety whose triangle image lies in
 the region and is a relative neighborhood there. -/
 def ofBoundaryAnchoredHomothety {Ω : Set Plane} {y : Ω}
-    (scale : ℝ) (hscale : scale ≠ 0)
+    (hcenter : y.1 0 = 0) (scale : ℝ) (hscale : scale ≠ 0)
     (hsubset :
       boundaryAnchoredHomothety y.1 scale hscale ''
           EuclideanComplex.Examples.closedTriangleSupport ⊆ Ω)
@@ -4325,6 +4420,11 @@ def ofBoundaryAnchoredHomothety {Ω : Set Plane} {y : Ω}
   anchor_eq := boundaryAnchoredHomothety_anchor y.1 scale hscale
   image_subset := hsubset
   image_mem_nhdsWithin := hnhds
+  maps_boundary_edge_to_boundary_line := by
+    intro p hp
+    have hp0 := EuclideanComplex.Examples.closedTriangleSimplexCarrier_e₂₀_coord_zero hp
+    simp [boundaryAnchoredHomothety, EuclideanComplex.Examples.closedTriangleBoundaryAnchor,
+      hcenter, hp0, smul_eq_mul]
 
 /-- Every relative neighborhood of a boundary point in the coordinate-0 half-plane contains a
 sufficiently small positive boundary-anchored copy of the standard triangle. -/
@@ -4422,6 +4522,16 @@ def ofTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionTriangleCopy Ω y) 
     exact ⟨p.1, by
       change p.1 ∈ EuclideanComplex.Examples.closedTriangleSupport
       exact p.2, rfl⟩
+  boundaryCarrier := ∅
+  boundaryCarrier_subset_range := by
+    intro q hq
+    simp at hq
+  boundaryCarrier_in_coordBoundary := by
+    intro q hq
+    simp at hq
+  boundaryCarrier_covered_by_boundary := by
+    intro q hq
+    simp at hq
   range_mem_nhds := by
     have hImage :
         T.homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ∈
@@ -4498,6 +4608,28 @@ def ofBoundaryTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionBoundaryTri
     exact ⟨p.1, by
       change p.1 ∈ EuclideanComplex.Examples.closedTriangleSupport
       exact p.2, rfl⟩
+  boundaryCarrier :=
+    {q : Ω | (q : Plane) ∈ T.homeomorph ''
+      EuclideanComplex.Examples.closedTriangleSimplexCarrier
+        EuclideanComplex.Examples.TriangleSimplex.e₂₀}
+  boundaryCarrier_subset_range := by
+    intro q hq
+    rcases hq with ⟨p, hp, hq⟩
+    let p' : PolygonalDiskExamples.standardTriangle.K.support :=
+      ⟨p, by
+        change p ∈ EuclideanComplex.Examples.closedTriangleSupport
+        exact EuclideanComplex.Examples.closedTriangleSimplexCarrier_subset_support
+          EuclideanComplex.Examples.TriangleSimplex.e₂₀ hp⟩
+    refine ⟨p', ?_⟩
+    exact Subtype.ext hq
+  boundaryCarrier_in_coordBoundary := by
+    intro q hq
+    rcases hq with ⟨p, hp, hq⟩
+    have hline := T.maps_boundary_edge_to_boundary_line p hp
+    simpa [← hq] using hline
+  boundaryCarrier_covered_by_boundary := by
+    intro q hq
+    exact ⟨EuclideanComplex.Examples.TriangleSimplex.e₂₀, by decide, hq⟩
   range_mem_nhds := by
     rw [mem_nhds_subtype_iff_nhdsWithin]
     convert T.image_mem_nhdsWithin using 1
@@ -4532,6 +4664,39 @@ def toModelChartPolygonalDisk
   simplexCarrier := N.simplexCarrier
   simplexCarrier_subset := N.simplexCarrier_subset
   support_covered_by_simplexCarrier := N.support_covered_by_simplexCarrier
+  modelBoundaryCore :=
+    match P.kind with
+    | RadoChartKind.disk => ∅
+    | RadoChartKind.halfDisk => N.boundaryCarrier
+  modelBoundaryCore_subset_range := by
+    intro q hq
+    cases hkind : P.kind
+    · rw [hkind] at hq
+      change q ∈ (∅ : Set P.modelRegion) at hq
+      cases hq
+    · rw [hkind] at hq
+      change q ∈ N.boundaryCarrier at hq
+      exact N.boundaryCarrier_subset_range hq
+  modelBoundaryCore_empty_of_disk := by
+    intro h
+    simp [h]
+  modelBoundaryCore_in_boundary_chart := by
+    intro h q hq
+    cases hkind : P.kind
+    · rw [hkind] at h
+      cases h
+    · rw [hkind] at hq
+      change q ∈ N.boundaryCarrier at hq
+      exact N.boundaryCarrier_in_coordBoundary q hq
+  modelBoundaryCore_covered_by_boundary := by
+    intro q hq
+    cases hkind : P.kind
+    · rw [hkind] at hq
+      change q ∈ (∅ : Set P.modelRegion) at hq
+      cases hq
+    · rw [hkind] at hq
+      change q ∈ N.boundaryCarrier at hq
+      exact N.boundaryCarrier_covered_by_boundary q hq
   respectsChartModel := N.respectsChartModel
 
 @[simp] theorem toModelChartPolygonalDisk_embed
@@ -4545,6 +4710,12 @@ def toModelChartPolygonalDisk
     (N : PlaneRegionPolygonalNeighborhood P.modelRegion y) (σ : N.disk.K.Simplex) :
     N.toModelChartPolygonalDisk.simplexCarrier σ = N.simplexCarrier σ := by
   rfl
+
+@[simp] theorem toModelChartPolygonalDisk_modelBoundaryCore_of_halfDisk
+    {M : Type*} [TopologicalSpace M] {P : RadoChartPair M} {y : P.modelRegion}
+    (N : PlaneRegionPolygonalNeighborhood P.modelRegion y) (hP : P.kind = RadoChartKind.halfDisk) :
+    N.toModelChartPolygonalDisk.modelBoundaryCore = N.boundaryCarrier := by
+  simp [toModelChartPolygonalDisk, hP]
 
 theorem toModelChartPolygonalDisk_range_mem_nhds
     {M : Type*} [TopologicalSpace M] {P : RadoChartPair M} {y : P.modelRegion}
@@ -7044,7 +7215,7 @@ theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
       (Ω := (Subtype.val '' U : Set Plane)) hRelative hSubsetHalfspace hBoundary with
     ⟨scale, hscale, hsubset, hnhds⟩
   let T : PlaneRegionBoundaryTriangleCopy (Subtype.val '' U) ⟨y.1, hyU⟩ :=
-    PlaneRegionBoundaryTriangleCopy.ofBoundaryAnchoredHomothety scale hscale hsubset hnhds
+    PlaneRegionBoundaryTriangleCopy.ofBoundaryAnchoredHomothety hy scale hscale hsubset hnhds
   exact ⟨PlaneRegionPolygonalNeighborhood.ofBoundaryTriangleCopy T⟩
 
 /-- An open neighborhood of a boundary-line point in the model half-plane contains an embedded

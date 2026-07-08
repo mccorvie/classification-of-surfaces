@@ -891,7 +891,10 @@ Proved finite/combinatorial bridge:
    constructors use `EuclideanComplex.Examples.closedTriangleSimplexCarrier`, with singleton
    vertex carriers, line-segment edge carriers, and the closed face carrier.  Generic constructors
    may still use coarse carriers where detailed simplex geometry is not supplied, but the local
-   chart pipeline now accepts and transports faithful carrier data.
+   chart pipeline now accepts and transports faithful carrier data.  Plane-region neighborhoods
+   also carry a boundary carrier; boundary-anchored triangle copies prove that the standard
+   boundary edge maps to the coordinate boundary line, and `ModelChartPolygonalDisk.toChartPair`
+   pulls that carrier back instead of replacing the boundary core by `∅`.
    `ChartPolygonalDisk.boundaryCore_subset_boundarySupport` now exposes the stronger fact that
    chart boundary cores are covered by the disk boundary subcomplex, and the initial Rado state
    records this with `toState_coversBoundaryCoresInBoundaryUpTo`.
