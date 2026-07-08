@@ -85,7 +85,7 @@ Do not replace this with a closed-surface definition. Boundary is part of the fi
 A wrapper structure is optional, but useful for blueprint and Codex work:
 
 ```lean
-structure EvalSurface (S : Type*) [TopologicalSpace S] : Prop where
+structure EvalSurface (S : Type*) [TopologicalSpace S] where
   t2 : T2Space S
   connected : ConnectedSpace S
   compact : CompactSpace S
@@ -93,7 +93,9 @@ structure EvalSurface (S : Type*) [TopologicalSpace S] : Prop where
   manifold : IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S
 ```
 
-This exact code may need adjustment because some of these are typeclasses rather than fields. The important point is that downstream bridge theorems should use the Eval hypotheses verbatim or through a transparent wrapper.
+The current Lean file also provides `evalSurface`, which packages active typeclass hypotheses, and
+`eval_surface_hypotheses : Nonempty (EvalSurface S)` as a blueprint-facing marker.  Downstream
+bridge theorems should use the Eval hypotheses verbatim or through this transparent wrapper.
 
 ### API 1: finite surface cell complex
 

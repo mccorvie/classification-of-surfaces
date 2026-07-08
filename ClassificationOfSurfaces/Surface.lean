@@ -43,9 +43,9 @@ def evalSurface : EvalSurface S where
   charted := inferInstance
   manifold := inferInstance
 
-/-- Marker theorem for the exact topological assumptions in the eval statement. -/
-theorem eval_surface_hypotheses : True := by
-  trivial
+/-- Marker theorem packaging the exact topological assumptions in the eval statement. -/
+theorem eval_surface_hypotheses : Nonempty (EvalSurface S) :=
+  ⟨evalSurface S⟩
 
 end EvalHypotheses
 

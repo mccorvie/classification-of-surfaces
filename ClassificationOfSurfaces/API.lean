@@ -16,6 +16,7 @@ project skeleton and documents the intended handoff points between teams.
 
 * `EvalSurface`
 * `evalSurface`
+* `eval_surface_hypotheses`
 * the typeclass hypothesis block used by `classification_of_surfaces`
 
 ## Moise / PL route
