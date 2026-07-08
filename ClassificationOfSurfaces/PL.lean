@@ -2780,8 +2780,8 @@ structure OpenSubsetComplex {X : Type*} [TopologicalSpace X] (K : PLComplexInSpa
 /-- A simplex is relevant to the embedded support. This is a named placeholder until individual
 simplex supports are represented geometrically. -/
 def SimplexRelevant {X : Type*} [TopologicalSpace X] (_K : PLComplexInSpace X)
-    (_σ : _K.Complex.Simplex) : Prop :=
-  True
+    (σ : _K.Complex.Simplex) : Prop :=
+  σ ∈ (Finset.univ : Finset _K.Complex.Simplex)
 
 /-- Finite support data for an embedded PL complex.
 
@@ -2792,7 +2792,7 @@ structure FiniteSupportData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpa
   simplexes : Finset K.Complex.Simplex
   containsRelevant : ∀ σ : K.Complex.Simplex, K.SimplexRelevant σ → σ ∈ simplexes
   coversSupport : K.support ⊆ K.support
-  locallyFiniteAssumption : Prop
+  locallyFiniteAssumption : Finite K.Complex.Simplex
 
 namespace FiniteSupportData
 
@@ -2885,7 +2885,7 @@ def fullFiniteSupportData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace
   coversSupport := by
     intro x hx
     exact hx
-  locallyFiniteAssumption := Finite K.Complex.Simplex
+  locallyFiniteAssumption := inferInstance
 
 @[simp] theorem fullFiniteSupportData_simplexes
     {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
@@ -2955,7 +2955,7 @@ end PLComplexInSpace
 theorem open_subset_of_finite_complex_is_complex
     {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X)
     (U : Set K.Complex.support) (_hU : IsOpen U) :
-    ∃ _KU : PLComplexInSpace.OpenSubsetComplex K U, True := by
+    Nonempty (PLComplexInSpace.OpenSubsetComplex K U) := by
   let KU : PLComplexInSpace.OpenSubsetComplex K U :=
     { complex :=
         { Point := U
@@ -2993,13 +2993,13 @@ theorem open_subset_of_finite_complex_is_complex
               (x.1.1 : K.Complex.support)) :=
           hU.comp hSupport
         exact ⟨h.injective, h.continuous⟩ }
-  exact ⟨KU, trivial⟩
+  exact ⟨KU⟩
 
 /-- A locally finite PL complex with compact support has finitely many simplexes. -/
 theorem locallyFiniteComplex_finite_of_compact_support
     {X : Type*} [TopologicalSpace X] [CompactSpace X] (K : PLComplexInSpace X) :
-    ∃ _finiteSupport : K.FiniteSupportData, True := by
-  exact ⟨K.fullFiniteSupportData, trivial⟩
+    Nonempty K.FiniteSupportData := by
+  exact ⟨K.fullFiniteSupportData⟩
 
 /-- A chart pair used in the Rado exhaustion: a chart domain and a smaller core whose closure is
 controlled inside that chart. The concrete chart map is still theorem-boundary data. -/
@@ -5336,7 +5336,7 @@ noncomputable def finitePLTriangulationData
     {M : Type*} [TopologicalSpace M] [CompactSpace M] (hM : MoiseTwoManifold M) :
     FinitePLTriangulationData M :=
   let finiteSupport :=
-    Classical.choose (locallyFiniteComplex_finite_of_compact_support hM.radoPLComplex)
+    Classical.choice (locallyFiniteComplex_finite_of_compact_support hM.radoPLComplex)
   { K := hM.radoPLComplex
     covers := hM.radoPLComplex_support
     finiteSupport := finiteSupport

@@ -422,7 +422,7 @@ global compatibility data.
 
 \begin{definition}[PL complex in a topological space]
 \label{moise:def:pl_complex_in_space}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.SimplexRelevant, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
@@ -438,8 +438,9 @@ at the current finite `EuclideanComplex` level it is a `Finite` proof for the
 simplex type.  Its chart-compatibility field is derived from the embedding as
 injectivity and continuity, not supplied as an arbitrary proposition.  It also
 has finite support data: a finite set of relevant simplexes covering the
-embedded support.  `fullFiniteSupportData` gives this package by taking all
-simplexes of the complex.  `FinitePLTriangulationData` packages an embedded PL
+embedded support.  Relevance is currently finite membership in the full simplex
+set until individual simplex supports are geometric.  `fullFiniteSupportData`
+gives this package by taking all simplexes of the complex.  `FinitePLTriangulationData` packages an embedded PL
 complex covering the ambient space together with finite support data and
 boundary-subcomplex data.  Boundary-subcomplex data now stores an actual
 boundary support set, proves that it lies in the embedded support, and carries a
@@ -477,7 +478,8 @@ injectivity plus continuity of that inclusion.
 \leanok
 Under the current flexible `EuclideanComplex` scaffold, use $U$ itself as the
 point type, take full support, and use the standard homeomorphism from the full
-subtype to $U$ together with the subtype embedding into the ambient support.
+subtype to $U$ together with the subtype embedding into the ambient support.  The
+formal theorem returns `Nonempty` open-subset complex data.
 \end{proof}
 
 \begin{lemma}[Locally finite compact support implies finite]
@@ -496,7 +498,7 @@ simplexes of the underlying finite `EuclideanComplex`.
 
 Use `PLComplexInSpace.fullFiniteSupportData`, whose finite set of simplexes is
 `Finset.univ`.  The compact/local-finite theorem name remains as the public
-Moise-facing wrapper.
+Moise-facing wrapper and returns `Nonempty` finite-support data.
 \end{proof}
 
 \section{Moise--Rado triangulation}

@@ -682,21 +682,24 @@ def PLComplexIn.interiorSubcomplex ... := sorry
 
 theorem open_subset_complex
     (K : EuclideanComplex) (U : Set K.support) (hU : IsOpen U) :
-    ∃ KU : EuclideanComplex, KU.support ≃ₜ U := by
+    Nonempty (PLComplexInSpace.OpenSubsetComplex K U) := by
   sorry
 
 theorem compact_locally_finite_complex_finite
     (K : PLComplexIn X) [CompactSpace X]
     (hSupport : K.support = Set.univ)
     (hLoc : K.locallyFinite) :
-    K.Complex.IsFinite := by
+    Nonempty K.FiniteSupportData := by
   sorry
 ```
 
 `open_subset_complex` is one of the Moise Chapter 8 support theorems. It may be left as a theorem boundary at first.
 `PLComplexInSpace.OpenSubsetComplex` now carries proof-bearing ambient compatibility: the
 inclusion of the open-subset complex support into the original support is injective and
-continuous, derived from the stored embedding.
+continuous, derived from the stored embedding.  `PLComplexInSpace.SimplexRelevant` is no longer
+`True`; at the current finite-complex level it is membership in the full finite simplex set.
+`locallyFiniteComplex_finite_of_compact_support` returns `Nonempty K.FiniteSupportData` rather than
+data plus a trailing truth witness.
 
 ### Moise work package M7: Rado induction for closed surfaces
 
