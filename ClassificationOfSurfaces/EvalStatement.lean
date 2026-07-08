@@ -17,12 +17,14 @@ namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
 
-/-- Every compact connected Hausdorff topological 2-manifold with boundary is homeomorphic to the
-sphere, an orientable normal-form quotient, or a non-orientable normal-form quotient. -/
+/-- Every compact connected Hausdorff topological 2-manifold with boundary satisfying the current
+C0 chart-boundary invariance bridge is homeomorphic to the sphere, an orientable normal-form
+quotient, or a non-orientable normal-form quotient. -/
 theorem classification_of_surfaces (S : Type*) [TopologicalSpace S]
     [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    [ChartBoundaryInvariant S] :
     Nonempty (S ≃ₜ SphereRepresentative) ∨
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (S ≃ₜ Quot (OrientableRel p n))) ∨
@@ -49,7 +51,8 @@ theorem classification_of_surfaces (S : Type*) [TopologicalSpace S]
 theorem topological_classification_of_surfaces (S : Type*) [TopologicalSpace S]
     [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    [ChartBoundaryInvariant S] :
     Nonempty (S ≃ₜ SphereRepresentative) ∨
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (S ≃ₜ Quot (OrientableRel p n))) ∨

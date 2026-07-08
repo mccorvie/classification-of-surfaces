@@ -38,12 +38,16 @@ The final theorem should be a short assembly proof using those two bridge theore
 
 ## Current Baseline
 
-The repository currently builds with a named theorem-boundary `sorry` in the
-triangulation-to-cell-complex realization bridge. Several theorem-boundary fields are still
-intentionally propositional scaffold data, especially in the Rado and quotient realization layers.
-The bottom API is in place:
+The repository currently builds. The Moise/PL triangulation route and the
+triangulation-to-cell-complex bridge are closed relative to the explicit C0
+`ChartBoundaryInvariant` hypothesis; positive-regularity bordered surfaces supply that hypothesis
+through mathlib. Several theorem-boundary fields are still intentionally propositional scaffold
+data, especially in the quotient realization and Gallier-Xu normal-form layers. The bottom API is in
+place:
 
 - `EvalSurface` packages the Lean Eval hypotheses.
+- `ChartBoundaryInvariant` isolates the deferred pure topological boundary-invariance theorem for
+  C0 half-space charts.
 - `OrientedEdge` records oriented triangle sides.
 - `FiniteSurfaceTriangulation` stores finite vertices, edges, triangles, oriented triangle boundary
   words, boundary-edge flags, and a homeomorphism from its realization to the target surface.
@@ -79,4 +83,5 @@ compatibility. New code should use the preferred names above.
 3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
 5. Make `OrientableRel` and `NonOrientableRel` genuine quotient relations over polygon models.
-6. Continue the Moise/PL triangulation route behind `compact_eval_surface_finitely_triangulable`.
+6. Decide whether to prove `ChartBoundaryInvariant` for C0 half-space manifolds directly or keep
+   the main theorem relative to it while developing the Gallier-Xu tail.

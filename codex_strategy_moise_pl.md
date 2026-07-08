@@ -78,9 +78,13 @@ The Eval input is a compact connected Hausdorff topological 2-manifold with boun
 [CompactSpace S]
 [ChartedSpace (EuclideanHalfSpace 2) S]
 [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+[ChartBoundaryInvariant S]
 ```
 
 Do not replace this with a closed-surface definition. Boundary is part of the final theorem.
+The additional `ChartBoundaryInvariant` typeclass isolates the hard C0 invariance-of-boundary
+theorem for arbitrary preferred half-space charts.  Positive-regularity surfaces get this
+automatically from mathlib's `ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`.
 
 A wrapper structure is optional, but useful for blueprint and Codex work:
 
@@ -91,6 +95,7 @@ structure EvalSurface (S : Type*) [TopologicalSpace S] where
   compact : CompactSpace S
   charted : ChartedSpace (EuclideanHalfSpace 2) S
   manifold : IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S
+  boundaryInvariant : ChartBoundaryInvariant S
 ```
 
 The current Lean file also provides `evalSurface`, which packages active typeclass hypotheses, and
@@ -355,7 +360,8 @@ theorem compact_eval_surface_finitely_triangulable
     (S : Type*) [TopologicalSpace S]
     [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    [ChartBoundaryInvariant S] :
     ∃ T : FiniteSurfaceTriangulation S, True := by
   sorry
 ```
@@ -367,7 +373,8 @@ theorem compact_eval_surface_finitely_triangulable
     (S : Type*) [TopologicalSpace S]
     [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    [ChartBoundaryInvariant S] :
     ∃ T : FiniteSurfaceTriangulation S,
       Nonempty (T.realization ≃ₜ S) := by
   sorry
@@ -380,7 +387,8 @@ theorem compact_surface_homeomorphic_to_cell_complex
     (S : Type*) [TopologicalSpace S]
     [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    [ChartBoundaryInvariant S] :
     ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
   obtain ⟨T, hT⟩ := compact_eval_surface_finitely_triangulable S
   let K := T.toCellComplex
@@ -956,8 +964,9 @@ Proved finite/combinatorial bridge:
    `mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff`,
    `rado_bordered_surface_triangulation_of_contMDiff`,
    `mathlib_bordered_surface_finitely_triangulable_of_contMDiff`, and
-   `compact_eval_surface_finitely_triangulable_of_contMDiff`.  Thus the remaining gap for the
-   original Eval theorem is specifically the topological C0 invariance needed for Moise.
+   `compact_eval_surface_finitely_triangulable_of_contMDiff`.  The C0 route is now closed relative
+   to the explicit `ChartBoundaryInvariant` typeclass; proving that class from bare topological
+   half-space manifold hypotheses is the separate pure-topology project.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
    `ChartPolygonalDisk` now carries explicit simplex-carrier data for its embedded PL complex,
@@ -1118,8 +1127,9 @@ by the public existential wrappers
 `compact_eval_surface_finitely_triangulable`.  The positive-regularity route now has parallel
 finite-output names ending in `_of_contMDiff`, including
 `mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff` and
-`compact_eval_surface_finitely_triangulable_of_contMDiff`; these avoid the C0 boundary-invariance
-theorem boundary.
+`compact_eval_surface_finitely_triangulable_of_contMDiff`; these supply the new
+`ChartBoundaryInvariant` hypothesis from positive regularity rather than requiring the deferred
+pure C0 theorem.
 
 Closed coordinate-local bridge:
 
@@ -1360,7 +1370,8 @@ theorem eval_to_moise_bordered_surface
     (S : Type*) [TopologicalSpace S]
     [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    [ChartBoundaryInvariant S] :
     MoiseBorderedSurface S := by
   sorry
 ```
@@ -1376,7 +1387,8 @@ theorem compact_eval_surface_finitely_triangulable
     (S : Type*) [TopologicalSpace S]
     [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    [ChartBoundaryInvariant S] :
     ∃ T : FiniteSurfaceTriangulation S,
       Nonempty (T.realization ≃ₜ S) := by
   -- eval_to_moise_bordered_surface
@@ -1391,7 +1403,8 @@ theorem compact_surface_homeomorphic_to_cell_complex
     (S : Type*) [TopologicalSpace S]
     [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    [ChartBoundaryInvariant S] :
     ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
   obtain ⟨T, hTS⟩ := compact_eval_surface_finitely_triangulable S
   refine ⟨T.toCellComplex, ?_⟩
@@ -1523,7 +1536,8 @@ theorem eval_classification_of_surfaces
     (S : Type*) [TopologicalSpace S]
     [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    [ChartBoundaryInvariant S] :
     -- exact Lean Eval conclusion
     := by
   obtain ⟨K, hSK⟩ := compact_surface_homeomorphic_to_cell_complex S

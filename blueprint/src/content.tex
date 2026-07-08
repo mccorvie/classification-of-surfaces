@@ -18,12 +18,14 @@
 
 \begin{definition}[Lean Eval compact surface with boundary]
 \label{moise:def:eval_surface}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EvalSurface}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EvalSurface, LeanEval.Topology.ClassificationOfSurfaces.ChartBoundaryInvariant}
 An \emph{Eval surface} is a type $S$ equipped with a topology such that $S$ is
 Hausdorff, connected, compact, charted over the Euclidean half-space
 $\mathbb H^2$, and is a $C^0$ manifold with corners for
-\texttt{modelWithCornersEuclideanHalfSpace 2}.  This definition packages exactly
-the hypotheses of the Lean Eval problem.
+\texttt{modelWithCornersEuclideanHalfSpace 2}.  The Lean wrapper also carries
+`ChartBoundaryInvariant`, the explicit C0 boundary-stratum invariance hypothesis
+used by the current Moise route.  Positive-regularity bordered surfaces supply
+this class from mathlib's boundary-point theorem.
 \end{definition}
 
 \begin{definition}[Finite surface cell complex]
@@ -595,11 +597,12 @@ source mapped to the coordinate boundary line, with both directions exposed as
 named lemmas.  Mathlib boundary points also lie in the boundary core of their
 own preferred chart, using `ModelWithCorners.boundary` and the half-space
 frontier computation.  The C0 arbitrary-chart version needed for finite
-subcovers is isolated at the frontier-of-target level as
+subcovers is isolated as the `ChartBoundaryInvariant` typeclass and exposed at
+the frontier-of-target level as
 `RadoChartPair.chartAt_extend_mem_frontier_target_of_manifold_boundary`.
 The coordinate-boundary consequence
 `RadoChartPair.fromChartAt_chart_coord_zero_of_manifold_boundary` is proved from
-that lower-level statement.  Its positive-regularity companion is proved in the
+that lower-level class field.  Its positive-regularity companion is proved in the
 more general nonzero-regularity form using mathlib's
 `ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`, and the C1 specialization
 is used by a fully proved positive-regularity extraction path.  The chart-pair API also includes core refinement:
@@ -1098,8 +1101,9 @@ mathlib manifold boundary is carried there by
 `rado_bordered_surface_triangulation` is the public existential wrapper with
 finite-support and boundary-subcomplex data as witnesses and the support
 equality as its proposition.  The positive-regularity variants with suffix
-`_of_contMDiff` follow the same finite-stage route but use the proved
-chart-boundary invariance theorem instead of the C0 theorem boundary.
+`_of_contMDiff` follow the same finite-stage route and supply
+`ChartBoundaryInvariant` from the proved positive-regularity chart-boundary
+invariance theorem.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface to Moise chart-pair interface]
@@ -1118,7 +1122,8 @@ exhaustion.
 Package the named extracted finite chart-pair cover and Rado local data as a
 `MoiseTwoManifold`; the public theorem is the nonempty-data wrapper around
 `mathlib_bordered_surface_moiseTwoManifold`.  The positive-regularity wrapper
-uses the same data path with the proved boundary-invariance theorem.
+uses the same data path after deriving `ChartBoundaryInvariant` from the proved
+boundary-invariance theorem.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface extraction data]
@@ -1535,7 +1540,7 @@ surface.
 
 \uses{moise:def:finite_surface_triangulation,moise:lem:eval_to_moise_bordered_surface,moise:thm:rado_bordered_surface_triangulation,moise:thm:finite_pl_complex_to_finite_surface_triangulation}
 Every compact connected Eval surface has a finite triangulation with boundary a
-subcomplex.
+subcomplex, relative to the explicit C0 `ChartBoundaryInvariant` hypothesis.
 \end{theorem}
 
 \begin{proof}
@@ -1547,7 +1552,7 @@ triangulation data from the Moise--Rado route and converts it to the project
 `compact_eval_surface_finiteSurfaceTriangulation` carry the actual objects; the
 theorem statements are existential wrappers.  The suffix `_of_contMDiff`
 versions give the same finite-surface output through the proved
-positive-regularity path.
+positive-regularity path, where `ChartBoundaryInvariant` is supplied by mathlib.
 \end{proof}
 
 \section{From triangulations to cell complexes}
@@ -1927,8 +1932,9 @@ representatives.
 
 \uses{moise:thm:compact_surface_cellulable,moise:thm:cell_complex_has_eval_representative}
 Every compact connected Hausdorff topological $2$-manifold with boundary in the
-Lean Eval sense is homeomorphic to one of the normal-form quotient spaces listed
-in the Eval problem.
+Lean Eval sense, equipped with the explicit C0 `ChartBoundaryInvariant`
+hypothesis, is homeomorphic to one of the normal-form quotient spaces listed in
+the Eval problem.
 \end{theorem}
 
 \begin{proof}

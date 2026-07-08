@@ -323,6 +323,7 @@ variable (S : Type*) [TopologicalSpace S]
 variable [Nonempty S] [T2Space S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+variable [ChartBoundaryInvariant S]
 
 /-- The named finite surface triangulation produced by the Moise--Rado route for a compact
 mathlib bordered surface. -/
@@ -384,6 +385,7 @@ variable (S : Type*) [TopologicalSpace S]
 variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+variable [ChartBoundaryInvariant S]
 
 /-- The named finite surface triangulation produced for a compact Eval surface. -/
 noncomputable def compact_eval_surface_finiteSurfaceTriangulation :

@@ -63,5 +63,8 @@ compatibility, but new code should use the preferred names above.
   data-preserving triangulation-to-cell-complex conversion.
 - Standard example boundary words for the disk, annulus, torus, projective plane, and Mobius strip
   compile as `SurfaceCellComplex` values.
-- Quotient realizations, Moise/PL triangulation, and Gallier-Xu normal-form reductions are still
-  theorem boundaries marked by named `sorry`s.
+- The Moise/PL triangulation route and the triangulation-to-cell-complex bridge compile relative to
+  the explicit C0 `ChartBoundaryInvariant` hypothesis. Positive-regularity surfaces supply this
+  hypothesis through mathlib.
+- Quotient realizations and Gallier-Xu normal-form reductions are still theorem boundaries marked
+  by named `sorry`s.
