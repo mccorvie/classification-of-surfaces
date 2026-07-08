@@ -3419,6 +3419,65 @@ def fullBoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplexIn
 
 end PLComplexInSpace
 
+/-- A stagewise PL complex in an ambient space.
+
+This is the faithful interface for Rado's countable union before quotienting persistent simplexes
+between stages.  Each finite stage is an embedded finite PL complex; the global support is covered
+by genuine stage-indexed simplex carriers.  The structure intentionally records finite data
+stagewise rather than claiming that the raw stage-indexed simplex type is locally finite. -/
+structure StagewisePLComplexInSpace (X : Type*) [TopologicalSpace X] where
+  stage : ℕ → PLComplexInSpace X
+  extends_succ : ∀ n, PLComplexInSpace.Extends (stage (n + 1)) (stage n)
+  support : Set X
+  support_eq_iUnion : support = ⋃ n, (stage n).support
+  Simplex : Type
+  simplexCarrier : Simplex → Set X
+  stageSimplex : ∀ n, (stage n).Complex.Simplex → Simplex
+  stageSimplexCarrier :
+    ∀ n (σ : (stage n).Complex.Simplex),
+      simplexCarrier (stageSimplex n σ) = (stage n).simplexCarrier σ
+  simplexCarrier_subset_support : ∀ σ, simplexCarrier σ ⊆ support
+  support_covered_by_simplexCarrier :
+    ∀ x ∈ support, ∃ σ : Simplex, x ∈ simplexCarrier σ
+  finiteStage : ∀ n, Finite (stage n).Complex.Simplex
+  boundarySimplex : Set Simplex
+  boundarySupport : Set X
+  boundarySupport_subset_support : boundarySupport ⊆ support
+  boundaryCarrier_subset :
+    ∀ ⦃σ : Simplex⦄, σ ∈ boundarySimplex → simplexCarrier σ ⊆ boundarySupport
+  boundarySupport_covered :
+    ∀ x ∈ boundarySupport, ∃ σ ∈ boundarySimplex, x ∈ simplexCarrier σ
+
+namespace StagewisePLComplexInSpace
+
+/-- A stagewise complex covers an ambient point iff the point is in its support. -/
+def Covers {X : Type*} [TopologicalSpace X] (K : StagewisePLComplexInSpace X)
+    (x : X) : Prop :=
+  x ∈ K.support
+
+/-- A stagewise complex covers an ambient subset iff the subset is contained in its support. -/
+def coveredBy {X : Type*} [TopologicalSpace X] (K : StagewisePLComplexInSpace X)
+    (s : Set X) : Prop :=
+  s ⊆ K.support
+
+theorem coveredBy_univ_iff {X : Type*} [TopologicalSpace X]
+    (K : StagewisePLComplexInSpace X) :
+    K.coveredBy Set.univ ↔ K.support = Set.univ := by
+  constructor
+  · intro h
+    exact Set.eq_univ_of_univ_subset h
+  · intro h x _hx
+    rw [h]
+    trivial
+
+/-- Every boundary point of a stagewise complex is a support point. -/
+theorem boundarySupport_subset {X : Type*} [TopologicalSpace X]
+    (K : StagewisePLComplexInSpace X) :
+    K.boundarySupport ⊆ K.support :=
+  K.boundarySupport_subset_support
+
+end StagewisePLComplexInSpace
+
 /-- Finite PL triangulation data produced by the Moise--Rado route before conversion to the
 project's `FiniteSurfaceTriangulation` object. -/
 structure FinitePLTriangulationData (X : Type*) [TopologicalSpace X] where
@@ -7037,6 +7096,66 @@ theorem boundarySupportUnion_covered_by_stageBoundarySimplexCarrier
   rcases hxn with ⟨σ, hσ, hxσ⟩
   exact ⟨⟨n, ⟨σ, hσ⟩⟩, hxσ⟩
 
+/-- Boundary simplexes of the faithful stagewise Rado union. -/
+def stagewiseBoundarySimplex
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) : Set S.StageUnionSimplex :=
+  {σ | σ.2 ∈ (S.stage σ.1).boundarySubcomplex.simplexes}
+
+/-- The faithful stagewise PL complex carried by a completed Rado induction sequence.
+
+Unlike `unionPLComplex`, this object does not replace the countable union by a finite
+compatibility wrapper.  Its simplexes are the actual finite-stage simplexes tagged by their stage.
+-/
+def stagewisePLComplex
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) : StagewisePLComplexInSpace M where
+  stage := fun n => (S.stage n).complex
+  extends_succ := S.extends_succ
+  support := S.supportUnion
+  support_eq_iUnion := rfl
+  Simplex := S.StageUnionSimplex
+  simplexCarrier := S.stageUnionSimplexCarrier
+  stageSimplex := fun n σ => ⟨n, σ⟩
+  stageSimplexCarrier := by
+    intro n σ
+    rfl
+  simplexCarrier_subset_support := by
+    intro σ
+    exact S.stageUnionSimplexCarrier_subset_supportUnion σ
+  support_covered_by_simplexCarrier := by
+    intro x hx
+    exact S.supportUnion_covered_by_stageUnionSimplexCarrier x hx
+  finiteStage := S.locallyFiniteUnion
+  boundarySimplex := S.stagewiseBoundarySimplex
+  boundarySupport := S.boundarySupportUnion
+  boundarySupport_subset_support := S.boundarySupportUnion_subset_supportUnion
+  boundaryCarrier_subset := by
+    intro σ hσ x hx
+    exact Set.mem_iUnion.mpr ⟨σ.1, ⟨σ.2, hσ, hx⟩⟩
+  boundarySupport_covered := by
+    intro x hx
+    rcases S.boundarySupportUnion_covered_by_stageBoundarySimplexCarrier x hx with ⟨σ, hxσ⟩
+    exact ⟨⟨σ.1, σ.2.1⟩, σ.2.2, hxσ⟩
+
+@[simp] theorem stagewisePLComplex_support
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    S.stagewisePLComplex.support = S.supportUnion := by
+  rfl
+
+@[simp] theorem stagewisePLComplex_boundarySupport
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    S.stagewisePLComplex.boundarySupport = S.boundarySupportUnion := by
+  rfl
+
+@[simp] theorem stagewisePLComplex_simplexCarrier
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (σ : S.StageUnionSimplex) :
+    S.stagewisePLComplex.simplexCarrier σ = S.stageUnionSimplexCarrier σ := by
+  rfl
+
 /-- The Rado stage-support union covers the whole manifold because chart cores cover it. -/
 theorem supportUnion_eq_univ
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -7470,7 +7589,25 @@ def radoSequence
     RadoInductiveSequence hM.chartPairExhaustion :=
   hM.radoInductionData.toInductiveSequence
 
-/-- The named PL complex produced by the Rado induction data stored in the Moise interface. -/
+/-- The faithful stagewise PL complex produced by the Rado induction data stored in the Moise
+interface. -/
+def radoStagewisePLComplex
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
+    StagewisePLComplexInSpace M :=
+  hM.radoSequence.stagewisePLComplex
+
+/-- The faithful stagewise Rado complex stored by the Moise interface covers the whole
+manifold. -/
+theorem radoStagewisePLComplex_support
+    {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
+    hM.radoStagewisePLComplex.support = Set.univ := by
+  rw [radoStagewisePLComplex, RadoInductiveSequence.stagewisePLComplex_support]
+  exact hM.radoSequence.supportUnion_eq_univ
+
+/-- Compatibility finite-wrapper PL complex produced by the Rado induction data stored in the
+Moise interface.
+
+For the faithful countable stagewise object, use `radoStagewisePLComplex`. -/
 noncomputable def radoPLComplex
     {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) : PLComplexInSpace M :=
   hM.radoSequence.unionPLComplex
@@ -7633,7 +7770,23 @@ theorem rado_union_complex
     ∃ K : PLComplexInSpace M, K.support = S.supportUnion := by
   exact ⟨S.unionPLComplex, S.unionPLComplex_support⟩
 
-/-- Moise-Rado triangulation theorem boundary for two-manifolds. -/
+/-- The faithful stagewise union of a Rado induction sequence. -/
+theorem rado_union_stagewise_complex
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
+    (S : RadoInductiveSequence E) :
+    ∃ K : StagewisePLComplexInSpace M, K.support = S.supportUnion := by
+  exact ⟨S.stagewisePLComplex, rfl⟩
+
+/-- Faithful stagewise Moise-Rado triangulation theorem for two-manifolds. -/
+theorem rado_triangulation_moise_two_manifold_stagewise
+    (M : Type*) [TopologicalSpace M] (hM : MoiseTwoManifold M) :
+    ∃ K : StagewisePLComplexInSpace M, K.support = Set.univ := by
+  exact ⟨hM.radoStagewisePLComplex, hM.radoStagewisePLComplex_support⟩
+
+/-- Moise-Rado triangulation theorem boundary for two-manifolds.
+
+This keeps the original finite-wrapper output.  The faithful countable Rado-union output is
+`rado_triangulation_moise_two_manifold_stagewise`. -/
 theorem rado_triangulation_moise_two_manifold
     (M : Type*) [TopologicalSpace M] (hM : MoiseTwoManifold M) :
     ∃ K : PLComplexInSpace M, K.support = Set.univ := by

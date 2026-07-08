@@ -1227,14 +1227,23 @@ Expected Rado induction shape:
      every later stage still covers every earlier chart core and boundary core.
 4. Prove the union of stage supports covers `Set.univ`; this is now a Lean proof from the
    exhaustion coverage field.
-5. Build the union complex using `Small`/`Shrink`: each stage support is small, so the countable
-   stage-support union is small and can be used as the point carrier of the scaffold embedded PL
-   complex.  The named API is now `RadoInductiveSequence.unionPLComplexData`,
-   `RadoInductiveSequence.unionPLComplex`, `RadoInductiveSequence.unionPLComplex_support`, and
+5. Build the union complex in two layers.  The faithful Rado object is now
+   `StagewisePLComplexInSpace`, which records the finite embedded PL complex at each stage,
+   monotone extension data, genuine stage-indexed simplex carriers, and boundary simplex carriers.
+   The named API is `RadoInductiveSequence.stagewisePLComplex`,
+   `RadoInductiveSequence.stagewisePLComplex_support`,
+   `RadoInductiveSequence.stagewisePLComplex_boundarySupport`,
+   `rado_union_stagewise_complex`, `MoiseTwoManifold.radoStagewisePLComplex`, and
+   `rado_triangulation_moise_two_manifold_stagewise`.  Because raw stage-indexed simplexes can
+   duplicate persistent simplexes in later stages, this interface records finite data stagewise
+   rather than claiming local finiteness of the raw countable simplex type.  Because
+   `EuclideanComplex` is still a finite-complex interface, the old support-union embedded complex
+   remains a compatibility wrapper built using `Small`/`Shrink`.  The wrapper API is
+   `RadoInductiveSequence.unionPLComplexData`, `RadoInductiveSequence.unionPLComplex`,
+   `RadoInductiveSequence.unionPLComplex_support`, and
    `RadoInductiveSequence.unionPLComplex_covers_univ`; `rado_union_complex` remains as the public
-   existential wrapper.  Because `EuclideanComplex` is still a finite-complex interface, this named
-   union complex remains a compatibility wrapper.  The faithful countable geometry is exposed
-   separately by `RadoInductiveSequence.StageUnionSimplex`,
+   existential wrapper for old downstream APIs.  The faithful countable geometry is exposed by
+   `RadoInductiveSequence.StageUnionSimplex`,
    `RadoInductiveSequence.stageUnionSimplexCarrier`,
    `RadoInductiveSequence.supportUnion_covered_by_stageUnionSimplexCarrier`,
    `RadoInductiveSequence.StageBoundarySimplex`,
@@ -1246,8 +1255,10 @@ Expected Rado induction shape:
    `RadoInductiveSequence.unionBoundarySubcomplexData` record the union of stage boundary supports
    as a genuine boundary subcomplex rather than using the whole support as boundary.
    At the Moise interface level, `MoiseTwoManifold.radoSequence`,
-   `MoiseTwoManifold.radoPLComplex`, and `MoiseTwoManifold.radoPLComplex_support` are the preferred
-   API for using the completed construction.  For compact Moise surfaces,
+   `MoiseTwoManifold.radoStagewisePLComplex`, and
+   `MoiseTwoManifold.radoStagewisePLComplex_support` are the preferred API for using the completed
+   countable construction.  `MoiseTwoManifold.radoPLComplex` and
+   `MoiseTwoManifold.radoPLComplex_support` are compatibility-wrapper names.  For compact Moise surfaces,
    `MoiseTwoManifold.supportUnionFinitePLTriangulationData` is the named finite-support package
    built from the support-union Rado complex and the union boundary-subcomplex data;
    `MoiseTwoManifold.finitePLTriangulationData` is kept as a compatibility wrapper.  Compact
