@@ -963,9 +963,14 @@ Proved finite/combinatorial bridge:
    chart-pair cover.  The boundary-support thread is also explicit:
    `boundarySupport_subset_succ`, `covers_boundaryCore_in_boundary_of_le`, and
    `finiteCover_boundaryCore_subset_stage_card_boundarySupport` show that selected boundary
-   cores land in the terminal finite stage's boundary support.  `RadoInductionData.finiteStagePLTriangulationData` is now the reusable
-   compact-case exit from the Rado layer: it packages that terminal state as finite PL
-   triangulation data, including the terminal state's stored boundary subcomplex.
+   cores land in the terminal finite stage's boundary support.  The carrier-level lemmas
+   `finiteCover_boundaryCarrier_subset_stage_card`,
+   `finiteCover_boundaryCarrier_subset_stage_card_boundarySupport`, and
+   `finiteStagePLTriangulationData_boundaryCarrier_subset` push the finite cover's named
+   `boundaryCarrier` into the terminal stage and its packaged boundary data.
+   `RadoInductionData.finiteStagePLTriangulationData` is now the reusable compact-case exit from
+   the Rado layer: it packages that terminal state as finite PL triangulation data, including the
+   terminal state's stored boundary subcomplex.
 11. `mathlib_bordered_surface_rado_induction_data`:
    finite Rado geometry packages as Rado induction data.
 12. `LocalChartPolygonalDiskData.toMoiseExtractionData`,

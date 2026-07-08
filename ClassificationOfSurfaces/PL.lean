@@ -6432,6 +6432,26 @@ theorem finiteCover_boundaryCore_subset_stage_card_boundarySupport
     rwa [hpair]
   exact D.covers_boundaryCore_in_boundary_of_le hnle hx'
 
+/-- The named boundary carrier of a finite chart-pair cover is contained in the support of the
+terminal finite Rado stage. -/
+theorem finiteCover_boundaryCarrier_subset_stage_card
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) :
+    C.boundaryCarrier ⊆ (D.stage (Fintype.card C.Index)).complex.support := by
+  intro x hx
+  rcases C.boundaryCovers x hx with ⟨i, hi⟩
+  exact D.finiteCover_boundaryCore_subset_stage_card i hi
+
+/-- The named boundary carrier of a finite chart-pair cover is contained in the stored boundary
+support of the terminal finite Rado stage. -/
+theorem finiteCover_boundaryCarrier_subset_stage_card_boundarySupport
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) :
+    C.boundaryCarrier ⊆ (D.stage (Fintype.card C.Index)).boundarySupport := by
+  intro x hx
+  rcases C.boundaryCovers x hx with ⟨i, hi⟩
+  exact D.finiteCover_boundaryCore_subset_stage_card_boundarySupport i hi
+
 /-- For a finite chart-pair cover, no countable union is needed: after `card C.Index` recursive
 steps the current finite Rado state covers the whole space. -/
 theorem finiteCover_stage_card_support_eq_univ
@@ -6471,6 +6491,15 @@ noncomputable def finiteStagePLTriangulationData
     D.finiteStagePLTriangulationData.covers =
       D.finiteCover_stage_card_support_eq_univ := by
   rfl
+
+/-- The boundary package of finite-stage PL triangulation data contains the finite cover's named
+boundary carrier. -/
+theorem finiteStagePLTriangulationData_boundaryCarrier_subset
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) :
+    C.boundaryCarrier ⊆ D.finiteStagePLTriangulationData.boundary.boundarySupport := by
+  simpa [finiteStagePLTriangulationData, RadoInductionState.boundarySubcomplexData] using
+    D.finiteCover_boundaryCarrier_subset_stage_card_boundarySupport
 
 /-- Every recursive Rado stage covers all chart cores up to its stage index. -/
 theorem stage_coversCoresUpTo
@@ -7254,6 +7283,15 @@ noncomputable def finiteStagePLTriangulationData
     {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
     D.finiteStagePLTriangulationData.K = D.finiteStagePLComplex := by
   rfl
+
+/-- The finite-stage triangulation extracted from compact Moise data keeps the finite chart
+cover's named boundary carrier inside its stored boundary support. -/
+theorem finiteStagePLTriangulationData_boundaryCarrier_subset
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
+    D.finiteCover.boundaryCarrier ⊆
+      D.finiteStagePLTriangulationData.boundary.boundarySupport := by
+  simpa [finiteStagePLTriangulationData] using
+    D.radoInductionData.finiteStagePLTriangulationData_boundaryCarrier_subset
 
 end MoiseExtractionData
 
