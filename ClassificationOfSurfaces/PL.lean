@@ -6613,9 +6613,12 @@ theorem radoPLComplex_support
     hM.radoPLComplex.support = Set.univ :=
   hM.radoSequence.unionPLComplex_covers_univ
 
-/-- The finite PL triangulation data produced from the Rado complex stored in a compact Moise
-two-manifold. -/
-noncomputable def finitePLTriangulationData
+/-- Finite PL triangulation data obtained from the named support-union Rado complex.
+
+This is the general compact `MoiseTwoManifold` fallback.  For compact surfaces extracted from a
+finite chart cover, prefer `MoiseExtractionData.finiteStagePLTriangulationData`, which uses the
+finite terminal Rado stage and its stored boundary subcomplex directly. -/
+noncomputable def supportUnionFinitePLTriangulationData
     {M : Type*} [TopologicalSpace M] [CompactSpace M] (hM : MoiseTwoManifold M) :
     FinitePLTriangulationData M :=
   let finiteSupport :=
@@ -6624,6 +6627,20 @@ noncomputable def finitePLTriangulationData
     covers := hM.radoPLComplex_support
     finiteSupport := finiteSupport
     boundary := hM.radoPLComplex.fullBoundarySubcomplexData }
+
+@[simp] theorem supportUnionFinitePLTriangulationData_K
+    {M : Type*} [TopologicalSpace M] [CompactSpace M] (hM : MoiseTwoManifold M) :
+    hM.supportUnionFinitePLTriangulationData.K = hM.radoPLComplex := by
+  rfl
+
+/-- Compatibility wrapper for the original compact Moise triangulation-data name.
+
+New compact chart-extraction code should use `MoiseExtractionData.finiteStagePLTriangulationData`
+when finite cover data is available. -/
+noncomputable def finitePLTriangulationData
+    {M : Type*} [TopologicalSpace M] [CompactSpace M] (hM : MoiseTwoManifold M) :
+    FinitePLTriangulationData M :=
+  hM.supportUnionFinitePLTriangulationData
 
 @[simp] theorem finitePLTriangulationData_K
     {M : Type*} [TopologicalSpace M] [CompactSpace M] (hM : MoiseTwoManifold M) :

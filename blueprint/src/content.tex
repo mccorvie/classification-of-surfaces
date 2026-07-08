@@ -523,7 +523,7 @@ public Moise-facing wrapper and returns `Nonempty` finite-support data.
 
 \begin{definition}[Moise topological two-manifold]
 \label{moise:def:moise_two_manifold}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoSequence, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData_support}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoSequence, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.supportUnionFinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.supportUnionFinitePLTriangulationData_K, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData_support}
 \leanok
 A Moise two-manifold is a separable metric space locally homeomorphic to the open
 unit disk.  The bordered version is locally homeomorphic to either the open disk
@@ -532,7 +532,10 @@ disk/half-disk chart-pair exhaustion used by the Rado induction, together with
 the local initial and successor data needed to run Rado's finite-stage
 construction over such exhaustions.  From this stored data there is a named
 Rado induction sequence, a named PL complex covering the whole manifold, and
-for compact spaces a named finite PL triangulation data package.
+for compact spaces a named support-union finite PL triangulation data fallback.
+When finite chart-cover extraction data is available, the preferred compact
+route is `MoiseExtractionData.finiteStagePLTriangulationData`, which uses the
+terminal finite Rado stage directly.
 \end{definition}
 
 \begin{definition}[Finite chart-pair cover]
@@ -941,7 +944,7 @@ support theorem for this named complex is exactly the desired conclusion.
 
 \begin{theorem}[Compact Moise surface is finitely triangulable]
 \label{moise:thm:compact_moise_surface_finitely_triangulable}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finite_pl_triangulation_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.supportUnionFinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finite_pl_triangulation_data}
 \leanok
 
 \uses{moise:thm:rado_triangulation_moise_manifold,moise:lem:compact_locally_finite_complex_finite}
@@ -955,9 +958,11 @@ the boundary subcomplex data needed by the bordered triangulation handoff.
 
 Apply the named Rado PL complex stored in the Moise interface.  The support is
 compact, so local finiteness implies that only finitely many simplexes occur.
-`MoiseTwoManifold.finitePLTriangulationData` packages this finite support data
-with the current full-subcomplex boundary package; the public theorems are
-data-only wrappers around that named object.
+`MoiseTwoManifold.supportUnionFinitePLTriangulationData` packages this finite
+support data with the current support-union boundary fallback; the old public
+name `MoiseTwoManifold.finitePLTriangulationData` is a compatibility wrapper.
+For compact surfaces extracted from a finite chart cover, the finite-stage
+package in `MoiseExtractionData` is the faithful boundary-data route.
 \end{proof}
 
 \section{Boundary surfaces in the Moise route}
