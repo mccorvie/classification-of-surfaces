@@ -729,6 +729,11 @@ structure PLComplexIn.BoundarySubcomplexData (K : PLComplexIn X) where
   locallyFiniteBoundary : Finite {σ : K.Complex.Simplex // σ ∈ boundary.simplexes}
 ```
 
+The two carrier-direction fields are packaged by
+`PLComplexInSpace.BoundarySubcomplexData.mem_boundarySupport_iff` and
+`PLComplexInSpace.BoundarySubcomplexData.boundarySupport_eq_iUnion_simplexCarrier`: the stored
+boundary support is exactly the union of carriers of the stored boundary simplexes.
+
 Current overlap and Rado-state status: `PLComplexInSpace.CompatibleOnOverlap` is no longer an
 arbitrary proposition or a tautological containment witness.  It is `Nonempty
 PLComplexInSpace.OverlapCompatibilityData`: a common carrier for the ambient overlap with maps into
@@ -1025,7 +1030,10 @@ Proved finite/combinatorial bridge:
    `finiteCover_boundaryCarrier_subset_stage_card`,
    `finiteCover_boundaryCarrier_subset_stage_card_boundarySupport`, and
    `finiteStagePLTriangulationData_boundaryCarrier_subset` push the finite cover's named
-   `boundaryCarrier` into the terminal stage and its packaged boundary data.
+   `boundaryCarrier` into the terminal stage and its packaged boundary data.  The finite and
+   stagewise boundary packages also expose exact support-as-union APIs via
+   `PLComplexInSpace.BoundarySubcomplexData.boundarySupport_eq_iUnion_simplexCarrier` and
+   `StagewisePLComplexInSpace.boundarySupport_eq_iUnion_simplexCarrier`.
    `RadoInductionData.finiteStagePLTriangulationData` is now the reusable compact-case exit from
    the Rado layer: it packages that terminal state as finite PL triangulation data, including the
    terminal state's stored boundary subcomplex.

@@ -3399,6 +3399,37 @@ structure BoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplex
     ∀ x ∈ boundarySupport, ∃ σ ∈ boundary.simplexes, x ∈ K.simplexCarrier σ
   locallyFiniteBoundary : Finite {σ : K.Complex.Simplex // σ ∈ boundary.simplexes}
 
+namespace BoundarySubcomplexData
+
+/-- A boundary package contains exactly the union of its boundary-simplex carriers. -/
+theorem mem_boundarySupport_iff
+    {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (B : K.BoundarySubcomplexData) (x : X) :
+    x ∈ B.boundarySupport ↔
+      ∃ σ ∈ B.boundary.simplexes, x ∈ K.simplexCarrier σ := by
+  constructor
+  · exact B.boundarySupport_covered x
+  · rintro ⟨σ, hσ, hxσ⟩
+    exact B.boundaryCarrier_subset hσ hxσ
+
+/-- Boundary support as an indexed union of boundary-simplex carriers. -/
+theorem boundarySupport_eq_iUnion_simplexCarrier
+    {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (B : K.BoundarySubcomplexData) :
+    B.boundarySupport =
+      ⋃ σ : {σ : K.Complex.Simplex // σ ∈ B.boundary.simplexes},
+        K.simplexCarrier σ.1 := by
+  ext x
+  rw [B.mem_boundarySupport_iff]
+  constructor
+  · rintro ⟨σ, hσ, hxσ⟩
+    exact Set.mem_iUnion.mpr ⟨⟨σ, hσ⟩, hxσ⟩
+  · intro hx
+    rcases Set.mem_iUnion.mp hx with ⟨σ, hxσ⟩
+    exact ⟨σ.1, σ.2, hxσ⟩
+
+end BoundarySubcomplexData
+
 /-- Default boundary data using the full subcomplex. -/
 def fullBoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
     K.BoundarySubcomplexData where
@@ -3475,6 +3506,30 @@ theorem boundarySupport_subset {X : Type*} [TopologicalSpace X]
     (K : StagewisePLComplexInSpace X) :
     K.boundarySupport ⊆ K.support :=
   K.boundarySupport_subset_support
+
+/-- A stagewise boundary package contains exactly the union of its boundary-simplex carriers. -/
+theorem mem_boundarySupport_iff {X : Type*} [TopologicalSpace X]
+    (K : StagewisePLComplexInSpace X) (x : X) :
+    x ∈ K.boundarySupport ↔
+      ∃ σ ∈ K.boundarySimplex, x ∈ K.simplexCarrier σ := by
+  constructor
+  · exact K.boundarySupport_covered x
+  · rintro ⟨σ, hσ, hxσ⟩
+    exact K.boundaryCarrier_subset hσ hxσ
+
+/-- Boundary support of a stagewise PL complex as a union of boundary-simplex carriers. -/
+theorem boundarySupport_eq_iUnion_simplexCarrier {X : Type*} [TopologicalSpace X]
+    (K : StagewisePLComplexInSpace X) :
+    K.boundarySupport =
+      ⋃ σ : {σ : K.Simplex // σ ∈ K.boundarySimplex}, K.simplexCarrier σ.1 := by
+  ext x
+  rw [K.mem_boundarySupport_iff]
+  constructor
+  · rintro ⟨σ, hσ, hxσ⟩
+    exact Set.mem_iUnion.mpr ⟨⟨σ, hσ⟩, hxσ⟩
+  · intro hx
+    rcases Set.mem_iUnion.mp hx with ⟨σ, hxσ⟩
+    exact ⟨σ.1, σ.2, hxσ⟩
 
 end StagewisePLComplexInSpace
 

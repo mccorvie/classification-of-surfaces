@@ -433,7 +433,7 @@ global compatibility data.
 
 \begin{definition}[PL complex in a topological space]
 \label{moise:def:pl_complex_in_space}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.simplexCarrier_subset_support, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.exists_simplexCarrier_of_mem_support, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.OverlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.overlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.compatibleOnOverlap_of_embedded_overlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.SimplexRelevant, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.covers, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.coveredBy_univ_iff, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.boundarySupport_subset, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.simplexCarrier_subset_support, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.exists_simplexCarrier_of_mem_support, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.OverlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.overlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.compatibleOnOverlap_of_embedded_overlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.SimplexRelevant, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.covers, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData.mem_boundarySupport_iff, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData.boundarySupport_eq_iUnion_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.coveredBy_univ_iff, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.boundarySupport_subset, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.mem_boundarySupport_iff, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.boundarySupport_eq_iUnion_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
@@ -461,11 +461,15 @@ boundary-subcomplex data.  Boundary-subcomplex data now stores an actual
 boundary support set, proves that it lies in the embedded support, proves that
 boundary simplex carriers lie in this boundary support, proves that the boundary
 support is covered by those carriers, and carries a finite subtype proof for the
-boundary simplexes.  The separate `StagewisePLComplexInSpace` interface records
+boundary simplexes.  The `mem_boundarySupport_iff` and
+`boundarySupport_eq_iUnion_simplexCarrier` lemmas package these two directions as
+exact boundary-support coverage.  The separate `StagewisePLComplexInSpace`
+interface records
 Rado-style countable unions faithfully: it stores a finite embedded complex at
 each stage, monotone extension data, genuine stage-indexed simplex carriers
 covering the global support, and boundary simplex carriers, without claiming
-that the raw stage-indexed simplex type is itself locally finite.
+that the raw stage-indexed simplex type is itself locally finite.  Its boundary
+support has the analogous exact boundary-support coverage lemmas.
 \end{definition}
 
 \begin{definition}[Interior subcomplex of a PL surface]
