@@ -687,6 +687,10 @@ the current complex and `BoundarySubcomplexFaceClosed` for the stored boundary s
 `boundaryCompatibleOnOverlaps` now uses the proof-bearing `BoundaryCompatibleOnOverlap` predicate:
 the complex must be compatible with the comparison complex on the ambient overlap, and the stored
 boundary subcomplex must be face-closed.
+`boundaryRespectsCharts` is now finite `ChartModelCompatibilityData`: a finite family of chart
+polygonal disks whose supports lie in the current complex and whose coordinate images respect the
+stored model regions.  Initial states use the singleton package, chart-extension steps append the
+new disk, and empty-chart steps preserve the previous package.
 
 Needed operations:
 
