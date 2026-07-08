@@ -3319,10 +3319,14 @@ structure BoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplex
   boundarySupport : Set X
   coversBoundary : boundarySupport ⊆ K.support
   compatibleWithAmbient : ∀ x ∈ boundarySupport, x ∈ K.support
+  boundaryCarrier_subset :
+    ∀ ⦃σ : K.Complex.Simplex⦄, σ ∈ boundary.simplexes →
+      K.simplexCarrier σ ⊆ boundarySupport
+  boundarySupport_covered :
+    ∀ x ∈ boundarySupport, ∃ σ ∈ boundary.simplexes, x ∈ K.simplexCarrier σ
   locallyFiniteBoundary : Finite {σ : K.Complex.Simplex // σ ∈ boundary.simplexes}
 
-/-- Default boundary data using the full subcomplex.  This is the scaffold boundary package used
-until boundary strata are represented as geometric subcomplexes. -/
+/-- Default boundary data using the full subcomplex. -/
 def fullBoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
     K.BoundarySubcomplexData where
   boundary := EuclideanComplex.Subcomplex.full K.Complex
@@ -3331,6 +3335,13 @@ def fullBoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplexIn
   compatibleWithAmbient := by
     intro x hx
     exact hx
+  boundaryCarrier_subset := by
+    intro σ hσ x hx
+    exact K.simplexCarrier_subset_support σ hx
+  boundarySupport_covered := by
+    intro x hx
+    rcases K.exists_simplexCarrier_of_mem_support hx with ⟨σ, hxσ⟩
+    exact ⟨σ, by simp [EuclideanComplex.Subcomplex.full], hxσ⟩
   locallyFiniteBoundary := inferInstance
 
 end PLComplexInSpace
@@ -4829,6 +4840,34 @@ def CoversBoundaryCoresUpTo
     (S : RadoInductionState M) : Prop :=
   ∀ n, n ≤ S.stage → (E.pair n).boundaryCore ⊆ S.complex.support
 
+/-- The ambient support set carried by the stored boundary subcomplex of a Rado state. -/
+def boundarySupport {M : Type*} [TopologicalSpace M] (S : RadoInductionState M) : Set M :=
+  {x | ∃ σ ∈ S.boundarySubcomplex.simplexes, x ∈ S.complex.simplexCarrier σ}
+
+theorem boundarySupport_subset_support {M : Type*} [TopologicalSpace M]
+    (S : RadoInductionState M) :
+    S.boundarySupport ⊆ S.complex.support := by
+  intro x hx
+  rcases hx with ⟨σ, _hσ, hxσ⟩
+  exact S.complex.simplexCarrier_subset_support σ hxσ
+
+/-- The boundary-subcomplex data extracted from a Rado induction state. -/
+def boundarySubcomplexData {M : Type*} [TopologicalSpace M]
+    (S : RadoInductionState M) : S.complex.BoundarySubcomplexData where
+  boundary := S.boundarySubcomplex
+  boundarySupport := S.boundarySupport
+  coversBoundary := S.boundarySupport_subset_support
+  compatibleWithAmbient := by
+    intro x hx
+    exact S.boundarySupport_subset_support hx
+  boundaryCarrier_subset := by
+    intro σ hσ x hx
+    exact ⟨σ, hσ, hx⟩
+  boundarySupport_covered := by
+    intro x hx
+    exact hx
+  locallyFiniteBoundary := S.boundaryLocallyFinite
+
 end RadoInductionState
 
 /-- Data used to initialize the Rado induction from the first chart pair. -/
@@ -6108,7 +6147,7 @@ noncomputable def finiteStagePLTriangulationData
   { K := K
     covers := D.finiteStagePLComplex_support
     finiteSupport := K.fullFiniteSupportData
-    boundary := K.fullBoundarySubcomplexData }
+    boundary := D.finiteStage.boundarySubcomplexData }
 
 @[simp] theorem finiteStagePLTriangulationData_K
     {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :

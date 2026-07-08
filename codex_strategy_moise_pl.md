@@ -699,6 +699,11 @@ structure PLComplexIn.BoundarySubcomplexData (K : PLComplexIn X) where
   boundarySupport : Set X
   coversBoundary : boundarySupport ⊆ K.support
   compatibleWithAmbient : ∀ x ∈ boundarySupport, x ∈ K.support
+  boundaryCarrier_subset :
+    ∀ ⦃σ : K.Complex.Simplex⦄, σ ∈ boundary.simplexes →
+      K.simplexCarrier σ ⊆ boundarySupport
+  boundarySupport_covered :
+    ∀ x ∈ boundarySupport, ∃ σ ∈ boundary.simplexes, x ∈ K.simplexCarrier σ
   locallyFiniteBoundary : Finite {σ : K.Complex.Simplex // σ ∈ boundary.simplexes}
 ```
 
@@ -927,7 +932,9 @@ Proved finite/combinatorial bridge:
    `MoiseExtractionData.finiteStage`, `MoiseExtractionData.finiteStagePLComplex`, and
    `MoiseExtractionData.finiteStagePLTriangulationData` use the finite terminal Rado stage
    directly, avoiding the countable support-union complex after compactness has produced a finite
-   cover.
+   cover.  `finiteStagePLTriangulationData` now uses
+   `RadoInductionState.boundarySubcomplexData`, so the boundary package comes from the terminal
+   Rado state's stored boundary subcomplex rather than `fullBoundarySubcomplexData`.
 13. `mathlib_bordered_surface_moiseTwoManifold`,
    `mathlib_bordered_surface_to_moise_two_manifold`, and
    `moise_two_manifold_of_extraction_data`:
@@ -955,7 +962,7 @@ simplex-type proof, and compatibility is supplied by injectivity and continuity 
 existential theorem.  `FinitePLTriangulationData` is the named Rado-output package for a covering
 embedded PL complex, finite support data, and boundary-subcomplex data; the bordered Rado theorem
 now wraps `mathlib_bordered_surface_finitePLTriangulationData`, which is built from the finite
-terminal Rado stage in `MoiseExtractionData`.
+terminal Rado stage in `MoiseExtractionData` and carries that stage's boundary subcomplex data.
 `mathlib_bordered_surface_finiteSurfaceTriangulation` and
 `compact_eval_surface_finiteSurfaceTriangulation` are the named finite triangulation objects used
 by the public existential wrappers

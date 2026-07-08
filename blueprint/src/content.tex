@@ -457,8 +457,10 @@ proof that the selected simplex carriers cover the embedded support.
 complex.  `FinitePLTriangulationData` packages an embedded PL
 complex covering the ambient space together with finite support data and
 boundary-subcomplex data.  Boundary-subcomplex data now stores an actual
-boundary support set, proves that it lies in the embedded support, and carries a
-finite subtype proof for the boundary simplexes.
+boundary support set, proves that it lies in the embedded support, proves that
+boundary simplex carriers lie in this boundary support, proves that the boundary
+support is covered by those carriers, and carries a finite subtype proof for the
+boundary simplexes.
 \end{definition}
 
 \begin{definition}[Interior subcomplex of a PL surface]
@@ -636,7 +638,7 @@ cores.
 
 \begin{definition}[Moise extraction data]
 \label{moise:def:moise_extraction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.toMoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStage, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.moise_two_manifold_of_extraction_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.toMoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStage, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.boundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.moise_two_manifold_of_extraction_data}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:moise_two_manifold}
@@ -654,7 +656,10 @@ Convert the finite chart-pair cover to a countable chart-pair exhaustion and
 use the stored local Rado induction data to fill the fields of the
 `MoiseTwoManifold` interface.  At the extraction-data level, stage
 `Fintype.card finiteCover.Index` already covers every chart core, so the
-finite-stage PL complex can be used directly for triangulation data.
+finite-stage PL complex can be used directly for triangulation data.  The
+finite-stage triangulation package uses the terminal Rado state's stored
+boundary subcomplex and its carrier-defined boundary support, rather than the
+full-subcomplex fallback.
 \end{proof}
 
 \begin{lemma}[Chart pair exhaustion]
@@ -971,7 +976,8 @@ Extract the finite chart-pair cover and local Rado induction data from the
 mathlib bordered-surface hypotheses, then use the finite terminal Rado stage at
 `Fintype.card finiteCover.Index`.  The named construction
 `mathlib_bordered_surface_finitePLTriangulationData` packages that finite-stage
-complex, support equality, finite support data, and boundary data;
+complex, support equality, finite support data, and the terminal Rado state's
+boundary-subcomplex data;
 `rado_bordered_surface_triangulation` is the public existential wrapper with
 finite-support and boundary-subcomplex data as witnesses and the support
 equality as its proposition.
