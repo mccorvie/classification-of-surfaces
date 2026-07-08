@@ -341,6 +341,37 @@ theorem mathlib_bordered_surface_finitely_triangulable :
 
 end MathlibBorderedSurface
 
+section MathlibBorderedSurfaceContMDiff
+
+open scoped Manifold
+
+variable (S : Type*) [TopologicalSpace S]
+variable [Nonempty S] [T2Space S] [CompactSpace S]
+variable [ChartedSpace (EuclideanHalfSpace 2) S]
+variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 S]
+
+/-- The named finite surface triangulation produced by the positive-regularity Moise--Rado route
+for a compact mathlib bordered surface. -/
+noncomputable def mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff :
+    FiniteSurfaceTriangulation S :=
+  (mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff S).toFiniteSurfaceTriangulation
+
+/-- The positive-regularity mathlib bordered-surface triangulation realizes the ambient surface. -/
+theorem mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff_homeomorphSurface :
+    Nonempty
+      ((mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff S).realization ≃ₜ S) := by
+  let D := mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff S
+  exact D.toFiniteSurfaceTriangulation_homeomorphSurface
+
+/-- Positive-regularity mathlib bordered-surface hypotheses produce a finite surface
+triangulation through the Moise--Rado finite PL triangulation data package. -/
+theorem mathlib_bordered_surface_finitely_triangulable_of_contMDiff :
+    ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
+  exact ⟨mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff S,
+    mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff_homeomorphSurface S⟩
+
+end MathlibBorderedSurfaceContMDiff
+
 section EvalHypotheses
 
 open scoped Manifold
@@ -371,6 +402,37 @@ theorem compact_surface_triangulable : Triangulable S :=
   compact_eval_surface_finitely_triangulable S
 
 end EvalHypotheses
+
+section EvalHypothesesContMDiff
+
+open scoped Manifold
+
+variable (S : Type*) [TopologicalSpace S]
+variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
+variable [ChartedSpace (EuclideanHalfSpace 2) S]
+variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 S]
+
+/-- The named finite surface triangulation produced for a compact positive-regularity Eval
+surface. -/
+noncomputable def compact_eval_surface_finiteSurfaceTriangulation_of_contMDiff :
+    FiniteSurfaceTriangulation S :=
+  mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff S
+
+/-- The named compact positive-regularity Eval surface triangulation realizes the ambient
+surface. -/
+theorem compact_eval_surface_finiteSurfaceTriangulation_of_contMDiff_homeomorphSurface :
+    Nonempty
+      ((compact_eval_surface_finiteSurfaceTriangulation_of_contMDiff S).realization ≃ₜ S) :=
+  mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff_homeomorphSurface S
+
+/-- Positive-regularity compact Eval surfaces admit finite triangulations by the proved
+Moise--Rado route. -/
+theorem compact_eval_surface_finitely_triangulable_of_contMDiff :
+    ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
+  exact ⟨compact_eval_surface_finiteSurfaceTriangulation_of_contMDiff S,
+    compact_eval_surface_finiteSurfaceTriangulation_of_contMDiff_homeomorphSurface S⟩
+
+end EvalHypothesesContMDiff
 
 end ClassificationOfSurfaces
 end Topology

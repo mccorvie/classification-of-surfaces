@@ -3699,14 +3699,16 @@ theorem fromChartAt_mem_boundaryCore_of_manifold_boundary
   rw [frontier_range_modelWithCornersEuclideanHalfSpace] at hxfrontier
   simpa [extChartAt, modelWithCornersEuclideanHalfSpace] using hxfrontier.symm
 
-/-- Positive-regularity chart-boundary invariance for preferred half-space charts.
+/-- Nonzero-regularity chart-boundary invariance for preferred half-space charts.
 
 This is the version directly available from mathlib's
-`ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`: for a `C¹` half-space manifold, every
+`ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`: for a half-space manifold with nonzero
+regularity index, every
 preferred chart sends manifold-boundary points in its source to the coordinate boundary line. -/
-theorem fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff
+theorem fromChartAt_chart_coord_zero_of_manifold_boundary_of_isManifold_ne_zero
     (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
-    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M]
+    {n : WithTop ℕ∞} [IsManifold (modelWithCornersEuclideanHalfSpace 2) n M]
+    (hn : n ≠ 0)
     (x : M) {y : (fromChartAt M x).domain}
     (hy : (y : M) ∈ (modelWithCornersEuclideanHalfSpace 2).boundary M) :
     ((fromChartAt M x).chartHomeomorph y : Plane) 0 = 0 := by
@@ -3714,7 +3716,7 @@ theorem fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff
   let e := chartAt (EuclideanHalfSpace 2) x
   have hfrontierTarget :
       e.extend I (y : M) ∈ frontier (e.extend I).target := by
-    exact (I.isBoundaryPoint_iff_of_mem_atlas (n := 1) (by norm_num)
+    exact (I.isBoundaryPoint_iff_of_mem_atlas (n := n) hn
       (chart_mem_atlas (EuclideanHalfSpace 2) x) y.2).mp hy
   have htarget : e.extend I (y : M) ∈ (e.extend I).target := by
     exact (e.extend I).map_source (by simp [e, I, fromChartAt] at y ⊢)
@@ -3748,6 +3750,16 @@ theorem fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff
   rw [hchart]
   simpa [e, I, modelWithCornersEuclideanHalfSpace, OpenPartialHomeomorph.extend] using
     hfrontierRange.symm
+
+/-- C¹ chart-boundary invariance for preferred half-space charts. -/
+theorem fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M]
+    (x : M) {y : (fromChartAt M x).domain}
+    (hy : (y : M) ∈ (modelWithCornersEuclideanHalfSpace 2).boundary M) :
+    ((fromChartAt M x).chartHomeomorph y : Plane) 0 = 0 :=
+  fromChartAt_chart_coord_zero_of_manifold_boundary_of_isManifold_ne_zero
+    (M := M) (n := 1) (by norm_num) (x := x) (y := y) hy
 
 /-- C0 chart-boundary invariance for preferred half-space charts.
 
@@ -7897,6 +7909,58 @@ theorem mathlib_chartAt_contains_polygonal_disk_core
           ModelChartPolygonalDisk.toChartPair, RadoChartPair.withCore])
       y hyCore hline
 
+/-- Positive-regularity variant of `mathlib_chartAt_contains_polygonal_disk_core` that uses the
+proved mathlib boundary-invariance theorem instead of the C0 theorem boundary. -/
+theorem mathlib_chartAt_contains_polygonal_disk_core_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] (x : M) :
+    ∃ D : ChartPolygonalDisk M,
+      D.chart.Refines (RadoChartPair.fromChartAt M x) ∧
+        D.chart.boundaryCore ⊆ (RadoChartPair.fromChartAt M x).boundaryCore ∧
+          D.chart.core ∈ 𝓝 x ∧ D.BoundaryFaithful ∧
+            (modelWithCornersEuclideanHalfSpace 2).boundary M ∩ D.chart.core ⊆
+              D.chart.boundaryCore := by
+  rcases mathlib_chartAt_contains_model_polygonal_disk_core M x with ⟨D, hD⟩
+  refine ⟨D.toChartPolygonalDisk, ?_, ?_, ?_, ?_, ?_⟩
+  · exact D.toChartPair_refines (by
+      intro y hy
+      have hydomain : y ∈ (RadoChartPair.fromChartAt M x).domain :=
+        D.pulledCore_subset_domain hy
+      simpa [RadoChartPair.fromChartAt] using hydomain)
+  · intro y hy
+    rw [D.toChartPolygonalDisk_chart_boundaryCore] at hy
+    rcases hy with ⟨q, hq, rfl⟩
+    exact RadoChartPair.fromChartAt_mem_boundaryCore_of_chart_coord_zero M x
+      (y := (RadoChartPair.fromChartAt M x).chartHomeomorph.symm q) (by
+        have hline :=
+          D.modelBoundaryCore_in_boundary_chart
+            (RadoChartPair.fromChartAt_kind M x) q hq
+        simpa using hline)
+  · simpa using hD
+  · exact D.toChartPolygonalDisk_boundaryFaithful
+  · intro y hy
+    rcases hy with ⟨hyBoundary, hyCore⟩
+    have hyPulled : y ∈ D.pulledCore := by
+      simpa [ModelChartPolygonalDisk.toChartPolygonalDisk,
+        ModelChartPolygonalDisk.toChartPair, RadoChartPair.withCore] using hyCore
+    have hyDomain : y ∈ (RadoChartPair.fromChartAt M x).domain :=
+      D.pulledCore_subset_domain hyPulled
+    have hlineFromChartAt :
+        (((RadoChartPair.fromChartAt M x).chartHomeomorph ⟨y, hyDomain⟩ : Plane) 0 = 0) :=
+      RadoChartPair.fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff
+        (M := M) x (y := ⟨y, hyDomain⟩) hyBoundary
+    have hline :
+        ((D.toChartPolygonalDisk.chart.chartHomeomorph
+            ⟨y, D.toChartPolygonalDisk.chart.core_subset_domain hyCore⟩ : Plane) 0 = 0) := by
+      change (((RadoChartPair.fromChartAt M x).chartHomeomorph ⟨y, _⟩ : Plane) 0 = 0)
+      simpa using hlineFromChartAt
+    exact D.toChartPolygonalDisk_boundaryFaithful
+      (by
+        simp [ModelChartPolygonalDisk.toChartPolygonalDisk,
+          ModelChartPolygonalDisk.toChartPair, RadoChartPair.withCore])
+      y hyCore hline
+
 /-- Pointwise chart-polygonal-disk data from a polygonal core inside the preferred mathlib chart.
 -/
 theorem mathlib_bordered_surface_point_chart_polygonal_disk_data
@@ -7906,6 +7970,21 @@ theorem mathlib_bordered_surface_point_chart_polygonal_disk_data
     Nonempty (PointChartPolygonalDiskData M
       ((modelWithCornersEuclideanHalfSpace 2).boundary M) x) := by
   rcases mathlib_chartAt_contains_polygonal_disk_core M x with
+    ⟨D, _hrefines, _hboundary, hcore, hfaithful, hboundarySet⟩
+  exact
+    ⟨{ disk := D
+       core_mem_nhds := hcore
+       boundaryFaithful := hfaithful
+       boundarySet_subset_boundaryCore := hboundarySet }⟩
+
+/-- Positive-regularity pointwise chart-polygonal-disk data from the preferred mathlib chart. -/
+theorem mathlib_bordered_surface_point_chart_polygonal_disk_data_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] (x : M) :
+    Nonempty (PointChartPolygonalDiskData M
+      ((modelWithCornersEuclideanHalfSpace 2).boundary M) x) := by
+  rcases mathlib_chartAt_contains_polygonal_disk_core_of_contMDiff M x with
     ⟨D, _hrefines, _hboundary, hcore, hfaithful, hboundarySet⟩
   exact
     ⟨{ disk := D
@@ -7961,6 +8040,16 @@ theorem mathlib_bordered_surface_local_chart_polygonal_disk_data
     ((modelWithCornersEuclideanHalfSpace 2).boundary M)
     (fun x => mathlib_bordered_surface_point_chart_polygonal_disk_data M x)
 
+/-- Positive-regularity local chart-polygonal-disk data extracted from the mathlib atlas. -/
+theorem mathlib_bordered_surface_local_chart_polygonal_disk_data_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    Nonempty (LocalChartPolygonalDiskData M) := by
+  exact local_chart_polygonal_disk_data_of_pointwise
+    ((modelWithCornersEuclideanHalfSpace 2).boundary M)
+    (fun x => mathlib_bordered_surface_point_chart_polygonal_disk_data_of_contMDiff M x)
+
 /-- Named local chart-polygonal-disk data extracted from a compact mathlib bordered surface. -/
 noncomputable def mathlib_bordered_surface_localChartPolygonalDiskData
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
@@ -7971,11 +8060,30 @@ noncomputable def mathlib_bordered_surface_localChartPolygonalDiskData
     ((modelWithCornersEuclideanHalfSpace 2).boundary M)
     (fun x => mathlib_bordered_surface_point_chart_polygonal_disk_data M x)
 
+/-- Named positive-regularity local chart-polygonal-disk data extracted from a compact mathlib
+bordered surface. -/
+noncomputable def mathlib_bordered_surface_localChartPolygonalDiskData_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    LocalChartPolygonalDiskData M :=
+  localChartPolygonalDiskDataOfPointwise
+    ((modelWithCornersEuclideanHalfSpace 2).boundary M)
+    (fun x => mathlib_bordered_surface_point_chart_polygonal_disk_data_of_contMDiff M x)
+
 @[simp] theorem mathlib_bordered_surface_localChartPolygonalDiskData_boundarySet
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     (mathlib_bordered_surface_localChartPolygonalDiskData M).boundarySet =
+      (modelWithCornersEuclideanHalfSpace 2).boundary M := by
+  rfl
+
+@[simp] theorem mathlib_bordered_surface_localChartPolygonalDiskData_of_contMDiff_boundarySet
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    (mathlib_bordered_surface_localChartPolygonalDiskData_of_contMDiff M).boundarySet =
       (modelWithCornersEuclideanHalfSpace 2).boundary M := by
   rfl
 
@@ -8128,6 +8236,15 @@ theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
   let L := mathlib_bordered_surface_localChartPolygonalDiskData M
   exact finite_chart_polygonal_disk_data_of_local L
 
+/-- Positive-regularity finite chart-pair cover carrying polygonal disk data. -/
+theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    Nonempty (Σ C : FiniteChartPairCover M, FiniteChartPolygonalDiskData C) := by
+  let L := mathlib_bordered_surface_localChartPolygonalDiskData_of_contMDiff M
+  exact finite_chart_polygonal_disk_data_of_local L
+
 /-- Named Moise extraction data built from the mathlib bordered-surface atlas. -/
 noncomputable def mathlib_bordered_surface_moiseExtractionData
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
@@ -8136,6 +8253,15 @@ noncomputable def mathlib_bordered_surface_moiseExtractionData
     MoiseExtractionData M :=
   (mathlib_bordered_surface_localChartPolygonalDiskData M).toMoiseExtractionData
 
+/-- Named positive-regularity Moise extraction data built from the mathlib bordered-surface
+atlas. -/
+noncomputable def mathlib_bordered_surface_moiseExtractionData_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    MoiseExtractionData M :=
+  (mathlib_bordered_surface_localChartPolygonalDiskData_of_contMDiff M).toMoiseExtractionData
+
 /-- Named Moise two-manifold package built from the mathlib bordered-surface atlas. -/
 noncomputable def mathlib_bordered_surface_moiseTwoManifold
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
@@ -8143,6 +8269,15 @@ noncomputable def mathlib_bordered_surface_moiseTwoManifold
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     MoiseTwoManifold M :=
   (mathlib_bordered_surface_moiseExtractionData M).toMoiseTwoManifold
+
+/-- Named positive-regularity Moise two-manifold package built from the mathlib bordered-surface
+atlas. -/
+noncomputable def mathlib_bordered_surface_moiseTwoManifold_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    MoiseTwoManifold M :=
+  (mathlib_bordered_surface_moiseExtractionData_of_contMDiff M).toMoiseTwoManifold
 
 /-- Polygonal disk data over a finite chart-pair cover packages as finite Rado geometry. -/
 theorem finite_rado_geometry_of_chart_polygonal_disk_data
@@ -8161,6 +8296,17 @@ theorem mathlib_bordered_surface_finite_rado_geometry
   rcases finite_rado_geometry_of_chart_polygonal_disk_data D with ⟨G⟩
   exact ⟨⟨C, G⟩⟩
 
+/-- Positive-regularity local Rado geometry over a finite chart-pair cover extracted from the
+mathlib atlas. -/
+theorem mathlib_bordered_surface_finite_rado_geometry_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    Nonempty (Σ C : FiniteChartPairCover M, FiniteRadoInductionGeometry C) := by
+  rcases mathlib_bordered_surface_finite_chart_polygonal_disk_data_of_contMDiff M with ⟨⟨C, D⟩⟩
+  rcases finite_rado_geometry_of_chart_polygonal_disk_data D with ⟨G⟩
+  exact ⟨⟨C, G⟩⟩
+
 /-- Local Rado induction data over a finite chart-pair cover extracted from the mathlib atlas. -/
 theorem mathlib_bordered_surface_rado_induction_data
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
@@ -8168,6 +8314,17 @@ theorem mathlib_bordered_surface_rado_induction_data
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     Nonempty (Σ C : FiniteChartPairCover M, RadoInductionData C.toChartPairExhaustion) := by
   rcases mathlib_bordered_surface_finite_rado_geometry M with ⟨⟨C, G⟩⟩
+  rcases rado_induction_data_of_finite_geometry G with ⟨D⟩
+  exact ⟨⟨C, D⟩⟩
+
+/-- Positive-regularity local Rado induction data over a finite chart-pair cover extracted from
+the mathlib atlas. -/
+theorem mathlib_bordered_surface_rado_induction_data_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    Nonempty (Σ C : FiniteChartPairCover M, RadoInductionData C.toChartPairExhaustion) := by
+  rcases mathlib_bordered_surface_finite_rado_geometry_of_contMDiff M with ⟨⟨C, G⟩⟩
   rcases rado_induction_data_of_finite_geometry G with ⟨D⟩
   exact ⟨⟨C, D⟩⟩
 
@@ -8183,6 +8340,15 @@ theorem mathlib_bordered_surface_moise_extraction_data
     Nonempty (MoiseExtractionData M) := by
   exact ⟨mathlib_bordered_surface_moiseExtractionData M⟩
 
+/-- Positive-regularity chart-extraction theorem from mathlib's bordered surface hypotheses to
+the Moise chart-pair interface. -/
+theorem mathlib_bordered_surface_moise_extraction_data_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    Nonempty (MoiseExtractionData M) := by
+  exact ⟨mathlib_bordered_surface_moiseExtractionData_of_contMDiff M⟩
+
 /-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
 Moise chart-pair interface.
 
@@ -8195,6 +8361,15 @@ theorem mathlib_bordered_surface_to_moise_two_manifold
     Nonempty (MoiseTwoManifold M) := by
   exact ⟨mathlib_bordered_surface_moiseTwoManifold M⟩
 
+/-- Positive-regularity theorem from mathlib's bordered surface hypotheses to the Rado-facing
+`MoiseTwoManifold` structure. -/
+theorem mathlib_bordered_surface_to_moise_two_manifold_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    Nonempty (MoiseTwoManifold M) := by
+  exact ⟨mathlib_bordered_surface_moiseTwoManifold_of_contMDiff M⟩
+
 /-- Named finite PL triangulation data built from the mathlib bordered-surface atlas. -/
 noncomputable def mathlib_bordered_surface_finitePLTriangulationData
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
@@ -8203,6 +8378,15 @@ noncomputable def mathlib_bordered_surface_finitePLTriangulationData
     FinitePLTriangulationData M :=
   (mathlib_bordered_surface_moiseExtractionData M).finiteStagePLTriangulationData
 
+/-- Named positive-regularity finite PL triangulation data built from the mathlib bordered-surface
+atlas. -/
+noncomputable def mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    FinitePLTriangulationData M :=
+  (mathlib_bordered_surface_moiseExtractionData_of_contMDiff M).finiteStagePLTriangulationData
+
 /-- Mathlib bordered surfaces produce finite PL triangulation data via the Moise--Rado route. -/
 theorem mathlib_bordered_surface_finite_pl_triangulation_data
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
@@ -8210,6 +8394,15 @@ theorem mathlib_bordered_surface_finite_pl_triangulation_data
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     Nonempty (FinitePLTriangulationData M) := by
   exact ⟨mathlib_bordered_surface_finitePLTriangulationData M⟩
+
+/-- Positive-regularity mathlib bordered surfaces produce finite PL triangulation data via the
+Moise--Rado route. -/
+theorem mathlib_bordered_surface_finite_pl_triangulation_data_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    Nonempty (FinitePLTriangulationData M) := by
+  exact ⟨mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff M⟩
 
 /-- The boundary carrier selected by the finite chart cover of a compact mathlib bordered surface
 is carried by the boundary package of the resulting finite PL triangulation data. -/
@@ -8221,6 +8414,20 @@ theorem mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary
       (mathlib_bordered_surface_finitePLTriangulationData M).boundary.boundarySupport := by
   let D := mathlib_bordered_surface_moiseExtractionData M
   simpa [mathlib_bordered_surface_finitePLTriangulationData] using
+    D.finiteStagePLTriangulationData_boundaryCarrier_subset
+
+/-- Positive-regularity boundary-carrier compatibility for the resulting finite PL triangulation
+data. -/
+theorem mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    let T := mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff M
+    (mathlib_bordered_surface_moiseExtractionData_of_contMDiff M).finiteCover.boundaryCarrier ⊆
+      T.boundary.boundarySupport := by
+  dsimp
+  let D := mathlib_bordered_surface_moiseExtractionData_of_contMDiff M
+  simpa [mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff] using
     D.finiteStagePLTriangulationData_boundaryCarrier_subset
 
 /-- The actual mathlib manifold boundary is carried by the boundary package of the finite PL
@@ -8240,6 +8447,25 @@ theorem mathlib_bordered_surface_manifoldBoundary_subset_finitePL_boundary
   simpa [mathlib_bordered_surface_finitePLTriangulationData, D] using
     D.finiteStagePLTriangulationData_boundarySet_subset hx
 
+/-- Positive-regularity version: the actual mathlib manifold boundary is carried by the boundary
+package of the finite PL triangulation data. -/
+theorem mathlib_bordered_surface_manifoldBoundary_subset_finitePL_boundary_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    let T := mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff M
+    (modelWithCornersEuclideanHalfSpace 2).boundary M ⊆
+      T.boundary.boundarySupport := by
+  dsimp
+  let D := mathlib_bordered_surface_moiseExtractionData_of_contMDiff M
+  have hBoundarySet :
+      D.finiteCover.boundarySet = (modelWithCornersEuclideanHalfSpace 2).boundary M := by
+    rfl
+  intro x hx
+  rw [← hBoundarySet] at hx
+  simpa [mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff, D] using
+    D.finiteStagePLTriangulationData_boundarySet_subset hx
+
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
@@ -8248,6 +8474,16 @@ theorem rado_bordered_surface_triangulation
     ∃ K : PLComplexInSpace M, ∃ _finiteSupport : K.FiniteSupportData,
       ∃ _boundary : K.BoundarySubcomplexData, K.support = Set.univ := by
   let D := mathlib_bordered_surface_finitePLTriangulationData M
+  exact ⟨D.K, D.finiteSupport, D.boundary, D.covers⟩
+
+/-- Positive-regularity Rado triangulation theorem for bordered surfaces. -/
+theorem rado_bordered_surface_triangulation_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    ∃ K : PLComplexInSpace M, ∃ _finiteSupport : K.FiniteSupportData,
+      ∃ _boundary : K.BoundarySubcomplexData, K.support = Set.univ := by
+  let D := mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff M
   exact ⟨D.K, D.finiteSupport, D.boundary, D.covers⟩
 
 /-- Bridge from mathlib's Eval surface hypotheses to the Moise bordered-surface interface. -/

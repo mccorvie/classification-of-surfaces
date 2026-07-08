@@ -904,10 +904,19 @@ Proved finite/combinatorial bridge:
    `ModelWithCorners.boundary` to this preferred-chart boundary core using the frontier of
    `EuclideanHalfSpace`.  The finite-cover route needs the corresponding arbitrary-chart C0
    boundary-invariance statement; this is isolated as the hard theorem boundary
-   `fromChartAt_chart_coord_zero_of_manifold_boundary`.  The positive-regularity companion
-   `fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff` is proved from mathlib's
-   `ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`, so the remaining gap is specifically the
-   topological C0 invariance needed for Moise.
+   `fromChartAt_chart_coord_zero_of_manifold_boundary`.  The positive-regularity companion is now
+   proved in the general nonzero-regularity form
+   `fromChartAt_chart_coord_zero_of_manifold_boundary_of_isManifold_ne_zero`, with the C1 wrapper
+   `fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff`, using mathlib's
+   `ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`.  The positive-regularity extraction path
+   is threaded through
+   `mathlib_chartAt_contains_polygonal_disk_core_of_contMDiff`,
+   `mathlib_bordered_surface_localChartPolygonalDiskData_of_contMDiff`,
+   `mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff`,
+   `rado_bordered_surface_triangulation_of_contMDiff`,
+   `mathlib_bordered_surface_finitely_triangulable_of_contMDiff`, and
+   `compact_eval_surface_finitely_triangulable_of_contMDiff`.  Thus the remaining gap for the
+   original Eval theorem is specifically the topological C0 invariance needed for Moise.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
    `ChartPolygonalDisk` now carries explicit simplex-carrier data for its embedded PL complex,
@@ -1047,7 +1056,11 @@ actual mathlib manifold boundary set.
 `compact_eval_surface_finiteSurfaceTriangulation` are the named finite triangulation objects used
 by the public existential wrappers
 `mathlib_bordered_surface_finitely_triangulable` and
-`compact_eval_surface_finitely_triangulable`.
+`compact_eval_surface_finitely_triangulable`.  The positive-regularity route now has parallel
+finite-output names ending in `_of_contMDiff`, including
+`mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff` and
+`compact_eval_surface_finitely_triangulable_of_contMDiff`; these avoid the C0 boundary-invariance
+theorem boundary.
 
 Closed coordinate-local bridge:
 
