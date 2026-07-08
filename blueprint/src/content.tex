@@ -720,7 +720,7 @@ and boundary chart cores.
 
 \begin{lemma}[Rado step extension from a chart disk]
 \label{moise:lem:rado_step_extension_from_chart_polygonal_disk}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplexData, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk_nextComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.emptyChart, LeanEval.Topology.ClassificationOfSurfaces.rado_step_extension_from_chart_polygonal_disk}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplexData, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_simplex, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_old_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_new_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk_nextComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.emptyChart, LeanEval.Topology.ClassificationOfSurfaces.rado_step_extension_from_chart_polygonal_disk}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:lem:pl_invariant_under_subdivision,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane,moise:lem:polygonal_disk_combinatorial_cell}
@@ -731,14 +731,17 @@ preserving overlap, local-finiteness, and boundary compatibility.
 
 \begin{proof}
 \leanok
-Build a scaffold PL complex whose support is the union of the old stage support
-and the embedded chart-disk support.  The old support and the next chart core
-are then contained in this union, and the overlap and boundary compatibility
-fields are witnessed by explicit common-carrier overlap data and face-closure
-proofs.  The named constructor `RadoStepExtensionData.fromChartPolygonalDisk`
-now also transports the previous finite chart-model compatibility family and
-adjoins the new chart disk.  The public theorem is the corresponding
-nonempty-data wrapper around that constructor.
+Build a carrier-level PL complex whose support is the union of the old stage
+support and the embedded chart-disk support.  Its simplex type is the disjoint
+sum of old-stage simplexes and chart-disk simplexes, and its simplex carriers
+are inherited from the corresponding side.  The old support and the next chart
+core are then contained in this union, and the overlap and boundary
+compatibility fields are witnessed by explicit common-carrier overlap data and
+face-closure proofs.  The named constructor
+`RadoStepExtensionData.fromChartPolygonalDisk` now also transports the previous
+finite chart-model compatibility family and adjoins the new chart disk.  The
+public theorem is the corresponding nonempty-data wrapper around that
+constructor.
 \end{proof}
 
 \begin{lemma}[Extend a PL complex across one chart]
@@ -865,8 +868,9 @@ named `initialData`, `stepData`, and
 supplied, it packages formally as `RadoInductionData`.  Its `finalState` is the
 finite terminal induction state after all chart pairs in the finite cover have
 been absorbed.  The `stepData` selector has named branch lemmas: in range it
-adjoins the selected chart disk, and out of range it returns the empty-chart
-extension leaving the complex unchanged.
+adjoins the selected chart disk using the disjoint-sum simplex/carrier
+chart-union complex, and out of range it returns the empty-chart extension
+leaving the complex unchanged.
 \end{definition}
 
 \begin{proof}
