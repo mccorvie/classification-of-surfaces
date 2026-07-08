@@ -413,6 +413,11 @@ structure EuclideanComplex.Subdivision (K : EuclideanComplex) where
   simplex_refines : Prop
 ```
 
+Current status: `EuclideanComplex.faceClosed` is no longer a free proposition.  It records a
+codimension-one face witness: if a simplex has at least two vertices, then erasing any vertex from
+that simplex gives the vertex set of another simplex.  The helper
+`EuclideanComplex.exists_erase_vertex_face` exposes this data.
+
 If mathlib's abstract or geometric simplicial complexes can be used cleanly, wrap them. If not, define a project-specific `EuclideanComplex` with the fields needed for Moise. Avoid getting blocked by the perfect general abstraction.
 
 Current scaffold note: the standard combinatorial triangle keeps finite vertex/simplex data, but

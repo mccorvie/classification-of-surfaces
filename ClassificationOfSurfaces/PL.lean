@@ -28,8 +28,8 @@ universe u
 
 The `Point`/`support` fields keep a topological carrier available for PL maps. The finite
 `Vertex`/`Simplex` fields provide the combinatorial data needed by links, skeletons, and later
-surface predicates. The geometric rectilinearity and face-closure obligations are currently stored
-as named propositions so they can be strengthened without changing downstream theorem names. -/
+surface predicates. The geometric rectilinearity obligation is currently stored as a named
+proposition; face-closure is a concrete combinatorial witness for codimension-one faces. -/
 structure EuclideanComplex where
   Point : Type
   pointTop : TopologicalSpace Point
@@ -43,7 +43,10 @@ structure EuclideanComplex where
   simplex_nonempty : ∀ σ, (simplexVertices σ).Nonempty
   support : Set Point
   realizesSimplexes : Prop
-  faceClosed : Prop
+  faceClosed :
+    ∀ σ : Simplex, ∀ v : Vertex, v ∈ simplexVertices σ →
+      1 < (simplexVertices σ).card →
+        ∃ τ : Simplex, simplexVertices τ = (simplexVertices σ).erase v
 
 attribute [instance] EuclideanComplex.pointTop
 attribute [instance] EuclideanComplex.vertexFintype
@@ -75,6 +78,12 @@ def IsFace (K : EuclideanComplex) (τ σ : K.Simplex) : Prop :=
 
 instance (K : EuclideanComplex) (τ σ : K.Simplex) : Decidable (K.IsFace τ σ) :=
   inferInstanceAs (Decidable (K.vertices τ ⊆ K.vertices σ))
+
+/-- Codimension-one combinatorial faces are represented by simplexes of the complex. -/
+theorem exists_erase_vertex_face (K : EuclideanComplex) (σ : K.Simplex) (v : K.Vertex)
+    (hv : v ∈ K.vertices σ) (hcard : 1 < (K.vertices σ).card) :
+    ∃ τ : K.Simplex, K.vertices τ = (K.vertices σ).erase v := by
+  exact K.faceClosed σ v hv hcard
 
 /-- A vertex is incident to a simplex if it belongs to the simplex vertex set. -/
 def IsVertexOf (K : EuclideanComplex) (v : K.Vertex) (σ : K.Simplex) : Prop :=
@@ -235,10 +244,7 @@ def full (K : EuclideanComplex) : K.Subcomplex where
 
 end Subcomplex
 
-/-- The link of a vertex as a subcomplex-shaped object.
-
-The face-closure proof is a theorem boundary until `EuclideanComplex.faceClosed` is strengthened
-from a proposition into usable face-witness data. -/
+/-- The link of a vertex as a subcomplex-shaped object. -/
 def linkSubcomplex (K : EuclideanComplex) (v : K.Vertex) : K.Subcomplex where
   simplexes := K.linkSimplexes v
   face_closed := by
@@ -490,7 +496,8 @@ def point : EuclideanComplex where
     simp
   support := Set.univ
   realizesSimplexes := True
-  faceClosed := True
+  faceClosed := by
+    decide
 
 /-- The standard segment as a finite complex. -/
 def segment : EuclideanComplex where
@@ -511,7 +518,8 @@ def segment : EuclideanComplex where
     cases σ <;> simp
   support := Set.univ
   realizesSimplexes := True
-  faceClosed := True
+  faceClosed := by
+    decide
 
 /-- The standard filled triangle as a finite complex. -/
 def triangle : EuclideanComplex where
@@ -536,7 +544,8 @@ def triangle : EuclideanComplex where
     cases σ <;> simp
   support := closedTriangleSupport
   realizesSimplexes := True
-  faceClosed := True
+  faceClosed := by
+    decide
 
 example : point.numVertices = 1 := by
   rfl
@@ -2576,7 +2585,8 @@ theorem open_subset_of_finite_complex_is_complex
             simp
           support := Set.univ
           realizesSimplexes := True
-          faceClosed := True }
+          faceClosed := by
+            decide }
       supportHomeomorph := Homeomorph.Set.univ U
       inclusion := fun x => (x.1 : K.Complex.support)
       inclusionEmbedding :=
@@ -4105,7 +4115,8 @@ noncomputable def chartUnionPLComplexData
         exact Finset.univ_nonempty
       support := Set.univ
       realizesSimplexes := True
-      faceClosed := True }
+      faceClosed := by
+        decide }
   let hKEmbedding : _root_.Topology.IsEmbedding (fun p : C.support => carrierMap p.1) :=
     hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
   let K : PLComplexInSpace M :=
@@ -4689,7 +4700,8 @@ noncomputable def unionPLComplexData
         exact Finset.univ_nonempty
       support := Set.univ
       realizesSimplexes := S.compatibleStages
-      faceClosed := True }
+      faceClosed := by
+        decide }
   let hKEmbedding : _root_.Topology.IsEmbedding (fun p : C.support => carrierMap p.1) :=
     hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
   let K : PLComplexInSpace M :=
