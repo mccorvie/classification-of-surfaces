@@ -691,6 +691,11 @@ boundary subcomplex must be face-closed.
 polygonal disks whose supports lie in the current complex and whose coordinate images respect the
 stored model regions.  Initial states use the singleton package, chart-extension steps append the
 new disk, and empty-chart steps preserve the previous package.
+The old `coversPreviousCores : Prop` and `coversPreviousBoundaryCores : Prop` state fields have
+been replaced by finite `RadoStageCoverageData`: numbered ordinary and boundary chart-core sets
+with support-containment proofs.  The separate `CoversCoresUpTo` and
+`CoversBoundaryCoresUpTo` predicates remain the exhaustion-specific cumulative statements proved
+by the induction lemmas.
 
 Needed operations:
 
@@ -1078,8 +1083,8 @@ Expected Rado induction shape:
      `RadoStepExtensionData.toState_coversPreviousCores`,
      `RadoStepExtensionData.toState_coversPreviousBoundaryCores`,
      `RadoInductionData.stage_coversPreviousCores`, and
-     `RadoInductionData.stage_coversPreviousBoundaryCores` connect the stored state fields to the
-     real cumulative coverage predicates;
+     `RadoInductionData.stage_coversPreviousBoundaryCores` prove the stored finite coverage
+     packages cover their recorded ordinary and boundary chart-core sets;
    - `RadoInductionData.covers_core_of_le`,
      `RadoInductionData.covers_boundaryCore_of_le`,
      `RadoInductiveSequence.core_subset_stage_of_le`, and

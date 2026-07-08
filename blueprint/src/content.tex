@@ -665,7 +665,7 @@ together with the definitional equality identifying it with the stored field.
 
 \begin{lemma}[Initial PL neighborhood]
 \label{moise:lem:initial_pl_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData.singleton, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData.mono, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData.extendWithChart, LeanEval.Topology.ClassificationOfSurfaces.BoundarySubcomplexFaceClosed, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData.singleton, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData.mono, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData.extendWithChart, LeanEval.Topology.ClassificationOfSurfaces.RadoStageCoverageData, LeanEval.Topology.ClassificationOfSurfaces.RadoStageCoverageData.singleton, LeanEval.Topology.ClassificationOfSurfaces.RadoStageCoverageData.extend, LeanEval.Topology.ClassificationOfSurfaces.BoundarySubcomplexFaceClosed, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:polygonal_disk_combinatorial_cell}
@@ -681,7 +681,9 @@ embedded PL complex, face-closure of the stored boundary subcomplex, and the
 combined boundary-overlap compatibility predicate.  The chart-respect field is
 finite `ChartModelCompatibilityData`, namely chart polygonal disks contained in
 the current complex together with proofs that their coordinate images respect
-the stored model regions.
+the stored model regions.  The coverage field is finite
+`RadoStageCoverageData`: numbered ordinary and boundary chart-core sets, each
+proved to lie in the current support.
 \end{lemma}
 
 \begin{proof}
@@ -691,9 +693,9 @@ first chart pair by rewriting the chart-core coverage fields.  Then package the
 embedded chart polygonal disk as a `PLComplexInSpace` and use its boundary
 subcomplex and coverage fields to build the stage-zero Rado induction state.
 The resulting state carries the singleton chart-model compatibility package and
-satisfies the up-to-stage core and boundary-core coverage
-predicates, and its stored `coversPreviousCores` fields are definitionally the
-same cumulative predicates.
+satisfies the up-to-stage core and boundary-core coverage predicates.  Its
+stored coverage package is the singleton finite package for the first ordinary
+and boundary chart cores.
 \end{proof}
 
 \begin{lemma}[Rado step extension from a chart disk]
@@ -740,7 +742,7 @@ Given `RadoStepExtensionData`, package the supplied next complex,
 boundary subcomplex, extension proof, and next-core coverage fields into the
 successor Rado induction state.  If the previous state covers all chart cores
 and boundary cores up to its stage, the successor state covers all such cores up
-to its new stage and stores those cumulative predicates in its state fields.
+to its new stage and stores finite numbered coverage data in its state fields.
 \end{proof}
 
 \begin{definition}[Rado induction local data]
@@ -752,9 +754,9 @@ to its new stage and stores those cumulative predicates in its state fields.
 Rado induction data consists of one initial chart-disk package and a successor
 chart-extension package for each finite stage.  It recursively determines all
 finite-stage induction states, proves the cumulative core and boundary-core
-coverage predicates at every stage, stores those predicates in each state,
-records a finite-simplex proof for every finite stage, and packages the stages
-as a Rado induction sequence.
+coverage predicates at every stage, stores finite numbered coverage data in
+each state, records a finite-simplex proof for every finite stage, and packages
+the stages as a Rado induction sequence.
 \end{definition}
 
 \begin{definition}[Rado induction sequence]
