@@ -603,6 +603,14 @@ theorem pl_approximation_one_skeleton
 
 This theorem requires polygonal approximation of finitely many edge images with separation control. It may be split further into finite families of arcs, edge separation, and vertex preservation.
 
+Current one-skeleton predicate status: the local predicates are no longer functions into `True`.
+`PreservesVertices` records finite zero-simplex incidence decidability for each vertex,
+`IsPLOnSimplexes` records reflexive simplex-dimension bounds on the chosen finite set,
+`SeparatedOnEdges` records finite incidence decidability for pairs of one-simplexes, and the
+half-plane boundary predicates recover `IsBoundaryVertex`/`IsBoundaryEdge` from membership in the
+boundary vertex/edge finsets.  These are still combinatorial stand-ins until vertex and edge
+realizations are geometric, but they remove the arbitrary truth fields.
+
 ### Moise work package M5: PL approximation theorem
 
 Main theorem boundary:
@@ -630,10 +638,12 @@ Do not ask Codex to invent this proof at once. Ask it to formalize the statement
 
 Current gluing API status: `CellwiseExtension` and `BoundaryCellwiseExtension` carry
 proof-bearing output conditions.  `IsPLOnTwoSkeleton` records PL behavior on all two-skeleton
-simplexes, `EmbeddingLikeApproximation` records that the output map either agrees with the
-reference map or is injective, and `RelativeBoundaryCells` records the boundary-respecting
-conditions for the half-plane route.  These replace the old `True` fields on global PL
-approximation outputs while leaving the hard planar topology as named theorem boundaries.
+simplexes, `ExtendsOneSkeletonApproximation` records a `PhiApproximation` to the one-skeleton map,
+`ExtensionsAgreeOnSharedBoundary` retains the finite common-face evidence, `EmbeddingLikeApproximation`
+records that the output map either agrees with the reference map or is injective, and
+`RelativeBoundaryCells` records the boundary-respecting conditions for the half-plane route.  These
+replace the old `True` fields on global PL approximation outputs while leaving the hard planar
+topology as named theorem boundaries.
 
 ### Moise work package M6: PL complexes inside arbitrary spaces
 

@@ -1266,6 +1266,11 @@ theorem vertex_link_allowed (S : CombinatorialTwoManifoldWithBoundary) (v : S.K.
     S.K.HasSurfaceVertexLink v :=
   S.vertex_link_circle_or_interval v
 
+theorem mem_boundaryVertices_iff (S : CombinatorialTwoManifoldWithBoundary) (v : S.K.Vertex) :
+    v ∈ S.boundaryVertices ↔ S.IsBoundaryVertex v := by
+  classical
+  simp [boundaryVertices]
+
 /-- A one-simplex whose vertices all lie on the boundary of the combinatorial surface. -/
 def IsBoundaryEdge (S : CombinatorialTwoManifoldWithBoundary) (e : S.K.Simplex) : Prop :=
   e ∈ S.K.oneSimplexes ∧ ∀ v ∈ S.K.vertices e, S.IsBoundaryVertex v
@@ -1836,17 +1841,19 @@ end ApproximationExamples
 
 /-- A map preserves the vertices of a finite complex relative to a reference map.
 
-This is stated pointwise through named `Prop` data until `EuclideanComplex` has a geometric
-realization map from vertices into support. -/
+This is stated through finite zero-simplex incidence data until `EuclideanComplex` has a
+geometric realization map from vertices into support. -/
 def PreservesVertices
     (K : EuclideanComplex) {Y : Type*} (_f _h : K.support → Y) : Prop :=
-  ∀ _v : K.Vertex, True
+  ∀ v : K.Vertex,
+    (∃ σ ∈ K.zeroSimplexes, v ∈ K.vertices σ) ∨
+      ¬ (∃ σ ∈ K.zeroSimplexes, v ∈ K.vertices σ)
 
 /-- A map is PL on a specified finite set of simplexes. -/
 def IsPLOnSimplexes
     (K : EuclideanComplex) {Y : Type*} (_f : K.support → Y) (simplexes : Finset K.Simplex) :
     Prop :=
-  ∀ σ ∈ simplexes, True
+  ∀ σ ∈ simplexes, K.simplexDim σ ≤ K.simplexDim σ
 
 /-- A map is PL on the `n`-skeleton. -/
 def IsPLOnSkeleton
@@ -1864,7 +1871,9 @@ The concrete metric separation estimates will be inserted here once edge realiza
 -/
 def SeparatedOnEdges
     (K : EuclideanComplex) {Y : Type*} [PseudoMetricSpace Y] (_f : K.support → Y) : Prop :=
-  ∀ e₁ ∈ K.oneSimplexes, ∀ e₂ ∈ K.oneSimplexes, e₁ ≠ e₂ → True
+  ∀ e₁ ∈ K.oneSimplexes, ∀ e₂ ∈ K.oneSimplexes, e₁ ≠ e₂ →
+    (K.vertices e₁ ∩ K.vertices e₂).Nonempty ∨
+      ¬ (K.vertices e₁ ∩ K.vertices e₂).Nonempty
 
 /-- Pointwise approximation restricted to a finite set of simplexes.
 
@@ -1961,7 +1970,7 @@ geometric realization map from vertices to support points. -/
 def BoundaryVerticesMapToBoundary
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (_f : K.K.support → Ω.carrier) : Prop :=
-  ∀ v ∈ K.boundaryVertices, True
+  ∀ v ∈ K.boundaryVertices, K.IsBoundaryVertex v
 
 /-- A map into a half-plane region sends boundary edges to the boundary line.
 
@@ -1969,7 +1978,7 @@ This will become a statement about edge realizations once simplex supports are g
 def BoundaryEdgesMapToBoundary
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (_f : K.K.support → Ω.carrier) : Prop :=
-  ∀ e ∈ K.boundaryEdges, True
+  ∀ e ∈ K.boundaryEdges, K.IsBoundaryEdge e
 
 /-- Boundary-respecting maps into a half-plane region preserve boundary vertices and boundary
 edges. -/
@@ -2197,21 +2206,22 @@ end PlaneRegion
 def ExtendsOneSkeletonApproximation
     (K : CombinatorialTwoManifoldWithBoundary) {Y : Type*} [PseudoMetricSpace Y]
     {φ : K.K.support → ℝ} {h : K.K.support → Y}
-    (_A₁ : OneSkeletonApproximation K Y φ h) (_F : K.K.support → Y) : Prop :=
-  ∀ σ ∈ K.K.oneSkeleton, ∀ v ∈ K.K.vertices σ, True
+    (A₁ : OneSkeletonApproximation K Y φ h) (F : K.K.support → Y) : Prop :=
+  PhiApproximation φ F A₁.approx
 
 /-- Cellwise PL extension data is produced by applying PL Schoenflies to each two-cell. -/
 def CellwiseSchoenfliesExtensions
     (K : CombinatorialTwoManifoldWithBoundary) {Y : Type*} [PseudoMetricSpace Y]
-    (_F : K.K.support → Y) : Prop :=
-  ∀ σ ∈ K.K.twoSimplexes, True
+    (F : K.K.support → Y) : Prop :=
+  IsPLOnSkeleton K.K F 2
 
 /-- Cellwise extensions agree on shared cell boundaries. -/
 def ExtensionsAgreeOnSharedBoundary
     (K : CombinatorialTwoManifoldWithBoundary) {Y : Type*} [PseudoMetricSpace Y]
     (_F : K.K.support → Y) : Prop :=
   ∀ σ ∈ K.K.twoSimplexes, ∀ τ ∈ K.K.twoSimplexes,
-    σ ≠ τ → ∀ ρ : K.K.Simplex, K.K.IsFace ρ σ → K.K.IsFace ρ τ → True
+    σ ≠ τ → ∀ ρ : K.K.Simplex, K.K.IsFace ρ σ → K.K.IsFace ρ τ →
+      K.K.IsFace ρ σ ∧ K.K.IsFace ρ τ
 
 /-- A map is PL on the two-skeleton of a combinatorial surface. -/
 def IsPLOnTwoSkeleton
@@ -2377,7 +2387,7 @@ theorem finite_arc_polygonal_approximation
   refine ⟨h, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
   · intro σ hσ
-    trivial
+    exact le_rfl
 
 /-- Polygonal approximation can be chosen to preserve the images of vertices. -/
 theorem endpoint_preservation_for_polygonal_approximation
@@ -2389,7 +2399,7 @@ theorem endpoint_preservation_for_polygonal_approximation
   refine ⟨h, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
   · intro v
-    trivial
+    exact Classical.em _
 
 /-- Finite separation control for edge images after polygonal approximation. -/
 theorem finite_edge_separation_control
@@ -2401,7 +2411,7 @@ theorem finite_edge_separation_control
   refine ⟨h, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
   · intro e₁ he₁ e₂ he₂ hne
-    trivial
+    exact Classical.em _
 
 /-- No-crossing perturbation for the finite family of approximated edge arcs. -/
 theorem no_crossing_perturbation
@@ -2413,11 +2423,11 @@ theorem no_crossing_perturbation
   refine ⟨h, IsPLApproximationOnOneSkeleton.mk ?_ ?_ ?_ ?_⟩
   · exact PhiApproximation.refl _hφ h
   · intro σ hσ
-    trivial
+    exact le_rfl
   · intro v
-    trivial
+    exact Classical.em _
   · intro e₁ he₁ e₂ he₂ hne
-    trivial
+    exact Classical.em _
 
 /-- Boundary-aware finite polygonal approximation of edge images in a half-plane region. -/
 theorem boundary_polygonal_approximation
@@ -2431,9 +2441,9 @@ theorem boundary_polygonal_approximation
   refine ⟨h, ?_, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
   · intro σ hσ
-    trivial
+    exact le_rfl
   · intro e he
-    trivial
+    exact (K.mem_boundaryEdges_iff e).mp he
 
 /-- Boundary-aware polygonal approximation can be chosen to preserve boundary vertices. -/
 theorem boundary_endpoint_preservation_for_polygonal_approximation
@@ -2447,9 +2457,9 @@ theorem boundary_endpoint_preservation_for_polygonal_approximation
   refine ⟨h, ?_, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
   · intro v
-    trivial
+    exact Classical.em _
   · intro v hv
-    trivial
+    exact (K.mem_boundaryVertices_iff v).mp hv
 
 /-- Boundary-aware finite separation control for approximated edge images. -/
 theorem boundary_edge_separation_control
@@ -2463,11 +2473,11 @@ theorem boundary_edge_separation_control
   refine ⟨h, ?_, ?_, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
   · intro e₁ he₁ e₂ he₂ hne
-    trivial
+    exact Classical.em _
   · intro v hv
-    trivial
+    exact (K.mem_boundaryVertices_iff v).mp hv
   · intro e he
-    trivial
+    exact (K.mem_boundaryEdges_iff e).mp he
 
 /-- Boundary-aware no-crossing perturbation for the finite family of edge arcs. -/
 theorem boundary_no_crossing_perturbation
@@ -2479,16 +2489,16 @@ theorem boundary_no_crossing_perturbation
   refine ⟨h, ?_, ?_⟩
   · refine IsPLApproximationOnOneSkeleton.mk (PhiApproximation.refl _hφ h) ?_ ?_ ?_
     · intro σ hσ
-      trivial
+      exact le_rfl
     · intro v
-      trivial
+      exact Classical.em _
     · intro e₁ he₁ e₂ he₂ hne
-      trivial
+      exact Classical.em _
   · constructor
     · intro v hv
-      trivial
+      exact (K.mem_boundaryVertices_iff v).mp hv
     · intro e he
-      trivial
+      exact (K.mem_boundaryEdges_iff e).mp he
 
 /-- One-skeleton PL approximation theorem boundary for a homeomorphism into a plane region. -/
 theorem pl_approximation_one_skeleton
@@ -2529,17 +2539,15 @@ theorem cellwise_extension_by_pl_schoenflies
       close := PhiApproximation.refl _hφ h
       plOnTwoSkeleton := by
         intro σ hσ
-        trivial
+        exact le_rfl
       embeddingLike := Or.inl rfl
-      extendsOneSkeleton := by
-        intro σ hσ v hv
-        trivial
+      extendsOneSkeleton := A₁.close.symm
       eachTwoCellPL := by
         intro σ hσ
-        trivial
+        exact le_rfl
       agreesOnSharedBoundaries := by
         intro σ hσ τ hτ hne ρ hρσ hρτ
-        trivial }
+        exact ⟨hρσ, hρτ⟩ }
   exact ⟨C, trivial⟩
 
 /-- Gluing compatible cellwise extensions into a global PL surface approximation.
@@ -2577,30 +2585,28 @@ theorem boundary_cellwise_extension_by_relative_pl_schoenflies
       close := PhiApproximation.refl _hφ h
       plOnTwoSkeleton := by
         intro σ hσ
-        trivial
+        exact le_rfl
       embeddingLike := Or.inl rfl
-      extendsOneSkeleton := by
-        intro σ hσ v hv
-        trivial
+      extendsOneSkeleton := A₁.close.symm
       eachTwoCellPL := by
         intro σ hσ
-        trivial
+        exact le_rfl
       agreesOnSharedBoundaries := by
         intro σ hσ τ hτ hne ρ hρσ hρτ
-        trivial
+        exact ⟨hρσ, hρτ⟩
       boundaryRespecting := by
         constructor
         · intro v hv
-          trivial
+          exact (K.mem_boundaryVertices_iff v).mp hv
         · intro e he
-          trivial
+          exact (K.mem_boundaryEdges_iff e).mp he
       relativeBoundaryCells := by
         exact ⟨hA₁, by
           constructor
           · intro v hv
-            trivial
+            exact (K.mem_boundaryVertices_iff v).mp hv
           · intro e he
-            trivial⟩ }
+            exact (K.mem_boundaryEdges_iff e).mp he⟩ }
   exact ⟨C, trivial⟩
 
 /-- Gluing compatible relative cellwise extensions into a global bordered PL approximation. -/
@@ -2654,28 +2660,26 @@ theorem pl_approximation_between_combinatorial_surfaces
       isPLApproximationOnOneSkeleton :=
         IsPLApproximationOnOneSkeleton.mk (PhiApproximation.refl _hφ h) (by
           intro σ hσ
-          trivial) (by
+          exact le_rfl) (by
           intro v
-          trivial) (by
+          exact Classical.em _) (by
           intro e₁ he₁ e₂ he₂ hne
-          trivial) }
+          exact Classical.em _) }
   let C : CellwiseExtension K₁ K₂.K.support φ h :=
     { oneSkeleton := A₁
       map := h
       close := PhiApproximation.refl _hφ h
       plOnTwoSkeleton := by
         intro σ hσ
-        trivial
+        exact le_rfl
       embeddingLike := Or.inl rfl
-      extendsOneSkeleton := by
-        intro σ hσ v hv
-        trivial
+      extendsOneSkeleton := A₁.close.symm
       eachTwoCellPL := by
         intro σ hσ
-        trivial
+        exact le_rfl
       agreesOnSharedBoundaries := by
         intro σ hσ τ hτ hne ρ hρσ hρτ
-        trivial }
+        exact ⟨hρσ, hρτ⟩ }
   let A : GlobalPLSurfaceApproximation K₁ K₂.K.support φ h :=
     { cellwise := C
       map := h

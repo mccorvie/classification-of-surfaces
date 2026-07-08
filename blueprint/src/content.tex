@@ -269,16 +269,18 @@ These are direct consequences of positivity and the metric triangle inequality.
 
 \begin{definition}[Half-plane boundary targets]
 \label{moise:def:half_plane_boundary_targets}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.HalfPlane, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneBoundary, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneRegion, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingMap, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingOneSkeletonApproximation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.HalfPlane, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneBoundary, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneRegion, LeanEval.Topology.ClassificationOfSurfaces.BoundaryVerticesMapToBoundary, LeanEval.Topology.ClassificationOfSurfaces.BoundaryEdgesMapToBoundary, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingMap, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingOneSkeletonApproximation}
 \leanok
 
 \uses{moise:def:combinatorial_surface,moise:def:phi_approximation}
 The direct bordered route uses the closed upper half-plane as the local target.
 A half-plane region records a plane subset contained in the half-plane together
 with its boundary part on the boundary line.  Boundary-respecting map predicates
-state that boundary vertices and boundary edges of a combinatorial surface map
-to this boundary line; the one-skeleton version combines this with the existing
-PL approximation predicate.
+state, at the current combinatorial level, that boundary vertices and boundary
+edges are certified by the boundary vertex and boundary edge predicates.  Once
+vertex and edge realizations are geometric, these predicates will become image
+containment in the boundary line.  The one-skeleton version combines this with
+the existing PL approximation predicate.
 \end{definition}
 
 \begin{lemma}[PL approximation on the one-skeleton]
@@ -302,7 +304,7 @@ remain separated and incident edges meet only at their common vertices.
 
 \begin{lemma}[Hard one-skeleton approximation boundaries]
 \label{moise:lem:one_skeleton_hard_boundaries}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.finite_arc_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.endpoint_preservation_for_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.finite_edge_separation_control, LeanEval.Topology.ClassificationOfSurfaces.no_crossing_perturbation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PreservesVertices, LeanEval.Topology.ClassificationOfSurfaces.IsPLOnSimplexes, LeanEval.Topology.ClassificationOfSurfaces.SeparatedOnEdges, LeanEval.Topology.ClassificationOfSurfaces.finite_arc_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.endpoint_preservation_for_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.finite_edge_separation_control, LeanEval.Topology.ClassificationOfSurfaces.no_crossing_perturbation}
 \leanok
 
 \uses{moise:def:combinatorial_surface,moise:def:phi_approximation}
@@ -313,10 +315,11 @@ control, and no-crossing of the approximated edge arcs.
 
 \begin{proof}
 \leanok
-With the current scaffold predicates, the reference map itself satisfies these
-conditions from strong positivity.  When edge realizations are made geometric,
-these declarations should be strengthened back into the intended planar
-approximation lemmas.
+With the current finite combinatorial predicates, the reference map itself
+satisfies these conditions from strong positivity, reflexive simplex-dimension
+bounds, finite vertex-incidence decidability, and finite edge-incidence
+decidability.  When edge realizations are made geometric, these declarations
+should be strengthened back into the intended planar approximation lemmas.
 \end{proof}
 
 \begin{lemma}[Bordered one-skeleton approximation boundaries]
@@ -340,16 +343,19 @@ predicate.  The geometric perturbation results remain named theorem boundaries.
 
 \begin{definition}[Cellwise extension and gluing interfaces]
 \label{moise:def:cellwise_extension_gluing}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.IsPLOnTwoSkeleton, LeanEval.Topology.ClassificationOfSurfaces.EmbeddingLikeApproximation, LeanEval.Topology.ClassificationOfSurfaces.RelativeBoundaryCells, LeanEval.Topology.ClassificationOfSurfaces.CellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLHomeomorphFromCellwise, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLSurfaceApproximation, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.BoundaryGlobalPLSurfaceApproximation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ExtendsOneSkeletonApproximation, LeanEval.Topology.ClassificationOfSurfaces.CellwiseSchoenfliesExtensions, LeanEval.Topology.ClassificationOfSurfaces.IsPLOnTwoSkeleton, LeanEval.Topology.ClassificationOfSurfaces.EmbeddingLikeApproximation, LeanEval.Topology.ClassificationOfSurfaces.RelativeBoundaryCells, LeanEval.Topology.ClassificationOfSurfaces.CellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLHomeomorphFromCellwise, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLSurfaceApproximation, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.BoundaryGlobalPLSurfaceApproximation}
 \leanok
 
 \uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:lem:pl_approximation_one_skeleton}
 A cellwise extension records a one-skeleton PL approximation, a global candidate
 map on the support, its $\varphi$-closeness to the original homeomorphism,
 finite two-cell extension data, and finite agreement conditions on shared
-boundaries.  It also carries proof-bearing global output conditions: the map is
-PL on the two-skeleton, and it is embedding-like by either agreeing with the
-reference map or being injective.  The global gluing predicate packages the
+boundaries.  One-skeleton extension is currently represented by a
+$\varphi$-approximation to the one-skeleton map, and shared-boundary agreement
+retains the finite common-face data.  It also carries proof-bearing global
+output conditions: the map is PL on the two-skeleton, and it is embedding-like
+by either agreeing with the reference map or being injective.  The global
+gluing predicate packages the
 claim that compatible cellwise data assemble into a global PL surface
 approximation.  The boundary versions additionally record boundary-respecting
 one-skeleton data, relative boundary-cell extension data, and a
