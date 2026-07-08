@@ -670,10 +670,11 @@ Current one-skeleton predicate status: the local predicates are no longer functi
 that contains every vertex represented by a zero-simplex.  `IsPLOnSimplexes` is backed by finite
 `PLOnSimplexesData`, recording a domain subdivision whose fine simplexes cover the requested
 coarse simplexes.  `SeparatedOnEdges` is backed by finite `EdgeSeparationData`, recording all
-nonincident edge pairs that require separation.  The half-plane boundary predicates recover
-`IsBoundaryVertex`/`IsBoundaryEdge` from membership in the boundary vertex/edge finsets.  These are
-still combinatorial stand-ins until vertex and edge realizations are geometric, but they remove the
-old excluded-middle and reflexivity witnesses.
+nonincident edge pairs that require separation.  The half-plane boundary predicates are backed by
+`BoundaryVertexImageData` and `BoundaryEdgeImageData`: they are now map-dependent witnesses storing
+support points whose images lie in the half-plane boundary carrier.  These are still finite
+stand-ins until vertex and edge realizations are geometric, but they remove the old map-independent
+boundary witnesses.
 
 ### Moise work package M5: PL approximation theorem
 
@@ -707,8 +708,10 @@ simplexes, `ExtendsOneSkeletonApproximation` records a `PhiApproximation` to the
 behavior on the one-skeleton and proves that common faces of distinct two-simplexes lie in the
 one-skeleton.  `EmbeddingLikeApproximation` records that the output map either agrees with the
 reference map or is injective, and `RelativeBoundaryCells` records the boundary-respecting
-conditions for the half-plane route.  These replace the old `True` fields on global PL
-approximation outputs while leaving the hard planar topology as named theorem boundaries.
+conditions for the half-plane route.  The bordered approximation theorem boundaries now require
+the input homeomorphism to carry `BoundaryRespectingMap` data instead of manufacturing boundary
+respect from an arbitrary map.  These replace the old `True` fields on global PL approximation
+outputs while leaving the hard planar topology as named theorem boundaries.
 
 ### Moise work package M6: PL complexes inside arbitrary spaces
 

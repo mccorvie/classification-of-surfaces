@@ -279,18 +279,18 @@ These are direct consequences of positivity and the metric triangle inequality.
 
 \begin{definition}[Half-plane boundary targets]
 \label{moise:def:half_plane_boundary_targets}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.HalfPlane, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneBoundary, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneRegion, LeanEval.Topology.ClassificationOfSurfaces.BoundaryVerticesMapToBoundary, LeanEval.Topology.ClassificationOfSurfaces.BoundaryEdgesMapToBoundary, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingMap, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingOneSkeletonApproximation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.HalfPlane, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneBoundary, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneRegion, LeanEval.Topology.ClassificationOfSurfaces.BoundaryVertexImageData, LeanEval.Topology.ClassificationOfSurfaces.BoundaryEdgeImageData, LeanEval.Topology.ClassificationOfSurfaces.BoundaryVerticesMapToBoundary, LeanEval.Topology.ClassificationOfSurfaces.BoundaryEdgesMapToBoundary, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingMap, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingOneSkeletonApproximation}
 \leanok
 
 \uses{moise:def:combinatorial_surface,moise:def:phi_approximation}
 The direct bordered route uses the closed upper half-plane as the local target.
 A half-plane region records a plane subset contained in the half-plane together
 with its boundary part on the boundary line.  Boundary-respecting map predicates
-state, at the current combinatorial level, that boundary vertices and boundary
-edges are certified by the boundary vertex and boundary edge predicates.  Once
-vertex and edge realizations are geometric, these predicates will become image
-containment in the boundary line.  The one-skeleton version combines this with
-the existing PL approximation predicate.
+now carry map-dependent witness data: for each boundary vertex or boundary edge
+they store a support point whose image lies in the target boundary carrier.
+Once vertex and edge realizations are geometric, these witnesses should be
+upgraded to image containment for the whole realized vertex or edge.  The
+one-skeleton version combines this with the existing PL approximation predicate.
 \end{definition}
 
 \begin{lemma}[PL approximation on the one-skeleton]
@@ -344,7 +344,8 @@ lemmas.
 The bordered one-skeleton approximation layer parallels the plane case but works
 in a half-plane region.  The theorem boundaries require polygonal approximation,
 endpoint preservation, finite separation, and no-crossing perturbations that
-keep boundary vertices and boundary edges on the boundary line.
+keep boundary vertices and boundary edges on the boundary line; this is now an
+explicit hypothesis on the input map and part of the output witness.
 \end{lemma}
 
 \begin{proof}

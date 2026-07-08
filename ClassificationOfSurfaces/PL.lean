@@ -2350,22 +2350,39 @@ theorem boundary_point_iff {Ω : HalfPlaneRegion} (p : Ω.carrier) :
 
 end HalfPlaneRegion
 
-/-- A map into a half-plane region sends boundary vertices to the boundary line.
+/-- Finite data witnessing that a map into a half-plane region sends boundary vertices to the
+boundary line.
 
-This is still vertex-indexed rather than point-indexed because the current complex API has no
-geometric realization map from vertices to support points. -/
+The complex API does not yet attach canonical support points to vertices, so this stores the
+support point used for each boundary vertex as part of the witness. -/
+structure BoundaryVertexImageData
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (f : K.K.support → Ω.carrier) where
+  point : ∀ v : K.K.Vertex, v ∈ K.boundaryVertices → K.K.support
+  maps_to_boundary : ∀ v hv, f (point v hv) ∈ Ω.boundaryCarrier
+
+/-- A map into a half-plane region sends boundary vertices to the boundary line. -/
 def BoundaryVerticesMapToBoundary
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
-    (_f : K.K.support → Ω.carrier) : Prop :=
-  ∀ v ∈ K.boundaryVertices, K.IsBoundaryVertex v
+    (f : K.K.support → Ω.carrier) : Prop :=
+  Nonempty (BoundaryVertexImageData K Ω f)
 
-/-- A map into a half-plane region sends boundary edges to the boundary line.
+/-- Finite data witnessing that a map into a half-plane region sends boundary edges to the
+boundary line.
 
-This will become a statement about edge realizations once simplex supports are geometric. -/
+The complex API does not yet attach canonical support carriers to boundary edges, so this stores
+one support point used for each boundary edge as part of the witness. -/
+structure BoundaryEdgeImageData
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (f : K.K.support → Ω.carrier) where
+  point : ∀ e : K.K.Simplex, e ∈ K.boundaryEdges → K.K.support
+  maps_to_boundary : ∀ e he, f (point e he) ∈ Ω.boundaryCarrier
+
+/-- A map into a half-plane region sends boundary edges to the boundary line. -/
 def BoundaryEdgesMapToBoundary
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
-    (_f : K.K.support → Ω.carrier) : Prop :=
-  ∀ e ∈ K.boundaryEdges, K.IsBoundaryEdge e
+    (f : K.K.support → Ω.carrier) : Prop :=
+  Nonempty (BoundaryEdgeImageData K Ω f)
 
 /-- Boundary-respecting maps into a half-plane region preserve boundary vertices and boundary
 edges. -/
@@ -2854,6 +2871,7 @@ theorem no_crossing_perturbation
 theorem boundary_polygonal_approximation
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
+    (hBoundary : BoundaryRespectingMap K Ω h)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
     ∃ f : K.K.support → Ω.carrier,
       IsApproximationOnOneSkeleton K.K φ f h ∧
@@ -2862,13 +2880,13 @@ theorem boundary_polygonal_approximation
   refine ⟨h, ?_, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
   · exact isPLOnOneSkeleton_identity K.K h
-  · intro e he
-    exact (K.mem_boundaryEdges_iff e).mp he
+  · exact hBoundary.edges
 
 /-- Boundary-aware polygonal approximation can be chosen to preserve boundary vertices. -/
 theorem boundary_endpoint_preservation_for_polygonal_approximation
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
+    (hBoundary : BoundaryRespectingMap K Ω h)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
     ∃ f : K.K.support → Ω.carrier,
       IsApproximationOnOneSkeleton K.K φ f h ∧
@@ -2877,43 +2895,35 @@ theorem boundary_endpoint_preservation_for_polygonal_approximation
   refine ⟨h, ?_, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
   · exact preservesVertices_all K.K h h
-  · intro v hv
-    exact (K.mem_boundaryVertices_iff v).mp hv
+  · exact hBoundary.vertices
 
 /-- Boundary-aware finite separation control for approximated edge images. -/
 theorem boundary_edge_separation_control
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
+    (hBoundary : BoundaryRespectingMap K Ω h)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
     ∃ f : K.K.support → Ω.carrier,
       IsApproximationOnOneSkeleton K.K φ f h ∧
         SeparatedOnEdges K.K f ∧
           BoundaryRespectingMap K Ω f := by
-  refine ⟨h, ?_, ?_, ?_, ?_⟩
+  refine ⟨h, ?_, ?_, hBoundary⟩
   · exact PhiApproximation.refl _hφ h
   · exact separatedOnEdges_all K.K h
-  · intro v hv
-    exact (K.mem_boundaryVertices_iff v).mp hv
-  · intro e he
-    exact (K.mem_boundaryEdges_iff e).mp he
 
 /-- Boundary-aware no-crossing perturbation for the finite family of edge arcs. -/
 theorem boundary_no_crossing_perturbation
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
+    (hBoundary : BoundaryRespectingMap K Ω h)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
     ∃ f : K.K.support → Ω.carrier,
       BoundaryRespectingOneSkeletonApproximation K Ω φ f h := by
-  refine ⟨h, ?_, ?_⟩
+  refine ⟨h, ?_, hBoundary⟩
   · refine IsPLApproximationOnOneSkeleton.mk (PhiApproximation.refl _hφ h) ?_ ?_ ?_
     · exact isPLOnOneSkeleton_identity K.K h
     · exact preservesVertices_all K.K h h
     · exact separatedOnEdges_all K.K h
-  · constructor
-    · intro v hv
-      exact (K.mem_boundaryVertices_iff v).mp hv
-    · intro e he
-      exact (K.mem_boundaryEdges_iff e).mp he
 
 /-- One-skeleton PL approximation theorem boundary for a homeomorphism into a plane region. -/
 theorem pl_approximation_one_skeleton
@@ -2930,10 +2940,11 @@ half-plane region. -/
 theorem bordered_pl_approximation_one_skeleton
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
+    (hBoundary : BoundaryRespectingMap K Ω h)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
     ∃ A : OneSkeletonApproximation K Ω.carrier φ h,
       BoundaryRespectingMap K Ω A.approx := by
-  rcases boundary_no_crossing_perturbation K Ω h φ _hφ with ⟨f, hf⟩
+  rcases boundary_no_crossing_perturbation K Ω h hBoundary φ _hφ with ⟨f, hf⟩
   refine ⟨{ approx := f, close := ?_, isPLApproximationOnOneSkeleton := hf.approximation },
     hf.boundary⟩
   exact hf.approximation.close
@@ -2986,7 +2997,8 @@ theorem boundary_cellwise_extension_by_relative_pl_schoenflies
     (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ)
     (A₁ : OneSkeletonApproximation K Ω.carrier φ h)
-    (hA₁ : BoundaryRespectingMap K Ω A₁.approx) :
+    (hA₁ : BoundaryRespectingMap K Ω A₁.approx)
+    (hBoundary : BoundaryRespectingMap K Ω h) :
     Nonempty (BoundaryCellwiseExtension K Ω φ h) := by
   let C : BoundaryCellwiseExtension K Ω φ h :=
     { oneSkeleton := A₁
@@ -2999,19 +3011,9 @@ theorem boundary_cellwise_extension_by_relative_pl_schoenflies
       eachTwoCellPL := isPLOnSkeleton_identity K.K h 2
       agreesOnSharedBoundaries :=
         ExtensionsAgreeOnSharedBoundary.ofSurface K (isPLOnOneSkeleton_identity K.K h)
-      boundaryRespecting := by
-        constructor
-        · intro v hv
-          exact (K.mem_boundaryVertices_iff v).mp hv
-        · intro e he
-          exact (K.mem_boundaryEdges_iff e).mp he
+      boundaryRespecting := hBoundary
       relativeBoundaryCells := by
-        exact ⟨hA₁, by
-          constructor
-          · intro v hv
-            exact (K.mem_boundaryVertices_iff v).mp hv
-          · intro e he
-            exact (K.mem_boundaryEdges_iff e).mp he⟩ }
+        exact ⟨hA₁, hBoundary⟩ }
   exact ⟨C⟩
 
 /-- Gluing compatible relative cellwise extensions into a global bordered PL approximation. -/
@@ -3046,11 +3048,12 @@ boundary-aware one-skeleton, relative Schoenflies, and relative gluing interface
 theorem bordered_pl_approximation_halfplane
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
+    (hBoundary : BoundaryRespectingMap K Ω h)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
     Nonempty (BoundaryGlobalPLSurfaceApproximation K Ω φ h) := by
-  rcases bordered_pl_approximation_one_skeleton K Ω h φ _hφ with ⟨A₁, hA₁⟩
-  rcases boundary_cellwise_extension_by_relative_pl_schoenflies K Ω h φ _hφ A₁ hA₁ with
-    ⟨C⟩
+  rcases bordered_pl_approximation_one_skeleton K Ω h hBoundary φ _hφ with ⟨A₁, hA₁⟩
+  rcases boundary_cellwise_extension_by_relative_pl_schoenflies K Ω h φ _hφ A₁ hA₁
+      hBoundary with ⟨C⟩
   exact boundary_global_pl_homeomorph_from_cellwise K Ω h φ _hφ C
 
 /-- PL approximation theorem between combinatorial surfaces. -/
@@ -8051,9 +8054,10 @@ theorem moise_extraction_finite_pl_triangulation_data
 theorem bordered_pl_approximation
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
+    (hBoundary : BoundaryRespectingMap K Ω h)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
     Nonempty (BoundaryGlobalPLSurfaceApproximation K Ω φ h) := by
-  exact bordered_pl_approximation_halfplane K Ω h φ _hφ
+  exact bordered_pl_approximation_halfplane K Ω h hBoundary φ _hφ
 
 /-- A compact mathlib bordered surface admits a finite cover by preferred chart-pair cores. -/
 theorem mathlib_bordered_surface_finite_chart_pair_cover

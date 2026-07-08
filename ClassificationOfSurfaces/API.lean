@@ -30,6 +30,9 @@ project skeleton and documents the intended handoff points between teams.
 * `CombinatorialTwoCell`
 * `SharedBoundaryCompatibilityData`
 * `ExtensionsAgreeOnSharedBoundary`
+* `BoundaryVertexImageData`
+* `BoundaryEdgeImageData`
+* `BoundaryRespectingMap`
 * `RadoChartPair.chartAt_extend_mem_frontier_target_of_manifold_boundary`
 * `mathlib_bordered_surface_finiteChartPairCover`
 * `mathlib_bordered_surface_finiteChartPairCover_boundarySet`
