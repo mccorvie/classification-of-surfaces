@@ -879,7 +879,8 @@ Proved finite/combinatorial bridge:
    the preferred mathlib chart at each point gives a chart pair whose core is a neighborhood, so a
    compact bordered surface has a finite chart-pair cover.  Its boundary core is now the part of
    the chart source mapped to the coordinate boundary line, exposed by
-   `fromChartAt_boundaryCore_in_model_boundary`, instead of the old empty-core placeholder.
+   `fromChartAt_boundaryCore_in_model_boundary` and
+   `fromChartAt_mem_boundaryCore_of_chart_coord_zero`, instead of the old empty-core placeholder.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
    `ChartPolygonalDisk` now carries explicit simplex-carrier data for its embedded PL complex,
@@ -1095,7 +1096,8 @@ model region contains the standard simplex.  The public theorems
 `mathlib_chartAt_model_region_contains_polygonal_neighborhood`,
 `mathlib_chartAt_contains_model_polygonal_disk_core` and
 `mathlib_chartAt_contains_polygonal_disk_core` are proved wrappers around the coordinate-local
-boundary.
+boundary.  The last wrapper now returns boundary-core compatibility with the preferred chart as
+well as ordinary core refinement.
 
 Compact finite-subcover extraction is packaged by
 `LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData` and exposed through

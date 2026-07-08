@@ -3654,6 +3654,26 @@ theorem fromChartAt_boundaryCore_in_model_boundary
     ((fromChartAt M x).chartHomeomorph y : Plane) 0 = 0 := by
   exact (fromChartAt M x).boundaryCore_in_boundary_chart rfl y hy
 
+/-- A point of the preferred chart source whose coordinate lies on the boundary line belongs to
+the preferred chart-pair boundary core. -/
+theorem fromChartAt_mem_boundaryCore_of_chart_coord_zero
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    (x : M) {y : (fromChartAt M x).domain}
+    (hy : ((fromChartAt M x).chartHomeomorph y : Plane) 0 = 0) :
+    (y : M) ∈ (fromChartAt M x).boundaryCore := by
+  change ∃ hy' : (y : M) ∈ (chartAt (EuclideanHalfSpace 2) x).source,
+    ((((chartAt (EuclideanHalfSpace 2) x).toHomeomorphSourceTarget.trans
+      ((Topology.IsEmbedding.subtypeVal :
+          Topology.IsEmbedding (Subtype.val : EuclideanHalfSpace 2 → Plane)).homeomorphImage
+        (chartAt (EuclideanHalfSpace 2) x).target))
+      ⟨(y : M), hy'⟩ : Plane) 0 = 0)
+  refine ⟨y.2, ?_⟩
+  change ((((chartAt (EuclideanHalfSpace 2) x).toHomeomorphSourceTarget.trans
+    ((Topology.IsEmbedding.subtypeVal :
+        Topology.IsEmbedding (Subtype.val : EuclideanHalfSpace 2 → Plane)).homeomorphImage
+      (chartAt (EuclideanHalfSpace 2) x).target)) y : Plane) 0 = 0) at hy
+  simpa using hy
+
 /-- A chart pair modeled on the half-disk. -/
 def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
   P.kind = RadoChartKind.halfDisk
@@ -7288,14 +7308,25 @@ theorem mathlib_chartAt_contains_polygonal_disk_core
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
     ∃ D : ChartPolygonalDisk M,
-      D.chart.Refines (RadoChartPair.fromChartAt M x) ∧ D.chart.core ∈ 𝓝 x := by
+      D.chart.Refines (RadoChartPair.fromChartAt M x) ∧
+        D.chart.boundaryCore ⊆ (RadoChartPair.fromChartAt M x).boundaryCore ∧
+          D.chart.core ∈ 𝓝 x := by
   rcases mathlib_chartAt_contains_model_polygonal_disk_core M x with ⟨D, hD⟩
-  refine ⟨D.toChartPolygonalDisk, ?_, ?_⟩
+  refine ⟨D.toChartPolygonalDisk, ?_, ?_, ?_⟩
   · exact D.toChartPair_refines (by
       intro y hy
       have hydomain : y ∈ (RadoChartPair.fromChartAt M x).domain :=
         D.pulledCore_subset_domain hy
       simpa [RadoChartPair.fromChartAt] using hydomain)
+  · intro y hy
+    rw [D.toChartPolygonalDisk_chart_boundaryCore] at hy
+    rcases hy with ⟨q, hq, rfl⟩
+    exact RadoChartPair.fromChartAt_mem_boundaryCore_of_chart_coord_zero M x
+      (y := (RadoChartPair.fromChartAt M x).chartHomeomorph.symm q) (by
+        have hline :=
+          D.modelBoundaryCore_in_boundary_chart
+            (RadoChartPair.fromChartAt_kind M x) q hq
+        simpa using hline)
   · simpa using hD
 
 /-- Pointwise chart-polygonal-disk data from a polygonal core inside the preferred mathlib chart.
@@ -7305,7 +7336,7 @@ theorem mathlib_bordered_surface_point_chart_polygonal_disk_data
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
     Nonempty (PointChartPolygonalDiskData M x) := by
-  rcases mathlib_chartAt_contains_polygonal_disk_core M x with ⟨D, _hrefines, hcore⟩
+  rcases mathlib_chartAt_contains_polygonal_disk_core M x with ⟨D, _hrefines, _hboundary, hcore⟩
   exact ⟨{ disk := D, core_mem_nhds := hcore }⟩
 
 /-- Pointwise chart-polygonal-disk data packages as local chart-polygonal-disk data. -/
