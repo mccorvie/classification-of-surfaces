@@ -589,6 +589,16 @@ theorem closedTriangleSimplexCarrier_e₂₀_coord_zero {p : TrianglePlane}
     p 0 = 0 :=
   hp.1
 
+/-- The part of the standard closed triangle lying on the coordinate boundary line is exactly the
+boundary edge `e₂₀`. -/
+theorem closedTriangleSupport_coord_zero_subset_e₂₀ {p : TrianglePlane}
+    (hp : p ∈ closedTriangleSupport) (h0 : p 0 = 0) :
+    p ∈ closedTriangleSimplexCarrier TriangleSimplex.e₂₀ := by
+  rcases hp with ⟨_hp0, hp1, hsum⟩
+  refine ⟨h0, hp1, ?_⟩
+  rw [h0, zero_add] at hsum
+  exact hsum
+
 theorem closedTriangleSupport_mem_nhds_centroid :
     closedTriangleSupport ∈ 𝓝 closedTriangleCentroid := by
   have h0 : IsOpen {p : TrianglePlane | 0 < p 0} := by
@@ -3977,6 +3987,23 @@ theorem boundaryCore_subset_boundarySupport
   rcases D.boundaryCore_covered_by_boundary x hx with ⟨σ, hσ, hxσ⟩
   exact ⟨σ, hσ, by simpa [toPLComplexInSpace, PLComplexInSpace.simplexCarrier] using hxσ⟩
 
+/-- A local chart polygonal disk is boundary-faithful if, in a half-disk chart, the whole part of
+its core whose chart coordinate lies on the model boundary line is included in the stored
+boundary core. -/
+def BoundaryFaithful {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk M) : Prop :=
+  D.chart.kind = RadoChartKind.halfDisk →
+    ∀ x (hx : x ∈ D.chart.core),
+      ((D.chart.chartHomeomorph ⟨x, D.chart.core_subset_domain hx⟩ : Plane) 0 = 0) →
+        x ∈ D.chart.boundaryCore
+
+theorem boundaryCore_of_chart_coord_zero
+    {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk M)
+    (hD : D.BoundaryFaithful) (hkind : D.chart.kind = RadoChartKind.halfDisk)
+    {x : M} (hx : x ∈ D.chart.core)
+    (hline : ((D.chart.chartHomeomorph ⟨x, D.chart.core_subset_domain hx⟩ : Plane) 0 = 0)) :
+    x ∈ D.chart.boundaryCore :=
+  hD hkind x hx hline
+
 end ChartPolygonalDisk
 
 /-- A polygonal disk embedded in the model region of a Rado chart pair.
@@ -3996,6 +4023,9 @@ structure ModelChartPolygonalDisk {M : Type*} [TopologicalSpace M] (P : RadoChar
   modelBoundaryCore_empty_of_disk : P.kind = RadoChartKind.disk → modelBoundaryCore = ∅
   modelBoundaryCore_in_boundary_chart :
     P.kind = RadoChartKind.halfDisk → ∀ q ∈ modelBoundaryCore, (q : Plane) 0 = 0
+  modelBoundaryCore_contains_boundary_chart :
+    P.kind = RadoChartKind.halfDisk →
+      ∀ q ∈ Set.range embed, (q : Plane) 0 = 0 → q ∈ modelBoundaryCore
   modelBoundaryCore_covered_by_boundary :
     ∀ q ∈ modelBoundaryCore, ∃ σ ∈ disk.boundarySubcomplex.simplexes, q ∈ simplexCarrier σ
   respectsChartModel : ∀ p : disk.K.support, (embed p : Plane) ∈ P.modelRegion
@@ -4146,6 +4176,32 @@ def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M 
     D.toChartPolygonalDisk.chart.boundaryCore = D.pulledBoundaryCore := by
   rfl
 
+/-- Pulling back a boundary-faithful model polygonal disk gives a boundary-faithful manifold
+chart polygonal disk. -/
+theorem toChartPolygonalDisk_boundaryFaithful (D : ModelChartPolygonalDisk P) :
+    D.toChartPolygonalDisk.BoundaryFaithful := by
+  intro hkind x hx hline
+  have hkindP : P.kind = RadoChartKind.halfDisk := by
+    simpa [toChartPolygonalDisk, toChartPair, RadoChartPair.withCore] using hkind
+  have hxPulled : x ∈ D.pulledCore := by
+    simpa [toChartPolygonalDisk, toChartPair, RadoChartPair.withCore] using hx
+  rcases hxPulled with ⟨p, rfl⟩
+  change D.toManifoldEmbed p ∈ D.pulledBoundaryCore
+  refine ⟨D.embed p, ?_, rfl⟩
+  apply D.modelBoundaryCore_contains_boundary_chart hkindP
+  · exact ⟨p, rfl⟩
+  · have hcoord :
+        D.toChartPolygonalDisk.chart.chartHomeomorph
+            ⟨D.toManifoldEmbed p,
+              D.toChartPolygonalDisk.chart.core_subset_domain hx⟩ =
+          D.embed p := by
+      change P.chartHomeomorph
+          ⟨(P.chartHomeomorph.symm (D.embed p)).1, _⟩ =
+        D.embed p
+      exact P.chartHomeomorph.apply_symm_apply (D.embed p)
+    rw [hcoord] at hline
+    exact hline
+
 @[simp] theorem toChartPolygonalDisk_simplexCarrier (D : ModelChartPolygonalDisk P)
     (σ : D.disk.K.Simplex) :
     D.toChartPolygonalDisk.simplexCarrier σ =
@@ -4220,9 +4276,17 @@ def standardTriangleInModel (P : RadoChartPair M)
       cases h
     · rw [hkind] at hq
       change (q : Plane) ∈
-        EuclideanComplex.Examples.closedTriangleSimplexCarrier
+          EuclideanComplex.Examples.closedTriangleSimplexCarrier
           EuclideanComplex.Examples.TriangleSimplex.e₂₀ at hq
       exact EuclideanComplex.Examples.closedTriangleSimplexCarrier_e₂₀_coord_zero hq
+  modelBoundaryCore_contains_boundary_chart := by
+    intro h q hq hline
+    rw [h]
+    rcases hq with ⟨p, rfl⟩
+    change (p.1 : Plane) ∈
+      EuclideanComplex.Examples.closedTriangleSimplexCarrier
+        EuclideanComplex.Examples.TriangleSimplex.e₂₀
+    exact EuclideanComplex.Examples.closedTriangleSupport_coord_zero_subset_e₂₀ p.2 hline
   modelBoundaryCore_covered_by_boundary := by
     intro q hq
     cases hkind : P.kind
@@ -4254,6 +4318,8 @@ structure PlaneRegionPolygonalNeighborhood (Ω : Set Plane) (y : Ω) where
   boundaryCarrier : Set Ω
   boundaryCarrier_subset_range : boundaryCarrier ⊆ Set.range embed
   boundaryCarrier_in_coordBoundary : ∀ q ∈ boundaryCarrier, (q : Plane) 0 = 0
+  boundaryCarrier_contains_coordBoundary :
+    ∀ q ∈ Set.range embed, (q : Plane) 0 = 0 → q ∈ boundaryCarrier
   boundaryCarrier_covered_by_boundary :
     ∀ q ∈ boundaryCarrier, ∃ σ ∈ disk.boundarySubcomplex.simplexes, q ∈ simplexCarrier σ
   range_mem_nhds : Set.range embed ∈ 𝓝 y
@@ -4358,6 +4424,11 @@ structure PlaneRegionBoundaryTriangleCopy (Ω : Set Plane) (y : Ω) where
       EuclideanComplex.Examples.closedTriangleSimplexCarrier
         EuclideanComplex.Examples.TriangleSimplex.e₂₀,
       (homeomorph p) 0 = 0
+  boundary_line_preimage_subset_boundary_edge :
+    ∀ p ∈ EuclideanComplex.Examples.closedTriangleSupport, (homeomorph p) 0 = 0 →
+      p ∈
+        EuclideanComplex.Examples.closedTriangleSimplexCarrier
+          EuclideanComplex.Examples.TriangleSimplex.e₂₀
 
 namespace PlaneRegionBoundaryTriangleCopy
 
@@ -4470,6 +4541,20 @@ def ofBoundaryAnchoredHomothety {Ω : Set Plane} {y : Ω}
     have hp0 := EuclideanComplex.Examples.closedTriangleSimplexCarrier_e₂₀_coord_zero hp
     simp [boundaryAnchoredHomothety, EuclideanComplex.Examples.closedTriangleBoundaryAnchor,
       hcenter, hp0, smul_eq_mul]
+  boundary_line_preimage_subset_boundary_edge := by
+    intro p hp hline
+    have hcoord :
+        (boundaryAnchoredHomothety y.1 scale hscale p) 0 =
+          scale * p 0 := by
+      simp [boundaryAnchoredHomothety, EuclideanComplex.Examples.closedTriangleBoundaryAnchor,
+        hcenter, smul_eq_mul]
+    have hp0 : p 0 = 0 := by
+      have hmul : scale * p 0 = 0 := by
+        simpa [hcoord] using hline
+      rcases mul_eq_zero.mp hmul with hscale_zero | hp0
+      · exact False.elim (hscale hscale_zero)
+      · exact hp0
+    exact EuclideanComplex.Examples.closedTriangleSupport_coord_zero_subset_e₂₀ hp hp0
 
 /-- Every relative neighborhood of a boundary point in the coordinate-0 half-plane contains a
 sufficiently small positive boundary-anchored copy of the standard triangle. -/
@@ -4527,8 +4612,10 @@ theorem standardTriangle_support_eq :
   rfl
 
 /-- A centered homeomorphic copy of the standard triangle in a region gives a polygonal
-neighborhood of the center. -/
-def ofTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionTriangleCopy Ω y) :
+neighborhood of the center, provided its image avoids the coordinate boundary line. -/
+def ofTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionTriangleCopy Ω y)
+    (havoidsCoordBoundary :
+      ∀ p ∈ EuclideanComplex.Examples.closedTriangleSupport, (T.homeomorph p) 0 ≠ 0) :
     PlaneRegionPolygonalNeighborhood Ω y where
   disk := PolygonalDiskExamples.standardTriangle
   embed := fun p =>
@@ -4574,6 +4661,10 @@ def ofTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionTriangleCopy Ω y) 
   boundaryCarrier_in_coordBoundary := by
     intro q hq
     simp at hq
+  boundaryCarrier_contains_coordBoundary := by
+    intro q hq hline
+    rcases hq with ⟨p, rfl⟩
+    exact False.elim (havoidsCoordBoundary p.1 p.2 hline)
   boundaryCarrier_covered_by_boundary := by
     intro q hq
     simp at hq
@@ -4672,6 +4763,11 @@ def ofBoundaryTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionBoundaryTri
     rcases hq with ⟨p, hp, hq⟩
     have hline := T.maps_boundary_edge_to_boundary_line p hp
     simpa [← hq] using hline
+  boundaryCarrier_contains_coordBoundary := by
+    intro q hq hline
+    rcases hq with ⟨p, rfl⟩
+    refine ⟨p.1, ?_, rfl⟩
+    exact T.boundary_line_preimage_subset_boundary_edge p.1 p.2 hline
   boundaryCarrier_covered_by_boundary := by
     intro q hq
     exact ⟨EuclideanComplex.Examples.TriangleSimplex.e₂₀, by decide, hq⟩
@@ -4733,6 +4829,13 @@ def toModelChartPolygonalDisk
     · rw [hkind] at hq
       change q ∈ N.boundaryCarrier at hq
       exact N.boundaryCarrier_in_coordBoundary q hq
+  modelBoundaryCore_contains_boundary_chart := by
+    intro h q hq hline
+    cases hkind : P.kind
+    · rw [hkind] at h
+      cases h
+    · change q ∈ N.boundaryCarrier
+      exact N.boundaryCarrier_contains_coordBoundary q hq hline
   modelBoundaryCore_covered_by_boundary := by
     intro q hq
     cases hkind : P.kind
@@ -5034,6 +5137,7 @@ structure FiniteChartPolygonalDiskData
   compatibleChartShrinks : ∀ i : C.Index, (disk i).chart.Refines (C.pair i)
   boundaryCompatibleChartShrinks :
     ∀ i : C.Index, (disk i).chart.boundaryCore ⊆ (C.pair i).boundaryCore
+  boundaryFaithful : ∀ i : C.Index, (disk i).BoundaryFaithful
 
 namespace FiniteChartPolygonalDiskData
 
@@ -5047,6 +5151,11 @@ def BoundaryCompatibleChartShrinks {M : Type u} [TopologicalSpace M]
     {C : FiniteChartPairCover M} (D : FiniteChartPolygonalDiskData C) : Prop :=
   ∀ i : C.Index, (D.disk i).chart.boundaryCore ⊆ (C.pair i).boundaryCore
 
+/-- Every selected local polygonal disk is boundary-faithful. -/
+def BoundaryFaithful {M : Type u} [TopologicalSpace M]
+    {C : FiniteChartPairCover M} (D : FiniteChartPolygonalDiskData C) : Prop :=
+  ∀ i : C.Index, (D.disk i).BoundaryFaithful
+
 end FiniteChartPolygonalDiskData
 
 /-- Pointwise local chart-polygonal-disk data before compactness extracts a finite subcover. -/
@@ -5058,11 +5167,13 @@ structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
   compatibleChartShrinks : ∀ x : M, (diskAt x).chart.Refines (pairAt x)
   boundaryCompatibleChartShrinks :
     ∀ x : M, (diskAt x).chart.boundaryCore ⊆ (pairAt x).boundaryCore
+  boundaryFaithful : ∀ x : M, (diskAt x).BoundaryFaithful
 
 /-- Pointwise local chart-polygonal-disk data at one point. -/
 structure PointChartPolygonalDiskData (M : Type*) [TopologicalSpace M] (x : M) where
   disk : ChartPolygonalDisk M
   core_mem_nhds : disk.chart.core ∈ 𝓝 x
+  boundaryFaithful : disk.BoundaryFaithful
 
 /-- The concrete face-closure condition carried by a boundary subcomplex. -/
 def BoundarySubcomplexFaceClosed (K : EuclideanComplex) (A : K.Subcomplex) : Prop :=
@@ -7428,12 +7539,31 @@ theorem euclideanHalfSpace_interior_polygonal_neighborhood_at
     Nonempty (PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩) := by
   have hAmbient : (Subtype.val '' U : Set Plane) ∈ 𝓝 y.1 :=
     euclideanHalfSpace_interior_image_mem_nhds U y hU hy
+  have hPositive : {p : Plane | 0 < p 0} ∈ 𝓝 y.1 := by
+    have hOpen : IsOpen {p : Plane | 0 < p 0} := by
+      exact isOpen_lt continuous_const
+        (PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) (0 : Fin 2))
+    exact hOpen.mem_nhds hy
+  have hAmbientPositive :
+      ((Subtype.val '' U : Set Plane) ∩ {p : Plane | 0 < p 0}) ∈ 𝓝 y.1 :=
+    Filter.inter_mem hAmbient hPositive
   rcases PlaneRegionTriangleCopy.exists_centeredHomothety_image_subset_of_mem_nhds
-      (Ω := (Subtype.val '' U : Set Plane)) hAmbient with
+      (Ω := (Subtype.val '' U : Set Plane) ∩ {p : Plane | 0 < p 0}) hAmbientPositive with
     ⟨scale, hscale, hsubset⟩
   let T : PlaneRegionTriangleCopy (Subtype.val '' U) ⟨y.1, hyU⟩ :=
-    PlaneRegionTriangleCopy.ofCenteredHomothety scale hscale hsubset
-  exact ⟨PlaneRegionPolygonalNeighborhood.ofTriangleCopy T⟩
+    PlaneRegionTriangleCopy.ofCenteredHomothety scale hscale (by
+      intro z hz
+      exact (hsubset hz).1)
+  have havoidsCoordBoundary :
+      ∀ p ∈ EuclideanComplex.Examples.closedTriangleSupport, (T.homeomorph p) 0 ≠ 0 := by
+    intro p hp hline
+    have hpos :
+        0 <
+          (PlaneRegionTriangleCopy.centeredHomothety y.1 scale hscale p) 0 :=
+      (hsubset ⟨p, hp, rfl⟩).2
+    change (PlaneRegionTriangleCopy.centeredHomothety y.1 scale hscale p) 0 = 0 at hline
+    linarith
+  exact ⟨PlaneRegionPolygonalNeighborhood.ofTriangleCopy T havoidsCoordBoundary⟩
 
 /-- An open neighborhood of an interior point in the model half-plane contains an embedded
 polygonal disk whose image is a neighborhood of the point. -/
@@ -7544,9 +7674,9 @@ theorem mathlib_chartAt_contains_polygonal_disk_core
     ∃ D : ChartPolygonalDisk M,
       D.chart.Refines (RadoChartPair.fromChartAt M x) ∧
         D.chart.boundaryCore ⊆ (RadoChartPair.fromChartAt M x).boundaryCore ∧
-          D.chart.core ∈ 𝓝 x := by
+          D.chart.core ∈ 𝓝 x ∧ D.BoundaryFaithful := by
   rcases mathlib_chartAt_contains_model_polygonal_disk_core M x with ⟨D, hD⟩
-  refine ⟨D.toChartPolygonalDisk, ?_, ?_, ?_⟩
+  refine ⟨D.toChartPolygonalDisk, ?_, ?_, ?_, ?_⟩
   · exact D.toChartPair_refines (by
       intro y hy
       have hydomain : y ∈ (RadoChartPair.fromChartAt M x).domain :=
@@ -7562,6 +7692,7 @@ theorem mathlib_chartAt_contains_polygonal_disk_core
             (RadoChartPair.fromChartAt_kind M x) q hq
         simpa using hline)
   · simpa using hD
+  · exact D.toChartPolygonalDisk_boundaryFaithful
 
 /-- Pointwise chart-polygonal-disk data from a polygonal core inside the preferred mathlib chart.
 -/
@@ -7570,8 +7701,9 @@ theorem mathlib_bordered_surface_point_chart_polygonal_disk_data
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
     Nonempty (PointChartPolygonalDiskData M x) := by
-  rcases mathlib_chartAt_contains_polygonal_disk_core M x with ⟨D, _hrefines, _hboundary, hcore⟩
-  exact ⟨{ disk := D, core_mem_nhds := hcore }⟩
+  rcases mathlib_chartAt_contains_polygonal_disk_core M x with
+    ⟨D, _hrefines, _hboundary, hcore, hfaithful⟩
+  exact ⟨{ disk := D, core_mem_nhds := hcore, boundaryFaithful := hfaithful }⟩
 
 /-- Pointwise chart-polygonal-disk data packages as local chart-polygonal-disk data. -/
 theorem local_chart_polygonal_disk_data_of_pointwise
@@ -7595,7 +7727,10 @@ theorem local_chart_polygonal_disk_data_of_pointwise
         exact ⟨subset_rfl, subset_rfl⟩
       boundaryCompatibleChartShrinks := by
         intro x
-        exact subset_rfl }
+        exact subset_rfl
+      boundaryFaithful := by
+        intro x
+        exact (Classical.choice (h x)).boundaryFaithful }
   exact ⟨L⟩
 
 /-- Local chart-polygonal-disk data extracted pointwise from the mathlib atlas. -/
@@ -7676,7 +7811,10 @@ noncomputable def toFiniteChartPolygonalDiskData
         exact L.compatibleChartShrinks i.1
       boundaryCompatibleChartShrinks := by
         intro i
-        exact L.boundaryCompatibleChartShrinks i.1 }
+        exact L.boundaryCompatibleChartShrinks i.1
+      boundaryFaithful := by
+        intro i
+        exact L.boundaryFaithful i.1 }
   exact ⟨C, D⟩
 
 /-- The finite chart-pair cover extracted from local chart-polygonal-disk data. -/

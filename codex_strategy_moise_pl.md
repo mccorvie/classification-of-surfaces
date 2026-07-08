@@ -829,6 +829,7 @@ structure FiniteChartPolygonalDiskData
   compatibleChartShrinks : ∀ i : C.Index, (disk i).chart.Refines (C.pair i)
   boundaryCompatibleChartShrinks :
     ∀ i : C.Index, (disk i).chart.boundaryCore ⊆ (C.pair i).boundaryCore
+  boundaryFaithful : ∀ i : C.Index, (disk i).BoundaryFaithful
 
 structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
   pairAt : M → RadoChartPair M
@@ -838,10 +839,12 @@ structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
   compatibleChartShrinks : ∀ x : M, (diskAt x).chart.Refines (pairAt x)
   boundaryCompatibleChartShrinks :
     ∀ x : M, (diskAt x).chart.boundaryCore ⊆ (pairAt x).boundaryCore
+  boundaryFaithful : ∀ x : M, (diskAt x).BoundaryFaithful
 
 structure PointChartPolygonalDiskData (M : Type*) [TopologicalSpace M] (x : M) where
   disk : ChartPolygonalDisk M
   core_mem_nhds : disk.chart.core ∈ 𝓝 x
+  boundaryFaithful : disk.BoundaryFaithful
 
 structure FiniteRadoInductionGeometry
     {M : Type*} [TopologicalSpace M] (C : FiniteChartPairCover M) where
@@ -900,8 +903,14 @@ Proved finite/combinatorial bridge:
    may still use coarse carriers where detailed simplex geometry is not supplied, but the local
    chart pipeline now accepts and transports faithful carrier data.  Plane-region neighborhoods
    also carry a boundary carrier; boundary-anchored triangle copies prove that the standard
-   boundary edge maps to the coordinate boundary line, and `ModelChartPolygonalDisk.toChartPair`
-   pulls that carrier back instead of replacing the boundary core by `∅`.
+   boundary edge maps to the coordinate boundary line and that every support point mapped to the
+   coordinate boundary line comes from that edge.  `PlaneRegionPolygonalNeighborhood` now carries
+   `boundaryCarrier_contains_coordBoundary`, `ModelChartPolygonalDisk` carries
+   `modelBoundaryCore_contains_boundary_chart`, and
+   `ModelChartPolygonalDisk.toChartPolygonalDisk_boundaryFaithful` proves the pulled-back
+   `ChartPolygonalDisk.BoundaryFaithful` predicate.  Thus `ModelChartPolygonalDisk.toChartPair`
+   pulls back a boundary core that is not merely included in the model boundary line but also
+   contains the local polygonal support lying on that line.
    `ChartPolygonalDisk.boundaryCore_subset_boundarySupport` now exposes the stronger fact that
    chart boundary cores are covered by the disk boundary subcomplex, and the initial Rado state
    records this with `toState_coversBoundaryCoresInBoundaryUpTo`.
@@ -1076,6 +1085,8 @@ The standard-triangle part of the interior construction is also factored:
    ambient plane neighborhood contains a sufficiently small centered triangle.
 8. `PlaneRegionPolygonalNeighborhood.ofTriangleCopy` converts such a copy into the
    `PlaneRegionPolygonalNeighborhood` object, proving the embedding and neighborhood fields.
+   For the half-plane interior route, the triangle is chosen inside the positive coordinate
+   half-plane, so its empty boundary carrier is justified by a genuine no-boundary-line proof.
 
 Thus `euclideanHalfSpace_interior_polygonal_neighborhood_at` is proved.  The boundary case should
 is factored through the analogous anchored triangle API:
@@ -1088,7 +1099,9 @@ is factored through the analogous anchored triangle API:
    the coarse metric bound needed for shrinking.
 4. `PlaneRegionBoundaryTriangleCopy` records a plane homeomorphism taking the boundary anchor to
    the target point, sending the triangle into the region, and making the image a relative
-   neighborhood there.
+   neighborhood there.  It records both directions of the boundary-line relation: the standard
+   boundary edge maps into the coordinate boundary line, and any point of the standard support
+   mapped to that line lies on the distinguished edge.
 5. `PlaneRegionBoundaryTriangleCopy.boundaryAnchoredHomothety` is the explicit positive scaling
    about the boundary anchor followed by translation to the target boundary point.
 6. `PlaneRegionBoundaryTriangleCopy.exists_boundaryAnchoredHomothety_image_subset_of_mem_nhdsWithin`
