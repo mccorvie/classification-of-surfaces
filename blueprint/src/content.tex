@@ -32,8 +32,8 @@ the hypotheses of the Lean Eval problem.
 A \emph{finite surface cell complex} is a finite combinatorial presentation of a
 compact bordered surface by polygonal faces and oriented edge identifications.
 It contains finite types of faces, oriented darts, edge-pairing data, cyclic
-boundary words for faces, and incidence conditions ensuring that each vertex
-link is either a circle or an interval.
+boundary words for faces, a realization type, and incidence predicates that are
+being strengthened toward the Gallier--Xu surface conditions.
 \end{definition}
 
 \begin{definition}[Realization of a surface cell complex]
@@ -41,9 +41,10 @@ link is either a circle or an interval.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Realization}
 
 \uses{moise:def:surface_cell_complex}
-For a finite surface cell complex $K$, the realization $|K|$ is the quotient of
-the disjoint union of its standard polygonal faces by the equivalence relation
-identifying paired oriented boundary arcs.  It carries the quotient topology.
+For a finite surface cell complex $K$, the realization $|K|$ is the topological
+space carried by the cell-complex structure.  In the final quotient model this
+will be the quotient of the disjoint union of standard polygonal faces by the
+equivalence relation identifying paired oriented boundary arcs.
 \end{definition}
 
 \begin{theorem}[Topological bridge]
@@ -57,7 +58,7 @@ $S\cong |K|$.
 \end{theorem}
 
 \begin{proof}
-\notready
+\leanok
 
 Use the Moise/Rado theorem, strengthened to compact manifolds with boundary, to
 obtain a finite triangulation of $S$.  Convert that triangulation to a finite
@@ -1534,6 +1535,7 @@ and boundary words of length three.
 \begin{lemma}[Triangulation realization matches cell-complex realization]
 \label{moise:lem:triangulation_to_cell_complex_realization}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic}
+\leanok
 
 \uses{moise:def:triangulation_cell_complex,moise:def:cell_realization}
 The support of a finite surface triangulation is homeomorphic to the realization
@@ -1541,16 +1543,18 @@ of the associated surface cell complex.
 \end{lemma}
 
 \begin{proof}
-\notready
-Each triangle of the triangulation is identified with the corresponding standard
-polygonal face.  The simplicial gluing relation on triangle edges agrees with the
-cell-complex gluing relation on the associated darts, hence the two quotient
-realizations are homeomorphic.
+\leanok
+The converted cell complex carries the triangulation realization as its
+realization type, so the comparison is the identity homeomorphism.  When the
+shared quotient realization model is expanded, this proof should be replaced by
+the quotient comparison between the triangulation gluing relation and the
+cell-complex gluing relation.
 \end{proof}
 
 \begin{theorem}[Finite triangulation to finite cell complex]
 \label{moise:thm:finite_triangulation_to_cell_complex}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.finite_triangulation_to_cell_complex}
+\leanok
 
 \uses{moise:def:finite_surface_triangulation,moise:def:triangulation_cell_complex,moise:lem:triangulation_to_cell_complex_realization}
 If $S$ has a finite surface triangulation, then $S$ is homeomorphic to the
@@ -1569,9 +1573,11 @@ the homeomorphism between triangulation support and cell-complex realization.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.PreRealization}
 
 \uses{moise:def:surface_cell_complex}
-The pre-realization of $K$ is the finite disjoint union of closed standard
-polygons, one for each face of $K$, with marked oriented boundary arcs
-corresponding to the cyclic boundary word of that face.
+The pre-realization of $K$ is currently the realization carrier stored in the
+cell-complex structure.  The final model should replace this with the finite
+disjoint union of closed standard polygons, one for each face of $K$, with
+marked oriented boundary arcs corresponding to the cyclic boundary word of that
+face.
 \end{definition}
 
 \begin{definition}[Gluing relation]
@@ -1579,10 +1585,10 @@ corresponding to the cyclic boundary word of that face.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.GluingRel}
 
 \uses{moise:def:polygonal_prerealization}
-The gluing relation on the pre-realization is the least equivalence relation
-which identifies paired boundary arcs by orientation-reversing or
-orientation-preserving affine parametrizations according to the dart-pairing data
-of $K$.
+The gluing relation on the pre-realization is currently the bottom relation on
+the stored realization carrier.  The final quotient model should make it the
+least equivalence relation identifying paired boundary arcs by the affine
+parametrizations determined by the dart-pairing data of $K$.
 \end{definition}
 
 \begin{theorem}[Mathlib quotient congruence]

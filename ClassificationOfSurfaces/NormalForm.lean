@@ -43,9 +43,7 @@ theorem SurfaceCellComplex.hasEvalRepresentative (K : SurfaceCellComplex) :
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (K.Realization ≃ₜ Quot (OrientableRel p n))) ∨
           (1 ≤ p ∧ Nonempty (K.Realization ≃ₜ Quot (NonOrientableRel p n))) := by
-  right
-  refine ⟨1, 0, Or.inl ?_⟩
-  exact ⟨Or.inl le_rfl, ⟨orientableRelPUnitHomeomorph 1 0⟩⟩
+  sorry
 
 /-- Compatibility spelling for the initial scaffold theorem name. -/
 theorem cell_complex_has_eval_representative (K : CellComplex) :

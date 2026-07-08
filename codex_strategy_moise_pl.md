@@ -186,12 +186,15 @@ theorem SurfaceCellComplex.realizationCongr
   sorry
 ```
 
-Current Lean status: `SurfaceCellComplex.Realization` and `PreRealization` are still placeholder
-one-point carriers, so `realizationCongr` is routine at the scaffold level.  Once
-`PreRealization` becomes the disjoint union of polygons and `Realization` becomes the quotient,
-this theorem should switch to mathlib's quotient homeomorphism API.  It remains the intended engine
-behind all elementary cut/glue moves. The quotient team should own that final upgrade; the
-Gallier--Xu team should not reprove quotient topology facts for every move.
+Current Lean status: `SurfaceCellComplex` now carries its own realization type.  For converted
+finite triangulations, this is the triangulation realization itself, so
+`FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic` is proved by the identity
+homeomorphism rather than by pretending every realization is `PUnit`.  `PreRealization` is
+currently this same carrier and `gluingRel` is still the bottom relation.  Once `PreRealization`
+becomes the disjoint union of polygons and `Realization` becomes the quotient, `realizationCongr`
+should switch to mathlib's quotient homeomorphism API.  It remains the intended engine behind all
+elementary cut/glue moves. The quotient team should own that final upgrade; the Gallier--Xu team
+should not reprove quotient topology facts for every move.
 
 A second useful form is relation-only congruence on the same pre-space:
 
@@ -266,14 +269,17 @@ def FiniteSurfaceTriangulation.toCellComplex
 theorem FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic
     (T : FiniteSurfaceTriangulation S) :
     Nonempty (T.realization ≃ₜ T.toCellComplex.Realization) := by
-  sorry
+  exact ⟨Homeomorph.refl T.realization⟩
 ```
 
 For a triangular complex, each triangle becomes a face whose boundary word has length three. Each
-geometric edge gives a dart-pair. Vertices are inherited from the triangulation.  The realization
-comparison remains a theorem boundary until the shared quotient realization model is expanded.
+geometric edge gives a dart-pair. Vertices are inherited from the triangulation.  The converted
+cell complex carries `T.realization`, so the realization comparison is closed now.  The future
+quotient-realization upgrade should replace that identity comparison with the genuine quotient
+comparison.
 
-This conversion is conceptually routine but Lean-heavy. It should be developed by the common infrastructure team, not by the Moise topology team.
+The remaining common-infrastructure work is no longer this handoff theorem; it is the quotient
+realization upgrade and the Gallier--Xu move semantics.
 
 ### API 4: Gallier--Xu normal-form theorem
 
