@@ -3850,6 +3850,10 @@ structure ModelChartPolygonalDisk {M : Type*} [TopologicalSpace M] (P : RadoChar
   disk : PolygonalDisk
   embed : disk.K.support → P.modelRegion
   isEmbedding : _root_.Topology.IsEmbedding embed
+  simplexCarrier : disk.K.Simplex → Set P.modelRegion
+  simplexCarrier_subset : ∀ σ, simplexCarrier σ ⊆ Set.range embed
+  support_covered_by_simplexCarrier :
+    ∀ x ∈ Set.range embed, ∃ σ : disk.K.Simplex, x ∈ simplexCarrier σ
   respectsChartModel : ∀ p : disk.K.support, (embed p : Plane) ∈ P.modelRegion
 
 namespace ModelChartPolygonalDisk
@@ -3942,13 +3946,20 @@ def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M 
   boundaryCore_covered := by
     intro y hy
     simp [toChartPair, RadoChartPair.withCore] at hy
-  simplexCarrier := fun _ => Set.range D.toManifoldEmbed
+  simplexCarrier := fun σ =>
+    (fun q : P.modelRegion => (P.chartHomeomorph.symm q).1) '' D.simplexCarrier σ
   simplexCarrier_subset := by
-    intro σ
-    exact subset_rfl
+    intro σ x hx
+    rcases hx with ⟨q, hq, rfl⟩
+    rcases D.simplexCarrier_subset σ hq with ⟨p, hp⟩
+    refine ⟨p, ?_⟩
+    simpa [toManifoldEmbed] using congrArg (fun q : P.modelRegion => (P.chartHomeomorph.symm q).1)
+      hp
   support_covered_by_simplexCarrier := by
     intro x hx
-    exact ⟨D.disk.K.defaultSimplex, hx⟩
+    rcases hx with ⟨p, rfl⟩
+    rcases D.support_covered_by_simplexCarrier (D.embed p) ⟨p, rfl⟩ with ⟨σ, hσ⟩
+    exact ⟨σ, ⟨D.embed p, hσ, rfl⟩⟩
   boundaryCore_covered_by_boundary := by
     intro y hy
     simp [toChartPair, RadoChartPair.withCore] at hy
@@ -3959,6 +3970,12 @@ def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M 
 
 @[simp] theorem toChartPolygonalDisk_chart_core (D : ModelChartPolygonalDisk P) :
     D.toChartPolygonalDisk.chart.core = D.pulledCore := by
+  rfl
+
+@[simp] theorem toChartPolygonalDisk_simplexCarrier (D : ModelChartPolygonalDisk P)
+    (σ : D.disk.K.Simplex) :
+    D.toChartPolygonalDisk.simplexCarrier σ =
+      (fun q : P.modelRegion => (P.chartHomeomorph.symm q).1) '' D.simplexCarrier σ := by
   rfl
 
 /-- A pulled-back model disk refines its ambient chart pair whenever its pulled-back core lies in
@@ -3996,6 +4013,14 @@ def standardTriangleInModel (P : RadoChartPair M)
     change _root_.Topology.IsEmbedding
       (fun p : PolygonalDiskExamples.standardTriangle.K.support => (p.1 : Plane))
     simpa [Function.comp_def] using hDomain
+  simplexCarrier := fun _ => Set.range (fun p : PolygonalDiskExamples.standardTriangle.K.support =>
+    (⟨p.1, hregion p.2⟩ : P.modelRegion))
+  simplexCarrier_subset := by
+    intro σ
+    exact subset_rfl
+  support_covered_by_simplexCarrier := by
+    intro x hx
+    exact ⟨PolygonalDiskExamples.standardTriangle.K.defaultSimplex, hx⟩
   respectsChartModel := by
     intro p
     exact (⟨p.1, hregion p.2⟩ : P.modelRegion).2
@@ -4009,6 +4034,10 @@ structure PlaneRegionPolygonalNeighborhood (Ω : Set Plane) (y : Ω) where
   disk : PolygonalDisk
   embed : disk.K.support → Ω
   isEmbedding : _root_.Topology.IsEmbedding embed
+  simplexCarrier : disk.K.Simplex → Set Ω
+  simplexCarrier_subset : ∀ σ, simplexCarrier σ ⊆ Set.range embed
+  support_covered_by_simplexCarrier :
+    ∀ x ∈ Set.range embed, ∃ σ : disk.K.Simplex, x ∈ simplexCarrier σ
   range_mem_nhds : Set.range embed ∈ 𝓝 y
   respectsChartModel : ∀ p : disk.K.support, (embed p : Plane) ∈ Ω
 
@@ -4289,6 +4318,16 @@ def ofTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionTriangleCopy Ω y) 
     change _root_.Topology.IsEmbedding
       (fun p : PolygonalDiskExamples.standardTriangle.K.support => T.homeomorph p.1)
     exact hDomain
+  simplexCarrier := fun _ =>
+    Set.range (fun p : PolygonalDiskExamples.standardTriangle.K.support =>
+      (⟨T.homeomorph p.1, T.image_subset ⟨p.1, by
+        simp [standardTriangle_support_eq] at p ⊢, rfl⟩⟩ : Ω))
+  simplexCarrier_subset := by
+    intro σ
+    exact subset_rfl
+  support_covered_by_simplexCarrier := by
+    intro x hx
+    exact ⟨PolygonalDiskExamples.standardTriangle.K.defaultSimplex, hx⟩
   range_mem_nhds := by
     have hImage :
         T.homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ∈
@@ -4344,6 +4383,16 @@ def ofBoundaryTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionBoundaryTri
     change _root_.Topology.IsEmbedding
       (fun p : PolygonalDiskExamples.standardTriangle.K.support => T.homeomorph p.1)
     exact hDomain
+  simplexCarrier := fun _ =>
+    Set.range (fun p : PolygonalDiskExamples.standardTriangle.K.support =>
+      (⟨T.homeomorph p.1, T.image_subset ⟨p.1, by
+        simp [standardTriangle_support_eq] at p ⊢, rfl⟩⟩ : Ω))
+  simplexCarrier_subset := by
+    intro σ
+    exact subset_rfl
+  support_covered_by_simplexCarrier := by
+    intro x hx
+    exact ⟨PolygonalDiskExamples.standardTriangle.K.defaultSimplex, hx⟩
   range_mem_nhds := by
     rw [mem_nhds_subtype_iff_nhdsWithin]
     convert T.image_mem_nhdsWithin using 1
@@ -4375,12 +4424,21 @@ def toModelChartPolygonalDisk
   disk := N.disk
   embed := N.embed
   isEmbedding := N.isEmbedding
+  simplexCarrier := N.simplexCarrier
+  simplexCarrier_subset := N.simplexCarrier_subset
+  support_covered_by_simplexCarrier := N.support_covered_by_simplexCarrier
   respectsChartModel := N.respectsChartModel
 
 @[simp] theorem toModelChartPolygonalDisk_embed
     {M : Type*} [TopologicalSpace M] {P : RadoChartPair M} {y : P.modelRegion}
     (N : PlaneRegionPolygonalNeighborhood P.modelRegion y) :
     N.toModelChartPolygonalDisk.embed = N.embed := by
+  rfl
+
+@[simp] theorem toModelChartPolygonalDisk_simplexCarrier
+    {M : Type*} [TopologicalSpace M] {P : RadoChartPair M} {y : P.modelRegion}
+    (N : PlaneRegionPolygonalNeighborhood P.modelRegion y) (σ : N.disk.K.Simplex) :
+    N.toModelChartPolygonalDisk.simplexCarrier σ = N.simplexCarrier σ := by
   rfl
 
 theorem toModelChartPolygonalDisk_range_mem_nhds
