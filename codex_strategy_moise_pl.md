@@ -404,6 +404,7 @@ structure EuclideanComplex where
   -- or: ambient : Type; [NormedAddCommGroup ambient]; [NormedSpace ℝ ambient]
   Simplex : Type v
   finiteSimplex : Fintype Simplex
+  simplexNonempty : Nonempty Simplex
   support : Set Point
   -- incidence / face data
 
@@ -413,12 +414,14 @@ structure EuclideanComplex.Subdivision (K : EuclideanComplex) where
   simplex_refines : Prop
 ```
 
-Current status: `EuclideanComplex.realizesSimplexes` and `EuclideanComplex.faceClosed` are no
-longer free propositions.  The realization field records that every simplex has a nonempty finite
-vertex set, exposed by `EuclideanComplex.realizesSimplex_nonempty`.  The face-closure field records
-a codimension-one face witness: if a simplex has at least two vertices, then erasing any vertex
-from that simplex gives the vertex set of another simplex.  The helper
-`EuclideanComplex.exists_erase_vertex_face` exposes this data.
+Current status: `EuclideanComplex` now carries a nonempty simplex type, exposed by
+`EuclideanComplex.defaultSimplex`, and `EuclideanComplex.realizesSimplexes` and
+`EuclideanComplex.faceClosed` are no longer free propositions.  The realization field records that
+every simplex has a nonempty finite vertex set, exposed by
+`EuclideanComplex.realizesSimplex_nonempty`.  The face-closure field records a codimension-one face
+witness: if a simplex has at least two vertices, then erasing any vertex from that simplex gives
+the vertex set of another simplex.  The helper `EuclideanComplex.exists_erase_vertex_face` exposes
+this data.
 `EuclideanComplex.Subdivision.covers_old_simplexes` is also proof-bearing carrier-surjectivity:
 every coarse simplex has a fine simplex carried to it, exposed by
 `EuclideanComplex.Subdivision.exists_carrier_eq`.  `EuclideanComplex.Subdivision.CommonRefinement`
@@ -480,9 +483,12 @@ structure PLMap.RespectsSubcomplex
 Current status: `PLMap.exists_subdivision_linear` is now a Prop-style API backed by the concrete
 `PLMap.subdivisionSupportWitness` field rather than a free `Prop` field.  The stored
 `PLSubdivisionSupportWitness` records chosen domain and target subdivisions together with the
-support-homeomorphism compatibility equation.  `PLMap.LinearOnSubdivision` still owns the named
-per-simplex affine and target-simplex obligations; those remain the next refinement point once
-simplex carriers become geometric.  The helper theorem is
+support-homeomorphism compatibility equation.  `PLMap.LinearOnSubdivision` now stores
+`PLMap.FineSimplexTargetData` and `PLMap.AffineOnFineSimplexData` for each fine domain simplex:
+target-simplex assignment data plus domain and target subdivision dimension bounds.  Actual affine
+formulas remain the next refinement point once simplex carriers become geometric.  The helper
+theorems are `PLMap.LinearOnSubdivision.targetSimplex_dimension_le`,
+`PLMap.LinearOnSubdivision.affine_domain_dimension_le`, and
 `PLMap.LinearOnSubdivision.support_compatible`.
 
 Prove basic closure properties:

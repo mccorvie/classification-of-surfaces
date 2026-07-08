@@ -39,6 +39,7 @@ structure EuclideanComplex where
   Simplex : Type
   simplexFintype : Fintype Simplex
   simplexDecidableEq : DecidableEq Simplex
+  simplexNonempty : Nonempty Simplex
   simplexVertices : Simplex → Finset Vertex
   simplex_nonempty : ∀ σ, (simplexVertices σ).Nonempty
   support : Set Point
@@ -53,6 +54,7 @@ attribute [instance] EuclideanComplex.vertexFintype
 attribute [instance] EuclideanComplex.vertexDecidableEq
 attribute [instance] EuclideanComplex.simplexFintype
 attribute [instance] EuclideanComplex.simplexDecidableEq
+attribute [instance] EuclideanComplex.simplexNonempty
 
 namespace EuclideanComplex
 
@@ -63,6 +65,10 @@ def numVertices (K : EuclideanComplex) : ℕ :=
 /-- Number of simplexes in a finite complex. -/
 def numSimplexes (K : EuclideanComplex) : ℕ :=
   Fintype.card K.Simplex
+
+/-- A chosen simplex in a nonempty finite complex. -/
+def defaultSimplex (K : EuclideanComplex) : K.Simplex :=
+  Classical.choice K.simplexNonempty
 
 /-- Vertices of a simplex. -/
 def vertices (K : EuclideanComplex) (σ : K.Simplex) : Finset K.Vertex :=
@@ -556,6 +562,7 @@ def point : EuclideanComplex where
   Simplex := PUnit
   simplexFintype := inferInstance
   simplexDecidableEq := inferInstance
+  simplexNonempty := inferInstance
   simplexVertices := fun _ => {PUnit.unit}
   simplex_nonempty := by
     intro σ
@@ -577,6 +584,7 @@ def segment : EuclideanComplex where
   Simplex := SegmentSimplex
   simplexFintype := inferInstance
   simplexDecidableEq := inferInstance
+  simplexNonempty := ⟨SegmentSimplex.left⟩
   simplexVertices := fun
     | SegmentSimplex.left => {0}
     | SegmentSimplex.right => {1}
@@ -601,6 +609,7 @@ def triangle : EuclideanComplex where
   Simplex := TriangleSimplex
   simplexFintype := inferInstance
   simplexDecidableEq := inferInstance
+  simplexNonempty := ⟨TriangleSimplex.v₀⟩
   simplexVertices := fun
     | TriangleSimplex.v₀ => {0}
     | TriangleSimplex.v₁ => {1}
@@ -804,16 +813,38 @@ theorem subdivisionSupportWitness_exists {K L : EuclideanComplex} (f : PLMap K L
     f.exists_subdivision_linear :=
   f.subdivisionSupportWitness
 
+/-- Target-simplex data for a fine domain simplex under a PL map represented on subdivisions.
+
+The current complex API still lacks geometric point membership in individual simplexes, so this
+records the finite target simplex assignment and the subdivision dimension bound available from
+the target subdivision. -/
+structure FineSimplexTargetData {K L : EuclideanComplex} (f : PLMap K L)
+    (S : K.Subdivision) (T : L.Subdivision) (_σ : S.K'.Simplex) where
+  targetSimplex : T.K'.Simplex
+  targetDimension_le_coarse :
+    T.K'.simplexDim targetSimplex ≤ L.simplexDim (T.carrier targetSimplex)
+
+/-- Affine-on-simplex data available before geometric affine simplex carriers are formalized.
+
+This packages the existing PL witness with the domain subdivision dimension bound for the fine
+simplex.  Later geometric work should extend this record with an actual affine formula on the
+simplex carrier. -/
+structure AffineOnFineSimplexData {K L : EuclideanComplex} (f : PLMap K L)
+    (S : K.Subdivision) (_T : L.Subdivision) (σ : S.K'.Simplex) where
+  existingPLWitness : f.exists_subdivision_linear
+  domainDimension_le_coarse : S.K'.simplexDim σ ≤ K.simplexDim (S.carrier σ)
+
 /-- A PL map is represented linearly after chosen domain and target subdivisions.
 
 The current complex API does not yet expose geometric simplex carriers, so the per-simplex
-linearity and target-simplex conditions are still named propositions. This structure is the
-interface where those conditions will be strengthened. -/
+linearity data records finite target-simplex assignments and subdivision dimension bounds. This
+structure is the interface where actual affine formulas will be attached once simplex carriers are
+geometric. -/
 structure LinearOnSubdivision {K L : EuclideanComplex} (f : PLMap K L)
     (S : K.Subdivision) (T : L.Subdivision) where
   existingPLWitness : f.exists_subdivision_linear
-  mapsFineSimplexToTargetSimplex : ∀ _σ : S.K'.Simplex, Prop
-  affineOnFineSimplex : ∀ _σ : S.K'.Simplex, Prop
+  mapsFineSimplexToTargetSimplex : ∀ σ : S.K'.Simplex, f.FineSimplexTargetData S T σ
+  affineOnFineSimplex : ∀ σ : S.K'.Simplex, f.AffineOnFineSimplexData S T σ
   compatibleWithSubdivisionSupports :
     ∀ x : S.K'.support,
       T.supportHomeomorph (T.supportHomeomorph.symm (f.toFun (S.supportHomeomorph x))) =
@@ -829,8 +860,12 @@ def of_existing {K L : EuclideanComplex} {f : PLMap K L}
     (S : K.Subdivision) (T : L.Subdivision) (hf : f.exists_subdivision_linear) :
     f.LinearOnSubdivision S T where
   existingPLWitness := hf
-  mapsFineSimplexToTargetSimplex := fun _ => True
-  affineOnFineSimplex := fun _ => True
+  mapsFineSimplexToTargetSimplex := fun _ =>
+    { targetSimplex := T.K'.defaultSimplex
+      targetDimension_le_coarse := T.dimension_le T.K'.defaultSimplex }
+  affineOnFineSimplex := fun σ =>
+    { existingPLWitness := hf
+      domainDimension_le_coarse := S.dimension_le σ }
   compatibleWithSubdivisionSupports := by
     intro x
     simp
@@ -839,6 +874,27 @@ theorem existing {K L : EuclideanComplex} {f : PLMap K L}
     {S : K.Subdivision} {T : L.Subdivision} (h : f.LinearOnSubdivision S T) :
     f.exists_subdivision_linear :=
   h.existingPLWitness
+
+/-- The target fine simplex assigned to a domain fine simplex by a linear subdivision witness. -/
+def targetSimplex {K L : EuclideanComplex} {f : PLMap K L}
+    {S : K.Subdivision} {T : L.Subdivision} (h : f.LinearOnSubdivision S T)
+    (σ : S.K'.Simplex) : T.K'.Simplex :=
+  (h.mapsFineSimplexToTargetSimplex σ).targetSimplex
+
+/-- The target assignment in a linear subdivision witness respects the target subdivision
+dimension bound. -/
+theorem targetSimplex_dimension_le {K L : EuclideanComplex} {f : PLMap K L}
+    {S : K.Subdivision} {T : L.Subdivision} (h : f.LinearOnSubdivision S T)
+    (σ : S.K'.Simplex) :
+    T.K'.simplexDim (h.targetSimplex σ) ≤ L.simplexDim (T.carrier (h.targetSimplex σ)) :=
+  (h.mapsFineSimplexToTargetSimplex σ).targetDimension_le_coarse
+
+/-- The affine-on-fine-simplex data carries the domain subdivision dimension bound. -/
+theorem affine_domain_dimension_le {K L : EuclideanComplex} {f : PLMap K L}
+    {S : K.Subdivision} {T : L.Subdivision} (h : f.LinearOnSubdivision S T)
+    (σ : S.K'.Simplex) :
+    S.K'.simplexDim σ ≤ K.simplexDim (S.carrier σ) :=
+  (h.affineOnFineSimplex σ).domainDimension_le_coarse
 
 /-- The support-homeomorphism compatibility equation stored by a linear subdivision witness. -/
 theorem support_compatible {K L : EuclideanComplex} {f : PLMap K L}
@@ -2906,6 +2962,7 @@ theorem open_subset_of_finite_complex_is_complex
           Simplex := PUnit
           simplexFintype := inferInstance
           simplexDecidableEq := inferInstance
+          simplexNonempty := inferInstance
           simplexVertices := fun _ => {PUnit.unit}
           simplex_nonempty := by
             intro σ
@@ -4438,6 +4495,7 @@ noncomputable def chartUnionPLComplexData
       Simplex := PUnit
       simplexFintype := inferInstance
       simplexDecidableEq := inferInstance
+      simplexNonempty := inferInstance
       simplexVertices := fun _ => Finset.univ
       simplex_nonempty := by
         intro σ
@@ -5025,6 +5083,7 @@ noncomputable def unionPLComplexData
       Simplex := PUnit
       simplexFintype := inferInstance
       simplexDecidableEq := inferInstance
+      simplexNonempty := inferInstance
       simplexVertices := fun _ => Finset.univ
       simplex_nonempty := by
         intro σ

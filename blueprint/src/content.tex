@@ -68,14 +68,14 @@ surface cell complex and compose the homeomorphisms.
 
 \begin{definition}[Euclidean finite complex and support]
 \label{moise:def:euclidean_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.support, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.realizesSimplex_nonempty, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.exists_erase_vertex_face}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.support, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.defaultSimplex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.realizesSimplex_nonempty, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.exists_erase_vertex_face}
 \leanok
 A Euclidean finite complex is a finite simplicial complex made of rectilinear
 simplexes in some Euclidean space.  Its support $|K|$ is the union of its
 simplexes with the subspace topology.  The current formal API stores finite
-vertex and simplex types, proof-bearing nonempty vertex sets for simplexes, and
-concrete codimension-one face closure: erasing a vertex from a simplex with at
-least two vertices produces the vertex set of another simplex.
+vertex and nonempty simplex types, proof-bearing nonempty vertex sets for
+simplexes, and concrete codimension-one face closure: erasing a vertex from a
+simplex with at least two vertices produces the vertex set of another simplex.
 \end{definition}
 
 \begin{definition}[Subdivision]
@@ -95,7 +95,7 @@ the original complex.
 
 \begin{definition}[PL map and PL homeomorphism]
 \label{moise:def:pl_map_homeomorphism}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLSubdivisionSupportWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLMap.subdivisionSupportWitness_exists, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.support_compatible, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap.RespectsSubcomplex, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.RestrictsTo}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLSubdivisionSupportWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLMap.subdivisionSupportWitness_exists, LeanEval.Topology.ClassificationOfSurfaces.PLMap.FineSimplexTargetData, LeanEval.Topology.ClassificationOfSurfaces.PLMap.AffineOnFineSimplexData, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.targetSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.targetSimplex_dimension_le, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.affine_domain_dimension_le, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.support_compatible, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap.RespectsSubcomplex, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.RestrictsTo}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:subdivision}
@@ -105,7 +105,8 @@ is a homeomorphism whose map and inverse are PL after suitable subdivisions.  Th
 formal API now includes identity, composition, inverse, and coherence fields
 relating the PL maps to the underlying homeomorphism.  The `PLMap` structure
 stores support-level subdivision witness data, and linear subdivision witnesses
-carry an explicit support-homeomorphism compatibility equation.  Restriction to
+carry explicit target-simplex assignment data, domain and target subdivision
+dimension bounds, and a support-homeomorphism compatibility equation.  Restriction to
 subcomplexes is no longer an arbitrary placeholder: a PL map respecting
 subcomplexes must assign each source simplex to a nonempty target subcomplex,
 and a PL homeomorphism restriction carries this condition in both directions.
@@ -125,11 +126,11 @@ any subdivision of the domain or target complex.
 \leanok
 The Lean interface packages Moise Section 5 Theorems 1 and 2 as transport maps
 for `PLMap` and `PLHomeomorph` across domain and target subdivisions.  The
-current scaffold records support-level subdivision witness data with named
-per-simplex affine and target-simplex obligations; those obligations are still
-propositional until simplex carriers become geometric.  The common-subdivision
-relation already carries carrier-compatible lift maps; the remaining geometric
-part is support containment of refined simplexes.
+current scaffold records support-level subdivision witness data, per-simplex
+target assignments, and subdivision dimension bounds.  Actual affine formulas
+are still deferred until simplex carriers become geometric.  The
+common-subdivision relation already carries carrier-compatible lift maps; the
+remaining geometric part is support containment of refined simplexes.
 \end{proof}
 
 \begin{definition}[Combinatorial two-manifold with boundary]
