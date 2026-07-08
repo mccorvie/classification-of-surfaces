@@ -2532,6 +2532,20 @@ inductive RadoChartKind where
   | halfDisk
 deriving DecidableEq, Repr
 
+namespace RadoChartKind
+
+/-- The model-region shape associated to a Rado chart kind.
+
+Disk charts are represented by open subsets of the plane.  Half-disk charts are represented by
+subsets obtained from the model closed half-plane.  This is intentionally modest, but it prevents
+the chart-kind field from being justified by an arbitrary proposition. -/
+def ModelMatchesRegion (kind : RadoChartKind) (Ω : Set Plane) : Prop :=
+  match kind with
+  | disk => IsOpen Ω
+  | halfDisk => ∃ U : Set (EuclideanHalfSpace 2), Ω = Subtype.val '' U
+
+end RadoChartKind
+
 /-- A chart pair used in the Rado exhaustion: a chart domain and a smaller core whose closure is
 controlled inside that chart. The concrete chart map is still theorem-boundary data. -/
 structure RadoChartPair (M : Type*) [TopologicalSpace M] where
@@ -2542,8 +2556,8 @@ structure RadoChartPair (M : Type*) [TopologicalSpace M] where
   core_subset_domain : core ⊆ domain
   modelRegion : Set Plane
   chartHomeomorph : domain ≃ₜ modelRegion
-  model_matches_kind : Prop
-  chart_to_model : Prop
+  model_matches_kind : kind.ModelMatchesRegion modelRegion
+  chart_to_model : ∀ x : domain, (chartHomeomorph x : Plane) ∈ modelRegion
   boundaryCore : Set M
   boundaryCore_subset_core : boundaryCore ⊆ core
   boundaryCore_empty_of_disk : kind = RadoChartKind.disk → boundaryCore = ∅
@@ -2581,8 +2595,10 @@ def empty (M : Type*) [TopologicalSpace M] : RadoChartPair M where
     simp at hx
   modelRegion := ∅
   chartHomeomorph := emptyHomeomorph M Plane
-  model_matches_kind := True
-  chart_to_model := True
+  model_matches_kind := isOpen_empty
+  chart_to_model := by
+    intro y
+    exact (emptyHomeomorph M Plane y).2
   boundaryCore := ∅
   boundaryCore_subset_core := by
     intro x hx
@@ -2614,8 +2630,15 @@ noncomputable def fromChartAt
       ((Topology.IsEmbedding.subtypeVal :
           Topology.IsEmbedding (Subtype.val : EuclideanHalfSpace 2 → Plane)).homeomorphImage
         (chartAt (EuclideanHalfSpace 2) x).target)
-  model_matches_kind := True
-  chart_to_model := True
+  model_matches_kind := by
+    exact ⟨(chartAt (EuclideanHalfSpace 2) x).target, rfl⟩
+  chart_to_model := by
+    intro y
+    exact
+      (((chartAt (EuclideanHalfSpace 2) x).toHomeomorphSourceTarget.trans
+        ((Topology.IsEmbedding.subtypeVal :
+            Topology.IsEmbedding (Subtype.val : EuclideanHalfSpace 2 → Plane)).homeomorphImage
+          (chartAt (EuclideanHalfSpace 2) x).target)) y).2
   boundaryCore := ∅
   boundaryCore_subset_core := by
     intro y hy
@@ -3377,8 +3400,10 @@ def standardTrianglePlaneCore : RadoChartPair Plane where
     trivial
   modelRegion := Set.univ
   chartHomeomorph := Homeomorph.refl (Set.univ : Set Plane)
-  model_matches_kind := True
-  chart_to_model := True
+  model_matches_kind := isOpen_univ
+  chart_to_model := by
+    intro p
+    trivial
   boundaryCore := ∅
   boundaryCore_subset_core := by
     intro p hp

@@ -607,6 +607,21 @@ induction data is isolated in `mathlib_bordered_surface_moise_extraction_data`.
 Current extraction layer:
 
 ```lean
+def RadoChartKind.ModelMatchesRegion (kind : RadoChartKind) (Ω : Set Plane) : Prop :=
+  match kind with
+  | disk => IsOpen Ω
+  | halfDisk => ∃ U : Set (EuclideanHalfSpace 2), Ω = Subtype.val '' U
+
+structure RadoChartPair (M : Type*) [TopologicalSpace M] where
+  kind : RadoChartKind
+  domain core : Set M
+  domain_open : IsOpen domain
+  core_subset_domain : core ⊆ domain
+  modelRegion : Set Plane
+  chartHomeomorph : domain ≃ₜ modelRegion
+  model_matches_kind : kind.ModelMatchesRegion modelRegion
+  chart_to_model : ∀ x : domain, (chartHomeomorph x : Plane) ∈ modelRegion
+
 structure FiniteChartPairCover (M : Type*) [TopologicalSpace M] where
   Index : Type*
   indexFintype : Fintype Index

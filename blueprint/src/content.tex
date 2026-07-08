@@ -486,7 +486,7 @@ for compact spaces a named finite PL triangulation data package.
 
 \begin{definition}[Finite chart-pair cover]
 \label{moise:def:finite_chart_pair_cover}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_mem_domain, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore_refines, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_nonempty, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_card_pos, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.zeroIndex, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_zero}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind.ModelMatchesRegion, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_mem_domain, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore_refines, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_nonempty, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_card_pos, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.zeroIndex, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_zero}
 \leanok
 
 A finite chart-pair cover is a finite family of Rado chart pairs whose smaller
@@ -496,13 +496,16 @@ countable chart-pair exhaustion used by Rado's induction.  The cover and its
 countable exhaustion now carry proof-bearing finiteness and nesting fields:
 for each point there is an explicit finite set of indices meeting its core, and
 each core is proved to lie in its chart domain, with the analogous boundary-core
-statements.  In a nonempty space the index type is nonempty; `zeroIndex` names
-the first selected chart, while the pair-of-less-than and pair-of-not-less-than
-lemmas identify the finite and out-of-range enumeration cases.  The preferred
-mathlib chart at a point gives a chart pair whose core is a neighborhood of
-that point.  The chart-pair API also includes core refinement: `withCore`
-replaces a chart-pair core by a smaller core while keeping the surrounding
-chart and model map fixed.
+statements.  Chart pairs also carry proof-bearing model-region data: disk charts
+use open plane regions, half-disk charts use regions obtained from
+`EuclideanHalfSpace 2`, and the chart homeomorphism is proved to land in the
+stored model region.  In a nonempty space the index type is nonempty;
+`zeroIndex` names the first selected chart, while the pair-of-less-than and
+pair-of-not-less-than lemmas identify the finite and out-of-range enumeration
+cases.  The preferred mathlib chart at a point gives a chart pair whose core is
+a neighborhood of that point.  The chart-pair API also includes core refinement:
+`withCore` replaces a chart-pair core by a smaller core while keeping the
+surrounding chart and model map fixed.
 \end{definition}
 
 \begin{definition}[Finite chart polygonal disk data]
