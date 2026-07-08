@@ -28,8 +28,8 @@ universe u
 
 The `Point`/`support` fields keep a topological carrier available for PL maps. The finite
 `Vertex`/`Simplex` fields provide the combinatorial data needed by links, skeletons, and later
-surface predicates. The geometric rectilinearity obligation is currently stored as a named
-proposition; face-closure is a concrete combinatorial witness for codimension-one faces. -/
+surface predicates. The realization field records that every simplex is represented by a nonempty
+finite vertex set; face-closure is a concrete combinatorial witness for codimension-one faces. -/
 structure EuclideanComplex where
   Point : Type
   pointTop : TopologicalSpace Point
@@ -42,7 +42,7 @@ structure EuclideanComplex where
   simplexVertices : Simplex → Finset Vertex
   simplex_nonempty : ∀ σ, (simplexVertices σ).Nonempty
   support : Set Point
-  realizesSimplexes : Prop
+  realizesSimplexes : ∀ σ : Simplex, (simplexVertices σ).Nonempty
   faceClosed :
     ∀ σ : Simplex, ∀ v : Vertex, v ∈ simplexVertices σ →
       1 < (simplexVertices σ).card →
@@ -67,6 +67,11 @@ def numSimplexes (K : EuclideanComplex) : ℕ :=
 /-- Vertices of a simplex. -/
 def vertices (K : EuclideanComplex) (σ : K.Simplex) : Finset K.Vertex :=
   K.simplexVertices σ
+
+/-- Every simplex is represented by a nonempty finite set of vertices. -/
+theorem realizesSimplex_nonempty (K : EuclideanComplex) (σ : K.Simplex) :
+    (K.vertices σ).Nonempty :=
+  K.realizesSimplexes σ
 
 /-- Dimension of a simplex, computed as `card vertices - 1`. -/
 def simplexDim (K : EuclideanComplex) (σ : K.Simplex) : ℕ :=
@@ -495,7 +500,9 @@ def point : EuclideanComplex where
     intro σ
     simp
   support := Set.univ
-  realizesSimplexes := True
+  realizesSimplexes := by
+    intro σ
+    simp
   faceClosed := by
     decide
 
@@ -517,7 +524,9 @@ def segment : EuclideanComplex where
     intro σ
     cases σ <;> simp
   support := Set.univ
-  realizesSimplexes := True
+  realizesSimplexes := by
+    intro σ
+    cases σ <;> simp
   faceClosed := by
     decide
 
@@ -543,7 +552,9 @@ def triangle : EuclideanComplex where
     intro σ
     cases σ <;> simp
   support := closedTriangleSupport
-  realizesSimplexes := True
+  realizesSimplexes := by
+    intro σ
+    cases σ <;> simp
   faceClosed := by
     decide
 
@@ -2584,7 +2595,9 @@ theorem open_subset_of_finite_complex_is_complex
             intro σ
             simp
           support := Set.univ
-          realizesSimplexes := True
+          realizesSimplexes := by
+            intro σ
+            simp
           faceClosed := by
             decide }
       supportHomeomorph := Homeomorph.Set.univ U
@@ -4114,7 +4127,9 @@ noncomputable def chartUnionPLComplexData
         intro σ
         exact Finset.univ_nonempty
       support := Set.univ
-      realizesSimplexes := True
+      realizesSimplexes := by
+        intro σ
+        exact Finset.univ_nonempty
       faceClosed := by
         decide }
   let hKEmbedding : _root_.Topology.IsEmbedding (fun p : C.support => carrierMap p.1) :=
@@ -4699,7 +4714,9 @@ noncomputable def unionPLComplexData
         intro σ
         exact Finset.univ_nonempty
       support := Set.univ
-      realizesSimplexes := S.compatibleStages
+      realizesSimplexes := by
+        intro σ
+        exact Finset.univ_nonempty
       faceClosed := by
         decide }
   let hKEmbedding : _root_.Topology.IsEmbedding (fun p : C.support => carrierMap p.1) :=

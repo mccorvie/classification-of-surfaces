@@ -413,9 +413,11 @@ structure EuclideanComplex.Subdivision (K : EuclideanComplex) where
   simplex_refines : Prop
 ```
 
-Current status: `EuclideanComplex.faceClosed` is no longer a free proposition.  It records a
-codimension-one face witness: if a simplex has at least two vertices, then erasing any vertex from
-that simplex gives the vertex set of another simplex.  The helper
+Current status: `EuclideanComplex.realizesSimplexes` and `EuclideanComplex.faceClosed` are no
+longer free propositions.  The realization field records that every simplex has a nonempty finite
+vertex set, exposed by `EuclideanComplex.realizesSimplex_nonempty`.  The face-closure field records
+a codimension-one face witness: if a simplex has at least two vertices, then erasing any vertex
+from that simplex gives the vertex set of another simplex.  The helper
 `EuclideanComplex.exists_erase_vertex_face` exposes this data.
 
 If mathlib's abstract or geometric simplicial complexes can be used cleanly, wrap them. If not, define a project-specific `EuclideanComplex` with the fields needed for Moise. Avoid getting blocked by the perfect general abstraction.

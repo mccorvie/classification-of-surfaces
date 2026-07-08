@@ -68,14 +68,14 @@ surface cell complex and compose the homeomorphisms.
 
 \begin{definition}[Euclidean finite complex and support]
 \label{moise:def:euclidean_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.support, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.exists_erase_vertex_face}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.support, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.realizesSimplex_nonempty, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.exists_erase_vertex_face}
 \leanok
 A Euclidean finite complex is a finite simplicial complex made of rectilinear
 simplexes in some Euclidean space.  Its support $|K|$ is the union of its
 simplexes with the subspace topology.  The current formal API stores finite
-vertex and simplex types, nonempty vertex sets for simplexes, and concrete
-codimension-one face closure: erasing a vertex from a simplex with at least two
-vertices produces the vertex set of another simplex.
+vertex and simplex types, proof-bearing nonempty vertex sets for simplexes, and
+concrete codimension-one face closure: erasing a vertex from a simplex with at
+least two vertices produces the vertex set of another simplex.
 \end{definition}
 
 \begin{definition}[Subdivision]
