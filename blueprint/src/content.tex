@@ -576,10 +576,13 @@ or half-disk around each point.  Finite chart polygonal disk data records the
 same disk data for each selected index in a finite chart-pair cover, together
 with chart-model and boundary compatibility assertions.  The API includes the
 standard geometric triangle as a concrete `ChartPolygonalDisk` in the coordinate
-plane.  Chart polygonal disks now carry proof-bearing chart-model compatibility:
-the chart image of every support point is proved to land in the stored model
-region.  They also carry boundary-core coverage by the disk boundary subcomplex,
-exposed as `ChartPolygonalDisk.boundaryCore_subset_boundarySupport`.
+plane.  Chart polygonal disks now carry explicit simplex-carrier data for their
+embedded PL complex, rather than having `toPLComplexInSpace` hardcode every
+simplex carrier as the whole disk image.  They also carry proof-bearing
+chart-model compatibility: the chart image of every support point is proved to
+land in the stored model region.  They carry boundary-core coverage by the disk
+boundary subcomplex, exposed as
+`ChartPolygonalDisk.boundaryCore_subset_boundarySupport`.
 `PlaneRegionPolygonalNeighborhood` is the chart-free coordinate object:
 a polygonal disk embedded in a plane region with image a neighborhood of a
 chosen point, again carrying the actual region-membership proof for the image.

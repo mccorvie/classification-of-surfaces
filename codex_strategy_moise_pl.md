@@ -880,6 +880,10 @@ Proved finite/combinatorial bridge:
    compact bordered surface has a finite chart-pair cover.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
+   `ChartPolygonalDisk` now carries explicit simplex-carrier data for its embedded PL complex,
+   so `ChartPolygonalDisk.toPLComplexInSpace` no longer hardcodes every simplex carrier as the
+   whole disk image.  Current constructors still use coarse carriers where detailed simplex
+   geometry is not yet supplied, but the interface can now accept faithful local carrier data.
    `ChartPolygonalDisk.boundaryCore_subset_boundarySupport` now exposes the stronger fact that
    chart boundary cores are covered by the disk boundary subcomplex, and the initial Rado state
    records this with `toState_coversBoundaryCoresInBoundaryUpTo`.

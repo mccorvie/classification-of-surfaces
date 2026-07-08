@@ -3795,8 +3795,12 @@ structure ChartPolygonalDisk (M : Type*) [TopologicalSpace M] where
   support_subset_domain : Set.range embed ⊆ chart.domain
   core_covered : chart.core ⊆ Set.range embed
   boundaryCore_covered : chart.boundaryCore ⊆ Set.range embed
+  simplexCarrier : disk.K.Simplex → Set M
+  simplexCarrier_subset : ∀ σ, simplexCarrier σ ⊆ Set.range embed
+  support_covered_by_simplexCarrier :
+    ∀ x ∈ Set.range embed, ∃ σ : disk.K.Simplex, x ∈ simplexCarrier σ
   boundaryCore_covered_by_boundary :
-    ∀ x ∈ chart.boundaryCore, ∃ σ ∈ disk.boundarySubcomplex.simplexes, x ∈ Set.range embed
+    ∀ x ∈ chart.boundaryCore, ∃ σ ∈ disk.boundarySubcomplex.simplexes, x ∈ simplexCarrier σ
   respectsChartModel :
     ∀ p : disk.K.support,
       (chart.chartHomeomorph ⟨embed p, support_subset_domain ⟨p, rfl⟩⟩ : Plane) ∈
@@ -3816,13 +3820,9 @@ def toPLComplexInSpace {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk 
   Complex := D.disk.K
   embed := D.embed
   isEmbedding := D.isEmbedding
-  simplexSupport := fun _ => Set.range D.embed
-  simplexSupport_subset := by
-    intro σ
-    exact subset_rfl
-  support_covered_by_simplexSupport := by
-    intro x hx
-    exact ⟨D.disk.K.defaultSimplex, hx⟩
+  simplexSupport := D.simplexCarrier
+  simplexSupport_subset := D.simplexCarrier_subset
+  support_covered_by_simplexSupport := D.support_covered_by_simplexCarrier
   locallyFinite := inferInstance
   compatibleCharts := ⟨D.isEmbedding.injective, D.isEmbedding.continuous⟩
 
@@ -3838,8 +3838,7 @@ theorem boundaryCore_subset_boundarySupport
         x ∈ D.toPLComplexInSpace.simplexCarrier σ} := by
   intro x hx
   rcases D.boundaryCore_covered_by_boundary x hx with ⟨σ, hσ, hxσ⟩
-  exact ⟨σ, hσ, by
-    simpa [toPLComplexInSpace, PLComplexInSpace.simplexCarrier] using hxσ⟩
+  exact ⟨σ, hσ, by simpa [toPLComplexInSpace, PLComplexInSpace.simplexCarrier] using hxσ⟩
 
 end ChartPolygonalDisk
 
@@ -3943,6 +3942,13 @@ def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M 
   boundaryCore_covered := by
     intro y hy
     simp [toChartPair, RadoChartPair.withCore] at hy
+  simplexCarrier := fun _ => Set.range D.toManifoldEmbed
+  simplexCarrier_subset := by
+    intro σ
+    exact subset_rfl
+  support_covered_by_simplexCarrier := by
+    intro x hx
+    exact ⟨D.disk.K.defaultSimplex, hx⟩
   boundaryCore_covered_by_boundary := by
     intro y hy
     simp [toChartPair, RadoChartPair.withCore] at hy
@@ -4432,6 +4438,14 @@ def standardTriangleInPlane : ChartPolygonalDisk Plane where
   boundaryCore_covered := by
     intro p hp
     simp [RadoChartPair.standardTrianglePlaneCore] at hp
+  simplexCarrier := fun _ =>
+    Set.range (fun p : PolygonalDiskExamples.standardTriangle.K.support => (p.1 : Plane))
+  simplexCarrier_subset := by
+    intro σ
+    exact subset_rfl
+  support_covered_by_simplexCarrier := by
+    intro x hx
+    exact ⟨PolygonalDiskExamples.standardTriangle.K.defaultSimplex, hx⟩
   boundaryCore_covered_by_boundary := by
     intro p hp
     simp [RadoChartPair.standardTrianglePlaneCore] at hp
@@ -4441,7 +4455,7 @@ def standardTriangleInPlane : ChartPolygonalDisk Plane where
 
 @[simp] theorem standardTriangleInPlane_chart :
     standardTriangleInPlane.chart = RadoChartPair.standardTrianglePlaneCore := by
-  rfl
+  simp [standardTriangleInPlane]
 
 theorem standardTriangleInPlane_covers_core :
     standardTriangleInPlane.chart.core ⊆ Set.range standardTriangleInPlane.embed :=
