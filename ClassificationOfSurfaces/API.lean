@@ -26,7 +26,10 @@ project skeleton and documents the intended handoff points between teams.
 * `PLMap`
 * `PLHomeomorph`
 * `CombinatorialTwoManifoldWithBoundary`
+* `CombinatorialTwoManifoldWithBoundary.sharedFace_mem_oneSkeleton`
 * `CombinatorialTwoCell`
+* `SharedBoundaryCompatibilityData`
+* `ExtensionsAgreeOnSharedBoundary`
 * `RadoChartPair.chartAt_extend_mem_frontier_target_of_manifold_boundary`
 * `mathlib_bordered_surface_finiteChartPairCover`
 * `mathlib_bordered_surface_finiteChartPairCover_boundarySet`

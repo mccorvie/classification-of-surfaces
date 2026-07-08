@@ -1379,6 +1379,9 @@ structure CombinatorialTwoManifoldWithBoundary where
   K : EuclideanComplex
   isTwoDimensional : K.IsTwoDimensional
   vertex_link_circle_or_interval : K.AllVertexLinksCircleOrInterval
+  shared_two_simplex_faces_in_oneSkeleton :
+    ∀ {σ τ ρ : K.Simplex}, σ ∈ K.twoSimplexes → τ ∈ K.twoSimplexes →
+      σ ≠ τ → K.IsFace ρ σ → K.IsFace ρ τ → ρ ∈ K.oneSkeleton
 
 namespace CombinatorialTwoManifoldWithBoundary
 
@@ -1403,6 +1406,14 @@ def interiorVertices (S : CombinatorialTwoManifoldWithBoundary) : Finset S.K.Ver
 theorem vertex_link_allowed (S : CombinatorialTwoManifoldWithBoundary) (v : S.K.Vertex) :
     S.K.HasSurfaceVertexLink v :=
   S.vertex_link_circle_or_interval v
+
+/-- Distinct two-simplexes of a combinatorial surface meet along the one-skeleton. -/
+theorem sharedFace_mem_oneSkeleton
+    (S : CombinatorialTwoManifoldWithBoundary) {σ τ ρ : S.K.Simplex}
+    (hσ : σ ∈ S.K.twoSimplexes) (hτ : τ ∈ S.K.twoSimplexes) (hne : σ ≠ τ)
+    (hρσ : S.K.IsFace ρ σ) (hρτ : S.K.IsFace ρ τ) :
+    ρ ∈ S.K.oneSkeleton :=
+  S.shared_two_simplex_faces_in_oneSkeleton hσ hτ hne hρσ hρτ
 
 theorem mem_boundaryVertices_iff (S : CombinatorialTwoManifoldWithBoundary) (v : S.K.Vertex) :
     v ∈ S.boundaryVertices ↔ S.IsBoundaryVertex v := by
@@ -2591,13 +2602,53 @@ def CellwiseSchoenfliesExtensions
     (F : K.K.support → Y) : Prop :=
   IsPLOnSkeleton K.K F 2
 
+/-- Finite data proving that cellwise extensions are compatible along shared boundaries.
+
+At the current combinatorial level, this records that the global map is PL on the common
+one-skeleton and that any common face of two distinct two-simplexes lies in that one-skeleton. -/
+structure SharedBoundaryCompatibilityData
+    (K : CombinatorialTwoManifoldWithBoundary) {Y : Type*} (_F : K.K.support → Y) where
+  plOnSharedBoundary : IsPLOnOneSkeleton K.K _F
+  sharedFace_mem_oneSkeleton :
+    ∀ σ ∈ K.K.twoSimplexes, ∀ τ ∈ K.K.twoSimplexes,
+      σ ≠ τ → ∀ ρ : K.K.Simplex, K.K.IsFace ρ σ → K.K.IsFace ρ τ →
+        ρ ∈ K.K.oneSkeleton
+
 /-- Cellwise extensions agree on shared cell boundaries. -/
 def ExtensionsAgreeOnSharedBoundary
     (K : CombinatorialTwoManifoldWithBoundary) {Y : Type*} [PseudoMetricSpace Y]
-    (_F : K.K.support → Y) : Prop :=
-  ∀ σ ∈ K.K.twoSimplexes, ∀ τ ∈ K.K.twoSimplexes,
-    σ ≠ τ → ∀ ρ : K.K.Simplex, K.K.IsFace ρ σ → K.K.IsFace ρ τ →
-      K.K.IsFace ρ σ ∧ K.K.IsFace ρ τ
+    (F : K.K.support → Y) : Prop :=
+  Nonempty (SharedBoundaryCompatibilityData K F)
+
+namespace ExtensionsAgreeOnSharedBoundary
+
+theorem plOnSharedBoundary
+    {K : CombinatorialTwoManifoldWithBoundary} {Y : Type*} [PseudoMetricSpace Y]
+    {F : K.K.support → Y} (h : ExtensionsAgreeOnSharedBoundary K F) :
+    IsPLOnOneSkeleton K.K F :=
+  h.some.plOnSharedBoundary
+
+theorem sharedFace_mem_oneSkeleton
+    {K : CombinatorialTwoManifoldWithBoundary} {Y : Type*} [PseudoMetricSpace Y]
+    {F : K.K.support → Y} (h : ExtensionsAgreeOnSharedBoundary K F)
+    {σ τ ρ : K.K.Simplex}
+    (hσ : σ ∈ K.K.twoSimplexes) (hτ : τ ∈ K.K.twoSimplexes) (hne : σ ≠ τ)
+    (hρσ : K.K.IsFace ρ σ) (hρτ : K.K.IsFace ρ τ) :
+    ρ ∈ K.K.oneSkeleton :=
+  h.some.sharedFace_mem_oneSkeleton σ hσ τ hτ hne ρ hρσ hρτ
+
+/-- Build shared-boundary compatibility from PL one-skeleton behavior and the surface
+intersection axiom. -/
+theorem ofSurface
+    (K : CombinatorialTwoManifoldWithBoundary) {Y : Type*} [PseudoMetricSpace Y]
+    {F : K.K.support → Y} (hpl : IsPLOnOneSkeleton K.K F) :
+    ExtensionsAgreeOnSharedBoundary K F :=
+  ⟨{ plOnSharedBoundary := hpl
+     sharedFace_mem_oneSkeleton := by
+       intro σ hσ τ hτ hne ρ hρσ hρτ
+       exact K.sharedFace_mem_oneSkeleton hσ hτ hne hρσ hρτ }⟩
+
+end ExtensionsAgreeOnSharedBoundary
 
 /-- A map is PL on the two-skeleton of a combinatorial surface. -/
 def IsPLOnTwoSkeleton
@@ -2905,9 +2956,8 @@ theorem cellwise_extension_by_pl_schoenflies
       embeddingLike := Or.inl rfl
       extendsOneSkeleton := A₁.close.symm
       eachTwoCellPL := isPLOnSkeleton_identity K.K h 2
-      agreesOnSharedBoundaries := by
-        intro σ hσ τ hτ hne ρ hρσ hρτ
-        exact ⟨hρσ, hρτ⟩ }
+      agreesOnSharedBoundaries :=
+        ExtensionsAgreeOnSharedBoundary.ofSurface K (isPLOnOneSkeleton_identity K.K h) }
   exact ⟨C⟩
 
 /-- Gluing compatible cellwise extensions into a global PL surface approximation.
@@ -2947,9 +2997,8 @@ theorem boundary_cellwise_extension_by_relative_pl_schoenflies
       embeddingLike := Or.inl rfl
       extendsOneSkeleton := A₁.close.symm
       eachTwoCellPL := isPLOnSkeleton_identity K.K h 2
-      agreesOnSharedBoundaries := by
-        intro σ hσ τ hτ hne ρ hρσ hρτ
-        exact ⟨hρσ, hρτ⟩
+      agreesOnSharedBoundaries :=
+        ExtensionsAgreeOnSharedBoundary.ofSurface K (isPLOnOneSkeleton_identity K.K h)
       boundaryRespecting := by
         constructor
         · intro v hv
@@ -3026,9 +3075,8 @@ theorem pl_approximation_between_combinatorial_surfaces
       embeddingLike := Or.inl rfl
       extendsOneSkeleton := A₁.close.symm
       eachTwoCellPL := isPLOnSkeleton_identity K₁.K h 2
-      agreesOnSharedBoundaries := by
-        intro σ hσ τ hτ hne ρ hρσ hρτ
-        exact ⟨hρσ, hρτ⟩ }
+      agreesOnSharedBoundaries :=
+        ExtensionsAgreeOnSharedBoundary.ofSurface K₁ (isPLOnOneSkeleton_identity K₁.K h) }
   let A : GlobalPLSurfaceApproximation K₁ K₂.K.support φ h :=
     { cellwise := C
       map := h

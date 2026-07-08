@@ -140,7 +140,7 @@ remaining geometric part is support containment of refined simplexes.
 
 \begin{definition}[Combinatorial two-manifold with boundary]
 \label{moise:def:combinatorial_surface}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkAdjacent, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkWalk, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkReachable, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkConnected, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoManifoldWithBoundary}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkAdjacent, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkWalk, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkReachable, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkConnected, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoManifoldWithBoundary, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoManifoldWithBoundary.sharedFace_mem_oneSkeleton}
 \leanok
 
 \uses{moise:def:euclidean_complex}
@@ -149,7 +149,9 @@ the link of every vertex is either a combinatorial circle or a combinatorial
 interval.  The formal definition now exposes a finite link graph with adjacency,
 bounded walks, bounded reachability, and connectedness by pairwise reachability,
 together with boundary and interior vertex predicates and one- and
-two-dimensional simplex filters.  Its support is then expected to be a
+two-dimensional simplex filters.  It also records the finite surface-validity
+condition that any common face of two distinct two-simplexes lies in the
+one-skeleton.  Its support is then expected to be a
 topological surface with boundary.
 \end{definition}
 
@@ -354,7 +356,7 @@ predicate.  The geometric perturbation results remain named theorem boundaries.
 
 \begin{definition}[Cellwise extension and gluing interfaces]
 \label{moise:def:cellwise_extension_gluing}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ExtendsOneSkeletonApproximation, LeanEval.Topology.ClassificationOfSurfaces.CellwiseSchoenfliesExtensions, LeanEval.Topology.ClassificationOfSurfaces.IsPLOnTwoSkeleton, LeanEval.Topology.ClassificationOfSurfaces.EmbeddingLikeApproximation, LeanEval.Topology.ClassificationOfSurfaces.RelativeBoundaryCells, LeanEval.Topology.ClassificationOfSurfaces.CellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLHomeomorphFromCellwise, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLSurfaceApproximation, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.BoundaryGlobalPLSurfaceApproximation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ExtendsOneSkeletonApproximation, LeanEval.Topology.ClassificationOfSurfaces.CellwiseSchoenfliesExtensions, LeanEval.Topology.ClassificationOfSurfaces.IsPLOnTwoSkeleton, LeanEval.Topology.ClassificationOfSurfaces.EmbeddingLikeApproximation, LeanEval.Topology.ClassificationOfSurfaces.RelativeBoundaryCells, LeanEval.Topology.ClassificationOfSurfaces.SharedBoundaryCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary.plOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary.sharedFace_mem_oneSkeleton, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary.ofSurface, LeanEval.Topology.ClassificationOfSurfaces.CellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLHomeomorphFromCellwise, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLSurfaceApproximation, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.BoundaryGlobalPLSurfaceApproximation}
 \leanok
 
 \uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:lem:pl_approximation_one_skeleton}
@@ -363,9 +365,11 @@ map on the support, its $\varphi$-closeness to the original homeomorphism,
 finite two-cell extension data, and finite agreement conditions on shared
 boundaries.  One-skeleton extension is currently represented by a
 $\varphi$-approximation to the one-skeleton map, and shared-boundary agreement
-retains the finite common-face data.  It also carries proof-bearing global
-output conditions: the map is PL on the two-skeleton, and it is embedding-like
-by either agreeing with the reference map or being injective.  The global
+is a nonempty data predicate recording that the candidate map is PL on the
+one-skeleton and that common faces of distinct two-simplexes lie in that
+one-skeleton.  It also carries proof-bearing global output conditions: the map
+is PL on the two-skeleton, and it is embedding-like by either agreeing with the
+reference map or being injective.  The global
 gluing predicate packages the
 claim that compatible cellwise data assemble into a global PL surface
 approximation.  The boundary versions additionally record boundary-respecting

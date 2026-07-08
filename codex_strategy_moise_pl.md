@@ -577,6 +577,7 @@ structure CombinatorialTwoManifoldWithBoundary where
   K : EuclideanComplex
   isTwoDimensional : Prop
   vertex_link_circle_or_interval : Prop
+  shared_two_simplex_faces_in_oneSkeleton : Prop
 
 structure CombinatorialTwoCell where
   K : EuclideanComplex
@@ -597,7 +598,11 @@ structure CombinatorialTwoCell where
 Current status: vertex-link connectedness is no longer the placeholder `True`.  The complex API
 defines `EuclideanComplex.LinkAdjacent`, `LinkWalk`, `LinkReachable`, and `LinkConnected`, with
 reachability bounded by the finite vertex count so link-connectedness remains decidable for small
-examples.
+examples.  The surface structure also records the finite intersection axiom
+`shared_two_simplex_faces_in_oneSkeleton`: any common face of two distinct two-simplexes lies in
+the one-skeleton.  The helper theorem
+`CombinatorialTwoManifoldWithBoundary.sharedFace_mem_oneSkeleton` is the intended way for gluing
+arguments to use this condition.
 
 Current status: the two-cell and polygonal-disk fields that used to be `True` have been split into
 named proof-bearing records:
@@ -698,11 +703,12 @@ Do not ask Codex to invent this proof at once. Ask it to formalize the statement
 Current gluing API status: `CellwiseExtension` and `BoundaryCellwiseExtension` carry
 proof-bearing output conditions.  `IsPLOnTwoSkeleton` records PL behavior on all two-skeleton
 simplexes, `ExtendsOneSkeletonApproximation` records a `PhiApproximation` to the one-skeleton map,
-`ExtensionsAgreeOnSharedBoundary` retains the finite common-face evidence, `EmbeddingLikeApproximation`
-records that the output map either agrees with the reference map or is injective, and
-`RelativeBoundaryCells` records the boundary-respecting conditions for the half-plane route.  These
-replace the old `True` fields on global PL approximation outputs while leaving the hard planar
-topology as named theorem boundaries.
+`ExtensionsAgreeOnSharedBoundary` is backed by `SharedBoundaryCompatibilityData`, which records PL
+behavior on the one-skeleton and proves that common faces of distinct two-simplexes lie in the
+one-skeleton.  `EmbeddingLikeApproximation` records that the output map either agrees with the
+reference map or is injective, and `RelativeBoundaryCells` records the boundary-respecting
+conditions for the half-plane route.  These replace the old `True` fields on global PL
+approximation outputs while leaving the hard planar topology as named theorem boundaries.
 
 ### Moise work package M6: PL complexes inside arbitrary spaces
 
