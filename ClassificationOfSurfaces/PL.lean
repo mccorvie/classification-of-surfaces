@@ -316,6 +316,16 @@ def full (K : EuclideanComplex) : K.Subcomplex where
     intro τ σ hσ hface
     simp
 
+/-- Subcomplexes are equal when they have the same finite simplex set. -/
+@[ext] theorem ext {K : EuclideanComplex} {A B : K.Subcomplex}
+    (h : A.simplexes = B.simplexes) : A = B := by
+  cases A with
+  | mk As Aclosed =>
+    cases B with
+    | mk Bs Bclosed =>
+      cases h
+      congr
+
 end Subcomplex
 
 /-- The link of a vertex as a subcomplex-shaped object. -/
@@ -1342,28 +1352,100 @@ theorem mem_boundaryEdges_iff (S : CombinatorialTwoManifoldWithBoundary) (e : S.
 
 end CombinatorialTwoManifoldWithBoundary
 
-/-- A PL map is compatible with a pair of subcomplexes. This is a boundary-restriction scaffold
-until subcomplex supports are made geometric. -/
-structure PLMap.RespectsSubcomplex {K L : EuclideanComplex}
-    (f : PLMap K L) (A : K.Subcomplex) (B : L.Subcomplex) : Prop where
-  maps_simplexes : ∀ {σ : K.Simplex}, σ ∈ A.simplexes → ∃ τ : L.Simplex, τ ∈ B.simplexes
-  image_lands_in_target : A.simplexes.Nonempty → B.simplexes.Nonempty
+/-- Finite simplex-level data witnessing that a PL map respects a pair of subcomplexes.
+
+The current complex API still lacks geometric carriers for individual simplexes, so the
+restriction condition is expressed as a face-compatible assignment of every source simplex to a
+target simplex in the target subcomplex.  This replaces the earlier nonempty-target placeholder:
+callers must now provide an actual finite simplex assignment and prove it preserves the face
+relation. -/
+structure PLMap.SubcomplexMapData {K L : EuclideanComplex}
+    (f : PLMap K L) (A : K.Subcomplex) (B : L.Subcomplex) where
+  simplexMap : K.Simplex → L.Simplex
+  simplexMap_mem : ∀ {σ : K.Simplex}, σ ∈ A.simplexes → simplexMap σ ∈ B.simplexes
+  face_compatible :
+    ∀ {τ σ : K.Simplex}, τ ∈ A.simplexes → σ ∈ A.simplexes → K.IsFace τ σ →
+      L.IsFace (simplexMap τ) (simplexMap σ)
+  linearWitness : f.HasLinearSubdivisionWitness
+
+/-- A PL map is compatible with a pair of subcomplexes. -/
+def PLMap.RespectsSubcomplex {K L : EuclideanComplex}
+    (f : PLMap K L) (A : K.Subcomplex) (B : L.Subcomplex) : Prop :=
+  Nonempty (f.SubcomplexMapData A B)
+
+namespace PLMap.SubcomplexMapData
+
+theorem maps_simplexes {K L : EuclideanComplex} {f : PLMap K L}
+    {A : K.Subcomplex} {B : L.Subcomplex} (D : f.SubcomplexMapData A B)
+    {σ : K.Simplex} (hσ : σ ∈ A.simplexes) :
+    ∃ τ : L.Simplex, τ ∈ B.simplexes :=
+  ⟨D.simplexMap σ, D.simplexMap_mem hσ⟩
+
+theorem image_lands_in_target {K L : EuclideanComplex} {f : PLMap K L}
+    {A : K.Subcomplex} {B : L.Subcomplex} (D : f.SubcomplexMapData A B)
+    (hA : A.simplexes.Nonempty) :
+    B.simplexes.Nonempty := by
+  rcases hA with ⟨σ, hσ⟩
+  exact ⟨D.simplexMap σ, D.simplexMap_mem hσ⟩
+
+end PLMap.SubcomplexMapData
 
 namespace PLMap.RespectsSubcomplex
 
-/-- Basic compatibility witness when the target subcomplex is nonempty.
+theorem ofData {K L : EuclideanComplex} {f : PLMap K L}
+    {A : K.Subcomplex} {B : L.Subcomplex} (D : f.SubcomplexMapData A B) :
+    f.RespectsSubcomplex A B :=
+  ⟨D⟩
 
-This is the weakest combinatorial substitute for geometric image containment available before
-simplex carriers are represented: each source simplex is assigned some target simplex in `B`. -/
-theorem trivial {K L : EuclideanComplex} (f : PLMap K L) (A : K.Subcomplex)
-    (B : L.Subcomplex) (hB : B.simplexes.Nonempty) :
-    f.RespectsSubcomplex A B where
-  maps_simplexes := by
+theorem maps_simplexes {K L : EuclideanComplex} {f : PLMap K L}
+    {A : K.Subcomplex} {B : L.Subcomplex} (h : f.RespectsSubcomplex A B)
+    {σ : K.Simplex} (hσ : σ ∈ A.simplexes) :
+    ∃ τ : L.Simplex, τ ∈ B.simplexes := by
+  rcases h with ⟨D⟩
+  exact D.maps_simplexes hσ
+
+theorem image_lands_in_target {K L : EuclideanComplex} {f : PLMap K L}
+    {A : K.Subcomplex} {B : L.Subcomplex} (h : f.RespectsSubcomplex A B)
+    (hA : A.simplexes.Nonempty) :
+    B.simplexes.Nonempty := by
+  rcases h with ⟨D⟩
+  exact D.image_lands_in_target hA
+
+/-- Build subcomplex-respect data from an explicit face-compatible simplex assignment. -/
+theorem ofSimplexMap {K L : EuclideanComplex} (f : PLMap K L)
+    (A : K.Subcomplex) (B : L.Subcomplex) (simplexMap : K.Simplex → L.Simplex)
+    (simplexMap_mem : ∀ {σ : K.Simplex}, σ ∈ A.simplexes → simplexMap σ ∈ B.simplexes)
+    (face_compatible :
+      ∀ {τ σ : K.Simplex}, τ ∈ A.simplexes → σ ∈ A.simplexes → K.IsFace τ σ →
+        L.IsFace (simplexMap τ) (simplexMap σ)) :
+    f.RespectsSubcomplex A B :=
+  ⟨{ simplexMap := simplexMap,
+      simplexMap_mem := simplexMap_mem,
+      face_compatible := face_compatible,
+      linearWitness := PLMap.HasLinearSubdivisionWitness.of_existing f.subdivisionSupportWitness }⟩
+
+/-- The identity PL map respects every subcomplex. -/
+theorem refl {K : EuclideanComplex} (A : K.Subcomplex) :
+    (PLMap.id K).RespectsSubcomplex A A :=
+  ofSimplexMap (PLMap.id K) A A id (by
     intro σ hσ
-    exact hB
-  image_lands_in_target := by
-    intro _hA
-    exact hB
+    exact hσ) (by
+    intro τ σ _hτ _hσ hface
+    exact hface)
+
+/-- Compose two compatible subcomplex restrictions. -/
+theorem comp {K L M : EuclideanComplex} {f : PLMap K L} {g : PLMap L M}
+    {A : K.Subcomplex} {B : L.Subcomplex} {C : M.Subcomplex}
+    (hf : f.RespectsSubcomplex A B) (hg : g.RespectsSubcomplex B C) :
+    (g.comp f).RespectsSubcomplex A C := by
+  rcases hf with ⟨F⟩
+  rcases hg with ⟨G⟩
+  refine ofSimplexMap (g.comp f) A C (fun σ => G.simplexMap (F.simplexMap σ)) ?_ ?_
+  · intro σ hσ
+    exact G.simplexMap_mem (F.simplexMap_mem hσ)
+  · intro τ σ hτ hσ hface
+    exact G.face_compatible (F.simplexMap_mem hτ) (F.simplexMap_mem hσ)
+      (F.face_compatible hτ hσ hface)
 
 end PLMap.RespectsSubcomplex
 
@@ -1390,12 +1472,26 @@ structure PLHomeomorph.RestrictsTo {K L : EuclideanComplex}
 
 namespace PLHomeomorph.RestrictsTo
 
-/-- Trivial restriction placeholder while subcomplex supports are still combinatorial. -/
-theorem trivial {K L : EuclideanComplex} (e : PLHomeomorph K L) (A : K.Subcomplex)
-    (B : L.Subcomplex) (hA : A.simplexes.Nonempty) (hB : B.simplexes.Nonempty) :
-    e.RestrictsTo A B where
-  map_respects := PLMap.RespectsSubcomplex.trivial e.pl_toFun A B hB
-  inv_respects := PLMap.RespectsSubcomplex.trivial e.pl_invFun B A hA
+/-- The identity PL homeomorphism restricts to any subcomplex. -/
+theorem refl {K : EuclideanComplex} (A : K.Subcomplex) :
+    (PLHomeomorph.refl K).RestrictsTo A A where
+  map_respects := PLMap.RespectsSubcomplex.refl A
+  inv_respects := PLMap.RespectsSubcomplex.refl A
+
+/-- Invert a restricted PL homeomorphism. -/
+theorem symm {K L : EuclideanComplex} {e : PLHomeomorph K L}
+    {A : K.Subcomplex} {B : L.Subcomplex} (h : e.RestrictsTo A B) :
+    e.symm.RestrictsTo B A where
+  map_respects := h.inv_respects
+  inv_respects := h.map_respects
+
+/-- Compose restricted PL homeomorphisms. -/
+theorem trans {K L M : EuclideanComplex} {e₁ : PLHomeomorph K L}
+    {e₂ : PLHomeomorph L M} {A : K.Subcomplex} {B : L.Subcomplex}
+    {C : M.Subcomplex} (h₁ : e₁.RestrictsTo A B) (h₂ : e₂.RestrictsTo B C) :
+    (e₁.trans e₂).RestrictsTo A C where
+  map_respects := PLMap.RespectsSubcomplex.comp h₁.map_respects h₂.map_respects
+  inv_respects := PLMap.RespectsSubcomplex.comp h₂.inv_respects h₁.inv_respects
 
 end PLHomeomorph.RestrictsTo
 
@@ -1416,15 +1512,13 @@ end PLHomeomorph
 
 namespace RestrictionExamples
 
-example {K L : EuclideanComplex} (e : PLHomeomorph K L) (A : K.Subcomplex)
-    (B : L.Subcomplex) (hA : A.simplexes.Nonempty) (hB : B.simplexes.Nonempty) :
-    e.RestrictsTo A B :=
-  PLHomeomorph.RestrictsTo.trivial e A B hA hB
+example {K : EuclideanComplex} (A : K.Subcomplex) :
+    (PLHomeomorph.refl K).RestrictsTo A A :=
+  PLHomeomorph.RestrictsTo.refl A
 
-example {K L : EuclideanComplex} (f : PLMap K L) (A : K.Subcomplex)
-    (B : L.Subcomplex) (hB : B.simplexes.Nonempty) :
-    f.RespectsSubcomplex A B :=
-  PLMap.RespectsSubcomplex.trivial f A B hB
+example {K : EuclideanComplex} (A : K.Subcomplex) :
+    (PLMap.id K).RespectsSubcomplex A A :=
+  PLMap.RespectsSubcomplex.refl A
 
 end RestrictionExamples
 
@@ -1456,6 +1550,50 @@ structure ClosedTriangleBoundaryModel
         τ ∈ closedTriangleBoundary.simplexes
   excludesInteriorFace :
     EuclideanComplex.Examples.TriangleSimplex.face ∉ closedTriangleBoundary.simplexes
+
+namespace ClosedTriangleBoundaryModel
+
+open EuclideanComplex.Examples
+
+/-- A subcomplex satisfying the closed-triangle boundary model has exactly the standard boundary
+simplexes. -/
+theorem simplexes_eq_standard (A : triangle.Subcomplex) (hA : ClosedTriangleBoundaryModel A) :
+    A.simplexes = triangleBoundarySubcomplex.simplexes := by
+  ext σ
+  constructor
+  · intro hσ
+    cases σ
+    · decide
+    · decide
+    · decide
+    · decide
+    · decide
+    · decide
+    · exact False.elim (hA.excludesInteriorFace hσ)
+  · intro hσ
+    cases σ
+    · have he : TriangleSimplex.e₀₁ ∈ A.simplexes :=
+        hA.containsBoundaryFaces (by decide)
+      exact A.face_closed he (by decide)
+    · have he : TriangleSimplex.e₀₁ ∈ A.simplexes :=
+        hA.containsBoundaryFaces (by decide)
+      exact A.face_closed he (by decide)
+    · have he : TriangleSimplex.e₁₂ ∈ A.simplexes :=
+        hA.containsBoundaryFaces (by decide)
+      exact A.face_closed he (by decide)
+    · exact hA.containsBoundaryFaces (by decide)
+    · exact hA.containsBoundaryFaces (by decide)
+    · exact hA.containsBoundaryFaces (by decide)
+    · exfalso
+      revert hσ
+      decide
+
+/-- The closed-triangle boundary model determines the standard triangle boundary subcomplex. -/
+theorem eq_standard (A : triangle.Subcomplex) (hA : ClosedTriangleBoundaryModel A) :
+    A = triangleBoundarySubcomplex := by
+  exact EuclideanComplex.Subcomplex.ext (simplexes_eq_standard A hA)
+
+end ClosedTriangleBoundaryModel
 
 /-- Data that the distinguished boundary of a polygonal disk is represented by a one-dimensional
 boundary complex and a one-dimensional subcomplex of the disk. -/
@@ -1602,6 +1740,19 @@ def segmentToTriangle : PLMap segment triangle where
       (fun _ : segment.support => (⟨(0 : TrianglePlane), zero_mem_closedTriangleSupport⟩ :
         triangle.support))⟩
 
+/-- The toy segment inclusion sends every source simplex to the chosen boundary edge of the
+standard triangle. -/
+theorem segmentToTriangle_respectsBoundary :
+    segmentToTriangle.RespectsSubcomplex
+      (EuclideanComplex.Subcomplex.full segment) triangleBoundarySubcomplex :=
+  PLMap.RespectsSubcomplex.ofSimplexMap segmentToTriangle
+    (EuclideanComplex.Subcomplex.full segment) triangleBoundarySubcomplex
+    (fun _ => TriangleSimplex.e₀₁) (by
+      intro σ hσ
+      decide) (by
+      intro τ σ hτ hσ hface
+      exact subset_rfl)
+
 /-- The standard filled triangle, with a scaffold boundary model, is a polygonal disk. -/
 def standardTriangle : PolygonalDisk where
   K := triangle
@@ -1611,9 +1762,7 @@ def standardTriangle : PolygonalDisk where
     exact ⟨TriangleSimplex.e₀₁, by decide⟩
   boundaryInclusion := segmentToTriangle
   boundaryInclusion_respects :=
-    PLMap.RespectsSubcomplex.trivial segmentToTriangle
-      (EuclideanComplex.Subcomplex.full segment) triangleBoundarySubcomplex
-      (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
+    segmentToTriangle_respectsBoundary
   isTwoDimensional := by
     constructor
     · intro σ
@@ -1629,9 +1778,7 @@ def standardTriangle : PolygonalDisk where
     { inclusionPL :=
         PLMap.HasLinearSubdivisionWitness.of_existing segmentToTriangle.subdivisionSupportWitness
       inclusionRespects :=
-        PLMap.RespectsSubcomplex.trivial segmentToTriangle
-          (EuclideanComplex.Subcomplex.full segment) triangleBoundarySubcomplex
-          (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
+        segmentToTriangle_respectsBoundary
       targetNonempty := by
         exact ⟨TriangleSimplex.e₀₁, by decide⟩ }
   frontier_covered_by_boundary :=
@@ -1649,10 +1796,7 @@ def standardTriangle : PolygonalDisk where
         decide }
   cellHomeomorphToTriangle := PLHomeomorph.refl triangle
   cellHomeomorph_respects_boundary :=
-    PLHomeomorph.RestrictsTo.trivial (PLHomeomorph.refl triangle)
-      triangleBoundarySubcomplex triangleBoundarySubcomplex
-      (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
-      (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
+    PLHomeomorph.RestrictsTo.refl triangleBoundarySubcomplex
   polygonalBoundary :=
     { boundaryAtMostOneDimensional := by
         intro σ
@@ -1668,9 +1812,7 @@ def standardTriangle : PolygonalDisk where
             PLMap.HasLinearSubdivisionWitness.of_existing
               segmentToTriangle.subdivisionSupportWitness
           inclusionRespects :=
-            PLMap.RespectsSubcomplex.trivial segmentToTriangle
-              (EuclideanComplex.Subcomplex.full segment) triangleBoundarySubcomplex
-              (by exact ⟨TriangleSimplex.e₀₁, by decide⟩)
+            segmentToTriangle_respectsBoundary
           targetNonempty := by
             exact ⟨TriangleSimplex.e₀₁, by decide⟩ } }
   triangulatesClosedInterior :=
@@ -1706,8 +1848,21 @@ theorem pl_schoenflies_combinatorial_two_cell
     C.cellHomeomorphToTriangle.trans D.cellHomeomorphToTriangle.symm
   refine ⟨E, ?_⟩
   constructor
-  · exact PLHomeomorph.RestrictsTo.trivial E C.boundarySubcomplex D.boundarySubcomplex
-      C.boundarySubcomplex_nonempty D.boundarySubcomplex_nonempty
+  · have hCstd :
+        C.closedTriangleBoundary = EuclideanComplex.Examples.triangleBoundarySubcomplex :=
+      ClosedTriangleBoundaryModel.eq_standard C.closedTriangleBoundary
+        C.closedTriangleModel_is_triangle
+    have hDstd :
+        D.closedTriangleBoundary = EuclideanComplex.Examples.triangleBoundarySubcomplex :=
+      ClosedTriangleBoundaryModel.eq_standard D.closedTriangleBoundary
+        D.closedTriangleModel_is_triangle
+    have hDsymm :
+        D.cellHomeomorphToTriangle.symm.RestrictsTo C.closedTriangleBoundary
+          D.boundarySubcomplex := by
+      rw [hCstd]
+      rw [← hDstd]
+      exact D.cellHomeomorph_respects_boundary.symm
+    exact PLHomeomorph.RestrictsTo.trans C.cellHomeomorph_respects_boundary hDsymm
   · exact
       { boundaryForwardPL :=
           PLMap.HasLinearSubdivisionWitness.of_existing e.pl_toFun.subdivisionSupportWitness

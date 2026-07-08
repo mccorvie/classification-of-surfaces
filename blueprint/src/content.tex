@@ -97,7 +97,7 @@ the original complex.
 
 \begin{definition}[PL map and PL homeomorphism]
 \label{moise:def:pl_map_homeomorphism}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLSubdivisionSupportWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLMap.subdivisionSupportWitness_exists, LeanEval.Topology.ClassificationOfSurfaces.PLMap.FineSimplexTargetData, LeanEval.Topology.ClassificationOfSurfaces.PLMap.AffineOnFineSimplexData, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.targetSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.targetSimplex_dimension_le, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.affine_domain_dimension_le, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.support_compatible, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap.RespectsSubcomplex, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.RestrictsTo}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLSubdivisionSupportWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLMap.subdivisionSupportWitness_exists, LeanEval.Topology.ClassificationOfSurfaces.PLMap.FineSimplexTargetData, LeanEval.Topology.ClassificationOfSurfaces.PLMap.AffineOnFineSimplexData, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.targetSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.targetSimplex_dimension_le, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.affine_domain_dimension_le, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.support_compatible, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap.SubcomplexMapData, LeanEval.Topology.ClassificationOfSurfaces.PLMap.RespectsSubcomplex, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.RestrictsTo}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:subdivision}
@@ -109,9 +109,11 @@ relating the PL maps to the underlying homeomorphism.  The `PLMap` structure
 stores support-level subdivision witness data, and linear subdivision witnesses
 carry explicit target-simplex assignment data, domain and target subdivision
 dimension bounds, and a support-homeomorphism compatibility equation.  Restriction to
-subcomplexes is no longer an arbitrary placeholder: a PL map respecting
-subcomplexes must assign each source simplex to a nonempty target subcomplex,
-and a PL homeomorphism restriction carries this condition in both directions.
+subcomplexes is no longer an arbitrary nonempty-target placeholder: a PL map
+respecting subcomplexes is backed by `PLMap.SubcomplexMapData`, a finite
+simplex assignment into the target subcomplex with face-compatibility and PL
+linearity witnesses.  A PL homeomorphism restriction carries this condition in
+both directions and composes through shared boundary subcomplexes.
 \end{definition}
 
 \begin{lemma}[PL property is invariant under subdivision]
@@ -226,7 +228,10 @@ distinguished boundary subcomplexes agrees with the prescribed boundary map.
 Use the stored PL homeomorphisms from each two-cell to the shared standard
 triangle model, compose the first with the inverse of the second, and discharge
 the boundary-extension fields using the restriction data and the PL witnesses
-carried by the boundary and cell homeomorphisms.
+carried by the boundary and cell homeomorphisms.  The formal proof first
+identifies each modeled closed-triangle boundary subcomplex with the standard
+triangle boundary, then composes the two stored boundary restrictions through
+that common subcomplex.
 \end{proof}
 
 \section{PL approximation in dimension two}

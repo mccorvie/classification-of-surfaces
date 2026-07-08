@@ -497,10 +497,19 @@ structure PLHomeomorph (K L : EuclideanComplex) where
   pl_toFun : PLMap K L
   pl_invFun : PLMap L K
 
-structure PLMap.RespectsSubcomplex
+structure PLMap.SubcomplexMapData
     (f : PLMap K L) (A : K.Subcomplex) (B : L.Subcomplex) where
-  maps_simplexes : ∀ {σ : K.Simplex}, σ ∈ A.simplexes → ∃ τ : L.Simplex, τ ∈ B.simplexes
-  image_lands_in_target : A.simplexes.Nonempty → B.simplexes.Nonempty
+  simplexMap : K.Simplex → L.Simplex
+  simplexMap_mem :
+    ∀ {σ : K.Simplex}, σ ∈ A.simplexes → simplexMap σ ∈ B.simplexes
+  face_compatible :
+    ∀ {τ σ : K.Simplex}, τ ∈ A.simplexes → σ ∈ A.simplexes → K.IsFace τ σ →
+      L.IsFace (simplexMap τ) (simplexMap σ)
+  linearWitness : f.HasLinearSubdivisionWitness
+
+def PLMap.RespectsSubcomplex
+    (f : PLMap K L) (A : K.Subcomplex) (B : L.Subcomplex) : Prop :=
+  Nonempty (f.SubcomplexMapData A B)
 ```
 
 Current status: `PLMap.exists_subdivision_linear` is now a Prop-style API backed by the concrete
@@ -530,10 +539,12 @@ theorem pl_iff_pl_after_subdivision : ... := by sorry
 This is reusable infrastructure. It should not depend on surfaces.
 
 Restriction status: `PLMap.RespectsSubcomplex` is now proof-bearing at the current
-combinatorial level.  It no longer says `True`; it requires nonempty target subcomplex data for
-source simplexes.  `PLHomeomorph.RestrictsTo` requires this condition in both directions, and
-two-cell data carries nonemptiness of the boundary subcomplex so Schoenflies can use the
-restriction API without arbitrary placeholders.
+combinatorial level.  It is backed by `PLMap.SubcomplexMapData`, so callers must provide a finite
+simplex assignment into the target subcomplex, prove face compatibility, and carry a PL linearity
+witness.  `PLHomeomorph.RestrictsTo` requires this condition in both directions and now has identity,
+symmetry, and composition APIs.  `pl_schoenflies_combinatorial_two_cell` composes the stored
+boundary restrictions through the standard triangle boundary instead of using a nonempty-target
+restriction placeholder.
 
 ### Moise work package M3: combinatorial surfaces and cells
 
