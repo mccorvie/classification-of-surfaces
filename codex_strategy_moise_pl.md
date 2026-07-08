@@ -422,8 +422,15 @@ structure EuclideanComplex where
 
 structure EuclideanComplex.Subdivision (K : EuclideanComplex) where
   K' : EuclideanComplex
-  same_support : K'.support = K.support
-  simplex_refines : Prop
+  supportHomeomorph : K'.support ≃ₜ K.support
+  vertexCarrier : K'.Vertex → K.Vertex
+  carrier : K'.Simplex → K.Simplex
+  simplex_refines :
+    ∀ ⦃σ' : K'.Simplex⦄ ⦃v' : K'.Vertex⦄,
+      v' ∈ K'.vertices σ' → vertexCarrier v' ∈ K.vertices (carrier σ')
+  dimension_le : ∀ σ' : K'.Simplex, K'.simplexDim σ' ≤ K.simplexDim (carrier σ')
+  face_refines : ∀ {τ' σ' : K'.Simplex}, K'.IsFace τ' σ' → K.IsFace (carrier τ') (carrier σ')
+  covers_old_simplexes : ∀ σ : K.Simplex, ∃ σ' : K'.Simplex, carrier σ' = σ
 ```
 
 Current status: `EuclideanComplex` now carries a nonempty simplex type, exposed by
@@ -436,7 +443,11 @@ the vertex set of another simplex.  The helper `EuclideanComplex.exists_erase_ve
 this data.
 `EuclideanComplex.Subdivision.covers_old_simplexes` is also proof-bearing carrier-surjectivity:
 every coarse simplex has a fine simplex carried to it, exposed by
-`EuclideanComplex.Subdivision.exists_carrier_eq`.  `EuclideanComplex.Subdivision.CommonRefinement`
+`EuclideanComplex.Subdivision.exists_carrier_eq`.  `EuclideanComplex.Subdivision.simplex_refines`
+is no longer a free proposition: the subdivision stores a vertex carrier and proves that every
+vertex of a fine simplex maps to a vertex of its carrier coarse simplex, exposed by
+`EuclideanComplex.Subdivision.carrierVertex` and
+`EuclideanComplex.Subdivision.vertex_mem_carrier`.  `EuclideanComplex.Subdivision.CommonRefinement`
 now carries lift maps from a common refinement to both subdivisions with compatible coarse
 carriers, and `common_subdivision` constructs this carrier-level common refinement using
 carrier-surjectivity.

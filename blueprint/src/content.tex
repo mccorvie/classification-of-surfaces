@@ -80,15 +80,17 @@ simplex with at least two vertices produces the vertex set of another simplex.
 
 \begin{definition}[Subdivision]
 \label{moise:def:subdivision}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.exists_carrier_eq, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.CommonRefinement}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.carrierVertex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.vertex_mem_carrier, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.exists_carrier_eq, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.CommonRefinement}
 \leanok
 
 \uses{moise:def:euclidean_complex}
-A subdivision $K'<K$ is a finite complex with homeomorphic support and a carrier
-map sending each simplex of $K'$ to a simplex of $K$.  The formal API records
-dimension monotonicity, face compatibility, and proof-bearing coarse coverage:
-every coarse simplex has a fine simplex carried to it.  The geometric
-rectilinear containment is isolated as refinement data.  A common refinement
+A subdivision $K'<K$ is a finite complex with homeomorphic support, a carrier
+map sending each simplex of $K'$ to a simplex of $K$, and a vertex carrier
+sending fine vertices to coarse vertices.  The formal API records concrete
+carrier-level simplex refinement: vertices of a fine simplex map to vertices of
+its carrier coarse simplex.  It also records dimension monotonicity, face
+compatibility, and proof-bearing coarse coverage: every coarse simplex has a
+fine simplex carried to it.  A common refinement
 now records lift maps to both refined complexes whose coarse carriers agree in
 the original complex.
 \end{definition}

@@ -335,15 +335,19 @@ def linkSubcomplex (K : EuclideanComplex) (v : K.Vertex) : K.Subcomplex where
 
 /-- A subdivision of a Euclidean complex.
 
-The refined complex `K'` has homeomorphic support and each fine simplex has a carrier coarse
-simplex. The carrier map is intentionally combinatorial: geometric containment is represented by
-`simplex_refines`, while `dimension_le` and `face_refines` expose the finite data needed by later
-arguments about skeletons, boundaries, and links. -/
+The refined complex `K'` has homeomorphic support, a carrier coarse simplex for each fine
+simplex, and a carrier coarse vertex for each fine vertex.  The `simplex_refines` field is the
+finite carrier-level replacement for geometric containment: every vertex of a fine simplex maps to
+a vertex of its carrier coarse simplex.  The remaining fields expose the dimension, face, and
+coverage data needed by later arguments about skeletons, boundaries, and links. -/
 structure Subdivision (K : EuclideanComplex) where
   K' : EuclideanComplex
   supportHomeomorph : K'.support ≃ₜ K.support
+  vertexCarrier : K'.Vertex → K.Vertex
   carrier : K'.Simplex → K.Simplex
-  simplex_refines : ∀ _ : K'.Simplex, Prop
+  simplex_refines :
+    ∀ ⦃σ' : K'.Simplex⦄ ⦃v' : K'.Vertex⦄,
+      v' ∈ K'.vertices σ' → vertexCarrier v' ∈ K.vertices (carrier σ')
   dimension_le : ∀ σ' : K'.Simplex, K'.simplexDim σ' ≤ K.simplexDim (carrier σ')
   face_refines : ∀ {τ' σ' : K'.Simplex}, K'.IsFace τ' σ' → K.IsFace (carrier τ') (carrier σ')
   covers_old_simplexes : ∀ σ : K.Simplex, ∃ σ' : K'.Simplex, carrier σ' = σ
@@ -359,6 +363,17 @@ def carrierSimplex {K : EuclideanComplex} (S : K.Subdivision) (σ' : S.K'.Simple
     K.Simplex :=
   S.carrier σ'
 
+/-- The coarse vertex carrying a fine vertex. -/
+def carrierVertex {K : EuclideanComplex} (S : K.Subdivision) (v' : S.K'.Vertex) :
+    K.Vertex :=
+  S.vertexCarrier v'
+
+/-- Vertices of a fine simplex map to vertices of its carrier coarse simplex. -/
+theorem vertex_mem_carrier {K : EuclideanComplex} (S : K.Subdivision)
+    {σ' : S.K'.Simplex} {v' : S.K'.Vertex} (hv : v' ∈ S.K'.vertices σ') :
+    S.carrierVertex v' ∈ K.vertices (S.carrier σ') :=
+  S.simplex_refines hv
+
 /-- Every coarse simplex has a fine simplex whose carrier is it. -/
 theorem exists_carrier_eq {K : EuclideanComplex} (S : K.Subdivision) (σ : K.Simplex) :
     ∃ σ' : S.K'.Simplex, S.carrier σ' = σ :=
@@ -368,8 +383,11 @@ theorem exists_carrier_eq {K : EuclideanComplex} (S : K.Subdivision) (σ : K.Sim
 protected def refl (K : EuclideanComplex) : K.Subdivision where
   K' := K
   supportHomeomorph := Homeomorph.refl K.support
+  vertexCarrier := id
   carrier := id
-  simplex_refines := fun σ => K.IsFace σ σ
+  simplex_refines := by
+    intro σ v hv
+    exact hv
   dimension_le := by
     intro σ
     rfl
@@ -385,8 +403,11 @@ protected def trans {K : EuclideanComplex} (S : K.Subdivision) (T : S.K'.Subdivi
     K.Subdivision where
   K' := T.K'
   supportHomeomorph := T.supportHomeomorph.trans S.supportHomeomorph
+  vertexCarrier := S.vertexCarrier ∘ T.vertexCarrier
   carrier := fun σ'' => S.carrier (T.carrier σ'')
-  simplex_refines := fun σ'' => T.simplex_refines σ'' ∧ S.simplex_refines (T.carrier σ'')
+  simplex_refines := by
+    intro σ'' v'' hv
+    exact S.simplex_refines (T.simplex_refines hv)
   dimension_le := by
     intro σ''
     exact le_trans (T.dimension_le σ'') (S.dimension_le (T.carrier σ''))
@@ -403,9 +424,18 @@ protected def trans {K : EuclideanComplex} (S : K.Subdivision) (T : S.K'.Subdivi
     (Subdivision.refl K).carrier σ = σ := by
   rfl
 
+@[simp] theorem refl_vertexCarrier (K : EuclideanComplex) (v : K.Vertex) :
+    (Subdivision.refl K).vertexCarrier v = v := by
+  rfl
+
 @[simp] theorem trans_carrier {K : EuclideanComplex} (S : K.Subdivision)
     (T : S.K'.Subdivision) (σ'' : T.K'.Simplex) :
     (S.trans T).carrier σ'' = S.carrier (T.carrier σ'') := by
+  rfl
+
+@[simp] theorem trans_vertexCarrier {K : EuclideanComplex} (S : K.Subdivision)
+    (T : S.K'.Subdivision) (v'' : T.K'.Vertex) :
+    (S.trans T).vertexCarrier v'' = S.vertexCarrier (T.vertexCarrier v'') := by
   rfl
 
 /-- A common refinement relation for two subdivisions of the same complex.
