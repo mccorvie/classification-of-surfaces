@@ -592,9 +592,10 @@ structure PLComplexIn.BoundarySubcomplexData (K : PLComplexIn X) where
 Current overlap and Rado-state status: `PLComplexInSpace.CompatibleOnOverlap` is no longer an
 arbitrary proposition; it packages the actual overlap set together with containment in both
 embedded supports.  Rado induction states carry this overlap witness for the current complex and
-`BoundarySubcomplexFaceClosed` for the stored boundary subcomplex.  The harder
-`boundaryCompatibleOnOverlaps` field remains a theorem-boundary predicate for later geometric
-boundary compatibility.
+`BoundarySubcomplexFaceClosed` for the stored boundary subcomplex.
+`boundaryCompatibleOnOverlaps` now uses the proof-bearing `BoundaryCompatibleOnOverlap` predicate:
+the complex must be compatible with the comparison complex on the ambient overlap, and the stored
+boundary subcomplex must be face-closed.
 
 Needed operations:
 

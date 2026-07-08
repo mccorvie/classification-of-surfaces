@@ -3778,6 +3778,14 @@ structure PointChartPolygonalDiskData (M : Type*) [TopologicalSpace M] (x : M) w
 def BoundarySubcomplexFaceClosed (K : EuclideanComplex) (A : K.Subcomplex) : Prop :=
   ∀ {τ σ}, σ ∈ A.simplexes → K.IsFace τ σ → τ ∈ A.simplexes
 
+/-- Boundary compatibility for overlap steps in the Rado induction.
+
+The new complex must be compatible with the comparison complex on their ambient overlap, and the
+chosen boundary subcomplex must be face-closed in the new complex. -/
+def BoundaryCompatibleOnOverlap {M : Type*} [TopologicalSpace M]
+    (K L : PLComplexInSpace M) (A : K.Complex.Subcomplex) : Prop :=
+  K.compatibleOnOverlap L ∧ BoundarySubcomplexFaceClosed K.Complex A
+
 /-- State of the Rado induction after finitely many chart pairs have been absorbed. -/
 structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   stage : ℕ
@@ -3787,7 +3795,8 @@ structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   coversPreviousBoundaryCores : Prop
   compatibleOnOverlaps : complex.compatibleOnOverlap complex
   boundaryIsSubcomplex : BoundarySubcomplexFaceClosed complex.Complex boundarySubcomplex
-  boundaryCompatibleOnOverlaps : Prop
+  boundaryCompatibleOnOverlaps :
+    BoundaryCompatibleOnOverlap complex complex boundarySubcomplex
   boundaryRespectsCharts : Prop
   locallyFinite : Finite complex.Complex.Simplex
   boundaryLocallyFinite : Finite {σ : complex.Complex.Simplex // σ ∈ boundarySubcomplex.simplexes}
@@ -3832,7 +3841,8 @@ structure RadoStepExtensionData
   coversNextCore : (E.pair (S.stage + 1)).core ⊆ nextComplex.support
   coversNextBoundaryCore : (E.pair (S.stage + 1)).boundaryCore ⊆ nextComplex.support
   compatibleOnOverlaps : nextComplex.compatibleOnOverlap S.complex
-  boundaryCompatibleOnOverlaps : Prop
+  boundaryCompatibleOnOverlaps :
+    BoundaryCompatibleOnOverlap nextComplex S.complex boundarySubcomplex
   boundaryRespectsCharts : Prop
 
 namespace InitialPLNeighborhoodData
@@ -3874,7 +3884,8 @@ def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
       ∀ n, n ≤ 0 → (E.pair n).boundaryCore ⊆ D.chartDisk.toPLComplexInSpace.support
     compatibleOnOverlaps := D.chartDisk.toPLComplexInSpace.compatibleOnOverlap_self
     boundaryIsSubcomplex := D.boundarySubcomplexCompatible
-    boundaryCompatibleOnOverlaps := True
+    boundaryCompatibleOnOverlaps :=
+      ⟨D.chartDisk.toPLComplexInSpace.compatibleOnOverlap_self, D.boundarySubcomplexCompatible⟩
     boundaryRespectsCharts := D.chartDisk.RespectsChartModel
     locallyFinite := inferInstance
     boundaryLocallyFinite := inferInstance }
@@ -3963,7 +3974,11 @@ def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
     boundaryIsSubcomplex := by
       intro τ σ hσ hface
       exact D.boundarySubcomplex.face_closed hσ hface
-    boundaryCompatibleOnOverlaps := D.boundaryCompatibleOnOverlaps
+    boundaryCompatibleOnOverlaps := by
+      constructor
+      · exact D.nextComplex.compatibleOnOverlap_self
+      · intro τ σ hσ hface
+        exact D.boundarySubcomplex.face_closed hσ hface
     boundaryRespectsCharts := D.boundaryRespectsCharts
     locallyFinite := inferInstance
     boundaryLocallyFinite := inferInstance }
@@ -4163,7 +4178,11 @@ noncomputable def fromChartPolygonalDisk
         exact Or.inr (D.boundaryCore_covered hx')
       compatibleOnOverlaps := by
         exact ⟨K.overlap S.complex, rfl, fun _ hx => hx.1, fun _ hx => hx.2⟩
-      boundaryCompatibleOnOverlaps := True
+      boundaryCompatibleOnOverlaps := by
+        constructor
+        · exact ⟨K.overlap S.complex, rfl, fun _ hx => hx.1, fun _ hx => hx.2⟩
+        · intro τ σ hσ hface
+          exact (EuclideanComplex.Subcomplex.full K.Complex).face_closed hσ hface
       boundaryRespectsCharts := D.RespectsChartModel }
 
 @[simp] theorem fromChartPolygonalDisk_nextComplex

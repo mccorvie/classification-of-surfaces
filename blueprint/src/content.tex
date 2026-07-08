@@ -641,7 +641,7 @@ together with the definitional equality identifying it with the stored field.
 
 \begin{lemma}[Initial PL neighborhood]
 \label{moise:lem:initial_pl_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.BoundarySubcomplexFaceClosed, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.BoundarySubcomplexFaceClosed, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:polygonal_disk_combinatorial_cell}
@@ -653,7 +653,8 @@ asserting that boundary chart cores are covered by this boundary subcomplex.
 The finite-stage state records genuine finite simplex data for the complex and
 for the boundary subcomplex, rather than a placeholder local-finiteness
 proposition.  It also records actual self-overlap compatibility for the current
-embedded PL complex and face-closure of the stored boundary subcomplex.
+embedded PL complex, face-closure of the stored boundary subcomplex, and the
+combined boundary-overlap compatibility predicate.
 \end{lemma}
 
 \begin{proof}
@@ -682,8 +683,8 @@ preserving overlap, local-finiteness, and boundary compatibility.
 \leanok
 Build a scaffold PL complex whose support is the union of the old stage support
 and the embedded chart-disk support.  The old support and the next chart core
-are then contained in this union, and the current overlap and boundary
-compatibility fields are propositional.  The named constructor
+are then contained in this union, and the overlap and boundary compatibility
+fields are witnessed by support-containment and face-closure proofs.  The named constructor
 `RadoStepExtensionData.fromChartPolygonalDisk` now packages this data directly;
 the public theorem is an existential wrapper around that constructor.
 \end{proof}
