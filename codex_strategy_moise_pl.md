@@ -803,14 +803,13 @@ structure FiniteChartPairCover (M : Type*) [TopologicalSpace M] where
   Index : Type*
   indexFintype : Fintype Index
   pair : Index → RadoChartPair M
+  boundaryCarrier : Set M
   covers : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
   boundaryCovers :
-    ∀ x : M, (∃ i : Index, x ∈ (pair i).boundaryCore) →
-      ∃ i : Index, x ∈ (pair i).boundaryCore
+    ∀ x : M, x ∈ boundaryCarrier → ∃ i : Index, x ∈ (pair i).boundaryCore
   interiorChartsCoverInterior : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
-  boundaryChartsCoverBoundary :
-    ∀ x : M, (∃ i : Index, x ∈ (pair i).boundaryCore) →
-      ∃ i : Index, x ∈ (pair i).boundaryCore
+  boundaryCore_subset_boundaryCarrier :
+    ∀ i : Index, (pair i).boundaryCore ⊆ boundaryCarrier
   locallyFinite : ∀ x : M, ∃ t : Finset Index, ∀ i, x ∈ (pair i).core → i ∈ t
   nestedControl : ∀ i : Index, (pair i).core ⊆ (pair i).domain
   boundaryLocallyFinite :
@@ -874,7 +873,11 @@ Proved finite/combinatorial bridge:
    finite chart and the in-range/out-of-range enumeration cases.  The finite-cover and exhaustion
    local-finiteness fields are proof-bearing: finite covers use explicit finite index sets, and
    the countable enumeration uses `Finset.range (Fintype.card C.Index)` because all out-of-range
-   chart pairs are empty.
+   chart pairs are empty.  The boundary side now carries a named `boundaryCarrier`; the fields
+   `boundaryCovers` and `boundaryCore_subset_boundaryCarrier` prove that this carrier is exactly
+   the union of boundary cores.  The named equality APIs are
+   `FiniteChartPairCover.boundaryCarrier_eq_iUnion_boundaryCore` and
+   `ChartPairExhaustion.boundaryCarrier_eq_boundaryCoreUnion`.
 3. `RadoChartPair.fromChartAt` and `mathlib_bordered_surface_finite_chart_pair_cover`:
    the preferred mathlib chart at each point gives a chart pair whose core is a neighborhood, so a
    compact bordered surface has a finite chart-pair cover.  Its boundary core is now the part of

@@ -3792,13 +3792,13 @@ structure FiniteChartPairCover (M : Type u) [TopologicalSpace M] where
   Index : Type u
   indexFintype : Fintype Index
   pair : Index → RadoChartPair M
+  boundaryCarrier : Set M
   covers : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
-  boundaryCovers : ∀ x : M, (∃ i : Index, x ∈ (pair i).boundaryCore) →
+  boundaryCovers : ∀ x : M, x ∈ boundaryCarrier →
     ∃ i : Index, x ∈ (pair i).boundaryCore
   interiorChartsCoverInterior : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
-  boundaryChartsCoverBoundary :
-    ∀ x : M, (∃ i : Index, x ∈ (pair i).boundaryCore) →
-      ∃ i : Index, x ∈ (pair i).boundaryCore
+  boundaryCore_subset_boundaryCarrier :
+    ∀ i : Index, (pair i).boundaryCore ⊆ boundaryCarrier
   locallyFinite : ∀ x : M, ∃ t : Finset Index, ∀ i : Index, x ∈ (pair i).core → i ∈ t
   nestedControl : ∀ i : Index, (pair i).core ⊆ (pair i).domain
   boundaryLocallyFinite :
@@ -3831,6 +3831,20 @@ theorem modelsMatchKind {M : Type u} [TopologicalSpace M]
   intro i
   exact (C.pair i).modelsMatchKind
 
+/-- The boundary carrier of a finite chart-pair cover is exactly the union of its boundary cores.
+-/
+theorem boundaryCarrier_eq_iUnion_boundaryCore {M : Type u} [TopologicalSpace M]
+    (C : FiniteChartPairCover M) :
+    C.boundaryCarrier = ⋃ i : C.Index, (C.pair i).boundaryCore := by
+  ext x
+  constructor
+  · intro hx
+    rcases C.boundaryCovers x hx with ⟨i, hi⟩
+    exact Set.mem_iUnion.mpr ⟨i, hi⟩
+  · intro hx
+    rcases Set.mem_iUnion.mp hx with ⟨i, hi⟩
+    exact C.boundaryCore_subset_boundaryCarrier i hi
+
 /-- Enumerate a finite chart-pair cover by natural numbers, using the empty chart pair outside the
 finite range. -/
 noncomputable def natPair {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) :
@@ -3860,6 +3874,7 @@ theorem exists_of_compact_local
     { Index := {x : M // x ∈ t}
       indexFintype := inferInstance
       pair := fun x => pairAt x.1
+      boundaryCarrier := ⋃ x : {x : M // x ∈ t}, (pairAt x.1).boundaryCore
       covers := by
         intro y
         have hy : y ∈ ⋃ x ∈ t, (pairAt x).core := by
@@ -3871,7 +3886,8 @@ theorem exists_of_compact_local
         exact ⟨⟨x, hxt⟩, hyx⟩
       boundaryCovers := by
         intro x hx
-        exact hx
+        rcases Set.mem_iUnion.mp hx with ⟨i, hi⟩
+        exact ⟨i, hi⟩
       interiorChartsCoverInterior := by
         intro y
         have hy : y ∈ ⋃ x ∈ t, (pairAt x).core := by
@@ -3881,9 +3897,9 @@ theorem exists_of_compact_local
         rcases hy with ⟨x, hx⟩
         rcases hx with ⟨hxt, hyx⟩
         exact ⟨⟨x, hxt⟩, hyx⟩
-      boundaryChartsCoverBoundary := by
-        intro x hx
-        exact hx
+      boundaryCore_subset_boundaryCarrier := by
+        intro i x hx
+        exact Set.mem_iUnion.mpr ⟨i, hx⟩
       locallyFinite := by
         intro _x
         refine ⟨Finset.univ, ?_⟩
@@ -4830,11 +4846,12 @@ end ChartPolygonalDisk
 /-- Countable chart-pair exhaustion data for the Rado induction. -/
 structure ChartPairExhaustion (M : Type*) [TopologicalSpace M] where
   pair : ℕ → RadoChartPair M
+  boundaryCarrier : Set M
   covers : ∀ x : M, ∃ n, x ∈ (pair n).core
-  boundaryCovers : ∀ x : M, x ∈ ⋃ n, (pair n).boundaryCore → ∃ n, x ∈ (pair n).boundaryCore
+  boundaryCovers : ∀ x : M, x ∈ boundaryCarrier → ∃ n, x ∈ (pair n).boundaryCore
   interiorChartsCoverInterior : ∀ x : M, ∃ n, x ∈ (pair n).core
-  boundaryChartsCoverBoundary :
-    ∀ x : M, x ∈ ⋃ n, (pair n).boundaryCore → ∃ n, x ∈ (pair n).boundaryCore
+  boundaryCore_subset_boundaryCarrier :
+    ∀ n, (pair n).boundaryCore ⊆ boundaryCarrier
   locallyFinite : ∀ x : M, ∃ t : Finset ℕ, ∀ n, x ∈ (pair n).core → n ∈ t
   nestedControl : ∀ n, (pair n).core ⊆ (pair n).domain
   boundaryLocallyFinite :
@@ -4875,6 +4892,20 @@ theorem mem_boundaryCoreUnion_iff {M : Type*} [TopologicalSpace M] (E : ChartPai
     x ∈ E.boundaryCoreUnion ↔ ∃ n, x ∈ (E.pair n).boundaryCore := by
   simp [boundaryCoreUnion]
 
+/-- The named boundary carrier is exactly the union of boundary cores in a chart-pair exhaustion.
+-/
+theorem boundaryCarrier_eq_boundaryCoreUnion
+    {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) :
+    E.boundaryCarrier = E.boundaryCoreUnion := by
+  ext x
+  constructor
+  · intro hx
+    rcases E.boundaryCovers x hx with ⟨n, hn⟩
+    exact (E.mem_boundaryCoreUnion_iff x).2 ⟨n, hn⟩
+  · intro hx
+    rcases (E.mem_boundaryCoreUnion_iff x).1 hx with ⟨n, hn⟩
+    exact E.boundaryCore_subset_boundaryCarrier n hn
+
 end ChartPairExhaustion
 
 namespace FiniteChartPairCover
@@ -4884,22 +4915,32 @@ induction. -/
 noncomputable def toChartPairExhaustion {M : Type u} [TopologicalSpace M]
     (C : FiniteChartPairCover M) : ChartPairExhaustion M where
   pair := C.natPair
+  boundaryCarrier := C.boundaryCarrier
   covers := by
     intro x
     rcases C.covers x with ⟨i, hi⟩
     exact ⟨(Fintype.equivFin C.Index i).1, by simpa [C.natPair_of_index i] using hi⟩
   boundaryCovers := by
     intro x hx
-    rcases Set.mem_iUnion.mp hx with ⟨n, hn⟩
-    exact ⟨n, hn⟩
+    rcases C.boundaryCovers x hx with ⟨i, hi⟩
+    exact ⟨(Fintype.equivFin C.Index i).1, by simpa [C.natPair_of_index i] using hi⟩
   interiorChartsCoverInterior := by
     intro x
     rcases C.covers x with ⟨i, hi⟩
     exact ⟨(Fintype.equivFin C.Index i).1, by simpa [C.natPair_of_index i] using hi⟩
-  boundaryChartsCoverBoundary := by
-    intro x hx
-    rcases Set.mem_iUnion.mp hx with ⟨n, hn⟩
-    exact ⟨n, hn⟩
+  boundaryCore_subset_boundaryCarrier := by
+    intro n x hx
+    by_cases hn : n < Fintype.card C.Index
+    · have hpair :
+          C.natPair n = C.pair ((Fintype.equivFin C.Index).symm ⟨n, hn⟩) := by
+        simp [natPair, hn]
+      rw [hpair] at hx
+      exact C.boundaryCore_subset_boundaryCarrier
+        ((Fintype.equivFin C.Index).symm ⟨n, hn⟩) hx
+    · have hpair : C.natPair n = RadoChartPair.empty M := by
+        simp [natPair, hn]
+      rw [hpair] at hx
+      simp [RadoChartPair.empty] at hx
   locallyFinite := by
     intro x
     refine ⟨Finset.range (Fintype.card C.Index), ?_⟩
@@ -4973,6 +5014,11 @@ theorem toChartPairExhaustion_pair_zero {M : Type u} [TopologicalSpace M] [Nonem
     (C : FiniteChartPairCover M) :
     C.toChartPairExhaustion.pair 0 = C.pair C.zeroIndex :=
   C.toChartPairExhaustion_pair_of_lt C.index_card_pos
+
+@[simp] theorem toChartPairExhaustion_boundaryCarrier
+    {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) :
+    C.toChartPairExhaustion.boundaryCarrier = C.boundaryCarrier := by
+  rfl
 
 end FiniteChartPairCover
 
@@ -7542,6 +7588,7 @@ noncomputable def toFiniteChartPolygonalDiskData
     { Index := {x : M // x ∈ t}
       indexFintype := inferInstance
       pair := fun x => L.pairAt x.1
+      boundaryCarrier := ⋃ x : {x : M // x ∈ t}, (L.pairAt x.1).boundaryCore
       covers := by
         intro y
         have hy : y ∈ ⋃ x ∈ t, (L.pairAt x).core := by
@@ -7553,7 +7600,8 @@ noncomputable def toFiniteChartPolygonalDiskData
         exact ⟨⟨x, hxt⟩, hyx⟩
       boundaryCovers := by
         intro x hx
-        exact hx
+        rcases Set.mem_iUnion.mp hx with ⟨i, hi⟩
+        exact ⟨i, hi⟩
       interiorChartsCoverInterior := by
         intro y
         have hy : y ∈ ⋃ x ∈ t, (L.pairAt x).core := by
@@ -7563,9 +7611,9 @@ noncomputable def toFiniteChartPolygonalDiskData
         rcases hy with ⟨x, hx⟩
         rcases hx with ⟨hxt, hyx⟩
         exact ⟨⟨x, hxt⟩, hyx⟩
-      boundaryChartsCoverBoundary := by
-        intro x hx
-        exact hx
+      boundaryCore_subset_boundaryCarrier := by
+        intro i x hx
+        exact Set.mem_iUnion.mpr ⟨i, hx⟩
       locallyFinite := by
         intro _x
         refine ⟨Finset.univ, ?_⟩
