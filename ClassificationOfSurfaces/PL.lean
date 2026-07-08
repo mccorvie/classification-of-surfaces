@@ -7815,6 +7815,18 @@ theorem mathlib_bordered_surface_finite_pl_triangulation_data
     Nonempty (FinitePLTriangulationData M) := by
   exact ⟨mathlib_bordered_surface_finitePLTriangulationData M⟩
 
+/-- The boundary carrier selected by the finite chart cover of a compact mathlib bordered surface
+is carried by the boundary package of the resulting finite PL triangulation data. -/
+theorem mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    (mathlib_bordered_surface_moiseExtractionData M).finiteCover.boundaryCarrier ⊆
+      (mathlib_bordered_surface_finitePLTriangulationData M).boundary.boundarySupport := by
+  let D := mathlib_bordered_surface_moiseExtractionData M
+  simpa [mathlib_bordered_surface_finitePLTriangulationData] using
+    D.finiteStagePLTriangulationData_boundaryCarrier_subset
+
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]

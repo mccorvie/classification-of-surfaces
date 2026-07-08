@@ -1007,7 +1007,7 @@ faces use the relative version for half-disks.
 
 \begin{theorem}[Moise--Rado triangulation for bordered surfaces]
 \label{moise:thm:rado_bordered_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_pl_triangulation_data, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_pl_triangulation_data, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation}
 \leanok
 
 \uses{moise:lem:mathlib_bordered_surface_to_moise_two_manifold,moise:thm:compact_moise_surface_finitely_triangulable}
@@ -1024,7 +1024,9 @@ mathlib bordered-surface hypotheses, then use the finite terminal Rado stage at
 `Fintype.card finiteCover.Index`.  The named construction
 `mathlib_bordered_surface_finitePLTriangulationData` packages that finite-stage
 complex, support equality, finite support data, and the terminal Rado state's
-boundary-subcomplex data;
+boundary-subcomplex data.  The selected finite chart-cover boundary carrier is
+proved to lie in that packaged boundary support by
+`mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary`;
 `rado_bordered_surface_triangulation` is the public existential wrapper with
 finite-support and boundary-subcomplex data as witnesses and the support
 equality as its proposition.

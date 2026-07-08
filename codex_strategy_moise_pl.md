@@ -1012,6 +1012,8 @@ existential theorem.  `FinitePLTriangulationData` is the named Rado-output packa
 embedded PL complex, finite support data, and boundary-subcomplex data; the bordered Rado theorem
 now wraps `mathlib_bordered_surface_finitePLTriangulationData`, which is built from the finite
 terminal Rado stage in `MoiseExtractionData` and carries that stage's boundary subcomplex data.
+The theorem `mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary` exposes that the
+finite cover's selected boundary carrier lies in the packaged finite PL boundary support.
 `mathlib_bordered_surface_finiteSurfaceTriangulation` and
 `compact_eval_surface_finiteSurfaceTriangulation` are the named finite triangulation objects used
 by the public existential wrappers
