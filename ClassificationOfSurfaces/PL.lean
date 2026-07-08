@@ -172,15 +172,53 @@ def linkEdgeSimplexes (K : EuclideanComplex) (v : K.Vertex) : Finset K.Simplex :
 def linkValence (K : EuclideanComplex) (v w : K.Vertex) : ℕ :=
   ((K.linkEdgeSimplexes v).filter fun e => w ∈ K.vertices e).card
 
-/-- Placeholder connectedness predicate for the finite link graph of `v`.
+/-- Adjacency in the finite link graph of `v`: two link vertices are adjacent when they occur
+together in some edge simplex of the link. -/
+def LinkAdjacent (K : EuclideanComplex) (v w₀ w₁ : K.Vertex) : Prop :=
+  w₀ ∈ K.linkVertices v ∧ w₁ ∈ K.linkVertices v ∧
+    ∃ e : K.Simplex, e ∈ K.linkEdgeSimplexes v ∧
+      w₀ ∈ K.vertices e ∧ w₁ ∈ K.vertices e
 
-Once paths in the one-skeleton are available this should be replaced by graph connectedness of
-`linkVertices v` and `linkEdgeSimplexes v`. -/
-def LinkConnected (_K : EuclideanComplex) (_v : _K.Vertex) : Prop :=
-  True
+instance (K : EuclideanComplex) (v w₀ w₁ : K.Vertex) :
+    Decidable (K.LinkAdjacent v w₀ w₁) :=
+  inferInstanceAs (Decidable
+    (w₀ ∈ K.linkVertices v ∧ w₁ ∈ K.linkVertices v ∧
+      ∃ e : K.Simplex, e ∈ K.linkEdgeSimplexes v ∧
+        w₀ ∈ K.vertices e ∧ w₁ ∈ K.vertices e))
+
+/-- A bounded walk in the finite link graph of `v`.  A walk of length `n` is represented by
+`n + 1` vertices with adjacent consecutive entries. -/
+def LinkWalk (K : EuclideanComplex) (v : K.Vertex) (n : ℕ)
+    (w₀ w₁ : K.Vertex) : Prop :=
+  ∃ path : Fin (n + 1) → K.Vertex,
+    path 0 = w₀ ∧
+      path ⟨n, Nat.lt_succ_self n⟩ = w₁ ∧
+        ∀ i : Fin n, K.LinkAdjacent v (path i.castSucc) (path i.succ)
+
+instance (K : EuclideanComplex) (v : K.Vertex) (n : ℕ) (w₀ w₁ : K.Vertex) :
+    Decidable (K.LinkWalk v n w₀ w₁) := by
+  unfold LinkWalk
+  exact Fintype.decidableExistsFintype
+
+/-- Reachability in the finite link graph of `v`, bounded by the number of vertices of the
+ambient complex.  The bound keeps the predicate finite and decidable. -/
+def LinkReachable (K : EuclideanComplex) (v w₀ w₁ : K.Vertex) : Prop :=
+  ∃ n : Fin (K.numVertices + 1), K.LinkWalk v n.1 w₀ w₁
+
+instance (K : EuclideanComplex) (v w₀ w₁ : K.Vertex) :
+    Decidable (K.LinkReachable v w₀ w₁) := by
+  unfold LinkReachable
+  exact Fintype.decidableExistsFintype
+
+/-- Connectedness of the finite link graph of `v`, expressed as pairwise finite reachability
+between link vertices. -/
+def LinkConnected (K : EuclideanComplex) (v : K.Vertex) : Prop :=
+  ∀ w₀ ∈ K.linkVertices v, ∀ w₁ ∈ K.linkVertices v, K.LinkReachable v w₀ w₁
 
 instance (K : EuclideanComplex) (v : K.Vertex) : Decidable (K.LinkConnected v) :=
-  isTrue trivial
+  inferInstanceAs
+    (Decidable
+      (∀ w₀ ∈ K.linkVertices v, ∀ w₁ ∈ K.linkVertices v, K.LinkReachable v w₀ w₁))
 
 /-- The link of `v` is combinatorially a circle: connected, nonempty, and every link vertex has
 link valence two. -/

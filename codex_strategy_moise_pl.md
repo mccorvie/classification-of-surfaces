@@ -530,6 +530,11 @@ structure CombinatorialTwoCell where
     Nonempty (PLHomeomorph K EuclideanComplex.Examples.triangle)
 ```
 
+Current status: vertex-link connectedness is no longer the placeholder `True`.  The complex API
+defines `EuclideanComplex.LinkAdjacent`, `LinkWalk`, `LinkReachable`, and `LinkConnected`, with
+reachability bounded by the finite vertex count so link-connectedness remains decidable for small
+examples.
+
 Current status: the two-cell and polygonal-disk fields that used to be `True` have been split into
 named proof-bearing records:
 

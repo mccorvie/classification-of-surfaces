@@ -131,16 +131,17 @@ relation is named separately for the future geometric proof.
 
 \begin{definition}[Combinatorial two-manifold with boundary]
 \label{moise:def:combinatorial_surface}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoManifoldWithBoundary}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkAdjacent, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkWalk, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkReachable, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkConnected, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoManifoldWithBoundary}
 \leanok
 
 \uses{moise:def:euclidean_complex}
 A two-dimensional complex $K$ is a combinatorial two-manifold with boundary if
 the link of every vertex is either a combinatorial circle or a combinatorial
-interval.  The formal definition now exposes named finite link predicates,
-boundary and interior vertex predicates, and one- and two-dimensional simplex
-filters.  Its support is then expected to be a topological surface with
-boundary.
+interval.  The formal definition now exposes a finite link graph with adjacency,
+bounded walks, bounded reachability, and connectedness by pairwise reachability,
+together with boundary and interior vertex predicates and one- and
+two-dimensional simplex filters.  Its support is then expected to be a
+topological surface with boundary.
 \end{definition}
 
 \begin{definition}[Combinatorial two-cell]
