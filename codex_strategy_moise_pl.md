@@ -421,7 +421,10 @@ from that simplex gives the vertex set of another simplex.  The helper
 `EuclideanComplex.exists_erase_vertex_face` exposes this data.
 `EuclideanComplex.Subdivision.covers_old_simplexes` is also proof-bearing carrier-surjectivity:
 every coarse simplex has a fine simplex carried to it, exposed by
-`EuclideanComplex.Subdivision.exists_carrier_eq`.
+`EuclideanComplex.Subdivision.exists_carrier_eq`.  `EuclideanComplex.Subdivision.CommonRefinement`
+now carries lift maps from a common refinement to both subdivisions with compatible coarse
+carriers, and `common_subdivision` constructs this carrier-level common refinement using
+carrier-surjectivity.
 
 If mathlib's abstract or geometric simplicial complexes can be used cleanly, wrap them. If not, define a project-specific `EuclideanComplex` with the fields needed for Moise. Avoid getting blocked by the perfect general abstraction.
 
@@ -432,13 +435,12 @@ old one-point triangle carrier, which made genuine embedded chart disks impossib
 `ChartPolygonalDisk.standardTriangleInPlane` provide the concrete model chart disk in the
 coordinate plane.
 
-Required theorem boundary:
+Existing theorem interface:
 
 ```lean
 theorem common_subdivision
-    (K₁ K₂ : EuclideanComplex) :
-    -- appropriate common-refinement statement
-    sorry
+    (S T : K.Subdivision) :
+    ∃ U : K.Subdivision, EuclideanComplex.Subdivision.CommonRefinement S T U
 ```
 
 Use this to make PL maps stable under subdivision.

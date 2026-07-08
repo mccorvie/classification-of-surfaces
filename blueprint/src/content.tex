@@ -80,7 +80,7 @@ least two vertices produces the vertex set of another simplex.
 
 \begin{definition}[Subdivision]
 \label{moise:def:subdivision}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.exists_carrier_eq}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.exists_carrier_eq, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.CommonRefinement}
 \leanok
 
 \uses{moise:def:euclidean_complex}
@@ -88,7 +88,9 @@ A subdivision $K'<K$ is a finite complex with homeomorphic support and a carrier
 map sending each simplex of $K'$ to a simplex of $K$.  The formal API records
 dimension monotonicity, face compatibility, and proof-bearing coarse coverage:
 every coarse simplex has a fine simplex carried to it.  The geometric
-rectilinear containment is isolated as refinement data.
+rectilinear containment is isolated as refinement data.  A common refinement
+now records lift maps to both refined complexes whose coarse carriers agree in
+the original complex.
 \end{definition}
 
 \begin{definition}[PL map and PL homeomorphism]
@@ -126,7 +128,8 @@ for `PLMap` and `PLHomeomorph` across domain and target subdivisions.  The
 current scaffold records support-level subdivision witness data with named
 per-simplex affine and target-simplex obligations; those obligations are still
 propositional until simplex carriers become geometric.  The common-subdivision
-relation is named separately for the future geometric proof.
+relation already carries carrier-compatible lift maps; the remaining geometric
+part is support containment of refined simplexes.
 \end{proof}
 
 \begin{definition}[Combinatorial two-manifold with boundary]

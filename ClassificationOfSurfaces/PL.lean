@@ -338,7 +338,7 @@ protected def refl (K : EuclideanComplex) : K.Subdivision where
   K' := K
   supportHomeomorph := Homeomorph.refl K.support
   carrier := id
-  simplex_refines := fun _ => True
+  simplex_refines := fun σ => K.IsFace σ σ
   dimension_le := by
     intro σ
     rfl
@@ -379,11 +379,17 @@ protected def trans {K : EuclideanComplex} (S : K.Subdivision) (T : S.K'.Subdivi
 
 /-- A common refinement relation for two subdivisions of the same complex.
 
-The concrete geometric compatibility is still propositional at this scaffold level; this is the
-interface used by Moise's domain-subdivision invariance argument. -/
+The refined subdivision `U` carries lift maps to the two refined complexes whose carriers agree
+back in the original coarse complex.  This is the finite carrier-level part of the Alexander common
+subdivision theorem; geometric support containment is still deferred to later simplex-carrier
+data. -/
 def CommonRefinement {K : EuclideanComplex} (_S _T : K.Subdivision)
-    (_U : K.Subdivision) : Prop :=
-  True
+    (U : K.Subdivision) : Prop :=
+  ∃ leftLift : U.K'.Simplex → _S.K'.Simplex,
+    ∃ rightLift : U.K'.Simplex → _T.K'.Simplex,
+      ∀ σ : U.K'.Simplex,
+        _S.carrier (leftLift σ) = U.carrier σ ∧
+          _T.carrier (rightLift σ) = U.carrier σ
 
 /-- Any two subdivisions have a common refinement.
 
@@ -391,7 +397,13 @@ This is the Alexander common-subdivision theorem boundary at the current scaffol
 refinement relation itself is propositional until simplex containment data is made geometric. -/
 theorem common_subdivision {K : EuclideanComplex} (S T : K.Subdivision) :
     ∃ U : K.Subdivision, CommonRefinement S T U := by
-  exact ⟨S, trivial⟩
+  classical
+  let rightLift : S.K'.Simplex → T.K'.Simplex :=
+    fun σ => Classical.choose (T.exists_carrier_eq (S.carrier σ))
+  refine ⟨S, ?_⟩
+  refine ⟨id, rightLift, ?_⟩
+  intro σ
+  exact ⟨rfl, Classical.choose_spec (T.exists_carrier_eq (S.carrier σ))⟩
 
 end Subdivision
 
