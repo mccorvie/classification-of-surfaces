@@ -807,7 +807,7 @@ as a Rado induction sequence.
 
 \begin{definition}[Rado induction sequence]
 \label{moise:def:rado_inductive_sequence}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion_subset_supportUnion}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion}
@@ -820,7 +820,7 @@ finite stages.
 
 \begin{lemma}[Rado stage supports cover the manifold]
 \label{moise:lem:rado_support_union_covers}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.boundarySupport_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_core_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_in_boundary, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_in_boundary_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_core_subset_stage_card, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_boundaryCore_subset_stage_card, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_boundaryCore_subset_stage_card_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_stage_card_support_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteStagePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteStagePLTriangulationData_K, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupport_subset_succ_stage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_boundarySupport_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.union_complex_covers_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_covers_univ}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.boundarySupport_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_core_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_in_boundary, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_in_boundary_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_core_subset_stage_card, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_boundaryCore_subset_stage_card, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_boundaryCore_subset_stage_card_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_stage_card_support_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteStagePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteStagePLTriangulationData_K, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupport_subset_succ_stage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_boundarySupport_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.union_complex_covers_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_covers_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplexData}
 \leanok
 
 \uses{moise:def:rado_inductive_sequence,moise:lem:chart_pair_exhaustion}
@@ -913,12 +913,14 @@ resulting object as nonempty data.
 
 \begin{lemma}[Rado union is a PL complex]
 \label{moise:lem:rado_union_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplexData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.rado_union_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.UnionVertex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.UnionSimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplexData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplex_simplexes, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_boundary_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_support_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.rado_union_complex}
 \leanok
 
 \uses{moise:def:rado_inductive_sequence,moise:def:pl_complex_in_space}
 The locally finite union of the finite-stage complexes in a Rado induction
-sequence is a named embedded PL complex whose support is the stage-support union.
+sequence is a named embedded PL complex whose support is the stage-support
+union.  Its boundary package is carried by the union of the stage boundary
+supports.
 \end{lemma}
 
 \begin{proof}
@@ -929,7 +931,9 @@ Euclidean-complex support, and countable unions of small sets are small.  Use
 topology induced by its inclusion into the ambient manifold, and embed it by
 that inclusion.  The construction is packaged as
 `RadoInductiveSequence.unionPLComplexData`; the public existential theorem
-`rado_union_complex` is a wrapper around this named complex.
+`rado_union_complex` is a wrapper around this named complex.  A small
+boundary/interior carrier complex records the stage-boundary support union as a
+distinguished boundary subcomplex.
 \end{proof}
 
 \begin{theorem}[Moise--Rado triangulation theorem]
@@ -967,10 +971,11 @@ the boundary subcomplex data needed by the bordered triangulation handoff.
 Apply the named Rado PL complex stored in the Moise interface.  The support is
 compact, so local finiteness implies that only finitely many simplexes occur.
 `MoiseTwoManifold.supportUnionFinitePLTriangulationData` packages this finite
-support data with the current support-union boundary fallback; the old public
+support data with `RadoInductiveSequence.unionBoundarySubcomplexData`, whose
+boundary support is the union of the stage boundary supports.  The old public
 name `MoiseTwoManifold.finitePLTriangulationData` is a compatibility wrapper.
 For compact surfaces extracted from a finite chart cover, the finite-stage
-package in `MoiseExtractionData` is the faithful boundary-data route.
+package in `MoiseExtractionData` remains the terminal-stage boundary-data route.
 \end{proof}
 
 \section{Boundary surfaces in the Moise route}

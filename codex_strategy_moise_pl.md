@@ -1172,13 +1172,18 @@ Expected Rado induction shape:
    complex.  The named API is now `RadoInductiveSequence.unionPLComplexData`,
    `RadoInductiveSequence.unionPLComplex`, `RadoInductiveSequence.unionPLComplex_support`, and
    `RadoInductiveSequence.unionPLComplex_covers_univ`; `rado_union_complex` remains as the public
-   existential wrapper.
+   existential wrapper.  The union complex now has a small boundary/interior carrier simplex API:
+   `RadoInductiveSequence.boundarySupportUnion`,
+   `RadoInductiveSequence.unionBoundarySubcomplex`, and
+   `RadoInductiveSequence.unionBoundarySubcomplexData` record the union of stage boundary supports
+   as a genuine boundary subcomplex rather than using the whole support as boundary.
    At the Moise interface level, `MoiseTwoManifold.radoSequence`,
    `MoiseTwoManifold.radoPLComplex`, and `MoiseTwoManifold.radoPLComplex_support` are the preferred
    API for using the completed construction.  For compact Moise surfaces,
    `MoiseTwoManifold.supportUnionFinitePLTriangulationData` is the named finite-support package
-   built from the support-union Rado complex; `MoiseTwoManifold.finitePLTriangulationData` is kept
-   as a compatibility wrapper.  Compact finite-cover extraction should instead use
+   built from the support-union Rado complex and the union boundary-subcomplex data;
+   `MoiseTwoManifold.finitePLTriangulationData` is kept as a compatibility wrapper.  Compact
+   finite-cover extraction should instead use
    `MoiseExtractionData.finiteStagePLTriangulationData`, which carries the terminal finite Rado
    state's boundary subcomplex data.
 6. For compact `M`, reduce locally finite countable triangulation to finite triangulation.

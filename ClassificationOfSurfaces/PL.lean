@@ -6500,10 +6500,41 @@ structure RadoInductiveSequence
 
 namespace RadoInductiveSequence
 
+/-- Vertices of the small carrier complex used for the support union of a completed Rado
+induction sequence. -/
+inductive UnionVertex where
+  | boundary
+  | interior
+deriving DecidableEq, Repr, Fintype
+
+/-- Simplexes of the small carrier complex used for the support union of a completed Rado
+induction sequence.  The boundary vertex carries the union of stage boundary supports, and the
+support edge carries the whole support union. -/
+inductive UnionSimplex where
+  | boundaryVertex
+  | interiorVertex
+  | supportEdge
+deriving DecidableEq, Repr, Fintype
+
 /-- The ambient support covered by all finite stages of a Rado induction sequence. -/
 def supportUnion {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
     (S : RadoInductiveSequence E) : Set M :=
   ⋃ n, (S.stage n).complex.support
+
+/-- The ambient boundary support carried by all finite stages of a Rado induction sequence. -/
+def boundarySupportUnion {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) : Set M :=
+  ⋃ n, (S.stage n).boundarySupport
+
+/-- The boundary-support union is contained in the support union. -/
+theorem boundarySupportUnion_subset_supportUnion
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    S.boundarySupportUnion ⊆ S.supportUnion := by
+  intro x hx
+  rcases Set.mem_iUnion.mp hx with ⟨n, hxn⟩
+  exact Set.mem_iUnion.mpr
+    ⟨n, (S.stage n).boundarySupport_subset_support hxn⟩
 
 /-- Every chart core is contained in the union of stage supports. -/
 theorem core_subset_supportUnion
@@ -6667,24 +6698,29 @@ noncomputable def unionPLComplexData
   have hCarrierEmbedding :
       @Topology.IsEmbedding (Shrink.{0} S.supportUnion) M carrierTop inferInstance carrierMap :=
     hCarrierInjective.isEmbedding_induced
+  have hBoundarySubset : S.boundarySupportUnion ⊆ S.supportUnion :=
+    S.boundarySupportUnion_subset_supportUnion
   let C : EuclideanComplex :=
     { Point := Shrink.{0} S.supportUnion
       pointTop := carrierTop
-      Vertex := PUnit
+      Vertex := UnionVertex
       vertexFintype := inferInstance
       vertexDecidableEq := inferInstance
-      Simplex := PUnit
+      Simplex := UnionSimplex
       simplexFintype := inferInstance
       simplexDecidableEq := inferInstance
-      simplexNonempty := inferInstance
-      simplexVertices := fun _ => Finset.univ
+      simplexNonempty := ⟨UnionSimplex.supportEdge⟩
+      simplexVertices := fun
+        | UnionSimplex.boundaryVertex => {UnionVertex.boundary}
+        | UnionSimplex.interiorVertex => {UnionVertex.interior}
+        | UnionSimplex.supportEdge => {UnionVertex.boundary, UnionVertex.interior}
       simplex_nonempty := by
         intro σ
-        exact Finset.univ_nonempty
+        cases σ <;> simp
       support := Set.univ
       realizesSimplexes := by
         intro σ
-        exact Finset.univ_nonempty
+        cases σ <;> simp
       faceClosed := by
         decide }
   let emb : C.support → M := fun p => carrierMap p.1
@@ -6694,13 +6730,25 @@ noncomputable def unionPLComplexData
     { Complex := C
       embed := emb
       isEmbedding := hKEmbedding
-      simplexSupport := fun _ => Set.range emb
+      simplexSupport := fun
+        | UnionSimplex.boundaryVertex => S.boundarySupportUnion
+        | UnionSimplex.interiorVertex => ∅
+        | UnionSimplex.supportEdge => Set.range emb
       simplexSupport_subset := by
-        intro σ
-        exact subset_rfl
+        intro σ x hx
+        cases σ with
+        | boundaryVertex =>
+            have hxU : x ∈ S.supportUnion := hBoundarySubset hx
+            let p : Shrink.{0} S.supportUnion := equivShrink.{0} S.supportUnion ⟨x, hxU⟩
+            refine ⟨⟨p, trivial⟩, ?_⟩
+            simp [emb, carrierMap, p]
+        | interiorVertex =>
+            simp at hx
+        | supportEdge =>
+            exact hx
       support_covered_by_simplexSupport := by
         intro x hx
-        exact ⟨C.defaultSimplex, hx⟩
+        exact ⟨UnionSimplex.supportEdge, hx⟩
       locallyFinite := inferInstance
       compatibleCharts := ⟨hKEmbedding.injective, hKEmbedding.continuous⟩ }
   refine ⟨K, ?_⟩
@@ -6733,6 +6781,93 @@ theorem unionPLComplex_covers_univ
     (S : RadoInductiveSequence E) :
     S.unionPLComplex.support = Set.univ :=
   S.union_complex_covers_univ S.unionPLComplex_support
+
+/-- Boundary subcomplex of the support-union PL complex. -/
+noncomputable def unionBoundarySubcomplex
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) : S.unionPLComplex.Complex.Subcomplex := by
+  unfold unionPLComplex unionPLComplexData
+  exact
+    { simplexes := {UnionSimplex.boundaryVertex}
+      face_closed := by
+        intro τ σ hσ hface
+        rw [Finset.mem_singleton] at hσ ⊢
+        subst σ
+        cases τ with
+        | boundaryVertex =>
+            rfl
+        | interiorVertex =>
+            exfalso
+            have hsubset :
+                ({UnionVertex.interior} : Finset UnionVertex) ⊆ {UnionVertex.boundary} := by
+              exact hface
+            have hmem : UnionVertex.interior ∈ ({UnionVertex.boundary} : Finset UnionVertex) :=
+              hsubset (by simp)
+            simp at hmem
+        | supportEdge =>
+            exfalso
+            have hsubset :
+                ({UnionVertex.boundary, UnionVertex.interior} : Finset UnionVertex) ⊆
+                  {UnionVertex.boundary} := by
+              exact hface
+            have hmem : UnionVertex.interior ∈ ({UnionVertex.boundary} : Finset UnionVertex) :=
+              hsubset (by simp)
+            simp at hmem }
+
+@[simp] theorem unionBoundarySubcomplex_simplexes
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    S.unionBoundarySubcomplex.simplexes = {UnionSimplex.boundaryVertex} := by
+  unfold unionBoundarySubcomplex unionPLComplex unionPLComplexData
+  rfl
+
+@[simp] theorem unionPLComplex_boundary_simplexCarrier
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    S.unionPLComplex.simplexCarrier
+        (show S.unionPLComplex.Complex.Simplex from UnionSimplex.boundaryVertex) =
+      S.boundarySupportUnion := by
+  unfold unionPLComplex unionPLComplexData PLComplexInSpace.simplexCarrier
+  rfl
+
+@[simp] theorem unionPLComplex_support_simplexCarrier
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    S.unionPLComplex.simplexCarrier
+        (show S.unionPLComplex.Complex.Simplex from UnionSimplex.supportEdge) =
+      S.unionPLComplex.support := by
+  unfold unionPLComplex unionPLComplexData PLComplexInSpace.simplexCarrier PLComplexInSpace.support
+  rfl
+
+/-- Boundary data for the support-union PL complex, using the monotone union of stage boundary
+supports rather than the full support. -/
+noncomputable def unionBoundarySubcomplexData
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) : S.unionPLComplex.BoundarySubcomplexData where
+  boundary := S.unionBoundarySubcomplex
+  boundarySupport := S.boundarySupportUnion
+  coversBoundary := by
+    intro x hx
+    rw [S.unionPLComplex_support]
+    exact S.boundarySupportUnion_subset_supportUnion hx
+  compatibleWithAmbient := by
+    intro x hx
+    rw [S.unionPLComplex_support]
+    exact S.boundarySupportUnion_subset_supportUnion hx
+  boundaryCarrier_subset := by
+    intro σ hσ x hx
+    rw [S.unionBoundarySubcomplex_simplexes] at hσ
+    have hσeq : σ = (show S.unionPLComplex.Complex.Simplex from UnionSimplex.boundaryVertex) :=
+      Finset.mem_singleton.mp hσ
+    subst σ
+    simpa using hx
+  boundarySupport_covered := by
+    intro x hx
+    refine ⟨(show S.unionPLComplex.Complex.Simplex from UnionSimplex.boundaryVertex), ?_, ?_⟩
+    · rw [S.unionBoundarySubcomplex_simplexes]
+      exact Finset.mem_singleton_self _
+    · simpa using hx
+  locallyFiniteBoundary := inferInstance
 
 end RadoInductiveSequence
 
@@ -6975,7 +7110,7 @@ noncomputable def supportUnionFinitePLTriangulationData
   { K := hM.radoPLComplex
     covers := hM.radoPLComplex_support
     finiteSupport := finiteSupport
-    boundary := hM.radoPLComplex.fullBoundarySubcomplexData }
+    boundary := hM.radoSequence.unionBoundarySubcomplexData }
 
 @[simp] theorem supportUnionFinitePLTriangulationData_K
     {M : Type*} [TopologicalSpace M] [CompactSpace M] (hM : MoiseTwoManifold M) :
