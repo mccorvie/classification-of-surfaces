@@ -40,30 +40,57 @@ def flip {α : Type*} : OrientedEdge α → OrientedEdge α
 
 end OrientedEdge
 
-/-- Placeholder for a finite triangulation of a topological surface.
+/-- Finite combinatorial validity data for the project triangulation object.
+
+This deliberately stays close to what the current PL complex handoff can prove:
+edges have two vertices, triangles have three vertices, recorded endpoints lie
+on their edge, and every edge appearing in a triangle boundary is a face of that
+triangle.  Cyclic ordering and quotient-realization geometry are separate
+theorem boundaries. -/
+structure FiniteSurfaceTriangulation.Valid
+    (Vertex Edge Triangle : Type*) [DecidableEq Vertex]
+    (edgeVertices : Edge → Finset Vertex)
+    (triangleVertices : Triangle → Finset Vertex)
+    (edgeSource edgeTarget : Edge → Vertex)
+    (triangleBoundary : Triangle → List (OrientedEdge Edge)) : Prop where
+  edge_card : ∀ e : Edge, (edgeVertices e).card = 2
+  triangle_card : ∀ t : Triangle, (triangleVertices t).card = 3
+  edgeSource_mem : ∀ e : Edge, edgeSource e ∈ edgeVertices e
+  edgeTarget_mem : ∀ e : Edge, edgeTarget e ∈ edgeVertices e
+  boundary_edge_vertices_subset :
+    ∀ t : Triangle, ∀ oe ∈ triangleBoundary t,
+      edgeVertices oe.edge ⊆ triangleVertices t
+
+/-- A finite triangulation of a topological surface.
 
 This should eventually be replaced by, or bridged to, the best available mathlib notion of finite
-simplicial/CW complex realization. For now it records the public API needed by the common
-triangulation-to-cell-complex bridge: a topological realization and a homeomorphism from that
-realization to the target surface. -/
+simplicial/CW complex realization.  For now it records the public API needed by the common
+triangulation-to-cell-complex bridge: finite incidence data, a topological realization, and a
+homeomorphism from that realization to the target surface. -/
 structure FiniteSurfaceTriangulation (S : Type*) [TopologicalSpace S] where
   Vertex : Type
   Edge : Type
   Triangle : Type
   vertexFintype : Fintype Vertex
+  vertexDecidableEq : DecidableEq Vertex
   edgeFintype : Fintype Edge
   triangleFintype : Fintype Triangle
   realization : Type
   realizationTop : TopologicalSpace realization
+  edgeVertices : Edge → Finset Vertex
+  triangleVertices : Triangle → Finset Vertex
   edgeSource : Edge → Vertex
   edgeTarget : Edge → Vertex
   triangleBoundary : Triangle → List (OrientedEdge Edge)
   edgeIsBoundary : Edge → Prop
-  isSurfaceTriangulation : Prop
+  isSurfaceTriangulation :
+    FiniteSurfaceTriangulation.Valid Vertex Edge Triangle edgeVertices triangleVertices
+      edgeSource edgeTarget triangleBoundary
   homeomorphSurface : Nonempty (realization ≃ₜ S)
 
 attribute [instance] FiniteSurfaceTriangulation.realizationTop
 attribute [instance] FiniteSurfaceTriangulation.vertexFintype
+attribute [instance] FiniteSurfaceTriangulation.vertexDecidableEq
 attribute [instance] FiniteSurfaceTriangulation.edgeFintype
 attribute [instance] FiniteSurfaceTriangulation.triangleFintype
 
@@ -97,6 +124,72 @@ end FiniteSurfaceTriangulation
 
 namespace PLComplexInSpace.FiniteSupportData
 
+/-- The chosen source vertex for a supported one-simplex. -/
+noncomputable def edgeSourceVertex {S : Type*} [TopologicalSpace S] {K : PLComplexInSpace S}
+    (_F : K.FiniteSupportData) (e : _F.OneSimplex) : K.Complex.Vertex :=
+  (K.Complex.simplex_nonempty e.1).choose
+
+theorem edgeSourceVertex_mem {S : Type*} [TopologicalSpace S] {K : PLComplexInSpace S}
+    (F : K.FiniteSupportData) (e : F.OneSimplex) :
+    F.edgeSourceVertex e ∈ K.Complex.vertices e.1 :=
+  (K.Complex.simplex_nonempty e.1).choose_spec
+
+/-- The chosen target vertex for a supported one-simplex, distinct from the source because
+one-simplexes have two vertices. -/
+noncomputable def edgeTargetVertex {S : Type*} [TopologicalSpace S] {K : PLComplexInSpace S}
+    (F : K.FiniteSupportData) (e : F.OneSimplex) : K.Complex.Vertex :=
+  let source := F.edgeSourceVertex e
+  have hsource : source ∈ K.Complex.vertices e.1 := F.edgeSourceVertex_mem e
+  have hcard : (K.Complex.vertices e.1).card = 2 :=
+    EuclideanComplex.vertices_card_eq_two_of_mem_oneSimplexes K.Complex
+      (F.oneSimplex_mem_complex_oneSimplexes e)
+  have hnonempty : ((K.Complex.vertices e.1).erase source).Nonempty := by
+    rw [Finset.nonempty_iff_ne_empty]
+    intro hempty
+    have hcardErase : ((K.Complex.vertices e.1).erase source).card = 0 := by
+      simp [hempty]
+    rw [Finset.card_erase_of_mem hsource, hcard] at hcardErase
+    simp at hcardErase
+  hnonempty.choose
+
+theorem edgeTargetVertex_mem {S : Type*} [TopologicalSpace S] {K : PLComplexInSpace S}
+    (F : K.FiniteSupportData) (e : F.OneSimplex) :
+    F.edgeTargetVertex e ∈ K.Complex.vertices e.1 := by
+  unfold edgeTargetVertex
+  dsimp
+  exact Finset.mem_of_mem_erase (Classical.choose_spec
+    (show ((K.Complex.vertices e.1).erase (F.edgeSourceVertex e)).Nonempty from by
+      rw [Finset.nonempty_iff_ne_empty]
+      intro hempty
+      have hsource : F.edgeSourceVertex e ∈ K.Complex.vertices e.1 :=
+        F.edgeSourceVertex_mem e
+      have hcard : (K.Complex.vertices e.1).card = 2 :=
+        EuclideanComplex.vertices_card_eq_two_of_mem_oneSimplexes K.Complex
+          (F.oneSimplex_mem_complex_oneSimplexes e)
+      have hcardErase : ((K.Complex.vertices e.1).erase (F.edgeSourceVertex e)).card = 0 := by
+        simp [hempty]
+      rw [Finset.card_erase_of_mem hsource, hcard] at hcardErase
+      simp at hcardErase))
+
+theorem edgeTargetVertex_ne_source {S : Type*} [TopologicalSpace S] {K : PLComplexInSpace S}
+    (F : K.FiniteSupportData) (e : F.OneSimplex) :
+    F.edgeTargetVertex e ≠ F.edgeSourceVertex e := by
+  unfold edgeTargetVertex
+  dsimp
+  exact Finset.ne_of_mem_erase (Classical.choose_spec
+    (show ((K.Complex.vertices e.1).erase (F.edgeSourceVertex e)).Nonempty from by
+      rw [Finset.nonempty_iff_ne_empty]
+      intro hempty
+      have hsource : F.edgeSourceVertex e ∈ K.Complex.vertices e.1 :=
+        F.edgeSourceVertex_mem e
+      have hcard : (K.Complex.vertices e.1).card = 2 :=
+        EuclideanComplex.vertices_card_eq_two_of_mem_oneSimplexes K.Complex
+          (F.oneSimplex_mem_complex_oneSimplexes e)
+      have hcardErase : ((K.Complex.vertices e.1).erase (F.edgeSourceVertex e)).card = 0 := by
+        simp [hempty]
+      rw [Finset.card_erase_of_mem hsource, hcard] at hcardErase
+      simp at hcardErase))
+
 /-- Boundary word for a supported two-simplex, retaining codimension-one faces that are supported
 one-simplexes.  Orientations are still scaffold data, so every retained edge is recorded with the
 positive orientation. -/
@@ -107,6 +200,24 @@ noncomputable def triangleBoundaryWord {S : Type*} [TopologicalSpace S] {K : PLC
       some (OrientedEdge.pos ⟨τ, hτ⟩)
     else
       none
+
+theorem edgeVertices_subset_triangleVertices_of_mem_boundaryWord
+    {S : Type*} [TopologicalSpace S] {K : PLComplexInSpace S}
+    (F : K.FiniteSupportData) (σ : F.TwoSimplex)
+    {oe : OrientedEdge F.OneSimplex} (hoe : oe ∈ F.triangleBoundaryWord σ) :
+    K.Complex.vertices oe.edge.1 ⊆ K.Complex.vertices σ.1 := by
+  unfold triangleBoundaryWord at hoe
+  rw [List.mem_filterMap] at hoe
+  rcases hoe with ⟨τ, hτmem, hτ⟩
+  by_cases hτF : τ ∈ F.oneSimplexes
+  · simp only [hτF, ↓reduceDIte] at hτ
+    injection hτ with hτoe
+    rw [← hτoe]
+    rw [Finset.mem_toList] at hτmem
+    rw [EuclideanComplex.boundarySimplexes, Finset.mem_filter] at hτmem
+    exact hτmem.2.1
+  · simp only [hτF, ↓reduceDIte] at hτ
+    cases hτ
 
 end PLComplexInSpace.FiniteSupportData
 
@@ -128,15 +239,31 @@ noncomputable def toFiniteSurfaceTriangulation {S : Type*} [TopologicalSpace S]
       Edge := finiteSupport.OneSimplex
       Triangle := finiteSupport.TwoSimplex
       vertexFintype := inferInstance
+      vertexDecidableEq := inferInstance
       edgeFintype := inferInstance
       triangleFintype := inferInstance
       realization := K.Complex.support
       realizationTop := inferInstance
-      edgeSource := fun e => (K.Complex.simplex_nonempty e.1).choose
-      edgeTarget := fun e => (K.Complex.simplex_nonempty e.1).choose
+      edgeVertices := fun e => K.Complex.vertices e.1
+      triangleVertices := fun σ => K.Complex.vertices σ.1
+      edgeSource := finiteSupport.edgeSourceVertex
+      edgeTarget := finiteSupport.edgeTargetVertex
       triangleBoundary := finiteSupport.triangleBoundaryWord
       edgeIsBoundary := fun e => e.1 ∈ boundary.boundary.simplexes
-      isSurfaceTriangulation := True
+      isSurfaceTriangulation :=
+        { edge_card := by
+            intro e
+            exact K.Complex.vertices_card_eq_two_of_mem_oneSimplexes
+              (finiteSupport.oneSimplex_mem_complex_oneSimplexes e)
+          triangle_card := by
+            intro σ
+            exact K.Complex.vertices_card_eq_three_of_mem_twoSimplexes
+              (finiteSupport.twoSimplex_mem_complex_twoSimplexes σ)
+          edgeSource_mem := finiteSupport.edgeSourceVertex_mem
+          edgeTarget_mem := finiteSupport.edgeTargetVertex_mem
+          boundary_edge_vertices_subset := by
+            intro σ oe hoe
+            exact finiteSupport.edgeVertices_subset_triangleVertices_of_mem_boundaryWord σ hoe }
       homeomorphSurface := ⟨K.isEmbedding.toHomeomorphOfSurjective hsurj⟩ }
 
 end PLComplexInSpace

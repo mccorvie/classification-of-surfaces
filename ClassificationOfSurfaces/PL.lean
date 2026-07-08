@@ -83,6 +83,17 @@ theorem realizesSimplex_nonempty (K : EuclideanComplex) (σ : K.Simplex) :
 def simplexDim (K : EuclideanComplex) (σ : K.Simplex) : ℕ :=
   (K.vertices σ).card - 1
 
+/-- A simplex of dimension `n` has `n + 1` vertices. -/
+theorem vertices_card_eq_succ_of_simplexDim_eq (K : EuclideanComplex) {σ : K.Simplex} {n : ℕ}
+    (hσ : K.simplexDim σ = n) :
+    (K.vertices σ).card = n + 1 := by
+  have hpos : 0 < (K.vertices σ).card :=
+    Finset.card_pos.mpr (K.simplex_nonempty σ)
+  unfold simplexDim at hσ
+  have hcancel : (K.vertices σ).card - 1 + 1 = (K.vertices σ).card :=
+    Nat.sub_add_cancel hpos
+  rw [← hcancel, hσ]
+
 /-- The relation that one simplex is a combinatorial face of another. -/
 def IsFace (K : EuclideanComplex) (τ σ : K.Simplex) : Prop :=
   K.vertices τ ⊆ K.vertices σ
@@ -126,6 +137,20 @@ def oneSimplexes (K : EuclideanComplex) : Finset K.Simplex :=
 /-- The two-dimensional simplexes. -/
 def twoSimplexes (K : EuclideanComplex) : Finset K.Simplex :=
   K.simplexesOfDim 2
+
+/-- A one-simplex has two vertices. -/
+theorem vertices_card_eq_two_of_mem_oneSimplexes
+    (K : EuclideanComplex) {σ : K.Simplex} (hσ : σ ∈ K.oneSimplexes) :
+    (K.vertices σ).card = 2 := by
+  rw [oneSimplexes, simplexesOfDim, Finset.mem_filter] at hσ
+  simpa using K.vertices_card_eq_succ_of_simplexDim_eq hσ.2
+
+/-- A two-simplex has three vertices. -/
+theorem vertices_card_eq_three_of_mem_twoSimplexes
+    (K : EuclideanComplex) {σ : K.Simplex} (hσ : σ ∈ K.twoSimplexes) :
+    (K.vertices σ).card = 3 := by
+  rw [twoSimplexes, simplexesOfDim, Finset.mem_filter] at hσ
+  simpa using K.vertices_card_eq_succ_of_simplexDim_eq hσ.2
 
 /-- The one-skeleton as a finite set of simplexes. -/
 def oneSkeleton (K : EuclideanComplex) : Finset K.Simplex :=

@@ -232,17 +232,29 @@ Suggested interface:
 
 ```lean
 structure FiniteSurfaceTriangulation (S : Type*) [TopologicalSpace S] where
-  Complex : Type u
+  Vertex Edge Triangle : Type u
   realization : Type v
   [realizationTop : TopologicalSpace realization]
-  finiteVertices : Prop
-  finiteEdges : Prop
-  finiteFaces : Prop
-  isSurfaceTriangulation : Prop
+  vertexFintype : Fintype Vertex
+  vertexDecidableEq : DecidableEq Vertex
+  edgeFintype : Fintype Edge
+  triangleFintype : Fintype Triangle
+  edgeVertices : Edge → Finset Vertex
+  triangleVertices : Triangle → Finset Vertex
+  edgeSource edgeTarget : Edge → Vertex
+  triangleBoundary : Triangle → List (OrientedEdge Edge)
+  edgeIsBoundary : Edge → Prop
+  isSurfaceTriangulation :
+    FiniteSurfaceTriangulation.Valid Vertex Edge Triangle edgeVertices triangleVertices
+      edgeSource edgeTarget triangleBoundary
   homeomorphSurface : Nonempty (realization ≃ₜ S)
 ```
 
-This is only schematic. A stronger implementation should explicitly store finite vertices, edges, triangles, incidence maps, and realization. The main point is that the triangulation object should be finite and should include or produce a homeomorphism to the original surface.
+`FiniteSurfaceTriangulation.Valid` is the current finite combinatorial validity predicate:
+edges have two vertices, triangles have three vertices, recorded endpoints lie on their edge, and
+every edge listed in a triangle boundary has its vertices contained in the triangle vertex set.
+The PL handoff proves this from one-simplex/two-simplex cardinal lemmas and the boundary-simplex
+relation, so the triangulation object no longer uses `isSurfaceTriangulation := True`.
 
 The conversion theorem should be the only bridge from triangulations to Gallier--Xu cell complexes:
 
@@ -882,6 +894,11 @@ The PL-to-triangulation bridge uses finite support data as the combinatorial han
 `PLComplexInSpace.FiniteSupportData.OneSimplex` supplies triangulation edges,
 `TwoSimplex` supplies triangles, and `triangleBoundaryWord` records the supported
 codimension-one faces of a two-simplex as the current scaffold boundary word.
+`EuclideanComplex.vertices_card_eq_two_of_mem_oneSimplexes` and
+`EuclideanComplex.vertices_card_eq_three_of_mem_twoSimplexes` prove the edge and triangle vertex
+cardinality fields in `FiniteSurfaceTriangulation.Valid`, while
+`edgeVertices_subset_triangleVertices_of_mem_boundaryWord` proves that every listed boundary edge
+is a face of its triangle.
 Because the current `EuclideanComplex` API has finite simplex types,
 `PLComplexInSpace.fullFiniteSupportData` is the named finite-support package taking all simplexes;
 `locallyFiniteComplex_finite_of_compact_support` is now the Moise-facing wrapper around that

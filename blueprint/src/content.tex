@@ -1328,17 +1328,22 @@ an extra Eval hypothesis not needed for the chart-pair package.
 
 \begin{definition}[Finite surface triangulation]
 \label{moise:def:finite_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.Valid}
 
 \uses{moise:def:eval_surface,moise:def:euclidean_complex}
 A finite surface triangulation of a topological space $S$ is a finite
 combinatorial two-manifold with boundary together with a homeomorphism from its
-support to $S$.
+support to $S$.  The formal object stores finite vertex, edge, and triangle
+types, vertex sets for each edge and triangle, endpoint maps, triangle boundary
+words, boundary-edge predicates, and proof-bearing validity data: edges have
+two vertices, triangles have three vertices, endpoints lie on their edge, and
+every edge appearing in a triangle boundary has its vertices contained in the
+triangle vertex set.
 \end{definition}
 
 \begin{theorem}[Finite PL complex to finite surface triangulation]
 \label{moise:thm:finite_pl_complex_to_finite_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.oneSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.twoSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.OneSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.TwoSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.triangleBoundaryWord, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.toFiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData.toFiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.finite_pl_complex_to_finite_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.vertices_card_eq_two_of_mem_oneSimplexes, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.vertices_card_eq_three_of_mem_twoSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.oneSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.twoSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.OneSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.TwoSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.edgeSourceVertex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.edgeTargetVertex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.triangleBoundaryWord, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.edgeVertices_subset_triangleVertices_of_mem_boundaryWord, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.toFiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData.toFiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.finite_pl_complex_to_finite_surface_triangulation}
 \leanok
 
 \uses{moise:def:finite_surface_triangulation,moise:thm:rado_bordered_surface_triangulation}
@@ -1353,7 +1358,10 @@ Use the finite vertex type of the embedded PL complex, the supported
 one-simplexes as edges, and the supported two-simplexes as triangles.  Boundary
 words are assembled from codimension-one boundary simplexes that are present as
 supported one-simplexes, and boundary edges are read from the supplied boundary
-subcomplex.  The named construction is
+subcomplex.  One-simplex and two-simplex cardinal lemmas prove the finite
+validity fields required by `FiniteSurfaceTriangulation.Valid`; boundary-word
+membership is traced back through the complex boundary-simplex relation to prove
+that every listed boundary edge is a face of the triangle.  The named construction is
 `PLComplexInSpace.toFiniteSurfaceTriangulation`.  Since the embedding has image
 equal to the whole surface, the embedding is surjective; an embedding that is
 surjective is a homeomorphism onto the ambient surface.

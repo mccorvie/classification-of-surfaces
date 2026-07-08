@@ -233,8 +233,10 @@ def FiniteSurfaceTriangulation.toCellComplex {S : Type*} [TopologicalSpace S]
   inv_target := by
     intro d
     cases d <;> rfl
-  surfaceValid := T.isSurfaceTriangulation
-  connected := True
+  surfaceValid :=
+    FiniteSurfaceTriangulation.Valid T.Vertex T.Edge T.Triangle T.edgeVertices
+      T.triangleVertices T.edgeSource T.edgeTarget T.triangleBoundary
+  connected := ConnectedSpace T.realization
 
 /-- The realization of the associated cell complex agrees with the triangulation realization. -/
 theorem FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic
