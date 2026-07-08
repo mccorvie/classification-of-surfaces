@@ -3600,16 +3600,25 @@ noncomputable def fromChartAt
         ((Topology.IsEmbedding.subtypeVal :
             Topology.IsEmbedding (Subtype.val : EuclideanHalfSpace 2 → Plane)).homeomorphImage
           (chartAt (EuclideanHalfSpace 2) x).target)) y).2
-  boundaryCore := ∅
+  boundaryCore :=
+    {y | ∃ hy : y ∈ (chartAt (EuclideanHalfSpace 2) x).source,
+      ((((chartAt (EuclideanHalfSpace 2) x).toHomeomorphSourceTarget.trans
+        ((Topology.IsEmbedding.subtypeVal :
+            Topology.IsEmbedding (Subtype.val : EuclideanHalfSpace 2 → Plane)).homeomorphImage
+          (chartAt (EuclideanHalfSpace 2) x).target))
+        ⟨y, hy⟩ : Plane) 0 = 0)}
   boundaryCore_subset_core := by
-    intro y hy
-    simp at hy
+    rintro y ⟨hy, _hline⟩
+    exact hy
   boundaryCore_empty_of_disk := by
     intro h
     cases h
   boundaryCore_in_boundary_chart := by
-    intro _h y hy
-    simp at hy
+    rintro _h y ⟨hy, hline⟩
+    have hy_eq :
+        (⟨(y : M), hy⟩ : (chartAt (EuclideanHalfSpace 2) x).source) = y :=
+      Subtype.ext rfl
+    simpa [hy_eq] using hline
 
 /-- The preferred mathlib chart pair has a core neighborhood of its center point. -/
 theorem fromChartAt_core_mem_nhds
@@ -3624,6 +3633,20 @@ theorem fromChartAt_mem_domain
     (x : M) :
     x ∈ (fromChartAt M x).domain := by
   simp [fromChartAt, mem_chart_source]
+
+@[simp] theorem fromChartAt_kind
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    (x : M) :
+    (fromChartAt M x).kind = RadoChartKind.halfDisk := by
+  rfl
+
+/-- Points in the preferred chart-pair boundary core map to the coordinate boundary line. -/
+theorem fromChartAt_boundaryCore_in_model_boundary
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    (x : M) {y : (fromChartAt M x).domain}
+    (hy : (y : M) ∈ (fromChartAt M x).boundaryCore) :
+    ((fromChartAt M x).chartHomeomorph y : Plane) 0 = 0 := by
+  exact (fromChartAt M x).boundaryCore_in_boundary_chart rfl y hy
 
 /-- A chart pair modeled on the half-disk. -/
 def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=

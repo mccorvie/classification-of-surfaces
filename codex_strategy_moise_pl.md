@@ -877,7 +877,9 @@ Proved finite/combinatorial bridge:
    chart pairs are empty.
 3. `RadoChartPair.fromChartAt` and `mathlib_bordered_surface_finite_chart_pair_cover`:
    the preferred mathlib chart at each point gives a chart pair whose core is a neighborhood, so a
-   compact bordered surface has a finite chart-pair cover.
+   compact bordered surface has a finite chart-pair cover.  Its boundary core is now the part of
+   the chart source mapped to the coordinate boundary line, exposed by
+   `fromChartAt_boundaryCore_in_model_boundary`, instead of the old empty-core placeholder.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
    `ChartPolygonalDisk` now carries explicit simplex-carrier data for its embedded PL complex,
