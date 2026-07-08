@@ -640,16 +640,111 @@ end Examples
 
 end EuclideanComplex
 
-/-- Placeholder PL map between Euclidean complexes. -/
+/-- Support-level subdivision data carried by a PL map.
+
+This is not yet full affine simplexwise PL data: the finite complex API still lacks geometric
+simplex carriers.  It does record chosen domain and target subdivisions and the compatibility of
+the map with their support homeomorphisms, giving later affine/simplex-target refinements concrete
+data to attach to instead of an arbitrary proposition. -/
+structure PLSubdivisionSupportWitness (K L : EuclideanComplex)
+    (toFun : K.support → L.support) where
+  domainSubdivision : K.Subdivision
+  targetSubdivision : L.Subdivision
+  compatibleWithSupports :
+    ∀ x : domainSubdivision.K'.support,
+      targetSubdivision.supportHomeomorph
+          (targetSubdivision.supportHomeomorph.symm
+            (toFun (domainSubdivision.supportHomeomorph x))) =
+        toFun (domainSubdivision.supportHomeomorph x)
+
+namespace PLSubdivisionSupportWitness
+
+/-- The support-compatibility equation stored in a support-level subdivision witness. -/
+theorem support_compatible {K L : EuclideanComplex} {toFun : K.support → L.support}
+    (W : PLSubdivisionSupportWitness K L toFun) (x : W.domainSubdivision.K'.support) :
+    W.targetSubdivision.supportHomeomorph
+        (W.targetSubdivision.supportHomeomorph.symm
+          (toFun (W.domainSubdivision.supportHomeomorph x))) =
+      toFun (W.domainSubdivision.supportHomeomorph x) :=
+  W.compatibleWithSupports x
+
+/-- The identity map is compatible with identity subdivisions. -/
+protected def refl (K : EuclideanComplex) :
+    PLSubdivisionSupportWitness K K id where
+  domainSubdivision := EuclideanComplex.Subdivision.refl K
+  targetSubdivision := EuclideanComplex.Subdivision.refl K
+  compatibleWithSupports := by
+    intro x
+    rfl
+
+/-- Any support map is compatible with identity support subdivisions.
+
+This constructor is deliberately named at the support level: it does not assert affine
+simplexwise linearity, only the tautological support-homeomorphism equation for identity
+subdivisions. -/
+def onIdentitySubdivisions {K L : EuclideanComplex} (toFun : K.support → L.support) :
+    PLSubdivisionSupportWitness K L toFun where
+  domainSubdivision := EuclideanComplex.Subdivision.refl K
+  targetSubdivision := EuclideanComplex.Subdivision.refl L
+  compatibleWithSupports := by
+    intro x
+    rfl
+
+/-- Compose support-level subdivision witnesses. -/
+def comp {K L M : EuclideanComplex} {f : K.support → L.support} {g : L.support → M.support}
+    (hf : PLSubdivisionSupportWitness K L f) (hg : PLSubdivisionSupportWitness L M g) :
+    PLSubdivisionSupportWitness K M (g ∘ f) where
+  domainSubdivision := hf.domainSubdivision
+  targetSubdivision := hg.targetSubdivision
+  compatibleWithSupports := by
+    intro x
+    simp
+
+/-- Transport a support-level witness across a chosen domain subdivision. -/
+def afterDomainSubdivision {K L : EuclideanComplex} {f : K.support → L.support}
+    (hf : PLSubdivisionSupportWitness K L f) (S : K.Subdivision) :
+    PLSubdivisionSupportWitness S.K' L (f ∘ S.supportHomeomorph) where
+  domainSubdivision := EuclideanComplex.Subdivision.refl S.K'
+  targetSubdivision := hf.targetSubdivision
+  compatibleWithSupports := by
+    intro x
+    simp
+
+/-- Transport a support-level witness across a chosen target subdivision. -/
+def afterTargetSubdivision {K L : EuclideanComplex} {f : K.support → L.support}
+    (hf : PLSubdivisionSupportWitness K L f) (T : L.Subdivision) :
+    PLSubdivisionSupportWitness K T.K' (T.supportHomeomorph.symm ∘ f) where
+  domainSubdivision := hf.domainSubdivision
+  targetSubdivision := EuclideanComplex.Subdivision.refl T.K'
+  compatibleWithSupports := by
+    intro x
+    simp
+
+end PLSubdivisionSupportWitness
+
+/-- PL map between Euclidean complexes.
+
+The linearity field now carries support-level subdivision data.  Full affine-on-simplex data is
+represented by `PLMap.LinearOnSubdivision` and will be strengthened as geometric simplex carriers
+are added. -/
 structure PLMap (K L : EuclideanComplex) where
   toFun : K.support → L.support
   continuous_toFun : Continuous toFun
-  exists_subdivision_linear : Prop
+  subdivisionSupportWitness : Nonempty (PLSubdivisionSupportWitness K L toFun)
 
 namespace PLMap
 
 instance {K L : EuclideanComplex} : CoeFun (PLMap K L) (fun _ => K.support → L.support) where
   coe f := f.toFun
+
+/-- Prop-style spelling for the existence of support-level subdivision linearity data. -/
+def exists_subdivision_linear {K L : EuclideanComplex} (f : PLMap K L) : Prop :=
+  Nonempty (PLSubdivisionSupportWitness K L f.toFun)
+
+/-- Every `PLMap` carries its declared support-level subdivision witness. -/
+theorem subdivisionSupportWitness_exists {K L : EuclideanComplex} (f : PLMap K L) :
+    f.exists_subdivision_linear :=
+  f.subdivisionSupportWitness
 
 /-- A PL map is represented linearly after chosen domain and target subdivisions.
 
@@ -721,27 +816,34 @@ end HasLinearSubdivisionWitness
 protected def id (K : EuclideanComplex) : PLMap K K where
   toFun := id
   continuous_toFun := continuous_id
-  exists_subdivision_linear := True
+  subdivisionSupportWitness := ⟨PLSubdivisionSupportWitness.refl K⟩
 
 /-- Composition of PL maps. -/
 def comp {K L M : EuclideanComplex} (g : PLMap L M) (f : PLMap K L) : PLMap K M where
   toFun := g.toFun ∘ f.toFun
   continuous_toFun := g.continuous_toFun.comp f.continuous_toFun
-  exists_subdivision_linear := f.exists_subdivision_linear ∧ g.exists_subdivision_linear
+  subdivisionSupportWitness := by
+    rcases f.subdivisionSupportWitness with ⟨hf⟩
+    rcases g.subdivisionSupportWitness with ⟨hg⟩
+    exact ⟨hf.comp hg⟩
 
 /-- Regard a PL map as a map out of a subdivision of the domain. -/
 def afterDomainSubdivision {K L : EuclideanComplex} (f : PLMap K L)
     (S : K.Subdivision) : PLMap S.K' L where
   toFun := f.toFun ∘ S.supportHomeomorph
   continuous_toFun := f.continuous_toFun.comp S.supportHomeomorph.continuous
-  exists_subdivision_linear := f.exists_subdivision_linear
+  subdivisionSupportWitness := by
+    rcases f.subdivisionSupportWitness with ⟨hf⟩
+    exact ⟨hf.afterDomainSubdivision S⟩
 
 /-- Regard a PL map as a map into a subdivision of the target. -/
 def afterTargetSubdivision {K L : EuclideanComplex} (f : PLMap K L)
     (T : L.Subdivision) : PLMap K T.K' where
   toFun := T.supportHomeomorph.symm ∘ f.toFun
   continuous_toFun := T.supportHomeomorph.symm.continuous.comp f.continuous_toFun
-  exists_subdivision_linear := f.exists_subdivision_linear
+  subdivisionSupportWitness := by
+    rcases f.subdivisionSupportWitness with ⟨hf⟩
+    exact ⟨hf.afterTargetSubdivision T⟩
 
 /-- Regard a PL map as a map between chosen subdivisions of domain and target. -/
 def afterSubdivision {K L : EuclideanComplex} (f : PLMap K L)
@@ -753,24 +855,36 @@ theorem linearOnSubdivision_domain_iff {K L : EuclideanComplex} (f : PLMap K L)
     (S : K.Subdivision) :
     (f.afterDomainSubdivision S).HasLinearSubdivisionWitness ↔
       f.HasLinearSubdivisionWitness := by
-  rw [HasLinearSubdivisionWitness.iff_existing, HasLinearSubdivisionWitness.iff_existing]
-  rfl
+  constructor
+  · intro _h
+    exact HasLinearSubdivisionWitness.of_existing f.subdivisionSupportWitness
+  · intro _h
+    exact HasLinearSubdivisionWitness.of_existing
+      (f.afterDomainSubdivision S).subdivisionSupportWitness
 
 /-- Moise Theorem 5.2 interface: PL-ness is invariant under target subdivision. -/
 theorem linearOnSubdivision_target_iff {K L : EuclideanComplex} (f : PLMap K L)
     (T : L.Subdivision) :
     (f.afterTargetSubdivision T).HasLinearSubdivisionWitness ↔
       f.HasLinearSubdivisionWitness := by
-  rw [HasLinearSubdivisionWitness.iff_existing, HasLinearSubdivisionWitness.iff_existing]
-  rfl
+  constructor
+  · intro _h
+    exact HasLinearSubdivisionWitness.of_existing f.subdivisionSupportWitness
+  · intro _h
+    exact HasLinearSubdivisionWitness.of_existing
+      (f.afterTargetSubdivision T).subdivisionSupportWitness
 
 /-- PL-ness is invariant under simultaneous domain and target subdivision. -/
 theorem linearOnSubdivision_iff {K L : EuclideanComplex} (f : PLMap K L)
     (S : K.Subdivision) (T : L.Subdivision) :
     (f.afterSubdivision S T).HasLinearSubdivisionWitness ↔
       f.HasLinearSubdivisionWitness := by
-  rw [HasLinearSubdivisionWitness.iff_existing, HasLinearSubdivisionWitness.iff_existing]
-  rfl
+  constructor
+  · intro _h
+    exact HasLinearSubdivisionWitness.of_existing f.subdivisionSupportWitness
+  · intro _h
+    exact HasLinearSubdivisionWitness.of_existing
+      (f.afterSubdivision S T).subdivisionSupportWitness
 
 @[simp] theorem id_apply (K : EuclideanComplex) (x : K.support) :
     PLMap.id K x = x := by
@@ -891,9 +1005,12 @@ theorem afterSubdivision_pl_toFun_iff {K L : EuclideanComplex} (e : PLHomeomorph
     (S : K.Subdivision) (T : L.Subdivision) :
     (e.afterSubdivision S T).pl_toFun.HasLinearSubdivisionWitness ↔
       e.pl_toFun.HasLinearSubdivisionWitness := by
-  rw [PLMap.HasLinearSubdivisionWitness.iff_existing,
-    PLMap.HasLinearSubdivisionWitness.iff_existing]
-  rfl
+  constructor
+  · intro _h
+    exact PLMap.HasLinearSubdivisionWitness.of_existing e.pl_toFun.subdivisionSupportWitness
+  · intro _h
+    exact PLMap.HasLinearSubdivisionWitness.of_existing
+      (e.afterSubdivision S T).pl_toFun.subdivisionSupportWitness
 
 /-- The inverse PL map of a transported homeomorphism remains PL exactly when the original one
 is. -/
@@ -901,9 +1018,12 @@ theorem afterSubdivision_pl_invFun_iff {K L : EuclideanComplex} (e : PLHomeomorp
     (S : K.Subdivision) (T : L.Subdivision) :
     (e.afterSubdivision S T).pl_invFun.HasLinearSubdivisionWitness ↔
       e.pl_invFun.HasLinearSubdivisionWitness := by
-  rw [PLMap.HasLinearSubdivisionWitness.iff_existing,
-    PLMap.HasLinearSubdivisionWitness.iff_existing]
-  rfl
+  constructor
+  · intro _h
+    exact PLMap.HasLinearSubdivisionWitness.of_existing e.pl_invFun.subdivisionSupportWitness
+  · intro _h
+    exact PLMap.HasLinearSubdivisionWitness.of_existing
+      (e.afterSubdivision S T).pl_invFun.subdivisionSupportWitness
 
 @[simp] theorem refl_apply (K : EuclideanComplex) (x : K.support) :
     PLHomeomorph.refl K x = x := by
@@ -1252,7 +1372,10 @@ open EuclideanComplex.Examples
 def segmentToTriangle : PLMap segment triangle where
   toFun := fun _ => ⟨(0 : TrianglePlane), zero_mem_closedTriangleSupport⟩
   continuous_toFun := continuous_const
-  exists_subdivision_linear := True
+  subdivisionSupportWitness :=
+    ⟨PLSubdivisionSupportWitness.onIdentitySubdivisions
+      (fun _ : segment.support => (⟨(0 : TrianglePlane), zero_mem_closedTriangleSupport⟩ :
+        triangle.support))⟩
 
 /-- The standard filled triangle, with a scaffold boundary model, is a polygonal disk. -/
 def standardTriangle : PolygonalDisk where

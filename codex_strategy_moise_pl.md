@@ -448,10 +448,21 @@ Use this to make PL maps stable under subdivision.
 Implement:
 
 ```lean
+structure PLSubdivisionSupportWitness (K L : EuclideanComplex)
+    (toFun : K.support → L.support) where
+  domainSubdivision : K.Subdivision
+  targetSubdivision : L.Subdivision
+  compatibleWithSupports :
+    ∀ x : domainSubdivision.K'.support,
+      targetSubdivision.supportHomeomorph
+          (targetSubdivision.supportHomeomorph.symm
+            (toFun (domainSubdivision.supportHomeomorph x))) =
+        toFun (domainSubdivision.supportHomeomorph x)
+
 structure PLMap (K L : EuclideanComplex) where
   toFun : K.support → L.support
   continuous_toFun : Continuous toFun
-  exists_subdivision_linear : Prop
+  subdivisionSupportWitness : Nonempty (PLSubdivisionSupportWitness K L toFun)
 
 structure PLHomeomorph (K L : EuclideanComplex) where
   toHomeomorph : K.support ≃ₜ L.support
@@ -464,10 +475,12 @@ structure PLMap.RespectsSubcomplex
   image_lands_in_target : A.simplexes.Nonempty → B.simplexes.Nonempty
 ```
 
-Current status: `PLMap.LinearOnSubdivision.compatibleWithSubdivisionSupports` is no longer a free
-proposition.  It records the support-homeomorphism compatibility equation saying that transporting
-the subdivided target point back along the target subdivision recovers the original map after the
-domain subdivision support homeomorphism.  The helper theorem is
+Current status: `PLMap.exists_subdivision_linear` is now a Prop-style API backed by the concrete
+`PLMap.subdivisionSupportWitness` field rather than a free `Prop` field.  The stored
+`PLSubdivisionSupportWitness` records chosen domain and target subdivisions together with the
+support-homeomorphism compatibility equation.  `PLMap.LinearOnSubdivision` still owns the named
+per-simplex affine and target-simplex obligations; those remain the next refinement point once
+simplex carriers become geometric.  The helper theorem is
 `PLMap.LinearOnSubdivision.support_compatible`.
 
 Prove basic closure properties:

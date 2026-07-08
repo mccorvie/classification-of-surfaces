@@ -93,7 +93,7 @@ rectilinear containment is isolated as refinement data.
 
 \begin{definition}[PL map and PL homeomorphism]
 \label{moise:def:pl_map_homeomorphism}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.support_compatible, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap.RespectsSubcomplex, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.RestrictsTo}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLSubdivisionSupportWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLMap.subdivisionSupportWitness_exists, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.support_compatible, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap.RespectsSubcomplex, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.RestrictsTo}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:subdivision}
@@ -101,9 +101,10 @@ A map $f:|K|\to |L|$ is piecewise linear if, after subdividing $K$, its
 restriction to each simplex is affine into a simplex of $L$.  A PL homeomorphism
 is a homeomorphism whose map and inverse are PL after suitable subdivisions.  The
 formal API now includes identity, composition, inverse, and coherence fields
-relating the PL maps to the underlying homeomorphism.  Linear subdivision
-witnesses carry an explicit support-homeomorphism compatibility equation.
-Restriction to subcomplexes is no longer an arbitrary placeholder: a PL map respecting
+relating the PL maps to the underlying homeomorphism.  The `PLMap` structure
+stores support-level subdivision witness data, and linear subdivision witnesses
+carry an explicit support-homeomorphism compatibility equation.  Restriction to
+subcomplexes is no longer an arbitrary placeholder: a PL map respecting
 subcomplexes must assign each source simplex to a nonempty target subcomplex,
 and a PL homeomorphism restriction carries this condition in both directions.
 \end{definition}
@@ -122,10 +123,10 @@ any subdivision of the domain or target complex.
 \leanok
 The Lean interface packages Moise Section 5 Theorems 1 and 2 as transport maps
 for `PLMap` and `PLHomeomorph` across domain and target subdivisions.  The
-current scaffold records a subdivision witness with named per-simplex affine and
-target-simplex obligations; those obligations are still propositional until
-simplex carriers become geometric.  The common-subdivision relation is named
-separately for the future geometric proof.
+current scaffold records support-level subdivision witness data with named
+per-simplex affine and target-simplex obligations; those obligations are still
+propositional until simplex carriers become geometric.  The common-subdivision
+relation is named separately for the future geometric proof.
 \end{proof}
 
 \begin{definition}[Combinatorial two-manifold with boundary]
