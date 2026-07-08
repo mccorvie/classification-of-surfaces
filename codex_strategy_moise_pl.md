@@ -447,6 +447,11 @@ structure PLHomeomorph (K L : EuclideanComplex) where
   toHomeomorph : K.support ≃ₜ L.support
   pl_toFun : PLMap K L
   pl_invFun : PLMap L K
+
+structure PLMap.RespectsSubcomplex
+    (f : PLMap K L) (A : K.Subcomplex) (B : L.Subcomplex) where
+  maps_simplexes : ∀ {σ : K.Simplex}, σ ∈ A.simplexes → ∃ τ : L.Simplex, τ ∈ B.simplexes
+  image_lands_in_target : A.simplexes.Nonempty → B.simplexes.Nonempty
 ```
 
 Prove basic closure properties:
@@ -463,6 +468,12 @@ theorem pl_iff_pl_after_subdivision : ... := by sorry
 ```
 
 This is reusable infrastructure. It should not depend on surfaces.
+
+Restriction status: `PLMap.RespectsSubcomplex` is now proof-bearing at the current
+combinatorial level.  It no longer says `True`; it requires nonempty target subcomplex data for
+source simplexes.  `PLHomeomorph.RestrictsTo` requires this condition in both directions, and
+two-cell data carries nonemptiness of the boundary subcomplex so Schoenflies can use the
+restriction API without arbitrary placeholders.
 
 ### Moise work package M3: combinatorial surfaces and cells
 

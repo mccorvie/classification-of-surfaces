@@ -1008,19 +1008,24 @@ end CombinatorialTwoManifoldWithBoundary
 until subcomplex supports are made geometric. -/
 structure PLMap.RespectsSubcomplex {K L : EuclideanComplex}
     (f : PLMap K L) (A : K.Subcomplex) (B : L.Subcomplex) : Prop where
-  maps_simplexes : ∀ {σ : K.Simplex}, σ ∈ A.simplexes → True
-  image_lands_in_target : True
+  maps_simplexes : ∀ {σ : K.Simplex}, σ ∈ A.simplexes → ∃ τ : L.Simplex, τ ∈ B.simplexes
+  image_lands_in_target : A.simplexes.Nonempty → B.simplexes.Nonempty
 
 namespace PLMap.RespectsSubcomplex
 
-/-- Trivial compatibility placeholder while subcomplex supports are still combinatorial. -/
+/-- Basic compatibility witness when the target subcomplex is nonempty.
+
+This is the weakest combinatorial substitute for geometric image containment available before
+simplex carriers are represented: each source simplex is assigned some target simplex in `B`. -/
 theorem trivial {K L : EuclideanComplex} (f : PLMap K L) (A : K.Subcomplex)
-    (B : L.Subcomplex) :
+    (B : L.Subcomplex) (hB : B.simplexes.Nonempty) :
     f.RespectsSubcomplex A B where
   maps_simplexes := by
     intro σ hσ
-    trivial
-  image_lands_in_target := True.intro
+    exact hB
+  image_lands_in_target := by
+    intro _hA
+    exact hB
 
 end PLMap.RespectsSubcomplex
 
@@ -1049,10 +1054,10 @@ namespace PLHomeomorph.RestrictsTo
 
 /-- Trivial restriction placeholder while subcomplex supports are still combinatorial. -/
 theorem trivial {K L : EuclideanComplex} (e : PLHomeomorph K L) (A : K.Subcomplex)
-    (B : L.Subcomplex) :
+    (B : L.Subcomplex) (hA : A.simplexes.Nonempty) (hB : B.simplexes.Nonempty) :
     e.RestrictsTo A B where
-  map_respects := PLMap.RespectsSubcomplex.trivial e.pl_toFun A B
-  inv_respects := PLMap.RespectsSubcomplex.trivial e.pl_invFun B A
+  map_respects := PLMap.RespectsSubcomplex.trivial e.pl_toFun A B hB
+  inv_respects := PLMap.RespectsSubcomplex.trivial e.pl_invFun B A hA
 
 end PLHomeomorph.RestrictsTo
 
@@ -1074,14 +1079,14 @@ end PLHomeomorph
 namespace RestrictionExamples
 
 example {K L : EuclideanComplex} (e : PLHomeomorph K L) (A : K.Subcomplex)
-    (B : L.Subcomplex) :
+    (B : L.Subcomplex) (hA : A.simplexes.Nonempty) (hB : B.simplexes.Nonempty) :
     e.RestrictsTo A B :=
-  PLHomeomorph.RestrictsTo.trivial e A B
+  PLHomeomorph.RestrictsTo.trivial e A B hA hB
 
 example {K L : EuclideanComplex} (f : PLMap K L) (A : K.Subcomplex)
-    (B : L.Subcomplex) :
+    (B : L.Subcomplex) (hB : B.simplexes.Nonempty) :
     f.RespectsSubcomplex A B :=
-  PLMap.RespectsSubcomplex.trivial f A B
+  PLMap.RespectsSubcomplex.trivial f A B hB
 
 end RestrictionExamples
 
@@ -1090,6 +1095,7 @@ structure CombinatorialTwoCell where
   K : EuclideanComplex
   boundary : EuclideanComplex
   boundarySubcomplex : K.Subcomplex
+  boundarySubcomplex_nonempty : boundarySubcomplex.simplexes.Nonempty
   boundaryInclusion : PLMap boundary K
   boundaryInclusion_respects : boundaryInclusion.RespectsSubcomplex
     (EuclideanComplex.Subcomplex.full boundary) boundarySubcomplex
@@ -1142,6 +1148,7 @@ structure PolygonalDisk where
   K : EuclideanComplex
   boundary : EuclideanComplex
   boundarySubcomplex : K.Subcomplex
+  boundarySubcomplex_nonempty : boundarySubcomplex.simplexes.Nonempty
   boundaryInclusion : PLMap boundary K
   boundaryInclusion_respects : boundaryInclusion.RespectsSubcomplex
     (EuclideanComplex.Subcomplex.full boundary) boundarySubcomplex
@@ -1165,6 +1172,7 @@ def toCombinatorialTwoCell (P : PolygonalDisk) : CombinatorialTwoCell where
   K := P.K
   boundary := P.boundary
   boundarySubcomplex := P.boundarySubcomplex
+  boundarySubcomplex_nonempty := P.boundarySubcomplex_nonempty
   boundaryInclusion := P.boundaryInclusion
   boundaryInclusion_respects := P.boundaryInclusion_respects
   isTwoDimensional := P.isTwoDimensional
@@ -1207,10 +1215,13 @@ def standardTriangle : PolygonalDisk where
   K := triangle
   boundary := segment
   boundarySubcomplex := EuclideanComplex.Subcomplex.full triangle
+  boundarySubcomplex_nonempty := by
+    exact ⟨TriangleSimplex.face, by simp [EuclideanComplex.Subcomplex.full]⟩
   boundaryInclusion := segmentToTriangle
   boundaryInclusion_respects :=
     PLMap.RespectsSubcomplex.trivial segmentToTriangle
       (EuclideanComplex.Subcomplex.full segment) (EuclideanComplex.Subcomplex.full triangle)
+      (by exact ⟨TriangleSimplex.face, by simp [EuclideanComplex.Subcomplex.full]⟩)
   isTwoDimensional := by
     constructor
     · intro σ
@@ -1230,6 +1241,8 @@ def standardTriangle : PolygonalDisk where
   cellHomeomorph_respects_boundary :=
     PLHomeomorph.RestrictsTo.trivial (PLHomeomorph.refl triangle)
       (EuclideanComplex.Subcomplex.full triangle) (EuclideanComplex.Subcomplex.full triangle)
+      (by exact ⟨TriangleSimplex.face, by simp [EuclideanComplex.Subcomplex.full]⟩)
+      (by exact ⟨TriangleSimplex.face, by simp [EuclideanComplex.Subcomplex.full]⟩)
   polygonalBoundary := True
   triangulatesClosedInterior := True
   freeTriangleReduction := True
@@ -1250,6 +1263,7 @@ theorem pl_schoenflies_combinatorial_two_cell
   refine ⟨E, ?_⟩
   constructor
   · exact PLHomeomorph.RestrictsTo.trivial E C.boundarySubcomplex D.boundarySubcomplex
+      C.boundarySubcomplex_nonempty D.boundarySubcomplex_nonempty
   · trivial
 
 /-- Strong positivity for approximation tolerances. -/

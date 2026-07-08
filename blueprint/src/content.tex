@@ -89,7 +89,7 @@ geometric rectilinear containment is isolated as refinement data.
 
 \begin{definition}[PL map and PL homeomorphism]
 \label{moise:def:pl_map_homeomorphism}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap.RespectsSubcomplex, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.RestrictsTo}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:subdivision}
@@ -97,7 +97,10 @@ A map $f:|K|\to |L|$ is piecewise linear if, after subdividing $K$, its
 restriction to each simplex is affine into a simplex of $L$.  A PL homeomorphism
 is a homeomorphism whose map and inverse are PL after suitable subdivisions.  The
 formal API now includes identity, composition, inverse, and coherence fields
-relating the PL maps to the underlying homeomorphism.
+relating the PL maps to the underlying homeomorphism.  Restriction to
+subcomplexes is no longer an arbitrary placeholder: a PL map respecting
+subcomplexes must assign each source simplex to a nonempty target subcomplex,
+and a PL homeomorphism restriction carries this condition in both directions.
 \end{definition}
 
 \begin{lemma}[PL property is invariant under subdivision]
@@ -142,12 +145,14 @@ boundary.
 \uses{moise:def:euclidean_complex,moise:def:combinatorial_surface}
 A combinatorial two-cell is a finite two-dimensional complex with a distinguished
 boundary subcomplex, a boundary inclusion map, and PL homeomorphism data to a
-closed triangle model respecting the boundary subcomplex.  The standard closed
-triangle now has geometric support in `EuclideanSpace ℝ (Fin 2)`, while its
-finite vertices and simplexes still provide the combinatorial triangle API.  A
-polygonal disk records the triangulation data produced by Moise's polygon
-theorem: a boundary complex, boundary subcomplex, PL inclusion, and PL
-homeomorphism to the standard closed triangle.
+closed triangle model respecting the boundary subcomplex.  The boundary
+subcomplex is now required to be nonempty so that restriction data has a genuine
+target simplex.  The standard closed triangle now has geometric support in
+`EuclideanSpace ℝ (Fin 2)`, while its finite vertices and simplexes still
+provide the combinatorial triangle API.  A polygonal disk records the
+triangulation data produced by Moise's polygon theorem: a boundary complex,
+boundary subcomplex, PL inclusion, and PL homeomorphism to the standard closed
+triangle.
 \end{definition}
 
 \begin{lemma}[Standard triangle support is a centroid neighborhood]
