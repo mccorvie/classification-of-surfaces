@@ -821,15 +821,16 @@ the resulting sequence are proved by induction over the natural number.
 
 \begin{definition}[Finite Rado induction geometry]
 \label{moise:def:finite_rado_induction_geometry}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.toRadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.finalState, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.finalState_support_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.initialData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextChartDisk_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextChartDisk_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextComplex_support_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextComplex_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.emptyChart, LeanEval.Topology.ClassificationOfSurfaces.rado_induction_data_of_finite_geometry}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionStepCompatible, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionBoundaryStepCompatible, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.toRadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.finalState, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.finalState_support_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.initialData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextChartDisk_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextChartDisk_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextComplex_support_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextComplex_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.emptyChart, LeanEval.Topology.ClassificationOfSurfaces.rado_induction_data_of_finite_geometry}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
 Finite Rado induction geometry over a finite chart-pair cover consists of the
 local geometric input needed to run Rado's construction: an initial polygonal
 chart disk, a successor chart-extension package at every finite stage, and the
-global compatibility assertions for the union together with a finite-simplex
-proof for each recursive finite stage.  Finite chart polygonal disk data has
+named stepwise compatibility predicates for ordinary overlaps and boundary
+overlaps, together with a finite-simplex proof for each recursive finite
+stage.  Finite chart polygonal disk data has
 named `initialData`, `stepData`, and
 `toFiniteRadoInductionGeometry` constructors; once finite Rado geometry is
 supplied, it packages formally as `RadoInductionData`.  Its `finalState` is the
@@ -841,9 +842,10 @@ extension leaving the complex unchanged.
 
 \begin{proof}
 \leanok
-Copy the initial, successor, compatibility, local-finiteness, and boundary
-compatibility fields from `FiniteRadoInductionGeometry` into
-`RadoInductionData`, then package the resulting object as nonempty data.
+Copy the initial, successor, stepwise overlap compatibility, local-finiteness,
+and stepwise boundary-overlap compatibility fields from
+`FiniteRadoInductionGeometry` into `RadoInductionData`, then package the
+resulting object as nonempty data.
 \end{proof}
 
 \begin{lemma}[Rado union is a PL complex]

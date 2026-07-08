@@ -4737,6 +4737,36 @@ def radoInductionStage
     ℕ → RadoInductionState M :=
   Nat.rec initial.toState fun n S => (step n S).toState
 
+/-- Stepwise overlap compatibility for the recursive Rado induction.
+
+At each stage, the successor extension package must prove compatibility between
+the newly built complex and the preceding stage complex on their ambient
+overlap. -/
+def RadoInductionStepCompatible
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (initial : InitialPLNeighborhoodData E)
+    (step : ∀ (_n : ℕ) (S : RadoInductionState M), RadoStepExtensionData E S) :
+    Prop :=
+  ∀ n,
+    (step n (radoInductionStage initial step n)).nextComplex.compatibleOnOverlap
+      (radoInductionStage initial step n).complex
+
+/-- Stepwise boundary-overlap compatibility for the recursive Rado induction.
+
+At each stage, the successor extension package must prove ordinary overlap
+compatibility and face-closure for the boundary subcomplex selected in the new
+stage. -/
+def RadoInductionBoundaryStepCompatible
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (initial : InitialPLNeighborhoodData E)
+    (step : ∀ (_n : ℕ) (S : RadoInductionState M), RadoStepExtensionData E S) :
+    Prop :=
+  ∀ n,
+    BoundaryCompatibleOnOverlap
+      (step n (radoInductionStage initial step n)).nextComplex
+      (radoInductionStage initial step n).complex
+      (step n (radoInductionStage initial step n)).boundarySubcomplex
+
 @[simp] theorem radoInductionStage_zero
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
     (initial : InitialPLNeighborhoodData E)
@@ -4761,10 +4791,10 @@ structure RadoInductionData
     {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) where
   initial : InitialPLNeighborhoodData E
   step : ∀ (_n : ℕ) (S : RadoInductionState M), RadoStepExtensionData E S
-  compatibleStages : Prop
+  compatibleStages : RadoInductionStepCompatible initial step
   locallyFiniteUnion :
     ∀ n, Finite ((radoInductionStage initial step n).complex.Complex.Simplex)
-  boundaryCompatibleUnion : Prop
+  boundaryCompatibleUnion : RadoInductionBoundaryStepCompatible initial step
 
 namespace RadoInductionData
 
@@ -4983,9 +5013,12 @@ structure RadoInductiveSequence
     ∀ n, PLComplexInSpace.Extends (stage (n + 1)).complex (stage n).complex
   covers_core : ∀ n, (E.pair n).core ⊆ (stage n).complex.support
   covers_boundaryCore : ∀ n, (E.pair n).boundaryCore ⊆ (stage n).complex.support
-  compatibleStages : Prop
+  compatibleStages :
+    ∀ n, (stage (n + 1)).complex.compatibleOnOverlap (stage n).complex
   locallyFiniteUnion : ∀ n, Finite (stage n).complex.Complex.Simplex
-  boundaryCompatibleUnion : Prop
+  boundaryCompatibleUnion :
+    ∀ n, BoundaryCompatibleOnOverlap (stage (n + 1)).complex (stage n).complex
+      (stage (n + 1)).boundarySubcomplex
 
 namespace RadoInductiveSequence
 
@@ -5188,9 +5221,26 @@ def RadoInductionData.toInductiveSequence
   extends_succ := D.extends_succ
   covers_core := D.covers_core
   covers_boundaryCore := D.covers_boundaryCore
-  compatibleStages := D.compatibleStages
+  compatibleStages := by
+    intro n
+    change ((D.step n (D.stage n)).toState).complex.compatibleOnOverlap
+      (D.stage n).complex
+    have hcompat : ∀ n,
+        (D.step n (radoInductionStage D.initial D.step n)).nextComplex.compatibleOnOverlap
+          (radoInductionStage D.initial D.step n).complex := D.compatibleStages
+    simpa [RadoInductionData.stage, RadoStepExtensionData.toState] using hcompat n
   locallyFiniteUnion := D.locallyFiniteUnion
-  boundaryCompatibleUnion := D.boundaryCompatibleUnion
+  boundaryCompatibleUnion := by
+    intro n
+    change BoundaryCompatibleOnOverlap ((D.step n (D.stage n)).toState).complex
+      (D.stage n).complex ((D.step n (D.stage n)).toState).boundarySubcomplex
+    have hcompat : ∀ n,
+        BoundaryCompatibleOnOverlap
+          (D.step n (radoInductionStage D.initial D.step n)).nextComplex
+          (radoInductionStage D.initial D.step n).complex
+          (D.step n (radoInductionStage D.initial D.step n)).boundarySubcomplex :=
+      D.boundaryCompatibleUnion
+    simpa [RadoInductionData.stage, RadoStepExtensionData.toState] using hcompat n
 
 /-- Finite local geometric data sufficient to build Rado induction data over a finite chart cover.
 
@@ -5202,10 +5252,10 @@ structure FiniteRadoInductionGeometry
   step :
     ∀ (_n : ℕ) (S : RadoInductionState M),
       RadoStepExtensionData C.toChartPairExhaustion S
-  compatibleStages : Prop
+  compatibleStages : RadoInductionStepCompatible initial step
   locallyFiniteUnion :
     ∀ n, Finite ((radoInductionStage initial step n).complex.Complex.Simplex)
-  boundaryCompatibleUnion : Prop
+  boundaryCompatibleUnion : RadoInductionBoundaryStepCompatible initial step
 
 namespace FiniteRadoInductionGeometry
 
@@ -5312,11 +5362,27 @@ noncomputable def toFiniteRadoInductionGeometry
     (D : FiniteChartPolygonalDiskData C) : FiniteRadoInductionGeometry C where
   initial := D.initialData
   step := fun _n S => D.stepData S
-  compatibleStages := D.CompatibleChartShrinks
+  compatibleStages := by
+    let stage := fun n =>
+      radoInductionStage D.initialData (fun _n S => D.stepData S) n
+    change ∀ n,
+      (D.stepData (stage n)).nextComplex.compatibleOnOverlap
+        (stage n).complex
+    intro n
+    exact (D.stepData (stage n)).compatibleOnOverlaps
   locallyFiniteUnion := by
     intro n
     infer_instance
-  boundaryCompatibleUnion := D.BoundaryCompatibleChartShrinks
+  boundaryCompatibleUnion := by
+    let stage := fun n =>
+      radoInductionStage D.initialData (fun _n S => D.stepData S) n
+    change ∀ n,
+      BoundaryCompatibleOnOverlap
+        (D.stepData (stage n)).nextComplex
+        (stage n).complex
+        (D.stepData (stage n)).boundarySubcomplex
+    intro n
+    exact (D.stepData (stage n)).boundaryCompatibleOnOverlaps
 
 @[simp] theorem toFiniteRadoInductionGeometry_initial
     {M : Type u} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}

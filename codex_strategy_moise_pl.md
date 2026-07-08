@@ -807,11 +807,17 @@ structure FiniteRadoInductionGeometry
   step :
     ∀ (_n : ℕ) (S : RadoInductionState M),
       RadoStepExtensionData C.toChartPairExhaustion S
-  compatibleStages : Prop
+  compatibleStages : RadoInductionStepCompatible initial step
   locallyFiniteUnion :
     ∀ n, Finite ((radoInductionStage initial step n).complex.Complex.Simplex)
-  boundaryCompatibleUnion : Prop
+  boundaryCompatibleUnion : RadoInductionBoundaryStepCompatible initial step
 ```
+
+The compatibility fields are not free placeholders: `RadoInductionStepCompatible` says each
+successor complex is compatible on overlaps with the previous recursive stage, and
+`RadoInductionBoundaryStepCompatible` says the same step supplies boundary-overlap compatibility
+for its boundary subcomplex.  `FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry` proves
+these aggregate fields from the per-step `RadoStepExtensionData` fields.
 
 Proved finite/combinatorial bridge:
 
