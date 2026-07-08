@@ -399,7 +399,7 @@ global compatibility data.
 
 \begin{definition}[PL complex in a topological space]
 \label{moise:def:pl_complex_in_space}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
@@ -408,7 +408,9 @@ $M$ equipped with charts from Euclidean simplexes such that the induced abstract
 complex is PL-compatible on intersections.  The formal API stores a mathlib
 topological embedding of the complex support into the ambient space, exposes the
 image support, point and set coverage predicates, extension data, and
-compatibility on overlaps.  Its local-finiteness field is now proof-bearing:
+compatibility on overlaps.  Overlap compatibility identifies the overlap as the
+intersection of the two embedded supports and proves containment in both
+supports.  Its local-finiteness field is now proof-bearing:
 at the current finite `EuclideanComplex` level it is a `Finite` proof for the
 simplex type.  Its chart-compatibility field is derived from the embedding as
 injectivity and continuity, not supplied as an arbitrary proposition.  It also
@@ -628,7 +630,7 @@ together with the definitional equality identifying it with the stored field.
 
 \begin{lemma}[Initial PL neighborhood]
 \label{moise:lem:initial_pl_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.BoundarySubcomplexFaceClosed, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:polygonal_disk_combinatorial_cell}
@@ -639,7 +641,8 @@ The induction state also records a boundary subcomplex and compatibility fields
 asserting that boundary chart cores are covered by this boundary subcomplex.
 The finite-stage state records genuine finite simplex data for the complex and
 for the boundary subcomplex, rather than a placeholder local-finiteness
-proposition.
+proposition.  It also records actual self-overlap compatibility for the current
+embedded PL complex and face-closure of the stored boundary subcomplex.
 \end{lemma}
 
 \begin{proof}
