@@ -2748,6 +2748,21 @@ def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Pro
 def IsInteriorChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
   P.kind = RadoChartKind.disk
 
+/-- A chart pair is one of Moise's local two-dimensional models: a disk or a half-disk. -/
+def HasDiskOrHalfDiskModel {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
+  P.IsInteriorChart ∨ P.IsBoundaryChart
+
+/-- Every `RadoChartPair` has a disk or half-disk model, because this is encoded by
+`RadoChartKind`. -/
+theorem hasDiskOrHalfDiskModel {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) :
+    P.HasDiskOrHalfDiskModel := by
+  cases h : P.kind <;> simp [HasDiskOrHalfDiskModel, IsInteriorChart, IsBoundaryChart, h]
+
+/-- The region model stored by a chart pair matches its disk/half-disk kind. -/
+theorem modelsMatchKind {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) :
+    P.kind.ModelMatchesRegion P.modelRegion :=
+  P.model_matches_kind
+
 /-- One chart pair refines another if its domain and core lie in the larger chart pair.
 
 For the local Rado construction this records that a polygonal disk or half-disk core has been
@@ -2836,6 +2851,28 @@ structure FiniteChartPairCover (M : Type u) [TopologicalSpace M] where
 attribute [instance] FiniteChartPairCover.indexFintype
 
 namespace FiniteChartPairCover
+
+/-- A finite chart-pair cover uses only disk or half-disk local models. -/
+def HasDiskOrHalfDiskModelCover {M : Type u} [TopologicalSpace M]
+    (C : FiniteChartPairCover M) : Prop :=
+  ∀ x : M, ∃ i : C.Index, x ∈ (C.pair i).core ∧ (C.pair i).HasDiskOrHalfDiskModel
+
+/-- The local model region of each chart pair in a finite cover matches its chart kind. -/
+def ModelsMatchKind {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) : Prop :=
+  ∀ i : C.Index, (C.pair i).kind.ModelMatchesRegion (C.pair i).modelRegion
+
+/-- The disk/half-disk model-cover property follows from the finite cover and chart-kind data. -/
+theorem hasDiskOrHalfDiskModelCover {M : Type u} [TopologicalSpace M]
+    (C : FiniteChartPairCover M) : C.HasDiskOrHalfDiskModelCover := by
+  intro x
+  rcases C.covers x with ⟨i, hi⟩
+  exact ⟨i, hi, (C.pair i).hasDiskOrHalfDiskModel⟩
+
+/-- The chart-kind/model-region compatibility is stored by each chart pair. -/
+theorem modelsMatchKind {M : Type u} [TopologicalSpace M]
+    (C : FiniteChartPairCover M) : C.ModelsMatchKind := by
+  intro i
+  exact (C.pair i).modelsMatchKind
 
 /-- Enumerate a finite chart-pair cover by natural numbers, using the empty chart pair outside the
 finite range. -/
@@ -3561,6 +3598,29 @@ structure ChartPairExhaustion (M : Type*) [TopologicalSpace M] where
   boundaryNestedControl : ∀ n, (pair n).boundaryCore ⊆ (pair n).core
 
 namespace ChartPairExhaustion
+
+/-- A chart-pair exhaustion uses only disk or half-disk local models. -/
+def HasDiskOrHalfDiskModelCover {M : Type*} [TopologicalSpace M]
+    (E : ChartPairExhaustion M) : Prop :=
+  ∀ x : M, ∃ n : ℕ, x ∈ (E.pair n).core ∧ (E.pair n).HasDiskOrHalfDiskModel
+
+/-- The local model region of each chart pair in an exhaustion matches its chart kind. -/
+def ModelsMatchKind {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) : Prop :=
+  ∀ n : ℕ, (E.pair n).kind.ModelMatchesRegion (E.pair n).modelRegion
+
+/-- The disk/half-disk model-cover property follows from the exhaustion cover and chart-kind data.
+-/
+theorem hasDiskOrHalfDiskModelCover {M : Type*} [TopologicalSpace M]
+    (E : ChartPairExhaustion M) : E.HasDiskOrHalfDiskModelCover := by
+  intro x
+  rcases E.covers x with ⟨n, hn⟩
+  exact ⟨n, hn, (E.pair n).hasDiskOrHalfDiskModel⟩
+
+/-- The chart-kind/model-region compatibility is stored by each chart pair in the exhaustion. -/
+theorem modelsMatchKind {M : Type*} [TopologicalSpace M]
+    (E : ChartPairExhaustion M) : E.ModelsMatchKind := by
+  intro n
+  exact (E.pair n).modelsMatchKind
 
 /-- The union of boundary cores in a chart-pair exhaustion. -/
 def boundaryCoreUnion {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M) : Set M :=
@@ -4819,9 +4879,9 @@ local Rado induction data needed to absorb chart pairs.  Constructing this data 
 manifold atlas is the remaining hard extraction theorem. -/
 structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
   t2 : T2Space M
-  local_disk_or_half_disk : Prop
-  secondCountable_or_separable_metric : Prop
   chartPairExhaustion : ChartPairExhaustion M
+  localDiskOrHalfDiskModels : chartPairExhaustion.HasDiskOrHalfDiskModelCover
+  chartModelsMatchKind : chartPairExhaustion.ModelsMatchKind
   radoInductionData : RadoInductionData chartPairExhaustion
 
 namespace MoiseTwoManifold
@@ -4872,8 +4932,8 @@ end MoiseTwoManifold
 interface used by Rado's theorem. -/
 structure MoiseExtractionData (M : Type*) [TopologicalSpace M] where
   finiteCover : FiniteChartPairCover M
-  local_disk_or_half_disk : Prop
-  secondCountable_or_separable_metric : Prop
+  localDiskOrHalfDiskModels : finiteCover.HasDiskOrHalfDiskModelCover
+  chartModelsMatchKind : finiteCover.ModelsMatchKind
   radoInductionData : RadoInductionData finiteCover.toChartPairExhaustion
 
 namespace MoiseExtractionData
@@ -4882,9 +4942,9 @@ namespace MoiseExtractionData
 def toMoiseTwoManifold {M : Type*} [TopologicalSpace M] [T2Space M]
     (D : MoiseExtractionData M) : MoiseTwoManifold M where
   t2 := inferInstance
-  local_disk_or_half_disk := D.local_disk_or_half_disk
-  secondCountable_or_separable_metric := D.secondCountable_or_separable_metric
   chartPairExhaustion := D.finiteCover.toChartPairExhaustion
+  localDiskOrHalfDiskModels := (D.finiteCover.toChartPairExhaustion).hasDiskOrHalfDiskModelCover
+  chartModelsMatchKind := (D.finiteCover.toChartPairExhaustion).modelsMatchKind
   radoInductionData := D.radoInductionData
 
 @[simp] theorem toMoiseTwoManifold_chartPairExhaustion
@@ -5321,8 +5381,8 @@ noncomputable def toMoiseExtractionData
     (L : LocalChartPolygonalDiskData M) : MoiseExtractionData M :=
   let P := L.toFiniteChartPolygonalDiskData
   { finiteCover := P.1
-    local_disk_or_half_disk := True
-    secondCountable_or_separable_metric := True
+    localDiskOrHalfDiskModels := P.1.hasDiskOrHalfDiskModelCover
+    chartModelsMatchKind := P.1.modelsMatchKind
     radoInductionData := P.2.toFiniteRadoInductionGeometry.toRadoInductionData }
 
 @[simp] theorem toMoiseExtractionData_finiteCover

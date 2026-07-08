@@ -628,9 +628,9 @@ Define a Moise-style 2-manifold interface if needed:
 ```lean
 structure MoiseTwoManifold (M : Type*) [TopologicalSpace M] where
   t2 : T2Space M
-  local_disk_or_half_disk : Prop
-  secondCountable_or_separable_metric : Prop
   chartPairExhaustion : ChartPairExhaustion M
+  localDiskOrHalfDiskModels : chartPairExhaustion.HasDiskOrHalfDiskModelCover
+  chartModelsMatchKind : chartPairExhaustion.ModelsMatchKind
   radoInductionData : RadoInductionData chartPairExhaustion
 ```
 
@@ -677,8 +677,8 @@ structure FiniteChartPairCover (M : Type*) [TopologicalSpace M] where
 
 structure MoiseExtractionData (M : Type*) [TopologicalSpace M] where
   finiteCover : FiniteChartPairCover M
-  local_disk_or_half_disk : Prop
-  secondCountable_or_separable_metric : Prop
+  localDiskOrHalfDiskModels : finiteCover.HasDiskOrHalfDiskModelCover
+  chartModelsMatchKind : finiteCover.ModelsMatchKind
   radoInductionData : RadoInductionData finiteCover.toChartPairExhaustion
 
 structure FiniteChartPolygonalDiskData

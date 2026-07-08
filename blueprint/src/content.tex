@@ -499,7 +499,7 @@ for compact spaces a named finite PL triangulation data package.
 
 \begin{definition}[Finite chart-pair cover]
 \label{moise:def:finite_chart_pair_cover}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind.ModelMatchesRegion, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_mem_domain, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore_refines, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_nonempty, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_card_pos, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.zeroIndex, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_zero}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind.ModelMatchesRegion, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_mem_domain, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.HasDiskOrHalfDiskModel, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.hasDiskOrHalfDiskModel, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.modelsMatchKind, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore_refines, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.HasDiskOrHalfDiskModelCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.ModelsMatchKind, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.hasDiskOrHalfDiskModelCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.modelsMatchKind, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_nonempty, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_card_pos, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.zeroIndex, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_zero, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.HasDiskOrHalfDiskModelCover, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.ModelsMatchKind, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.hasDiskOrHalfDiskModelCover, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.modelsMatchKind}
 \leanok
 
 A finite chart-pair cover is a finite family of Rado chart pairs whose smaller
@@ -509,10 +509,13 @@ countable chart-pair exhaustion used by Rado's induction.  The cover and its
 countable exhaustion now carry proof-bearing finiteness and nesting fields:
 for each point there is an explicit finite set of indices meeting its core, and
 each core is proved to lie in its chart domain, with the analogous boundary-core
-statements.  Chart pairs also carry proof-bearing model-region data: disk charts
-use open plane regions, half-disk charts use regions obtained from
-`EuclideanHalfSpace 2`, and the chart homeomorphism is proved to land in the
-stored model region.  In a nonempty space the index type is nonempty;
+statements.  Chart pairs also carry proof-bearing model-region data: every
+chart is proved to be a disk or half-disk model, disk charts use open plane
+regions, half-disk charts use regions obtained from `EuclideanHalfSpace 2`, and
+the chart homeomorphism is proved to land in the stored model region.  Finite
+covers and countable exhaustions expose named predicates saying their charts
+are disk/half-disk models and their model regions match their chart kinds.  In
+a nonempty space the index type is nonempty;
 `zeroIndex` names the first selected chart, while the pair-of-less-than and
 pair-of-not-less-than lemmas identify the finite and out-of-range enumeration
 cases.  The preferred mathlib chart at a point gives a chart pair whose core is
@@ -600,8 +603,10 @@ cores.
 \uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:moise_two_manifold}
 Moise extraction data is the finite chart-pair cover and local Rado induction
 data extracted from a compact mathlib bordered surface before packaging it as a
-`MoiseTwoManifold`.  Because the cover is finite, it also has a named terminal
-Rado stage and finite-stage PL triangulation package.
+`MoiseTwoManifold`.  It also records that the selected chart pairs are
+disk/half-disk models and that each model region matches its chart kind.  Because
+the cover is finite, it has a named terminal Rado stage and finite-stage PL
+triangulation package.
 \end{definition}
 
 \begin{proof}
