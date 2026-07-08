@@ -432,7 +432,7 @@ global compatibility data.
 
 \begin{definition}[PL complex in a topological space]
 \label{moise:def:pl_complex_in_space}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.OverlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.overlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.compatibleOnOverlap_of_embedded_overlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.SimplexRelevant, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.simplexCarrier_subset_support, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.exists_simplexCarrier_of_mem_support, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.OverlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.overlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.compatibleOnOverlap_of_embedded_overlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.SimplexRelevant, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.covers, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
@@ -448,10 +448,13 @@ ambient overlap point.  Its local-finiteness field is now proof-bearing:
 at the current finite `EuclideanComplex` level it is a `Finite` proof for the
 simplex type.  Its chart-compatibility field is derived from the embedding as
 injectivity and continuity, not supplied as an arbitrary proposition.  It also
-has finite support data: a finite set of relevant simplexes covering the
-embedded support.  Relevance is currently finite membership in the full simplex
-set until individual simplex supports are geometric.  `fullFiniteSupportData`
-gives this package by taking all simplexes of the complex.  `FinitePLTriangulationData` packages an embedded PL
+has simplex-carrier data: each abstract simplex has a stored ambient support set
+inside the embedded support, and every point of the embedded support lies in one
+of these carriers.  Finite support data is now a finite set of relevant
+simplexes, where relevance means the stored carrier is nonempty, together with a
+proof that the selected simplex carriers cover the embedded support.
+`fullFiniteSupportData` gives this package by taking all simplexes of the
+complex.  `FinitePLTriangulationData` packages an embedded PL
 complex covering the ambient space together with finite support data and
 boundary-subcomplex data.  Boundary-subcomplex data now stores an actual
 boundary support set, proves that it lies in the embedded support, and carries a
@@ -501,15 +504,17 @@ formal theorem returns `Nonempty` open-subset complex data.
 \uses{moise:def:pl_complex_in_space}
 A locally finite PL complex in a compact ambient space has finite support data.
 In the present finite-complex API this data is already available by taking all
-simplexes of the underlying finite `EuclideanComplex`.
+simplexes of the underlying finite `EuclideanComplex`, but the returned package
+now also proves coverage of the embedded support by stored simplex carriers.
 \end{lemma}
 
 \begin{proof}
 \leanok
 
 Use `PLComplexInSpace.fullFiniteSupportData`, whose finite set of simplexes is
-`Finset.univ`.  The compact/local-finite theorem name remains as the public
-Moise-facing wrapper and returns `Nonempty` finite-support data.
+`Finset.univ` and whose coverage proof uses the simplex-carrier cover stored in
+the embedded complex.  The compact/local-finite theorem name remains as the
+public Moise-facing wrapper and returns `Nonempty` finite-support data.
 \end{proof}
 
 \section{Moise--Rado triangulation}

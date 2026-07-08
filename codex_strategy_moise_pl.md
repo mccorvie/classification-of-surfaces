@@ -744,10 +744,13 @@ theorem compact_locally_finite_complex_finite
 `open_subset_complex` is one of the Moise Chapter 8 support theorems. It may be left as a theorem boundary at first.
 `PLComplexInSpace.OpenSubsetComplex` now carries proof-bearing ambient compatibility: the
 inclusion of the open-subset complex support into the original support is injective and
-continuous, derived from the stored embedding.  `PLComplexInSpace.SimplexRelevant` is no longer
-`True`; at the current finite-complex level it is membership in the full finite simplex set.
-`locallyFiniteComplex_finite_of_compact_support` returns `Nonempty K.FiniteSupportData` rather than
-data plus a trailing truth witness.
+continuous, derived from the stored embedding.  `PLComplexInSpace` now stores simplex-carrier
+data directly: every abstract simplex has an ambient carrier subset of the embedded support, and
+the embedded support is covered by these carriers.  `PLComplexInSpace.SimplexRelevant` is no
+longer `True` or full finite-set membership; it means the stored ambient carrier is nonempty.
+`FiniteSupportData.covers` proves that the selected relevant simplex carriers cover the embedded
+support.  `locallyFiniteComplex_finite_of_compact_support` returns `Nonempty K.FiniteSupportData`
+rather than data plus a trailing truth witness.
 
 ### Moise work package M7: Rado induction for closed surfaces
 
@@ -942,8 +945,10 @@ cardinality fields in `FiniteSurfaceTriangulation.Valid`, while
 is a face of its triangle.
 Because the current `EuclideanComplex` API has finite simplex types,
 `PLComplexInSpace.fullFiniteSupportData` is the named finite-support package taking all simplexes;
-`locallyFiniteComplex_finite_of_compact_support` is now the Moise-facing wrapper around that
-package rather than the source of the finite data.  `PLComplexInSpace.locallyFinite` and
+its coverage proof now uses the `PLComplexInSpace.simplexCarrier` cover stored on the embedded
+complex, not the tautology `K.support ⊆ K.support`.
+`locallyFiniteComplex_finite_of_compact_support` is the Moise-facing wrapper around that package
+rather than the source of the finite data.  `PLComplexInSpace.locallyFinite` and
 `PLComplexInSpace.compatibleCharts` are no longer free propositions: local finiteness is a finite
 simplex-type proof, and compatibility is supplied by injectivity and continuity of the embedding.
 `PLComplexInSpace.toFiniteSurfaceTriangulation` is the named construction behind the public

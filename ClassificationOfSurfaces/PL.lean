@@ -2970,6 +2970,10 @@ structure PLComplexInSpace (X : Type*) [TopologicalSpace X] where
   Complex : EuclideanComplex
   embed : Complex.support → X
   isEmbedding : _root_.Topology.IsEmbedding embed
+  simplexSupport : Complex.Simplex → Set X
+  simplexSupport_subset : ∀ σ, simplexSupport σ ⊆ Set.range embed
+  support_covered_by_simplexSupport :
+    ∀ x ∈ Set.range embed, ∃ σ : Complex.Simplex, x ∈ simplexSupport σ
   locallyFinite : Finite Complex.Simplex
   compatibleCharts : Function.Injective embed ∧ Continuous embed
 
@@ -2993,6 +2997,23 @@ theorem continuous_embed {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace 
 theorem injective_embed {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
     Function.Injective K.embed :=
   K.isEmbedding.injective
+
+/-- The ambient carrier assigned to one simplex of an embedded PL complex. -/
+def simplexCarrier {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X)
+    (σ : K.Complex.Simplex) : Set X :=
+  K.simplexSupport σ
+
+/-- Simplex carriers lie in the embedded support. -/
+theorem simplexCarrier_subset_support {X : Type*} [TopologicalSpace X]
+    (K : PLComplexInSpace X) (σ : K.Complex.Simplex) :
+    K.simplexCarrier σ ⊆ K.support := by
+  simpa [simplexCarrier, support] using K.simplexSupport_subset σ
+
+/-- Every point of the embedded support lies in one of the stored simplex carriers. -/
+theorem exists_simplexCarrier_of_mem_support {X : Type*} [TopologicalSpace X]
+    (K : PLComplexInSpace X) {x : X} (hx : x ∈ K.support) :
+    ∃ σ : K.Complex.Simplex, x ∈ K.simplexCarrier σ := by
+  simpa [simplexCarrier, support] using K.support_covered_by_simplexSupport x hx
 
 /-- A point of the ambient space is covered by an embedded PL complex. -/
 def Covers {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) (x : X) : Prop :=
@@ -3166,21 +3187,19 @@ structure OpenSubsetComplex {X : Type*} [TopologicalSpace X] (K : PLComplexInSpa
   inclusionEmbedding : _root_.Topology.IsEmbedding inclusion
   compatibleWithAmbient : Function.Injective inclusion ∧ Continuous inclusion
 
-/-- A simplex is relevant to the embedded support. This is a named placeholder until individual
-simplex supports are represented geometrically. -/
-def SimplexRelevant {X : Type*} [TopologicalSpace X] (_K : PLComplexInSpace X)
-    (σ : _K.Complex.Simplex) : Prop :=
-  σ ∈ (Finset.univ : Finset _K.Complex.Simplex)
+/-- A simplex is relevant to the embedded support when its stored ambient carrier is nonempty. -/
+def SimplexRelevant {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X)
+    (σ : K.Complex.Simplex) : Prop :=
+  (K.simplexCarrier σ).Nonempty
 
 /-- Finite support data for an embedded PL complex.
 
-For now every simplex is relevant because `EuclideanComplex` is already finite. Once simplex
-supports are geometric subsets, `containsRelevant` should say that every simplex meeting the
-ambient support belongs to `simplexes`. -/
+The selected finite set contains every simplex whose ambient carrier is nonempty and covers the
+embedded support by the selected simplex carriers. -/
 structure FiniteSupportData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) where
   simplexes : Finset K.Complex.Simplex
   containsRelevant : ∀ σ : K.Complex.Simplex, K.SimplexRelevant σ → σ ∈ simplexes
-  coversSupport : K.support ⊆ K.support
+  coversSupport : ∀ x ∈ K.support, ∃ σ ∈ simplexes, x ∈ K.simplexCarrier σ
   locallyFiniteAssumption : Finite K.Complex.Simplex
 
 namespace FiniteSupportData
@@ -3189,6 +3208,12 @@ theorem contains {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
     (F : K.FiniteSupportData) {σ : K.Complex.Simplex} (hσ : K.SimplexRelevant σ) :
     σ ∈ F.simplexes :=
   F.containsRelevant σ hσ
+
+/-- Finite support data covers the embedded support by its selected simplex carriers. -/
+theorem covers {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) {x : X} (hx : x ∈ K.support) :
+    ∃ σ ∈ F.simplexes, x ∈ K.simplexCarrier σ :=
+  F.coversSupport x hx
 
 /-- Supported simplexes of a specified dimension. -/
 def simplexesOfDim {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
@@ -3273,7 +3298,8 @@ def fullFiniteSupportData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace
     simp
   coversSupport := by
     intro x hx
-    exact hx
+    rcases K.exists_simplexCarrier_of_mem_support hx with ⟨σ, hxσ⟩
+    exact ⟨σ, by simp, hxσ⟩
   locallyFiniteAssumption := inferInstance
 
 @[simp] theorem fullFiniteSupportData_simplexes
@@ -3777,6 +3803,13 @@ def toPLComplexInSpace {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk 
   Complex := D.disk.K
   embed := D.embed
   isEmbedding := D.isEmbedding
+  simplexSupport := fun _ => Set.range D.embed
+  simplexSupport_subset := by
+    intro σ
+    exact subset_rfl
+  support_covered_by_simplexSupport := by
+    intro x hx
+    exact ⟨D.disk.K.defaultSimplex, hx⟩
   locallyFinite := inferInstance
   compatibleCharts := ⟨D.isEmbedding.injective, D.isEmbedding.continuous⟩
 
@@ -5088,12 +5121,20 @@ noncomputable def chartUnionPLComplexData
         exact Finset.univ_nonempty
       faceClosed := by
         decide }
-  let hKEmbedding : _root_.Topology.IsEmbedding (fun p : C.support => carrierMap p.1) :=
+  let emb : C.support → M := fun p => carrierMap p.1
+  let hKEmbedding : _root_.Topology.IsEmbedding emb :=
     hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
   let K : PLComplexInSpace M :=
     { Complex := C
-      embed := fun p => carrierMap p.1
+      embed := emb
       isEmbedding := hKEmbedding
+      simplexSupport := fun _ => Set.range emb
+      simplexSupport_subset := by
+        intro σ
+        exact subset_rfl
+      support_covered_by_simplexSupport := by
+        intro x hx
+        exact ⟨C.defaultSimplex, hx⟩
       locallyFinite := inferInstance
       compatibleCharts := ⟨hKEmbedding.injective, hKEmbedding.continuous⟩ }
   refine ⟨K, ?_⟩
@@ -5105,7 +5146,7 @@ noncomputable def chartUnionPLComplexData
   · intro hx
     let p : Shrink.{0} U := equivShrink.{0} U ⟨x, hx⟩
     refine ⟨⟨p, trivial⟩, ?_⟩
-    simp [K, carrierMap, p]
+    simp [K, carrierMap, emb, p]
 
 /-- The named scaffold PL complex obtained by adjoining one chart polygonal disk to a Rado stage.
 -/
@@ -5717,12 +5758,20 @@ noncomputable def unionPLComplexData
         exact Finset.univ_nonempty
       faceClosed := by
         decide }
-  let hKEmbedding : _root_.Topology.IsEmbedding (fun p : C.support => carrierMap p.1) :=
+  let emb : C.support → M := fun p => carrierMap p.1
+  let hKEmbedding : _root_.Topology.IsEmbedding emb :=
     hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
   let K : PLComplexInSpace M :=
     { Complex := C
-      embed := fun p => carrierMap p.1
+      embed := emb
       isEmbedding := hKEmbedding
+      simplexSupport := fun _ => Set.range emb
+      simplexSupport_subset := by
+        intro σ
+        exact subset_rfl
+      support_covered_by_simplexSupport := by
+        intro x hx
+        exact ⟨C.defaultSimplex, hx⟩
       locallyFinite := inferInstance
       compatibleCharts := ⟨hKEmbedding.injective, hKEmbedding.continuous⟩ }
   refine ⟨K, ?_⟩
@@ -5734,7 +5783,7 @@ noncomputable def unionPLComplexData
   · intro hx
     let p : Shrink.{0} S.supportUnion := equivShrink.{0} S.supportUnion ⟨x, hx⟩
     refine ⟨⟨p, trivial⟩, ?_⟩
-    simp [K, carrierMap, p]
+    simp [K, carrierMap, emb, p]
 
 /-- The named PL complex realizing the support union of a completed Rado induction sequence. -/
 noncomputable def unionPLComplex
