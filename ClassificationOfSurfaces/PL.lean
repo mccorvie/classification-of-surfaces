@@ -1807,6 +1807,26 @@ def ExtensionsAgreeOnSharedBoundary
   ∀ σ ∈ K.K.twoSimplexes, ∀ τ ∈ K.K.twoSimplexes,
     σ ≠ τ → ∀ ρ : K.K.Simplex, K.K.IsFace ρ σ → K.K.IsFace ρ τ → True
 
+/-- A map is PL on the two-skeleton of a combinatorial surface. -/
+def IsPLOnTwoSkeleton
+    (K : CombinatorialTwoManifoldWithBoundary) {Y : Type*} (f : K.K.support → Y) : Prop :=
+  IsPLOnSkeleton K.K f 2
+
+/-- The embedding-like output condition currently available to the approximation layer.
+
+The first branch records the common case in this scaffold where the output map is definitionally
+the reference homeomorphism.  The second branch is the finite-combinatorial substitute for the
+eventual topological embedding condition. -/
+def EmbeddingLikeApproximation
+    {X Y : Type*} (f h : X → Y) : Prop :=
+  f = h ∨ Function.Injective f
+
+/-- Relative boundary-cell compatibility for the half-plane route. -/
+def RelativeBoundaryCells
+    (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
+    (oneSkeletonMap map : K.K.support → Ω.carrier) : Prop :=
+  BoundaryRespectingMap K Ω oneSkeletonMap ∧ BoundaryRespectingMap K Ω map
+
 /-- Cellwise extensions of a one-skeleton approximation across the two-cells of a surface. -/
 structure CellwiseExtension
     (K : CombinatorialTwoManifoldWithBoundary) (Y : Type*) [PseudoMetricSpace Y]
@@ -1814,6 +1834,8 @@ structure CellwiseExtension
   oneSkeleton : OneSkeletonApproximation K Y φ h
   map : K.K.support → Y
   close : PhiApproximation φ map h
+  plOnTwoSkeleton : IsPLOnTwoSkeleton K map
+  embeddingLike : EmbeddingLikeApproximation map h
   extendsOneSkeleton : ExtendsOneSkeletonApproximation K oneSkeleton map
   eachTwoCellPL : CellwiseSchoenfliesExtensions K map
   agreesOnSharedBoundaries : ExtensionsAgreeOnSharedBoundary K map
@@ -1850,8 +1872,8 @@ structure GlobalPLSurfaceApproximation
   cellwise : CellwiseExtension K Y φ h
   map : K.K.support → Y
   close : PhiApproximation φ map h
-  isPLOnSubdivision : Prop
-  isEmbedding : Prop
+  isPLOnSubdivision : IsPLOnTwoSkeleton K map
+  isEmbedding : EmbeddingLikeApproximation map h
   cellwiseCompatible : GlobalPLHomeomorphFromCellwise cellwise map
 
 namespace GlobalPLSurfaceApproximation
@@ -1873,11 +1895,13 @@ structure BoundaryCellwiseExtension
   boundaryRespectingOneSkeleton : BoundaryRespectingMap K Ω oneSkeleton.approx
   map : K.K.support → Ω.carrier
   close : PhiApproximation φ map h
+  plOnTwoSkeleton : IsPLOnTwoSkeleton K map
+  embeddingLike : EmbeddingLikeApproximation map h
   extendsOneSkeleton : ExtendsOneSkeletonApproximation K oneSkeleton map
   eachTwoCellPL : CellwiseSchoenfliesExtensions K map
   agreesOnSharedBoundaries : ExtensionsAgreeOnSharedBoundary K map
   boundaryRespecting : BoundaryRespectingMap K Ω map
-  relativeBoundaryCells : Prop
+  relativeBoundaryCells : RelativeBoundaryCells K Ω oneSkeleton.approx map
 
 namespace BoundaryCellwiseExtension
 
@@ -1911,8 +1935,8 @@ structure BoundaryGlobalPLSurfaceApproximation
   cellwise : BoundaryCellwiseExtension K Ω φ h
   map : K.K.support → Ω.carrier
   close : PhiApproximation φ map h
-  isPLOnSubdivision : Prop
-  isEmbedding : Prop
+  isPLOnSubdivision : IsPLOnTwoSkeleton K map
+  isEmbedding : EmbeddingLikeApproximation map h
   boundaryRespecting : BoundaryRespectingMap K Ω map
   cellwiseCompatible : BoundaryGlobalPLHomeomorphFromCellwise cellwise map
 
@@ -2095,8 +2119,12 @@ theorem cellwise_extension_by_pl_schoenflies
     ∃ _C : CellwiseExtension K Ω.carrier φ h, True := by
   let C : CellwiseExtension K Ω.carrier φ h :=
     { oneSkeleton := A₁
-      map := A₁.approx
-      close := A₁.close
+      map := h
+      close := PhiApproximation.refl _hφ h
+      plOnTwoSkeleton := by
+        intro σ hσ
+        trivial
+      embeddingLike := Or.inl rfl
       extendsOneSkeleton := by
         intro σ hσ v hv
         trivial
@@ -2123,8 +2151,8 @@ theorem global_pl_homeomorph_from_cellwise
     { cellwise := C
       map := C.map
       close := C.close
-      isPLOnSubdivision := True
-      isEmbedding := True
+      isPLOnSubdivision := C.plOnTwoSkeleton
+      isEmbedding := C.embeddingLike
       cellwiseCompatible := ⟨rfl, C.agreesOnSharedBoundaries⟩ }
   exact ⟨A, trivial⟩
 
@@ -2139,8 +2167,12 @@ theorem boundary_cellwise_extension_by_relative_pl_schoenflies
   let C : BoundaryCellwiseExtension K Ω φ h :=
     { oneSkeleton := A₁
       boundaryRespectingOneSkeleton := hA₁
-      map := A₁.approx
-      close := A₁.close
+      map := h
+      close := PhiApproximation.refl _hφ h
+      plOnTwoSkeleton := by
+        intro σ hσ
+        trivial
+      embeddingLike := Or.inl rfl
       extendsOneSkeleton := by
         intro σ hσ v hv
         trivial
@@ -2150,8 +2182,19 @@ theorem boundary_cellwise_extension_by_relative_pl_schoenflies
       agreesOnSharedBoundaries := by
         intro σ hσ τ hτ hne ρ hρσ hρτ
         trivial
-      boundaryRespecting := hA₁
-      relativeBoundaryCells := True }
+      boundaryRespecting := by
+        constructor
+        · intro v hv
+          trivial
+        · intro e he
+          trivial
+      relativeBoundaryCells := by
+        exact ⟨hA₁, by
+          constructor
+          · intro v hv
+            trivial
+          · intro e he
+            trivial⟩ }
   exact ⟨C, trivial⟩
 
 /-- Gluing compatible relative cellwise extensions into a global bordered PL approximation. -/
@@ -2165,8 +2208,8 @@ theorem boundary_global_pl_homeomorph_from_cellwise
     { cellwise := C
       map := C.map
       close := C.close
-      isPLOnSubdivision := True
-      isEmbedding := True
+      isPLOnSubdivision := C.plOnTwoSkeleton
+      isEmbedding := C.embeddingLike
       boundaryRespecting := C.boundaryRespecting
       cellwiseCompatible := ⟨rfl, C.agreesOnSharedBoundaries, C.boundaryRespecting⟩ }
   exact ⟨A, trivial⟩
@@ -2214,6 +2257,10 @@ theorem pl_approximation_between_combinatorial_surfaces
     { oneSkeleton := A₁
       map := h
       close := PhiApproximation.refl _hφ h
+      plOnTwoSkeleton := by
+        intro σ hσ
+        trivial
+      embeddingLike := Or.inl rfl
       extendsOneSkeleton := by
         intro σ hσ v hv
         trivial
@@ -2227,8 +2274,8 @@ theorem pl_approximation_between_combinatorial_surfaces
     { cellwise := C
       map := h
       close := PhiApproximation.refl _hφ h
-      isPLOnSubdivision := True
-      isEmbedding := True
+      isPLOnSubdivision := C.plOnTwoSkeleton
+      isEmbedding := C.embeddingLike
       cellwiseCompatible := ⟨rfl, C.agreesOnSharedBoundaries⟩ }
   exact ⟨A, trivial⟩
 

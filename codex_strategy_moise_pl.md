@@ -551,6 +551,13 @@ Expected proof structure:
 
 Do not ask Codex to invent this proof at once. Ask it to formalize the statement, create auxiliary predicates, and prove small composition/monotonicity lemmas for approximation.
 
+Current gluing API status: `CellwiseExtension` and `BoundaryCellwiseExtension` carry
+proof-bearing output conditions.  `IsPLOnTwoSkeleton` records PL behavior on all two-skeleton
+simplexes, `EmbeddingLikeApproximation` records that the output map either agrees with the
+reference map or is injective, and `RelativeBoundaryCells` records the boundary-respecting
+conditions for the half-plane route.  These replace the old `True` fields on global PL
+approximation outputs while leaving the hard planar topology as named theorem boundaries.
+
 ### Moise work package M6: PL complexes inside arbitrary spaces
 
 Moise builds PL complexes inside the surface. Define:

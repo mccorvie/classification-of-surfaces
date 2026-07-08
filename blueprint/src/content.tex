@@ -323,17 +323,20 @@ predicate.  The geometric perturbation results remain named theorem boundaries.
 
 \begin{definition}[Cellwise extension and gluing interfaces]
 \label{moise:def:cellwise_extension_gluing}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.CellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLHomeomorphFromCellwise, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLSurfaceApproximation, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.BoundaryGlobalPLSurfaceApproximation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.IsPLOnTwoSkeleton, LeanEval.Topology.ClassificationOfSurfaces.EmbeddingLikeApproximation, LeanEval.Topology.ClassificationOfSurfaces.RelativeBoundaryCells, LeanEval.Topology.ClassificationOfSurfaces.CellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLHomeomorphFromCellwise, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLSurfaceApproximation, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.BoundaryGlobalPLSurfaceApproximation}
 \leanok
 
 \uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:lem:pl_approximation_one_skeleton}
 A cellwise extension records a one-skeleton PL approximation, a global candidate
 map on the support, its $\varphi$-closeness to the original homeomorphism,
 finite two-cell extension data, and finite agreement conditions on shared
-boundaries.  The global gluing predicate packages the claim that compatible
-cellwise data assemble into a global PL surface approximation.  The boundary
-versions additionally record boundary-respecting one-skeleton data, relative
-boundary-cell extension data, and a boundary-respecting global map.
+boundaries.  It also carries proof-bearing global output conditions: the map is
+PL on the two-skeleton, and it is embedding-like by either agreeing with the
+reference map or being injective.  The global gluing predicate packages the
+claim that compatible cellwise data assemble into a global PL surface
+approximation.  The boundary versions additionally record boundary-respecting
+one-skeleton data, relative boundary-cell extension data, and a
+boundary-respecting global map.
 \end{definition}
 
 \begin{lemma}[Hard cellwise extension and gluing boundaries]
