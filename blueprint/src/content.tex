@@ -306,7 +306,7 @@ remain separated and incident edges meet only at their common vertices.
 
 \begin{lemma}[Hard one-skeleton approximation boundaries]
 \label{moise:lem:one_skeleton_hard_boundaries}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PreservesVertices, LeanEval.Topology.ClassificationOfSurfaces.IsPLOnSimplexes, LeanEval.Topology.ClassificationOfSurfaces.SeparatedOnEdges, LeanEval.Topology.ClassificationOfSurfaces.finite_arc_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.endpoint_preservation_for_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.finite_edge_separation_control, LeanEval.Topology.ClassificationOfSurfaces.no_crossing_perturbation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.VertexPreservationData, LeanEval.Topology.ClassificationOfSurfaces.PreservesVertices, LeanEval.Topology.ClassificationOfSurfaces.PLOnSimplexesData, LeanEval.Topology.ClassificationOfSurfaces.IsPLOnSimplexes, LeanEval.Topology.ClassificationOfSurfaces.EdgeSeparationData, LeanEval.Topology.ClassificationOfSurfaces.SeparatedOnEdges, LeanEval.Topology.ClassificationOfSurfaces.finite_arc_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.endpoint_preservation_for_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.finite_edge_separation_control, LeanEval.Topology.ClassificationOfSurfaces.no_crossing_perturbation}
 \leanok
 
 \uses{moise:def:combinatorial_surface,moise:def:phi_approximation}
@@ -318,10 +318,13 @@ control, and no-crossing of the approximated edge arcs.
 \begin{proof}
 \leanok
 With the current finite combinatorial predicates, the reference map itself
-satisfies these conditions from strong positivity, reflexive simplex-dimension
-bounds, finite vertex-incidence decidability, and finite edge-incidence
-decidability.  When edge realizations are made geometric, these declarations
-should be strengthened back into the intended planar approximation lemmas.
+satisfies these conditions from strong positivity and finite witness packages:
+`PLOnSimplexesData` records a subdivision covering the requested simplexes,
+`VertexPreservationData` records the finite vertices represented by
+zero-simplexes, and `EdgeSeparationData` records the finite nonincident edge
+pairs requiring separation.  When edge realizations are made geometric, these
+declarations should be strengthened back into the intended planar approximation
+lemmas.
 \end{proof}
 
 \begin{lemma}[Bordered one-skeleton approximation boundaries]

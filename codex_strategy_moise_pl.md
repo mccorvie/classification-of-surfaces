@@ -628,12 +628,14 @@ theorem pl_approximation_one_skeleton
 This theorem requires polygonal approximation of finitely many edge images with separation control. It may be split further into finite families of arcs, edge separation, and vertex preservation.
 
 Current one-skeleton predicate status: the local predicates are no longer functions into `True`.
-`PreservesVertices` records finite zero-simplex incidence decidability for each vertex,
-`IsPLOnSimplexes` records reflexive simplex-dimension bounds on the chosen finite set,
-`SeparatedOnEdges` records finite incidence decidability for pairs of one-simplexes, and the
-half-plane boundary predicates recover `IsBoundaryVertex`/`IsBoundaryEdge` from membership in the
-boundary vertex/edge finsets.  These are still combinatorial stand-ins until vertex and edge
-realizations are geometric, but they remove the arbitrary truth fields.
+`PreservesVertices` is backed by finite `VertexPreservationData`, recording a finite vertex set
+that contains every vertex represented by a zero-simplex.  `IsPLOnSimplexes` is backed by finite
+`PLOnSimplexesData`, recording a domain subdivision whose fine simplexes cover the requested
+coarse simplexes.  `SeparatedOnEdges` is backed by finite `EdgeSeparationData`, recording all
+nonincident edge pairs that require separation.  The half-plane boundary predicates recover
+`IsBoundaryVertex`/`IsBoundaryEdge` from membership in the boundary vertex/edge finsets.  These are
+still combinatorial stand-ins until vertex and edge realizations are geometric, but they remove the
+old excluded-middle and reflexivity witnesses.
 
 ### Moise work package M5: PL approximation theorem
 

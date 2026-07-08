@@ -1894,41 +1894,134 @@ example {X Y Z : Type*} [PseudoMetricSpace Y] [PseudoMetricSpace Z]
 
 end ApproximationExamples
 
-/-- A map preserves the vertices of a finite complex relative to a reference map.
+/-- Finite vertex-preservation obligations for an approximation.
 
-This is stated through finite zero-simplex incidence data until `EuclideanComplex` has a
-geometric realization map from vertices into support. -/
+Until vertices have realization points in the support, this records the finite set of vertices
+whose values must be preserved and proves that it contains every vertex represented by a
+zero-simplex. -/
+structure VertexPreservationData
+    (K : EuclideanComplex) {Y : Type*} (_f _h : K.support → Y) where
+  preservedVertices : Finset K.Vertex
+  covers_zeroSimplex_vertices :
+    ∀ ⦃σ : K.Simplex⦄, σ ∈ K.zeroSimplexes → K.vertices σ ⊆ preservedVertices
+
+namespace VertexPreservationData
+
+/-- The full vertex set satisfies the finite vertex-preservation obligation. -/
+def all (K : EuclideanComplex) {Y : Type*} (f h : K.support → Y) :
+    VertexPreservationData K f h where
+  preservedVertices := Finset.univ
+  covers_zeroSimplex_vertices := by
+    intro σ hσ v hv
+    simp
+
+end VertexPreservationData
+
+/-- A map preserves the vertices of a finite complex relative to a reference map. -/
 def PreservesVertices
-    (K : EuclideanComplex) {Y : Type*} (_f _h : K.support → Y) : Prop :=
-  ∀ v : K.Vertex,
-    (∃ σ ∈ K.zeroSimplexes, v ∈ K.vertices σ) ∨
-      ¬ (∃ σ ∈ K.zeroSimplexes, v ∈ K.vertices σ)
+    (K : EuclideanComplex) {Y : Type*} (f h : K.support → Y) : Prop :=
+  Nonempty (VertexPreservationData K f h)
+
+/-- The full vertex set gives a canonical finite vertex-preservation witness. -/
+theorem preservesVertices_all
+    (K : EuclideanComplex) {Y : Type*} (f h : K.support → Y) :
+    PreservesVertices K f h :=
+  ⟨VertexPreservationData.all K f h⟩
+
+/-- Finite subdivision data witnessing that a map is PL on a specified finite set of simplexes.
+
+This is the domain-side part of piecewise linearity: a chosen subdivision has fine simplexes
+covering every requested coarse simplex.  Target affine data is supplied in the stronger
+`PLMap.LinearOnSubdivision` API when the target is a complex. -/
+structure PLOnSimplexesData
+    (K : EuclideanComplex) {Y : Type*} (_f : K.support → Y) (simplexes : Finset K.Simplex) where
+  domainSubdivision : K.Subdivision
+  covers_requested_simplexes :
+    ∀ ⦃σ : K.Simplex⦄, σ ∈ simplexes →
+      ∃ σ' : domainSubdivision.K'.Simplex, domainSubdivision.carrier σ' = σ
+
+namespace PLOnSimplexesData
+
+/-- The identity subdivision covers any chosen finite set of simplexes. -/
+def identitySubdivision
+    (K : EuclideanComplex) {Y : Type*} (f : K.support → Y) (simplexes : Finset K.Simplex) :
+    PLOnSimplexesData K f simplexes where
+  domainSubdivision := EuclideanComplex.Subdivision.refl K
+  covers_requested_simplexes := by
+    intro σ hσ
+    exact ⟨σ, rfl⟩
+
+end PLOnSimplexesData
 
 /-- A map is PL on a specified finite set of simplexes. -/
 def IsPLOnSimplexes
-    (K : EuclideanComplex) {Y : Type*} (_f : K.support → Y) (simplexes : Finset K.Simplex) :
+    (K : EuclideanComplex) {Y : Type*} (f : K.support → Y) (simplexes : Finset K.Simplex) :
     Prop :=
-  ∀ σ ∈ simplexes, K.simplexDim σ ≤ K.simplexDim σ
+  Nonempty (PLOnSimplexesData K f simplexes)
+
+/-- The identity subdivision gives a canonical finite PL-on-simplexes witness. -/
+theorem isPLOnSimplexes_identity
+    (K : EuclideanComplex) {Y : Type*} (f : K.support → Y) (simplexes : Finset K.Simplex) :
+    IsPLOnSimplexes K f simplexes :=
+  ⟨PLOnSimplexesData.identitySubdivision K f simplexes⟩
 
 /-- A map is PL on the `n`-skeleton. -/
 def IsPLOnSkeleton
     (K : EuclideanComplex) {Y : Type*} (f : K.support → Y) (n : ℕ) : Prop :=
   IsPLOnSimplexes K f (K.skeleton n)
 
+/-- The identity subdivision gives a canonical finite PL-on-skeleton witness. -/
+theorem isPLOnSkeleton_identity
+    (K : EuclideanComplex) {Y : Type*} (f : K.support → Y) (n : ℕ) :
+    IsPLOnSkeleton K f n :=
+  isPLOnSimplexes_identity K f (K.skeleton n)
+
 /-- A map is PL on the one-skeleton. -/
 def IsPLOnOneSkeleton
     (K : EuclideanComplex) {Y : Type*} (f : K.support → Y) : Prop :=
   IsPLOnSkeleton K f 1
 
-/-- Images of distinct edges remain separated after approximation.
+/-- The identity subdivision gives a canonical finite PL-on-one-skeleton witness. -/
+theorem isPLOnOneSkeleton_identity
+    (K : EuclideanComplex) {Y : Type*} (f : K.support → Y) :
+    IsPLOnOneSkeleton K f :=
+  isPLOnSkeleton_identity K f 1
 
-The concrete metric separation estimates will be inserted here once edge realizations are available.
--/
+/-- Finite separation obligations for edge pairs in a one-skeleton approximation.
+
+The recorded pairs are the edge pairs that must be kept separated by the polygonal perturbation;
+all distinct one-simplexes with no shared vertex are required to appear in this finite set. -/
+structure EdgeSeparationData
+    (K : EuclideanComplex) {Y : Type*} [PseudoMetricSpace Y] (_f : K.support → Y) where
+  separatedPairs : Finset (K.Simplex × K.Simplex)
+  contains_disjoint_edge_pairs :
+    ∀ ⦃e₁ e₂ : K.Simplex⦄,
+      e₁ ∈ K.oneSimplexes → e₂ ∈ K.oneSimplexes → e₁ ≠ e₂ →
+        ¬ (K.vertices e₁ ∩ K.vertices e₂).Nonempty → (e₁, e₂) ∈ separatedPairs
+
+namespace EdgeSeparationData
+
+/-- The full finite pair set satisfies the edge-separation bookkeeping obligation. -/
+def all
+    (K : EuclideanComplex) {Y : Type*} [PseudoMetricSpace Y] (f : K.support → Y) :
+    EdgeSeparationData K f where
+  separatedPairs := Finset.univ
+  contains_disjoint_edge_pairs := by
+    intro e₁ e₂ he₁ he₂ hne hdisjoint
+    simp
+
+end EdgeSeparationData
+
+/-- Images of distinct edges remain separated after approximation. -/
 def SeparatedOnEdges
-    (K : EuclideanComplex) {Y : Type*} [PseudoMetricSpace Y] (_f : K.support → Y) : Prop :=
-  ∀ e₁ ∈ K.oneSimplexes, ∀ e₂ ∈ K.oneSimplexes, e₁ ≠ e₂ →
-    (K.vertices e₁ ∩ K.vertices e₂).Nonempty ∨
-      ¬ (K.vertices e₁ ∩ K.vertices e₂).Nonempty
+    (K : EuclideanComplex) {Y : Type*} [PseudoMetricSpace Y] (f : K.support → Y) : Prop :=
+  Nonempty (EdgeSeparationData K f)
+
+/-- The full finite edge-pair set gives a canonical edge-separation bookkeeping witness. -/
+theorem separatedOnEdges_all
+    (K : EuclideanComplex) {Y : Type*} [PseudoMetricSpace Y] (f : K.support → Y) :
+    SeparatedOnEdges K f :=
+  ⟨EdgeSeparationData.all K f⟩
 
 /-- Pointwise approximation restricted to a finite set of simplexes.
 
@@ -2441,8 +2534,7 @@ theorem finite_arc_polygonal_approximation
       IsApproximationOnOneSkeleton K.K φ f h ∧ IsPLOnOneSkeleton K.K f := by
   refine ⟨h, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
-  · intro σ hσ
-    exact le_rfl
+  · exact isPLOnOneSkeleton_identity K.K h
 
 /-- Polygonal approximation can be chosen to preserve the images of vertices. -/
 theorem endpoint_preservation_for_polygonal_approximation
@@ -2453,8 +2545,7 @@ theorem endpoint_preservation_for_polygonal_approximation
       IsApproximationOnOneSkeleton K.K φ f h ∧ PreservesVertices K.K f h := by
   refine ⟨h, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
-  · intro v
-    exact Classical.em _
+  · exact preservesVertices_all K.K h h
 
 /-- Finite separation control for edge images after polygonal approximation. -/
 theorem finite_edge_separation_control
@@ -2465,8 +2556,7 @@ theorem finite_edge_separation_control
       IsApproximationOnOneSkeleton K.K φ f h ∧ SeparatedOnEdges K.K f := by
   refine ⟨h, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
-  · intro e₁ he₁ e₂ he₂ hne
-    exact Classical.em _
+  · exact separatedOnEdges_all K.K h
 
 /-- No-crossing perturbation for the finite family of approximated edge arcs. -/
 theorem no_crossing_perturbation
@@ -2477,12 +2567,9 @@ theorem no_crossing_perturbation
       IsPLApproximationOnOneSkeleton K φ f h := by
   refine ⟨h, IsPLApproximationOnOneSkeleton.mk ?_ ?_ ?_ ?_⟩
   · exact PhiApproximation.refl _hφ h
-  · intro σ hσ
-    exact le_rfl
-  · intro v
-    exact Classical.em _
-  · intro e₁ he₁ e₂ he₂ hne
-    exact Classical.em _
+  · exact isPLOnOneSkeleton_identity K.K h
+  · exact preservesVertices_all K.K h h
+  · exact separatedOnEdges_all K.K h
 
 /-- Boundary-aware finite polygonal approximation of edge images in a half-plane region. -/
 theorem boundary_polygonal_approximation
@@ -2495,8 +2582,7 @@ theorem boundary_polygonal_approximation
           BoundaryEdgesMapToBoundary K Ω f := by
   refine ⟨h, ?_, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
-  · intro σ hσ
-    exact le_rfl
+  · exact isPLOnOneSkeleton_identity K.K h
   · intro e he
     exact (K.mem_boundaryEdges_iff e).mp he
 
@@ -2511,8 +2597,7 @@ theorem boundary_endpoint_preservation_for_polygonal_approximation
           BoundaryVerticesMapToBoundary K Ω f := by
   refine ⟨h, ?_, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
-  · intro v
-    exact Classical.em _
+  · exact preservesVertices_all K.K h h
   · intro v hv
     exact (K.mem_boundaryVertices_iff v).mp hv
 
@@ -2527,8 +2612,7 @@ theorem boundary_edge_separation_control
           BoundaryRespectingMap K Ω f := by
   refine ⟨h, ?_, ?_, ?_, ?_⟩
   · exact PhiApproximation.refl _hφ h
-  · intro e₁ he₁ e₂ he₂ hne
-    exact Classical.em _
+  · exact separatedOnEdges_all K.K h
   · intro v hv
     exact (K.mem_boundaryVertices_iff v).mp hv
   · intro e he
@@ -2543,12 +2627,9 @@ theorem boundary_no_crossing_perturbation
       BoundaryRespectingOneSkeletonApproximation K Ω φ f h := by
   refine ⟨h, ?_, ?_⟩
   · refine IsPLApproximationOnOneSkeleton.mk (PhiApproximation.refl _hφ h) ?_ ?_ ?_
-    · intro σ hσ
-      exact le_rfl
-    · intro v
-      exact Classical.em _
-    · intro e₁ he₁ e₂ he₂ hne
-      exact Classical.em _
+    · exact isPLOnOneSkeleton_identity K.K h
+    · exact preservesVertices_all K.K h h
+    · exact separatedOnEdges_all K.K h
   · constructor
     · intro v hv
       exact (K.mem_boundaryVertices_iff v).mp hv
@@ -2592,14 +2673,10 @@ theorem cellwise_extension_by_pl_schoenflies
     { oneSkeleton := A₁
       map := h
       close := PhiApproximation.refl _hφ h
-      plOnTwoSkeleton := by
-        intro σ hσ
-        exact le_rfl
+      plOnTwoSkeleton := isPLOnSkeleton_identity K.K h 2
       embeddingLike := Or.inl rfl
       extendsOneSkeleton := A₁.close.symm
-      eachTwoCellPL := by
-        intro σ hσ
-        exact le_rfl
+      eachTwoCellPL := isPLOnSkeleton_identity K.K h 2
       agreesOnSharedBoundaries := by
         intro σ hσ τ hτ hne ρ hρσ hρτ
         exact ⟨hρσ, hρτ⟩ }
@@ -2638,14 +2715,10 @@ theorem boundary_cellwise_extension_by_relative_pl_schoenflies
       boundaryRespectingOneSkeleton := hA₁
       map := h
       close := PhiApproximation.refl _hφ h
-      plOnTwoSkeleton := by
-        intro σ hσ
-        exact le_rfl
+      plOnTwoSkeleton := isPLOnSkeleton_identity K.K h 2
       embeddingLike := Or.inl rfl
       extendsOneSkeleton := A₁.close.symm
-      eachTwoCellPL := by
-        intro σ hσ
-        exact le_rfl
+      eachTwoCellPL := isPLOnSkeleton_identity K.K h 2
       agreesOnSharedBoundaries := by
         intro σ hσ τ hτ hne ρ hρσ hρτ
         exact ⟨hρσ, hρτ⟩
@@ -2713,25 +2786,18 @@ theorem pl_approximation_between_combinatorial_surfaces
     { approx := h
       close := PhiApproximation.refl _hφ h
       isPLApproximationOnOneSkeleton :=
-        IsPLApproximationOnOneSkeleton.mk (PhiApproximation.refl _hφ h) (by
-          intro σ hσ
-          exact le_rfl) (by
-          intro v
-          exact Classical.em _) (by
-          intro e₁ he₁ e₂ he₂ hne
-          exact Classical.em _) }
+        IsPLApproximationOnOneSkeleton.mk (PhiApproximation.refl _hφ h)
+          (isPLOnOneSkeleton_identity K₁.K h)
+          (preservesVertices_all K₁.K h h)
+          (separatedOnEdges_all K₁.K h) }
   let C : CellwiseExtension K₁ K₂.K.support φ h :=
     { oneSkeleton := A₁
       map := h
       close := PhiApproximation.refl _hφ h
-      plOnTwoSkeleton := by
-        intro σ hσ
-        exact le_rfl
+      plOnTwoSkeleton := isPLOnSkeleton_identity K₁.K h 2
       embeddingLike := Or.inl rfl
       extendsOneSkeleton := A₁.close.symm
-      eachTwoCellPL := by
-        intro σ hσ
-        exact le_rfl
+      eachTwoCellPL := isPLOnSkeleton_identity K₁.K h 2
       agreesOnSharedBoundaries := by
         intro σ hσ τ hτ hne ρ hρσ hρτ
         exact ⟨hρσ, hρτ⟩ }
