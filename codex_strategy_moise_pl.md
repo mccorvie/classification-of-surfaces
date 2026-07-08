@@ -594,10 +594,11 @@ The first serious theorem boundary is one-skeleton approximation:
 ```lean
 theorem pl_approximation_one_skeleton
     (K : CombinatorialTwoManifoldWithBoundary)
-    (h : K.K.support ≃ₜ SetLikePlaneRegion)
+    (Ω : PlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ)
     (hφ : StronglyPositive φ) :
-    ∃ f₁, IsPLApproximationOnOneSkeleton K h φ f₁ := by
+    Nonempty (OneSkeletonApproximation K Ω.carrier φ h) := by
   sorry
 ```
 
@@ -618,11 +619,11 @@ Main theorem boundary:
 ```lean
 theorem pl_approximation_plane_combinatorial_surface
     (K : CombinatorialTwoManifoldWithBoundary)
-    (h : K.K.support ≃ₜ PlaneRegion)
+    (Ω : PlaneRegion)
+    (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ)
     (hφ : StronglyPositive φ) :
-    ∃ f : PLHomeomorph K.K PlaneComplex,
-      PhiApproximation φ f.toHomeomorph h := by
+    Nonempty (GlobalPLSurfaceApproximation K Ω.carrier φ h) := by
   sorry
 ```
 
@@ -736,6 +737,12 @@ structure RadoChartPair (M : Type*) [TopologicalSpace M] where
   chartHomeomorph : domain ≃ₜ modelRegion
   model_matches_kind : kind.ModelMatchesRegion modelRegion
   chart_to_model : ∀ x : domain, (chartHomeomorph x : Plane) ∈ modelRegion
+  boundaryCore : Set M
+  boundaryCore_subset_core : boundaryCore ⊆ core
+  boundaryCore_empty_of_disk : kind = RadoChartKind.disk → boundaryCore = ∅
+  boundaryCore_in_boundary_chart :
+    kind = RadoChartKind.halfDisk →
+      ∀ x : domain, (x : M) ∈ boundaryCore → ((chartHomeomorph x : Plane) 0 = 0)
 
 structure FiniteChartPairCover (M : Type*) [TopologicalSpace M] where
   Index : Type*
@@ -828,7 +835,7 @@ Proved finite/combinatorial bridge:
    along the selected finite indices.  The chart-shrink compatibility fields are proof-bearing:
    every chosen disk chart refines the selected chart pair, and boundary cores are compatible by
    inclusion.  The sigma-valued construction is the reusable data extraction; the theorem with
-   the original public name is now only the existential wrapper.
+   the original public name now returns a nonempty dependent sigma package.
 7. `local_chart_polygonal_disk_data_of_pointwise`:
    pointwise chart-disk data packages into the local function-valued data used for compactness.
 8. `mathlib_bordered_surface_point_chart_polygonal_disk_data`:
@@ -860,7 +867,7 @@ Proved finite/combinatorial bridge:
    `mathlib_bordered_surface_moiseExtractionData`, and
    `mathlib_bordered_surface_moise_extraction_data`:
    finite cover extraction plus local Rado induction data packages as named `MoiseExtractionData`;
-   the theorem with the original public name is now the existential wrapper.  At this level,
+   the theorem with the original public name is now the nonempty-data wrapper.  At this level,
    `MoiseExtractionData.finiteStage`, `MoiseExtractionData.finiteStagePLComplex`, and
    `MoiseExtractionData.finiteStagePLTriangulationData` use the finite terminal Rado stage
    directly, avoiding the countable support-union complex after compactness has produced a finite
@@ -898,7 +905,7 @@ Closed coordinate-local bridge:
 theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : y.1 0 = 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
-    ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True
+    Nonempty (PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩)
 ```
 
 The coordinate-local boundary half-disk case is now proved.  The interior case shrinks an arbitrary
@@ -1008,9 +1015,9 @@ For compact surfaces:
 theorem compact_moise_surface_finitely_triangulable
     (M : Type*) [TopologicalSpace M] [CompactSpace M]
     (hM : MoiseTwoManifold M) :
-    ∃ T : FiniteSurfaceTriangulation M,
-      Nonempty (T.realization ≃ₜ M) := by
-  -- use Rado plus compact/local-finite implies finite
+    ∃ K : PLComplexInSpace M, ∃ _finiteSupport : K.FiniteSupportData,
+      K.support = Set.univ := by
+  -- use Rado plus compact/local-finite finite-support packaging
   sorry
 ```
 
@@ -1078,8 +1085,8 @@ theorem rado_bordered_surface_triangulation
     [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ T : FiniteSurfaceTriangulation M,
-      Nonempty (T.realization ≃ₜ M) := by
+    ∃ K : PLComplexInSpace M, ∃ _finiteSupport : K.FiniteSupportData,
+      ∃ _boundary : K.BoundarySubcomplexData, K.support = Set.univ := by
   sorry
 ```
 

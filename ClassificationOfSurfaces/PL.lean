@@ -2505,9 +2505,9 @@ theorem pl_approximation_one_skeleton
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : PlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
-    ∃ _A : OneSkeletonApproximation K Ω.carrier φ h, True := by
+    Nonempty (OneSkeletonApproximation K Ω.carrier φ h) := by
   rcases no_crossing_perturbation K Ω h φ _hφ with ⟨f, hf⟩
-  refine ⟨{ approx := f, close := ?_, isPLApproximationOnOneSkeleton := hf }, trivial⟩
+  refine ⟨{ approx := f, close := ?_, isPLApproximationOnOneSkeleton := hf }⟩
   exact IsPLApproximationOnOneSkeleton.close hf
 
 /-- Boundary-aware one-skeleton PL approximation theorem boundary for a homeomorphism into a
@@ -2532,7 +2532,7 @@ theorem cellwise_extension_by_pl_schoenflies
     (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ)
     (A₁ : OneSkeletonApproximation K Ω.carrier φ h) :
-    ∃ _C : CellwiseExtension K Ω.carrier φ h, True := by
+    Nonempty (CellwiseExtension K Ω.carrier φ h) := by
   let C : CellwiseExtension K Ω.carrier φ h :=
     { oneSkeleton := A₁
       map := h
@@ -2548,7 +2548,7 @@ theorem cellwise_extension_by_pl_schoenflies
       agreesOnSharedBoundaries := by
         intro σ hσ τ hτ hne ρ hρσ hρτ
         exact ⟨hρσ, hρτ⟩ }
-  exact ⟨C, trivial⟩
+  exact ⟨C⟩
 
 /-- Gluing compatible cellwise extensions into a global PL surface approximation.
 
@@ -2560,7 +2560,7 @@ theorem global_pl_homeomorph_from_cellwise
     (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ)
     (C : CellwiseExtension K Ω.carrier φ h) :
-    ∃ _A : GlobalPLSurfaceApproximation K Ω.carrier φ h, True := by
+    Nonempty (GlobalPLSurfaceApproximation K Ω.carrier φ h) := by
   let A : GlobalPLSurfaceApproximation K Ω.carrier φ h :=
     { cellwise := C
       map := C.map
@@ -2568,7 +2568,7 @@ theorem global_pl_homeomorph_from_cellwise
       isPLOnSubdivision := C.plOnTwoSkeleton
       isEmbedding := C.embeddingLike
       cellwiseCompatible := ⟨rfl, C.agreesOnSharedBoundaries⟩ }
-  exact ⟨A, trivial⟩
+  exact ⟨A⟩
 
 /-- Relative cellwise extension by PL Schoenflies for half-plane boundary cells. -/
 theorem boundary_cellwise_extension_by_relative_pl_schoenflies
@@ -2577,7 +2577,7 @@ theorem boundary_cellwise_extension_by_relative_pl_schoenflies
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ)
     (A₁ : OneSkeletonApproximation K Ω.carrier φ h)
     (hA₁ : BoundaryRespectingMap K Ω A₁.approx) :
-    ∃ _C : BoundaryCellwiseExtension K Ω φ h, True := by
+    Nonempty (BoundaryCellwiseExtension K Ω φ h) := by
   let C : BoundaryCellwiseExtension K Ω φ h :=
     { oneSkeleton := A₁
       boundaryRespectingOneSkeleton := hA₁
@@ -2607,7 +2607,7 @@ theorem boundary_cellwise_extension_by_relative_pl_schoenflies
             exact (K.mem_boundaryVertices_iff v).mp hv
           · intro e he
             exact (K.mem_boundaryEdges_iff e).mp he⟩ }
-  exact ⟨C, trivial⟩
+  exact ⟨C⟩
 
 /-- Gluing compatible relative cellwise extensions into a global bordered PL approximation. -/
 theorem boundary_global_pl_homeomorph_from_cellwise
@@ -2615,7 +2615,7 @@ theorem boundary_global_pl_homeomorph_from_cellwise
     (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ)
     (C : BoundaryCellwiseExtension K Ω φ h) :
-    ∃ _A : BoundaryGlobalPLSurfaceApproximation K Ω φ h, True := by
+    Nonempty (BoundaryGlobalPLSurfaceApproximation K Ω φ h) := by
   let A : BoundaryGlobalPLSurfaceApproximation K Ω φ h :=
     { cellwise := C
       map := C.map
@@ -2624,16 +2624,16 @@ theorem boundary_global_pl_homeomorph_from_cellwise
       isEmbedding := C.embeddingLike
       boundaryRespecting := C.boundaryRespecting
       cellwiseCompatible := ⟨rfl, C.agreesOnSharedBoundaries, C.boundaryRespecting⟩ }
-  exact ⟨A, trivial⟩
+  exact ⟨A⟩
 
 /-- Moise PL approximation theorem in the plane, assembled from the named interfaces. -/
 theorem pl_approximation_plane_combinatorial_surface
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : PlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
-    ∃ _A : GlobalPLSurfaceApproximation K Ω.carrier φ h, True := by
-  rcases pl_approximation_one_skeleton K Ω h φ _hφ with ⟨A₁, _⟩
-  rcases cellwise_extension_by_pl_schoenflies K Ω h φ _hφ A₁ with ⟨C, _⟩
+    Nonempty (GlobalPLSurfaceApproximation K Ω.carrier φ h) := by
+  rcases pl_approximation_one_skeleton K Ω h φ _hφ with ⟨A₁⟩
+  rcases cellwise_extension_by_pl_schoenflies K Ω h φ _hφ A₁ with ⟨C⟩
   exact global_pl_homeomorph_from_cellwise K Ω h φ _hφ C
 
 /-- Bordered Moise PL approximation theorem in a half-plane region, assembled from the
@@ -2642,10 +2642,10 @@ theorem bordered_pl_approximation_halfplane
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
-    ∃ _A : BoundaryGlobalPLSurfaceApproximation K Ω φ h, True := by
+    Nonempty (BoundaryGlobalPLSurfaceApproximation K Ω φ h) := by
   rcases bordered_pl_approximation_one_skeleton K Ω h φ _hφ with ⟨A₁, hA₁⟩
   rcases boundary_cellwise_extension_by_relative_pl_schoenflies K Ω h φ _hφ A₁ hA₁ with
-    ⟨C, _⟩
+    ⟨C⟩
   exact boundary_global_pl_homeomorph_from_cellwise K Ω h φ _hφ C
 
 /-- PL approximation theorem between combinatorial surfaces. -/
@@ -2653,7 +2653,7 @@ theorem pl_approximation_between_combinatorial_surfaces
     (K₁ K₂ : CombinatorialTwoManifoldWithBoundary) [PseudoMetricSpace K₂.K.support]
     (φ : K₁.K.support → ℝ) (_hφ : StronglyPositive φ)
     (h : K₁.K.support → K₂.K.support) :
-    ∃ _A : GlobalPLSurfaceApproximation K₁ K₂.K.support φ h, True := by
+    Nonempty (GlobalPLSurfaceApproximation K₁ K₂.K.support φ h) := by
   let A₁ : OneSkeletonApproximation K₁ K₂.K.support φ h :=
     { approx := h
       close := PhiApproximation.refl _hφ h
@@ -2687,7 +2687,7 @@ theorem pl_approximation_between_combinatorial_surfaces
       isPLOnSubdivision := C.plOnTwoSkeleton
       isEmbedding := C.embeddingLike
       cellwiseCompatible := ⟨rfl, C.agreesOnSharedBoundaries⟩ }
-  exact ⟨A, trivial⟩
+  exact ⟨A⟩
 
 /-- A PL complex embedded in a topological space. -/
 structure PLComplexInSpace (X : Type*) [TopologicalSpace X] where
@@ -3037,7 +3037,9 @@ structure RadoChartPair (M : Type*) [TopologicalSpace M] where
   boundaryCore : Set M
   boundaryCore_subset_core : boundaryCore ⊆ core
   boundaryCore_empty_of_disk : kind = RadoChartKind.disk → boundaryCore = ∅
-  boundaryCore_in_boundary_chart : kind = RadoChartKind.halfDisk → Prop
+  boundaryCore_in_boundary_chart :
+    kind = RadoChartKind.halfDisk →
+      ∀ x : domain, (x : M) ∈ boundaryCore → ((chartHomeomorph x : Plane) 0 = 0)
 
 namespace RadoChartPair
 
@@ -3083,8 +3085,8 @@ def empty (M : Type*) [TopologicalSpace M] : RadoChartPair M where
     intro _h
     rfl
   boundaryCore_in_boundary_chart := by
-    intro _h
-    exact True
+    intro h
+    cases h
 
 /-- The chart pair supplied by the preferred mathlib chart at a point of a bordered surface.
 
@@ -3123,8 +3125,8 @@ noncomputable def fromChartAt
     intro h
     cases h
   boundaryCore_in_boundary_chart := by
-    intro _h
-    exact True
+    intro _h y hy
+    simp at hy
 
 /-- The preferred mathlib chart pair has a core neighborhood of its center point. -/
 theorem fromChartAt_core_mem_nhds
@@ -3174,7 +3176,10 @@ def Refines {M : Type*} [TopologicalSpace M] (P Q : RadoChartPair M) : Prop :=
 def withCore {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
     (core boundaryCore : Set M) (hcore : core ⊆ P.domain)
     (hboundary : boundaryCore ⊆ core)
-    (hboundary_disk : P.kind = RadoChartKind.disk → boundaryCore = ∅) :
+    (hboundary_disk : P.kind = RadoChartKind.disk → boundaryCore = ∅)
+    (hboundary_chart :
+      P.kind = RadoChartKind.halfDisk →
+        ∀ x : P.domain, (x : M) ∈ boundaryCore → ((P.chartHomeomorph x : Plane) 0 = 0)) :
     RadoChartPair M where
   kind := P.kind
   domain := P.domain
@@ -3188,32 +3193,33 @@ def withCore {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
   boundaryCore := boundaryCore
   boundaryCore_subset_core := hboundary
   boundaryCore_empty_of_disk := hboundary_disk
-  boundaryCore_in_boundary_chart := by
-    intro h
-    exact P.boundaryCore_in_boundary_chart h
+  boundaryCore_in_boundary_chart := hboundary_chart
 
 @[simp] theorem withCore_kind
     {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
-    (core boundaryCore : Set M) (hcore hboundary hboundary_disk) :
-    (P.withCore core boundaryCore hcore hboundary hboundary_disk).kind = P.kind := by
+    (core boundaryCore : Set M) (hcore hboundary hboundary_disk hboundary_chart) :
+    (P.withCore core boundaryCore hcore hboundary hboundary_disk hboundary_chart).kind =
+      P.kind := by
   rfl
 
 @[simp] theorem withCore_domain
     {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
-    (core boundaryCore : Set M) (hcore hboundary hboundary_disk) :
-    (P.withCore core boundaryCore hcore hboundary hboundary_disk).domain = P.domain := by
+    (core boundaryCore : Set M) (hcore hboundary hboundary_disk hboundary_chart) :
+    (P.withCore core boundaryCore hcore hboundary hboundary_disk hboundary_chart).domain =
+      P.domain := by
   rfl
 
 @[simp] theorem withCore_core
     {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
-    (core boundaryCore : Set M) (hcore hboundary hboundary_disk) :
-    (P.withCore core boundaryCore hcore hboundary hboundary_disk).core = core := by
+    (core boundaryCore : Set M) (hcore hboundary hboundary_disk hboundary_chart) :
+    (P.withCore core boundaryCore hcore hboundary hboundary_disk hboundary_chart).core =
+      core := by
   rfl
 
 @[simp] theorem withCore_boundaryCore
     {M : Type*} [TopologicalSpace M] (P : RadoChartPair M)
-    (core boundaryCore : Set M) (hcore hboundary hboundary_disk) :
-    (P.withCore core boundaryCore hcore hboundary hboundary_disk).boundaryCore =
+    (core boundaryCore : Set M) (hcore hboundary hboundary_disk hboundary_chart) :
+    (P.withCore core boundaryCore hcore hboundary hboundary_disk hboundary_chart).boundaryCore =
       boundaryCore := by
   rfl
 
@@ -3224,8 +3230,12 @@ theorem withCore_refines
     (core boundaryCore : Set M) (hcoreDomain : core ⊆ P.domain)
     (hboundary : boundaryCore ⊆ core)
     (hboundary_disk : P.kind = RadoChartKind.disk → boundaryCore = ∅)
+    (hboundary_chart :
+      P.kind = RadoChartKind.halfDisk →
+        ∀ x : P.domain, (x : M) ∈ boundaryCore → ((P.chartHomeomorph x : Plane) 0 = 0))
     (hcore : core ⊆ P.core) :
-    (P.withCore core boundaryCore hcoreDomain hboundary hboundary_disk).Refines P := by
+    (P.withCore core boundaryCore hcoreDomain hboundary hboundary_disk hboundary_chart).Refines
+      P := by
   exact ⟨subset_rfl, hcore⟩
 
 end RadoChartPair
@@ -3295,7 +3305,7 @@ theorem exists_of_compact_local
     {M : Type u} [TopologicalSpace M] [CompactSpace M]
     (pairAt : M → RadoChartPair M)
     (hcore : ∀ x : M, (pairAt x).core ∈ 𝓝 x) :
-    ∃ _C : FiniteChartPairCover M, True := by
+    Nonempty (FiniteChartPairCover M) := by
   classical
   rcases CompactSpace.elim_nhds_subcover (fun x : M => (pairAt x).core) hcore with
     ⟨t, ht⟩
@@ -3343,7 +3353,7 @@ theorem exists_of_compact_local
       boundaryNestedControl := by
         intro i
         exact (pairAt i.1).boundaryCore_subset_core }
-  exact ⟨C, trivial⟩
+  exact ⟨C⟩
 
 end FiniteChartPairCover
 
@@ -3457,7 +3467,9 @@ def toChartPair (D : ModelChartPolygonalDisk P) : RadoChartPair M :=
     intro y hy
     simp at hy) (by
     intro _h
-    rfl)
+    rfl) (by
+    intro _h y hy
+    simp at hy)
 
 @[simp] theorem toChartPair_domain (D : ModelChartPolygonalDisk P) :
     D.toChartPair.domain = P.domain := by
@@ -3507,6 +3519,9 @@ theorem toChartPair_refines (D : ModelChartPolygonalDisk P)
     (by
       intro _h
       rfl)
+    (by
+      intro _h y hy
+      simp at hy)
     hcore
 
 /-- The standard coordinate triangle as a model disk in any chart model region containing it. -/
@@ -3947,8 +3962,8 @@ def standardTrianglePlaneCore : RadoChartPair Plane where
     intro _h
     rfl
   boundaryCore_in_boundary_chart := by
-    intro _h
-    exact True
+    intro h
+    cases h
 
 end RadoChartPair
 
@@ -4678,16 +4693,16 @@ theorem rado_step_extension_from_chart_polygonal_disk
     {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
     (S : RadoInductionState M) (D : ChartPolygonalDisk M)
     (hD : D.chart = E.pair (S.stage + 1)) :
-    ∃ _Dstep : RadoStepExtensionData E S, True := by
-  exact ⟨RadoStepExtensionData.fromChartPolygonalDisk S D hD, trivial⟩
+    Nonempty (RadoStepExtensionData E S) := by
+  exact ⟨RadoStepExtensionData.fromChartPolygonalDisk S D hD⟩
 
 /-- Extending across an out-of-range empty chart pair leaves the current stage unchanged. -/
 theorem rado_step_extension_empty_chart
     {M : Type*} [TopologicalSpace M] (E : ChartPairExhaustion M)
     (S : RadoInductionState M)
     (hEmpty : E.pair (S.stage + 1) = RadoChartPair.empty M) :
-    ∃ _Dstep : RadoStepExtensionData E S, True := by
-  exact ⟨RadoStepExtensionData.emptyChart S hEmpty, trivial⟩
+    Nonempty (RadoStepExtensionData E S) := by
+  exact ⟨RadoStepExtensionData.emptyChart S hEmpty⟩
 
 /-- The finite-stage state generated by an initial Rado neighborhood and successor data. -/
 def radoInductionStage
@@ -5296,8 +5311,8 @@ end FiniteChartPolygonalDiskData
 theorem rado_induction_data_of_finite_geometry
     {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
     (G : FiniteRadoInductionGeometry C) :
-    ∃ _D : RadoInductionData C.toChartPairExhaustion, True := by
-  exact ⟨G.toRadoInductionData, trivial⟩
+    Nonempty (RadoInductionData C.toChartPairExhaustion) := by
+  exact ⟨G.toRadoInductionData⟩
 
 /-- Moise-style topological two-manifold interface used by the Rado triangulation layer.
 
@@ -5432,8 +5447,8 @@ theorem chart_pair_exhaustion
 /-- Local chart-disk and extension data exist at every Rado stage for the chosen Moise interface. -/
 theorem rado_induction_data_exists
     {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
-    ∃ _D : RadoInductionData hM.chartPairExhaustion, True := by
-  exact ⟨hM.radoInductionData, trivial⟩
+    Nonempty (RadoInductionData hM.chartPairExhaustion) := by
+  exact ⟨hM.radoInductionData⟩
 
 /-- Hard theorem boundary: the finite-stage Rado induction can be carried out over an exhaustion.
 
@@ -5441,8 +5456,8 @@ The proof uses the initial PL neighborhood, the chart-extension step, and PL app
 successive chart. -/
 theorem rado_inductive_sequence_exists
     {M : Type*} [TopologicalSpace M] (hM : MoiseTwoManifold M) :
-    ∃ _S : RadoInductiveSequence hM.chartPairExhaustion, True := by
-  exact ⟨hM.radoSequence, trivial⟩
+    Nonempty (RadoInductiveSequence hM.chartPairExhaustion) := by
+  exact ⟨hM.radoSequence⟩
 
 /-- The locally finite union of a Rado induction sequence is a PL complex. -/
 theorem rado_union_complex
@@ -5460,30 +5475,30 @@ theorem rado_triangulation_moise_two_manifold
 /-- Compact Moise surfaces are finitely triangulable. -/
 theorem compact_moise_surface_finitely_triangulable
     (M : Type*) [TopologicalSpace M] [CompactSpace M] (_hM : MoiseTwoManifold M) :
-    ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
-      ∃ _finiteSupport : K.FiniteSupportData, True := by
+    ∃ K : PLComplexInSpace M, ∃ _finiteSupport : K.FiniteSupportData,
+      K.support = Set.univ := by
   let D := _hM.finitePLTriangulationData
-  exact ⟨D.K, D.covers, D.finiteSupport, trivial⟩
+  exact ⟨D.K, D.finiteSupport, D.covers⟩
 
 /-- Compact Moise surfaces produce finite PL triangulation data. -/
 theorem compact_moise_surface_finite_pl_triangulation_data
     (M : Type*) [TopologicalSpace M] [CompactSpace M] (_hM : MoiseTwoManifold M) :
-    ∃ _D : FinitePLTriangulationData M, True := by
-  exact ⟨_hM.finitePLTriangulationData, trivial⟩
+    Nonempty (FinitePLTriangulationData M) := by
+  exact ⟨_hM.finitePLTriangulationData⟩
 
 /-- Bordered PL approximation theorem boundary. -/
 theorem bordered_pl_approximation
     (K : CombinatorialTwoManifoldWithBoundary) (Ω : HalfPlaneRegion)
     (h : K.K.support ≃ₜ Ω.carrier)
     (φ : K.K.support → ℝ) (_hφ : StronglyPositive φ) :
-    ∃ _A : BoundaryGlobalPLSurfaceApproximation K Ω φ h, True := by
+    Nonempty (BoundaryGlobalPLSurfaceApproximation K Ω φ h) := by
   exact bordered_pl_approximation_halfplane K Ω h φ _hφ
 
 /-- A compact mathlib bordered surface admits a finite cover by preferred chart-pair cores. -/
 theorem mathlib_bordered_surface_finite_chart_pair_cover
     (M : Type*) [TopologicalSpace M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M] :
-    ∃ _C : FiniteChartPairCover M, True := by
+    Nonempty (FiniteChartPairCover M) := by
   exact FiniteChartPairCover.exists_of_compact_local
     (fun x : M => RadoChartPair.fromChartAt M x)
     (fun x : M => RadoChartPair.fromChartAt_core_mem_nhds M x)
@@ -5546,7 +5561,7 @@ inside the given half-plane neighborhood. -/
 theorem euclideanHalfSpace_interior_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : 0 < y.1 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
-    ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+    Nonempty (PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩) := by
   have hAmbient : (Subtype.val '' U : Set Plane) ∈ 𝓝 y.1 :=
     euclideanHalfSpace_interior_image_mem_nhds U y hU hy
   rcases PlaneRegionTriangleCopy.exists_centeredHomothety_image_subset_of_mem_nhds
@@ -5554,7 +5569,7 @@ theorem euclideanHalfSpace_interior_polygonal_neighborhood_at
     ⟨scale, hscale, hsubset⟩
   let T : PlaneRegionTriangleCopy (Subtype.val '' U) ⟨y.1, hyU⟩ :=
     PlaneRegionTriangleCopy.ofCenteredHomothety scale hscale hsubset
-  exact ⟨PlaneRegionPolygonalNeighborhood.ofTriangleCopy T, trivial⟩
+  exact ⟨PlaneRegionPolygonalNeighborhood.ofTriangleCopy T⟩
 
 /-- An open neighborhood of an interior point in the model half-plane contains an embedded
 polygonal disk whose image is a neighborhood of the point. -/
@@ -5562,17 +5577,16 @@ theorem euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighbo
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : 0 < y.1 0) :
     ∃ hyU : y.1 ∈ (Subtype.val '' U),
-      ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+      Nonempty (PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩) := by
   let hyU := euclideanHalfSpace_point_mem_image_of_mem_nhds U y hU
-  rcases euclideanHalfSpace_interior_polygonal_neighborhood_at U y hU hy hyU with ⟨N, hN⟩
-  exact ⟨hyU, N, hN⟩
+  exact ⟨hyU, euclideanHalfSpace_interior_polygonal_neighborhood_at U y hU hy hyU⟩
 
 /-- Euclidean boundary geometry at a fixed image point: construct a polygonal half-disk
 neighborhood inside the given half-plane neighborhood. -/
 theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : y.1 0 = 0) (hyU : y.1 ∈ (Subtype.val '' U)) :
-    ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+    Nonempty (PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩) := by
   have hRelative : (Subtype.val '' U : Set Plane) ∈ 𝓝[{p : Plane | 0 ≤ p 0}] y.1 :=
     euclideanHalfSpace_image_mem_nhdsWithin_halfspace U y hU
   have hBoundary : y.1 0 = 0 := hy
@@ -5586,7 +5600,7 @@ theorem euclideanHalfSpace_boundary_polygonal_neighborhood_at
     ⟨scale, hscale, hsubset, hnhds⟩
   let T : PlaneRegionBoundaryTriangleCopy (Subtype.val '' U) ⟨y.1, hyU⟩ :=
     PlaneRegionBoundaryTriangleCopy.ofBoundaryAnchoredHomothety scale hscale hsubset hnhds
-  exact ⟨PlaneRegionPolygonalNeighborhood.ofBoundaryTriangleCopy T, trivial⟩
+  exact ⟨PlaneRegionPolygonalNeighborhood.ofBoundaryTriangleCopy T⟩
 
 /-- An open neighborhood of a boundary-line point in the model half-plane contains an embedded
 polygonal half-disk whose image is a neighborhood of the point. -/
@@ -5594,17 +5608,16 @@ theorem euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighbo
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y)
     (hy : y.1 0 = 0) :
     ∃ hyU : y.1 ∈ (Subtype.val '' U),
-      ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩, True := by
+      Nonempty (PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hyU⟩) := by
   let hyU := euclideanHalfSpace_point_mem_image_of_mem_nhds U y hU
-  rcases euclideanHalfSpace_boundary_polygonal_neighborhood_at U y hU hy hyU with ⟨N, hN⟩
-  exact ⟨hyU, N, hN⟩
+  exact ⟨hyU, euclideanHalfSpace_boundary_polygonal_neighborhood_at U y hU hy hyU⟩
 
 /-- An open neighborhood in the model half-plane contains an embedded polygonal disk or half-disk
 whose image is a neighborhood of the chosen point. -/
 theorem euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood
     (U : Set (EuclideanHalfSpace 2)) (y : EuclideanHalfSpace 2) (hU : U ∈ 𝓝 y) :
     ∃ hy : y.1 ∈ (Subtype.val '' U),
-      ∃ _N : PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hy⟩, True := by
+      Nonempty (PlaneRegionPolygonalNeighborhood (Subtype.val '' U) ⟨y.1, hy⟩) := by
   by_cases hboundary : y.1 0 = 0
   · exact euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood
       U y hU hboundary
@@ -5627,7 +5640,8 @@ theorem mathlib_chartAt_model_region_contains_polygonal_neighborhood
   have hU : U ∈ 𝓝 y := by
     simpa [U, y] using chart_target_mem_nhds (EuclideanHalfSpace 2) x
   rcases euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood U y hU with
-    ⟨hy, N, _⟩
+    ⟨hy, hN⟩
+  let N := Classical.choice hN
   let D : ModelChartPolygonalDisk (RadoChartPair.fromChartAt M x) :=
     N.toModelChartPolygonalDisk
   refine ⟨D, ?_⟩
@@ -5680,18 +5694,18 @@ theorem mathlib_bordered_surface_point_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] (x : M) :
-    ∃ _D : PointChartPolygonalDiskData M x, True := by
+    Nonempty (PointChartPolygonalDiskData M x) := by
   rcases mathlib_chartAt_contains_polygonal_disk_core M x with ⟨D, _hrefines, hcore⟩
-  exact ⟨{ disk := D, core_mem_nhds := hcore }, trivial⟩
+  exact ⟨{ disk := D, core_mem_nhds := hcore }⟩
 
 /-- Pointwise chart-polygonal-disk data packages as local chart-polygonal-disk data. -/
 theorem local_chart_polygonal_disk_data_of_pointwise
     {M : Type*} [TopologicalSpace M]
-    (h : ∀ x : M, ∃ _D : PointChartPolygonalDiskData M x, True) :
-    ∃ _L : LocalChartPolygonalDiskData M, True := by
+    (h : ∀ x : M, Nonempty (PointChartPolygonalDiskData M x)) :
+    Nonempty (LocalChartPolygonalDiskData M) := by
   classical
   let diskAt : M → ChartPolygonalDisk M :=
-    fun x => (Classical.choose (h x)).disk
+    fun x => (Classical.choice (h x)).disk
   let L : LocalChartPolygonalDiskData M :=
     { pairAt := fun x => (diskAt x).chart
       diskAt := diskAt
@@ -5700,21 +5714,21 @@ theorem local_chart_polygonal_disk_data_of_pointwise
         rfl
       core_mem_nhds := by
         intro x
-        exact (Classical.choose (h x)).core_mem_nhds
+        exact (Classical.choice (h x)).core_mem_nhds
       compatibleChartShrinks := by
         intro x
         exact ⟨subset_rfl, subset_rfl⟩
       boundaryCompatibleChartShrinks := by
         intro x
         exact subset_rfl }
-  exact ⟨L, trivial⟩
+  exact ⟨L⟩
 
 /-- Local chart-polygonal-disk data extracted pointwise from the mathlib atlas. -/
 theorem mathlib_bordered_surface_local_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ _D : LocalChartPolygonalDiskData M, True := by
+    Nonempty (LocalChartPolygonalDiskData M) := by
   exact local_chart_polygonal_disk_data_of_pointwise
     (fun x => mathlib_bordered_surface_point_chart_polygonal_disk_data M x)
 
@@ -5825,9 +5839,9 @@ carrying indexed polygonal disk data. -/
 theorem finite_chart_polygonal_disk_data_of_local
     {M : Type u} [TopologicalSpace M] [CompactSpace M]
     (L : LocalChartPolygonalDiskData M) :
-    ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
+    Nonempty (Σ C : FiniteChartPairCover M, FiniteChartPolygonalDiskData C) := by
   let P := L.toFiniteChartPolygonalDiskData
-  exact ⟨P.1, P.2, trivial⟩
+  exact ⟨⟨P.1, P.2⟩⟩
 
 /-- A compact mathlib bordered surface admits a finite chart-pair cover carrying polygonal disk
 data on every selected chart pair. -/
@@ -5835,8 +5849,8 @@ theorem mathlib_bordered_surface_finite_chart_polygonal_disk_data
     (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ C : FiniteChartPairCover M, ∃ _D : FiniteChartPolygonalDiskData C, True := by
-  rcases mathlib_bordered_surface_local_chart_polygonal_disk_data M with ⟨L, _⟩
+    Nonempty (Σ C : FiniteChartPairCover M, FiniteChartPolygonalDiskData C) := by
+  rcases mathlib_bordered_surface_local_chart_polygonal_disk_data M with ⟨L⟩
   exact finite_chart_polygonal_disk_data_of_local L
 
 /-- Named Moise extraction data built from the mathlib bordered-surface atlas. -/
@@ -5846,7 +5860,7 @@ noncomputable def mathlib_bordered_surface_moiseExtractionData
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
     MoiseExtractionData M :=
   let L : LocalChartPolygonalDiskData M :=
-    Classical.choose (mathlib_bordered_surface_local_chart_polygonal_disk_data M)
+    Classical.choice (mathlib_bordered_surface_local_chart_polygonal_disk_data M)
   L.toMoiseExtractionData
 
 /-- Named Moise two-manifold package built from the mathlib bordered-surface atlas. -/
@@ -5861,29 +5875,28 @@ noncomputable def mathlib_bordered_surface_moiseTwoManifold
 theorem finite_rado_geometry_of_chart_polygonal_disk_data
     {M : Type*} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}
     (D : FiniteChartPolygonalDiskData C) :
-    ∃ _G : FiniteRadoInductionGeometry C, True := by
-  exact ⟨D.toFiniteRadoInductionGeometry, trivial⟩
+    Nonempty (FiniteRadoInductionGeometry C) := by
+  exact ⟨D.toFiniteRadoInductionGeometry⟩
 
 /-- Local Rado geometry over a finite chart-pair cover extracted from the mathlib atlas. -/
 theorem mathlib_bordered_surface_finite_rado_geometry
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ C : FiniteChartPairCover M, ∃ _G : FiniteRadoInductionGeometry C, True := by
-  rcases mathlib_bordered_surface_finite_chart_polygonal_disk_data M with ⟨C, D, _⟩
-  rcases finite_rado_geometry_of_chart_polygonal_disk_data D with ⟨G, _⟩
-  exact ⟨C, G, trivial⟩
+    Nonempty (Σ C : FiniteChartPairCover M, FiniteRadoInductionGeometry C) := by
+  rcases mathlib_bordered_surface_finite_chart_polygonal_disk_data M with ⟨⟨C, D⟩⟩
+  rcases finite_rado_geometry_of_chart_polygonal_disk_data D with ⟨G⟩
+  exact ⟨⟨C, G⟩⟩
 
 /-- Local Rado induction data over a finite chart-pair cover extracted from the mathlib atlas. -/
 theorem mathlib_bordered_surface_rado_induction_data
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ C : FiniteChartPairCover M,
-      ∃ _D : RadoInductionData C.toChartPairExhaustion, True := by
-  rcases mathlib_bordered_surface_finite_rado_geometry M with ⟨C, G, _⟩
-  rcases rado_induction_data_of_finite_geometry G with ⟨D, _⟩
-  exact ⟨C, D, trivial⟩
+    Nonempty (Σ C : FiniteChartPairCover M, RadoInductionData C.toChartPairExhaustion) := by
+  rcases mathlib_bordered_surface_finite_rado_geometry M with ⟨⟨C, G⟩⟩
+  rcases rado_induction_data_of_finite_geometry G with ⟨D⟩
+  exact ⟨⟨C, D⟩⟩
 
 /-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
 Moise chart-pair interface.
@@ -5894,8 +5907,8 @@ theorem mathlib_bordered_surface_moise_extraction_data
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ _D : MoiseExtractionData M, True := by
-  exact ⟨mathlib_bordered_surface_moiseExtractionData M, trivial⟩
+    Nonempty (MoiseExtractionData M) := by
+  exact ⟨mathlib_bordered_surface_moiseExtractionData M⟩
 
 /-- Hard chart-extraction theorem boundary from mathlib's bordered surface hypotheses to the
 Moise chart-pair interface.
@@ -5906,8 +5919,8 @@ theorem mathlib_bordered_surface_to_moise_two_manifold
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ _hM : MoiseTwoManifold M, True := by
-  exact ⟨mathlib_bordered_surface_moiseTwoManifold M, trivial⟩
+    Nonempty (MoiseTwoManifold M) := by
+  exact ⟨mathlib_bordered_surface_moiseTwoManifold M⟩
 
 /-- Named finite PL triangulation data built from the mathlib bordered-surface atlas. -/
 noncomputable def mathlib_bordered_surface_finitePLTriangulationData
@@ -5922,25 +5935,25 @@ theorem mathlib_bordered_surface_finite_pl_triangulation_data
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ _D : FinitePLTriangulationData M, True := by
-  exact ⟨mathlib_bordered_surface_finitePLTriangulationData M, trivial⟩
+    Nonempty (FinitePLTriangulationData M) := by
+  exact ⟨mathlib_bordered_surface_finitePLTriangulationData M⟩
 
 /-- Rado triangulation theorem boundary for bordered surfaces. -/
 theorem rado_bordered_surface_triangulation
     (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
     [ChartedSpace (EuclideanHalfSpace 2) M]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
-    ∃ K : PLComplexInSpace M, K.support = Set.univ ∧
-      ∃ _finiteSupport : K.FiniteSupportData, ∃ _boundary : K.BoundarySubcomplexData, True := by
+    ∃ K : PLComplexInSpace M, ∃ _finiteSupport : K.FiniteSupportData,
+      ∃ _boundary : K.BoundarySubcomplexData, K.support = Set.univ := by
   let D := mathlib_bordered_surface_finitePLTriangulationData M
-  exact ⟨D.K, D.covers, D.finiteSupport, D.boundary, trivial⟩
+  exact ⟨D.K, D.finiteSupport, D.boundary, D.covers⟩
 
 /-- Bridge from mathlib's Eval surface hypotheses to the Moise bordered-surface interface. -/
 theorem eval_surface_to_moise_bordered_surface
     (S : Type*) [TopologicalSpace S] [T2Space S] [ConnectedSpace S] [CompactSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
-    ∃ _hM : MoiseTwoManifold S, True := by
+    Nonempty (MoiseTwoManifold S) := by
   exact mathlib_bordered_surface_to_moise_two_manifold S
 
 end

@@ -532,10 +532,13 @@ each core is proved to lie in its chart domain, with the analogous boundary-core
 statements.  Chart pairs also carry proof-bearing model-region data: every
 chart is proved to be a disk or half-disk model, disk charts use open plane
 regions, half-disk charts use regions obtained from `EuclideanHalfSpace 2`, and
-the chart homeomorphism is proved to land in the stored model region.  Finite
-covers and countable exhaustions expose named predicates saying their charts
-are disk/half-disk models and their model regions match their chart kinds.  In
-a nonempty space the index type is nonempty;
+the chart homeomorphism is proved to land in the stored model region.  Boundary
+cores are now proof-bearing as well: for half-disk charts, every boundary-core
+point is carried by the chart homeomorphism to the coordinate boundary line
+`p 0 = 0`; disk charts have empty boundary core.  Finite covers and countable
+exhaustions expose named predicates saying their charts are disk/half-disk
+models and their model regions match their chart kinds.  In a nonempty space
+the index type is nonempty;
 `zeroIndex` names the first selected chart, while the pair-of-less-than and
 pair-of-not-less-than lemmas identify the finite and out-of-range enumeration
 cases.  The preferred mathlib chart at a point gives a chart pair whose core is
@@ -706,7 +709,7 @@ and the embedded chart-disk support.  The old support and the next chart core
 are then contained in this union, and the overlap and boundary compatibility
 fields are witnessed by support-containment and face-closure proofs.  The named constructor
 `RadoStepExtensionData.fromChartPolygonalDisk` now packages this data directly;
-the public theorem is an existential wrapper around that constructor.
+the public theorem is the corresponding nonempty-data wrapper around that constructor.
 \end{proof}
 
 \begin{lemma}[Extend a PL complex across one chart]
@@ -840,7 +843,7 @@ extension leaving the complex unchanged.
 \leanok
 Copy the initial, successor, compatibility, local-finiteness, and boundary
 compatibility fields from `FiniteRadoInductionGeometry` into
-`RadoInductionData`, then package the resulting object existentially.
+`RadoInductionData`, then package the resulting object as nonempty data.
 \end{proof}
 
 \begin{lemma}[Rado union is a PL complex]
@@ -900,7 +903,7 @@ Apply the named Rado PL complex stored in the Moise interface.  The support is
 compact, so local finiteness implies that only finitely many simplexes occur.
 `MoiseTwoManifold.finitePLTriangulationData` packages this finite support data
 with the current full-subcomplex boundary package; the public theorems are
-wrappers around that named object.
+data-only wrappers around that named object.
 \end{proof}
 
 \section{Boundary surfaces in the Moise route}
@@ -943,7 +946,9 @@ mathlib bordered-surface hypotheses, then use the finite terminal Rado stage at
 `Fintype.card finiteCover.Index`.  The named construction
 `mathlib_bordered_surface_finitePLTriangulationData` packages that finite-stage
 complex, support equality, finite support data, and boundary data;
-`rado_bordered_surface_triangulation` is the public existential wrapper.
+`rado_bordered_surface_triangulation` is the public existential wrapper with
+finite-support and boundary-subcomplex data as witnesses and the support
+equality as its proposition.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface to Moise chart-pair interface]
@@ -960,7 +965,7 @@ exhaustion.
 \begin{proof}
 \leanok
 Package the named extracted finite chart-pair cover and Rado local data as a
-`MoiseTwoManifold`; the public theorem is the existential wrapper around
+`MoiseTwoManifold`; the public theorem is the nonempty-data wrapper around
 `mathlib_bordered_surface_moiseTwoManifold`.
 \end{proof}
 
@@ -1020,8 +1025,9 @@ Apply compactness to the pointwise family of local chart cores and use the
 finite subcover indices to carry the corresponding polygonal disk data.  The
 named construction
 `LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData` packages the
-chosen finite cover and indexed disks; the public theorem is the existential
-wrapper used by downstream Rado statements.
+chosen finite cover and indexed disks; the public theorem returns the
+corresponding nonempty dependent sigma package used by downstream Rado
+statements.
 \end{proof}
 
 \begin{lemma}[Mathlib bordered surface local chart polygonal disk data]
