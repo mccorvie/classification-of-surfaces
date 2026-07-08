@@ -305,6 +305,10 @@ SurfaceCellComplex.Equivalent
 SurfaceCellComplex.elementaryMove_homeomorph
 SurfaceCellComplex.equivalent_homeomorph
 SurfaceCellComplex.normalForm
+NormalForm.IsEvalAdmissible
+SurfaceCellComplex.RealizesNormalForm
+SurfaceCellComplex.HasNormalForm
+SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm
 SurfaceCellComplex.hasEvalRepresentative
 ```
 
@@ -322,6 +326,15 @@ theorem SurfaceCellComplex.hasEvalRepresentative
 ```
 
 This theorem should not mention PL maps, charts, Moise, Jordan curves, or embedded plane graphs.
+
+Current Lean status: `SurfaceCellComplex.HasNormalForm` is no longer a `True` placeholder.  It is
+an existential witness carrying a representative cell complex, an equivalence from the input
+complex to that representative, and a proof that the representative realizes the named Eval
+quotient.  The easy bridge
+`SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm` is proved.  The hard combinatorial
+boundary is now `surface_cell_complex_reduces_to_normal_form`, which must produce an admissible
+normal-form witness.  `SurfaceCellComplex.hasEvalRepresentative` is now a proved wrapper around
+that boundary and the witness-to-Eval bridge.
 
 ### API 5: topological bridge for Moise
 
@@ -1418,17 +1431,15 @@ def NonOrientableCellComplex (p n : Nat) : SurfaceCellComplex := sorry
 Prove normal-form existence:
 
 ```lean
-theorem SurfaceCellComplex.gx_normal_form
+theorem surface_cell_complex_reduces_to_normal_form
     (K : SurfaceCellComplex) :
-    SurfaceCellComplex.Equivalent K SphereCellComplex ∨
-    (∃ p n, (1 ≤ p ∨ 1 ≤ n) ∧
-      SurfaceCellComplex.Equivalent K (OrientableCellComplex p n)) ∨
-    (∃ p n, 1 ≤ p ∧
-      SurfaceCellComplex.Equivalent K (NonOrientableCellComplex p n)) := by
+    ∃ N : NormalForm, N.IsEvalAdmissible ∧ K.HasNormalForm N := by
   sorry
 ```
 
-This is a combinatorial theorem. It should not involve quotient topology except through the later homeomorphism theorem.
+This is a combinatorial theorem.  It should construct canonical representatives and equivalences
+by the Gallier--Xu moves, then attach the quotient-realization theorem for the chosen canonical
+representative.
 
 ### G5: connect canonical complexes to Eval quotient representatives
 

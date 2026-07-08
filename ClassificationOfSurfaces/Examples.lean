@@ -217,27 +217,33 @@ example :
 /-- Example target: the disk cell complex realizes the disk normal form. -/
 theorem disk_has_normal_form :
     diskCellComplex.HasNormalForm diskNormalForm := by
-  trivial
+  exact SurfaceCellComplex.hasNormalFormOfRealizes diskCellComplex diskNormalForm
+    ⟨orientableRelPUnitHomeomorph 0 1⟩
 
 /-- Example target: the annulus cell complex realizes the annulus normal form. -/
 theorem annulus_has_normal_form :
     annulusCellComplex.HasNormalForm annulusNormalForm := by
-  trivial
+  exact SurfaceCellComplex.hasNormalFormOfRealizes annulusCellComplex annulusNormalForm
+    ⟨orientableRelPUnitHomeomorph 0 2⟩
 
 /-- Example target: the torus cell complex realizes the torus normal form. -/
 theorem torus_has_normal_form :
     torusCellComplex.HasNormalForm torusNormalForm := by
-  trivial
+  exact SurfaceCellComplex.hasNormalFormOfRealizes torusCellComplex torusNormalForm
+    ⟨orientableRelPUnitHomeomorph 1 0⟩
 
 /-- Example target: the projective-plane cell complex realizes the projective-plane normal form. -/
 theorem projective_plane_has_normal_form :
     projectivePlaneCellComplex.HasNormalForm projectivePlaneNormalForm := by
-  trivial
+  exact SurfaceCellComplex.hasNormalFormOfRealizes projectivePlaneCellComplex
+    projectivePlaneNormalForm
+    ⟨nonOrientableRelPUnitHomeomorph 1 0⟩
 
 /-- Example target: the Mobius-strip cell complex realizes the Mobius-strip normal form. -/
 theorem mobius_strip_has_normal_form :
     mobiusStripCellComplex.HasNormalForm mobiusStripNormalForm := by
-  trivial
+  exact SurfaceCellComplex.hasNormalFormOfRealizes mobiusStripCellComplex mobiusStripNormalForm
+    ⟨nonOrientableRelPUnitHomeomorph 1 1⟩
 
 /-- Future target: the torus example should be homeomorphic to the orientable representative with
 one handle and no boundary. -/

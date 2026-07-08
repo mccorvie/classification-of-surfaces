@@ -66,8 +66,11 @@ aliases. New code should prefer the `SurfaceCellComplex` and `FiniteSurfaceTrian
 
 ## Gallier-Xu tail
 
+* `NormalForm.IsEvalAdmissible`
+* `SurfaceCellComplex.RealizesNormalForm`
 * `SurfaceCellComplex.HasNormalForm`
 * `surface_cell_complex_reduces_to_normal_form`
+* `SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm`
 * `SurfaceCellComplex.hasEvalRepresentative`
 
 The Gallier-Xu tail should consume only `SurfaceCellComplex` and quotient-realization APIs. It

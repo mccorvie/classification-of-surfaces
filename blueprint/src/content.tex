@@ -1803,11 +1803,14 @@ blocks until all loops are grouped together.
 
 \begin{theorem}[Every cell complex has canonical normal form]
 \label{moise:thm:gx_normal_form}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.equivalent_canonical}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.surface_cell_complex_reduces_to_normal_form}
 
-\uses{moise:def:canonical_cell_complex,moise:lem:gx_vertex_reduction,moise:lem:gx_one_face_crosscaps,moise:lem:gx_introduce_handles,moise:lem:gx_handle_crosscap_to_crosscaps,moise:lem:gx_group_loops}
-Every finite connected surface cell complex is equivalent to a canonical
-orientable or canonical nonorientable cell complex.
+\uses{moise:def:canonical_cell_complex,moise:def:normal_form_witness,moise:lem:gx_vertex_reduction,moise:lem:gx_one_face_crosscaps,moise:lem:gx_introduce_handles,moise:lem:gx_handle_crosscap_to_crosscaps,moise:lem:gx_group_loops}
+Every finite connected surface cell complex has an admissible named normal-form
+witness.  In Lean this means a named Eval normal form together with a concrete
+representative cell complex, an equivalence from the original complex to that
+representative, and a proof that the representative realizes the named quotient
+space.
 \end{theorem}
 
 \begin{proof}
@@ -1827,11 +1830,38 @@ nonorientable normal-form polygon boundary relations.  They are the exact target
 spaces named in the Lean Eval classification statement.
 \end{definition}
 
+\begin{definition}[Named normal-form witnesses]
+\label{moise:def:normal_form_witness}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.IsEvalAdmissible, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.RealizesNormalForm, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.HasNormalForm}
+
+\uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives}
+A normal-form witness for a surface cell complex $K$ consists of an admissible
+normal-form name, a representative cell complex, an equivalence from $K$ to that
+representative, and a homeomorphism from the representative realization to the
+quotient space named by the normal form.
+\end{definition}
+
+\begin{lemma}[Normal-form witness gives an Eval branch]
+\label{moise:lem:normal_form_witness_eval_branch}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm}
+
+\uses{moise:def:normal_form_witness}
+An admissible named normal-form witness immediately gives the corresponding
+branch of the Eval classification disjunction.
+\end{lemma}
+
+\begin{proof}
+
+Compose the equivalence from $K$ to its representative with the representative's
+homeomorphism to the named Eval quotient.  The admissibility predicate supplies
+the positivity side condition in the orientable and nonorientable branches.
+\end{proof}
+
 \begin{lemma}[Canonical realization equals Eval quotient]
 \label{moise:lem:canonical_realization_eval_quotient}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.canonical_realization_homeomorphic_eval_quotient}
 
-\uses{moise:def:canonical_cell_complex,moise:def:eval_quotient_representatives,moise:lem:cell_realization_quotient_congr}
+\uses{moise:def:canonical_cell_complex,moise:def:eval_quotient_representatives,moise:def:normal_form_witness,moise:lem:cell_realization_quotient_congr}
 The realization of a canonical orientable or nonorientable cell complex is
 homeomorphic to the corresponding Eval quotient representative.
 \end{lemma}
@@ -1847,7 +1877,7 @@ relations coincide.  Apply quotient congruence.
 \label{moise:thm:cell_complex_has_eval_representative}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.cell_complex_has_eval_representative}
 
-\uses{moise:thm:equivalent_cell_complexes_homeomorphic,moise:thm:gx_normal_form,moise:lem:canonical_realization_eval_quotient}
+\uses{moise:thm:equivalent_cell_complexes_homeomorphic,moise:thm:gx_normal_form,moise:lem:canonical_realization_eval_quotient,moise:lem:normal_form_witness_eval_branch}
 For every finite connected surface cell complex $K$, the realization $|K|$ is
 homeomorphic to the sphere representative, or to an orientable Eval quotient
 representative, or to a nonorientable Eval quotient representative.
