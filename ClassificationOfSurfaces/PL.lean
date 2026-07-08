@@ -7884,6 +7884,12 @@ noncomputable def finiteStagePLTriangulationData
     D.finiteStagePLTriangulationData.K = D.finiteStagePLComplex := by
   rfl
 
+/-- The finite-stage triangulation extracted from compact Moise data covers the whole space. -/
+theorem finiteStagePLTriangulationData_support
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
+    D.finiteStagePLTriangulationData.K.support = Set.univ :=
+  D.finiteStagePLTriangulationData.covers
+
 /-- The finite-stage triangulation extracted from compact Moise data keeps the finite chart
 cover's named boundary carrier inside its stored boundary support. -/
 theorem finiteStagePLTriangulationData_boundaryCarrier_subset
@@ -7974,6 +7980,24 @@ theorem compact_moise_surface_finite_pl_triangulation_data
     (M : Type*) [TopologicalSpace M] [CompactSpace M] (_hM : MoiseTwoManifold M) :
     Nonempty (FinitePLTriangulationData M) := by
   exact ⟨_hM.finitePLTriangulationData⟩
+
+/-- Finite cover extraction data gives a finite terminal-stage PL triangulation directly.
+
+This is the compact finite-cover exit from the Rado layer.  Unlike
+`compact_moise_surface_finitely_triangulable`, it does not pass through the countable
+support-union compatibility wrapper. -/
+theorem moise_extraction_finitely_triangulable
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
+    ∃ K : PLComplexInSpace M, ∃ _finiteSupport : K.FiniteSupportData,
+      ∃ _boundary : K.BoundarySubcomplexData, K.support = Set.univ := by
+  let T := D.finiteStagePLTriangulationData
+  exact ⟨T.K, T.finiteSupport, T.boundary, T.covers⟩
+
+/-- Finite cover extraction data packages a terminal-stage finite PL triangulation. -/
+theorem moise_extraction_finite_pl_triangulation_data
+    {M : Type*} [TopologicalSpace M] (D : MoiseExtractionData M) :
+    Nonempty (FinitePLTriangulationData M) := by
+  exact ⟨D.finiteStagePLTriangulationData⟩
 
 /-- Bordered PL approximation theorem boundary. -/
 theorem bordered_pl_approximation

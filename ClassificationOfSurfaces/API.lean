@@ -32,6 +32,8 @@ project skeleton and documents the intended handoff points between teams.
 * `FinitePLTriangulationData`
 * `MoiseTwoManifold`
 * `MoiseTwoManifold.finitePLTriangulationData`
+* `MoiseExtractionData.finiteStagePLTriangulationData`
+* `moise_extraction_finitely_triangulable`
 * `mathlib_bordered_surface_finitely_triangulable`
 * `compact_eval_surface_finitely_triangulable`
 

@@ -1056,6 +1056,10 @@ Proved finite/combinatorial bridge:
    cover.  The extraction wrapper delegates to
    `RadoInductionData.finiteStagePLTriangulationData`, so the boundary package comes from the
    terminal Rado state's stored boundary subcomplex rather than `fullBoundarySubcomplexData`.
+   `MoiseExtractionData.finiteStagePLTriangulationData_support` records the support equality, and
+   the public extraction-level wrappers `moise_extraction_finitely_triangulable` and
+   `moise_extraction_finite_pl_triangulation_data` expose the finite terminal-stage output without
+   passing through `MoiseTwoManifold.supportUnionFinitePLTriangulationData`.
 13. `mathlib_bordered_surface_moiseTwoManifold`,
    `mathlib_bordered_surface_to_moise_two_manifold`, and
    `moise_two_manifold_of_extraction_data`:

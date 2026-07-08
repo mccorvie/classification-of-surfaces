@@ -693,7 +693,7 @@ cores.
 
 \begin{definition}[Moise extraction data]
 \label{moise:def:moise_extraction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.toMoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStage, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.boundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData_boundaryCarrier_subset, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData_boundarySet_subset, LeanEval.Topology.ClassificationOfSurfaces.moise_two_manifold_of_extraction_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.toMoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStage, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.boundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData_support, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData_boundaryCarrier_subset, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData_boundarySet_subset, LeanEval.Topology.ClassificationOfSurfaces.moise_two_manifold_of_extraction_data}
 \leanok
 
 \uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:moise_two_manifold}
@@ -1012,7 +1012,7 @@ generalized to stagewise complexes.
 
 \begin{theorem}[Compact Moise surface is finitely triangulable]
 \label{moise:thm:compact_moise_surface_finitely_triangulable}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.supportUnionFinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finite_pl_triangulation_data}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.supportUnionFinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finite_pl_triangulation_data, LeanEval.Topology.ClassificationOfSurfaces.moise_extraction_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.moise_extraction_finite_pl_triangulation_data}
 \leanok
 
 \uses{moise:thm:rado_triangulation_moise_manifold,moise:lem:compact_locally_finite_complex_finite}
@@ -1032,6 +1032,10 @@ boundary support is the union of the stage boundary supports.  The old public
 name `MoiseTwoManifold.finitePLTriangulationData` is a compatibility wrapper.
 For compact surfaces extracted from a finite chart cover, the finite-stage
 package in `MoiseExtractionData` remains the terminal-stage boundary-data route.
+The extraction-level theorem `moise_extraction_finitely_triangulable` is the
+preferred compact finite-cover statement: it returns the terminal finite Rado
+stage with finite support and boundary-subcomplex data directly, avoiding the
+support-union wrapper.
 \end{proof}
 
 \section{Boundary surfaces in the Moise route}
