@@ -904,7 +904,10 @@ Proved finite/combinatorial bridge:
    `ModelWithCorners.boundary` to this preferred-chart boundary core using the frontier of
    `EuclideanHalfSpace`.  The finite-cover route needs the corresponding arbitrary-chart C0
    boundary-invariance statement; this is isolated as the hard theorem boundary
-   `fromChartAt_chart_coord_zero_of_manifold_boundary`.
+   `fromChartAt_chart_coord_zero_of_manifold_boundary`.  The positive-regularity companion
+   `fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff` is proved from mathlib's
+   `ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`, so the remaining gap is specifically the
+   topological C0 invariance needed for Moise.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
    `ChartPolygonalDisk` now carries explicit simplex-carrier data for its embedded PL complex,
