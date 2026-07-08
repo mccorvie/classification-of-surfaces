@@ -506,6 +506,18 @@ abbrev TrianglePlane : Type :=
 def closedTriangleSupport : Set TrianglePlane :=
   {p | 0 ≤ p 0 ∧ 0 ≤ p 1 ∧ p 0 + p 1 ≤ 1}
 
+/-- The first vertex of the standard closed triangle. -/
+def closedTriangleVertex₀ : TrianglePlane :=
+  !₂[(0 : ℝ), (0 : ℝ)]
+
+/-- The second vertex of the standard closed triangle. -/
+def closedTriangleVertex₁ : TrianglePlane :=
+  !₂[(1 : ℝ), (0 : ℝ)]
+
+/-- The third vertex of the standard closed triangle. -/
+def closedTriangleVertex₂ : TrianglePlane :=
+  !₂[(0 : ℝ), (1 : ℝ)]
+
 /-- The centroid of the standard closed 2-simplex. -/
 def closedTriangleCentroid : TrianglePlane :=
   !₂[(1 : ℝ) / 3, (1 : ℝ) / 3]
@@ -525,6 +537,51 @@ theorem closedTriangleCentroid_mem_closedTriangleSupport :
 theorem closedTriangleBoundaryAnchor_mem_closedTriangleSupport :
     closedTriangleBoundaryAnchor ∈ closedTriangleSupport := by
   norm_num [closedTriangleBoundaryAnchor, closedTriangleSupport]
+
+/-- The geometric carrier of each simplex of the standard closed triangle. -/
+def closedTriangleSimplexCarrier : TriangleSimplex → Set TrianglePlane
+  | TriangleSimplex.v₀ => {closedTriangleVertex₀}
+  | TriangleSimplex.v₁ => {closedTriangleVertex₁}
+  | TriangleSimplex.v₂ => {closedTriangleVertex₂}
+  | TriangleSimplex.e₀₁ => {p | 0 ≤ p 0 ∧ p 1 = 0 ∧ p 0 ≤ 1}
+  | TriangleSimplex.e₁₂ => {p | 0 ≤ p 0 ∧ 0 ≤ p 1 ∧ p 0 + p 1 = 1}
+  | TriangleSimplex.e₂₀ => {p | p 0 = 0 ∧ 0 ≤ p 1 ∧ p 1 ≤ 1}
+  | TriangleSimplex.face => closedTriangleSupport
+
+@[simp] theorem closedTriangleSimplexCarrier_face :
+    closedTriangleSimplexCarrier TriangleSimplex.face = closedTriangleSupport := by
+  rfl
+
+/-- Each standard-triangle simplex carrier lies in the closed triangle support. -/
+theorem closedTriangleSimplexCarrier_subset_support (σ : TriangleSimplex) :
+    closedTriangleSimplexCarrier σ ⊆ closedTriangleSupport := by
+  intro p hp
+  cases σ
+  · have hp' : p = closedTriangleVertex₀ := by
+      simpa [closedTriangleSimplexCarrier] using hp
+    rw [hp']
+    norm_num [closedTriangleVertex₀, closedTriangleSupport]
+  · have hp' : p = closedTriangleVertex₁ := by
+      simpa [closedTriangleSimplexCarrier] using hp
+    rw [hp']
+    norm_num [closedTriangleVertex₁, closedTriangleSupport]
+  · have hp' : p = closedTriangleVertex₂ := by
+      simpa [closedTriangleSimplexCarrier] using hp
+    rw [hp']
+    norm_num [closedTriangleVertex₂, closedTriangleSupport]
+  · rcases hp with ⟨hp0, hp1, hp0le⟩
+    exact ⟨hp0, by simp [hp1], by nlinarith⟩
+  · rcases hp with ⟨hp0, hp1, hsum⟩
+    exact ⟨hp0, hp1, le_of_eq hsum⟩
+  · rcases hp with ⟨hp0, hp1, hp1le⟩
+    exact ⟨by simp [hp0], hp1, by nlinarith⟩
+  · exact hp
+
+/-- The standard-triangle simplex carriers cover the closed triangle support. -/
+theorem closedTriangleSupport_covered_by_simplexCarrier {p : TrianglePlane}
+    (hp : p ∈ closedTriangleSupport) :
+    ∃ σ : TriangleSimplex, p ∈ closedTriangleSimplexCarrier σ := by
+  exact ⟨TriangleSimplex.face, hp⟩
 
 theorem closedTriangleSupport_mem_nhds_centroid :
     closedTriangleSupport ∈ 𝓝 closedTriangleCentroid := by
@@ -4013,14 +4070,17 @@ def standardTriangleInModel (P : RadoChartPair M)
     change _root_.Topology.IsEmbedding
       (fun p : PolygonalDiskExamples.standardTriangle.K.support => (p.1 : Plane))
     simpa [Function.comp_def] using hDomain
-  simplexCarrier := fun _ => Set.range (fun p : PolygonalDiskExamples.standardTriangle.K.support =>
-    (⟨p.1, hregion p.2⟩ : P.modelRegion))
+  simplexCarrier := fun σ =>
+    {q : P.modelRegion | (q : Plane) ∈ EuclideanComplex.Examples.closedTriangleSimplexCarrier σ}
   simplexCarrier_subset := by
-    intro σ
-    exact subset_rfl
+    intro σ q hq
+    refine ⟨⟨q.1, ?_⟩, ?_⟩
+    · exact EuclideanComplex.Examples.closedTriangleSimplexCarrier_subset_support σ hq
+    · exact Subtype.ext rfl
   support_covered_by_simplexCarrier := by
     intro x hx
-    exact ⟨PolygonalDiskExamples.standardTriangle.K.defaultSimplex, hx⟩
+    rcases hx with ⟨p, rfl⟩
+    exact ⟨EuclideanComplex.Examples.TriangleSimplex.face, p.2⟩
   respectsChartModel := by
     intro p
     exact (⟨p.1, hregion p.2⟩ : P.modelRegion).2
@@ -4318,16 +4378,27 @@ def ofTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionTriangleCopy Ω y) 
     change _root_.Topology.IsEmbedding
       (fun p : PolygonalDiskExamples.standardTriangle.K.support => T.homeomorph p.1)
     exact hDomain
-  simplexCarrier := fun _ =>
-    Set.range (fun p : PolygonalDiskExamples.standardTriangle.K.support =>
-      (⟨T.homeomorph p.1, T.image_subset ⟨p.1, by
-        simp [standardTriangle_support_eq] at p ⊢, rfl⟩⟩ : Ω))
+  simplexCarrier := fun σ =>
+    {q : Ω | (q : Plane) ∈ T.homeomorph ''
+      EuclideanComplex.Examples.closedTriangleSimplexCarrier σ}
   simplexCarrier_subset := by
-    intro σ
-    exact subset_rfl
+    intro σ q hq
+    rcases hq with ⟨p, hp, hq⟩
+    let p' : PolygonalDiskExamples.standardTriangle.K.support :=
+      ⟨p, by
+        change p ∈ EuclideanComplex.Examples.closedTriangleSupport
+        exact EuclideanComplex.Examples.closedTriangleSimplexCarrier_subset_support σ hp⟩
+    refine ⟨p', ?_⟩
+    exact Subtype.ext hq
   support_covered_by_simplexCarrier := by
     intro x hx
-    exact ⟨PolygonalDiskExamples.standardTriangle.K.defaultSimplex, hx⟩
+    rcases hx with ⟨p, rfl⟩
+    refine ⟨EuclideanComplex.Examples.TriangleSimplex.face, ?_⟩
+    change T.homeomorph p.1 ∈
+      T.homeomorph '' EuclideanComplex.Examples.closedTriangleSupport
+    exact ⟨p.1, by
+      change p.1 ∈ EuclideanComplex.Examples.closedTriangleSupport
+      exact p.2, rfl⟩
   range_mem_nhds := by
     have hImage :
         T.homeomorph '' EuclideanComplex.Examples.closedTriangleSupport ∈
@@ -4383,16 +4454,27 @@ def ofBoundaryTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionBoundaryTri
     change _root_.Topology.IsEmbedding
       (fun p : PolygonalDiskExamples.standardTriangle.K.support => T.homeomorph p.1)
     exact hDomain
-  simplexCarrier := fun _ =>
-    Set.range (fun p : PolygonalDiskExamples.standardTriangle.K.support =>
-      (⟨T.homeomorph p.1, T.image_subset ⟨p.1, by
-        simp [standardTriangle_support_eq] at p ⊢, rfl⟩⟩ : Ω))
+  simplexCarrier := fun σ =>
+    {q : Ω | (q : Plane) ∈ T.homeomorph ''
+      EuclideanComplex.Examples.closedTriangleSimplexCarrier σ}
   simplexCarrier_subset := by
-    intro σ
-    exact subset_rfl
+    intro σ q hq
+    rcases hq with ⟨p, hp, hq⟩
+    let p' : PolygonalDiskExamples.standardTriangle.K.support :=
+      ⟨p, by
+        change p ∈ EuclideanComplex.Examples.closedTriangleSupport
+        exact EuclideanComplex.Examples.closedTriangleSimplexCarrier_subset_support σ hp⟩
+    refine ⟨p', ?_⟩
+    exact Subtype.ext hq
   support_covered_by_simplexCarrier := by
     intro x hx
-    exact ⟨PolygonalDiskExamples.standardTriangle.K.defaultSimplex, hx⟩
+    rcases hx with ⟨p, rfl⟩
+    refine ⟨EuclideanComplex.Examples.TriangleSimplex.face, ?_⟩
+    change T.homeomorph p.1 ∈
+      T.homeomorph '' EuclideanComplex.Examples.closedTriangleSupport
+    exact ⟨p.1, by
+      change p.1 ∈ EuclideanComplex.Examples.closedTriangleSupport
+      exact p.2, rfl⟩
   range_mem_nhds := by
     rw [mem_nhds_subtype_iff_nhdsWithin]
     convert T.image_mem_nhdsWithin using 1
@@ -4496,14 +4578,15 @@ def standardTriangleInPlane : ChartPolygonalDisk Plane where
   boundaryCore_covered := by
     intro p hp
     simp [RadoChartPair.standardTrianglePlaneCore] at hp
-  simplexCarrier := fun _ =>
-    Set.range (fun p : PolygonalDiskExamples.standardTriangle.K.support => (p.1 : Plane))
+  simplexCarrier := EuclideanComplex.Examples.closedTriangleSimplexCarrier
   simplexCarrier_subset := by
-    intro σ
-    exact subset_rfl
+    intro σ x hx
+    refine ⟨⟨x, ?_⟩, rfl⟩
+    exact EuclideanComplex.Examples.closedTriangleSimplexCarrier_subset_support σ hx
   support_covered_by_simplexCarrier := by
     intro x hx
-    exact ⟨PolygonalDiskExamples.standardTriangle.K.defaultSimplex, hx⟩
+    rcases hx with ⟨p, rfl⟩
+    exact ⟨EuclideanComplex.Examples.TriangleSimplex.face, p.2⟩
   boundaryCore_covered_by_boundary := by
     intro p hp
     simp [RadoChartPair.standardTrianglePlaneCore] at hp

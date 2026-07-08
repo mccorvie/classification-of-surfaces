@@ -885,9 +885,11 @@ Proved finite/combinatorial bridge:
    whole disk image.  `PlaneRegionPolygonalNeighborhood` and `ModelChartPolygonalDisk` now carry
    the same explicit carrier data, and the named conversion lemmas
    `toModelChartPolygonalDisk_simplexCarrier` and `toChartPolygonalDisk_simplexCarrier` expose
-   that the data is preserved through the coordinate-to-manifold pipeline.  Current constructors
-   still use coarse carriers where detailed simplex geometry is not yet supplied, but the interface
-   can now accept faithful local carrier data.
+   that the data is preserved through the coordinate-to-manifold pipeline.  The standard-triangle
+   constructors use `EuclideanComplex.Examples.closedTriangleSimplexCarrier`, with singleton
+   vertex carriers, line-segment edge carriers, and the closed face carrier.  Generic constructors
+   may still use coarse carriers where detailed simplex geometry is not supplied, but the local
+   chart pipeline now accepts and transports faithful carrier data.
    `ChartPolygonalDisk.boundaryCore_subset_boundarySupport` now exposes the stronger fact that
    chart boundary cores are covered by the disk boundary subcomplex, and the initial Rado state
    records this with `toState_coversBoundaryCoresInBoundaryUpTo`.
