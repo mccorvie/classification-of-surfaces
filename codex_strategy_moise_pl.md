@@ -679,9 +679,11 @@ structure PLComplexIn.BoundarySubcomplexData (K : PLComplexIn X) where
 ```
 
 Current overlap and Rado-state status: `PLComplexInSpace.CompatibleOnOverlap` is no longer an
-arbitrary proposition; it packages the actual overlap set together with containment in both
-embedded supports.  Rado induction states carry this overlap witness for the current complex and
-`BoundarySubcomplexFaceClosed` for the stored boundary subcomplex.
+arbitrary proposition or a tautological containment witness.  It is `Nonempty
+PLComplexInSpace.OverlapCompatibilityData`: a common carrier for the ambient overlap with maps into
+both complex supports, equality after embedding in the ambient space, injectivity on both sides,
+and coverage of every ambient overlap point.  Rado induction states carry this overlap witness for
+the current complex and `BoundarySubcomplexFaceClosed` for the stored boundary subcomplex.
 `boundaryCompatibleOnOverlaps` now uses the proof-bearing `BoundaryCompatibleOnOverlap` predicate:
 the complex must be compatible with the comparison complex on the ambient overlap, and the stored
 boundary subcomplex must be face-closed.

@@ -2768,9 +2768,122 @@ theorem coveredBy_univ_iff {X : Type*} [TopologicalSpace X] (K : PLComplexInSpac
 def overlap {X : Type*} [TopologicalSpace X] (K L : PLComplexInSpace X) : Set X :=
   K.support ∩ L.support
 
-/-- Compatibility of two embedded PL complexes on their overlap. -/
+/-- Proof-bearing common-carrier data for the ambient overlap of two embedded PL complexes.
+
+The carrier parametrizes points of the overlap from both sides.  The two maps land in the complex
+supports, agree after embedding into the ambient space, are injective, and cover every ambient
+overlap point.  Later geometric work can refine the carrier to compatible subcomplex supports; this
+already prevents overlap compatibility from being just the tautology
+`K.support ∩ L.support ⊆ K.support ∧ K.support ∩ L.support ⊆ L.support`. -/
+structure OverlapCompatibilityData {X : Type*} [TopologicalSpace X]
+    (K L : PLComplexInSpace X) where
+  Carrier : Type
+  left : Carrier → K.Complex.support
+  right : Carrier → L.Complex.support
+  left_injective : Function.Injective left
+  right_injective : Function.Injective right
+  ambient_eq : ∀ z, K.embed (left z) = L.embed (right z)
+  covers_overlap :
+    ∀ x ∈ K.overlap L, ∃ z, K.embed (left z) = x ∧ L.embed (right z) = x
+
+/-- Compatibility of two embedded PL complexes on their overlap.
+
+This is intentionally stated as nonempty data so Rado steps must carry an explicit common carrier
+for the overlap, while callers can keep using the proposition-shaped public API. -/
 def CompatibleOnOverlap {X : Type*} [TopologicalSpace X] (K L : PLComplexInSpace X) : Prop :=
-  ∃ U : Set X, U = K.overlap L ∧ U ⊆ K.support ∧ U ⊆ L.support
+  Nonempty (OverlapCompatibilityData K L)
+
+namespace OverlapCompatibilityData
+
+theorem left_mem_overlap {X : Type*} [TopologicalSpace X] {K L : PLComplexInSpace X}
+    (D : OverlapCompatibilityData K L) (z : D.Carrier) :
+    K.embed (D.left z) ∈ K.overlap L := by
+  constructor
+  · exact ⟨D.left z, rfl⟩
+  · exact ⟨D.right z, (D.ambient_eq z).symm⟩
+
+theorem right_mem_overlap {X : Type*} [TopologicalSpace X] {K L : PLComplexInSpace X}
+    (D : OverlapCompatibilityData K L) (z : D.Carrier) :
+    L.embed (D.right z) ∈ K.overlap L := by
+  rw [← D.ambient_eq z]
+  exact D.left_mem_overlap z
+
+end OverlapCompatibilityData
+
+/-- Canonical common-carrier data for the ambient overlap of two embedded complexes. -/
+noncomputable def overlapCompatibilityData {X : Type*} [TopologicalSpace X]
+    (K L : PLComplexInSpace X) : OverlapCompatibilityData K L where
+  Carrier := {p : K.Complex.support // K.embed p ∈ L.support}
+  left := fun p => p.1
+  right := fun p =>
+    Classical.choose
+      (show ∃ q : L.Complex.support, L.embed q = K.embed p.1 by
+        simpa [support] using p.2)
+  left_injective := by
+    intro p q hpq
+    exact Subtype.ext hpq
+  right_injective := by
+    intro p q hpq
+    apply Subtype.ext
+    have hp :
+        L.embed
+            (Classical.choose
+              (show ∃ r : L.Complex.support, L.embed r = K.embed p.1 by
+                simpa [support] using p.2)) =
+          K.embed p.1 :=
+      Classical.choose_spec
+        (show ∃ r : L.Complex.support, L.embed r = K.embed p.1 by
+          simpa [support] using p.2)
+    have hq :
+        L.embed
+            (Classical.choose
+              (show ∃ r : L.Complex.support, L.embed r = K.embed q.1 by
+                simpa [support] using q.2)) =
+          K.embed q.1 :=
+      Classical.choose_spec
+        (show ∃ r : L.Complex.support, L.embed r = K.embed q.1 by
+          simpa [support] using q.2)
+    apply K.injective_embed
+    calc
+      K.embed p.1 =
+          L.embed
+            (Classical.choose
+              (show ∃ r : L.Complex.support, L.embed r = K.embed p.1 by
+                simpa [support] using p.2)) := hp.symm
+      _ =
+          L.embed
+            (Classical.choose
+              (show ∃ r : L.Complex.support, L.embed r = K.embed q.1 by
+                simpa [support] using q.2)) := by
+            exact congrArg L.embed hpq
+      _ = K.embed q.1 := hq
+  ambient_eq := by
+    intro p
+    exact
+      (Classical.choose_spec
+        (show ∃ q : L.Complex.support, L.embed q = K.embed p.1 by
+          simpa [support] using p.2)).symm
+  covers_overlap := by
+    intro x hx
+    rcases hx.1 with ⟨p, hp⟩
+    let z : {p : K.Complex.support // K.embed p ∈ L.support} :=
+      ⟨p, by rw [hp]; exact hx.2⟩
+    refine ⟨z, hp, ?_⟩
+    calc
+      L.embed
+          (Classical.choose
+            (show ∃ q : L.Complex.support, L.embed q = K.embed z.1 by
+              simpa [support] using z.2)) =
+        K.embed z.1 :=
+          Classical.choose_spec
+            (show ∃ q : L.Complex.support, L.embed q = K.embed z.1 by
+              simpa [support] using z.2)
+      _ = x := hp
+
+theorem compatibleOnOverlap_of_embedded_overlap
+    {X : Type*} [TopologicalSpace X] (K L : PLComplexInSpace X) :
+    K.CompatibleOnOverlap L :=
+  ⟨K.overlapCompatibilityData L⟩
 
 /-- One embedded PL complex extends another if it covers the old support and preserves the old
 PL data up to compatibility. -/
@@ -2787,7 +2900,7 @@ def compatibleOnOverlap {X : Type*} [TopologicalSpace X] (K L : PLComplexInSpace
 
 theorem compatibleOnOverlap_self {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
     K.compatibleOnOverlap K := by
-  exact ⟨K.overlap K, rfl, fun _ hx => hx.1, fun _ hx => hx.2⟩
+  exact K.compatibleOnOverlap_of_embedded_overlap K
 
 theorem extends_refl {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
     K.ExtendsData K := by
@@ -4605,7 +4718,7 @@ noncomputable def fromChartPolygonalDisk
         · intro x hx
           rw [hKsupport]
           exact Or.inl hx
-        · exact ⟨K.overlap S.complex, rfl, fun _ hx => hx.1, fun _ hx => hx.2⟩
+        · exact K.compatibleOnOverlap_of_embedded_overlap S.complex
       coversNextCore := by
         intro x hx
         have hx' : x ∈ D.chart.core := by
@@ -4621,10 +4734,10 @@ noncomputable def fromChartPolygonalDisk
         rw [hKsupport]
         exact Or.inr (D.boundaryCore_covered hx')
       compatibleOnOverlaps := by
-        exact ⟨K.overlap S.complex, rfl, fun _ hx => hx.1, fun _ hx => hx.2⟩
+        exact K.compatibleOnOverlap_of_embedded_overlap S.complex
       boundaryCompatibleOnOverlaps := by
         constructor
-        · exact ⟨K.overlap S.complex, rfl, fun _ hx => hx.1, fun _ hx => hx.2⟩
+        · exact K.compatibleOnOverlap_of_embedded_overlap S.complex
         · intro τ σ hσ hface
           exact (EuclideanComplex.Subcomplex.full K.Complex).face_closed hσ hface
       boundaryRespectsCharts := D.RespectsChartModel }

@@ -422,7 +422,7 @@ global compatibility data.
 
 \begin{definition}[PL complex in a topological space]
 \label{moise:def:pl_complex_in_space}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.SimplexRelevant, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.OverlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.overlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.compatibleOnOverlap_of_embedded_overlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.SimplexRelevant, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
@@ -431,9 +431,10 @@ $M$ equipped with charts from Euclidean simplexes such that the induced abstract
 complex is PL-compatible on intersections.  The formal API stores a mathlib
 topological embedding of the complex support into the ambient space, exposes the
 image support, point and set coverage predicates, extension data, and
-compatibility on overlaps.  Overlap compatibility identifies the overlap as the
-intersection of the two embedded supports and proves containment in both
-supports.  Its local-finiteness field is now proof-bearing:
+compatibility on overlaps.  Overlap compatibility now carries common-carrier
+data for the ambient overlap: maps into both complex supports, equality after
+embedding in the ambient space, injectivity on both sides, and coverage of every
+ambient overlap point.  Its local-finiteness field is now proof-bearing:
 at the current finite `EuclideanComplex` level it is a `Finite` proof for the
 simplex type.  Its chart-compatibility field is derived from the embedding as
 injectivity and continuity, not supplied as an arbitrary proposition.  It also
@@ -707,9 +708,10 @@ preserving overlap, local-finiteness, and boundary compatibility.
 Build a scaffold PL complex whose support is the union of the old stage support
 and the embedded chart-disk support.  The old support and the next chart core
 are then contained in this union, and the overlap and boundary compatibility
-fields are witnessed by support-containment and face-closure proofs.  The named constructor
-`RadoStepExtensionData.fromChartPolygonalDisk` now packages this data directly;
-the public theorem is the corresponding nonempty-data wrapper around that constructor.
+fields are witnessed by explicit common-carrier overlap data and face-closure
+proofs.  The named constructor `RadoStepExtensionData.fromChartPolygonalDisk`
+now packages this data directly; the public theorem is the corresponding
+nonempty-data wrapper around that constructor.
 \end{proof}
 
 \begin{lemma}[Extend a PL complex across one chart]
