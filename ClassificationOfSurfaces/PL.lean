@@ -2846,9 +2846,18 @@ structure ChartPolygonalDisk (M : Type*) [TopologicalSpace M] where
   support_subset_domain : Set.range embed ⊆ chart.domain
   core_covered : chart.core ⊆ Set.range embed
   boundaryCore_covered : chart.boundaryCore ⊆ Set.range embed
-  respectsChartModel : Prop
+  respectsChartModel :
+    ∀ p : disk.K.support,
+      (chart.chartHomeomorph ⟨embed p, support_subset_domain ⟨p, rfl⟩⟩ : Plane) ∈
+        chart.modelRegion
 
 namespace ChartPolygonalDisk
+
+/-- The model-region compatibility statement carried by a chart polygonal disk. -/
+def RespectsChartModel {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk M) : Prop :=
+  ∀ p : D.disk.K.support,
+    (D.chart.chartHomeomorph ⟨D.embed p, D.support_subset_domain ⟨p, rfl⟩⟩ : Plane) ∈
+      D.chart.modelRegion
 
 /-- The embedded PL complex associated to a chart polygonal disk. -/
 def toPLComplexInSpace {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk M) :
@@ -2874,7 +2883,7 @@ structure ModelChartPolygonalDisk {M : Type*} [TopologicalSpace M] (P : RadoChar
   disk : PolygonalDisk
   embed : disk.K.support → P.modelRegion
   isEmbedding : _root_.Topology.IsEmbedding embed
-  respectsChartModel : Prop
+  respectsChartModel : ∀ p : disk.K.support, (embed p : Plane) ∈ P.modelRegion
 
 namespace ModelChartPolygonalDisk
 
@@ -2964,7 +2973,10 @@ def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M 
   boundaryCore_covered := by
     intro y hy
     simp [toChartPair, RadoChartPair.withCore] at hy
-  respectsChartModel := D.respectsChartModel
+  respectsChartModel := by
+    intro p
+    exact D.toChartPair.chart_to_model
+      ⟨D.toManifoldEmbed p, D.pulledCore_subset_domain ⟨p, rfl⟩⟩
 
 @[simp] theorem toChartPolygonalDisk_chart_core (D : ModelChartPolygonalDisk P) :
     D.toChartPolygonalDisk.chart.core = D.pulledCore := by
@@ -3002,7 +3014,9 @@ def standardTriangleInModel (P : RadoChartPair M)
     change _root_.Topology.IsEmbedding
       (fun p : PolygonalDiskExamples.standardTriangle.K.support => (p.1 : Plane))
     simpa [Function.comp_def] using hDomain
-  respectsChartModel := True
+  respectsChartModel := by
+    intro p
+    exact (⟨p.1, hregion p.2⟩ : P.modelRegion).2
 
 end ModelChartPolygonalDisk
 
@@ -3014,7 +3028,7 @@ structure PlaneRegionPolygonalNeighborhood (Ω : Set Plane) (y : Ω) where
   embed : disk.K.support → Ω
   isEmbedding : _root_.Topology.IsEmbedding embed
   range_mem_nhds : Set.range embed ∈ 𝓝 y
-  respectsChartModel : Prop
+  respectsChartModel : ∀ p : disk.K.support, (embed p : Plane) ∈ Ω
 
 /-- A copy of the standard closed triangle in a plane region, centered at the chosen point.
 
@@ -3322,7 +3336,11 @@ def ofTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionTriangleCopy Ω y) 
           rwa [standardTriangle_support_eq]⟩
       refine ⟨⟨T.homeomorph p, T.image_subset ⟨p, hp, rfl⟩⟩, ?_, rfl⟩
       exact ⟨p', rfl⟩
-  respectsChartModel := True
+  respectsChartModel := by
+    intro p
+    exact
+      (⟨T.homeomorph p.1, T.image_subset ⟨p.1, by
+        simp [standardTriangle_support_eq] at p ⊢, rfl⟩⟩ : Ω).2
 
 /-- A boundary-anchored homeomorphic copy of the standard triangle in a region gives a polygonal
 neighborhood of the boundary point, using the relative-neighborhood field of the copy. -/
@@ -3361,7 +3379,11 @@ def ofBoundaryTriangleCopy {Ω : Set Plane} {y : Ω} (T : PlaneRegionBoundaryTri
           rwa [standardTriangle_support_eq]⟩
       refine ⟨⟨T.homeomorph p, T.image_subset ⟨p, hp, rfl⟩⟩, ?_, rfl⟩
       exact ⟨p', rfl⟩
-  respectsChartModel := True
+  respectsChartModel := by
+    intro p
+    exact
+      (⟨T.homeomorph p.1, T.image_subset ⟨p.1, by
+        simp [standardTriangle_support_eq] at p ⊢, rfl⟩⟩ : Ω).2
 
 /-- Regard a chart-free plane-region polygonal neighborhood as a model chart disk. -/
 def toModelChartPolygonalDisk
@@ -3434,7 +3456,9 @@ def standardTriangleInPlane : ChartPolygonalDisk Plane where
   boundaryCore_covered := by
     intro p hp
     simp [RadoChartPair.standardTrianglePlaneCore] at hp
-  respectsChartModel := True
+  respectsChartModel := by
+    intro p
+    trivial
 
 @[simp] theorem standardTriangleInPlane_chart :
     standardTriangleInPlane.chart = RadoChartPair.standardTrianglePlaneCore := by
@@ -3581,8 +3605,23 @@ structure FiniteChartPolygonalDiskData
     {M : Type u} [TopologicalSpace M] (C : FiniteChartPairCover M) where
   disk : C.Index → ChartPolygonalDisk M
   chart_eq : ∀ i : C.Index, (disk i).chart = C.pair i
-  compatibleChartShrinks : Prop
-  boundaryCompatibleChartShrinks : Prop
+  compatibleChartShrinks : ∀ i : C.Index, (disk i).chart.Refines (C.pair i)
+  boundaryCompatibleChartShrinks :
+    ∀ i : C.Index, (disk i).chart.boundaryCore ⊆ (C.pair i).boundaryCore
+
+namespace FiniteChartPolygonalDiskData
+
+/-- The chart-shrink compatibility statement carried by finite chart polygonal disk data. -/
+def CompatibleChartShrinks {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : FiniteChartPolygonalDiskData C) : Prop :=
+  ∀ i : C.Index, (D.disk i).chart.Refines (C.pair i)
+
+/-- The boundary-core compatibility statement carried by finite chart polygonal disk data. -/
+def BoundaryCompatibleChartShrinks {M : Type u} [TopologicalSpace M]
+    {C : FiniteChartPairCover M} (D : FiniteChartPolygonalDiskData C) : Prop :=
+  ∀ i : C.Index, (D.disk i).chart.boundaryCore ⊆ (C.pair i).boundaryCore
+
+end FiniteChartPolygonalDiskData
 
 /-- Pointwise local chart-polygonal-disk data before compactness extracts a finite subcover. -/
 structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
@@ -3590,8 +3629,9 @@ structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
   diskAt : M → ChartPolygonalDisk M
   chart_eq : ∀ x : M, (diskAt x).chart = pairAt x
   core_mem_nhds : ∀ x : M, (pairAt x).core ∈ 𝓝 x
-  compatibleChartShrinks : Prop
-  boundaryCompatibleChartShrinks : Prop
+  compatibleChartShrinks : ∀ x : M, (diskAt x).chart.Refines (pairAt x)
+  boundaryCompatibleChartShrinks :
+    ∀ x : M, (diskAt x).chart.boundaryCore ⊆ (pairAt x).boundaryCore
 
 /-- Pointwise local chart-polygonal-disk data at one point. -/
 structure PointChartPolygonalDiskData (M : Type*) [TopologicalSpace M] (x : M) where
@@ -3691,7 +3731,7 @@ def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
     compatibleOnOverlaps := True
     boundaryIsSubcomplex := D.boundarySubcomplexCompatible
     boundaryCompatibleOnOverlaps := True
-    boundaryRespectsCharts := D.chartDisk.respectsChartModel
+    boundaryRespectsCharts := D.chartDisk.RespectsChartModel
     locallyFinite := inferInstance
     boundaryLocallyFinite := inferInstance }
 
@@ -3977,7 +4017,7 @@ noncomputable def fromChartPolygonalDisk
         exact Or.inr (D.boundaryCore_covered hx')
       compatibleOnOverlaps := True
       boundaryCompatibleOnOverlaps := True
-      boundaryRespectsCharts := D.respectsChartModel }
+      boundaryRespectsCharts := D.RespectsChartModel }
 
 @[simp] theorem fromChartPolygonalDisk_nextComplex
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -4632,9 +4672,9 @@ noncomputable def toFiniteRadoInductionGeometry
     (D : FiniteChartPolygonalDiskData C) : FiniteRadoInductionGeometry C where
   initial := D.initialData
   step := fun _n S => D.stepData S
-  compatibleStages := D.compatibleChartShrinks
+  compatibleStages := D.CompatibleChartShrinks
   locallyFiniteUnion := True
-  boundaryCompatibleUnion := D.boundaryCompatibleChartShrinks
+  boundaryCompatibleUnion := D.BoundaryCompatibleChartShrinks
 
 @[simp] theorem toFiniteRadoInductionGeometry_initial
     {M : Type u} [TopologicalSpace M] [Nonempty M] {C : FiniteChartPairCover M}
@@ -5059,8 +5099,12 @@ theorem local_chart_polygonal_disk_data_of_pointwise
       core_mem_nhds := by
         intro x
         exact (Classical.choose (h x)).core_mem_nhds
-      compatibleChartShrinks := True
-      boundaryCompatibleChartShrinks := True }
+      compatibleChartShrinks := by
+        intro x
+        exact ⟨subset_rfl, subset_rfl⟩
+      boundaryCompatibleChartShrinks := by
+        intro x
+        exact subset_rfl }
   exact ⟨L, trivial⟩
 
 /-- Local chart-polygonal-disk data extracted pointwise from the mathlib atlas. -/
@@ -5134,8 +5178,12 @@ noncomputable def toFiniteChartPolygonalDiskData
   let D : FiniteChartPolygonalDiskData C :=
     { disk := fun i => L.diskAt i.1
       chart_eq := fun i => L.chart_eq i.1
-      compatibleChartShrinks := L.compatibleChartShrinks
-      boundaryCompatibleChartShrinks := L.boundaryCompatibleChartShrinks }
+      compatibleChartShrinks := by
+        intro i
+        exact L.compatibleChartShrinks i.1
+      boundaryCompatibleChartShrinks := by
+        intro i
+        exact L.boundaryCompatibleChartShrinks i.1 }
   exact ⟨C, D⟩
 
 /-- The finite chart-pair cover extracted from local chart-polygonal-disk data. -/

@@ -650,16 +650,18 @@ structure FiniteChartPolygonalDiskData
     {M : Type*} [TopologicalSpace M] (C : FiniteChartPairCover M) where
   disk : C.Index → ChartPolygonalDisk M
   chart_eq : ∀ i : C.Index, (disk i).chart = C.pair i
-  compatibleChartShrinks : Prop
-  boundaryCompatibleChartShrinks : Prop
+  compatibleChartShrinks : ∀ i : C.Index, (disk i).chart.Refines (C.pair i)
+  boundaryCompatibleChartShrinks :
+    ∀ i : C.Index, (disk i).chart.boundaryCore ⊆ (C.pair i).boundaryCore
 
 structure LocalChartPolygonalDiskData (M : Type*) [TopologicalSpace M] where
   pairAt : M → RadoChartPair M
   diskAt : M → ChartPolygonalDisk M
   chart_eq : ∀ x : M, (diskAt x).chart = pairAt x
   core_mem_nhds : ∀ x : M, (pairAt x).core ∈ 𝓝 x
-  compatibleChartShrinks : Prop
-  boundaryCompatibleChartShrinks : Prop
+  compatibleChartShrinks : ∀ x : M, (diskAt x).chart.Refines (pairAt x)
+  boundaryCompatibleChartShrinks :
+    ∀ x : M, (diskAt x).chart.boundaryCore ⊆ (pairAt x).boundaryCore
 
 structure PointChartPolygonalDiskData (M : Type*) [TopologicalSpace M] (x : M) where
   disk : ChartPolygonalDisk M
@@ -707,8 +709,10 @@ Proved finite/combinatorial bridge:
    `LocalChartPolygonalDiskData.finiteChartPolygonalDiskData`, and
    `finite_chart_polygonal_disk_data_of_local`:
    compactness extracts a finite chart-pair cover while carrying pointwise polygonal disk data
-   along the selected finite indices.  The sigma-valued construction is the reusable data
-   extraction; the theorem with the original public name is now only the existential wrapper.
+   along the selected finite indices.  The chart-shrink compatibility fields are proof-bearing:
+   every chosen disk chart refines the selected chart pair, and boundary cores are compatible by
+   inclusion.  The sigma-valued construction is the reusable data extraction; the theorem with
+   the original public name is now only the existential wrapper.
 7. `local_chart_polygonal_disk_data_of_pointwise`:
    pointwise chart-disk data packages into the local function-valued data used for compactness.
 8. `mathlib_bordered_surface_point_chart_polygonal_disk_data`:
