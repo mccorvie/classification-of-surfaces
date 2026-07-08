@@ -492,14 +492,17 @@ for compact spaces a named finite PL triangulation data package.
 A finite chart-pair cover is a finite family of Rado chart pairs whose smaller
 cores cover the ambient space.  It can be enumerated by natural numbers, using
 the empty chart pair outside the finite range, and hence packaged as the
-countable chart-pair exhaustion used by Rado's induction.  In a nonempty space
-the index type is nonempty; `zeroIndex` names the first selected chart, while
-the pair-of-less-than and pair-of-not-less-than lemmas identify the finite and
-out-of-range enumeration cases.  The preferred mathlib chart at a point gives a
-chart pair whose core is a neighborhood of that
-point.  The chart-pair API also includes core refinement: `withCore` replaces a
-chart-pair core by a smaller core while keeping the surrounding chart and model
-map fixed.
+countable chart-pair exhaustion used by Rado's induction.  The cover and its
+countable exhaustion now carry proof-bearing finiteness and nesting fields:
+for each point there is an explicit finite set of indices meeting its core, and
+each core is proved to lie in its chart domain, with the analogous boundary-core
+statements.  In a nonempty space the index type is nonempty; `zeroIndex` names
+the first selected chart, while the pair-of-less-than and pair-of-not-less-than
+lemmas identify the finite and out-of-range enumeration cases.  The preferred
+mathlib chart at a point gives a chart pair whose core is a neighborhood of
+that point.  The chart-pair API also includes core refinement: `withCore`
+replaces a chart-pair core by a smaller core while keeping the surrounding
+chart and model map fixed.
 \end{definition}
 
 \begin{definition}[Finite chart polygonal disk data]
@@ -598,7 +601,9 @@ Every Moise two-manifold admits a countable sequence of chart pairs
 $(N_i,N'_i)$ such that $N'_i\subset N_i$, $N_i$ maps to the unit disk, $N'_i$ maps
 to the smaller disk or half-disk according to its chart kind, and the $N'_i$
 cover the manifold.  The formal exhaustion tracks interior and boundary chart
-coverage separately, with boundary cores for half-disk charts.
+coverage separately, with boundary cores for half-disk charts.  It also stores
+local-finiteness witnesses as finite sets of natural-number indices and stores
+the actual inclusions $N'_i\subset N_i$ and boundary-core containment.
 \end{lemma}
 
 \begin{proof}
@@ -618,6 +623,9 @@ $\mathcal X_1$ in the manifold whose support is a compact two-manifold with
 boundary and whose interior subcomplex contains the smaller chart neighborhood.
 The induction state also records a boundary subcomplex and compatibility fields
 asserting that boundary chart cores are covered by this boundary subcomplex.
+The finite-stage state records genuine finite simplex data for the complex and
+for the boundary subcomplex, rather than a placeholder local-finiteness
+proposition.
 \end{lemma}
 
 \begin{proof}

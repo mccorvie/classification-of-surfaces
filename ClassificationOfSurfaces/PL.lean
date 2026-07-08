@@ -2724,12 +2724,15 @@ structure FiniteChartPairCover (M : Type u) [TopologicalSpace M] where
   covers : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
   boundaryCovers : ∀ x : M, (∃ i : Index, x ∈ (pair i).boundaryCore) →
     ∃ i : Index, x ∈ (pair i).boundaryCore
-  interiorChartsCoverInterior : Prop
-  boundaryChartsCoverBoundary : Prop
-  locallyFinite : Prop
-  nestedControl : Prop
-  boundaryLocallyFinite : Prop
-  boundaryNestedControl : Prop
+  interiorChartsCoverInterior : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
+  boundaryChartsCoverBoundary :
+    ∀ x : M, (∃ i : Index, x ∈ (pair i).boundaryCore) →
+      ∃ i : Index, x ∈ (pair i).boundaryCore
+  locallyFinite : ∀ x : M, ∃ t : Finset Index, ∀ i : Index, x ∈ (pair i).core → i ∈ t
+  nestedControl : ∀ i : Index, (pair i).core ⊆ (pair i).domain
+  boundaryLocallyFinite :
+    ∀ x : M, ∃ t : Finset Index, ∀ i : Index, x ∈ (pair i).boundaryCore → i ∈ t
+  boundaryNestedControl : ∀ i : Index, (pair i).boundaryCore ⊆ (pair i).core
 
 attribute [instance] FiniteChartPairCover.indexFintype
 
@@ -2776,12 +2779,34 @@ theorem exists_of_compact_local
       boundaryCovers := by
         intro x hx
         exact hx
-      interiorChartsCoverInterior := True
-      boundaryChartsCoverBoundary := True
-      locallyFinite := True
-      nestedControl := True
-      boundaryLocallyFinite := True
-      boundaryNestedControl := True }
+      interiorChartsCoverInterior := by
+        intro y
+        have hy : y ∈ ⋃ x ∈ t, (pairAt x).core := by
+          rw [ht]
+          trivial
+        simp only [Set.mem_iUnion] at hy
+        rcases hy with ⟨x, hx⟩
+        rcases hx with ⟨hxt, hyx⟩
+        exact ⟨⟨x, hxt⟩, hyx⟩
+      boundaryChartsCoverBoundary := by
+        intro x hx
+        exact hx
+      locallyFinite := by
+        intro _x
+        refine ⟨Finset.univ, ?_⟩
+        intro i _hi
+        simp
+      nestedControl := by
+        intro i
+        exact (pairAt i.1).core_subset_domain
+      boundaryLocallyFinite := by
+        intro _x
+        refine ⟨Finset.univ, ?_⟩
+        intro i _hi
+        simp
+      boundaryNestedControl := by
+        intro i
+        exact (pairAt i.1).boundaryCore_subset_core }
   exact ⟨C, trivial⟩
 
 end FiniteChartPairCover
@@ -3401,12 +3426,14 @@ structure ChartPairExhaustion (M : Type*) [TopologicalSpace M] where
   pair : ℕ → RadoChartPair M
   covers : ∀ x : M, ∃ n, x ∈ (pair n).core
   boundaryCovers : ∀ x : M, x ∈ ⋃ n, (pair n).boundaryCore → ∃ n, x ∈ (pair n).boundaryCore
-  interiorChartsCoverInterior : Prop
-  boundaryChartsCoverBoundary : Prop
-  locallyFinite : Prop
-  nestedControl : Prop
-  boundaryLocallyFinite : Prop
-  boundaryNestedControl : Prop
+  interiorChartsCoverInterior : ∀ x : M, ∃ n, x ∈ (pair n).core
+  boundaryChartsCoverBoundary :
+    ∀ x : M, x ∈ ⋃ n, (pair n).boundaryCore → ∃ n, x ∈ (pair n).boundaryCore
+  locallyFinite : ∀ x : M, ∃ t : Finset ℕ, ∀ n, x ∈ (pair n).core → n ∈ t
+  nestedControl : ∀ n, (pair n).core ⊆ (pair n).domain
+  boundaryLocallyFinite :
+    ∀ x : M, ∃ t : Finset ℕ, ∀ n, x ∈ (pair n).boundaryCore → n ∈ t
+  boundaryNestedControl : ∀ n, (pair n).boundaryCore ⊆ (pair n).core
 
 namespace ChartPairExhaustion
 
@@ -3436,12 +3463,54 @@ noncomputable def toChartPairExhaustion {M : Type u} [TopologicalSpace M]
     intro x hx
     rcases Set.mem_iUnion.mp hx with ⟨n, hn⟩
     exact ⟨n, hn⟩
-  interiorChartsCoverInterior := C.interiorChartsCoverInterior
-  boundaryChartsCoverBoundary := C.boundaryChartsCoverBoundary
-  locallyFinite := C.locallyFinite
-  nestedControl := C.nestedControl
-  boundaryLocallyFinite := C.boundaryLocallyFinite
-  boundaryNestedControl := C.boundaryNestedControl
+  interiorChartsCoverInterior := by
+    intro x
+    rcases C.covers x with ⟨i, hi⟩
+    exact ⟨(Fintype.equivFin C.Index i).1, by simpa [C.natPair_of_index i] using hi⟩
+  boundaryChartsCoverBoundary := by
+    intro x hx
+    rcases Set.mem_iUnion.mp hx with ⟨n, hn⟩
+    exact ⟨n, hn⟩
+  locallyFinite := by
+    intro x
+    refine ⟨Finset.range (Fintype.card C.Index), ?_⟩
+    intro n hn
+    by_contra hnot
+    have hnlt : ¬ n < Fintype.card C.Index := by
+      simpa using hnot
+    have hpair : C.natPair n = RadoChartPair.empty M := by
+      simp [natPair, hnlt]
+    rw [hpair] at hn
+    simp [RadoChartPair.empty] at hn
+  nestedControl := by
+    intro n
+    by_cases hn : n < Fintype.card C.Index
+    · have hpair :
+          C.natPair n = C.pair ((Fintype.equivFin C.Index).symm ⟨n, hn⟩) := by
+        simp [natPair, hn]
+      rw [hpair]
+      exact (C.pair ((Fintype.equivFin C.Index).symm ⟨n, hn⟩)).core_subset_domain
+    · simp [natPair, hn, RadoChartPair.empty]
+  boundaryLocallyFinite := by
+    intro x
+    refine ⟨Finset.range (Fintype.card C.Index), ?_⟩
+    intro n hn
+    by_contra hnot
+    have hnlt : ¬ n < Fintype.card C.Index := by
+      simpa using hnot
+    have hpair : C.natPair n = RadoChartPair.empty M := by
+      simp [natPair, hnlt]
+    rw [hpair] at hn
+    simp [RadoChartPair.empty] at hn
+  boundaryNestedControl := by
+    intro n
+    by_cases hn : n < Fintype.card C.Index
+    · have hpair :
+          C.natPair n = C.pair ((Fintype.equivFin C.Index).symm ⟨n, hn⟩) := by
+        simp [natPair, hn]
+      rw [hpair]
+      exact (C.pair ((Fintype.equivFin C.Index).symm ⟨n, hn⟩)).boundaryCore_subset_core
+    · simp [natPair, hn, RadoChartPair.empty]
 
 /-- A finite chart-pair cover of a nonempty space has a nonempty index type. -/
 theorem index_nonempty {M : Type u} [TopologicalSpace M] [Nonempty M]
@@ -3515,8 +3584,8 @@ structure RadoInductionState (M : Type*) [TopologicalSpace M] where
   boundaryIsSubcomplex : Prop
   boundaryCompatibleOnOverlaps : Prop
   boundaryRespectsCharts : Prop
-  locallyFinite : Prop
-  boundaryLocallyFinite : Prop
+  locallyFinite : Finite complex.Complex.Simplex
+  boundaryLocallyFinite : Finite {σ : complex.Complex.Simplex // σ ∈ boundarySubcomplex.simplexes}
 
 namespace RadoInductionState
 
@@ -3598,8 +3667,8 @@ def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
     boundaryIsSubcomplex := D.boundarySubcomplexCompatible
     boundaryCompatibleOnOverlaps := True
     boundaryRespectsCharts := D.chartDisk.respectsChartModel
-    locallyFinite := Finite D.chartDisk.toPLComplexInSpace.Complex.Simplex
-    boundaryLocallyFinite := True }
+    locallyFinite := inferInstance
+    boundaryLocallyFinite := inferInstance }
 
 @[simp] theorem toState_stage
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -3685,8 +3754,8 @@ def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
     boundaryIsSubcomplex := True
     boundaryCompatibleOnOverlaps := D.boundaryCompatibleOnOverlaps
     boundaryRespectsCharts := D.boundaryRespectsCharts
-    locallyFinite := Finite D.nextComplex.Complex.Simplex
-    boundaryLocallyFinite := True }
+    locallyFinite := inferInstance
+    boundaryLocallyFinite := inferInstance }
 
 @[simp] theorem toState_stage
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -5009,12 +5078,34 @@ noncomputable def toFiniteChartPolygonalDiskData
       boundaryCovers := by
         intro x hx
         exact hx
-      interiorChartsCoverInterior := True
-      boundaryChartsCoverBoundary := True
-      locallyFinite := True
-      nestedControl := True
-      boundaryLocallyFinite := True
-      boundaryNestedControl := True }
+      interiorChartsCoverInterior := by
+        intro y
+        have hy : y ∈ ⋃ x ∈ t, (L.pairAt x).core := by
+          rw [ht]
+          trivial
+        simp only [Set.mem_iUnion] at hy
+        rcases hy with ⟨x, hx⟩
+        rcases hx with ⟨hxt, hyx⟩
+        exact ⟨⟨x, hxt⟩, hyx⟩
+      boundaryChartsCoverBoundary := by
+        intro x hx
+        exact hx
+      locallyFinite := by
+        intro _x
+        refine ⟨Finset.univ, ?_⟩
+        intro i _hi
+        simp
+      nestedControl := by
+        intro i
+        exact (L.pairAt i.1).core_subset_domain
+      boundaryLocallyFinite := by
+        intro _x
+        refine ⟨Finset.univ, ?_⟩
+        intro i _hi
+        simp
+      boundaryNestedControl := by
+        intro i
+        exact (L.pairAt i.1).boundaryCore_subset_core }
   let D : FiniteChartPolygonalDiskData C :=
     { disk := fun i => L.diskAt i.1
       chart_eq := fun i => L.chart_eq i.1

@@ -612,6 +612,18 @@ structure FiniteChartPairCover (M : Type*) [TopologicalSpace M] where
   indexFintype : Fintype Index
   pair : Index → RadoChartPair M
   covers : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
+  boundaryCovers :
+    ∀ x : M, (∃ i : Index, x ∈ (pair i).boundaryCore) →
+      ∃ i : Index, x ∈ (pair i).boundaryCore
+  interiorChartsCoverInterior : ∀ x : M, ∃ i : Index, x ∈ (pair i).core
+  boundaryChartsCoverBoundary :
+    ∀ x : M, (∃ i : Index, x ∈ (pair i).boundaryCore) →
+      ∃ i : Index, x ∈ (pair i).boundaryCore
+  locallyFinite : ∀ x : M, ∃ t : Finset Index, ∀ i, x ∈ (pair i).core → i ∈ t
+  nestedControl : ∀ i : Index, (pair i).core ⊆ (pair i).domain
+  boundaryLocallyFinite :
+    ∀ x : M, ∃ t : Finset Index, ∀ i, x ∈ (pair i).boundaryCore → i ∈ t
+  boundaryNestedControl : ∀ i : Index, (pair i).boundaryCore ⊆ (pair i).core
 
 structure MoiseExtractionData (M : Type*) [TopologicalSpace M] where
   finiteCover : FiniteChartPairCover M
@@ -658,7 +670,10 @@ Proved finite/combinatorial bridge:
    a finite chart-pair cover can be enumerated by `ℕ` and used as the Rado chart-pair exhaustion.
    The helper API `zeroIndex`, `toChartPairExhaustion_pair_of_lt`,
    `toChartPairExhaustion_pair_of_not_lt`, and `toChartPairExhaustion_pair_zero` names the first
-   finite chart and the in-range/out-of-range enumeration cases.
+   finite chart and the in-range/out-of-range enumeration cases.  The finite-cover and exhaustion
+   local-finiteness fields are proof-bearing: finite covers use explicit finite index sets, and
+   the countable enumeration uses `Finset.range (Fintype.card C.Index)` because all out-of-range
+   chart pairs are empty.
 3. `RadoChartPair.fromChartAt` and `mathlib_bordered_surface_finite_chart_pair_cover`:
    the preferred mathlib chart at each point gives a chart pair whose core is a neighborhood, so a
    compact bordered surface has a finite chart-pair cover.
