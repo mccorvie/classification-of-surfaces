@@ -464,6 +464,12 @@ structure PLMap.RespectsSubcomplex
   image_lands_in_target : A.simplexes.Nonempty → B.simplexes.Nonempty
 ```
 
+Current status: `PLMap.LinearOnSubdivision.compatibleWithSubdivisionSupports` is no longer a free
+proposition.  It records the support-homeomorphism compatibility equation saying that transporting
+the subdivided target point back along the target subdivision recovers the original map after the
+domain subdivision support homeomorphism.  The helper theorem is
+`PLMap.LinearOnSubdivision.support_compatible`.
+
 Prove basic closure properties:
 
 ```lean

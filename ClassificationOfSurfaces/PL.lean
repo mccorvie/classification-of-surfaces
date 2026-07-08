@@ -661,7 +661,10 @@ structure LinearOnSubdivision {K L : EuclideanComplex} (f : PLMap K L)
   existingPLWitness : f.exists_subdivision_linear
   mapsFineSimplexToTargetSimplex : ∀ _σ : S.K'.Simplex, Prop
   affineOnFineSimplex : ∀ _σ : S.K'.Simplex, Prop
-  compatibleWithSubdivisionSupports : Prop
+  compatibleWithSubdivisionSupports :
+    ∀ x : S.K'.support,
+      T.supportHomeomorph (T.supportHomeomorph.symm (f.toFun (S.supportHomeomorph x))) =
+        f.toFun (S.supportHomeomorph x)
 
 /-- A PL map has some subdivision witness on which it is linear simplexwise. -/
 def HasLinearSubdivisionWitness {K L : EuclideanComplex} (f : PLMap K L) : Prop :=
@@ -675,12 +678,22 @@ def of_existing {K L : EuclideanComplex} {f : PLMap K L}
   existingPLWitness := hf
   mapsFineSimplexToTargetSimplex := fun _ => True
   affineOnFineSimplex := fun _ => True
-  compatibleWithSubdivisionSupports := True
+  compatibleWithSubdivisionSupports := by
+    intro x
+    simp
 
 theorem existing {K L : EuclideanComplex} {f : PLMap K L}
     {S : K.Subdivision} {T : L.Subdivision} (h : f.LinearOnSubdivision S T) :
     f.exists_subdivision_linear :=
   h.existingPLWitness
+
+/-- The support-homeomorphism compatibility equation stored by a linear subdivision witness. -/
+theorem support_compatible {K L : EuclideanComplex} {f : PLMap K L}
+    {S : K.Subdivision} {T : L.Subdivision} (h : f.LinearOnSubdivision S T)
+    (x : S.K'.support) :
+    T.supportHomeomorph (T.supportHomeomorph.symm (f.toFun (S.supportHomeomorph x))) =
+      f.toFun (S.supportHomeomorph x) :=
+  h.compatibleWithSubdivisionSupports x
 
 end LinearOnSubdivision
 
