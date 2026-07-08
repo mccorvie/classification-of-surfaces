@@ -2444,18 +2444,22 @@ theorem mem_fullFiniteSupportData_simplexes
 /-- Boundary subcomplex data for an embedded PL complex in a bordered surface. -/
 structure BoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) where
   boundary : K.Complex.Subcomplex
-  coversBoundary : Prop
-  compatibleWithAmbient : Prop
-  locallyFiniteBoundary : Prop
+  boundarySupport : Set X
+  coversBoundary : boundarySupport ⊆ K.support
+  compatibleWithAmbient : ∀ x ∈ boundarySupport, x ∈ K.support
+  locallyFiniteBoundary : Finite {σ : K.Complex.Simplex // σ ∈ boundary.simplexes}
 
 /-- Default boundary data using the full subcomplex.  This is the scaffold boundary package used
 until boundary strata are represented as geometric subcomplexes. -/
 def fullBoundarySubcomplexData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
     K.BoundarySubcomplexData where
   boundary := EuclideanComplex.Subcomplex.full K.Complex
-  coversBoundary := True
-  compatibleWithAmbient := True
-  locallyFiniteBoundary := True
+  boundarySupport := K.support
+  coversBoundary := subset_rfl
+  compatibleWithAmbient := by
+    intro x hx
+    exact hx
+  locallyFiniteBoundary := inferInstance
 
 end PLComplexInSpace
 

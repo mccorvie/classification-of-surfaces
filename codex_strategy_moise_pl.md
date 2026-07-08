@@ -562,6 +562,13 @@ structure PLComplexIn (X : Type*) [TopologicalSpace X] where
   embedding : Embedding embed
   locallyFinite : Finite Complex.Simplex
   compatibleCharts : Function.Injective embed ∧ Continuous embed
+
+structure PLComplexIn.BoundarySubcomplexData (K : PLComplexIn X) where
+  boundary : K.Complex.Subcomplex
+  boundarySupport : Set X
+  coversBoundary : boundarySupport ⊆ K.support
+  compatibleWithAmbient : ∀ x ∈ boundarySupport, x ∈ K.support
+  locallyFiniteBoundary : Finite {σ : K.Complex.Simplex // σ ∈ boundary.simplexes}
 ```
 
 Needed operations:
