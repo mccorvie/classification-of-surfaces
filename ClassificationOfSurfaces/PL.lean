@@ -5118,6 +5118,24 @@ theorem toState_coversPreviousBoundaryCores
     D.toState.coverage.CoversBoundaryCoreSets :=
   D.toState.coverage.coversBoundaryCoreSets
 
+/-- Vertex embedding for old-stage vertices in a one-chart union complex. -/
+def chartUnionOldVertexEmbedding
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) :
+    S.complex.Complex.Vertex ↪ S.complex.Complex.Vertex ⊕ D.disk.K.Vertex :=
+  ⟨Sum.inl, by
+    intro a b h
+    exact Sum.inl.inj h⟩
+
+/-- Vertex embedding for newly adjoined chart-disk vertices in a one-chart union complex. -/
+def chartUnionNewVertexEmbedding
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) :
+    D.disk.K.Vertex ↪ S.complex.Complex.Vertex ⊕ D.disk.K.Vertex :=
+  ⟨Sum.inr, by
+    intro a b h
+    exact Sum.inr.inj h⟩
+
 /-- The carrier-level PL complex obtained by adjoining one chart polygonal disk to a Rado stage.
 
 The simplex type is the disjoint sum of old-stage simplexes and chart-disk simplexes, and
@@ -5145,16 +5163,6 @@ noncomputable def chartUnionPLComplexData
   have hCarrierEmbedding :
       @Topology.IsEmbedding (Shrink.{0} U) M carrierTop inferInstance carrierMap :=
     hCarrierInjective.isEmbedding_induced
-  let oldVertex :
-      S.complex.Complex.Vertex ↪ S.complex.Complex.Vertex ⊕ D.disk.K.Vertex :=
-    ⟨Sum.inl, by
-      intro a b h
-      exact Sum.inl.inj h⟩
-  let newVertex :
-      D.disk.K.Vertex ↪ S.complex.Complex.Vertex ⊕ D.disk.K.Vertex :=
-    ⟨Sum.inr, by
-      intro a b h
-      exact Sum.inr.inj h⟩
   let C : EuclideanComplex :=
     { Point := Shrink.{0} U
       pointTop := carrierTop
@@ -5167,8 +5175,8 @@ noncomputable def chartUnionPLComplexData
       simplexNonempty := by
         exact ⟨Sum.inl S.complex.Complex.defaultSimplex⟩
       simplexVertices := fun
-        | Sum.inl σ => (S.complex.Complex.vertices σ).map oldVertex
-        | Sum.inr σ => (D.disk.K.vertices σ).map newVertex
+        | Sum.inl σ => (S.complex.Complex.vertices σ).map (chartUnionOldVertexEmbedding S D)
+        | Sum.inr σ => (D.disk.K.vertices σ).map (chartUnionNewVertexEmbedding S D)
       simplex_nonempty := by
         intro σ
         cases σ with
@@ -5204,23 +5212,30 @@ noncomputable def chartUnionPLComplexData
                   simpa [EuclideanComplex.vertices] using hτ
                 refine ⟨Sum.inl τ, ?_⟩
                 calc
-                  Finset.map oldVertex (S.complex.Complex.simplexVertices τ) =
-                      Finset.map oldVertex
+                  Finset.map (chartUnionOldVertexEmbedding S D)
+                        (S.complex.Complex.simplexVertices τ) =
+                      Finset.map (chartUnionOldVertexEmbedding S D)
                         ((S.complex.Complex.simplexVertices σ).erase v) := by
                     rw [hτ']
                   _ =
-                      (Finset.map oldVertex
-                        (S.complex.Complex.simplexVertices σ)).erase (oldVertex v) :=
-                    Finset.map_erase oldVertex (S.complex.Complex.simplexVertices σ) v
+                      (Finset.map (chartUnionOldVertexEmbedding S D)
+                        (S.complex.Complex.simplexVertices σ)).erase
+                          ((chartUnionOldVertexEmbedding S D) v) :=
+                    Finset.map_erase (chartUnionOldVertexEmbedding S D)
+                      (S.complex.Complex.simplexVertices σ) v
                   _ =
-                      (Finset.map oldVertex
+                      (Finset.map (chartUnionOldVertexEmbedding S D)
                         (S.complex.Complex.simplexVertices σ)).erase (Sum.inl v) := rfl
             | inr v =>
-                simp [EuclideanComplex.vertices] at hv
+                rw [Finset.mem_map] at hv
+                rcases hv with ⟨v', _hv', hv'eq⟩
+                cases hv'eq
         | inr σ =>
             cases v with
             | inl v =>
-                simp [EuclideanComplex.vertices] at hv
+                rw [Finset.mem_map] at hv
+                rcases hv with ⟨v', _hv', hv'eq⟩
+                cases hv'eq
             | inr v =>
                 have hv_new : v ∈ D.disk.K.vertices σ := by
                   rw [Finset.mem_map] at hv
@@ -5235,14 +5250,19 @@ noncomputable def chartUnionPLComplexData
                   simpa [EuclideanComplex.vertices] using hτ
                 refine ⟨Sum.inr τ, ?_⟩
                 calc
-                  Finset.map newVertex (D.disk.K.simplexVertices τ) =
-                      Finset.map newVertex ((D.disk.K.simplexVertices σ).erase v) := by
+                  Finset.map (chartUnionNewVertexEmbedding S D) (D.disk.K.simplexVertices τ) =
+                      Finset.map (chartUnionNewVertexEmbedding S D)
+                        ((D.disk.K.simplexVertices σ).erase v) := by
                     rw [hτ']
                   _ =
-                      (Finset.map newVertex (D.disk.K.simplexVertices σ)).erase (newVertex v) :=
-                    Finset.map_erase newVertex (D.disk.K.simplexVertices σ) v
+                      (Finset.map (chartUnionNewVertexEmbedding S D)
+                        (D.disk.K.simplexVertices σ)).erase
+                          ((chartUnionNewVertexEmbedding S D) v) :=
+                    Finset.map_erase (chartUnionNewVertexEmbedding S D)
+                      (D.disk.K.simplexVertices σ) v
                   _ =
-                      (Finset.map newVertex (D.disk.K.simplexVertices σ)).erase (Sum.inr v) := rfl }
+                      (Finset.map (chartUnionNewVertexEmbedding S D)
+                        (D.disk.K.simplexVertices σ)).erase (Sum.inr v) := rfl }
   let emb : C.support → M := fun p => carrierMap p.1
   let hKEmbedding : _root_.Topology.IsEmbedding emb :=
     hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
@@ -5329,12 +5349,135 @@ noncomputable def chartUnionPLComplex
   unfold chartUnionPLComplex chartUnionPLComplexData PLComplexInSpace.simplexCarrier
   rfl
 
+/-- Old-stage simplex vertex sets are preserved, with vertices embedded on the left. -/
+@[simp] theorem chartUnionPLComplex_old_vertices
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) (σ : S.complex.Complex.Simplex) :
+    (chartUnionPLComplex S D).Complex.vertices
+        (show (chartUnionPLComplex S D).Complex.Simplex from Sum.inl σ) =
+      (S.complex.Complex.vertices σ).map (chartUnionOldVertexEmbedding S D) := by
+  unfold chartUnionPLComplex chartUnionPLComplexData EuclideanComplex.vertices
+  rfl
+
+/-- New chart-disk simplex vertex sets are preserved, with vertices embedded on the right. -/
+@[simp] theorem chartUnionPLComplex_new_vertices
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) (σ : D.disk.K.Simplex) :
+    (chartUnionPLComplex S D).Complex.vertices
+        (show (chartUnionPLComplex S D).Complex.Simplex from Sum.inr σ) =
+      (D.disk.K.vertices σ).map (chartUnionNewVertexEmbedding S D) := by
+  unfold chartUnionPLComplex chartUnionPLComplexData EuclideanComplex.vertices
+  rfl
+
 /-- The chart-union complex has support equal to old support union chart-disk image. -/
 theorem chartUnionPLComplex_support
     {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
     (D : ChartPolygonalDisk M) :
     (chartUnionPLComplex S D).support = S.complex.support ∪ Set.range D.embed :=
   (chartUnionPLComplexData S D).2
+
+/-- Boundary subcomplex for a one-chart union: keep the old stage boundary on the left and the
+chart disk boundary on the right. -/
+noncomputable def chartUnionBoundarySubcomplex
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) : (chartUnionPLComplex S D).Complex.Subcomplex := by
+  classical
+  refine
+    { simplexes :=
+        Finset.univ.filter fun σ =>
+          match σ with
+          | Sum.inl τ => τ ∈ S.boundarySubcomplex.simplexes
+          | Sum.inr τ => τ ∈ D.disk.boundarySubcomplex.simplexes
+      face_closed := ?_ }
+  · intro τ σ hσ hface
+    rw [Finset.mem_filter] at hσ ⊢
+    constructor
+    · simp
+    · cases σ with
+      | inl σ =>
+          cases τ with
+          | inl τ =>
+              have hface_old : S.complex.Complex.IsFace τ σ := by
+                intro v hv
+                have hvUnion :
+                    Sum.inl v ∈ (chartUnionPLComplex S D).Complex.vertices
+                      (show (chartUnionPLComplex S D).Complex.Simplex from Sum.inl τ) := by
+                  rw [chartUnionPLComplex_old_vertices]
+                  exact Finset.mem_map.mpr ⟨v, hv, rfl⟩
+                have hvTarget := hface hvUnion
+                rw [chartUnionPLComplex_old_vertices] at hvTarget
+                change Sum.inl v ∈
+                  (S.complex.Complex.vertices σ).map (chartUnionOldVertexEmbedding S D) at hvTarget
+                rw [Finset.mem_map] at hvTarget
+                rcases hvTarget with ⟨v', hv', hv'eq⟩
+                exact (Sum.inl.inj hv'eq).symm ▸ hv'
+              exact S.boundarySubcomplex.face_closed hσ.2 hface_old
+          | inr τ =>
+              exfalso
+              rcases D.disk.K.simplex_nonempty τ with ⟨v, hv⟩
+              have hvUnion :
+                  Sum.inr v ∈ (chartUnionPLComplex S D).Complex.vertices
+                    (show (chartUnionPLComplex S D).Complex.Simplex from Sum.inr τ) := by
+                rw [chartUnionPLComplex_new_vertices]
+                exact Finset.mem_map.mpr ⟨v, hv, rfl⟩
+              have hvTarget := hface hvUnion
+              rw [chartUnionPLComplex_old_vertices] at hvTarget
+              change Sum.inr v ∈
+                (S.complex.Complex.vertices σ).map (chartUnionOldVertexEmbedding S D) at hvTarget
+              rw [Finset.mem_map] at hvTarget
+              rcases hvTarget with ⟨v', _hv', hv'eq⟩
+              cases hv'eq
+      | inr σ =>
+          cases τ with
+          | inl τ =>
+              exfalso
+              rcases S.complex.Complex.simplex_nonempty τ with ⟨v, hv⟩
+              have hvUnion :
+                  Sum.inl v ∈ (chartUnionPLComplex S D).Complex.vertices
+                    (show (chartUnionPLComplex S D).Complex.Simplex from Sum.inl τ) := by
+                rw [chartUnionPLComplex_old_vertices]
+                exact Finset.mem_map.mpr ⟨v, hv, rfl⟩
+              have hvTarget := hface hvUnion
+              rw [chartUnionPLComplex_new_vertices] at hvTarget
+              change Sum.inl v ∈
+                (D.disk.K.vertices σ).map (chartUnionNewVertexEmbedding S D) at hvTarget
+              rw [Finset.mem_map] at hvTarget
+              rcases hvTarget with ⟨v', _hv', hv'eq⟩
+              cases hv'eq
+          | inr τ =>
+              have hface_new : D.disk.K.IsFace τ σ := by
+                intro v hv
+                have hvUnion :
+                    Sum.inr v ∈ (chartUnionPLComplex S D).Complex.vertices
+                      (show (chartUnionPLComplex S D).Complex.Simplex from Sum.inr τ) := by
+                  rw [chartUnionPLComplex_new_vertices]
+                  exact Finset.mem_map.mpr ⟨v, hv, rfl⟩
+                have hvTarget := hface hvUnion
+                rw [chartUnionPLComplex_new_vertices] at hvTarget
+                change Sum.inr v ∈
+                  (D.disk.K.vertices σ).map (chartUnionNewVertexEmbedding S D) at hvTarget
+                rw [Finset.mem_map] at hvTarget
+                rcases hvTarget with ⟨v', hv', hv'eq⟩
+                exact (Sum.inr.inj hv'eq).symm ▸ hv'
+              exact D.disk.boundarySubcomplex.face_closed hσ.2 hface_new
+
+@[simp] theorem chartUnionBoundarySubcomplex_left_mem
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) (σ : S.complex.Complex.Simplex) :
+    (show (chartUnionPLComplex S D).Complex.Simplex from Sum.inl σ) ∈
+        (chartUnionBoundarySubcomplex S D).simplexes ↔
+      σ ∈ S.boundarySubcomplex.simplexes := by
+  unfold chartUnionBoundarySubcomplex
+  simp
+
+@[simp] theorem chartUnionBoundarySubcomplex_right_mem
+    {M : Type*} [TopologicalSpace M] (S : RadoInductionState M)
+    (D : ChartPolygonalDisk M) (σ : D.disk.K.Simplex) :
+    (show (chartUnionPLComplex S D).Complex.Simplex from Sum.inr σ) ∈
+        (chartUnionBoundarySubcomplex S D).simplexes ↔
+      σ ∈ D.disk.boundarySubcomplex.simplexes := by
+  unfold chartUnionBoundarySubcomplex
+  simp
 
 /-- Named one-step Rado extension data from a polygonal chart disk. -/
 noncomputable def fromChartPolygonalDisk
@@ -5347,7 +5490,7 @@ noncomputable def fromChartPolygonalDisk
     chartUnionPLComplex_support S D
   exact
     { nextComplex := K
-      boundarySubcomplex := EuclideanComplex.Subcomplex.full K.Complex
+      boundarySubcomplex := chartUnionBoundarySubcomplex S D
       nextChartDisk := some D
       next_chart_eq := by
         intro D' hD'
@@ -5379,7 +5522,7 @@ noncomputable def fromChartPolygonalDisk
         constructor
         · exact K.compatibleOnOverlap_of_embedded_overlap S.complex
         · intro τ σ hσ hface
-          exact (EuclideanComplex.Subcomplex.full K.Complex).face_closed hσ hface
+          exact (chartUnionBoundarySubcomplex S D).face_closed hσ hface
       boundaryRespectsCharts := by
         refine S.boundaryRespectsCharts.extendWithChart D ?_ ?_
         · intro x hx
