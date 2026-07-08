@@ -3871,6 +3871,25 @@ theorem fromChartAt_mem_boundaryCore_of_manifold_boundary
   rw [frontier_range_modelWithCornersEuclideanHalfSpace] at hxfrontier
   simpa [extChartAt, modelWithCornersEuclideanHalfSpace] using hxfrontier.symm
 
+/-- C0 theorem boundary: topological half-space chart changes preserve the boundary stratum.
+
+Mathlib proves this for positive differentiability in
+`ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`.  At regularity `0`, the corresponding
+statement is an invariance-of-domain/local-homology theorem for open subsets of the closed
+half-plane: a manifold-boundary point lying in any preferred half-space chart is mapped to the
+frontier of that chart's extended target. -/
+theorem chartAt_extend_mem_frontier_target_of_manifold_boundary
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M]
+    (x : M) {y : M}
+    (hySource : y ∈ (chartAt (EuclideanHalfSpace 2) x).source)
+    (hyBoundary : y ∈ (modelWithCornersEuclideanHalfSpace 2).boundary M) :
+    (chartAt (EuclideanHalfSpace 2) x).extend (modelWithCornersEuclideanHalfSpace 2) y ∈
+      frontier
+        (((chartAt (EuclideanHalfSpace 2) x).extend
+          (modelWithCornersEuclideanHalfSpace 2)).target) := by
+  sorry
+
 /-- Nonzero-regularity chart-boundary invariance for preferred half-space charts.
 
 This is the version directly available from mathlib's
@@ -3948,7 +3967,44 @@ theorem fromChartAt_chart_coord_zero_of_manifold_boundary
     (x : M) {y : (fromChartAt M x).domain}
     (hy : (y : M) ∈ (modelWithCornersEuclideanHalfSpace 2).boundary M) :
     ((fromChartAt M x).chartHomeomorph y : Plane) 0 = 0 := by
-  sorry
+  let I := modelWithCornersEuclideanHalfSpace 2
+  let e := chartAt (EuclideanHalfSpace 2) x
+  have hfrontierTarget :
+      e.extend I (y : M) ∈ frontier (e.extend I).target := by
+    exact chartAt_extend_mem_frontier_target_of_manifold_boundary
+      (M := M) (x := x) (y := y) (by simp [fromChartAt] at y ⊢) hy
+  have htarget : e.extend I (y : M) ∈ (e.extend I).target := by
+    exact (e.extend I).map_source (by simp [e, I, fromChartAt] at y ⊢)
+  have hnotInteriorTarget :
+      e.extend I (y : M) ∉ interior (e.extend I).target :=
+    (mem_frontier_iff_notMem_interior htarget).mp hfrontierTarget
+  have htargetH : e (y : M) ∈ e.target := by
+    exact e.map_source (by simp [e, fromChartAt] at y ⊢)
+  have hnotInteriorRange :
+      e.extend I (y : M) ∉ interior (Set.range I) := by
+    intro hInteriorRange
+    exact hnotInteriorTarget (by
+      simpa [e, I, OpenPartialHomeomorph.extend] using
+        e.mem_interior_extend_target (I := I) htargetH hInteriorRange)
+  have hrange : e.extend I (y : M) ∈ Set.range I :=
+    OpenPartialHomeomorph.extend_target_subset_range e htarget
+  have hfrontierRange : e.extend I (y : M) ∈ frontier (Set.range I) :=
+    (mem_frontier_iff_notMem_interior hrange).2 hnotInteriorRange
+  rw [frontier_range_modelWithCornersEuclideanHalfSpace] at hfrontierRange
+  change ((((chartAt (EuclideanHalfSpace 2) x).toHomeomorphSourceTarget.trans
+    ((Topology.IsEmbedding.subtypeVal :
+        Topology.IsEmbedding (Subtype.val : EuclideanHalfSpace 2 → Plane)).homeomorphImage
+      (chartAt (EuclideanHalfSpace 2) x).target)) y : Plane) 0 = 0)
+  have hchart :
+      (((chartAt (EuclideanHalfSpace 2) x).toHomeomorphSourceTarget.trans
+        ((Topology.IsEmbedding.subtypeVal :
+            Topology.IsEmbedding (Subtype.val : EuclideanHalfSpace 2 → Plane)).homeomorphImage
+          (chartAt (EuclideanHalfSpace 2) x).target)) y : Plane) =
+        ((chartAt (EuclideanHalfSpace 2) x (y : M) : EuclideanHalfSpace 2).1 : Plane) := by
+    rfl
+  rw [hchart]
+  simpa [e, I, modelWithCornersEuclideanHalfSpace, OpenPartialHomeomorph.extend] using
+    hfrontierRange.symm
 
 /-- A chart pair modeled on the half-disk. -/
 def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=

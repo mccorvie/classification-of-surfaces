@@ -27,6 +27,7 @@ project skeleton and documents the intended handoff points between teams.
 * `PLHomeomorph`
 * `CombinatorialTwoManifoldWithBoundary`
 * `CombinatorialTwoCell`
+* `RadoChartPair.chartAt_extend_mem_frontier_target_of_manifold_boundary`
 * `PLComplexInSpace`
 * `FinitePLTriangulationData`
 * `MoiseTwoManifold`

@@ -933,9 +933,11 @@ Proved finite/combinatorial bridge:
    `fromChartAt_mem_boundaryCore_of_manifold_boundary` connects mathlib's
    `ModelWithCorners.boundary` to this preferred-chart boundary core using the frontier of
    `EuclideanHalfSpace`.  The finite-cover route needs the corresponding arbitrary-chart C0
-   boundary-invariance statement; this is isolated as the hard theorem boundary
-   `fromChartAt_chart_coord_zero_of_manifold_boundary`.  The positive-regularity companion is now
-   proved in the general nonzero-regularity form
+   boundary-invariance statement; this is isolated at the frontier-of-target level as the hard
+   theorem boundary `chartAt_extend_mem_frontier_target_of_manifold_boundary`.  The coordinate
+   consequence `fromChartAt_chart_coord_zero_of_manifold_boundary` is now proved from that
+   lower-level boundary.  The positive-regularity companion is now proved in the general
+   nonzero-regularity form
    `fromChartAt_chart_coord_zero_of_manifold_boundary_of_isManifold_ne_zero`, with the C1 wrapper
    `fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff`, using mathlib's
    `ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`.  The positive-regularity extraction path
