@@ -41,10 +41,16 @@ Gallier-Xu normal-form proof.
 
 * `OrientedEdge`
 * `FiniteSurfaceTriangulation`
+* `PLComplexInSpace.mem_support_iff`
+* `PLComplexInSpace.support_eq_iUnion_simplexCarrier`
 * `PLComplexInSpace.FiniteSupportData.OneSimplex`
 * `PLComplexInSpace.FiniteSupportData.TwoSimplex`
+* `PLComplexInSpace.FiniteSupportData.mem_support_iff`
+* `PLComplexInSpace.FiniteSupportData.support_eq_iUnion_simplexCarrier`
 * `PLComplexInSpace.FiniteSupportData.edgeTargetVertex_ne_source`
 * `PLComplexInSpace.FiniteSupportData.triangleBoundaryWord`
+* `StagewisePLComplexInSpace.mem_support_iff`
+* `StagewisePLComplexInSpace.support_eq_iUnion_simplexCarrier`
 * `PLComplexInSpace.BoundarySubcomplexData.mem_boundarySupport_iff`
 * `PLComplexInSpace.BoundarySubcomplexData.boundarySupport_eq_iUnion_simplexCarrier`
 * `StagewisePLComplexInSpace.mem_boundarySupport_iff`

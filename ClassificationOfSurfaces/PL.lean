@@ -3088,6 +3088,23 @@ theorem exists_simplexCarrier_of_mem_support {X : Type*} [TopologicalSpace X]
     ∃ σ : K.Complex.Simplex, x ∈ K.simplexCarrier σ := by
   simpa [simplexCarrier, support] using K.support_covered_by_simplexSupport x hx
 
+/-- The embedded support is exactly the union of its stored simplex carriers. -/
+theorem mem_support_iff {X : Type*} [TopologicalSpace X]
+    (K : PLComplexInSpace X) (x : X) :
+    x ∈ K.support ↔ ∃ σ : K.Complex.Simplex, x ∈ K.simplexCarrier σ := by
+  constructor
+  · exact K.exists_simplexCarrier_of_mem_support
+  · rintro ⟨σ, hxσ⟩
+    exact K.simplexCarrier_subset_support σ hxσ
+
+/-- Support of an embedded PL complex as an indexed union of simplex carriers. -/
+theorem support_eq_iUnion_simplexCarrier {X : Type*} [TopologicalSpace X]
+    (K : PLComplexInSpace X) :
+    K.support = ⋃ σ : K.Complex.Simplex, K.simplexCarrier σ := by
+  ext x
+  rw [K.mem_support_iff]
+  exact Set.mem_iUnion.symm
+
 /-- A point of the ambient space is covered by an embedded PL complex. -/
 def Covers {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) (x : X) : Prop :=
   x ∈ K.support
@@ -3287,6 +3304,30 @@ theorem covers {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
     (F : K.FiniteSupportData) {x : X} (hx : x ∈ K.support) :
     ∃ σ ∈ F.simplexes, x ∈ K.simplexCarrier σ :=
   F.coversSupport x hx
+
+/-- A finite support package covers exactly the embedded support by its selected carriers. -/
+theorem mem_support_iff {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) (x : X) :
+    x ∈ K.support ↔ ∃ σ ∈ F.simplexes, x ∈ K.simplexCarrier σ := by
+  constructor
+  · exact F.covers
+  · rintro ⟨σ, _hσ, hxσ⟩
+    exact K.simplexCarrier_subset_support σ hxσ
+
+/-- Embedded support as a union of the selected finite-support simplex carriers. -/
+theorem support_eq_iUnion_simplexCarrier
+    {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
+    (F : K.FiniteSupportData) :
+    K.support =
+      ⋃ σ : {σ : K.Complex.Simplex // σ ∈ F.simplexes}, K.simplexCarrier σ.1 := by
+  ext x
+  rw [F.mem_support_iff]
+  constructor
+  · rintro ⟨σ, hσ, hxσ⟩
+    exact Set.mem_iUnion.mpr ⟨⟨σ, hσ⟩, hxσ⟩
+  · intro hx
+    rcases Set.mem_iUnion.mp hx with ⟨σ, hxσ⟩
+    exact ⟨σ.1, σ.2, hxσ⟩
 
 /-- Supported simplexes of a specified dimension. -/
 def simplexesOfDim {X : Type*} [TopologicalSpace X] {K : PLComplexInSpace X}
@@ -3506,6 +3547,23 @@ theorem boundarySupport_subset {X : Type*} [TopologicalSpace X]
     (K : StagewisePLComplexInSpace X) :
     K.boundarySupport ⊆ K.support :=
   K.boundarySupport_subset_support
+
+/-- A stagewise PL complex support is exactly the union of its stored simplex carriers. -/
+theorem mem_support_iff {X : Type*} [TopologicalSpace X]
+    (K : StagewisePLComplexInSpace X) (x : X) :
+    x ∈ K.support ↔ ∃ σ : K.Simplex, x ∈ K.simplexCarrier σ := by
+  constructor
+  · exact K.support_covered_by_simplexCarrier x
+  · rintro ⟨σ, hxσ⟩
+    exact K.simplexCarrier_subset_support σ hxσ
+
+/-- Stagewise support as an indexed union of simplex carriers. -/
+theorem support_eq_iUnion_simplexCarrier {X : Type*} [TopologicalSpace X]
+    (K : StagewisePLComplexInSpace X) :
+    K.support = ⋃ σ : K.Simplex, K.simplexCarrier σ := by
+  ext x
+  rw [K.mem_support_iff]
+  exact Set.mem_iUnion.symm
 
 /-- A stagewise boundary package contains exactly the union of its boundary-simplex carriers. -/
 theorem mem_boundarySupport_iff {X : Type*} [TopologicalSpace X]

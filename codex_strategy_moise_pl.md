@@ -781,8 +781,11 @@ data directly: every abstract simplex has an ambient carrier subset of the embed
 the embedded support is covered by these carriers.  `PLComplexInSpace.SimplexRelevant` is no
 longer `True` or full finite-set membership; it means the stored ambient carrier is nonempty.
 `FiniteSupportData.covers` proves that the selected relevant simplex carriers cover the embedded
-support.  `locallyFiniteComplex_finite_of_compact_support` returns `Nonempty K.FiniteSupportData`
-rather than data plus a trailing truth witness.
+support, and `FiniteSupportData.support_eq_iUnion_simplexCarrier` packages this as an exact
+support-as-union statement over the selected simplexes.  The ambient PL complex itself also has
+`PLComplexInSpace.mem_support_iff` and `PLComplexInSpace.support_eq_iUnion_simplexCarrier`.
+`locallyFiniteComplex_finite_of_compact_support` returns `Nonempty K.FiniteSupportData` rather
+than data plus a trailing truth witness.
 
 ### Moise work package M7: Rado induction for closed surfaces
 
@@ -1032,7 +1035,8 @@ Proved finite/combinatorial bridge:
    `finiteStagePLTriangulationData_boundaryCarrier_subset` push the finite cover's named
    `boundaryCarrier` into the terminal stage and its packaged boundary data.  The finite and
    stagewise boundary packages also expose exact support-as-union APIs via
-   `PLComplexInSpace.BoundarySubcomplexData.boundarySupport_eq_iUnion_simplexCarrier` and
+   `PLComplexInSpace.BoundarySubcomplexData.boundarySupport_eq_iUnion_simplexCarrier`,
+   `StagewisePLComplexInSpace.support_eq_iUnion_simplexCarrier`, and
    `StagewisePLComplexInSpace.boundarySupport_eq_iUnion_simplexCarrier`.
    `RadoInductionData.finiteStagePLTriangulationData` is now the reusable compact-case exit from
    the Rado layer: it packages that terminal state as finite PL triangulation data, including the
