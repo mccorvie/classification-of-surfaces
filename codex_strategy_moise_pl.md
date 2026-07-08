@@ -254,8 +254,9 @@ structure FiniteSurfaceTriangulation (S : Type*) [TopologicalSpace S] where
 ```
 
 `FiniteSurfaceTriangulation.Valid` is the current finite combinatorial validity predicate:
-edges have two vertices, triangles have three vertices, recorded endpoints lie on their edge, and
-every edge listed in a triangle boundary has its vertices contained in the triangle vertex set.
+edges have two vertices, triangles have three vertices, recorded endpoints lie on their edge,
+edge endpoints are distinct, and every edge listed in a triangle boundary has its vertices
+contained in the triangle vertex set.
 The PL handoff proves this from one-simplex/two-simplex cardinal lemmas and the boundary-simplex
 relation, so the triangulation object no longer uses `isSurfaceTriangulation := True`.
 
@@ -1051,9 +1052,9 @@ The PL-to-triangulation bridge uses finite support data as the combinatorial han
 codimension-one faces of a two-simplex as the current scaffold boundary word.
 `EuclideanComplex.vertices_card_eq_two_of_mem_oneSimplexes` and
 `EuclideanComplex.vertices_card_eq_three_of_mem_twoSimplexes` prove the edge and triangle vertex
-cardinality fields in `FiniteSurfaceTriangulation.Valid`, while
-`edgeVertices_subset_triangleVertices_of_mem_boundaryWord` proves that every listed boundary edge
-is a face of its triangle.
+cardinality fields in `FiniteSurfaceTriangulation.Valid`, `edgeTargetVertex_ne_source` proves the
+distinct-endpoint field, and `edgeVertices_subset_triangleVertices_of_mem_boundaryWord` proves that
+every listed boundary edge is a face of its triangle.
 Because the current `EuclideanComplex` API has finite simplex types,
 `PLComplexInSpace.fullFiniteSupportData` is the named finite-support package taking all simplexes;
 its coverage proof now uses the `PLComplexInSpace.simplexCarrier` cover stored on the embedded

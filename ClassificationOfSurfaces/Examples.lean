@@ -147,6 +147,10 @@ def oneTriangleTriangulation : FiniteSurfaceTriangulation PUnit where
         intro e
         fin_cases e <;>
         decide
+      edgeSource_ne_edgeTarget := by
+        intro e
+        fin_cases e <;>
+        decide
       boundary_edge_vertices_subset := by
         intro t oe hoe
         exact Finset.subset_univ _ }
@@ -200,6 +204,10 @@ def reversedSideTriangulation : FiniteSurfaceTriangulation PUnit where
         fin_cases e <;>
         decide
       edgeTarget_mem := by
+        intro e
+        fin_cases e <;>
+        decide
+      edgeSource_ne_edgeTarget := by
         intro e
         fin_cases e <;>
         decide

@@ -1466,9 +1466,9 @@ combinatorial two-manifold with boundary together with a homeomorphism from its
 support to $S$.  The formal object stores finite vertex, edge, and triangle
 types, vertex sets for each edge and triangle, endpoint maps, triangle boundary
 words, boundary-edge predicates, and proof-bearing validity data: edges have
-two vertices, triangles have three vertices, endpoints lie on their edge, and
-every edge appearing in a triangle boundary has its vertices contained in the
-triangle vertex set.
+two vertices, triangles have three vertices, endpoints lie on their edge,
+edge endpoints are distinct, and every edge appearing in a triangle boundary
+has its vertices contained in the triangle vertex set.
 \end{definition}
 
 \begin{theorem}[Finite PL complex to finite surface triangulation]
@@ -1489,12 +1489,14 @@ one-simplexes as edges, and the supported two-simplexes as triangles.  Boundary
 words are assembled from codimension-one boundary simplexes that are present as
 supported one-simplexes, and boundary edges are read from the supplied boundary
 subcomplex.  One-simplex and two-simplex cardinal lemmas prove the finite
-validity fields required by `FiniteSurfaceTriangulation.Valid`; boundary-word
-membership is traced back through the complex boundary-simplex relation to prove
-that every listed boundary edge is a face of the triangle.  The named construction is
-`PLComplexInSpace.toFiniteSurfaceTriangulation`.  Since the embedding has image
-equal to the whole surface, the embedding is surjective; an embedding that is
-surjective is a homeomorphism onto the ambient surface.
+validity fields required by `FiniteSurfaceTriangulation.Valid`; the chosen
+second endpoint of a one-simplex is proved distinct from the first, and
+boundary-word membership is traced back through the complex boundary-simplex
+relation to prove that every listed boundary edge is a face of the triangle.
+The named construction is `PLComplexInSpace.toFiniteSurfaceTriangulation`.
+Since the embedding has image equal to the whole surface, the embedding is
+surjective; an embedding that is surjective is a homeomorphism onto the ambient
+surface.
 \end{proof}
 
 \begin{theorem}[Compact Eval surface is finitely triangulable]

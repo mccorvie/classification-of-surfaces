@@ -57,6 +57,7 @@ structure FiniteSurfaceTriangulation.Valid
   triangle_card : ∀ t : Triangle, (triangleVertices t).card = 3
   edgeSource_mem : ∀ e : Edge, edgeSource e ∈ edgeVertices e
   edgeTarget_mem : ∀ e : Edge, edgeTarget e ∈ edgeVertices e
+  edgeSource_ne_edgeTarget : ∀ e : Edge, edgeSource e ≠ edgeTarget e
   boundary_edge_vertices_subset :
     ∀ t : Triangle, ∀ oe ∈ triangleBoundary t,
       edgeVertices oe.edge ⊆ triangleVertices t
@@ -261,6 +262,9 @@ noncomputable def toFiniteSurfaceTriangulation {S : Type*} [TopologicalSpace S]
               (finiteSupport.twoSimplex_mem_complex_twoSimplexes σ)
           edgeSource_mem := finiteSupport.edgeSourceVertex_mem
           edgeTarget_mem := finiteSupport.edgeTargetVertex_mem
+          edgeSource_ne_edgeTarget := by
+            intro e h
+            exact finiteSupport.edgeTargetVertex_ne_source e h.symm
           boundary_edge_vertices_subset := by
             intro σ oe hoe
             exact finiteSupport.edgeVertices_subset_triangleVertices_of_mem_boundaryWord σ hoe }

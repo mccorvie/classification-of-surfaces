@@ -42,6 +42,7 @@ Gallier-Xu normal-form proof.
 * `FiniteSurfaceTriangulation`
 * `PLComplexInSpace.FiniteSupportData.OneSimplex`
 * `PLComplexInSpace.FiniteSupportData.TwoSimplex`
+* `PLComplexInSpace.FiniteSupportData.edgeTargetVertex_ne_source`
 * `PLComplexInSpace.FiniteSupportData.triangleBoundaryWord`
 * `PLComplexInSpace.toFiniteSurfaceTriangulation`
 * `FinitePLTriangulationData.toFiniteSurfaceTriangulation`
