@@ -6958,6 +6958,73 @@ theorem stage_coversBoundaryCoresInBoundaryUpTo
     simpa [S.stage_eq n] using hm
   exact S.boundaryCore_subset_boundarySupport_of_le hmn
 
+/-- A genuine stage-indexed simplex in the countable Rado union.
+
+The compatibility `unionPLComplex` below is still a finite wrapper around the support union.
+This type keeps the actual countable union of stage simplexes available to theorem statements that
+need the Moise geometry rather than the finite wrapper. -/
+abbrev StageUnionSimplex
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) : Type :=
+  Σ n : ℕ, (S.stage n).complex.Complex.Simplex
+
+/-- Carrier of a genuine stage-indexed simplex in the countable Rado union. -/
+def stageUnionSimplexCarrier
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (σ : S.StageUnionSimplex) : Set M :=
+  (S.stage σ.1).complex.simplexCarrier σ.2
+
+/-- Every genuine stage-indexed simplex carrier lies in the Rado support union. -/
+theorem stageUnionSimplexCarrier_subset_supportUnion
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (σ : S.StageUnionSimplex) :
+    S.stageUnionSimplexCarrier σ ⊆ S.supportUnion := by
+  intro x hx
+  exact Set.mem_iUnion.mpr
+    ⟨σ.1, (S.stage σ.1).complex.simplexCarrier_subset_support σ.2 hx⟩
+
+/-- The Rado support union is covered by genuine stage-indexed simplex carriers. -/
+theorem supportUnion_covered_by_stageUnionSimplexCarrier
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    ∀ x ∈ S.supportUnion, ∃ σ : S.StageUnionSimplex, x ∈ S.stageUnionSimplexCarrier σ := by
+  intro x hx
+  rcases Set.mem_iUnion.mp hx with ⟨n, hxn⟩
+  rcases (S.stage n).complex.exists_simplexCarrier_of_mem_support hxn with ⟨σ, hxσ⟩
+  exact ⟨⟨n, σ⟩, hxσ⟩
+
+/-- A genuine stage-indexed boundary simplex in the countable Rado union. -/
+abbrev StageBoundarySimplex
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) : Type :=
+  Σ n : ℕ, {σ : (S.stage n).complex.Complex.Simplex //
+    σ ∈ (S.stage n).boundarySubcomplex.simplexes}
+
+/-- Carrier of a genuine stage-indexed boundary simplex. -/
+def stageBoundarySimplexCarrier
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (σ : S.StageBoundarySimplex) : Set M :=
+  (S.stage σ.1).complex.simplexCarrier σ.2.1
+
+/-- Every genuine boundary-simplex carrier lies in the boundary-support union. -/
+theorem stageBoundarySimplexCarrier_subset_boundarySupportUnion
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (σ : S.StageBoundarySimplex) :
+    S.stageBoundarySimplexCarrier σ ⊆ S.boundarySupportUnion := by
+  intro x hx
+  exact Set.mem_iUnion.mpr ⟨σ.1, σ.2.1, σ.2.2, hx⟩
+
+/-- The boundary-support union is covered by genuine stage-indexed boundary-simplex carriers. -/
+theorem boundarySupportUnion_covered_by_stageBoundarySimplexCarrier
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) :
+    ∀ x ∈ S.boundarySupportUnion,
+      ∃ σ : S.StageBoundarySimplex, x ∈ S.stageBoundarySimplexCarrier σ := by
+  intro x hx
+  rcases Set.mem_iUnion.mp hx with ⟨n, hxn⟩
+  rcases hxn with ⟨σ, hσ, hxσ⟩
+  exact ⟨⟨n, ⟨σ, hσ⟩⟩, hxσ⟩
+
 /-- The Rado stage-support union covers the whole manifold because chart cores cover it. -/
 theorem supportUnion_eq_univ
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}

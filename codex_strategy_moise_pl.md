@@ -1219,7 +1219,15 @@ Expected Rado induction shape:
    complex.  The named API is now `RadoInductiveSequence.unionPLComplexData`,
    `RadoInductiveSequence.unionPLComplex`, `RadoInductiveSequence.unionPLComplex_support`, and
    `RadoInductiveSequence.unionPLComplex_covers_univ`; `rado_union_complex` remains as the public
-   existential wrapper.  The union complex now has a small boundary/interior carrier simplex API:
+   existential wrapper.  Because `EuclideanComplex` is still a finite-complex interface, this named
+   union complex remains a compatibility wrapper.  The faithful countable geometry is exposed
+   separately by `RadoInductiveSequence.StageUnionSimplex`,
+   `RadoInductiveSequence.stageUnionSimplexCarrier`,
+   `RadoInductiveSequence.supportUnion_covered_by_stageUnionSimplexCarrier`,
+   `RadoInductiveSequence.StageBoundarySimplex`,
+   `RadoInductiveSequence.stageBoundarySimplexCarrier`, and
+   `RadoInductiveSequence.boundarySupportUnion_covered_by_stageBoundarySimplexCarrier`.
+   The union complex also has a small boundary/interior carrier simplex API:
    `RadoInductiveSequence.boundarySupportUnion`,
    `RadoInductiveSequence.unionBoundarySubcomplex`, and
    `RadoInductiveSequence.unionBoundarySubcomplexData` record the union of stage boundary supports

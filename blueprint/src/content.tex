@@ -829,7 +829,7 @@ as a Rado induction sequence.
 
 \begin{definition}[Rado induction sequence]
 \label{moise:def:rado_inductive_sequence}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion_subset_supportUnion}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.StageUnionSimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageUnionSimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageUnionSimplexCarrier_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_covered_by_stageUnionSimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.StageBoundarySimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageBoundarySimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageBoundarySimplexCarrier_subset_boundarySupportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion_covered_by_stageBoundarySimplexCarrier}
 \leanok
 
 \uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion}
@@ -837,7 +837,8 @@ A Rado induction sequence over a chart-pair exhaustion is a sequence of finite
 stage PL complexes, each extending the previous one, such that the $n$th stage
 covers the $n$th chart core and carries the $n$th boundary chart core in its
 stored boundary support.  Its support union is the union of the supports of all
-finite stages.
+finite stages, and the actual countable union of stage simplexes is exposed by
+stage-indexed simplex carriers for ordinary and boundary simplexes.
 \end{definition}
 
 \begin{lemma}[Rado stage supports cover the manifold]
@@ -935,14 +936,17 @@ resulting object as nonempty data.
 
 \begin{lemma}[Rado union is a PL complex]
 \label{moise:lem:rado_union_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.UnionVertex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.UnionSimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplexData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplex_simplexes, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_boundary_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_support_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.rado_union_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.UnionVertex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.UnionSimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.StageUnionSimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageUnionSimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.StageBoundarySimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageBoundarySimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplexData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplex_simplexes, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_boundary_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_support_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.rado_union_complex}
 \leanok
 
 \uses{moise:def:rado_inductive_sequence,moise:def:pl_complex_in_space}
 The locally finite union of the finite-stage complexes in a Rado induction
 sequence is a named embedded PL complex whose support is the stage-support
 union.  Its boundary package is carried by the union of the stage boundary
-supports.
+supports.  Since the named embedded complex is still a finite compatibility
+wrapper, the sequence also exposes the faithful countable stage-indexed
+simplex-carrier API used by statements that need the actual Moise union
+geometry.
 \end{lemma}
 
 \begin{proof}
@@ -953,9 +957,11 @@ Euclidean-complex support, and countable unions of small sets are small.  Use
 topology induced by its inclusion into the ambient manifold, and embed it by
 that inclusion.  The construction is packaged as
 `RadoInductiveSequence.unionPLComplexData`; the public existential theorem
-`rado_union_complex` is a wrapper around this named complex.  A small
+`rado_union_complex` is a wrapper around this named complex.  The actual
+stage-indexed simplex carriers prove that both the support union and the
+boundary-support union are covered by genuine finite-stage simplexes.  A small
 boundary/interior carrier complex records the stage-boundary support union as a
-distinguished boundary subcomplex.
+distinguished boundary subcomplex for downstream finite-complex APIs.
 \end{proof}
 
 \begin{theorem}[Moise--Rado triangulation theorem]
