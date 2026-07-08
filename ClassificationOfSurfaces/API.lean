@@ -28,11 +28,16 @@ project skeleton and documents the intended handoff points between teams.
 * `CombinatorialTwoManifoldWithBoundary`
 * `CombinatorialTwoCell`
 * `RadoChartPair.chartAt_extend_mem_frontier_target_of_manifold_boundary`
+* `mathlib_bordered_surface_finiteChartPairCover`
+* `mathlib_bordered_surface_finiteChartPairCover_boundarySet`
+* `mathlib_bordered_surface_boundary_subset_finiteChartPairCover_boundaryCarrier`
 * `PLComplexInSpace`
 * `FinitePLTriangulationData`
 * `MoiseTwoManifold`
 * `MoiseTwoManifold.finitePLTriangulationData`
 * `MoiseExtractionData.finiteStagePLTriangulationData`
+* `mathlib_bordered_surface_moiseExtractionData_finiteCover`
+* `mathlib_bordered_surface_moiseExtractionData_finiteCover_boundarySet`
 * `moise_extraction_finitely_triangulable`
 * `mathlib_bordered_surface_finitely_triangulable`
 * `compact_eval_surface_finitely_triangulable`

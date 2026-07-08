@@ -1003,7 +1003,13 @@ Proved finite/combinatorial bridge:
    along the selected finite indices.  The chart-shrink compatibility fields are proof-bearing:
    every chosen disk chart refines the selected chart pair, and boundary cores are compatible by
    inclusion.  The sigma-valued construction is the reusable data extraction; the theorem with
-   the original public name now returns a nonempty dependent sigma package.
+   the original public name now returns a nonempty dependent sigma package.  For compact mathlib
+   bordered surfaces, the named
+   `mathlib_bordered_surface_finiteChartPairCover` is this stronger polygonal-disk extraction
+   cover, not merely the earlier preferred-chart finite subcover: its `boundarySet` is exactly
+   `(modelWithCornersEuclideanHalfSpace 2).boundary M`, and
+   `mathlib_bordered_surface_boundary_subset_finiteChartPairCover_boundaryCarrier` exposes that
+   the actual manifold boundary lies in its selected boundary carrier.
 7. `local_chart_polygonal_disk_data_of_pointwise`:
    pointwise chart-disk data packages into the local function-valued data used for compactness.
 8. `mathlib_bordered_surface_point_chart_polygonal_disk_data`:
@@ -1057,7 +1063,11 @@ Proved finite/combinatorial bridge:
    `RadoInductionData.finiteStagePLTriangulationData`, so the boundary package comes from the
    terminal Rado state's stored boundary subcomplex rather than `fullBoundarySubcomplexData`.
    `MoiseExtractionData.finiteStagePLTriangulationData_support` records the support equality, and
-   the public extraction-level wrappers `moise_extraction_finitely_triangulable` and
+   `mathlib_bordered_surface_moiseExtractionData_finiteCover` identifies the extraction package's
+   finite cover with the named polygonal-disk finite cover.  The boundary-set simp theorem
+   `mathlib_bordered_surface_moiseExtractionData_finiteCover_boundarySet` records that this cover
+   carries the actual mathlib manifold boundary.
+   The public extraction-level wrappers `moise_extraction_finitely_triangulable` and
    `moise_extraction_finite_pl_triangulation_data` expose the finite terminal-stage output without
    passing through `MoiseTwoManifold.supportUnionFinitePLTriangulationData`.
 13. `mathlib_bordered_surface_moiseTwoManifold`,

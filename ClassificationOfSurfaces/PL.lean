@@ -8563,6 +8563,65 @@ noncomputable def toMoiseExtractionData
 
 end LocalChartPolygonalDiskData
 
+/-- Named finite chart-pair cover extracted from compact mathlib bordered-surface local chart data.
+
+Unlike `mathlib_bordered_surface_finite_chart_pair_cover`, this cover remembers the actual
+mathlib manifold boundary as its `boundarySet`. -/
+noncomputable def mathlib_bordered_surface_finiteChartPairCover
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    FiniteChartPairCover M :=
+  (mathlib_bordered_surface_localChartPolygonalDiskData M).finiteChartPairCover
+
+/-- Positive-regularity named finite chart-pair cover extracted from compact mathlib
+bordered-surface local chart data. -/
+noncomputable def mathlib_bordered_surface_finiteChartPairCover_of_contMDiff
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    FiniteChartPairCover M :=
+  (mathlib_bordered_surface_localChartPolygonalDiskData_of_contMDiff M).finiteChartPairCover
+
+@[simp] theorem mathlib_bordered_surface_finiteChartPairCover_boundarySet
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    (mathlib_bordered_surface_finiteChartPairCover M).boundarySet =
+      (modelWithCornersEuclideanHalfSpace 2).boundary M := by
+  rfl
+
+@[simp] theorem mathlib_bordered_surface_finiteChartPairCover_of_contMDiff_boundarySet
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    (mathlib_bordered_surface_finiteChartPairCover_of_contMDiff M).boundarySet =
+      (modelWithCornersEuclideanHalfSpace 2).boundary M := by
+  rfl
+
+/-- The actual mathlib boundary is contained in the boundary carrier of the finite cover extracted
+from local polygonal disk data. -/
+theorem mathlib_bordered_surface_boundary_subset_finiteChartPairCover_boundaryCarrier
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    (modelWithCornersEuclideanHalfSpace 2).boundary M ⊆
+      (mathlib_bordered_surface_finiteChartPairCover M).boundaryCarrier := by
+  intro x hx
+  exact (mathlib_bordered_surface_finiteChartPairCover M).boundarySet_subset_boundaryCarrier hx
+
+/-- Positive-regularity version: the actual mathlib boundary is contained in the boundary carrier
+of the finite cover extracted from local polygonal disk data. -/
+theorem mathlib_bordered_surface_boundary_subset_finiteChartPairCover_of_contMDiff_boundaryCarrier
+    (M : Type*) [TopologicalSpace M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    (modelWithCornersEuclideanHalfSpace 2).boundary M ⊆
+      (mathlib_bordered_surface_finiteChartPairCover_of_contMDiff M).boundaryCarrier := by
+  intro x hx
+  let C := mathlib_bordered_surface_finiteChartPairCover_of_contMDiff M
+  exact C.boundarySet_subset_boundaryCarrier hx
+
 /-- Compactness promotes pointwise local chart-polygonal-disk data to a finite chart-pair cover
 carrying indexed polygonal disk data. -/
 theorem finite_chart_polygonal_disk_data_of_local
@@ -8607,6 +8666,38 @@ noncomputable def mathlib_bordered_surface_moiseExtractionData_of_contMDiff
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
     MoiseExtractionData M :=
   (mathlib_bordered_surface_localChartPolygonalDiskData_of_contMDiff M).toMoiseExtractionData
+
+theorem mathlib_bordered_surface_moiseExtractionData_finiteCover
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    (mathlib_bordered_surface_moiseExtractionData M).finiteCover =
+      mathlib_bordered_surface_finiteChartPairCover M := by
+  rfl
+
+theorem mathlib_bordered_surface_moiseExtractionData_of_contMDiff_finiteCover
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    (mathlib_bordered_surface_moiseExtractionData_of_contMDiff M).finiteCover =
+      mathlib_bordered_surface_finiteChartPairCover_of_contMDiff M := by
+  rfl
+
+@[simp] theorem mathlib_bordered_surface_moiseExtractionData_finiteCover_boundarySet
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 M] :
+    (mathlib_bordered_surface_moiseExtractionData M).finiteCover.boundarySet =
+      (modelWithCornersEuclideanHalfSpace 2).boundary M := by
+  rfl
+
+@[simp] theorem mathlib_bordered_surface_moiseExtractionData_of_contMDiff_finiteCover_boundarySet
+    (M : Type*) [TopologicalSpace M] [Nonempty M] [T2Space M] [CompactSpace M]
+    [ChartedSpace (EuclideanHalfSpace 2) M]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 1 M] :
+    (mathlib_bordered_surface_moiseExtractionData_of_contMDiff M).finiteCover.boundarySet =
+      (modelWithCornersEuclideanHalfSpace 2).boundary M := by
+  rfl
 
 /-- Named Moise two-manifold package built from the mathlib bordered-surface atlas. -/
 noncomputable def mathlib_bordered_surface_moiseTwoManifold
