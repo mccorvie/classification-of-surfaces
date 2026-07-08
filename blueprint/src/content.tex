@@ -443,7 +443,7 @@ lemma.
 
 \begin{theorem}[Open subset of a finite complex is a complex]
 \label{moise:thm:open_subset_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.open_subset_of_finite_complex_is_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.OpenSubsetComplex, LeanEval.Topology.ClassificationOfSurfaces.open_subset_of_finite_complex_is_complex}
 \leanok
 
 \uses{moise:def:euclidean_complex,moise:def:subdivision,moise:def:pl_complex_in_space}
@@ -451,7 +451,8 @@ If $K$ is a finite complex and $U\subseteq |K|$ is open, then there is a complex
 $K_U$ with $|K_U|=U$ such that every simplex of $K_U$ is a rectilinear subsimplex
 of a simplex of $K$.  The formal statement returns open-subset complex data: a
 new finite complex, a homeomorphism from its support to $U$, an embedding back
-into the original support, and an ambient compatibility predicate.
+into the original support, and proof-bearing ambient compatibility as
+injectivity plus continuity of that inclusion.
 \end{theorem}
 
 \begin{proof}

@@ -617,6 +617,9 @@ theorem compact_locally_finite_complex_finite
 ```
 
 `open_subset_complex` is one of the Moise Chapter 8 support theorems. It may be left as a theorem boundary at first.
+`PLComplexInSpace.OpenSubsetComplex` now carries proof-bearing ambient compatibility: the
+inclusion of the open-subset complex support into the original support is injective and
+continuous, derived from the stored embedding.
 
 ### Moise work package M7: Rado induction for closed surfaces
 

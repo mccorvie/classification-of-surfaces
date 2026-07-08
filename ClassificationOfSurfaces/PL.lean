@@ -2379,7 +2379,7 @@ structure OpenSubsetComplex {X : Type*} [TopologicalSpace X] (K : PLComplexInSpa
   supportHomeomorph : complex.support ≃ₜ U
   inclusion : complex.support → K.Complex.support
   inclusionEmbedding : _root_.Topology.IsEmbedding inclusion
-  compatibleWithAmbient : Prop
+  compatibleWithAmbient : Function.Injective inclusion ∧ Continuous inclusion
 
 /-- A simplex is relevant to the embedded support. This is a named placeholder until individual
 simplex supports are represented geometrically. -/
@@ -2581,7 +2581,18 @@ theorem open_subset_of_finite_complex_is_complex
       inclusion := fun x => (x.1 : K.Complex.support)
       inclusionEmbedding :=
         _root_.Topology.IsEmbedding.subtypeVal.comp _root_.Topology.IsEmbedding.subtypeVal
-      compatibleWithAmbient := True }
+      compatibleWithAmbient := by
+        let hU : _root_.Topology.IsEmbedding (Subtype.val : U → K.Complex.support) :=
+          _root_.Topology.IsEmbedding.subtypeVal
+        let hSupport :
+            _root_.Topology.IsEmbedding
+              (Subtype.val : {x : U // x ∈ (Set.univ : Set U)} → U) :=
+          _root_.Topology.IsEmbedding.subtypeVal
+        let h : _root_.Topology.IsEmbedding
+            (fun x : {x : U // x ∈ (Set.univ : Set U)} =>
+              (x.1.1 : K.Complex.support)) :=
+          hU.comp hSupport
+        exact ⟨h.injective, h.continuous⟩ }
   exact ⟨KU, trivial⟩
 
 /-- A locally finite PL complex with compact support has finitely many simplexes. -/
