@@ -3795,6 +3795,8 @@ structure ChartPolygonalDisk (M : Type*) [TopologicalSpace M] where
   support_subset_domain : Set.range embed ⊆ chart.domain
   core_covered : chart.core ⊆ Set.range embed
   boundaryCore_covered : chart.boundaryCore ⊆ Set.range embed
+  boundaryCore_covered_by_boundary :
+    ∀ x ∈ chart.boundaryCore, ∃ σ ∈ disk.boundarySubcomplex.simplexes, x ∈ Set.range embed
   respectsChartModel :
     ∀ p : disk.K.support,
       (chart.chartHomeomorph ⟨embed p, support_subset_domain ⟨p, rfl⟩⟩ : Plane) ∈
@@ -3828,6 +3830,16 @@ def toPLComplexInSpace {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk 
     {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk M) :
     D.toPLComplexInSpace.Complex = D.disk.K := by
   rfl
+
+theorem boundaryCore_subset_boundarySupport
+    {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk M) :
+    D.chart.boundaryCore ⊆
+      {x | ∃ σ ∈ D.disk.boundarySubcomplex.simplexes,
+        x ∈ D.toPLComplexInSpace.simplexCarrier σ} := by
+  intro x hx
+  rcases D.boundaryCore_covered_by_boundary x hx with ⟨σ, hσ, hxσ⟩
+  exact ⟨σ, hσ, by
+    simpa [toPLComplexInSpace, PLComplexInSpace.simplexCarrier] using hxσ⟩
 
 end ChartPolygonalDisk
 
@@ -3929,6 +3941,9 @@ def toChartPolygonalDisk (D : ModelChartPolygonalDisk P) : ChartPolygonalDisk M 
     intro y hy
     simpa [toChartPair, RadoChartPair.withCore, pulledCore] using hy
   boundaryCore_covered := by
+    intro y hy
+    simp [toChartPair, RadoChartPair.withCore] at hy
+  boundaryCore_covered_by_boundary := by
     intro y hy
     simp [toChartPair, RadoChartPair.withCore] at hy
   respectsChartModel := by
@@ -4417,6 +4432,9 @@ def standardTriangleInPlane : ChartPolygonalDisk Plane where
   boundaryCore_covered := by
     intro p hp
     simp [RadoChartPair.standardTrianglePlaneCore] at hp
+  boundaryCore_covered_by_boundary := by
+    intro p hp
+    simp [RadoChartPair.standardTrianglePlaneCore] at hp
   respectsChartModel := by
     intro p
     trivial
@@ -4844,6 +4862,13 @@ def CoversBoundaryCoresUpTo
 def boundarySupport {M : Type*} [TopologicalSpace M] (S : RadoInductionState M) : Set M :=
   {x | ∃ σ ∈ S.boundarySubcomplex.simplexes, x ∈ S.complex.simplexCarrier σ}
 
+/-- A Rado induction state carries every boundary chart core up to its stage in its stored
+boundary support. -/
+def CoversBoundaryCoresInBoundaryUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductionState M) : Prop :=
+  ∀ n, n ≤ S.stage → (E.pair n).boundaryCore ⊆ S.boundarySupport
+
 theorem boundarySupport_subset_support {M : Type*} [TopologicalSpace M]
     (S : RadoInductionState M) :
     S.boundarySupport ⊆ S.complex.support := by
@@ -4877,6 +4902,10 @@ structure InitialPLNeighborhoodData
   chart_eq : chartDisk.chart = E.pair 0
   coversInitialCore : (E.pair 0).core ⊆ chartDisk.toPLComplexInSpace.support
   coversInitialBoundaryCore : (E.pair 0).boundaryCore ⊆ chartDisk.toPLComplexInSpace.support
+  coversInitialBoundaryCoreInBoundary :
+    (E.pair 0).boundaryCore ⊆
+      {x | ∃ σ ∈ chartDisk.disk.boundarySubcomplex.simplexes,
+        x ∈ chartDisk.toPLComplexInSpace.simplexCarrier σ}
   boundarySubcomplexCompatible :
     BoundarySubcomplexFaceClosed chartDisk.toPLComplexInSpace.Complex
       chartDisk.disk.boundarySubcomplex
@@ -4893,6 +4922,9 @@ structure RadoStepExtensionData
   extends_old : PLComplexInSpace.Extends nextComplex S.complex
   coversNextCore : (E.pair (S.stage + 1)).core ⊆ nextComplex.support
   coversNextBoundaryCore : (E.pair (S.stage + 1)).boundaryCore ⊆ nextComplex.support
+  coversNextBoundaryCoreInBoundary :
+    (E.pair (S.stage + 1)).boundaryCore ⊆
+      {x | ∃ σ ∈ boundarySubcomplex.simplexes, x ∈ nextComplex.simplexCarrier σ}
   compatibleOnOverlaps : nextComplex.compatibleOnOverlap S.complex
   boundaryCompatibleOnOverlaps :
     BoundaryCompatibleOnOverlap nextComplex S.complex boundarySubcomplex
@@ -4924,6 +4956,12 @@ def ofChartPolygonalDisk
       exact hx
     simpa [ChartPolygonalDisk.toPLComplexInSpace, PLComplexInSpace.support]
       using D.boundaryCore_covered hx'
+  coversInitialBoundaryCoreInBoundary := by
+    intro x hx
+    have hx' : x ∈ D.chart.boundaryCore := by
+      rw [hD]
+      exact hx
+    exact D.boundaryCore_subset_boundarySupport hx'
   boundarySubcomplexCompatible := by
     intro τ σ hσ hface
     exact D.disk.boundarySubcomplex.face_closed hσ hface
@@ -4963,6 +5001,12 @@ theorem boundaryCore_subset_toState_support
     (D : InitialPLNeighborhoodData E) :
     (E.pair 0).boundaryCore ⊆ D.toState.complex.support :=
   D.coversInitialBoundaryCore
+
+theorem boundaryCore_subset_toState_boundarySupport
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    (E.pair 0).boundaryCore ⊆ D.toState.boundarySupport :=
+  D.coversInitialBoundaryCoreInBoundary
 
 theorem toState_coversPreviousCores_iff
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -5009,6 +5053,17 @@ theorem toState_coversPreviousBoundaryCores
     (D : InitialPLNeighborhoodData E) :
     D.toState.coverage.CoversBoundaryCoreSets :=
   D.toState.coverage.coversBoundaryCoreSets
+
+/-- The initial Rado state carries every boundary chart core up to stage zero in its boundary
+support. -/
+theorem toState_coversBoundaryCoresInBoundaryUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : InitialPLNeighborhoodData E) :
+    D.toState.CoversBoundaryCoresInBoundaryUpTo (E := E) := by
+  intro n hn
+  have hn0 : n = 0 := Nat.eq_zero_of_le_zero hn
+  subst n
+  exact D.boundaryCore_subset_toState_boundarySupport
 
 end InitialPLNeighborhoodData
 
@@ -5067,6 +5122,12 @@ theorem boundaryCore_subset_toState_support
     (E.pair (S.stage + 1)).boundaryCore ⊆ D.toState.complex.support :=
   D.coversNextBoundaryCore
 
+theorem boundaryCore_subset_toState_boundarySupport
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
+    (E.pair (S.stage + 1)).boundaryCore ⊆ D.toState.boundarySupport :=
+  D.coversNextBoundaryCoreInBoundary
+
 theorem toState_coversPreviousCores_iff
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
     {S : RadoInductionState M} (D : RadoStepExtensionData E S) :
@@ -5119,6 +5180,22 @@ theorem toState_coversBoundaryCoresUpTo
   · have hlt : n < S.stage + 1 := lt_of_le_of_ne hn hlast
     have hnS : n ≤ S.stage := Nat.le_of_lt_succ hlt
     exact (hS n hnS).trans D.extends_old.1
+
+/-- A successor Rado step preserves previous boundary-core coverage in the boundary support and
+adds the next boundary chart core to that boundary support. -/
+theorem toState_coversBoundaryCoresInBoundaryUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    {S : RadoInductionState M} (D : RadoStepExtensionData E S)
+    (hS : S.CoversBoundaryCoresInBoundaryUpTo (E := E)) :
+    D.toState.CoversBoundaryCoresInBoundaryUpTo (E := E) := by
+  intro n hn
+  change n ≤ S.stage + 1 at hn
+  by_cases hlast : n = S.stage + 1
+  · subst n
+    exact D.boundaryCore_subset_toState_boundarySupport
+  · have hlt : n < S.stage + 1 := lt_of_le_of_ne hn hlast
+    have hnS : n ≤ S.stage := Nat.le_of_lt_succ hlt
+    exact (hS n hnS).trans D.oldBoundarySupport_subset_toState_boundarySupport
 
 theorem toState_coversPreviousBoundaryCores
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -5525,6 +5602,15 @@ noncomputable def fromChartPolygonalDisk
           exact hx
         rw [hKsupport]
         exact Or.inr (D.boundaryCore_covered hx')
+      coversNextBoundaryCoreInBoundary := by
+        intro x hx
+        have hx' : x ∈ D.chart.boundaryCore := by
+          rw [hD]
+          exact hx
+        rcases D.boundaryCore_subset_boundarySupport hx' with ⟨σ, hσ, hxσ⟩
+        refine ⟨(show K.Complex.Simplex from Sum.inr σ), ?_, ?_⟩
+        · exact (chartUnionBoundarySubcomplex_right_mem S D σ).2 hσ
+        · simpa [K] using hxσ
       compatibleOnOverlaps := by
         exact K.compatibleOnOverlap_of_embedded_overlap S.complex
       boundaryCompatibleOnOverlaps := by
@@ -5591,6 +5677,10 @@ def emptyChart
       rw [hEmpty] at hx
       simp [RadoChartPair.empty] at hx
     coversNextBoundaryCore := by
+      intro x hx
+      rw [hEmpty] at hx
+      simp [RadoChartPair.empty] at hx
+    coversNextBoundaryCoreInBoundary := by
       intro x hx
       rw [hEmpty] at hx
       simp [RadoChartPair.empty] at hx
@@ -5777,6 +5867,14 @@ theorem support_subset_succ
     (D.stage n).complex.support ⊆ (D.stage (n + 1)).complex.support :=
   (D.extends_succ n).1
 
+/-- The recursive Rado stage boundary supports are monotone under successor stages. -/
+theorem boundarySupport_subset_succ
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) (n : ℕ) :
+    (D.stage n).boundarySupport ⊆ (D.stage (n + 1)).boundarySupport := by
+  simpa [stage] using
+    (D.step n (D.stage n)).oldBoundarySupport_subset_toState_boundarySupport
+
 /-- Later recursive Rado stages still cover earlier chart cores. -/
 theorem covers_core_of_le
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -5808,6 +5906,20 @@ theorem covers_boundaryCore
       rw [hstage] at h
       simpa [stage] using h
 
+/-- The recursively built `n`th stage carries the `n`th boundary chart core in its boundary
+support. -/
+theorem covers_boundaryCore_in_boundary
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    ∀ n, (E.pair n).boundaryCore ⊆ (D.stage n).boundarySupport
+  | 0 => by
+      simpa [stage] using D.initial.boundaryCore_subset_toState_boundarySupport
+  | n + 1 => by
+      have hstage : (D.stage n).stage = n := D.stage_stage_eq n
+      have h := (D.step n (D.stage n)).boundaryCore_subset_toState_boundarySupport
+      rw [hstage] at h
+      simpa [stage] using h
+
 /-- Later recursive Rado stages still cover earlier boundary chart cores. -/
 theorem covers_boundaryCore_of_le
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -5825,6 +5937,25 @@ theorem covers_boundaryCore_of_le
       · have hlt : m < n + 1 := lt_of_le_of_ne hmn hm
         have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
         exact (ih hmn').trans (D.support_subset_succ n)
+
+/-- Later recursive Rado stages still carry earlier boundary chart cores in their boundary
+support. -/
+theorem covers_boundaryCore_in_boundary_of_le
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) {m n : ℕ} (hmn : m ≤ n) :
+    (E.pair m).boundaryCore ⊆ (D.stage n).boundarySupport := by
+  induction n with
+  | zero =>
+      have hm : m = 0 := Nat.eq_zero_of_le_zero hmn
+      subst m
+      exact D.covers_boundaryCore_in_boundary 0
+  | succ n ih =>
+      by_cases hm : m = n + 1
+      · subst m
+        exact D.covers_boundaryCore_in_boundary (n + 1)
+      · have hlt : m < n + 1 := lt_of_le_of_ne hmn hm
+        have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
+        exact (ih hmn').trans (D.boundarySupport_subset_succ n)
 
 /-- In a finite chart-pair cover, the recursive stage at the cardinality of the cover still
 covers the core of every indexed chart. -/
@@ -5859,6 +5990,23 @@ theorem finiteCover_boundaryCore_subset_stage_card
   have hx' : x ∈ (C.toChartPairExhaustion.pair n).boundaryCore := by
     rwa [hpair]
   exact D.covers_boundaryCore_of_le hnle hx'
+
+/-- In a finite chart-pair cover, the recursive terminal stage carries every indexed boundary
+chart core in its boundary support. -/
+theorem finiteCover_boundaryCore_subset_stage_card_boundarySupport
+    {M : Type u} [TopologicalSpace M] {C : FiniteChartPairCover M}
+    (D : RadoInductionData C.toChartPairExhaustion) (i : C.Index) :
+    (C.pair i).boundaryCore ⊆ (D.stage (Fintype.card C.Index)).boundarySupport := by
+  intro x hx
+  let n : ℕ := (Fintype.equivFin C.Index i).1
+  have hnle : n ≤ Fintype.card C.Index :=
+    Nat.le_of_lt (Fintype.equivFin C.Index i).2
+  have hpair : C.toChartPairExhaustion.pair n = C.pair i := by
+    change C.natPair n = C.pair i
+    simpa [n] using C.natPair_of_index i
+  have hx' : x ∈ (C.toChartPairExhaustion.pair n).boundaryCore := by
+    rwa [hpair]
+  exact D.covers_boundaryCore_in_boundary_of_le hnle hx'
 
 /-- For a finite chart-pair cover, no countable union is needed: after `card C.Index` recursive
 steps the current finite Rado state covers the whole space. -/
@@ -5922,6 +6070,18 @@ theorem stage_coversBoundaryCoresUpTo
       exact (D.step n (D.stage n)).toState_coversBoundaryCoresUpTo
         (D.stage_coversBoundaryCoresUpTo n)
 
+/-- Every recursive Rado stage carries all boundary chart cores up to its stage index in its
+stored boundary support. -/
+theorem stage_coversBoundaryCoresInBoundaryUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (D : RadoInductionData E) :
+    ∀ n, (D.stage n).CoversBoundaryCoresInBoundaryUpTo (E := E)
+  | 0 => by
+      exact D.initial.toState_coversBoundaryCoresInBoundaryUpTo
+  | n + 1 => by
+      exact (D.step n (D.stage n)).toState_coversBoundaryCoresInBoundaryUpTo
+        (D.stage_coversBoundaryCoresInBoundaryUpTo n)
+
 /-- Every recursively built stage stores finite chart-core coverage data whose sets are covered. -/
 theorem stage_coversPreviousCores
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -5962,8 +6122,12 @@ structure RadoInductiveSequence
   stage_eq : ∀ n, (stage n).stage = n
   extends_succ :
     ∀ n, PLComplexInSpace.Extends (stage (n + 1)).complex (stage n).complex
+  boundarySupport_subset_succ :
+    ∀ n, (stage n).boundarySupport ⊆ (stage (n + 1)).boundarySupport
   covers_core : ∀ n, (E.pair n).core ⊆ (stage n).complex.support
   covers_boundaryCore : ∀ n, (E.pair n).boundaryCore ⊆ (stage n).complex.support
+  covers_boundaryCoreInBoundary :
+    ∀ n, (E.pair n).boundaryCore ⊆ (stage n).boundarySupport
   compatibleStages :
     ∀ n, (stage (n + 1)).complex.compatibleOnOverlap (stage n).complex
   locallyFiniteUnion : ∀ n, Finite (stage n).complex.Complex.Simplex
@@ -6001,6 +6165,14 @@ theorem support_subset_succ
     (S.stage n).complex.support ⊆ (S.stage (n + 1)).complex.support :=
   (S.extends_succ n).1
 
+/-- Boundary supports in a completed Rado induction sequence are monotone under successor stages.
+-/
+theorem boundarySupport_subset_succ_stage
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (n : ℕ) :
+    (S.stage n).boundarySupport ⊆ (S.stage (n + 1)).boundarySupport :=
+  S.boundarySupport_subset_succ n
+
 /-- Later stages in a completed Rado sequence still cover earlier chart cores. -/
 theorem core_subset_stage_of_le
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -6037,6 +6209,25 @@ theorem boundaryCore_subset_stage_of_le
         have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
         exact (ih hmn').trans (S.support_subset_succ n)
 
+/-- Later stages in a completed Rado sequence still carry earlier boundary chart cores in their
+stored boundary supports. -/
+theorem boundaryCore_subset_boundarySupport_of_le
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) {m n : ℕ} (hmn : m ≤ n) :
+    (E.pair m).boundaryCore ⊆ (S.stage n).boundarySupport := by
+  induction n with
+  | zero =>
+      have hm : m = 0 := Nat.eq_zero_of_le_zero hmn
+      subst m
+      exact S.covers_boundaryCoreInBoundary 0
+  | succ n ih =>
+      by_cases hm : m = n + 1
+      · subst m
+        exact S.covers_boundaryCoreInBoundary (n + 1)
+      · have hlt : m < n + 1 := lt_of_le_of_ne hmn hm
+        have hmn' : m ≤ n := Nat.le_of_lt_succ hlt
+        exact (ih hmn').trans (S.boundarySupport_subset_succ_stage n)
+
 /-- Every stage of a completed Rado sequence covers all chart cores up to that stage. -/
 theorem stage_coversCoresUpTo
     {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
@@ -6056,6 +6247,17 @@ theorem stage_coversBoundaryCoresUpTo
   have hmn : m ≤ n := by
     simpa [S.stage_eq n] using hm
   exact S.boundaryCore_subset_stage_of_le hmn
+
+/-- Every stage of a completed Rado sequence carries all boundary chart cores up to that stage in
+its stored boundary support. -/
+theorem stage_coversBoundaryCoresInBoundaryUpTo
+    {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
+    (S : RadoInductiveSequence E) (n : ℕ) :
+    (S.stage n).CoversBoundaryCoresInBoundaryUpTo (E := E) := by
+  intro m hm
+  have hmn : m ≤ n := by
+    simpa [S.stage_eq n] using hm
+  exact S.boundaryCore_subset_boundarySupport_of_le hmn
 
 /-- The Rado stage-support union covers the whole manifold because chart cores cover it. -/
 theorem supportUnion_eq_univ
@@ -6178,8 +6380,10 @@ def RadoInductionData.toInductiveSequence
   stage := D.stage
   stage_eq := D.stage_stage_eq
   extends_succ := D.extends_succ
+  boundarySupport_subset_succ := D.boundarySupport_subset_succ
   covers_core := D.covers_core
   covers_boundaryCore := D.covers_boundaryCore
+  covers_boundaryCoreInBoundary := D.covers_boundaryCore_in_boundary
   compatibleStages := by
     intro n
     change ((D.step n (D.stage n)).toState).complex.compatibleOnOverlap

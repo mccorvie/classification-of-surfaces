@@ -880,6 +880,9 @@ Proved finite/combinatorial bridge:
    compact bordered surface has a finite chart-pair cover.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
+   `ChartPolygonalDisk.boundaryCore_subset_boundarySupport` now exposes the stronger fact that
+   chart boundary cores are covered by the disk boundary subcomplex, and the initial Rado state
+   records this with `toState_coversBoundaryCoresInBoundaryUpTo`.
 5. `RadoStepExtensionData.chartUnionPLComplexData`,
    `RadoStepExtensionData.fromChartPolygonalDisk`, `RadoStepExtensionData.emptyChart`, and
    `rado_step_extension_from_chart_polygonal_disk`:
@@ -894,7 +897,10 @@ Proved finite/combinatorial bridge:
    sum of the previous boundary subcomplex and the chart-disk boundary subcomplex; the old/right
    membership lemmas expose the two summands.  `RadoStepExtensionData.preservesOldBoundarySupport`
    and `oldBoundarySupport_subset_toState_boundarySupport` record that a successor step really
-   carries the previous boundary support into the next boundary support.  The finite chart step
+   carries the previous boundary support into the next boundary support.
+   `boundaryCore_subset_toState_boundarySupport` and
+   `toState_coversBoundaryCoresInBoundaryUpTo` record the parallel fact for the next boundary
+   chart core itself.  The finite chart step
    selector now calls the named constructors directly rather than choosing witnesses from
    existential theorem wrappers, and
    `RadoStepExtensionData.fromChartPolygonalDisk_nextComplex_support` exposes the support
@@ -932,7 +938,10 @@ Proved finite/combinatorial bridge:
    `RadoInductionData.finiteCover_boundaryCore_subset_stage_card`, and
    `RadoInductionData.finiteCover_stage_card_support_eq_univ` proves that stage
    `Fintype.card C.Index` already covers the whole space for an exhaustion coming from a finite
-   chart-pair cover.  `RadoInductionData.finiteStagePLTriangulationData` is now the reusable
+   chart-pair cover.  The boundary-support thread is also explicit:
+   `boundarySupport_subset_succ`, `covers_boundaryCore_in_boundary_of_le`, and
+   `finiteCover_boundaryCore_subset_stage_card_boundarySupport` show that selected boundary
+   cores land in the terminal finite stage's boundary support.  `RadoInductionData.finiteStagePLTriangulationData` is now the reusable
    compact-case exit from the Rado layer: it packages that terminal state as finite PL
    triangulation data, including the terminal state's stored boundary subcomplex.
 11. `mathlib_bordered_surface_rado_induction_data`:
