@@ -3674,6 +3674,21 @@ theorem fromChartAt_mem_boundaryCore_of_chart_coord_zero
       (chartAt (EuclideanHalfSpace 2) x).target)) y : Plane) 0 = 0) at hy
   simpa using hy
 
+/-- A mathlib boundary point belongs to the boundary core of its preferred `chartAt` Rado pair. -/
+theorem fromChartAt_mem_boundaryCore_of_manifold_boundary
+    (M : Type*) [TopologicalSpace M] [ChartedSpace (EuclideanHalfSpace 2) M]
+    (x : M) (hx : x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary M) :
+    x ∈ (fromChartAt M x).boundaryCore := by
+  apply fromChartAt_mem_boundaryCore_of_chart_coord_zero
+    (M := M) (x := x) (y := ⟨x, fromChartAt_mem_domain M x⟩)
+  change (((chartAt (EuclideanHalfSpace 2) x x : EuclideanHalfSpace 2).1 : Plane) 0 = 0)
+  have hxfrontier :
+      (extChartAt (modelWithCornersEuclideanHalfSpace 2) x) x ∈
+        frontier (Set.range (modelWithCornersEuclideanHalfSpace 2)) := by
+    exact (ModelWithCorners.isBoundaryPoint_iff).mp hx
+  rw [frontier_range_modelWithCornersEuclideanHalfSpace] at hxfrontier
+  simpa [extChartAt, modelWithCornersEuclideanHalfSpace] using hxfrontier.symm
+
 /-- A chart pair modeled on the half-disk. -/
 def IsBoundaryChart {M : Type*} [TopologicalSpace M] (P : RadoChartPair M) : Prop :=
   P.kind = RadoChartKind.halfDisk

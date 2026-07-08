@@ -881,6 +881,9 @@ Proved finite/combinatorial bridge:
    the chart source mapped to the coordinate boundary line, exposed by
    `fromChartAt_boundaryCore_in_model_boundary` and
    `fromChartAt_mem_boundaryCore_of_chart_coord_zero`, instead of the old empty-core placeholder.
+   `fromChartAt_mem_boundaryCore_of_manifold_boundary` connects mathlib's
+   `ModelWithCorners.boundary` to this preferred-chart boundary core using the frontier of
+   `EuclideanHalfSpace`.
 4. `InitialPLNeighborhoodData.ofChartPolygonalDisk`:
    a polygonal disk covering the first chart core gives the stage-zero initialization data.
    `ChartPolygonalDisk` now carries explicit simplex-carrier data for its embedded PL complex,
