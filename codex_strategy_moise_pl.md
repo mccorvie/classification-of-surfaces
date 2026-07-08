@@ -709,7 +709,8 @@ structure FiniteRadoInductionGeometry
     ∀ (_n : ℕ) (S : RadoInductionState M),
       RadoStepExtensionData C.toChartPairExhaustion S
   compatibleStages : Prop
-  locallyFiniteUnion : Prop
+  locallyFiniteUnion :
+    ∀ n, Finite ((radoInductionStage initial step n).complex.Complex.Simplex)
   boundaryCompatibleUnion : Prop
 ```
 

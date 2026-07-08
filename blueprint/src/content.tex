@@ -709,15 +709,16 @@ to its new stage and stores those cumulative predicates in its state fields.
 
 \begin{definition}[Rado induction local data]
 \label{moise:def:rado_induction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.toInductiveSequence}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.radoInductionStage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.toInductiveSequence}
 \leanok
 
 \uses{moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
 Rado induction data consists of one initial chart-disk package and a successor
 chart-extension package for each finite stage.  It recursively determines all
 finite-stage induction states, proves the cumulative core and boundary-core
-coverage predicates at every stage, stores those predicates in each state, and
-packages the stages as a Rado induction sequence.
+coverage predicates at every stage, stores those predicates in each state,
+records a finite-simplex proof for every finite stage, and packages the stages
+as a Rado induction sequence.
 \end{definition}
 
 \begin{definition}[Rado induction sequence]
@@ -798,8 +799,9 @@ the resulting sequence are proved by induction over the natural number.
 Finite Rado induction geometry over a finite chart-pair cover consists of the
 local geometric input needed to run Rado's construction: an initial polygonal
 chart disk, a successor chart-extension package at every finite stage, and the
-global compatibility/local-finiteness assertions for the union.  Finite chart
-polygonal disk data has named `initialData`, `stepData`, and
+global compatibility assertions for the union together with a finite-simplex
+proof for each recursive finite stage.  Finite chart polygonal disk data has
+named `initialData`, `stepData`, and
 `toFiniteRadoInductionGeometry` constructors; once finite Rado geometry is
 supplied, it packages formally as `RadoInductionData`.  Its `finalState` is the
 finite terminal induction state after all chart pairs in the finite cover have
