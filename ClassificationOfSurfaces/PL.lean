@@ -2237,8 +2237,8 @@ structure PLComplexInSpace (X : Type*) [TopologicalSpace X] where
   Complex : EuclideanComplex
   embed : Complex.support → X
   isEmbedding : _root_.Topology.IsEmbedding embed
-  locallyFinite : Prop
-  compatibleCharts : Prop
+  locallyFinite : Finite Complex.Simplex
+  compatibleCharts : Function.Injective embed ∧ Continuous embed
 
 namespace PLComplexInSpace
 
@@ -2428,7 +2428,7 @@ def fullFiniteSupportData {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace
   coversSupport := by
     intro x hx
     exact hx
-  locallyFiniteAssumption := K.locallyFinite
+  locallyFiniteAssumption := Finite K.Complex.Simplex
 
 @[simp] theorem fullFiniteSupportData_simplexes
     {X : Type*} [TopologicalSpace X] (K : PLComplexInSpace X) :
@@ -2808,8 +2808,8 @@ def toPLComplexInSpace {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk 
   Complex := D.disk.K
   embed := D.embed
   isEmbedding := D.isEmbedding
-  locallyFinite := True
-  compatibleCharts := D.respectsChartModel
+  locallyFinite := inferInstance
+  compatibleCharts := ⟨D.isEmbedding.injective, D.isEmbedding.continuous⟩
 
 @[simp] theorem toPLComplexInSpace_complex
     {M : Type*} [TopologicalSpace M] (D : ChartPolygonalDisk M) :
@@ -3598,7 +3598,7 @@ def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
     boundaryIsSubcomplex := D.boundarySubcomplexCompatible
     boundaryCompatibleOnOverlaps := True
     boundaryRespectsCharts := D.chartDisk.respectsChartModel
-    locallyFinite := D.chartDisk.toPLComplexInSpace.locallyFinite
+    locallyFinite := Finite D.chartDisk.toPLComplexInSpace.Complex.Simplex
     boundaryLocallyFinite := True }
 
 @[simp] theorem toState_stage
@@ -3685,7 +3685,7 @@ def toState {M : Type*} [TopologicalSpace M] {E : ChartPairExhaustion M}
     boundaryIsSubcomplex := True
     boundaryCompatibleOnOverlaps := D.boundaryCompatibleOnOverlaps
     boundaryRespectsCharts := D.boundaryRespectsCharts
-    locallyFinite := D.nextComplex.locallyFinite
+    locallyFinite := Finite D.nextComplex.Complex.Simplex
     boundaryLocallyFinite := True }
 
 @[simp] theorem toState_stage
@@ -3811,12 +3811,14 @@ noncomputable def chartUnionPLComplexData
       support := Set.univ
       realizesSimplexes := True
       faceClosed := True }
+  let hKEmbedding : _root_.Topology.IsEmbedding (fun p : C.support => carrierMap p.1) :=
+    hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
   let K : PLComplexInSpace M :=
     { Complex := C
       embed := fun p => carrierMap p.1
-      isEmbedding := hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
-      locallyFinite := True
-      compatibleCharts := True }
+      isEmbedding := hKEmbedding
+      locallyFinite := inferInstance
+      compatibleCharts := ⟨hKEmbedding.injective, hKEmbedding.continuous⟩ }
   refine ⟨K, ?_⟩
   ext x
   constructor
@@ -4363,12 +4365,14 @@ noncomputable def unionPLComplexData
       support := Set.univ
       realizesSimplexes := S.compatibleStages
       faceClosed := True }
+  let hKEmbedding : _root_.Topology.IsEmbedding (fun p : C.support => carrierMap p.1) :=
+    hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
   let K : PLComplexInSpace M :=
     { Complex := C
       embed := fun p => carrierMap p.1
-      isEmbedding := hCarrierEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
-      locallyFinite := S.locallyFiniteUnion
-      compatibleCharts := S.boundaryCompatibleUnion }
+      isEmbedding := hKEmbedding
+      locallyFinite := inferInstance
+      compatibleCharts := ⟨hKEmbedding.injective, hKEmbedding.continuous⟩ }
   refine ⟨K, ?_⟩
   ext x
   constructor

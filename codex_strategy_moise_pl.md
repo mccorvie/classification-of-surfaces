@@ -560,7 +560,8 @@ structure PLComplexIn (X : Type*) [TopologicalSpace X] where
   Complex : EuclideanComplex
   embed : Complex.support ↪ X
   embedding : Embedding embed
-  locallyFinite : Prop
+  locallyFinite : Finite Complex.Simplex
+  compatibleCharts : Function.Injective embed ∧ Continuous embed
 ```
 
 Needed operations:
@@ -727,7 +728,9 @@ codimension-one faces of a two-simplex as the current scaffold boundary word.
 Because the current `EuclideanComplex` API has finite simplex types,
 `PLComplexInSpace.fullFiniteSupportData` is the named finite-support package taking all simplexes;
 `locallyFiniteComplex_finite_of_compact_support` is now the Moise-facing wrapper around that
-package rather than the source of the finite data.
+package rather than the source of the finite data.  `PLComplexInSpace.locallyFinite` and
+`PLComplexInSpace.compatibleCharts` are no longer free propositions: local finiteness is a finite
+simplex-type proof, and compatibility is supplied by injectivity and continuity of the embedding.
 `PLComplexInSpace.toFiniteSurfaceTriangulation` is the named construction behind the public
 existential theorem.  `FinitePLTriangulationData` is the named Rado-output package for a covering
 embedded PL complex, finite support data, and boundary-subcomplex data; the bordered Rado theorem

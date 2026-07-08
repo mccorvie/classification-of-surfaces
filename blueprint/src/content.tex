@@ -405,12 +405,15 @@ $M$ equipped with charts from Euclidean simplexes such that the induced abstract
 complex is PL-compatible on intersections.  The formal API stores a mathlib
 topological embedding of the complex support into the ambient space, exposes the
 image support, point and set coverage predicates, extension data, and
-compatibility on overlaps.  It also has finite support data: a finite set of
-relevant simplexes covering the embedded support.  At the current finite
-`EuclideanComplex` level, `fullFiniteSupportData` gives this package by taking
-all simplexes of the complex.  `FinitePLTriangulationData`
-packages an embedded PL complex covering the ambient space together with finite
-support data and boundary-subcomplex data.
+compatibility on overlaps.  Its local-finiteness field is now proof-bearing:
+at the current finite `EuclideanComplex` level it is a `Finite` proof for the
+simplex type.  Its chart-compatibility field is derived from the embedding as
+injectivity and continuity, not supplied as an arbitrary proposition.  It also
+has finite support data: a finite set of relevant simplexes covering the
+embedded support.  `fullFiniteSupportData` gives this package by taking all
+simplexes of the complex.  `FinitePLTriangulationData` packages an embedded PL
+complex covering the ambient space together with finite support data and
+boundary-subcomplex data.
 \end{definition}
 
 \begin{definition}[Interior subcomplex of a PL surface]
