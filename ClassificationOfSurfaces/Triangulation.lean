@@ -3,6 +3,8 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
+import ClassificationOfSurfaces.Moise.ChartInduction
+import ClassificationOfSurfaces.Moise.GeometricTriangulation
 import ClassificationOfSurfaces.PL
 
 /-!
@@ -287,6 +289,65 @@ theorem toFiniteSurfaceTriangulation_homeomorphSurface
 
 end FinitePLTriangulationData
 
+namespace GeometricTriangulation
+
+variable {S : Type*} [TopologicalSpace S] (T : GeometricTriangulation S)
+
+/-- The boundary word of a face of a geometric triangulation: its two-element subsets, listed
+with the positive orientation. -/
+noncomputable def triangleBoundary (t : T.Triangle) : List (OrientedEdge T.Edge) :=
+  (t.1.powersetCard 2).toList.attach.map fun e =>
+    OrientedEdge.pos
+      ⟨e.1,
+        T.mem_edges_of_subset_face t.2
+          (Finset.mem_powersetCard.mp (Finset.mem_toList.mp e.2)).1
+          (Finset.mem_powersetCard.mp (Finset.mem_toList.mp e.2)).2⟩
+
+theorem edge_subset_of_mem_triangleBoundary {t : T.Triangle} {oe : OrientedEdge T.Edge}
+    (hoe : oe ∈ T.triangleBoundary t) : oe.edge.1 ⊆ t.1 := by
+  unfold triangleBoundary at hoe
+  rw [List.mem_map] at hoe
+  rcases hoe with ⟨e, _he, rfl⟩
+  exact (Finset.mem_powersetCard.mp (Finset.mem_toList.mp e.2)).1
+
+/-- Package a geometric triangulation as the project's `FiniteSurfaceTriangulation` object.
+
+This is the compatibility bridge: downstream consumers (the cell-complex conversion and the
+Gallier--Xu route) keep their interface, while the triangulation content now lives in the
+faithful geometric object. -/
+noncomputable def toFiniteSurfaceTriangulation : FiniteSurfaceTriangulation S where
+  Vertex := T.Vertex
+  Edge := T.Edge
+  Triangle := T.Triangle
+  vertexFintype := T.vertexFintype
+  vertexDecidableEq := T.vertexDecidableEq
+  edgeFintype := inferInstance
+  triangleFintype := inferInstance
+  realization := T.realization
+  realizationTop := inferInstance
+  edgeVertices := fun e => e.1
+  triangleVertices := fun t => t.1
+  edgeSource := T.edgeSource
+  edgeTarget := T.edgeTarget
+  triangleBoundary := T.triangleBoundary
+  edgeIsBoundary := fun e => T.IsBoundaryEdge e
+  isSurfaceTriangulation :=
+    { edge_card := T.edge_card
+      triangle_card := T.triangle_card
+      edgeSource_mem := T.edgeSource_mem
+      edgeTarget_mem := T.edgeTarget_mem
+      edgeSource_ne_edgeTarget := T.edgeSource_ne_edgeTarget
+      boundary_edge_vertices_subset := fun _t _oe hoe =>
+        T.edge_subset_of_mem_triangleBoundary hoe }
+  homeomorphSurface := ⟨T.homeo⟩
+
+/-- The bridge realizes the ambient space. -/
+theorem toFiniteSurfaceTriangulation_homeomorphSurface :
+    Nonempty (T.toFiniteSurfaceTriangulation.realization ≃ₜ S) :=
+  T.toFiniteSurfaceTriangulation.homeomorphSurface
+
+end GeometricTriangulation
+
 /-- A space is triangulable if it has a finite surface triangulation in the project sense. -/
 def SurfaceTriangulable (S : Type*) [TopologicalSpace S] : Prop :=
   ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S)
@@ -387,15 +448,31 @@ variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 variable [ChartBoundaryInvariant S]
 
-/-- The named finite surface triangulation produced for a compact Eval surface. -/
+/-- Radó's theorem (Moise, *Geometric Topology in Dimensions 2 and 3*, Ch. 8, Thm. 3; bordered
+version): every compact surface in the Eval sense admits a finite geometric triangulation — a
+homeomorphism onto the realization of a finite two-dimensional simplicial complex.
+
+Semantic anchors: the conclusion implies `CompactSpace S` and `T2Space S`
+(`GeometricTriangulation.compactSpace`, `GeometricTriangulation.t2Space`), and is refuted for
+non-compact spaces (`Moise/Countermodels.lean`), so it cannot be discharged by a junk witness.
+
+The proof is the assembled Radó chart induction (`Moise.moise_triangulation_of_boundaries`); the
+remaining hard content sits on its two named boundaries, `Moise.moise_finite_chart_cover`
+(a port of the proven `PL.lean` spine) and `Moise.moise_induction_step` (which will consume the
+polygonal Jordan/Schoenflies theorems and PL approximation, Moise Ch. 2-6). -/
+theorem moise_triangulation : Nonempty (GeometricTriangulation S) :=
+  Moise.moise_triangulation_of_boundaries S
+
+/-- The named finite surface triangulation produced for a compact Eval surface, obtained from the
+geometric triangulation boundary `moise_triangulation` through the compatibility bridge. -/
 noncomputable def compact_eval_surface_finiteSurfaceTriangulation :
     FiniteSurfaceTriangulation S :=
-  mathlib_bordered_surface_finiteSurfaceTriangulation S
+  (Classical.choice (moise_triangulation S)).toFiniteSurfaceTriangulation
 
 /-- The named compact Eval surface triangulation realizes the ambient surface. -/
 theorem compact_eval_surface_finiteSurfaceTriangulation_homeomorphSurface :
     Nonempty ((compact_eval_surface_finiteSurfaceTriangulation S).realization ≃ₜ S) :=
-  mathlib_bordered_surface_finiteSurfaceTriangulation_homeomorphSurface S
+  (compact_eval_surface_finiteSurfaceTriangulation S).homeomorphSurface
 
 /-- Moise/PL theorem boundary: compact Eval surfaces admit finite triangulations. -/
 theorem compact_eval_surface_finitely_triangulable :
