@@ -1,0 +1,38 @@
+# Known-Weak Ledger
+
+Deliberately-weak, placeholder, or vacuous definitions. Rule (see AUTOFORMALIZATION_GUIDE.md,
+Definition Faithfulness): **strengthen before extending** — do not build new layers on an entry
+here. If you must consume one, add yourself to its dependents list.
+
+Entries found by the 2026-07-08 audit. Status values: `placeholder` (intentional scaffold),
+`vacuous` (satisfiable by junk witnesses), `retiring` (superseded by the Moise route rebuild).
+
+## Triangulation route (being replaced by `ClassificationOfSurfaces/Moise/`)
+
+| Declaration | File | Status | Problem | Intended meaning |
+|---|---|---|---|---|
+| `FiniteSurfaceTriangulation` | Triangulation.lean | vacuous, retiring | `realization : Type` arbitrary; combinatorial data unlinked to topology; every space satisfies `SurfaceTriangulable` via the empty triangulation | superseded by `GeometricTriangulation` (embeddings of the standard 2-simplex, intersections are common faces) |
+| `EuclideanComplex` | PL.lean | vacuous, retiring | `support` has no linkage to simplicial data; `realizesSimplexes` duplicates `simplex_nonempty` | geometric simplicial complex with real carriers |
+| `PLMap` / `PLSubdivisionSupportWitness` | PL.lean | vacuous, retiring | any continuous map qualifies (`onIdentitySubdivisions`) | map affine on each simplex of some subdivision |
+| `IsPLOnSimplexes` / `IsPLOnSkeleton` | PL.lean | vacuous, retiring | true for every function (`isPLOnSimplexes_identity`); witness never mentions the function | PL condition on the restriction to those simplexes |
+| `SeparatedOnEdges` | PL.lean | vacuous, retiring | true for every map; no metric content | disjoint edges have disjoint images |
+| `EmbeddingLikeApproximation` | PL.lean | vacuous, retiring | `f = h ∨ Injective f` | the approximation is a (PL) embedding |
+| `PLComplexInSpace.simplexSupport` | PL.lean | vacuous, retiring | arbitrary set-valued assignment; no face-intersection condition; chart-union takes disjoint sums without overlap reconciliation | carriers are simplex images meeting in common faces |
+| Schoenflies/approximation "theorem boundaries" (PL.lean:2825–3060) | PL.lean | vacuous, retiring | trivially satisfiable because the predicates above are vacuous; names promise Moise Ch. 2–6 content that is absent | re-stated honestly in `Moise/PolygonalJordan.lean` (Ch. 2), `Moise/PolygonalSchoenflies.lean` (Ch. 2–3), `Moise/PLApproximation.lean` (Ch. 5–6), `Moise/ChartInduction.lean` (Ch. 8) |
+
+**Salvageable from PL.lean** (real content, to be ported, not weak): `RadoChartPair` +
+`fromChartAt` (3749–4060), `FiniteChartPairCover.exists_of_compact_local` (4248),
+triangle/homothety fitting lemmas (4685–5320), `euclideanHalfSpace` polygonal-neighborhood
+theorems (8077–8460), `ChartBoundaryInvariant` isolation (Surface.lean).
+
+## Cell-complex / normal-form side (owned separately; listed so nobody extends them)
+
+| Declaration | File | Status | Problem | Intended meaning |
+|---|---|---|---|---|
+| `SurfaceCellComplex.surfaceValid`, `.connected` | CellComplex.lean | vacuous | `Prop`-typed *data* fields, never required to hold | proper hypothesis fields about the incidence data |
+| `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | realization = quotient of polygon disjoint union by boundary-word gluing |
+| `SurfaceCellModel`, `OrientableRel`, `NonOrientableRel` | Representatives.lean | placeholder | `PUnit` with `⊥` relations: `Quot (OrientableRel p n)` is a point, so the eval conclusion's non-sphere branches assert `S ≃ₜ point` | actual polygon quotient representatives |
+| `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | **false as stated** | with placeholder representatives the statement is disprovable (a complex with `realization := Bool` is homeomorphic to neither the sphere nor a point); the `sorry` cannot be filled until Representatives is fixed | re-state after real representatives land |
+
+Dependents of the cell-complex entries: `NormalForm.lean`, `EvalStatement.lean`,
+`Examples.lean` (all pre-existing; no new dependents allowed).
