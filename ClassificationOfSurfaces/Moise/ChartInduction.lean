@@ -3,8 +3,8 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
+import ClassificationOfSurfaces.Moise.ChartExtraction
 import ClassificationOfSurfaces.Moise.PLApproximation
-import ClassificationOfSurfaces.Surface
 
 /-!
 # The Radó chart induction
@@ -158,58 +158,6 @@ theorem radoInvariant_empty (S : Type*) [TopologicalSpace S] :
     exact absurd he (Finset.notMem_empty e)
   coresInside := Set.empty_subset _
 
-/-- The kind of a Moise chart: interior charts are disks, boundary charts are half-disks. -/
-inductive ChartKind where
-  | disk
-  | halfDisk
-deriving DecidableEq, Repr
-
-/-- The model region of a chart kind: the open unit disk, or its closed-right half. -/
-def ChartKind.modelRegion : ChartKind → Set Plane
-  | .disk => Metric.ball 0 1
-  | .halfDisk => {x ∈ Metric.ball 0 1 | 0 ≤ x 0}
-
-/-- The model core of a chart kind: the closed disk of radius one half, or its right half.  Cores
-are compact and their union over a chart cover is what the Radó induction absorbs. -/
-def ChartKind.modelCore : ChartKind → Set Plane
-  | .disk => Metric.closedBall 0 (1 / 2)
-  | .halfDisk => {x ∈ Metric.closedBall 0 (1 / 2) | 0 ≤ x 0}
-
-theorem ChartKind.modelCore_subset_modelRegion (k : ChartKind) :
-    k.modelCore ⊆ k.modelRegion := by
-  cases k with
-  | disk =>
-      exact (Metric.closedBall_subset_ball (by norm_num))
-  | halfDisk =>
-      rintro x ⟨hx, hx0⟩
-      exact ⟨Metric.closedBall_subset_ball (by norm_num) hx, hx0⟩
-
-/-- A chart of the Moise cover: an open domain homeomorphic to the model disk or half-disk, with
-the compact core marked out by the chart. -/
-structure MoiseChart (S : Type*) [TopologicalSpace S] where
-  /-- Whether this is an interior (disk) or boundary (half-disk) chart. -/
-  kind : ChartKind
-  /-- The chart domain. -/
-  domain : Set S
-  /-- Chart domains are open. -/
-  isOpen_domain : IsOpen domain
-  /-- The chart homeomorphism onto the model region. -/
-  chart : domain ≃ₜ kind.modelRegion
-
-namespace MoiseChart
-
-variable {S : Type*} [TopologicalSpace S] (c : MoiseChart S)
-
-/-- The core of a chart: the part of the domain corresponding to the model core. -/
-def core : Set S :=
-  Subtype.val '' (c.chart ⁻¹' {p : c.kind.modelRegion | (p : Plane) ∈ c.kind.modelCore})
-
-theorem core_subset_domain : c.core ⊆ c.domain := by
-  rintro x ⟨p, -, rfl⟩
-  exact p.2
-
-end MoiseChart
-
 section EvalHypotheses
 
 variable (S : Type*) [TopologicalSpace S]
@@ -218,31 +166,10 @@ variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 variable [ChartBoundaryInvariant S]
 
-/-- A chart is boundary-faithful when, in the half-disk case, the chart coordinate detects the
-manifold boundary.  This is the property the local chart-extraction theorem provides and the
-induction step consumes. -/
-def MoiseChart.BoundaryFaithful (c : MoiseChart S) : Prop :=
-  c.kind = ChartKind.halfDisk →
-    ∀ x (hx : x ∈ c.domain),
-      x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔ ((c.chart ⟨x, hx⟩ : Plane) 0 = 0)
-
-/-- **Theorem boundary** (Moise Ch. 8, Thm. 1, local part; bordered version).
-
-Every point of an Eval surface has a boundary-faithful Moise chart whose core is a neighborhood
-of the point.  Interior points get disk charts; `ChartBoundaryInvariant` supplies the half-disk
-charts at manifold-boundary points.
-
-`PL.lean` contains a genuine proof of essentially this statement (`RadoChartPair.fromChartAt`
-with the `euclideanHalfSpace` neighborhood lemmas at PL.lean:8077-8460); discharging this
-boundary is a port of that spine to `MoiseChart` — the only new geometry is straightening a small
-chart ball onto the standard unit disk model, which is a scaling map. -/
-theorem exists_moiseChart_core_mem_nhds (x : S) :
-    ∃ c : MoiseChart S, c.BoundaryFaithful ∧ c.core ∈ nhds x := by
-  sorry
-
+omit [T2Space S] [ConnectedSpace S] [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
 /-- A compact Eval surface has a finite cover by boundary-faithful Moise chart cores (Moise
-Ch. 8, Thm. 1, plus compactness).  Proved from the local chart-extraction boundary by taking a
-finite subcover of the core interiors. -/
+Ch. 8, Thm. 1, plus compactness).  Proved by a finite subcover of the core interiors from the
+local chart extraction (`exists_moiseChart_core_mem_nhds`, `Moise/ChartExtraction.lean`). -/
 theorem moise_finite_chart_cover :
     ∃ (m : ℕ) (charts : Fin m → MoiseChart S),
       (⋃ i, (charts i).core) = Set.univ ∧
