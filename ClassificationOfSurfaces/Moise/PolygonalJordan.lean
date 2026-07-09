@@ -131,6 +131,141 @@ theorem frontier_interiorRegion : frontier J.interiorRegion = J.carrier :=
 theorem frontier_exteriorRegion : frontier J.exteriorRegion = J.carrier :=
   J.polygonal_jordan.choose_spec.choose_spec.2.2.2.2.2.2.2.2.2
 
+/-! ### The crossing index (Moise Ch. 2, proof of Thm. 1, Lemma 2)
+
+The parity of the number of polygon edges crossed by the leftward horizontal ray from a point.
+We use the half-open edge convention (an edge is crossed when the point's height lies in the
+half-open interval between the endpoint heights): this replaces Moise's "slightly perturbed
+line" device, needs no general-position choice of axes, and makes the index everywhere defined.
+Horizontal edges are never crossed. -/
+
+/-- The x-coordinate at height `y` of the line through `v` and `w` (meaningful when the heights
+of `v` and `w` differ, which the crossing condition guarantees at use sites). -/
+noncomputable def crossingX (v w : Plane) (y : ℝ) : ℝ :=
+  v 0 + (y - v 1) / (w 1 - v 1) * (w 0 - v 0)
+
+/-- The leftward horizontal ray from `P` crosses edge `i`, with the half-open height
+convention. -/
+def EdgeCrossed (i : ZMod J.n) (P : Plane) : Prop :=
+  ((J.vertex i) 1 ≤ P 1 ∧ P 1 < (J.vertex (i + 1)) 1 ∨
+    (J.vertex (i + 1)) 1 ≤ P 1 ∧ P 1 < (J.vertex i) 1) ∧
+  crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) < P 0
+
+open scoped Classical in
+/-- The Moise index of a point: the parity of the number of edges crossed by its leftward
+horizontal ray. -/
+noncomputable def index (P : Plane) : ℕ :=
+  (Finset.univ.filter fun i : ZMod J.n => J.EdgeCrossed i P).card % 2
+
+theorem index_lt_two (P : Plane) : J.index P < 2 :=
+  Nat.mod_lt _ (by norm_num)
+
+/-- Points of a segment have heights between the endpoint heights. -/
+theorem height_le_max_of_mem_segment {v w q : Plane} (hq : q ∈ segment ℝ v w) :
+    q 1 ≤ max (v 1) (w 1) := by
+  rcases hq with ⟨a, b, ha, hb, hab, rfl⟩
+  have h1 : (a • v + b • w) 1 = a * v 1 + b * w 1 := by
+    simp
+  rw [h1]
+  calc a * v 1 + b * w 1 ≤ a * max (v 1) (w 1) + b * max (v 1) (w 1) := by
+        gcongr
+        · exact le_max_left _ _
+        · exact le_max_right _ _
+    _ = max (v 1) (w 1) := by rw [← add_mul, hab, one_mul]
+
+/-- Points of the polygon have heights at most the maximal vertex height. -/
+theorem height_le_of_mem_carrier {q : Plane} (hq : q ∈ J.carrier) :
+    ∃ i : ZMod J.n, q 1 ≤ (J.vertex i) 1 := by
+  rcases Set.mem_iUnion.mp hq with ⟨i, hqi⟩
+  rcases le_total ((J.vertex i) 1) ((J.vertex (i + 1)) 1) with h | h
+  · exact ⟨i + 1, by simpa [max_eq_right h] using height_le_max_of_mem_segment hqi⟩
+  · exact ⟨i, by simpa [max_eq_left h] using height_le_max_of_mem_segment hqi⟩
+
+/-- A point strictly above every vertex has index zero: its leftward ray crosses nothing. -/
+theorem index_eq_zero_of_high {P : Plane} (hP : ∀ i : ZMod J.n, (J.vertex i) 1 < P 1) :
+    J.index P = 0 := by
+  classical
+  have hempty : (Finset.univ.filter fun i : ZMod J.n => J.EdgeCrossed i P) = ∅ := by
+    apply Finset.filter_false_of_mem
+    intro i _
+    rintro ⟨hy | hy, -⟩
+    · exact absurd hy.2 (not_lt.mpr (hP (i + 1)).le)
+    · exact absurd hy.2 (not_lt.mpr (hP i).le)
+  simp [index, hempty]
+
+/-- A point strictly above every vertex is off the polygon. -/
+theorem notMem_carrier_of_high {P : Plane} (hP : ∀ i : ZMod J.n, (J.vertex i) 1 < P 1) :
+    P ∉ J.carrier := by
+  intro hmem
+  rcases J.height_le_of_mem_carrier hmem with ⟨i, hi⟩
+  exact absurd hi (not_le.mpr (hP i))
+
+/-- There are points off the polygon with index zero. -/
+theorem exists_index_eq_zero : ∃ P : Plane, P ∉ J.carrier ∧ J.index P = 0 := by
+  classical
+  obtain ⟨ymax, hymax⟩ : ∃ y, ∀ i : ZMod J.n, (J.vertex i) 1 ≤ y := by
+    set g : ZMod J.n → ℝ := fun i => (J.vertex i) 1 with hg
+    exact ⟨(Finset.univ.image g).max' (by simp),
+      fun i => Finset.le_max' _ (g i) (Finset.mem_image_of_mem g (Finset.mem_univ i))⟩
+  set P : Plane := (WithLp.toLp 2 ![0, ymax + 1] : Plane) with hPdef
+  have hP1 : P 1 = ymax + 1 := rfl
+  have hhigh : ∀ i : ZMod J.n, (J.vertex i) 1 < P 1 := by
+    intro i
+    rw [hP1]
+    exact lt_of_le_of_lt (hymax i) (by linarith)
+  exact ⟨P, J.notMem_carrier_of_high hhigh, J.index_eq_zero_of_high hhigh⟩
+
+/-- **Sub-boundary** (Moise Ch. 2, Thm. 1, Lemma 2, local constancy of the index).
+
+Off the polygon the crossing index is locally constant.  The proof is elementary casework: for
+`Q` near `P`, the crossing status of each edge is unchanged unless the ray endpoint passes a
+vertex height, and at a vertex height the half-open convention makes the count change by `0` or
+`2` (the two edges at that vertex are both gained or both lost when they point to the same side,
+and exchanged when they point to opposite sides). -/
+theorem index_locallyConstant {P : Plane} (hP : P ∉ J.carrier) :
+    ∀ᶠ Q in nhds P, J.index Q = J.index P := by
+  sorry
+
+/-- **Sub-boundary** (Moise Ch. 2, Thm. 1, Lemma 2, existence of an inside point).
+
+Some point off the polygon has index one: take a height that is no vertex height but is attained
+by the polygon, let `P₁` be the leftmost polygon point at that height, and move slightly right of
+`P₁`.  (Moise's construction; requires knowing the polygon is not contained in a single
+horizontal line, which follows from the embedding fields.) -/
+theorem exists_index_eq_one : ∃ P : Plane, P ∉ J.carrier ∧ J.index P = 1 := by
+  sorry
+
+/-- **Moise Ch. 2, Thm. 1, Lemma 2**: the complement of a polygon is disconnected.  Proved from
+the index machinery: the index-0 and index-1 loci are relatively open (local constancy), cover
+the complement (the index is a parity), and are both nonempty. -/
+theorem compl_carrier_not_isPreconnected : ¬ IsPreconnected (J.carrierᶜ : Set Plane) := by
+  classical
+  intro hconn
+  obtain ⟨P₀, hP₀mem, hP₀⟩ := J.exists_index_eq_zero
+  obtain ⟨P₁, hP₁mem, hP₁⟩ := J.exists_index_eq_one
+  -- the two index loci, fattened to open sets by local constancy
+  set U : Set Plane := {Q | Q ∉ J.carrier ∧ J.index Q = 0} with hUdef
+  set V : Set Plane := {Q | Q ∉ J.carrier ∧ J.index Q = 1} with hVdef
+  have hopen : ∀ k, IsOpen {Q : Plane | Q ∉ J.carrier ∧ J.index Q = k} := by
+    intro k
+    rw [isOpen_iff_mem_nhds]
+    rintro Q ⟨hQmem, hQk⟩
+    have hcompl : J.carrierᶜ ∈ nhds Q :=
+      J.isClosed_carrier.isOpen_compl.mem_nhds hQmem
+    filter_upwards [J.index_locallyConstant hQmem, hcompl] with R hR hRmem
+    exact ⟨hRmem, by rw [hR, hQk]⟩
+  have hcover : (J.carrierᶜ : Set Plane) ⊆ U ∪ V := by
+    intro Q hQ
+    have := J.index_lt_two Q
+    interval_cases h : J.index Q
+    · exact Or.inl ⟨hQ, h⟩
+    · exact Or.inr ⟨hQ, h⟩
+  have hUne : ((J.carrierᶜ : Set Plane) ∩ U).Nonempty := ⟨P₀, hP₀mem, hP₀mem, hP₀⟩
+  have hVne : ((J.carrierᶜ : Set Plane) ∩ V).Nonempty := ⟨P₁, hP₁mem, hP₁mem, hP₁⟩
+  obtain ⟨Q, -, ⟨-, hQ0⟩, ⟨-, hQ1⟩⟩ := hconn U V (hopen 0) (hopen 1) hcover hUne hVne
+  rw [hQ0] at hQ1
+  exact absurd hQ1 (by norm_num)
+
 /-- The closed region bounded by a polygon: the closure of its interior region. -/
 noncomputable def closedRegion : Set Plane :=
   closure J.interiorRegion
