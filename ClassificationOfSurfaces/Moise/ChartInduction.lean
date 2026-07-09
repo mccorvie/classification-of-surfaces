@@ -218,29 +218,50 @@ variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 variable [ChartBoundaryInvariant S]
 
-/-- **Theorem boundary** (Moise Ch. 8, Thm. 1, plus compactness; bordered version).
-
-A compact Eval surface has a finite cover by Moise chart cores, with half-disk charts placing the
-manifold boundary on the model boundary line.  `PL.lean` contains a genuine proof of essentially
-this statement (`RadoChartPair.fromChartAt`, `FiniteChartPairCover.exists_of_compact_local`, and
-the boundary-faithfulness lemmas using `ChartBoundaryInvariant`); discharging this boundary is a
-port of that spine to the fresh objects, not new mathematics. -/
-theorem moise_finite_chart_cover :
-    ∃ (m : ℕ) (charts : Fin m → MoiseChart S),
-      (⋃ i, (charts i).core) = Set.univ ∧
-      ∀ i, (charts i).kind = ChartKind.halfDisk →
-        ∀ x (hx : x ∈ (charts i).domain),
-          x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
-            (((charts i).chart ⟨x, hx⟩ : Plane) 0 = 0) := by
-  sorry
-
 /-- A chart is boundary-faithful when, in the half-disk case, the chart coordinate detects the
-manifold boundary.  This is the property the cover theorem provides and the induction step
-consumes. -/
+manifold boundary.  This is the property the local chart-extraction theorem provides and the
+induction step consumes. -/
 def MoiseChart.BoundaryFaithful (c : MoiseChart S) : Prop :=
   c.kind = ChartKind.halfDisk →
     ∀ x (hx : x ∈ c.domain),
       x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔ ((c.chart ⟨x, hx⟩ : Plane) 0 = 0)
+
+/-- **Theorem boundary** (Moise Ch. 8, Thm. 1, local part; bordered version).
+
+Every point of an Eval surface has a boundary-faithful Moise chart whose core is a neighborhood
+of the point.  Interior points get disk charts; `ChartBoundaryInvariant` supplies the half-disk
+charts at manifold-boundary points.
+
+`PL.lean` contains a genuine proof of essentially this statement (`RadoChartPair.fromChartAt`
+with the `euclideanHalfSpace` neighborhood lemmas at PL.lean:8077-8460); discharging this
+boundary is a port of that spine to `MoiseChart` — the only new geometry is straightening a small
+chart ball onto the standard unit disk model, which is a scaling map. -/
+theorem exists_moiseChart_core_mem_nhds (x : S) :
+    ∃ c : MoiseChart S, c.BoundaryFaithful ∧ c.core ∈ nhds x := by
+  sorry
+
+/-- A compact Eval surface has a finite cover by boundary-faithful Moise chart cores (Moise
+Ch. 8, Thm. 1, plus compactness).  Proved from the local chart-extraction boundary by taking a
+finite subcover of the core interiors. -/
+theorem moise_finite_chart_cover :
+    ∃ (m : ℕ) (charts : Fin m → MoiseChart S),
+      (⋃ i, (charts i).core) = Set.univ ∧
+      ∀ i, (charts i).BoundaryFaithful := by
+  classical
+  choose c hfaithful hcore using exists_moiseChart_core_mem_nhds S
+  have hcover : (Set.univ : Set S) ⊆ ⋃ x : S, interior (c x).core := by
+    intro x _
+    exact Set.mem_iUnion.mpr ⟨x, mem_interior_iff_mem_nhds.mpr (hcore x)⟩
+  obtain ⟨t, ht⟩ := isCompact_univ.elim_finite_subcover
+    (fun x : S => interior (c x).core) (fun x => isOpen_interior) hcover
+  obtain ⟨m, e⟩ := Finite.exists_equiv_fin t
+  let e' := Classical.choice e
+  refine ⟨m, fun i => c (e'.symm i).1, ?_, fun i => hfaithful (e'.symm i).1⟩
+  apply Set.eq_univ_of_univ_subset
+  intro x hx
+  rcases Set.mem_iUnion₂.mp (ht (Set.mem_univ x)) with ⟨y, hyt, hxy⟩
+  exact Set.mem_iUnion.mpr ⟨e' ⟨y, hyt⟩, by
+    simpa using interior_subset hxy⟩
 
 /-- **Theorem boundary** (Moise Ch. 8, Thm. 3, the induction step; bordered version).
 
