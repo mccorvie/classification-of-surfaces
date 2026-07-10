@@ -1,1944 +1,698 @@
 % !TEX root = web.tex
-% Lean blueprint fragment for the Moise / PL-complex route.
-% Intended location: blueprint/src/content_moise_pl.tex
+% Lean blueprint for the classification-of-surfaces project.
 %
-% This is a content.tex-style fragment: include it from content.tex with
-%   \input{content_moise_pl}
-% It assumes the usual leanblueprint macros are available: \lean, \uses,
-% \leanok, \mathlibok, \notready, and standard theorem environments.
-%
-% This file is written as an alternative complete route.  The Gallier--Xu and
-% quotient-space tail intentionally mirrors the Mohar--Thomassen route so the two
-% files can be evaluated independently.  In a combined blueprint, extract the
-% shared tail into one common file to avoid duplicate labels and declarations.
+% Faithfulness conventions (kept in sync with the repository state; see
+% docs/MOISE_ROUTE.md for the prose roadmap and docs/KNOWN_WEAK.md for the
+% weakness ledger):
+%   * \lean{...} names are attached only to declarations that exist and compile;
+%   * \leanok on a statement means the Lean statement exists and compiles;
+%   * \leanok on a proof means the Lean proof of THAT declaration contains no
+%     sorry (transitive readiness is what the dependency graph displays);
+%   * planned declarations carry no \lean pointer and their proofs are marked
+%     \notready.
 
-\chapter{Route B: Moise via PL complexes}
+\chapter{The triangulation theorem: the Moise route}
 
-\section{Global interface for the classification project}
+This chapter records the formalization of Rad\'o's theorem (every compact
+bordered surface admits a finite triangulation) following Moise,
+\emph{Geometric Topology in Dimensions 2 and 3}, Ch.~8, whose inputs are the
+\emph{polygonal} Jordan and Schoenflies theorems (Ch.~2--3) and the PL
+approximation theorem (Ch.~5--6).  The full Jordan curve theorem (Ch.~4) and
+the full Schoenflies theorem (Ch.~9) are not on this route.  The Lean files
+live in \texttt{ClassificationOfSurfaces/Moise/}.
+
+\section{The Eval surface interface}
+
+\begin{definition}[C0 chart-boundary invariance]
+\label{moise:def:chart_boundary_invariant}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartBoundaryInvariant}
+\leanok
+The one deliberate assumption of the project: a mathlib manifold-boundary point
+lying in any preferred half-plane chart is sent by that chart to the frontier of
+the chart's extended target.  Mathlib proves this for positive regularity
+(\texttt{ModelWithCorners.isBoundaryPoint\_iff\_of\_mem\_atlas}); at regularity
+$C^0$ it is the invariance-of-boundary theorem, deferred as this typeclass.
+Only this implication is assumed; its converse is never used.
+\end{definition}
 
 \begin{definition}[Lean Eval compact surface with boundary]
 \label{moise:def:eval_surface}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EvalSurface, LeanEval.Topology.ClassificationOfSurfaces.ChartBoundaryInvariant}
-An \emph{Eval surface} is a type $S$ equipped with a topology such that $S$ is
-Hausdorff, connected, compact, charted over the Euclidean half-space
-$\mathbb H^2$, and is a $C^0$ manifold with corners for
-\texttt{modelWithCornersEuclideanHalfSpace 2}.  The Lean wrapper also carries
-`ChartBoundaryInvariant`, the explicit C0 boundary-stratum invariance hypothesis
-used by the current Moise route.  Positive-regularity bordered surfaces supply
-this class from mathlib's boundary-point theorem.
+\lean{LeanEval.Topology.ClassificationOfSurfaces.EvalSurface}
+\leanok
+\uses{moise:def:chart_boundary_invariant}
+An \emph{Eval surface} is a Hausdorff, connected, compact type charted over the
+Euclidean half-plane, a $C^0$ manifold for
+\texttt{modelWithCornersEuclideanHalfSpace 2}, together with the
+\ref{moise:def:chart_boundary_invariant} bridge.
 \end{definition}
+
+\section{Geometric triangulations}
+
+\begin{definition}[Geometric realization of a face family]
+\label{moise:def:geometric_realization}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.GeometricRealization}
+\leanok
+For a finite vertex type $V$ and a family $F$ of three-element vertex sets, the
+realization is the set of points of the standard simplex
+$\Delta^V\subseteq V\to\mathbb R$ supported on some face of $F$: the finite
+union of the geometric $2$-simplexes of $F$, glued along shared barycentric
+faces.  It is compact and Hausdorff by construction.
+\end{definition}
+
+\begin{definition}[Geometric triangulation]
+\label{moise:def:geometric_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.GeometricTriangulation}
+\leanok
+\uses{moise:def:geometric_realization}
+A \emph{geometric triangulation} of a space $S$ is a finite face family
+together with a homeomorphism from its geometric realization onto $S$.  There
+is no independent realization field: the realization is computed from the
+combinatorial data, so the definition cannot be satisfied by degenerate
+witnesses.  Executable anchors: the standard $2$-simplex triangulates itself,
+and $\mathbb R$ and $\mathbb Q$ admit no geometric triangulation
+(\texttt{Moise/Countermodels.lean}).
+\end{definition}
+
+\begin{lemma}[Triangulated spaces are compact Hausdorff]
+\label{moise:lem:triangulation_compact}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.GeometricTriangulation.compactSpace, LeanEval.Topology.ClassificationOfSurfaces.GeometricTriangulation.t2Space}
+\leanok
+\uses{moise:def:geometric_triangulation}
+A space with a geometric triangulation is compact and Hausdorff.
+\end{lemma}
+
+\begin{proof}
+\leanok
+The realization is a closed subset of the compact standard simplex inside the
+Hausdorff space $V\to\mathbb R$; transport along the homeomorphism.
+\end{proof}
+
+\begin{theorem}[Rad\'o; Moise Ch.~8, Thm.~3]
+\label{moise:thm:moise_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.moise_triangulation}
+\leanok
+\uses{moise:def:eval_surface,moise:def:geometric_triangulation,moise:thm:rado_assembly}
+Every Eval surface admits a geometric triangulation.
+\end{theorem}
+
+\begin{proof}
+\leanok
+This is \ref{moise:thm:rado_assembly}; the remaining mathematical content
+lives on that theorem's open inputs.
+\end{proof}
+
+\section{Plane complexes and piecewise-linear maps}
+
+\begin{definition}[Finite simplicial complex in the plane]
+\label{moise:def:plane_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PlaneComplex}
+\leanok
+A \emph{plane complex} is a finite family of affine simplexes of dimension at
+most two in $\mathbb R^2$: vertex positions are actual points, each face is
+affinely independent, faces are closed under nonempty subsets, and any two face
+carriers (convex hulls) intersect exactly in the carrier of their shared
+vertices.  The support is defined as the union of the face carriers and is
+compact.  Executable anchor: the closed standard triangle with its seven faces
+(\texttt{Moise/Anchors.lean}).
+\end{definition}
+
+\begin{definition}[Subdivisions and PL maps]
+\label{moise:def:pl_maps}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PlaneComplex.Subdivides, LeanEval.Topology.ClassificationOfSurfaces.Moise.IsAffineOn, LeanEval.Topology.ClassificationOfSurfaces.Moise.IsPLOn, LeanEval.Topology.ClassificationOfSurfaces.Moise.IsPLOnSet}
+\leanok
+\uses{moise:def:plane_complex}
+$K'$ subdivides $K$ when they have the same support and every face carrier of
+$K'$ lies in a face carrier of $K$.  A map is \emph{PL on $K$} when it agrees
+with an affine map on every face carrier of some subdivision of $K$, and PL on
+a set $A$ when $A$ carries some plane complex on which it is PL.  A generic
+continuous map is not PL on any complex with a $2$-face.
+\end{definition}
+
+\begin{lemma}[Realization bridge]
+\label{moise:lem:plane_complex_realization}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PlaneComplex.toGeometricTriangulation}
+\leanok
+\uses{moise:def:plane_complex,moise:def:geometric_triangulation}
+A purely two-dimensional plane complex induces a geometric triangulation of its
+support, by barycentric coordinates in the face containing each point.
+\end{lemma}
+
+\begin{proof}
+Elementary affine geometry; a designated starter task
+(\texttt{docs/MOISE\_ROUTE.md}).
+\end{proof}
+
+\section{The Jordan curve theorem for polygons (Moise Ch.~2)}
+
+\begin{definition}[Polygonal simple closed curve]
+\label{moise:def:polygonal_circle}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle}
+\leanok
+A \emph{polygonal circle} is a cyclically indexed family of at least three
+plane points with consecutive points distinct, adjacent segments meeting
+exactly in the shared vertex, and non-adjacent segments disjoint.  Its carrier
+(the union of the edges) is compact.  Executable anchor: the standard triangle
+(\texttt{Moise/Anchors.lean}).
+\end{definition}
+
+\begin{definition}[Crossing index]
+\label{moise:def:crossing_index}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.EdgeCrossed, LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.index}
+\leanok
+\uses{moise:def:polygonal_circle}
+The \emph{index} of a plane point is the parity of the number of polygon edges
+crossed by its leftward horizontal ray, an edge counting as crossed when the
+point's height lies in the half-open interval between the endpoint heights.
+The half-open convention replaces Moise's perturbed lines: the index is
+everywhere defined, no general-position choice of axes is needed, and
+horizontal edges are never crossed.
+\end{definition}
+
+\begin{lemma}[The index vanishes far away]
+\label{moise:lem:index_zero_high}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.index_eq_zero_of_high, LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.exists_index_eq_zero}
+\leanok
+\uses{moise:def:crossing_index}
+A point strictly above every vertex is off the polygon and has index zero; such
+points exist.
+\end{lemma}
+
+\begin{proof}
+\leanok
+No edge satisfies the height condition; points of a segment have heights
+bounded by the endpoint heights.
+\end{proof}
+
+\begin{lemma}[Local constancy of the index]
+\label{moise:lem:index_locally_constant}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.index_locallyConstant}
+\leanok
+\uses{moise:def:crossing_index}
+Off the polygon the index is locally constant.
+\end{lemma}
+
+\begin{proof}
+Casework: near a point off the polygon, the crossing status of each edge is
+unchanged unless the ray height passes a vertex height, where the half-open
+convention makes the count change by $0$ or $2$.
+\end{proof}
+
+\begin{lemma}[An index-one point exists]
+\label{moise:lem:index_one_exists}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.exists_index_eq_one}
+\leanok
+\uses{moise:def:crossing_index}
+Some point off the polygon has index one.
+\end{lemma}
+
+\begin{proof}
+Choose a non-vertex height attained by the polygon, take the leftmost polygon
+point at that height, and move slightly right of it (Moise's construction;
+requires that the polygon is not contained in a single horizontal line, which
+follows from the embedding fields).
+\end{proof}
+
+\begin{lemma}[Moise Ch.~2, Thm.~1, Lemma 2]
+\label{moise:lem:complement_disconnected}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.compl_carrier_not_isPreconnected}
+\leanok
+\uses{moise:lem:index_zero_high,moise:lem:index_locally_constant,moise:lem:index_one_exists}
+The complement of a polygon is disconnected.
+\end{lemma}
+
+\begin{proof}
+\leanok
+The index-$0$ and index-$1$ loci are relatively open by local constancy, cover
+the complement, and are both nonempty.
+\end{proof}
+
+\begin{theorem}[Jordan curve theorem for polygons; Moise Ch.~2, Thms.~1, 5, 6]
+\label{moise:thm:polygonal_jordan}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.polygonal_jordan}
+\leanok
+\uses{moise:def:polygonal_circle,moise:lem:complement_disconnected}
+The complement of a polygon has exactly two connected components, an open
+bounded interior and an open unbounded exterior, and the polygon is the
+frontier of each.
+\end{theorem}
+
+\begin{proof}
+At least two components is \ref{moise:lem:complement_disconnected}.  At most
+two components is Moise's strip-neighborhood walk (Ch.~2, Thm.~1, Lemma 1):
+every point of the complement joins the strip neighborhood of the polygon by a
+segment, and the strip minus the polygon has at most two sides.  The frontier
+statements are Moise Thms.~5--6.
+\end{proof}
+
+\begin{definition}[Interior, exterior, closed region]
+\label{moise:def:polygon_regions}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.interiorRegion, LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.exteriorRegion, LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.closedRegion}
+\leanok
+\uses{moise:thm:polygonal_jordan}
+The interior and exterior regions of a polygon are the bounded and unbounded
+complementary components provided by \ref{moise:thm:polygonal_jordan}; the
+closed region is the closure of the interior, and it is compact.
+\end{definition}
+
+\section{The Schoenflies theorem for polygons (Moise Ch.~2--3)}
+
+\begin{theorem}[Polygonal disks are polyhedra; Moise Ch.~2, Thm.~2]
+\label{moise:thm:region_polyhedron}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.closedRegion_is_polyhedron}
+\leanok
+\uses{moise:def:polygon_regions,moise:def:plane_complex}
+The closed region bounded by a polygon is the support of a purely
+two-dimensional plane complex whose edge skeleton along the polygon refines the
+polygon's edges.
+\end{theorem}
+
+\begin{proof}
+Cut the region by the finitely many lines through the polygon's edges and
+triangulate each convex piece.
+\end{proof}
+
+\begin{lemma}[Polygonal disks are triangulable]
+\label{moise:lem:region_triangulable}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.closedRegion_triangulable}
+\leanok
+\uses{moise:thm:region_polyhedron,moise:lem:plane_complex_realization}
+The closed region bounded by a polygon admits a geometric triangulation.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Combine \ref{moise:thm:region_polyhedron} with the realization bridge.
+\end{proof}
+
+\begin{theorem}[Schoenflies for polygons; Moise Ch.~3, Thm.~5]
+\label{moise:thm:polygonal_schoenflies}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.polygonal_schoenflies}
+\leanok
+\uses{moise:def:polygonal_circle,moise:thm:region_polyhedron}
+Any two polygons in the plane are equivalent under a homeomorphism of the whole
+plane.
+\end{theorem}
+
+\begin{proof}
+Free-triangle removal induction over a triangulation of the closed region
+(Moise Ch.~3, Thm.~4), then compose two normalizations.
+\end{proof}
+
+\begin{theorem}[Relative Schoenflies for polygons; Moise Ch.~3, Thm.~7]
+\label{moise:thm:polygonal_schoenflies_rel}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.polygonal_schoenflies_rel}
+\leanok
+\uses{moise:thm:polygonal_schoenflies}
+The straightening homeomorphism can be chosen supported in any prescribed open
+set containing the closed region: it sends the polygon to the frontier of a
+triangle and is the identity outside the open set.
+\end{theorem}
+
+\begin{proof}
+Choose the homeomorphisms in Moise's Thm.~4 induction supported in the open
+set.
+\end{proof}
+
+\section{Broken lines (Moise Ch.~1)}
+
+\begin{definition}[Broken-line joinedness]
+\label{moise:def:broken_line}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.JoinedByBrokenLine}
+\leanok
+Two points of a set are joined by a broken line when a finite chain of segments
+inside the set connects them.
+\end{definition}
+
+\begin{lemma}[Open connected sets are broken-line connected]
+\label{moise:lem:broken_line_connected}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.IsPreconnected.joinedByBrokenLine}
+\leanok
+\uses{moise:def:broken_line}
+In an open preconnected subset of the plane, any two points are joined by a
+broken line.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Clopen-chain argument: the locus joined to a fixed point is open (extend by one
+segment inside a ball) and relatively closed (same ball argument), hence
+everything.
+\end{proof}
+
+\section{PL approximation (Moise Ch.~5--6)}
+
+\begin{theorem}[Cone extension; Moise Ch.~5, Thms.~3--6]
+\label{moise:thm:cone_extension}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_extension_of_triangle_boundary}
+\leanok
+\uses{moise:def:pl_maps,moise:thm:polygonal_jordan}
+A map that is PL and injective on the frontier of a triangle, carrying it onto
+the frontier of a second triangle, extends to a PL homeomorphism of the closed
+triangles.
+\end{theorem}
+
+\begin{proof}
+Cone from an interior point: the extension is affine on each segment from the
+cone point to the boundary.
+\end{proof}
+
+\begin{theorem}[One-skeleton approximation; Moise Ch.~6, Thm.~2]
+\label{moise:thm:one_skeleton_approx}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_approximation_one_skeleton}
+\leanok
+\uses{moise:def:pl_maps,moise:lem:broken_line_connected}
+An embedding of the support of a finite one-dimensional plane complex into the
+plane can be $\varepsilon$-approximated by a PL embedding agreeing with it on
+all vertices.
+\end{theorem}
+
+\begin{proof}
+Subdivide finely, replace each small arc by a broken line in a small
+neighborhood (\ref{moise:lem:broken_line_connected}), keeping the broken lines
+disjoint except at shared endpoints.
+\end{proof}
+
+\begin{theorem}[PL approximation of embedded 2-manifolds; Moise Ch.~6, Thm.~3]
+\label{moise:thm:pl_approximation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_approximation_two_manifold}
+\leanok
+\uses{moise:thm:one_skeleton_approx,moise:thm:cone_extension,moise:thm:polygonal_schoenflies_rel}
+An embedding of the support of a finite combinatorial $2$-manifold-with-boundary
+into the plane can be $\varepsilon$-approximated by a PL embedding.  This is
+the single point of the whole route where dimension two is used (Moise's remark
+at the end of Ch.~8).
+\end{theorem}
+
+\begin{proof}
+Approximate on the one-skeleton by \ref{moise:thm:one_skeleton_approx}, extend
+across each $2$-cell by the combinatorial Schoenflies theorem
+(\ref{moise:thm:cone_extension}, via \ref{moise:thm:polygonal_schoenflies_rel}),
+with the subdivision fine enough that extended images of distinct cells have
+disjoint interiors.
+\end{proof}
+
+\section{Chart extraction (Moise Ch.~8, Thm.~1)}
+
+\begin{definition}[Moise charts]
+\label{moise:def:moise_chart}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.ChartKind, LeanEval.Topology.ClassificationOfSurfaces.Moise.MoiseChart, LeanEval.Topology.ClassificationOfSurfaces.Moise.MoiseChart.core}
+\leanok
+A \emph{Moise chart} is an open domain homeomorphic to the standard open unit
+disk (interior kind) or half-disk (boundary kind), with a compact core marked
+out by the model disk of radius one half.
+\end{definition}
+
+\begin{definition}[Boundary faithfulness]
+\label{moise:def:boundary_faithful}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.MoiseChart.BoundaryFaithful}
+\leanok
+\uses{moise:def:moise_chart,moise:def:chart_boundary_invariant}
+A chart is boundary-faithful when disk charts contain no manifold-boundary
+points and half-disk charts send manifold-boundary points to the model edge
+line.  This is exactly what \ref{moise:def:chart_boundary_invariant} yields;
+the converse of the half-disk clause is $C^0$ invariance of the boundary and is
+deliberately not part of the interface.
+\end{definition}
+
+\begin{lemma}[Local chart extraction]
+\label{moise:lem:chart_extraction}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.exists_moiseChart_core_mem_nhds}
+\leanok
+\uses{moise:def:eval_surface,moise:def:moise_chart,moise:def:boundary_faithful}
+Every point of an Eval surface has a boundary-faithful Moise chart whose core
+is a neighborhood of the point.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Take the preferred mathlib chart; a small ball (interior case) or relative
+half-ball (edge case) about the image point lies in the chart image, and the
+recentering homeomorphism $v\mapsto\varepsilon^{-1}(v-p)$ straightens it onto
+the standard model.  \ref{moise:def:chart_boundary_invariant} places boundary
+points on the frontier of the extended target, hence on the edge line.
+\end{proof}
+
+\begin{lemma}[Finite chart cover]
+\label{moise:lem:finite_chart_cover}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.moise_finite_chart_cover}
+\leanok
+\uses{moise:lem:chart_extraction}
+A compact Eval surface has a finite cover by boundary-faithful Moise chart
+cores.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Finite subcover of the core interiors.
+\end{proof}
+
+\section{The Rad\'o induction (Moise Ch.~8, Thm.~3)}
+
+\begin{definition}[Partial triangulation]
+\label{moise:def:partial_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation, LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation.combInterior}
+\leanok
+\uses{moise:def:geometric_realization}
+A \emph{partial triangulation} of $S$ is a finite face family together with a
+topological embedding of its geometric realization into $S$.  Its support is
+compact; its combinatorial interior is the support minus the image of the
+boundary edges (edges lying in exactly one face).
+\end{definition}
+
+\begin{definition}[The Rad\'o invariant]
+\label{moise:def:rado_invariant}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.RadoInvariant}
+\leanok
+\uses{moise:def:partial_triangulation}
+The invariant carried through the induction (Moise's conditions (3)--(4)): the
+complex is a combinatorial surface (every edge in at most two faces) and the
+absorbed region lies in its combinatorial interior.  The empty partial
+triangulation satisfies the invariant for the empty region.  This invariant is
+expected to be strengthened during the proof of
+\ref{moise:thm:induction_step}; weakening the step's conclusion is not
+permitted.
+\end{definition}
+
+\begin{theorem}[The induction step; Moise Ch.~8, Thm.~3, step]
+\label{moise:thm:induction_step}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.moise_induction_step}
+\leanok
+\uses{moise:def:rado_invariant,moise:def:boundary_faithful,moise:thm:pl_approximation,moise:thm:polygonal_schoenflies_rel}
+Given a partial triangulation satisfying the invariant for a region $A$ and one
+more boundary-faithful chart, some partial triangulation satisfies the
+invariant for $A$ together with the chart's core.
+\end{theorem}
+
+\begin{proof}
+Work in the chart's model coordinates; take a polyhedral neighborhood of the
+part of the built complex meeting the chart (Moise Thm.~8.2); adjust it by
+\ref{moise:thm:pl_approximation} so that it meets a fine complex containing
+the model core simplicially (Moise's conditions (a)--(h)); glue (Moise
+Thm.~7.6).
+\end{proof}
+
+\begin{theorem}[Assembled Rad\'o induction]
+\label{moise:thm:rado_assembly}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.moise_triangulation_of_boundaries}
+\leanok
+\uses{moise:lem:finite_chart_cover,moise:thm:induction_step,moise:def:rado_invariant,moise:def:geometric_triangulation}
+A compact Eval surface admits a geometric triangulation.
+\end{theorem}
+
+\begin{proof}
+\leanok
+Starting from the empty complex, absorb the finitely many chart cores one at a
+time by \ref{moise:thm:induction_step}; when all cores are absorbed the
+invariant forces the support to be everything, and a fully covering partial
+triangulation is a geometric triangulation.
+\end{proof}
+
+\chapter{From triangulations to the classification}
+
+This chapter is the downstream half: convert triangulations to finite surface
+cell complexes and reduce cell complexes to Gallier--Xu normal forms.  Much of
+it is currently placeholder scaffolding: see \texttt{docs/KNOWN\_WEAK.md} for
+the ledger.  In particular the Eval quotient representatives are still
+one-point placeholders, so \ref{moise:thm:gx_normal_form} is \emph{not
+provable as currently stated in Lean} — the representatives must be
+implemented first and the statement re-audited.
+
+\section{Cell complexes and the topological bridge}
 
 \begin{definition}[Finite surface cell complex]
 \label{moise:def:surface_cell_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex}
-A \emph{finite surface cell complex} is a finite combinatorial presentation of a
-compact bordered surface by polygonal faces and oriented edge identifications.
-It contains finite types of faces, oriented darts, edge-pairing data, cyclic
-boundary words for faces, a realization type, and incidence predicates that are
-being strengthened toward the Gallier--Xu surface conditions.
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Realization}
+\leanok
+A finite combinatorial presentation of a compact bordered surface by faces,
+oriented darts, pairing, and boundary words, with a realization space.
+\emph{Ledger note:} the realization is currently an arbitrary stored type and
+the surface-validity fields are stored propositions; the final model should be
+the polygon-quotient realization.
 \end{definition}
 
-\begin{definition}[Realization of a surface cell complex]
-\label{moise:def:cell_realization}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Realization}
+\begin{definition}[Finite surface triangulation (legacy interface)]
+\label{moise:def:finite_surface_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.GeometricTriangulation.toFiniteSurfaceTriangulation}
+\leanok
+\uses{moise:def:geometric_triangulation}
+The legacy triangulation package consumed by the cell-complex conversion.  Its
+content now comes exclusively from \ref{moise:def:geometric_triangulation}
+through the compatibility bridge; the legacy object itself is in the weakness
+ledger and should not be extended.
+\end{definition}
 
-\uses{moise:def:surface_cell_complex}
-For a finite surface cell complex $K$, the realization $|K|$ is the topological
-space carried by the cell-complex structure.  In the final quotient model this
-will be the quotient of the disjoint union of standard polygonal faces by the
-equivalence relation identifying paired oriented boundary arcs.
+\begin{definition}[Triangulation as a cell complex]
+\label{moise:def:triangulation_cell_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex}
+\leanok
+\uses{moise:def:finite_surface_triangulation,moise:def:surface_cell_complex}
+A finite surface triangulation yields a surface cell complex with one face per
+triangle and signed darts for the oriented edge occurrences.
 \end{definition}
 
 \begin{theorem}[Topological bridge]
 \label{moise:thm:compact_surface_cellulable}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.compact_surface_homeomorphic_to_cell_complex}
-
-\uses{moise:def:eval_surface,moise:def:surface_cell_complex,moise:def:cell_realization,moise:thm:compact_eval_surface_finitely_triangulable,moise:thm:finite_triangulation_to_cell_complex}
-Every Eval surface $S$ is homeomorphic to the realization of some finite surface
-cell complex: there exists a finite surface cell complex $K$ and a homeomorphism
-$S\cong |K|$.
+\leanok
+\uses{moise:def:eval_surface,moise:thm:moise_triangulation,moise:def:triangulation_cell_complex}
+Every Eval surface is homeomorphic to the realization of some finite surface
+cell complex.
 \end{theorem}
 
 \begin{proof}
 \leanok
-
-Use the Moise/Rado theorem, strengthened to compact manifolds with boundary, to
-obtain a finite triangulation of $S$.  Convert that triangulation to a finite
-surface cell complex and compose the homeomorphisms.
+Triangulate by \ref{moise:thm:moise_triangulation}, convert through the
+bridge, and compose the homeomorphisms.
 \end{proof}
 
-\section{PL-complex foundations}
+\section{Quotient realizations}
 
-\begin{definition}[Euclidean finite complex and support]
-\label{moise:def:euclidean_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.support, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.defaultSimplex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.realizesSimplex_nonempty, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.exists_erase_vertex_face}
-\leanok
-A Euclidean finite complex is a finite simplicial complex made of rectilinear
-simplexes in some Euclidean space.  Its support $|K|$ is the union of its
-simplexes with the subspace topology.  The current formal API stores finite
-vertex and nonempty simplex types, proof-bearing nonempty vertex sets for
-simplexes, and concrete codimension-one face closure: erasing a vertex from a
-simplex with at least two vertices produces the vertex set of another simplex.
-\end{definition}
-
-\begin{definition}[Subdivision]
-\label{moise:def:subdivision}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.carrierVertex, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.vertex_mem_carrier, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.exists_carrier_eq, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.CommonRefinement}
-\leanok
-
-\uses{moise:def:euclidean_complex}
-A subdivision $K'<K$ is a finite complex with homeomorphic support, a carrier
-map sending each simplex of $K'$ to a simplex of $K$, and a vertex carrier
-sending fine vertices to coarse vertices.  The formal API records concrete
-carrier-level simplex refinement: vertices of a fine simplex map to vertices of
-its carrier coarse simplex.  It also records dimension monotonicity, face
-compatibility, and proof-bearing coarse coverage: every coarse simplex has a
-fine simplex carried to it.  A common refinement
-now records lift maps to both refined complexes whose coarse carriers agree in
-the original complex.
-\end{definition}
-
-\begin{definition}[PL map and PL homeomorphism]
-\label{moise:def:pl_map_homeomorphism}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLSubdivisionSupportWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap, LeanEval.Topology.ClassificationOfSurfaces.PLMap.subdivisionSupportWitness_exists, LeanEval.Topology.ClassificationOfSurfaces.PLMap.FineSimplexTargetData, LeanEval.Topology.ClassificationOfSurfaces.PLMap.AffineOnFineSimplexData, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.targetSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.targetSimplex_dimension_le, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.affine_domain_dimension_le, LeanEval.Topology.ClassificationOfSurfaces.PLMap.LinearOnSubdivision.support_compatible, LeanEval.Topology.ClassificationOfSurfaces.PLMap.HasLinearSubdivisionWitness, LeanEval.Topology.ClassificationOfSurfaces.PLMap.SubcomplexMapData, LeanEval.Topology.ClassificationOfSurfaces.PLMap.RespectsSubcomplex, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.RestrictsTo}
-\leanok
-
-\uses{moise:def:euclidean_complex,moise:def:subdivision}
-A map $f:|K|\to |L|$ is piecewise linear if, after subdividing $K$, its
-restriction to each simplex is affine into a simplex of $L$.  A PL homeomorphism
-is a homeomorphism whose map and inverse are PL after suitable subdivisions.  The
-formal API now includes identity, composition, inverse, and coherence fields
-relating the PL maps to the underlying homeomorphism.  The `PLMap` structure
-stores support-level subdivision witness data, and linear subdivision witnesses
-carry explicit target-simplex assignment data, domain and target subdivision
-dimension bounds, and a support-homeomorphism compatibility equation.  Restriction to
-subcomplexes is no longer an arbitrary nonempty-target placeholder: a PL map
-respecting subcomplexes is backed by `PLMap.SubcomplexMapData`, a finite
-simplex assignment into the target subcomplex with face-compatibility and PL
-linearity witnesses.  A PL homeomorphism restriction carries this condition in
-both directions and composes through shared boundary subcomplexes.
-\end{definition}
-
-\begin{lemma}[PL property is invariant under subdivision]
-\label{moise:lem:pl_invariant_under_subdivision}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Subdivision.common_subdivision, LeanEval.Topology.ClassificationOfSurfaces.PLMap.afterSubdivision, LeanEval.Topology.ClassificationOfSurfaces.PLHomeomorph.afterSubdivision, LeanEval.Topology.ClassificationOfSurfaces.pl_iff_pl_after_subdivision}
-\leanok
-
-\uses{moise:def:pl_map_homeomorphism,moise:def:subdivision}
-A homeomorphism is PL relative to $K$ and $L$ if and only if it is PL relative to
-any subdivision of the domain or target complex.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The Lean interface packages Moise Section 5 Theorems 1 and 2 as transport maps
-for `PLMap` and `PLHomeomorph` across domain and target subdivisions.  The
-current scaffold records support-level subdivision witness data, per-simplex
-target assignments, and subdivision dimension bounds.  Actual affine formulas
-are still deferred beyond the standard-triangle geometric carriers.  The
-common-subdivision relation already carries carrier-compatible lift maps; the
-remaining geometric part is support containment of refined simplexes.
-\end{proof}
-
-\begin{definition}[Combinatorial two-manifold with boundary]
-\label{moise:def:combinatorial_surface}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkAdjacent, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkWalk, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkReachable, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.LinkConnected, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoManifoldWithBoundary, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoManifoldWithBoundary.sharedFace_mem_oneSkeleton}
-\leanok
-
-\uses{moise:def:euclidean_complex}
-A two-dimensional complex $K$ is a combinatorial two-manifold with boundary if
-the link of every vertex is either a combinatorial circle or a combinatorial
-interval.  The formal definition now exposes a finite link graph with adjacency,
-bounded walks, bounded reachability, and connectedness by pairwise reachability,
-together with boundary and interior vertex predicates and one- and
-two-dimensional simplex filters.  It also records the finite surface-validity
-condition that any common face of two distinct two-simplexes lies in the
-one-skeleton.  Its support is then expected to be a
-topological surface with boundary.
-\end{definition}
-
-\begin{definition}[Combinatorial two-cell]
-\label{moise:def:combinatorial_two_cell}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.TrianglePlane, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.triangleBoundarySubcomplex, LeanEval.Topology.ClassificationOfSurfaces.CellBoundaryEmbeddingData, LeanEval.Topology.ClassificationOfSurfaces.FrontierCoveredByBoundary, LeanEval.Topology.ClassificationOfSurfaces.ClosedTriangleBoundaryModel, LeanEval.Topology.ClassificationOfSurfaces.PolygonalBoundaryData, LeanEval.Topology.ClassificationOfSurfaces.ClosedInteriorTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.CombinatorialTwoCell, LeanEval.Topology.ClassificationOfSurfaces.PolygonalDisk}
-\leanok
-
-\uses{moise:def:euclidean_complex,moise:def:combinatorial_surface}
-A combinatorial two-cell is a finite two-dimensional complex with a distinguished
-boundary subcomplex, a boundary inclusion map, and PL homeomorphism data to a
-closed triangle model respecting the boundary subcomplex.  The boundary
-subcomplex is now required to be nonempty and carries proof-bearing boundary
-embedding data, frontier coverage for the codimension-one faces of two-simplexes,
-and a closed-triangle boundary model excluding the interior face.  The standard
-closed triangle now has geometric support in
-`EuclideanSpace ℝ (Fin 2)`, while its finite vertices and simplexes still
-provide the combinatorial triangle API.  A polygonal disk records Moise's
-polygon theorem output as named boundary, closed-interior triangulation, and
-free-triangle-reduction data instead of arbitrary truth fields.
-\end{definition}
-
-\begin{lemma}[Standard triangle support is a centroid neighborhood]
-\label{moise:lem:standard_triangle_centroid_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleCentroid, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleCentroid_mem_closedTriangleSupport, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport_mem_nhds_centroid, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.dist_centroid_le_three_of_mem_closedTriangleSupport}
-\leanok
-
-\uses{moise:def:combinatorial_two_cell}
-The centroid of the standard closed triangle lies in the triangle support, the
-triangle support is an ambient Euclidean neighborhood of that centroid, and the
-whole triangle lies within a fixed bounded distance of the centroid.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The centroid has both coordinates `1 / 3`, so it satisfies the three defining
-closed-triangle inequalities strictly.  The open set cut out by the strict
-inequalities is contained in the closed triangle and is a neighborhood of the
-centroid.  The coarse distance bound uses the coordinate inequalities defining
-the closed triangle and the Euclidean norm formula.
-\end{proof}
-
-\begin{lemma}[Polygonal disk is a combinatorial two-cell]
-\label{moise:lem:polygonal_disk_combinatorial_cell}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PolygonalDisk.toCombinatorialTwoCell, LeanEval.Topology.ClassificationOfSurfaces.polygonal_disk_is_combinatorial_two_cell}
-\leanok
-
-\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism}
-If $J$ is a polygonal simple closed curve in $\mathbb R^2$ and $I$ is its
-interior, then the triangulated closed disk data package as a combinatorial
-two-cell.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The formal theorem takes the triangulation output as `PolygonalDisk` data and
-repackages its fields as a `CombinatorialTwoCell`.  The geometric theorem that a
-polygonal simple closed curve supplies this data remains the external Moise
-input: triangulate the disk and reduce it to a standard closed triangle by
-removing free triangles.
-\end{proof}
-
-\begin{theorem}[PL Schoenflies for combinatorial two-cells]
-\label{moise:thm:pl_schoenflies_combinatorial_cell}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_schoenflies_combinatorial_two_cell}
-\leanok
-
-\uses{moise:def:combinatorial_two_cell,moise:def:pl_map_homeomorphism}
-Every PL homeomorphism between the boundaries of two combinatorial two-cells
-extends to a PL homeomorphism between the two cells whose restriction to the
-distinguished boundary subcomplexes agrees with the prescribed boundary map.
-\end{theorem}
-
-\begin{proof}
-\leanok
-
-Use the stored PL homeomorphisms from each two-cell to the shared standard
-triangle model, compose the first with the inverse of the second, and discharge
-the boundary-extension fields using the restriction data and the PL witnesses
-carried by the boundary and cell homeomorphisms.  The formal proof first
-identifies each modeled closed-triangle boundary subcomplex with the standard
-triangle boundary, then composes the two stored boundary restrictions through
-that common subcomplex.
-\end{proof}
-
-\section{PL approximation in dimension two}
-
-\begin{definition}[Strongly positive function]
-\label{moise:def:strongly_positive}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.StronglyPositive}
-\leanok
-A function $\varphi:X\to\mathbb R$ is strongly positive if $\varphi(x)>0$ for all
-$x$ and it has the lower-separation properties needed to make local approximation
-estimates uniform on compact simplexes.  In a metric formalization this may be
-implemented as a positive continuous function or as Moise's strongly positive
-notion.
-\end{definition}
-
-\begin{definition}[$\varphi$-approximation]
-\label{moise:def:phi_approximation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PhiApproximation}
-\leanok
-
-\uses{moise:def:strongly_positive}
-For maps $f,g:X\to Y$ into a metric space, $f$ is a $\varphi$-approximation of
-$g$ if $d(f(x),g(x))<\varphi(x)$ for every $x$.
-\end{definition}
-
-\begin{lemma}[Approximation calculus]
-\label{moise:lem:approximation_calculus}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.StronglyPositive.mono, LeanEval.Topology.ClassificationOfSurfaces.StronglyPositive.add, LeanEval.Topology.ClassificationOfSurfaces.StronglyPositive.min, LeanEval.Topology.ClassificationOfSurfaces.PhiApproximation.mono, LeanEval.Topology.ClassificationOfSurfaces.PhiApproximation.symm, LeanEval.Topology.ClassificationOfSurfaces.PhiApproximation.trans}
-\leanok
-
-\uses{moise:def:strongly_positive,moise:def:phi_approximation}
-Strongly positive tolerances are closed under monotonicity, addition, minimum,
-positive scalar multiplication, pullback, and restriction.  Pointwise
-$\varphi$-approximations are closed under monotonicity, symmetry, triangle
-composition, precomposition, restriction, and suitable postcomposition.
-\end{lemma}
-
-\begin{proof}
-\leanok
-These are direct consequences of positivity and the metric triangle inequality.
-\end{proof}
-
-\begin{definition}[Half-plane boundary targets]
-\label{moise:def:half_plane_boundary_targets}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.HalfPlane, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneBoundary, LeanEval.Topology.ClassificationOfSurfaces.HalfPlaneRegion, LeanEval.Topology.ClassificationOfSurfaces.BoundaryVertexImageData, LeanEval.Topology.ClassificationOfSurfaces.BoundaryEdgeImageData, LeanEval.Topology.ClassificationOfSurfaces.BoundaryVerticesMapToBoundary, LeanEval.Topology.ClassificationOfSurfaces.BoundaryEdgesMapToBoundary, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingMap, LeanEval.Topology.ClassificationOfSurfaces.BoundaryRespectingOneSkeletonApproximation}
-\leanok
-
-\uses{moise:def:combinatorial_surface,moise:def:phi_approximation}
-The direct bordered route uses the closed upper half-plane as the local target.
-A half-plane region records a plane subset contained in the half-plane together
-with its boundary part on the boundary line.  Boundary-respecting map predicates
-now carry map-dependent witness data: for each boundary vertex or boundary edge
-they store a support point whose image lies in the target boundary carrier.
-Once vertex and edge realizations are geometric, these witnesses should be
-upgraded to image containment for the whole realized vertex or edge.  The
-one-skeleton version combines this with the existing PL approximation predicate.
-\end{definition}
-
-\begin{lemma}[PL approximation on the one-skeleton]
-\label{moise:lem:pl_approximation_one_skeleton}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_one_skeleton}
-\leanok
-
-\uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:def:pl_map_homeomorphism,moise:lem:pl_invariant_under_subdivision,moise:lem:one_skeleton_hard_boundaries}
-Let $K$ be a combinatorial two-manifold with boundary, $h:|K|\to M\subseteq
-\mathbb R^2$ a homeomorphism, and $\varphi\gg 0$.  After a sufficiently fine
-subdivision, $h$ restricted to the one-skeleton has a PL embedding which is a
-$\varphi$-approximation and preserves the images of vertices.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Approximate each edge image by a broken line inside a sufficiently small
-neighborhood.  Choose the subdivision fine enough so that nonincident edge images
-remain separated and incident edges meet only at their common vertices.
-\end{proof}
-
-\begin{lemma}[Hard one-skeleton approximation boundaries]
-\label{moise:lem:one_skeleton_hard_boundaries}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.VertexPreservationData, LeanEval.Topology.ClassificationOfSurfaces.PreservesVertices, LeanEval.Topology.ClassificationOfSurfaces.PLOnSimplexesData, LeanEval.Topology.ClassificationOfSurfaces.IsPLOnSimplexes, LeanEval.Topology.ClassificationOfSurfaces.EdgeSeparationData, LeanEval.Topology.ClassificationOfSurfaces.SeparatedOnEdges, LeanEval.Topology.ClassificationOfSurfaces.finite_arc_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.endpoint_preservation_for_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.finite_edge_separation_control, LeanEval.Topology.ClassificationOfSurfaces.no_crossing_perturbation}
-\leanok
-
-\uses{moise:def:combinatorial_surface,moise:def:phi_approximation}
-The one-skeleton approximation API is split into named finite conditions:
-polygonal approximation of edge images, endpoint preservation, edge separation
-control, and no-crossing of the approximated edge arcs.
-\end{lemma}
-
-\begin{proof}
-\leanok
-With the current finite combinatorial predicates, the reference map itself
-satisfies these conditions from strong positivity and finite witness packages:
-`PLOnSimplexesData` records a subdivision covering the requested simplexes,
-`VertexPreservationData` records the finite vertices represented by
-zero-simplexes, and `EdgeSeparationData` records the finite nonincident edge
-pairs requiring separation.  When edge realizations are made geometric, these
-declarations should be strengthened back into the intended planar approximation
-lemmas.
-\end{proof}
-
-\begin{lemma}[Bordered one-skeleton approximation boundaries]
-\label{moise:lem:bordered_one_skeleton_hard_boundaries}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.boundary_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.boundary_endpoint_preservation_for_polygonal_approximation, LeanEval.Topology.ClassificationOfSurfaces.boundary_edge_separation_control, LeanEval.Topology.ClassificationOfSurfaces.boundary_no_crossing_perturbation, LeanEval.Topology.ClassificationOfSurfaces.bordered_pl_approximation_one_skeleton}
-\leanok
-
-\uses{moise:def:half_plane_boundary_targets,moise:def:combinatorial_surface,moise:def:phi_approximation}
-The bordered one-skeleton approximation layer parallels the plane case but works
-in a half-plane region.  The theorem boundaries require polygonal approximation,
-endpoint preservation, finite separation, and no-crossing perturbations that
-keep boundary vertices and boundary edges on the boundary line; this is now an
-explicit hypothesis on the input map and part of the output witness.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The wrapper theorem packages the boundary-aware no-crossing perturbation as a
-one-skeleton PL approximation together with the boundary-respecting map
-predicate.  The geometric perturbation results remain named theorem boundaries.
-\end{proof}
-
-\begin{definition}[Cellwise extension and gluing interfaces]
-\label{moise:def:cellwise_extension_gluing}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ExtendsOneSkeletonApproximation, LeanEval.Topology.ClassificationOfSurfaces.CellwiseSchoenfliesExtensions, LeanEval.Topology.ClassificationOfSurfaces.IsPLOnTwoSkeleton, LeanEval.Topology.ClassificationOfSurfaces.EmbeddingLikeApproximation, LeanEval.Topology.ClassificationOfSurfaces.RelativeBoundaryCells, LeanEval.Topology.ClassificationOfSurfaces.SharedBoundaryCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary.plOnSharedBoundary, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary.sharedFace_mem_oneSkeleton, LeanEval.Topology.ClassificationOfSurfaces.ExtensionsAgreeOnSharedBoundary.ofSurface, LeanEval.Topology.ClassificationOfSurfaces.CellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLHomeomorphFromCellwise, LeanEval.Topology.ClassificationOfSurfaces.GlobalPLSurfaceApproximation, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCellwiseExtension, LeanEval.Topology.ClassificationOfSurfaces.BoundaryGlobalPLSurfaceApproximation}
-\leanok
-
-\uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:lem:pl_approximation_one_skeleton}
-A cellwise extension records a one-skeleton PL approximation, a global candidate
-map on the support, its $\varphi$-closeness to the original homeomorphism,
-finite two-cell extension data, and finite agreement conditions on shared
-boundaries.  One-skeleton extension is currently represented by a
-$\varphi$-approximation to the one-skeleton map, and shared-boundary agreement
-is a nonempty data predicate recording that the candidate map is PL on the
-one-skeleton and that common faces of distinct two-simplexes lie in that
-one-skeleton.  It also carries proof-bearing global output conditions: the map
-is PL on the two-skeleton, and it is embedding-like by either agreeing with the
-reference map or being injective.  The global
-gluing predicate packages the
-claim that compatible cellwise data assemble into a global PL surface
-approximation.  The boundary versions additionally record boundary-respecting
-one-skeleton data, relative boundary-cell extension data, and a
-boundary-respecting global map.
-\end{definition}
-
-\begin{lemma}[Hard cellwise extension and gluing boundaries]
-\label{moise:lem:cellwise_extension_gluing_boundaries}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.cellwise_extension_by_pl_schoenflies, LeanEval.Topology.ClassificationOfSurfaces.global_pl_homeomorph_from_cellwise, LeanEval.Topology.ClassificationOfSurfaces.boundary_cellwise_extension_by_relative_pl_schoenflies, LeanEval.Topology.ClassificationOfSurfaces.boundary_global_pl_homeomorph_from_cellwise, LeanEval.Topology.ClassificationOfSurfaces.bordered_pl_approximation_halfplane}
-\leanok
-
-\uses{moise:def:cellwise_extension_gluing,moise:thm:pl_schoenflies_combinatorial_cell}
-After the one-skeleton is controlled, the API packages cellwise extension data
-and glues compatible finite families into global PL approximation data.  The
-bordered route additionally records boundary-respecting cellwise data.
-\end{lemma}
-
-\begin{proof}
-\leanok
-With the current scaffold predicates, take the one-skeleton approximation map as
-the cellwise/global map and discharge the finite compatibility fields
-pointwise.  The geometric Schoenflies and gluing content will reappear when the
-cell predicates are strengthened.
-\end{proof}
-
-\begin{theorem}[Moise PL approximation theorem in the plane]
-\label{moise:thm:pl_approximation_plane}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_plane_combinatorial_surface}
-\leanok
-
-\uses{moise:def:combinatorial_surface,moise:def:phi_approximation,moise:lem:pl_invariant_under_subdivision,moise:lem:pl_approximation_one_skeleton,moise:lem:cellwise_extension_gluing_boundaries}
-Let $K$ be a combinatorial two-manifold with boundary, let $h:|K|\to M\subseteq
-\mathbb R^2$ be a homeomorphism, and let $\varphi\gg 0$.  There exists a PL
-homeomorphism $f:|K|\to\mathbb R^2$ which is a $\varphi$-approximation of $h$.
-\end{theorem}
-
-\begin{proof}
-\leanok
-
-Approximate $h$ on the one-skeleton by a PL embedding.  Apply the cellwise PL
-Schoenflies extension boundary to extend across every two-cell, then apply the
-global gluing boundary to assemble the compatible cellwise extensions.
-\end{proof}
-
-\begin{theorem}[PL approximation between combinatorial surfaces]
-\label{moise:thm:pl_approximation_between_surfaces}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.pl_approximation_between_combinatorial_surfaces}
-\leanok
-
-\uses{moise:thm:pl_approximation_plane,moise:lem:pl_invariant_under_subdivision,moise:def:combinatorial_surface}
-If $K_1$ is a combinatorial two-manifold with boundary, $K_2$ is a combinatorial
-two-manifold, $h:|K_1|\to |K_2|$ is a homeomorphism, and $\varphi\gg0$, then $h$
-has a PL homeomorphic $\varphi$-approximation into $|K_2|$.
-\end{theorem}
-
-\begin{proof}
-\leanok
-With the current scaffold predicates, use the given map as its own
-$\varphi$-approximation and package the placeholder one-skeleton, cellwise, and
-global compatibility data.
-\end{proof}
-
-\section{Open subcomplexes and PL complexes in a manifold}
-
-\begin{definition}[PL complex in a topological space]
-\label{moise:def:pl_complex_in_space}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.simplexCarrier_subset_support, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.exists_simplexCarrier_of_mem_support, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_support_iff, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.support_eq_iUnion_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.OverlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.overlapCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.compatibleOnOverlap_of_embedded_overlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.CompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.SimplexRelevant, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.covers, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.mem_support_iff, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.support_eq_iUnion_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.mem_fullFiniteSupportData_simplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData.mem_boundarySupport_iff, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData.boundarySupport_eq_iUnion_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.coveredBy_univ_iff, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.mem_support_iff, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.support_eq_iUnion_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.boundarySupport_subset, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.mem_boundarySupport_iff, LeanEval.Topology.ClassificationOfSurfaces.StagewisePLComplexInSpace.boundarySupport_eq_iUnion_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData}
-\leanok
-
-\uses{moise:def:euclidean_complex,moise:def:pl_map_homeomorphism}
-A PL complex in a topological space $M$ is a locally finite family of subsets of
-$M$ equipped with charts from Euclidean simplexes such that the induced abstract
-complex is PL-compatible on intersections.  The formal API stores a mathlib
-topological embedding of the complex support into the ambient space, exposes the
-image support, point and set coverage predicates, extension data, and
-compatibility on overlaps.  Overlap compatibility now carries common-carrier
-data for the ambient overlap: maps into both complex supports, equality after
-embedding in the ambient space, injectivity on both sides, and coverage of every
-ambient overlap point.  Its local-finiteness field is now proof-bearing:
-at the current finite `EuclideanComplex` level it is a `Finite` proof for the
-simplex type.  Its chart-compatibility field is derived from the embedding as
-injectivity and continuity, not supplied as an arbitrary proposition.  It also
-has simplex-carrier data: each abstract simplex has a stored ambient support set
-inside the embedded support, and every point of the embedded support lies in one
-of these carriers.  The `mem_support_iff` and
-`support_eq_iUnion_simplexCarrier` lemmas package this as exact
-support-as-union coverage.  Finite support data is now a finite set of relevant
-simplexes, where relevance means the stored carrier is nonempty, together with a
-proof that the selected simplex carriers cover the embedded support.
-`PLComplexInSpace.FiniteSupportData.mem_support_iff` and
-`PLComplexInSpace.FiniteSupportData.support_eq_iUnion_simplexCarrier` give the
-same exact support coverage using only the selected finite simplexes.
-`fullFiniteSupportData` gives this package by taking all simplexes of the
-complex.  `FinitePLTriangulationData` packages an embedded PL
-complex covering the ambient space together with finite support data and
-boundary-subcomplex data.  Boundary-subcomplex data now stores an actual
-boundary support set, proves that it lies in the embedded support, proves that
-boundary simplex carriers lie in this boundary support, proves that the boundary
-support is covered by those carriers, and carries a finite subtype proof for the
-boundary simplexes.  The `mem_boundarySupport_iff` and
-`boundarySupport_eq_iUnion_simplexCarrier` lemmas package these two directions as
-exact boundary-support coverage.  The separate `StagewisePLComplexInSpace`
-interface records
-Rado-style countable unions faithfully: it stores a finite embedded complex at
-each stage, monotone extension data, genuine stage-indexed simplex carriers
-covering the global support, and boundary simplex carriers, without claiming
-that the raw stage-indexed simplex type is itself locally finite.  Its boundary
-support and ordinary support have analogous exact support-coverage lemmas.
-\end{definition}
-
-\begin{definition}[Interior subcomplex of a PL surface]
-\label{moise:def:pl_complex_interior_subcomplex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.interiorSubcomplex}
-\leanok
-
-\uses{moise:def:pl_complex_in_space,moise:def:combinatorial_surface}
-For a PL complex $\mathcal X$ whose support is a two-manifold with boundary,
-$\mathcal X^\circ$ is the set of simplexes whose image sets do not meet the
-boundary of the support.  Until boundary strata are available as geometric
-subcomplexes, the formal carrier is the whole support with an explicit openness
-lemma.
-\end{definition}
-
-\begin{theorem}[Open subset of a finite complex is a complex]
-\label{moise:thm:open_subset_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.OpenSubsetComplex, LeanEval.Topology.ClassificationOfSurfaces.open_subset_of_finite_complex_is_complex}
-\leanok
-
-\uses{moise:def:euclidean_complex,moise:def:subdivision,moise:def:pl_complex_in_space}
-If $K$ is a finite complex and $U\subseteq |K|$ is open, then there is a complex
-$K_U$ with $|K_U|=U$ such that every simplex of $K_U$ is a rectilinear subsimplex
-of a simplex of $K$.  The formal statement returns open-subset complex data: a
-new finite complex, a homeomorphism from its support to $U$, an embedding back
-into the original support, and proof-bearing ambient compatibility as
-injectivity plus continuity of that inclusion.
-\end{theorem}
-
-\begin{proof}
-\leanok
-Under the current flexible `EuclideanComplex` scaffold, use $U$ itself as the
-point type, take full support, and use the standard homeomorphism from the full
-subtype to $U$ together with the subtype embedding into the ambient support.  The
-formal theorem returns `Nonempty` open-subset complex data.
-\end{proof}
-
-\begin{lemma}[Locally finite compact support implies finite]
-\label{moise:lem:compact_locally_finite_complex_finite}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.fullFiniteSupportData, LeanEval.Topology.ClassificationOfSurfaces.locallyFiniteComplex_finite_of_compact_support}
-\leanok
-
-\uses{moise:def:pl_complex_in_space}
-A locally finite PL complex in a compact ambient space has finite support data.
-In the present finite-complex API this data is already available by taking all
-simplexes of the underlying finite `EuclideanComplex`, but the returned package
-now also proves coverage of the embedded support by stored simplex carriers.
-\end{lemma}
-
-\begin{proof}
-\leanok
-
-Use `PLComplexInSpace.fullFiniteSupportData`, whose finite set of simplexes is
-`Finset.univ` and whose coverage proof uses the simplex-carrier cover stored in
-the embedded complex.  The compact/local-finite theorem name remains as the
-public Moise-facing wrapper and returns `Nonempty` finite-support data.
-\end{proof}
-
-\section{Moise--Rado triangulation}
-
-\begin{definition}[Moise topological two-manifold]
-\label{moise:def:moise_two_manifold}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoSequence, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.supportUnionFinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.supportUnionFinitePLTriangulationData_K, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData_support}
-\leanok
-A Moise two-manifold is a separable metric space locally homeomorphic to the open
-unit disk.  The bordered version is locally homeomorphic to either the open disk
-or the closed half-disk.  The formal interface also stores the countable
-disk/half-disk chart-pair exhaustion used by the Rado induction, together with
-the local initial and successor data needed to run Rado's finite-stage
-construction over such exhaustions.  From this stored data there is a named
-Rado induction sequence, a named PL complex covering the whole manifold, and
-for compact spaces a named support-union finite PL triangulation data fallback.
-When finite chart-cover extraction data is available, the preferred compact
-route is `MoiseExtractionData.finiteStagePLTriangulationData`, which uses the
-terminal finite Rado stage directly.
-\end{definition}
-
-\begin{definition}[Finite chart-pair cover]
-\label{moise:def:finite_chart_pair_cover}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind.ModelMatchesRegion, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.empty, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_core_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_mem_domain, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_kind, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_boundaryCore_in_model_boundary, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_mem_boundaryCore_of_chart_coord_zero, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_mem_boundaryCore_of_manifold_boundary, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_chart_coord_zero_of_manifold_boundary_of_isManifold_ne_zero, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_chart_coord_zero_of_manifold_boundary_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.fromChartAt_chart_coord_zero_of_manifold_boundary, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.HasDiskOrHalfDiskModel, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.hasDiskOrHalfDiskModel, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.modelsMatchKind, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.Refines, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.withCore_refines, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.HasDiskOrHalfDiskModelCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.ModelsMatchKind, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.hasDiskOrHalfDiskModelCover, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.modelsMatchKind, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.boundaryCarrier_eq_iUnion_boundaryCore, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.boundarySet_subset_iUnion_boundaryCore, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.natPair, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_nonempty, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.index_card_pos, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.zeroIndex, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_pair_zero, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_boundaryCarrier, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.toChartPairExhaustion_boundarySet, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.HasDiskOrHalfDiskModelCover, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.ModelsMatchKind, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.hasDiskOrHalfDiskModelCover, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.modelsMatchKind, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.boundaryCoreUnion, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.boundaryCarrier_eq_boundaryCoreUnion, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion.boundarySet_subset_boundaryCoreUnion}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.chartAt_extend_mem_frontier_target_of_manifold_boundary}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteChartPairCover_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteChartPairCover_boundarySet, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteChartPairCover_of_contMDiff_boundarySet, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_boundary_subset_finiteChartPairCover_boundaryCarrier, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_boundary_subset_finiteChartPairCover_of_contMDiff_boundaryCarrier}
-\leanok
-
-A finite chart-pair cover is a finite family of Rado chart pairs whose smaller
-cores cover the ambient space.  It can be enumerated by natural numbers, using
-the empty chart pair outside the finite range, and hence packaged as the
-countable chart-pair exhaustion used by Rado's induction.  The cover and its
-countable exhaustion now carry proof-bearing finiteness and nesting fields:
-for each point there is an explicit finite set of indices meeting its core, and
-each core is proved to lie in its chart domain, with the analogous boundary-core
-local-finiteness and nesting statements.  Their boundary side is no longer a
-self-implication: a named `boundaryCarrier` is covered by the selected boundary
-cores, every selected boundary core lies in that carrier, and the named equality
-lemmas identify the carrier with the union of boundary cores.  A separate
-`boundarySet` records the intended ambient boundary and is proved to lie in the
-boundary carrier, hence in the union of selected boundary cores.  Chart pairs also
-carry proof-bearing model-region data: every
-chart is proved to be a disk or half-disk model, disk charts use open plane
-regions, half-disk charts use regions obtained from `EuclideanHalfSpace 2`, and
-the chart homeomorphism is proved to land in the stored model region.  Boundary
-cores are now proof-bearing as well: for half-disk charts, every boundary-core
-point is carried by the chart homeomorphism to the coordinate boundary line
-`p 0 = 0`; disk charts have empty boundary core.  Finite covers and countable
-exhaustions expose named predicates saying their charts are disk/half-disk
-models and their model regions match their chart kinds.  In a nonempty space
-the index type is nonempty;
-`zeroIndex` names the first selected chart, while the pair-of-less-than and
-pair-of-not-less-than lemmas identify the finite and out-of-range enumeration
-cases.  The preferred mathlib chart at a point gives a chart pair whose core is
-a neighborhood of that point and whose boundary core is the part of the chart
-source mapped to the coordinate boundary line, with both directions exposed as
-named lemmas.  Mathlib boundary points also lie in the boundary core of their
-own preferred chart, using `ModelWithCorners.boundary` and the half-space
-frontier computation.  The C0 arbitrary-chart version needed for finite
-subcovers is isolated as the `ChartBoundaryInvariant` typeclass and exposed at
-the frontier-of-target level as
-`RadoChartPair.chartAt_extend_mem_frontier_target_of_manifold_boundary`.
-The coordinate-boundary consequence
-`RadoChartPair.fromChartAt_chart_coord_zero_of_manifold_boundary` is proved from
-that lower-level class field.  Its positive-regularity companion is proved in the
-more general nonzero-regularity form using mathlib's
-`ModelWithCorners.isBoundaryPoint_iff_of_mem_atlas`, and the C1 specialization
-is used by a fully proved positive-regularity extraction path.  The chart-pair API also includes core refinement:
-`withCore` replaces a chart-pair core by a smaller core while keeping the
-surrounding chart and model map fixed.
-The local polygonal-disk extraction route also provides a named finite cover
-whose `boundarySet` is definitionally the mathlib manifold boundary, and whose
-boundary carrier contains that actual boundary.
-\end{definition}
-
-\begin{definition}[Finite chart polygonal disk data]
-\label{moise:def:finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSimplexCarrier_subset_support, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport_covered_by_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSimplexCarrier_e₂₀_coord_zero, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.Examples.closedTriangleSupport_coord_zero_subset_e₂₀, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair.standardTrianglePlaneCore, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.RespectsChartModel, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.BoundaryFaithful, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.boundaryCore_of_chart_coord_zero, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.boundaryCore_subset_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk.standardTriangleInPlane, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.centeredHomothety, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.centeredHomothety_centroid, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.dist_center_centeredHomothety, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.ofCenteredHomothety, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionTriangleCopy.exists_centeredHomothety_image_subset_of_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionBoundaryTriangleCopy.maps_boundary_edge_to_boundary_line, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionBoundaryTriangleCopy.boundary_line_preimage_subset_boundary_edge, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.standardTriangle_support_eq, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.ofTriangleCopy, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.PlaneRegionPolygonalNeighborhood.toModelChartPolygonalDisk_modelBoundaryCore_of_halfDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.pulledBoundaryCore, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.standardTriangleInModel, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPair_boundaryCore, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk_boundaryFaithful, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk_chart_boundaryCore, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPolygonalDisk_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.ModelChartPolygonalDisk.toChartPair_refines, LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_contains_polygonal_disk_core_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_point_chart_polygonal_disk_data_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_local_chart_polygonal_disk_data_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_localChartPolygonalDiskData_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.PointChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.CompatibleChartShrinks, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.BoundaryCompatibleChartShrinks, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.BoundaryFaithful}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:lem:polygonal_disk_combinatorial_cell,moise:lem:standard_triangle_centroid_neighborhood}
-Local chart polygonal disk data assigns a chart pair and embedded polygonal disk
-or half-disk around each point.  Finite chart polygonal disk data records the
-same disk data for each selected index in a finite chart-pair cover, together
-with chart-model, boundary compatibility, and boundary-faithfulness assertions.
-The API includes the
-standard geometric triangle as a concrete `ChartPolygonalDisk` in the coordinate
-plane.  Chart polygonal disks now carry explicit simplex-carrier data for their
-embedded PL complex, rather than having `toPLComplexInSpace` hardcode every
-simplex carrier as the whole disk image.  For the standard triangle these
-carriers are now geometric: singleton vertex carriers, line-segment edge
-carriers, and the closed face carrier.  They also carry proof-bearing
-chart-model compatibility: the chart image of every support point is proved to
-land in the stored model region.  They carry boundary-core coverage by the disk
-boundary subcomplex, exposed as
-`ChartPolygonalDisk.boundaryCore_subset_boundarySupport`.  They also expose
-`ChartPolygonalDisk.BoundaryFaithful`: in a half-disk chart, any point of the
-local core whose chart coordinate lies on the coordinate boundary line lies in
-the chart boundary core.
-`PlaneRegionPolygonalNeighborhood` is the chart-free coordinate object:
-a polygonal disk embedded in a plane region with image a neighborhood of a
-chosen point, again carrying the actual region-membership proof for the image
-and the coordinate-side simplex carriers and boundary carrier.  Its boundary
-carrier now contains every point of the polygonal support lying on the coordinate
-boundary line; boundary-anchored triangle copies prove both directions for the
-distinguished edge.  Conversion to `ModelChartPolygonalDisk` preserves these
-carriers for half-disk chart pairs, and
-`ModelChartPolygonalDisk.toChartPolygonalDisk_boundaryFaithful` transports the
-reverse containment through the chart homeomorphism.  Thus pulled-back model
-disks no longer erase or under-specify boundary cores.
-`PlaneRegionTriangleCopy` packages a homeomorphic copy of the
-standard triangle whose centroid maps to the chosen point and whose image lies
-in the region.  The `centeredHomothety` helper is the explicit translation and
-nonzero scaling about the centroid; `ofCenteredHomothety` turns a containment
-proof for such a scaled triangle into a `PlaneRegionTriangleCopy`, and
-`exists_centeredHomothety_image_subset_of_mem_nhds` proves that every ambient
-neighborhood of a plane point contains such a sufficiently small scaled
-triangle.  `ofTriangleCopy` turns that data into a
-`PlaneRegionPolygonalNeighborhood`.
-Such a neighborhood can be converted to a `ModelChartPolygonalDisk`, then
-transported through the chart homeomorphism to produce an embedded chart
-polygonal disk in the manifold.  If the model disk image is a neighborhood of
-the chart coordinate, then
-`pulledCore_mem_nhds_of_range_mem_nhds` proves that its pulled-back core is a
-neighborhood in the manifold.  When the model region contains the standard
-simplex, the constructor `standardTriangleInModel` gives a concrete model disk.
-Local and finite chart polygonal disk data also carry proof-bearing shrink
-compatibility: each chosen disk chart refines the chosen chart pair, and the
-boundary cores are compatible by inclusion.
-\end{definition}
-
-\begin{lemma}[Compact local chart pairs have finite subcover]
-\label{moise:lem:compact_local_chart_pairs_finite_cover}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPairCover.exists_of_compact_local}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover}
-If every point of a compact space has a Rado chart pair whose core is a
-neighborhood of that point, then finitely many of those chart-pair cores cover
-the whole space.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Apply `CompactSpace.elim_nhds_subcover` to the family of chart-pair cores and
-index the resulting finite cover by the finite subtype of selected points.
-\end{proof}
-
-\begin{lemma}[Mathlib bordered surface has finite chart-pair cover]
-\label{moise:lem:mathlib_bordered_surface_finite_chart_pair_cover}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_chart_pair_cover}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:lem:compact_local_chart_pairs_finite_cover}
-A compact mathlib bordered surface admits a finite cover by preferred
-chart-pair cores.
-\end{lemma}
-
-\begin{proof}
-\leanok
-For each point, use the preferred chart from `chartAt`; its source is a
-neighborhood of the point.  Compactness extracts finitely many such chart-pair
-cores.
-\end{proof}
-
-\begin{definition}[Moise extraction data]
-\label{moise:def:moise_extraction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.toMoiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStage, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.boundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData_support, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData_boundaryCarrier_subset, LeanEval.Topology.ClassificationOfSurfaces.MoiseExtractionData.finiteStagePLTriangulationData_boundarySet_subset, LeanEval.Topology.ClassificationOfSurfaces.moise_two_manifold_of_extraction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.finiteChartPairCover_boundarySet, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.toMoiseExtractionData_finiteCover, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.toMoiseExtractionData_finiteCover_boundarySet, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseExtractionData_finiteCover, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseExtractionData_of_contMDiff_finiteCover, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseExtractionData_finiteCover_boundarySet, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseExtractionData_of_contMDiff_finiteCover_boundarySet}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:moise_two_manifold}
-Moise extraction data is the finite chart-pair cover and local Rado induction
-data extracted from a compact mathlib bordered surface before packaging it as a
-`MoiseTwoManifold`.  It also records that the selected chart pairs are
-disk/half-disk models and that each model region matches its chart kind.  Because
-the cover is finite, it has a named terminal Rado stage and finite-stage PL
-triangulation package.  The package exposes that both the selected
-`boundaryCarrier` and the intended `boundarySet` are carried by the terminal
-finite PL boundary support.  For the mathlib bordered-surface extraction, the
-finite cover is identified with the named polygonal-disk finite cover, and its
-`boundarySet` is exactly the mathlib manifold boundary.
-\end{definition}
-
-\begin{proof}
-\leanok
-Convert the finite chart-pair cover to a countable chart-pair exhaustion and
-use the stored local Rado induction data to fill the fields of the
-`MoiseTwoManifold` interface.  At the extraction-data level, stage
-`Fintype.card finiteCover.Index` already covers every chart core, so the
-finite-stage PL complex can be used directly for triangulation data.  The
-finite-stage triangulation package uses the terminal Rado state's stored
-boundary subcomplex and its carrier-defined boundary support, rather than the
-full-subcomplex fallback.
-\end{proof}
-
-\begin{lemma}[Chart pair exhaustion]
-\label{moise:lem:chart_pair_exhaustion}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoChartKind, LeanEval.Topology.ClassificationOfSurfaces.RadoChartPair, LeanEval.Topology.ClassificationOfSurfaces.ChartPairExhaustion, LeanEval.Topology.ClassificationOfSurfaces.chart_pair_exhaustion}
-\leanok
-
-\uses{moise:def:moise_two_manifold}
-Every Moise two-manifold admits a countable sequence of chart pairs
-$(N_i,N'_i)$ such that $N'_i\subset N_i$, $N_i$ maps to the unit disk, $N'_i$ maps
-to the smaller disk or half-disk according to its chart kind, and the $N'_i$
-cover the manifold.  The formal exhaustion tracks interior and boundary chart
-coverage separately, with boundary cores for half-disk charts.  It also stores
-local-finiteness witnesses as finite sets of natural-number indices and stores
-the actual inclusions $N'_i\subset N_i$ and boundary-core containment.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Return the `ChartPairExhaustion` stored in the `MoiseTwoManifold` interface,
-together with the definitional equality identifying it with the stored field.
-\end{proof}
-
-\begin{lemma}[Initial PL neighborhood]
-\label{moise:lem:initial_pl_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData.singleton, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData.mono, LeanEval.Topology.ClassificationOfSurfaces.ChartModelCompatibilityData.extendWithChart, LeanEval.Topology.ClassificationOfSurfaces.RadoStageCoverageData, LeanEval.Topology.ClassificationOfSurfaces.RadoStageCoverageData.singleton, LeanEval.Topology.ClassificationOfSurfaces.RadoStageCoverageData.extend, LeanEval.Topology.ClassificationOfSurfaces.BoundarySubcomplexFaceClosed, LeanEval.Topology.ClassificationOfSurfaces.BoundaryCompatibleOnOverlap, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.ofChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.boundaryCore_subset_toState_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.InitialPLNeighborhoodData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionState.CoversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.initial_pl_neighborhood}
-\leanok
-
-\uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:polygonal_disk_combinatorial_cell}
-For the first chart pair of a two-manifold, there is a finite PL complex
-$\mathcal X_1$ in the manifold whose support is a compact two-manifold with
-boundary and whose interior subcomplex contains the smaller chart neighborhood.
-The induction state also records a boundary subcomplex and compatibility fields
-asserting that boundary chart cores are covered by this boundary subcomplex.
-The finite-stage state records genuine finite simplex data for the complex and
-for the boundary subcomplex, rather than a placeholder local-finiteness
-proposition.  It also records actual self-overlap compatibility for the current
-embedded PL complex, face-closure of the stored boundary subcomplex, and the
-combined boundary-overlap compatibility predicate.  The chart-respect field is
-finite `ChartModelCompatibilityData`, namely chart polygonal disks contained in
-the current complex together with proofs that their coordinate images respect
-the stored model regions.  The coverage field is finite
-`RadoStageCoverageData`: numbered ordinary and boundary chart-core sets, each
-proved to lie in the current support.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Build `InitialPLNeighborhoodData` from a chart polygonal disk whose chart is the
-first chart pair by rewriting the chart-core coverage fields.  Then package the
-embedded chart polygonal disk as a `PLComplexInSpace` and use its boundary
-subcomplex and coverage fields to build the stage-zero Rado induction state.
-The resulting state carries the singleton chart-model compatibility package and
-satisfies the up-to-stage core and boundary-core coverage predicates, including
-coverage of boundary chart cores by the stored boundary support.  Its stored
-coverage package is the singleton finite package for the first ordinary and
-boundary chart cores.
-\end{proof}
-
-\begin{lemma}[Rado step extension from a chart disk]
-\label{moise:lem:rado_step_extension_from_chart_polygonal_disk}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionOldVertexEmbedding, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionNewVertexEmbedding, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplexData, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_simplex, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_old_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_new_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_old_vertices, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_new_vertices, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionBoundarySubcomplex, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionBoundarySubcomplex_left_mem, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.chartUnionBoundarySubcomplex_right_mem, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.preservesOldBoundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.oldBoundarySupport_subset_toState_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.boundaryCore_subset_toState_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk_nextComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.emptyChart, LeanEval.Topology.ClassificationOfSurfaces.rado_step_extension_from_chart_polygonal_disk}
-\leanok
-
-\uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:lem:pl_invariant_under_subdivision,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane,moise:lem:polygonal_disk_combinatorial_cell}
-Given a current finite Rado induction state and polygonal disk data covering the
-next chart core, the old PL complex can be extended across that chart disk while
-preserving overlap, local-finiteness, and boundary compatibility.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Build a carrier-level PL complex whose support is the union of the old stage
-support and the embedded chart-disk support.  Its simplex type is the disjoint
-sum of old-stage simplexes and chart-disk simplexes, and its simplex carriers
-and vertex sets are inherited from the corresponding side.  Its boundary
-subcomplex is the finite disjoint sum of the old boundary subcomplex and the
-chart-disk boundary subcomplex, with face closure proved combinatorially from
-the two summands.  The step data also proves that the old boundary support is
-contained in the successor state's boundary support.  The old support and the
-next chart core are then contained in this union, and the overlap and boundary
-compatibility fields are witnessed by explicit common-carrier overlap data and
-face-closure proofs.  The named constructor
-`RadoStepExtensionData.fromChartPolygonalDisk` now also transports the previous
-finite chart-model compatibility family, adjoins the new chart disk, and proves
-that the next boundary chart core lies in the successor boundary support.  The
-public theorem is the corresponding nonempty-data wrapper around that
-constructor.
-\end{proof}
-
-\begin{lemma}[Extend a PL complex across one chart]
-\label{moise:lem:extend_pl_complex_across_chart}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversPreviousCores_iff, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversPreviousBoundaryCores_iff, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.toState_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.extend_pl_complex_across_chart}
-\leanok
-
-\uses{moise:def:pl_complex_in_space,moise:def:pl_complex_interior_subcomplex,moise:lem:pl_invariant_under_subdivision,moise:thm:open_subset_complex,moise:thm:pl_approximation_plane,moise:lem:polygonal_disk_combinatorial_cell}
-Suppose $\mathcal X_n$ is a PL complex in a two-manifold whose support is a
-compact two-manifold with boundary and whose interior contains the first $n$
-small chart neighborhoods.  Then there is a PL complex $\mathcal X_{n+1}$ with
-the same properties for the first $n+1$ chart neighborhoods and with
-$\mathcal X_n^\circ\subseteq\mathcal X_{n+1}^\circ$.  In the bordered route,
-the extension preserves the boundary subcomplex and its compatibility on
-overlaps.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Given `RadoStepExtensionData`, package the supplied next complex,
-boundary subcomplex, extension proof, and next-core coverage fields into the
-successor Rado induction state.  If the previous state covers all chart cores
-and boundary cores up to its stage, the successor state covers all such cores up
-to its new stage and stores finite numbered coverage data in its state fields.
-\end{proof}
-
-\begin{definition}[Rado induction local data]
-\label{moise:def:rado_induction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.radoInductionStage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversPreviousCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.stage_coversPreviousBoundaryCores, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.toInductiveSequence}
-\leanok
-
-\uses{moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
-Rado induction data consists of one initial chart-disk package and a successor
-chart-extension package for each finite stage.  It recursively determines all
-finite-stage induction states, proves the cumulative core and boundary-core
-coverage predicates at every stage, including boundary-core coverage by the
-stored boundary support, stores finite numbered coverage data in each state,
-records a finite-simplex proof for every finite stage, and packages the stages
-as a Rado induction sequence.
-\end{definition}
-
-\begin{definition}[Rado induction sequence]
-\label{moise:def:rado_inductive_sequence}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stage_coversBoundaryCoresInBoundaryUpTo, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.StageUnionSimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageUnionSimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageUnionSimplexCarrier_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_covered_by_stageUnionSimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.StageBoundarySimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageBoundarySimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageBoundarySimplexCarrier_subset_boundarySupportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupportUnion_covered_by_stageBoundarySimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewiseBoundarySimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewisePLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewisePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewisePLComplex_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewisePLComplex_simplexCarrier}
-\leanok
-
-\uses{moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion}
-A Rado induction sequence over a chart-pair exhaustion is a sequence of finite
-stage PL complexes, each extending the previous one, such that the $n$th stage
-covers the $n$th chart core and carries the $n$th boundary chart core in its
-stored boundary support.  Its support union is the union of the supports of all
-finite stages, and the actual countable union of stage simplexes is exposed by
-stage-indexed simplex carriers for ordinary and boundary simplexes.  These
-carriers are packaged as a `StagewisePLComplexInSpace`, which records the
-finite stage complexes and genuine countable support union directly.
-\end{definition}
-
-\begin{lemma}[Rado stage supports cover the manifold]
-\label{moise:lem:rado_support_union_covers}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.boundarySupport_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_core_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_in_boundary, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.covers_boundaryCore_in_boundary_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_core_subset_stage_card, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_boundaryCore_subset_stage_card, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_boundaryCore_subset_stage_card_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_boundaryCarrier_subset_stage_card, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_boundaryCarrier_subset_stage_card_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteCover_stage_card_support_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteStagePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteStagePLTriangulationData_K, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionData.finiteStagePLTriangulationData_boundaryCarrier_subset, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.support_subset_succ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundarySupport_subset_succ_stage, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_stage_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_boundarySupport_of_le, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.core_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.boundaryCore_subset_supportUnion, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.supportUnion_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewisePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.union_complex_covers_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_covers_univ, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplexData}
-\leanok
-
-\uses{moise:def:rado_inductive_sequence,moise:lem:chart_pair_exhaustion}
-The union of the stage supports in a Rado induction sequence covers every chart
-core, hence covers the whole manifold.  Therefore the stagewise Rado union, and
-any compatibility PL complex realizing the same support, has support equal to
-the whole manifold.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The $n$th chart core is contained in the support of the $n$th induction stage,
-and extension monotonicity implies that later stages still cover every earlier
-core and boundary core.  Boundary-support monotonicity also implies that later
-stages carry every earlier boundary chart core in the stored boundary support.
-Hence each chart core is contained in the union of all stage supports.  Since
-the chart cores cover the manifold by the exhaustion hypothesis, the support
-union is all of `Set.univ`.  For an exhaustion coming from a finite chart-pair
-cover, the stronger endpoint lemma shows that the single recursive stage at
-`Fintype.card C.Index` already covers `Set.univ`, and the analogous boundary
-endpoint lemmas carry both each selected boundary core and the cover's named
-boundary carrier in that terminal stage's boundary support; the named
-constructor `RadoInductionData.finiteStagePLTriangulationData` packages that
-terminal stage as finite PL triangulation data.
-\end{proof}
-
-\begin{lemma}[Rado induction local data exists]
-\label{moise:lem:rado_induction_data_exists}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_induction_data_exists}
-\leanok
-
-\uses{moise:def:moise_two_manifold,moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
-For the chart-pair exhaustion stored in the Moise interface, the local initial
-and successor data needed to run every finite stage of the Rado induction
-exists.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The strengthened `MoiseTwoManifold` interface packages the local Rado induction
-data.  The remaining hard geometric work is now isolated in the theorem that
-constructs this Moise interface from mathlib's bordered-manifold hypotheses.
-\end{proof}
-
-\begin{lemma}[Rado induction sequence exists]
-\label{moise:lem:rado_inductive_sequence_exists}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.rado_inductive_sequence_exists}
-\leanok
-
-\uses{moise:def:moise_two_manifold,moise:def:rado_induction_data,moise:def:rado_inductive_sequence,moise:lem:rado_induction_data_exists}
-For the chart-pair exhaustion stored in the Moise interface, the finite-stage
-Rado induction can be carried out.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Given local Rado induction data, recursively construct the finite stage at each
-natural number.  The stage-index, extension, and chart-core coverage fields of
-the resulting sequence are proved by induction over the natural number.
-\end{proof}
-
-\begin{definition}[Finite Rado induction geometry]
-\label{moise:def:finite_rado_induction_geometry}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionStepCompatible, LeanEval.Topology.ClassificationOfSurfaces.RadoInductionBoundaryStepCompatible, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.toRadoInductionData, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.finalState, LeanEval.Topology.ClassificationOfSurfaces.FiniteRadoInductionGeometry.finalState_support_eq_univ, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.initialData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextChartDisk_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextChartDisk_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextComplex_support_of_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.stepData_nextComplex_of_not_lt, LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.fromChartPolygonalDisk, LeanEval.Topology.ClassificationOfSurfaces.RadoStepExtensionData.emptyChart, LeanEval.Topology.ClassificationOfSurfaces.rado_induction_data_of_finite_geometry}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:lem:initial_pl_neighborhood,moise:lem:extend_pl_complex_across_chart}
-Finite Rado induction geometry over a finite chart-pair cover consists of the
-local geometric input needed to run Rado's construction: an initial polygonal
-chart disk, a successor chart-extension package at every finite stage, and the
-named stepwise compatibility predicates for ordinary overlaps and boundary
-overlaps, together with a finite-simplex proof for each recursive finite
-stage.  Finite chart polygonal disk data has
-named `initialData`, `stepData`, and
-`toFiniteRadoInductionGeometry` constructors; once finite Rado geometry is
-supplied, it packages formally as `RadoInductionData`.  Its `finalState` is the
-finite terminal induction state after all chart pairs in the finite cover have
-been absorbed.  The `stepData` selector has named branch lemmas: in range it
-adjoins the selected chart disk using the disjoint-sum simplex/carrier
-chart-union complex, and out of range it returns the empty-chart extension
-leaving the complex unchanged.
-\end{definition}
-
-\begin{proof}
-\leanok
-Copy the initial, successor, stepwise overlap compatibility, local-finiteness,
-and stepwise boundary-overlap compatibility fields from
-`FiniteRadoInductionGeometry` into `RadoInductionData`, then package the
-resulting object as nonempty data.
-\end{proof}
-
-\begin{lemma}[Rado union is a PL complex]
-\label{moise:lem:rado_union_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.UnionVertex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.UnionSimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.StageUnionSimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageUnionSimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.StageBoundarySimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stageBoundarySimplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewiseBoundarySimplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewisePLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewisePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewisePLComplex_boundarySupport, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.stagewisePLComplex_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplexData, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplex, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplex_simplexes, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_boundary_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionPLComplex_support_simplexCarrier, LeanEval.Topology.ClassificationOfSurfaces.RadoInductiveSequence.unionBoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.rado_union_stagewise_complex, LeanEval.Topology.ClassificationOfSurfaces.rado_union_complex}
-\leanok
-
-\uses{moise:def:rado_inductive_sequence,moise:def:pl_complex_in_space}
-The finite-stage complexes in a Rado induction sequence assemble into a named
-stagewise PL complex whose support is the stage-support union and whose
-simplexes are genuine stage-indexed simplexes.  Its boundary package is carried
-by the union of the stage boundary supports.  The old named embedded
-`PLComplexInSpace` is retained as a finite compatibility wrapper for APIs that
-still require a finite `EuclideanComplex`.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Each stage support is small because it is the range of a map out of a finite
-Euclidean-complex support, and countable unions of small sets are small.  Use
-`Shrink` of the stage-support union as a small point carrier, give it the
-topology induced by its inclusion into the ambient manifold, and embed it by
-that inclusion.  The construction is packaged as
-`RadoInductiveSequence.stagewisePLComplex`; the public theorem
-`rado_union_stagewise_complex` is the faithful existential wrapper.  The actual
-stage-indexed simplex carriers prove that both the support union and the
-boundary-support union are covered by genuine finite-stage simplexes.  The
-compatibility construction `RadoInductiveSequence.unionPLComplexData` still
-uses `Shrink` of the stage-support union as a small point carrier and records
-the stage-boundary support union as a distinguished boundary subcomplex for
-downstream finite-complex APIs; `rado_union_complex` is the old wrapper around
-that compatibility complex.
-\end{proof}
-
-\begin{theorem}[Moise--Rado triangulation theorem]
-\label{moise:thm:rado_triangulation_moise_manifold}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoStagewisePLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoStagewisePLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.radoPLComplex_support, LeanEval.Topology.ClassificationOfSurfaces.rado_triangulation_moise_two_manifold_stagewise, LeanEval.Topology.ClassificationOfSurfaces.rado_triangulation_moise_two_manifold}
-\leanok
-
-\uses{moise:def:moise_two_manifold,moise:def:pl_complex_in_space,moise:lem:chart_pair_exhaustion,moise:lem:rado_inductive_sequence_exists,moise:lem:rado_union_complex,moise:lem:rado_support_union_covers}
-Every Moise two-manifold admits a faithful stagewise PL complex whose support is
-the whole manifold.  A compatibility theorem also returns the older embedded
-finite-wrapper PL complex with the same support.
-\end{theorem}
-
-\begin{proof}
-\leanok
-The `MoiseTwoManifold` interface stores the Rado induction data.  Its
-`radoSequence` field packages this data as a completed induction sequence, and
-`radoStagewisePLComplex` is the faithful countable union associated to that
-sequence.  Its support theorem is exactly the desired conclusion.  The
-compatibility name `radoPLComplex` still packages the support union as a
-finite-wrapper embedded complex for downstream APIs that have not yet been
-generalized to stagewise complexes.
-\end{proof}
-
-\begin{theorem}[Compact Moise surface is finitely triangulable]
-\label{moise:thm:compact_moise_surface_finitely_triangulable}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.supportUnionFinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.MoiseTwoManifold.finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_moise_surface_finite_pl_triangulation_data, LeanEval.Topology.ClassificationOfSurfaces.moise_extraction_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.moise_extraction_finite_pl_triangulation_data}
-\leanok
-
-\uses{moise:thm:rado_triangulation_moise_manifold,moise:lem:compact_locally_finite_complex_finite}
-Every compact Moise two-manifold has a PL complex covering the whole manifold
-together with finite support data.  The named data-package version also records
-the boundary subcomplex data needed by the bordered triangulation handoff.
-\end{theorem}
-
-\begin{proof}
-\leanok
-
-Apply the named Rado PL complex stored in the Moise interface.  The support is
-compact, so local finiteness implies that only finitely many simplexes occur.
-`MoiseTwoManifold.supportUnionFinitePLTriangulationData` packages this finite
-support data with `RadoInductiveSequence.unionBoundarySubcomplexData`, whose
-boundary support is the union of the stage boundary supports.  The old public
-name `MoiseTwoManifold.finitePLTriangulationData` is a compatibility wrapper.
-For compact surfaces extracted from a finite chart cover, the finite-stage
-package in `MoiseExtractionData` remains the terminal-stage boundary-data route.
-The extraction-level theorem `moise_extraction_finitely_triangulable` is the
-preferred compact finite-cover statement: it returns the terminal finite Rado
-stage with finite support and boundary-subcomplex data directly, avoiding the
-support-union wrapper.
-\end{proof}
-
-\section{Boundary surfaces in the Moise route}
-
-\begin{theorem}[Bordered PL approximation]
-\label{moise:thm:bordered_pl_approximation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.bordered_pl_approximation}
-\leanok
-
-\uses{moise:def:half_plane_boundary_targets,moise:lem:bordered_one_skeleton_hard_boundaries,moise:lem:cellwise_extension_gluing_boundaries,moise:def:combinatorial_surface}
-The PL approximation theorem remains valid for local half-disk charts and
-combinatorial surfaces with boundary, with approximating PL homeomorphisms
-respecting the boundary half-plane.
-\end{theorem}
-
-\begin{proof}
-\leanok
-Apply the boundary-aware one-skeleton approximation in a half-plane region, then
-extend across two-cells using the relative PL Schoenflies boundary and glue the
-relative cellwise extensions.  Interior faces use the ordinary PL Schoenflies argument; boundary
-faces use the relative version for half-disks.
-\end{proof}
-
-\begin{theorem}[Moise--Rado triangulation for bordered surfaces]
-\label{moise:thm:rado_bordered_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.BoundarySubcomplexData, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitePLTriangulationData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitePLTriangulationData_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_pl_triangulation_data, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_pl_triangulation_data_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_manifoldBoundary_subset_finitePL_boundary, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_manifoldBoundary_subset_finitePL_boundary_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation, LeanEval.Topology.ClassificationOfSurfaces.rado_bordered_surface_triangulation_of_contMDiff}
-\leanok
-
-\uses{moise:lem:mathlib_bordered_surface_to_moise_two_manifold,moise:thm:compact_moise_surface_finitely_triangulable}
-Every nonempty compact Moise two-manifold with boundary has a finite
-triangulation whose support covers the manifold, whose relevant simplexes are
-finite, and whose boundary is carried by a boundary subcomplex compatible with
-the ambient PL complex.
-\end{theorem}
-
-\begin{proof}
-\leanok
-Extract the finite chart-pair cover and local Rado induction data from the
-mathlib bordered-surface hypotheses, then use the finite terminal Rado stage at
-`Fintype.card finiteCover.Index`.  The named construction
-`mathlib_bordered_surface_finitePLTriangulationData` packages that finite-stage
-complex, support equality, finite support data, and the terminal Rado state's
-boundary-subcomplex data.  The selected finite chart-cover boundary carrier is
-proved to lie in that packaged boundary support by
-`mathlib_bordered_surface_boundaryCarrier_subset_finitePL_boundary`; the actual
-mathlib manifold boundary is carried there by
-`mathlib_bordered_surface_manifoldBoundary_subset_finitePL_boundary`.
-`rado_bordered_surface_triangulation` is the public existential wrapper with
-finite-support and boundary-subcomplex data as witnesses and the support
-equality as its proposition.  The positive-regularity variants with suffix
-`_of_contMDiff` follow the same finite-stage route and supply
-`ChartBoundaryInvariant` from the proved positive-regularity chart-boundary
-invariance theorem.
-\end{proof}
-
-\begin{lemma}[Mathlib bordered surface to Moise chart-pair interface]
-\label{moise:lem:mathlib_bordered_surface_to_moise_two_manifold}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseTwoManifold, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseTwoManifold_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_to_moise_two_manifold, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_to_moise_two_manifold_of_contMDiff}
-\leanok
-
-\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_moise_extraction_data}
-A nonempty compact mathlib surface with boundary admits the strengthened Moise
-two-manifold package, including a countable disk/half-disk chart-pair
-exhaustion.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Package the named extracted finite chart-pair cover and Rado local data as a
-`MoiseTwoManifold`; the public theorem is the nonempty-data wrapper around
-`mathlib_bordered_surface_moiseTwoManifold`.  The positive-regularity wrapper
-uses the same data path after deriving `ChartBoundaryInvariant` from the proved
-boundary-invariance theorem.
-\end{proof}
-
-\begin{lemma}[Mathlib bordered surface extraction data]
-\label{moise:lem:mathlib_bordered_surface_moise_extraction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.toMoiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseExtractionData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moiseExtractionData_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moise_extraction_data, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_moise_extraction_data_of_contMDiff}
-\leanok
-
-\uses{moise:def:eval_surface,moise:def:moise_extraction_data,moise:lem:mathlib_bordered_surface_local_chart_polygonal_disk_data}
-The nonempty mathlib bordered-surface atlas supplies the finite chart-pair cover
-and local Rado induction data needed to build the Moise interface.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Choose local chart-polygonal-disk data from the mathlib atlas, extract the
-finite subcover with indexed disks by compactness, convert the resulting finite
-polygonal disk package into Rado induction data, and package the named result as
-`MoiseExtractionData`.
-\end{proof}
-
-\begin{lemma}[Mathlib bordered surface finite Rado geometry]
-\label{moise:lem:mathlib_bordered_surface_finite_rado_geometry}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry, LeanEval.Topology.ClassificationOfSurfaces.finite_rado_geometry_of_chart_polygonal_disk_data, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_rado_geometry}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:def:finite_rado_induction_geometry,moise:lem:initial_pl_neighborhood,moise:lem:rado_step_extension_from_chart_polygonal_disk}
-For the finite chart-pair cover with polygonal disk data extracted from a
-nonempty compact mathlib bordered surface, the chart cores initialize and
-extend Rado's induction stage by stage with the compatibility needed for the
-construction.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The disk for chart zero initializes the induction, and the one-step extension
-theorem supplies each successor package.  The constructor
-`FiniteChartPolygonalDiskData.toFiniteRadoInductionGeometry` assembles these
-fields into `FiniteRadoInductionGeometry`; the mathlib wrapper first extracts
-the finite cover with polygonal disk data.
-\end{proof}
-
-\begin{lemma}[Mathlib bordered surface finite chart polygonal disk data]
-\label{moise:lem:mathlib_bordered_surface_finite_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.finiteChartPairCover, LeanEval.Topology.ClassificationOfSurfaces.LocalChartPolygonalDiskData.finiteChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.finite_chart_polygonal_disk_data_of_local, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finite_chart_polygonal_disk_data}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_bordered_surface_local_chart_polygonal_disk_data}
-A compact mathlib bordered surface admits a finite chart-pair cover such that
-every enumerated chart pair carries embedded polygonal disk or half-disk data
-covering its core and compatible with the chart model.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Apply compactness to the pointwise family of local chart cores and use the
-finite subcover indices to carry the corresponding polygonal disk data.  The
-named construction
-`LocalChartPolygonalDiskData.toFiniteChartPolygonalDiskData` packages the
-chosen finite cover and indexed disks; the public theorem returns the
-corresponding nonempty dependent sigma package used by downstream Rado
-statements.
-\end{proof}
-
-\begin{lemma}[Mathlib bordered surface local chart polygonal disk data]
-\label{moise:lem:mathlib_bordered_surface_local_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.localChartPolygonalDiskDataOfPointwise, LeanEval.Topology.ClassificationOfSurfaces.local_chart_polygonal_disk_data_of_pointwise, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_localChartPolygonalDiskData, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_localChartPolygonalDiskData_boundarySet, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_local_chart_polygonal_disk_data}
-\leanok
-
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_bordered_surface_point_chart_polygonal_disk_data}
-Around every point of a compact mathlib bordered surface, there is a chart pair
-whose core is a neighborhood of the point and whose core is covered by embedded
-polygonal disk or half-disk data compatible with the chart model.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Choose pointwise chart-polygonal-disk data at every point and package the chosen
-chart and disk functions as `LocalChartPolygonalDiskData`.  The named mathlib
-local data has boundary set definitionally equal to
-`(modelWithCornersEuclideanHalfSpace 2).boundary M`.
-\end{proof}
-
-\begin{lemma}[Mathlib bordered surface point chart polygonal disk data]
-\label{moise:lem:mathlib_bordered_surface_point_chart_polygonal_disk_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_point_chart_polygonal_disk_data}
-\leanok
-
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_chartAt_contains_polygonal_disk_core}
-At every point of a compact mathlib bordered surface, there is a chart pair
-whose core is a neighborhood of that point and whose core is covered by embedded
-polygonal disk or half-disk data compatible with the chart model.  The
-pointwise package also proves that manifold-boundary points in the local core
-lie in the local boundary core.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Use the polygonal disk core contained in the preferred mathlib chart and package
-it as `PointChartPolygonalDiskData`.
-\end{proof}
-
-\begin{lemma}[Mathlib chart contains polygonal disk core]
-\label{moise:lem:mathlib_chartAt_contains_polygonal_disk_core}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_contains_polygonal_disk_core}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_chartAt_contains_model_polygonal_disk_core}
-The preferred mathlib chart at a point contains a smaller Rado chart pair whose
-core is a neighborhood of the point and is covered by an embedded polygonal
-disk or half-disk compatible with the chart model.  The smaller boundary core
-is also contained in the preferred chart boundary core.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Use the model polygonal disk supplied in the chart coordinates.  Pull it back
-through the chart homeomorphism to obtain a `ChartPolygonalDisk`; its core is
-the pulled-back image of the model disk.  The `withCore_refines` API proves that
-this smaller chart pair refines the preferred chart pair, since the preferred
-chart pair's core is its whole chart source.  Boundary compatibility follows
-from the model boundary carrier and the preferred-chart boundary-core
-characterization.
-\end{proof}
-
-\begin{lemma}[Mathlib chart contains model polygonal disk core]
-\label{moise:lem:mathlib_chartAt_contains_model_polygonal_disk_core}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_contains_model_polygonal_disk_core}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:mathlib_chartAt_model_region_contains_polygonal_neighborhood}
-In the coordinate model region of the preferred chart at a point, there is a
-polygonal disk or half-disk whose pullback through the chart homeomorphism is a
-neighborhood core of the point.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Apply the coordinate-neighborhood theorem to obtain a model polygonal disk whose
-image is a neighborhood of the chart coordinate.  The theorem
-`ModelChartPolygonalDisk.pulledCore_mem_nhds_of_range_mem_nhds` transports that
-neighborhood statement back through the chart homeomorphism.
-\end{proof}
-
-\begin{lemma}[Mathlib chart model region contains polygonal neighborhood]
-\label{moise:lem:mathlib_chartAt_model_region_contains_polygonal_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_chartAt_model_region_contains_polygonal_neighborhood}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:def:finite_chart_polygonal_disk_data,moise:lem:euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood}
-In the coordinate model region of the preferred chart at a point, there is an
-embedded polygonal disk or half-disk whose image is a neighborhood of the chart
-coordinate.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Apply the half-plane polygonal-neighborhood theorem to the target of the
-preferred mathlib chart.  The chart-pair model region is definitionally the
-image of this target under the half-plane inclusion into the ambient plane, and
-the stored chart homeomorphism sends the center point to the corresponding
-coordinate point.
-\end{proof}
-
-\begin{lemma}[Half-plane open neighborhoods contain polygonal neighborhoods]
-\label{moise:lem:euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_open_neighborhood_contains_polygonal_neighborhood}
-\leanok
-
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood,moise:lem:euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood}
-Every neighborhood of a point in the Euclidean half-plane contains an embedded
-polygonal disk or half-disk whose image is a neighborhood of that point.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Split on whether the first coordinate is zero.  Boundary points use the
-half-disk theorem; otherwise nonnegativity in `EuclideanHalfSpace` promotes to
-strict positivity and the interior disk theorem applies.
-\end{proof}
-
-\begin{lemma}[Interior half-plane neighborhoods contain polygonal disks]
-\label{moise:lem:euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_open_neighborhood_contains_polygonal_neighborhood}
-\leanok
-
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:euclideanHalfSpace_interior_polygonal_neighborhood_at,moise:lem:euclideanHalfSpace_point_mem_image_of_mem_nhds}
-Every neighborhood of an interior point of the Euclidean half-plane contains an
-embedded polygonal disk whose image is a neighborhood of that point.
-\end{lemma}
-
-\begin{proof}
-\leanok
-First prove that the ambient coordinate point belongs to the image of the
-half-plane neighborhood.  Then apply the fixed-point interior polygonal
-neighborhood theorem.
-\end{proof}
-
-\begin{lemma}[Interior fixed-point polygonal neighborhood]
-\label{moise:lem:euclideanHalfSpace_interior_polygonal_neighborhood_at}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_polygonal_neighborhood_at}
-\leanok
-
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell,moise:lem:euclideanHalfSpace_interior_image_mem_nhds}
-Given an interior point already packaged as a point of the image of a half-plane
-neighborhood, construct a polygonal disk neighborhood at that point.
-\end{lemma}
-
-\begin{proof}
-\leanok
-First turn the half-plane neighborhood into an ordinary ambient Euclidean
-neighborhood of `y.1`.  Then choose a sufficiently small centered homothetic
-copy of the standard triangle inside that ambient neighborhood and convert the
-triangle copy to a `PlaneRegionPolygonalNeighborhood`.
-\end{proof}
-
-\begin{lemma}[Boundary half-plane neighborhoods contain polygonal half-disks]
-\label{moise:lem:euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_boundary_open_neighborhood_contains_polygonal_neighborhood}
-\leanok
-
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:euclideanHalfSpace_boundary_polygonal_neighborhood_at,moise:lem:euclideanHalfSpace_point_mem_image_of_mem_nhds}
-Every neighborhood of a boundary-line point of the Euclidean half-plane contains
-an embedded polygonal half-disk whose image is a neighborhood of that point.
-\end{lemma}
-
-\begin{proof}
-\leanok
-First prove that the ambient coordinate point belongs to the image of the
-half-plane neighborhood.  Then apply the fixed-point boundary polygonal
-neighborhood theorem.
-\end{proof}
-
-\begin{lemma}[Boundary fixed-point polygonal neighborhood]
-\label{moise:lem:euclideanHalfSpace_boundary_polygonal_neighborhood_at}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_boundary_polygonal_neighborhood_at}
-\leanok
-
-\uses{moise:def:finite_chart_polygonal_disk_data,moise:lem:polygonal_disk_combinatorial_cell,moise:lem:euclideanHalfSpace_image_mem_nhdsWithin_halfspace}
-Given a boundary-line point already packaged as a point of the image of a
-half-plane neighborhood, construct a polygonal half-disk neighborhood at that
-point.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The image of the half-plane neighborhood is a relative ambient neighborhood in
-the closed coordinate half-plane.  Choose a sufficiently small positive
-homothetic copy of the standard triangle anchored at a point in the relative
-interior of its boundary edge.  Positivity and the boundary-coordinate equation
-keep the homothety inside the closed half-plane, while the standard triangle is
-a relative neighborhood of its anchor.  Convert the resulting boundary triangle
-copy to a `PlaneRegionPolygonalNeighborhood`.
-\end{proof}
-
-\begin{lemma}[Half-plane neighborhood point belongs to image]
-\label{moise:lem:euclideanHalfSpace_point_mem_image_of_mem_nhds}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_point_mem_image_of_mem_nhds}
-\leanok
-
-If `U` is a neighborhood of `y` in the Euclidean half-plane, then the ambient
-coordinate point `y.1` belongs to the image of `U` under the half-plane
-inclusion.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Use `mem_of_mem_nhds` to see `y ∈ U`, then take its image under subtype
-coercion.
-\end{proof}
-
-\begin{lemma}[Interior half-space is a neighborhood]
-\label{moise:lem:euclideanHalfSpace_interior_halfspace_mem_nhds}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_halfspace_mem_nhds}
-\leanok
-
-At an interior point of the Euclidean half-space, the ambient closed half-space
-is an ordinary Euclidean neighborhood.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The open coordinate half-space `0 < p 0` is a neighborhood of the point and is
-contained in the closed half-space.
-\end{proof}
-
-\begin{lemma}[Interior half-space subtype neighborhoods are ambient neighborhoods]
-\label{moise:lem:euclideanHalfSpace_interior_map_nhds_eq}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_map_nhds_eq}
-\leanok
-
-\uses{moise:lem:euclideanHalfSpace_interior_halfspace_mem_nhds}
-At an interior point, mapping the half-space subtype neighborhood filter along
-the inclusion gives the ordinary ambient Euclidean neighborhood filter.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Apply mathlib's subtype-neighborhood theorem using the fact that the closed
-half-space is a neighborhood of the point.
-\end{proof}
-
-\begin{lemma}[Half-space neighborhoods map to relative ambient neighborhoods]
-\label{moise:lem:euclideanHalfSpace_image_mem_nhdsWithin_halfspace}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_image_mem_nhdsWithin_halfspace}
-\leanok
-
-The image of a neighborhood in `EuclideanHalfSpace 2` under the subtype
-inclusion is a relative neighborhood of the ambient coordinate point within the
-closed half-space.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Use the embedding API for `Subtype.val`; its map of neighborhood filters is the
-relative neighborhood filter on the range, and mathlib identifies that range
-with the closed half-space.
-\end{proof}
-
-\begin{lemma}[Interior half-space neighborhoods map to ambient neighborhoods]
-\label{moise:lem:euclideanHalfSpace_interior_image_mem_nhds}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.euclideanHalfSpace_interior_image_mem_nhds}
-\leanok
-
-\uses{moise:lem:euclideanHalfSpace_interior_map_nhds_eq}
-The image of a neighborhood of an interior half-space point under the subtype
-inclusion is an ordinary ambient Euclidean neighborhood.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Rewrite the mapped neighborhood filter using the interior subtype-neighborhood
-equality, then use `Filter.image_mem_map`.
-\end{proof}
-
-\begin{lemma}[Mathlib bordered surface local Rado induction data]
-\label{moise:lem:mathlib_bordered_surface_rado_induction_data}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_rado_induction_data}
-\leanok
-
-\uses{moise:def:finite_chart_pair_cover,moise:def:rado_induction_data,moise:def:finite_rado_induction_geometry,moise:lem:mathlib_bordered_surface_finite_rado_geometry}
-A nonempty compact mathlib bordered surface admits a finite chart-pair cover
-carrying the initial polygonal disk and successor chart-extension data needed
-for Rado's induction.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Use the finite Rado geometry theorem boundary, then convert the resulting
-`FiniteRadoInductionGeometry` package into recursive `RadoInductionData`.
-\end{proof}
-
-\begin{lemma}[Eval surface to Moise bordered surface]
-\label{moise:lem:eval_to_moise_bordered_surface}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.eval_surface_to_moise_bordered_surface}
-\leanok
-
-\uses{moise:def:eval_surface,moise:lem:mathlib_bordered_surface_to_moise_two_manifold}
-Every compact Eval surface is a compact Moise two-manifold with boundary.
-\end{lemma}
-
-\begin{proof}
-\leanok
-Apply the mathlib-bordered-surface-to-Moise theorem boundary; connectedness is
-an extra Eval hypothesis not needed for the chart-pair package.
-\end{proof}
-
-\begin{definition}[Finite surface triangulation]
-\label{moise:def:finite_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.Valid}
-
-\uses{moise:def:eval_surface,moise:def:euclidean_complex}
-A finite surface triangulation of a topological space $S$ is a finite
-combinatorial two-manifold with boundary together with a homeomorphism from its
-support to $S$.  The formal object stores finite vertex, edge, and triangle
-types, vertex sets for each edge and triangle, endpoint maps, triangle boundary
-words, boundary-edge predicates, and proof-bearing validity data: edges have
-two vertices, triangles have three vertices, endpoints lie on their edge,
-edge endpoints are distinct, and every edge appearing in a triangle boundary
-has its vertices contained in the triangle vertex set.
-\end{definition}
-
-\begin{theorem}[Finite PL complex to finite surface triangulation]
-\label{moise:thm:finite_pl_complex_to_finite_surface_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.vertices_card_eq_two_of_mem_oneSimplexes, LeanEval.Topology.ClassificationOfSurfaces.EuclideanComplex.vertices_card_eq_three_of_mem_twoSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.oneSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.twoSimplexes, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.OneSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.TwoSimplex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.edgeSourceVertex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.edgeTargetVertex, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.triangleBoundaryWord, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.FiniteSupportData.edgeVertices_subset_triangleVertices_of_mem_boundaryWord, LeanEval.Topology.ClassificationOfSurfaces.PLComplexInSpace.toFiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.FinitePLTriangulationData.toFiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.finite_pl_complex_to_finite_surface_triangulation}
-\leanok
-
-\uses{moise:def:finite_surface_triangulation,moise:thm:rado_bordered_surface_triangulation}
-A finite embedded PL complex whose support covers the surface, together with
-finite support data and boundary-subcomplex data, determines a finite surface
-triangulation of the ambient surface.
-\end{theorem}
-
-\begin{proof}
-\leanok
-Use the finite vertex type of the embedded PL complex, the supported
-one-simplexes as edges, and the supported two-simplexes as triangles.  Boundary
-words are assembled from codimension-one boundary simplexes that are present as
-supported one-simplexes, and boundary edges are read from the supplied boundary
-subcomplex.  One-simplex and two-simplex cardinal lemmas prove the finite
-validity fields required by `FiniteSurfaceTriangulation.Valid`; the chosen
-second endpoint of a one-simplex is proved distinct from the first, and
-boundary-word membership is traced back through the complex boundary-simplex
-relation to prove that every listed boundary edge is a face of the triangle.
-The named construction is `PLComplexInSpace.toFiniteSurfaceTriangulation`.
-Since the embedding has image equal to the whole surface, the embedding is
-surjective; an embedding that is surjective is a homeomorphism onto the ambient
-surface.
-\end{proof}
-
-\begin{theorem}[Compact Eval surface is finitely triangulable]
-\label{moise:thm:compact_eval_surface_finitely_triangulable}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteSurfaceTriangulation_homeomorphSurface, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finiteSurfaceTriangulation_of_contMDiff_homeomorphSurface, LeanEval.Topology.ClassificationOfSurfaces.mathlib_bordered_surface_finitely_triangulable_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finiteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finiteSurfaceTriangulation_homeomorphSurface, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finitely_triangulable, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finiteSurfaceTriangulation_of_contMDiff, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finiteSurfaceTriangulation_of_contMDiff_homeomorphSurface, LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_finitely_triangulable_of_contMDiff}
-\leanok
-
-\uses{moise:def:finite_surface_triangulation,moise:lem:eval_to_moise_bordered_surface,moise:thm:rado_bordered_surface_triangulation,moise:thm:finite_pl_complex_to_finite_surface_triangulation}
-Every compact connected Eval surface has a finite triangulation with boundary a
-subcomplex, relative to the explicit C0 `ChartBoundaryInvariant` hypothesis.
-\end{theorem}
-
-\begin{proof}
-\leanok
-Apply the named mathlib-bordered triangulation theorem, which obtains finite PL
-triangulation data from the Moise--Rado route and converts it to the project
-`FiniteSurfaceTriangulation` object.  The named constructions
-`mathlib_bordered_surface_finiteSurfaceTriangulation` and
-`compact_eval_surface_finiteSurfaceTriangulation` carry the actual objects; the
-theorem statements are existential wrappers.  The suffix `_of_contMDiff`
-versions give the same finite-surface output through the proved
-positive-regularity path, where `ChartBoundaryInvariant` is supplied by mathlib.
-\end{proof}
-
-\section{From triangulations to cell complexes}
-
-\begin{definition}[Triangulation as a cell complex]
-\label{moise:def:triangulation_cell_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex}
-
-\uses{moise:def:finite_surface_triangulation,moise:def:surface_cell_complex}
-Given a finite surface triangulation, define a surface cell complex with one face
-for each triangle, one unoriented edge for each edge of the triangulation, paired
-or unpaired oriented darts according to whether the edge is interior or boundary,
-and boundary words of length three.
-\end{definition}
-
-\begin{lemma}[Triangulation realization matches cell-complex realization]
-\label{moise:lem:triangulation_to_cell_complex_realization}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic}
-\leanok
-
-\uses{moise:def:triangulation_cell_complex,moise:def:cell_realization}
-The support of a finite surface triangulation is homeomorphic to the realization
-of the associated surface cell complex.
-\end{lemma}
-
-\begin{proof}
-\leanok
-The converted cell complex carries the triangulation realization as its
-realization type, so the comparison is the identity homeomorphism.  When the
-shared quotient realization model is expanded, this proof should be replaced by
-the quotient comparison between the triangulation gluing relation and the
-cell-complex gluing relation.
-\end{proof}
-
-\begin{theorem}[Finite triangulation to finite cell complex]
-\label{moise:thm:finite_triangulation_to_cell_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.finite_triangulation_to_cell_complex}
-\leanok
-
-\uses{moise:def:finite_surface_triangulation,moise:def:triangulation_cell_complex,moise:lem:triangulation_to_cell_complex_realization}
-If $S$ has a finite surface triangulation, then $S$ is homeomorphic to the
-realization of a finite surface cell complex.
-\end{theorem}
-
-\begin{proof}
-Take the associated cell complex and compose the triangulation homeomorphism with
-the homeomorphism between triangulation support and cell-complex realization.
-\end{proof}
-
-\section{Quotient realizations and quotient homeomorphisms}
-
-\begin{definition}[Polygonal pre-realization]
-\label{moise:def:polygonal_prerealization}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.PreRealization}
-
-\uses{moise:def:surface_cell_complex}
-The pre-realization of $K$ is currently the realization carrier stored in the
-cell-complex structure.  The final model should replace this with the finite
-disjoint union of closed standard polygons, one for each face of $K$, with
-marked oriented boundary arcs corresponding to the cyclic boundary word of that
-face.
-\end{definition}
-
-\begin{definition}[Gluing relation]
+\begin{definition}[Polygonal pre-realization and gluing relation]
 \label{moise:def:gluing_relation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.GluingRel}
-
-\uses{moise:def:polygonal_prerealization}
-The gluing relation on the pre-realization is currently the bottom relation on
-the stored realization carrier.  The final quotient model should make it the
-least equivalence relation identifying paired boundary arcs by the affine
-parametrizations determined by the dart-pairing data of $K$.
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.PreRealization, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.GluingRel}
+\leanok
+\uses{moise:def:surface_cell_complex}
+\emph{Ledger note: placeholders.}  The pre-realization is currently the stored
+realization carrier and the gluing relation is the bottom relation.  The final
+model: disjoint union of standard polygons, glued by the affine identifications
+of paired boundary arcs.
 \end{definition}
 
-\begin{theorem}[Mathlib quotient congruence]
-\label{moise:thm:mathlib_quotient_congr}
-\lean{Homeomorph.Quotient.congr, Homeomorph.Quotient.congrRight, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.realizationCongrRight}
-\mathlibok
-If a homeomorphism between two spaces carries one quotient relation exactly to
-another, it descends to a homeomorphism between the quotient spaces.  If the
-underlying space is fixed and two quotient relations are equivalent, the quotient
-spaces are homeomorphic.
-\end{theorem}
-
-\begin{lemma}[Induced homeomorphism of cell realizations]
+\begin{lemma}[Quotient congruence]
 \label{moise:lem:cell_realization_quotient_congr}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.realizationCongr}
-
-\uses{moise:def:cell_realization,moise:def:gluing_relation,moise:thm:mathlib_quotient_congr}
-A homeomorphism between polygonal pre-realizations which sends the gluing
-relation of $K$ to the gluing relation of $L$ induces a homeomorphism
-$|K|\cong |L|$.
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.realizationCongr, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.realizationCongrRight}
+\leanok
+\uses{moise:def:gluing_relation}
+A homeomorphism of pre-realizations carrying one gluing relation to the other
+descends to the realizations (mathlib's
+\texttt{Homeomorph.Quotient.congrRight}).
 \end{lemma}
 
 \begin{proof}
-Apply the quotient congruence theorem from mathlib to the homeomorphism of
-pre-realizations and the proof that it respects exactly the two gluing relations.
+\leanok
+Currently trivial through the placeholder model; must be re-proved through the
+quotient model when \ref{moise:def:gluing_relation} is implemented.
 \end{proof}
 
 \begin{definition}[Elementary cell-complex moves]
 \label{moise:def:gx_elementary_moves}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.ElementarySubdivision, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Equivalent}
-
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Equivalent}
+\leanok
 \uses{moise:def:surface_cell_complex}
-The elementary moves are the Gallier--Xu operations: subdivide an edge by
-replacing $a,a^{-1}$ with $bc,c^{-1}b^{-1}$, and split a face by inserting a new
-diagonal edge.  Equivalence is the equivalence relation generated by these moves.
+\emph{Ledger note.}  The intended equivalence is generated by the Gallier--Xu
+elementary moves (edge subdivision, face splitting); the current Lean
+`Equivalent` is the placeholder ``homeomorphic realizations''.  The elementary
+moves themselves are not yet formalized.
 \end{definition}
 
 \begin{lemma}[Elementary moves preserve realization]
 \label{moise:lem:elementary_moves_preserve_realization}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.elementarySubdivision_realization_homeomorphic}
-
 \uses{moise:def:gx_elementary_moves,moise:lem:cell_realization_quotient_congr}
-If $L$ is obtained from $K$ by one elementary Gallier--Xu subdivision move, then
-$|K|$ and $|L|$ are homeomorphic.
+If $L$ is obtained from $K$ by one elementary Gallier--Xu move, then
+$|K|\cong|L|$.  (Not yet stated in Lean; blocked on the quotient realization
+model.)
 \end{lemma}
 
 \begin{proof}
-
-For edge subdivision, use the identity on the underlying glued polygonal space
-with a reparametrization of the subdivided boundary arc.  For face subdivision,
-use the homeomorphism between one polygon and two polygons glued along the new
-diagonal.  In both cases, verify the gluing relations and descend by quotient
-congruence.
-\end{proof}
-
-\begin{theorem}[Equivalent cell complexes have homeomorphic realizations]
-\label{moise:thm:equivalent_cell_complexes_homeomorphic}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.equivalent_realization_homeomorphic}
-
-\uses{moise:def:gx_elementary_moves,moise:lem:elementary_moves_preserve_realization}
-If finite surface cell complexes $K$ and $L$ are equivalent in the Gallier--Xu
-sense, then $|K|\cong |L|$.
-\end{theorem}
-
-\begin{proof}
-
-Induct over the reflexive, symmetric, transitive closure generating equivalence,
-composing the homeomorphisms supplied by elementary moves and their inverses.
+\notready
+Reparametrize the subdivided arc, or split one polygon into two along the new
+diagonal; descend by quotient congruence.
 \end{proof}
 
 \section{Gallier--Xu normal-form reduction}
 
-\begin{definition}[Orientability, contours, and Euler characteristic]
-\label{moise:def:gx_invariants}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Orientable, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Contours, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.eulerChar}
-
-\uses{moise:def:surface_cell_complex}
-For a finite surface cell complex, orientability is coherent orientation of
-faces, contours are cyclic boundary components, and the Euler characteristic is
-$n_0-n_1+n_2$ using the vertices, edges, and faces of the cell complex.
-\end{definition}
-
-\begin{lemma}[Elementary moves preserve invariants]
-\label{moise:lem:gx_moves_preserve_invariants}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.elementary_moves_preserve_invariants}
-
-\uses{moise:def:gx_elementary_moves,moise:def:gx_invariants}
-The Gallier--Xu elementary moves preserve orientability, the number of contours,
-and Euler characteristic.
-\end{lemma}
-
-\begin{proof}
-
-Check the two moves.  Edge subdivision increases both the number of vertices and
-edges by one.  Face subdivision increases both the number of edges and faces by
-one.  Coherent orientations and boundary contours are transported through the
-local rewrite.
-\end{proof}
-
-\begin{definition}[Canonical cell complexes]
-\label{moise:def:canonical_cell_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.CanonicalOrientable, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.CanonicalNonorientable}
-
-\uses{moise:def:surface_cell_complex}
-A canonical orientable complex has one face with word
-$a_1b_1a_1^{-1}b_1^{-1}\cdots a_pb_pa_p^{-1}b_p^{-1}c_1h_1c_1^{-1}\cdots c_qh_qc_q^{-1}$.
-A canonical nonorientable complex has one face with word
-$a_1a_1\cdots a_pa_pc_1h_1c_1^{-1}\cdots c_qh_qc_q^{-1}$, with $p\geq 1$.
-\end{definition}
-
-\begin{lemma}[Eliminate $aa^{-1}$ strings]
-\label{moise:lem:gx_eliminate_inverse_pairs}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.eliminate_inverse_pairs}
-
-\uses{moise:def:gx_elementary_moves}
-Every occurrence of a consecutive string $aa^{-1}$ in a boundary word can be
-removed by Gallier--Xu elementary moves.
-\end{lemma}
-
-\begin{proof}
-
-Split the face near $aa^{-1}$ using a new edge, contract the resulting length-two
-face by inverse edge subdivision, and then remove the redundant face by inverse
-face subdivision.
-\end{proof}
-
-\begin{lemma}[Vertex reduction]
-\label{moise:lem:gx_vertex_reduction}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.vertex_reduction}
-
-\uses{moise:lem:gx_eliminate_inverse_pairs}
-Every connected cell complex is equivalent to one with either a null inner vertex
-or exactly one inner vertex, and whose boundary vertices are loops of the form
-$(h,c,h^{-1})$.
-\end{lemma}
-
-\begin{proof}
-\notready
-
-Follow Gallier--Xu Lemma 6.1, Step 2.  Repeatedly shrink an inner vertex by
-eliminating an adjacent edge until only one inner vertex remains; then reduce each
-boundary vertex to a loop without disturbing already reduced loops.
-\end{proof}
-
-\begin{lemma}[Reduce to one face and introduce crosscaps]
-\label{moise:lem:gx_one_face_crosscaps}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.one_face_and_crosscaps}
-
-\uses{moise:lem:gx_vertex_reduction}
-After vertex reduction, every connected cell complex is equivalent to one with a
-single face, and repeated occurrences $aXaY$ may be replaced by adjacent
-crosscaps.
-\end{lemma}
-
-\begin{proof}
-\notready
-
-Use inverse face subdivision to merge adjacent faces sharing an edge until one
-face remains.  Then use the Gallier--Xu pseudo-rewrite
-$aXaY\simeq bbY^{-1}X$ to introduce crosscaps while preserving loops and the
-reduced vertex structure.
-\end{proof}
-
-\begin{lemma}[Introduce handles]
-\label{moise:lem:gx_introduce_handles}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.introduce_handles}
-
-\uses{moise:lem:gx_one_face_crosscaps}
-Boundary words containing interlaced inverse pairs $aUbVa^{-1}Xb^{-1}Y$ are
-equivalent to words containing a handle $cdc^{-1}d^{-1}$.
-\end{lemma}
-
-\begin{proof}
-\notready
-
-Formalize the pseudo-rewrite
-$aUVa^{-1}X\simeq bVUb^{-1}X$ and apply it twice to transform the interlaced pair
-into a handle block.
-\end{proof}
-
-\begin{lemma}[Handle plus crosscap becomes three crosscaps]
-\label{moise:lem:gx_handle_crosscap_to_crosscaps}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.handle_crosscap_to_three_crosscaps}
-
-\uses{moise:lem:gx_one_face_crosscaps,moise:lem:gx_introduce_handles}
-A word containing one crosscap and one handle is equivalent to a word containing
-three crosscaps instead.
-\end{lemma}
-
-\begin{proof}
-\notready
-
-Use the Gallier--Xu pseudo-rewrite $aaXY\simeq bYbX^{-1}$ repeatedly on the word
-$aaXbcb^{-1}c^{-1}Y$ to obtain three adjacent crosscap blocks.
-\end{proof}
-
-\begin{lemma}[Group boundary loops]
-\label{moise:lem:gx_group_loops}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.group_boundary_loops}
-
-\uses{moise:lem:gx_introduce_handles}
-All loop blocks $chc^{-1}$ can be moved to the end of the single boundary word
-without changing the handle or crosscap blocks.
-\end{lemma}
-
-\begin{proof}
-\notready
-
-Use the pseudo-rewrite $aUVa^{-1}X\simeq bVUb^{-1}X$ to commute any two loop
-blocks until all loops are grouped together.
-\end{proof}
-
-\begin{theorem}[Every cell complex has canonical normal form]
-\label{moise:thm:gx_normal_form}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.surface_cell_complex_reduces_to_normal_form}
-
-\uses{moise:def:canonical_cell_complex,moise:def:normal_form_witness,moise:lem:gx_vertex_reduction,moise:lem:gx_one_face_crosscaps,moise:lem:gx_introduce_handles,moise:lem:gx_handle_crosscap_to_crosscaps,moise:lem:gx_group_loops}
-Every finite connected surface cell complex has an admissible named normal-form
-witness.  In Lean this means a named Eval normal form together with a concrete
-representative cell complex, an equivalence from the original complex to that
-representative, and a proof that the representative realizes the named quotient
-space.
-\end{theorem}
-
-\begin{proof}
-
-Apply the Gallier--Xu sequence of reductions: remove inverse pairs, reduce
-vertices, merge faces, introduce crosscaps, introduce handles, convert mixed
-handle-crosscap words to all-crosscap form, and group boundary loops.
-\end{proof}
-
-\section{Normal-form quotient representatives and final assembly}
-
 \begin{definition}[Eval quotient representatives]
 \label{moise:def:eval_quotient_representatives}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.OrientableRel, LeanEval.Topology.ClassificationOfSurfaces.NonOrientableRel}
-The Eval representatives are quotient spaces determined by the orientable and
-nonorientable normal-form polygon boundary relations.  They are the exact target
-spaces named in the Lean Eval classification statement.
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SphereRepresentative, LeanEval.Topology.ClassificationOfSurfaces.OrientableRel, LeanEval.Topology.ClassificationOfSurfaces.NonOrientableRel}
+\leanok
+\emph{Ledger note: placeholders.}  The orientable and nonorientable relations
+are currently the bottom relation on a one-point carrier, so the named
+quotients are single points.  They must become genuine polygon-boundary
+quotients before the normal-form theorem can be honestly attempted.
 \end{definition}
 
 \begin{definition}[Named normal-form witnesses]
 \label{moise:def:normal_form_witness}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.IsEvalAdmissible, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.RealizesNormalForm, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.HasNormalForm}
-
+\leanok
 \uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives}
-A normal-form witness for a surface cell complex $K$ consists of an admissible
-normal-form name, a representative cell complex, an equivalence from $K$ to that
-representative, and a homeomorphism from the representative realization to the
-quotient space named by the normal form.
+A normal-form witness for $K$: an admissible normal-form name, a representative
+complex, an equivalence from $K$ to it, and a homeomorphism from its
+realization to the named Eval quotient.
 \end{definition}
+
+\begin{theorem}[Normal-form reduction]
+\label{moise:thm:gx_normal_form}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.surface_cell_complex_reduces_to_normal_form}
+\leanok
+\uses{moise:def:normal_form_witness,moise:def:gx_elementary_moves,moise:lem:elementary_moves_preserve_realization}
+Every finite connected surface cell complex has an admissible named normal-form
+witness.  \emph{Warning (ledger): with the placeholder representatives of
+\ref{moise:def:eval_quotient_representatives}, the current Lean statement is
+false for complexes whose realization is not a point or a sphere; the sorry
+cannot be discharged until the representatives are implemented and this
+statement is re-audited.}
+\end{theorem}
+
+\begin{proof}
+\notready
+Gallier--Xu Ch.~6: remove inverse pairs, reduce vertices, merge faces,
+introduce crosscaps and handles, convert mixed words to all-crosscap form,
+group boundary loops.
+\end{proof}
 
 \begin{lemma}[Normal-form witness gives an Eval branch]
 \label{moise:lem:normal_form_witness_eval_branch}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm}
-
+\leanok
 \uses{moise:def:normal_form_witness}
-An admissible named normal-form witness immediately gives the corresponding
-branch of the Eval classification disjunction.
+An admissible named normal-form witness gives the corresponding branch of the
+Eval classification disjunction.
 \end{lemma}
 
 \begin{proof}
-
-Compose the equivalence from $K$ to its representative with the representative's
-homeomorphism to the named Eval quotient.  The admissibility predicate supplies
-the positivity side condition in the orientable and nonorientable branches.
+\leanok
+Compose the equivalence with the representative's homeomorphism; admissibility
+supplies the positivity side conditions.
 \end{proof}
 
-\begin{lemma}[Canonical realization equals Eval quotient]
-\label{moise:lem:canonical_realization_eval_quotient}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.canonical_realization_homeomorphic_eval_quotient}
-
-\uses{moise:def:canonical_cell_complex,moise:def:eval_quotient_representatives,moise:def:normal_form_witness,moise:lem:cell_realization_quotient_congr}
-The realization of a canonical orientable or nonorientable cell complex is
-homeomorphic to the corresponding Eval quotient representative.
-\end{lemma}
-
-\begin{proof}
-
-Identify the one polygon used by the canonical cell complex with the polygon used
-in the Eval quotient definition and prove that the two generated boundary
-relations coincide.  Apply quotient congruence.
-\end{proof}
-
-\begin{theorem}[Cell-complex classification into Eval representatives]
-\label{moise:thm:cell_complex_has_eval_representative}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.cell_complex_has_eval_representative}
-
-\uses{moise:thm:equivalent_cell_complexes_homeomorphic,moise:thm:gx_normal_form,moise:lem:canonical_realization_eval_quotient,moise:lem:normal_form_witness_eval_branch}
-For every finite connected surface cell complex $K$, the realization $|K|$ is
-homeomorphic to the sphere representative, or to an orientable Eval quotient
-representative, or to a nonorientable Eval quotient representative.
-\end{theorem}
-
-\begin{proof}
-
-Choose a canonical cell complex equivalent to $K$.  Equivalent complexes have
-homeomorphic realizations, and canonical realizations are the Eval quotient
-representatives.
-\end{proof}
+\section{Final assembly}
 
 \begin{theorem}[Topological classification of compact Eval surfaces]
 \label{moise:thm:eval_classification_of_surfaces}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.topological_classification_of_surfaces}
-
-\uses{moise:thm:compact_surface_cellulable,moise:thm:cell_complex_has_eval_representative}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.classification_of_surfaces, LeanEval.Topology.ClassificationOfSurfaces.topological_classification_of_surfaces}
+\leanok
+\uses{moise:thm:compact_surface_cellulable,moise:thm:gx_normal_form,moise:lem:normal_form_witness_eval_branch}
 Every compact connected Hausdorff topological $2$-manifold with boundary in the
-Lean Eval sense, equipped with the explicit C0 `ChartBoundaryInvariant`
-hypothesis, is homeomorphic to one of the normal-form quotient spaces listed in
-the Eval problem.
+Lean Eval sense, with the explicit C0 \ref{moise:def:chart_boundary_invariant}
+hypothesis, is homeomorphic to the sphere representative or to one of the
+normal-form quotient spaces named in the Eval problem.
 \end{theorem}
 
 \begin{proof}
-
-Apply the topological bridge to obtain $S\cong |K|$.  Apply the cell-complex
-classification to $K$.  Compose the resulting homeomorphisms.
+\leanok
+Apply the topological bridge and the normal-form reduction, and compose.  (The
+Lean proof of this assembly contains no sorry of its own; the open content is
+on \ref{moise:thm:gx_normal_form} and the triangulation leaves, as the
+dependency graph shows.)
 \end{proof}
