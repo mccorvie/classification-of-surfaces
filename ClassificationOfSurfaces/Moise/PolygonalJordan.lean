@@ -422,6 +422,291 @@ theorem upLeft_card_add_downLeft_card_even {P : Plane} (hP : P ∉ J.carrier) :
   rw [hsplit, Nat.even_iff]
   omega
 
+/-! #### Per-edge behavior of the crossing status near a point off the polygon -/
+
+theorem continuous_coord (j : Fin 2) : Continuous fun v : Plane => v j :=
+  PiLp.continuous_apply (p := 2) (β := fun _ : Fin 2 => ℝ) j
+
+/-- The crossing abscissa depends continuously on the query point. -/
+theorem continuous_crossingX (v w : Plane) :
+    Continuous fun Q : Plane => crossingX v w (Q 1) := by
+  unfold crossingX
+  fun_prop
+
+@[simp] theorem crossingX_left (v w : Plane) : crossingX v w (v 1) = v 0 := by
+  unfold crossingX
+  simp
+
+theorem crossingX_right (v w : Plane) (hne : v 1 ≠ w 1) : crossingX v w (w 1) = w 0 := by
+  unfold crossingX
+  field_simp
+  ring
+
+end PolygonalCircle
+
+namespace PolygonalCircle
+
+variable (J : PolygonalCircle)
+
+/-- A point whose height lies in an edge's band and whose abscissa is the crossing abscissa lies
+on that edge. -/
+theorem mem_carrier_of_crossing {P : Plane} (i : ZMod J.n)
+    (hy : ((J.vertex i) 1 ≤ P 1 ∧ P 1 < (J.vertex (i + 1)) 1) ∨
+      ((J.vertex (i + 1)) 1 ≤ P 1 ∧ P 1 < (J.vertex i) 1))
+    (hx : crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) = P 0) :
+    P ∈ J.carrier := by
+  have hab : (J.vertex (i + 1)) 1 - (J.vertex i) 1 ≠ 0 := by
+    intro hz
+    rw [sub_eq_zero] at hz
+    rcases hy with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> linarith
+  set t : ℝ := (P 1 - (J.vertex i) 1) / ((J.vertex (i + 1)) 1 - (J.vertex i) 1) with htdef
+  have ht0 : 0 ≤ t := by
+    rcases hy with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · exact div_nonneg (by linarith) (by linarith)
+    · exact le_of_lt (div_pos_of_neg_of_neg (by linarith) (by linarith))
+  have ht1 : t ≤ 1 := by
+    rcases hy with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · rw [htdef, div_le_one (by linarith)]
+      linarith
+    · rw [htdef, div_le_one_of_neg (by linarith)]
+      linarith
+  have hpt : (1 - t) • J.vertex i + t • J.vertex (i + 1) = P := by
+    have hcx := hx
+    unfold crossingX at hcx
+    apply plane_ext
+    · simp only [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul]
+      rw [← hcx, htdef]
+      field_simp
+      ring
+    · simp only [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul]
+      rw [htdef]
+      field_simp
+      ring
+  exact Set.mem_iUnion.mpr ⟨i, ⟨1 - t, t, by linarith, ht0, by ring, hpt⟩⟩
+
+/-- Horizontal edges are never crossed. -/
+theorem not_edgeCrossed_of_horizontal {i : ZMod J.n}
+    (hAB : (J.vertex i) 1 = (J.vertex (i + 1)) 1) (R : Plane) : ¬ J.EdgeCrossed i R := by
+  rintro ⟨⟨h1, h2⟩ | ⟨h1, h2⟩, -⟩ <;> linarith
+
+/-- Near a point off the polygon, each edge's crossing status is: switched by the query height
+for the flipping edges, constant otherwise. -/
+theorem eventually_edgeCrossed_iff {P : Plane} (hP : P ∉ J.carrier) (i : ZMod J.n) :
+    ∀ᶠ Q in nhds P,
+      (J.EdgeCrossed i Q ↔
+        if i ∈ J.upLeftEdges P then P 1 ≤ Q 1
+        else if i ∈ J.downLeftEdges P then Q 1 < P 1
+        else J.EdgeCrossed i P) := by
+  classical
+  have hev_lt : ∀ c : ℝ, P 1 < c → ∀ᶠ Q : Plane in nhds P, Q 1 < c := fun c hc =>
+    (isOpen_lt (continuous_coord 1) continuous_const).eventually_mem hc
+  have hev_gt : ∀ c : ℝ, c < P 1 → ∀ᶠ Q : Plane in nhds P, c < Q 1 := fun c hc =>
+    (isOpen_lt continuous_const (continuous_coord 1)).eventually_mem hc
+  have hev_x_lt : crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) < P 0 →
+      ∀ᶠ Q : Plane in nhds P, crossingX (J.vertex i) (J.vertex (i + 1)) (Q 1) < Q 0 :=
+    fun hc => (isOpen_lt (continuous_crossingX _ _) (continuous_coord 0)).eventually_mem hc
+  have hev_x_gt : P 0 < crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) →
+      ∀ᶠ Q : Plane in nhds P, Q 0 < crossingX (J.vertex i) (J.vertex (i + 1)) (Q 1) :=
+    fun hc => (isOpen_lt (continuous_coord 0) (continuous_crossingX _ _)).eventually_mem hc
+  by_cases hU : i ∈ J.upLeftEdges P
+  · -- rising flipping edge: status ⟺ (P 1 ≤ Q 1) eventually
+    simp only [hU, if_pos]
+    have hU' := hU
+    simp only [upLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and] at hU'
+    obtain ⟨hbase1, hbase0, htop⟩ | ⟨hbase1, hbase0, htop⟩ := hU'
+    · -- base is vertex i
+      have hcx : crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) < P 0 := by
+        rw [← hbase1, crossingX_left]
+        exact hbase0
+      filter_upwards [hev_lt _ htop, hev_x_lt hcx] with Q hQtop hQx
+      constructor
+      · rintro ⟨⟨h1, -⟩ | ⟨h1, -⟩, -⟩
+        · rw [← hbase1]; exact h1
+        · linarith
+      · intro hQ1
+        exact ⟨Or.inl ⟨by rw [hbase1]; exact hQ1, hQtop⟩, hQx⟩
+    · -- base is vertex i + 1
+      have hcx : crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) < P 0 := by
+        rw [← hbase1, crossingX_right _ _ (by rw [hbase1]; exact ne_of_gt htop)]
+        exact hbase0
+      filter_upwards [hev_lt _ htop, hev_x_lt hcx] with Q hQtop hQx
+      constructor
+      · rintro ⟨⟨h1', -⟩ | ⟨h1, -⟩, -⟩
+        · linarith
+        · rw [← hbase1]; exact h1
+      · intro hQ1
+        exact ⟨Or.inr ⟨by rw [hbase1]; exact hQ1, hQtop⟩, hQx⟩
+  by_cases hD : i ∈ J.downLeftEdges P
+  · -- falling flipping edge: status ⟺ (Q 1 < P 1) eventually
+    simp only [hU, hD, if_neg, if_pos, not_false_iff]
+    have hD' := hD
+    simp only [downLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and] at hD'
+    obtain ⟨hbase1, hbase0, hbot⟩ | ⟨hbase1, hbase0, hbot⟩ := hD'
+    · -- base is vertex i, other endpoint below
+      have hcx : crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) < P 0 := by
+        rw [← hbase1, crossingX_left]
+        exact hbase0
+      filter_upwards [hev_gt _ hbot, hev_x_lt hcx] with Q hQbot hQx
+      constructor
+      · rintro ⟨⟨h1, h2⟩ | ⟨-, h2⟩, -⟩
+        · linarith
+        · rw [← hbase1]; exact h2
+      · intro hQ1
+        exact ⟨Or.inr ⟨hQbot.le, by rw [hbase1]; exact hQ1⟩, hQx⟩
+    · -- base is vertex i + 1, other endpoint below
+      have hcx : crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) < P 0 := by
+        rw [← hbase1, crossingX_right _ _ (by rw [hbase1]; exact ne_of_lt hbot)]
+        exact hbase0
+      filter_upwards [hev_gt _ hbot, hev_x_lt hcx] with Q hQbot hQx
+      constructor
+      · rintro ⟨⟨-, h2⟩ | ⟨h1, h2⟩, -⟩
+        · rw [← hbase1]; exact h2
+        · linarith
+      · intro hQ1
+        exact ⟨Or.inl ⟨hQbot.le, by rw [hbase1]; exact hQ1⟩, hQx⟩
+  · -- non-flipping edge: status eventually constant
+    simp only [hU, hD, if_neg, not_false_iff]
+    by_cases hAB : (J.vertex i) 1 = (J.vertex (i + 1)) 1
+    · -- horizontal: never crossed on either side
+      filter_upwards [] with Q
+      exact iff_of_false (J.not_edgeCrossed_of_horizontal hAB Q)
+        (J.not_edgeCrossed_of_horizontal hAB P)
+    -- non-horizontal, non-flipping
+    by_cases hyP : ((J.vertex i) 1 ≤ P 1 ∧ P 1 < (J.vertex (i + 1)) 1) ∨
+        ((J.vertex (i + 1)) 1 ≤ P 1 ∧ P 1 < (J.vertex i) 1)
+    · -- the height condition holds at P
+      have hxne : crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) ≠ P 0 := fun hx =>
+        hP (J.mem_carrier_of_crossing i hyP hx)
+      -- P is not at either endpoint height, or the edge would be flipping or right-critical;
+      -- first show the endpoint heights straddle P strictly or the x-condition settles it
+      rcases lt_or_gt_of_ne hxne with hxlt | hxgt
+      · -- the crossing is strictly left of P: the edge is genuinely crossed at P unless the
+        -- height condition degenerates at an endpoint, which the flipping/critical analysis
+        -- below rules out
+        rcases hyP with ⟨h1, h2⟩ | ⟨h1, h2⟩
+        · rcases eq_or_lt_of_le h1 with heq | hlt
+          · -- P at the lower endpoint height: vertex i is the base; it must be right of P or
+            -- equal to P, but the crossing abscissa at P 1 is vertex i's abscissa < P 0,
+            -- contradicting non-membership in the flipping sets
+            exfalso
+            have hbx : (J.vertex i) 0 < P 0 := by
+              rw [← heq] at hxlt
+              rwa [crossingX_left] at hxlt
+            exact hU (by
+              simp only [upLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and]
+              exact Or.inl ⟨heq, hbx, h2⟩)
+          · -- strictly inside the band: the status is eventually true, as at P
+            filter_upwards [hev_gt _ hlt, hev_lt _ h2, hev_x_lt hxlt] with Q hQ1 hQ2 hQx
+            exact iff_of_true ⟨Or.inl ⟨hQ1.le, hQ2⟩, hQx⟩ ⟨Or.inl ⟨h1, h2⟩, hxlt⟩
+        · rcases eq_or_lt_of_le h1 with heq | hlt
+          · exfalso
+            have hbx : (J.vertex (i + 1)) 0 < P 0 := by
+              rw [← heq] at hxlt
+              rwa [crossingX_right _ _ (by rw [heq]; exact ne_of_gt h2)] at hxlt
+            exact hU (by
+              simp only [upLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and]
+              exact Or.inr ⟨heq, hbx, h2⟩)
+          · filter_upwards [hev_gt _ hlt, hev_lt _ h2, hev_x_lt hxlt] with Q hQ1 hQ2 hQx
+            exact iff_of_true ⟨Or.inr ⟨hQ1.le, hQ2⟩, hQx⟩ ⟨Or.inr ⟨h1, h2⟩, hxlt⟩
+      · -- the crossing is strictly right of P: eventually never crossed, and not crossed at P
+        filter_upwards [hev_x_gt hxgt] with Q hQx
+        exact iff_of_false (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hQx.le))
+          (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hxgt.le))
+    · -- the height condition fails at P and P is at neither endpoint height strictly inside:
+      -- P's height avoids the closed band, so nearby heights do too
+      have hAne : (J.vertex i) 1 ≠ P 1 ∨ ¬ (P 1 < (J.vertex (i + 1)) 1) := by
+        by_cases hA : (J.vertex i) 1 = P 1
+        · right
+          intro hB
+          exact hyP (Or.inl ⟨hA.le, hB⟩)
+        · exact Or.inl hA
+      -- case on the position of P 1 relative to both endpoint heights
+      rcases lt_trichotomy (P 1) ((J.vertex i) 1) with hA | hA | hA
+      · rcases lt_trichotomy (P 1) ((J.vertex (i + 1)) 1) with hB | hB | hB
+        · -- P 1 below both: nearby heights below both
+          filter_upwards [hev_lt _ hA, hev_lt _ hB] with Q hQ1 hQ2
+          refine iff_of_false ?_ ?_
+          · rintro ⟨⟨h1, -⟩ | ⟨h1, -⟩, -⟩ <;> linarith
+          · rintro ⟨⟨h1, -⟩ | ⟨h1, -⟩, -⟩ <;> linarith
+        · -- P 1 equals the height of vertex i+1, which is below vertex i: the edge falls to a
+          -- base at P's height; it is not flipping, so the base is right of P (or equals P)
+          have hbase : P 0 < (J.vertex (i + 1)) 0 := by
+            rcases lt_trichotomy ((J.vertex (i + 1)) 0) (P 0) with hlt | heq | hgt
+            · exact absurd (by
+                simp only [upLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and]
+                exact Or.inr ⟨hB.symm, hlt, hA⟩) hU
+            · exact absurd (J.vertex_mem_carrier (i + 1))
+                (by rw [plane_ext heq (by rw [hB])]; exact hP)
+            · exact hgt
+          have hxgt : P 0 < crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) := by
+            rw [hB, crossingX_right _ _ (by rw [← hB]; exact ne_of_gt hA)]
+            exact hbase
+          filter_upwards [hev_x_gt hxgt] with Q hQx
+          exact iff_of_false (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hQx.le))
+            (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hxgt.le))
+        · -- between the heights with the band living on the other side: the height condition
+          -- holds at P after all, contradiction
+          exact absurd (Or.inr ⟨hB.le, hA⟩) hyP
+      · -- P 1 equals the height of vertex i
+        have hBne : (J.vertex (i + 1)) 1 ≠ P 1 := by
+          intro hB
+          exact hAB (hA.symm.trans hB.symm)
+        rcases lt_or_gt_of_ne hBne with hB | hB
+        · -- the edge falls from a base at P's height
+          have hbase : P 0 < (J.vertex i) 0 := by
+            rcases lt_trichotomy ((J.vertex i) 0) (P 0) with hlt | heq | hgt
+            · exact absurd (by
+                simp only [downLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and]
+                exact Or.inl ⟨hA.symm, hlt, hB⟩) hD
+            · exact absurd (J.vertex_mem_carrier i)
+                (by rw [plane_ext heq hA.symm]; exact hP)
+            · exact hgt
+          have hxgt : P 0 < crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) := by
+            rw [hA, crossingX_left]
+            exact hbase
+          filter_upwards [hev_x_gt hxgt] with Q hQx
+          exact iff_of_false (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hQx.le))
+            (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hxgt.le))
+        · -- the edge rises from a base at P's height
+          have hbase : P 0 < (J.vertex i) 0 := by
+            rcases lt_trichotomy ((J.vertex i) 0) (P 0) with hlt | heq | hgt
+            · exact absurd (by
+                simp only [upLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and]
+                exact Or.inl ⟨hA.symm, hlt, hB⟩) hU
+            · exact absurd (J.vertex_mem_carrier i)
+                (by rw [plane_ext heq hA.symm]; exact hP)
+            · exact hgt
+          have hxgt : P 0 < crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) := by
+            rw [hA, crossingX_left]
+            exact hbase
+          filter_upwards [hev_x_gt hxgt] with Q hQx
+          exact iff_of_false (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hQx.le))
+            (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hxgt.le))
+      · rcases lt_trichotomy (P 1) ((J.vertex (i + 1)) 1) with hB | hB | hB
+        · -- band straddles P from the other orientation: height condition holds, contradiction
+          exact absurd (Or.inl ⟨hA.le, hB⟩) hyP
+        · -- P 1 equals the height of vertex i+1, which is above... the edge rises to a base at
+          -- P's height from vertex i below? No: vertex i is below P, base is vertex i+1 at P
+          have hbase : P 0 < (J.vertex (i + 1)) 0 := by
+            rcases lt_trichotomy ((J.vertex (i + 1)) 0) (P 0) with hlt | heq | hgt
+            · exact absurd (by
+                simp only [downLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and]
+                exact Or.inr ⟨hB.symm, hlt, hA⟩) hD
+            · exact absurd (J.vertex_mem_carrier (i + 1))
+                (by rw [plane_ext heq (by rw [hB])]; exact hP)
+            · exact hgt
+          have hxgt : P 0 < crossingX (J.vertex i) (J.vertex (i + 1)) (P 1) := by
+            rw [hB, crossingX_right _ _ (by rw [← hB]; exact ne_of_lt hA)]
+            exact hbase
+          filter_upwards [hev_x_gt hxgt] with Q hQx
+          exact iff_of_false (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hQx.le))
+            (fun ⟨_, hx⟩ => absurd hx (not_lt.mpr hxgt.le))
+        · -- P 1 above both: nearby heights above both
+          filter_upwards [hev_gt _ hA, hev_gt _ hB] with Q hQ1 hQ2
+          refine iff_of_false ?_ ?_
+          · rintro ⟨⟨-, h2⟩ | ⟨-, h2⟩, -⟩ <;> linarith
+          · rintro ⟨⟨-, h2⟩ | ⟨-, h2⟩, -⟩ <;> linarith
+
 /-- **Sub-boundary** (Moise Ch. 2, Thm. 1, Lemma 2, local constancy of the index).
 
 Off the polygon the crossing index is locally constant.  The proof is elementary casework: for
