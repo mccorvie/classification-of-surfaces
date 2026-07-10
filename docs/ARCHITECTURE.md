@@ -1,8 +1,10 @@
 # Architecture
 
 This is the short human summary of the project. For the authoritative Lean declarations, read
-`ClassificationOfSurfaces/API.lean`. For the detailed Moise/PL route, read
-`codex_strategy_moise_pl.md`. For the proof dependency graph, read `blueprint/src/content.tex`.
+`ClassificationOfSurfaces/API.lean`. **For the triangulation route (the `Moise/` directory),
+read `docs/MOISE_ROUTE.md` — it supersedes `codex_strategy_moise_pl.md` and any PL-route
+description below, which refer to the retired `PL.lean` layer (see `docs/KNOWN_WEAK.md`).**
+For the proof dependency graph, read `blueprint/src/content.tex`.
 
 ## Target
 

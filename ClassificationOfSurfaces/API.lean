@@ -20,7 +20,22 @@ project skeleton and documents the intended handoff points between teams.
 * `eval_surface_hypotheses`
 * the typeclass hypothesis block used by `classification_of_surfaces`
 
-## Moise / PL route
+## Moise route (current; see `docs/MOISE_ROUTE.md` for status and handoff map)
+
+* `GeometricTriangulation` and `GeometricRealization` (`Moise/GeometricTriangulation.lean`)
+* `PlaneComplex`, `IsPLOn`, `IsPLOnSet` (`Moise/PlaneComplex.lean`)
+* `PolygonalCircle`, `polygonal_jordan`, the crossing `index` (`Moise/PolygonalJordan.lean`)
+* `closedRegion_is_polyhedron`, `polygonal_schoenflies_rel` (`Moise/PolygonalSchoenflies.lean`)
+* `pl_approximation_two_manifold` (`Moise/PLApproximation.lean`)
+* `JoinedByBrokenLine` (`Moise/BrokenLine.lean`)
+* `MoiseChart`, `MoiseChart.BoundaryFaithful`, `exists_moiseChart_core_mem_nhds`
+  (`Moise/ChartExtraction.lean`)
+* `PartialTriangulation`, `RadoInvariant`, `moise_finite_chart_cover`, `moise_induction_step`,
+  `moise_triangulation_of_boundaries` (`Moise/ChartInduction.lean`)
+* `moise_triangulation` (`Triangulation.lean`)
+* anchors and countermodels: `Moise/Anchors.lean`, `Moise/Countermodels.lean`
+
+## Legacy PL route (retired; kept compiling as a quarry — do not extend, see docs/KNOWN_WEAK.md)
 
 * `EuclideanComplex`
 * `EuclideanComplex.Subdivision`
