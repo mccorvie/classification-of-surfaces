@@ -12,8 +12,9 @@ quotient.
 - `ClassificationOfSurfaces/API.lean`: public Lean API map and preferred collaborator entry point.
 - `docs/ARCHITECTURE.md`: concise architecture overview and current next tasks.
 - `docs/AUTOFORMALIZATION_GUIDE.md`: operating rules for human-plus-agent formalization work.
-- `codex_strategy_moise_pl.md`: detailed Moise/PL triangulation route and work-package plan.
-- `blueprint/src/content.tex`: Lean blueprint for the Moise/PL route.
+- `docs/MOISE_ROUTE.md`: the triangulation route — status, open leaves, and handoff map.
+- `docs/KNOWN_WEAK.md`: weakness ledger (placeholder definitions; do not extend).
+- `blueprint/src/content.tex`: Lean blueprint, kept in sync with the repository state.
 - `docs/MATHLIB_SURVEY.md`: current mathlib starting points and gaps.
 - `docs/DESIGN_DECISIONS.md`: accepted decisions and still-open design questions.
 - `CONTRIBUTING.md`: collaboration workflow.
@@ -52,7 +53,7 @@ SurfaceCellComplex.hasEvalRepresentative
 
 The final theorem `classification_of_surfaces`, with blueprint-facing wrapper
 `topological_classification_of_surfaces`, should then be a short composition of these two bridges.
-Legacy aliases such as `CellComplex`, `FiniteTriangulation`, and `Triangulable` still compile for
+Legacy aliases `CellComplex` and `FiniteTriangulation` still compile for
 compatibility, but new code should use the preferred names above.
 
 ## Current Status

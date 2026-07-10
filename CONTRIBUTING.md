@@ -14,9 +14,9 @@ This is a collaborative Lean formalization project for the classification of com
 ## Coordination
 
 Start with `ClassificationOfSurfaces/API.lean` for the current Lean API map. The short architecture
-summary is in `docs/ARCHITECTURE.md`; the detailed Moise/PL route is in
-`codex_strategy_moise_pl.md`. Agent-assisted work should follow
-`docs/AUTOFORMALIZATION_GUIDE.md`.
+summary is in `docs/ARCHITECTURE.md`; the triangulation route's status and handoff map is
+`docs/MOISE_ROUTE.md`. All work must follow `docs/AUTOFORMALIZATION_GUIDE.md` (in particular the
+Definition Faithfulness section) and respect the ledger in `docs/KNOWN_WEAK.md`.
 
 When starting a task, record which file and theorem boundary you are working on. If a definition
 choice affects both the topology and combinatorics tracks, document the decision before building on
@@ -24,11 +24,11 @@ it heavily.
 
 ## API Boundaries
 
-- New code should prefer `SurfaceCellComplex`, `FiniteSurfaceTriangulation`, and
-  `SurfaceTriangulable`. The old names `CellComplex`, `FiniteTriangulation`, and `Triangulable`
-  are compatibility aliases only.
-- The Moise/PL route should produce `FiniteSurfaceTriangulation`; it should not depend on
-  Gallier-Xu normal-form definitions.
+- New triangulation work targets `GeometricTriangulation` (`ClassificationOfSurfaces/Moise/`);
+  `FiniteSurfaceTriangulation` is a ledgered compatibility interface fed by the bridge, and
+  `CellComplex`/`FiniteTriangulation` are aliases only.
+- The Moise route produces `GeometricTriangulation`; it should not depend on Gallier-Xu
+  normal-form definitions.
 - Shared infrastructure should convert finite triangulations to `SurfaceCellComplex`.
 - The Gallier-Xu route should consume only `SurfaceCellComplex` and quotient-realization APIs. It
   should not mention PL maps, Moise manifolds, or manifold chart machinery.

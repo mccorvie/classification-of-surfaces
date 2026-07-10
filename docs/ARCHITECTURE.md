@@ -2,7 +2,7 @@
 
 This is the short human summary of the project. For the authoritative Lean declarations, read
 `ClassificationOfSurfaces/API.lean`. **For the triangulation route (the `Moise/` directory),
-read `docs/MOISE_ROUTE.md` — it supersedes `codex_strategy_moise_pl.md` and any PL-route
+read `docs/MOISE_ROUTE.md` — it supersedes the deleted `codex_strategy_moise_pl.md` and any PL-route
 description below, which refer to the retired `PL.lean` layer (see `docs/KNOWN_WEAK.md`).**
 For the proof dependency graph, read `blueprint/src/content.tex`.
 
@@ -62,7 +62,7 @@ place:
 - Examples for the disk, annulus, torus, projective plane, and Mobius strip compile as concrete
   boundary-word presentations.
 
-Legacy aliases `CellComplex`, `FiniteTriangulation`, and `Triangulable` remain for early scaffold
+Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
 compatibility. New code should use the preferred names above.
 
 ## File Map

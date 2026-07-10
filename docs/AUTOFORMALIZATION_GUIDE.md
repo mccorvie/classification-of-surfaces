@@ -161,7 +161,7 @@ probes in the Definition Faithfulness section.
 - `docs/DESIGN_DECISIONS.md` records accepted decisions and open design questions.
 - `docs/KNOWN_WEAK.md` is the weakness ledger: placeholder definitions, their intended final
   meaning, and their dependents.
-- `codex_strategy_moise_pl.md` is the detailed Moise/PL handoff plan.
+- `docs/MOISE_ROUTE.md` is the triangulation route status and handoff map.
 - `blueprint/src/content.tex` is the proof dependency blueprint.
 
 If a doc becomes stale, either update it immediately or delete/merge it. Stale plans are worse than

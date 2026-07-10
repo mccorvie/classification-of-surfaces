@@ -1,7 +1,7 @@
 # Design Decisions
 
 This file records project-level design decisions and open design questions. It is intentionally
-shorter and more stable than `codex_strategy_moise_pl.md`: use this file to see what choices are
+shorter and more stable than `docs/MOISE_ROUTE.md`: use this file to see what choices are
 accepted, provisional, or still open before building new code on top of them.
 
 Not every item in this file is decided. The `Active Decisions` section records choices the current
