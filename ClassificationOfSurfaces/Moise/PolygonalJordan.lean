@@ -215,6 +215,213 @@ theorem exists_index_eq_zero : ∃ P : Plane, P ∉ J.carrier ∧ J.index P = 0 
     exact lt_of_le_of_lt (hymax i) (by linarith)
   exact ⟨P, J.notMem_carrier_of_high hhigh, J.index_eq_zero_of_high hhigh⟩
 
+/-! #### The handshake lemma for the local-constancy casework
+
+Near a point `P` off the polygon, the only edges whose crossing status is not locally constant
+are those with exactly one endpoint at the height of `P`, that endpoint lying strictly to the
+left of `P`: rising edges switch on and falling edges switch off as the query point's height
+crosses `P`'s.  The index is therefore locally constant provided the number of such edges is
+even, which is a double-counting argument: every vertex has two incident edges, a horizontal
+partner of a left vertex is itself a left vertex (otherwise the horizontal edge would contain
+`P`), and so the non-horizontal incident edges of the left vertices pair up. -/
+
+/-- Two plane points with equal coordinates are equal. -/
+theorem plane_ext {p q : Plane} (h0 : p 0 = q 0) (h1 : p 1 = q 1) : p = q := by
+  ext i
+  fin_cases i
+  · exact h0
+  · exact h1
+
+/-- A point at the height of a horizontal segment, with abscissa between the endpoints, lies on
+the segment. -/
+theorem mem_segment_of_horizontal {a b P : Plane} (ha : a 1 = P 1) (hb : b 1 = P 1)
+    (hax : a 0 ≤ P 0) (hxb : P 0 ≤ b 0) : P ∈ segment ℝ a b := by
+  rcases eq_or_lt_of_le (hax.trans hxb) with hab | hab
+  · have hPa : P = a := by
+      apply plane_ext
+      · exact le_antisymm (by rw [hab]; exact hxb) hax
+      · exact ha.symm
+    rw [hPa]
+    exact left_mem_segment ℝ a b
+  · set t : ℝ := (P 0 - a 0) / (b 0 - a 0) with ht
+    have hden : (0 : ℝ) < b 0 - a 0 := by linarith
+    have ht0 : 0 ≤ t := div_nonneg (by linarith) hden.le
+    have ht1 : t ≤ 1 := by
+      rw [ht, div_le_one hden]
+      linarith
+    have hpt : (1 - t) • a + t • b = P := by
+      apply plane_ext
+      · simp only [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul]
+        rw [ht]
+        field_simp
+        ring
+      · simp only [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul]
+        rw [ha, hb]
+        ring
+    exact ⟨1 - t, t, by linarith, ht0, by ring, hpt⟩
+
+variable (J : PolygonalCircle)
+
+open Classical in
+/-- The vertices at the height of `P`, strictly to its left. -/
+noncomputable def leftVertices (P : Plane) : Finset (ZMod J.n) :=
+  Finset.univ.filter fun k => (J.vertex k) 1 = P 1 ∧ (J.vertex k) 0 < P 0
+
+open Classical in
+/-- Edges with one endpoint at the height of `P` and left of `P`, the other endpoint strictly
+above. -/
+noncomputable def upLeftEdges (P : Plane) : Finset (ZMod J.n) :=
+  Finset.univ.filter fun i =>
+    ((J.vertex i) 1 = P 1 ∧ (J.vertex i) 0 < P 0 ∧ P 1 < (J.vertex (i + 1)) 1) ∨
+    ((J.vertex (i + 1)) 1 = P 1 ∧ (J.vertex (i + 1)) 0 < P 0 ∧ P 1 < (J.vertex i) 1)
+
+open Classical in
+/-- Edges with one endpoint at the height of `P` and left of `P`, the other endpoint strictly
+below. -/
+noncomputable def downLeftEdges (P : Plane) : Finset (ZMod J.n) :=
+  Finset.univ.filter fun i =>
+    ((J.vertex i) 1 = P 1 ∧ (J.vertex i) 0 < P 0 ∧ (J.vertex (i + 1)) 1 < P 1) ∨
+    ((J.vertex (i + 1)) 1 = P 1 ∧ (J.vertex (i + 1)) 0 < P 0 ∧ (J.vertex i) 1 < P 1)
+
+/-- The horizontal partner of a left vertex is a left vertex: otherwise the horizontal edge
+between them would contain `P`. -/
+theorem left_of_horizontal_partner {P : Plane} (hP : P ∉ J.carrier) {k : ZMod J.n}
+    (hk1 : (J.vertex k) 1 = P 1) (hk0 : (J.vertex k) 0 < P 0)
+    {l : ZMod J.n} (hl1 : (J.vertex l) 1 = P 1)
+    (hedge : segment ℝ (J.vertex k) (J.vertex l) ⊆ J.carrier ∨
+      segment ℝ (J.vertex l) (J.vertex k) ⊆ J.carrier) :
+    (J.vertex l) 0 < P 0 := by
+  by_contra hge
+  rw [not_lt] at hge
+  have hmem : P ∈ segment ℝ (J.vertex k) (J.vertex l) :=
+    mem_segment_of_horizontal hk1 hl1 hk0.le hge
+  rcases hedge with h | h
+  · exact hP (h hmem)
+  · refine hP (h ?_)
+    rw [segment_symm]
+    exact hmem
+
+/-- Edge `i` (from vertex `i` to vertex `i + 1`) lies on the carrier. -/
+theorem edgeSegment_subset_carrier (i : ZMod J.n) :
+    segment ℝ (J.vertex i) (J.vertex (i + 1)) ⊆ J.carrier :=
+  fun _ hx => Set.mem_iUnion.mpr ⟨i, hx⟩
+
+open Classical in
+/-- **The handshake lemma**: the flipping edges (up-left plus down-left) are even in number. -/
+theorem upLeft_card_add_downLeft_card_even {P : Plane} (hP : P ∉ J.carrier) :
+    Even ((J.upLeftEdges P).card + (J.downLeftEdges P).card) := by
+  classical
+  set h : ℝ := P 1 with hh
+  -- edges based at their first endpoint / second endpoint
+  set A : Finset (ZMod J.n) := Finset.univ.filter fun i =>
+    ((J.vertex i) 1 = h ∧ (J.vertex i) 0 < P 0) ∧ (J.vertex (i + 1)) 1 ≠ h with hA
+  set B : Finset (ZMod J.n) := Finset.univ.filter fun i =>
+    ((J.vertex (i + 1)) 1 = h ∧ (J.vertex (i + 1)) 0 < P 0) ∧ (J.vertex i) 1 ≠ h with hB
+  -- the flipping edges split as A ⊔ B
+  have hsplit : (J.upLeftEdges P).card + (J.downLeftEdges P).card = A.card + B.card := by
+    have hUD : J.upLeftEdges P ∪ J.downLeftEdges P = A ∪ B := by
+      ext i
+      simp only [upLeftEdges, downLeftEdges, hA, hB, Finset.mem_union, Finset.mem_filter,
+        Finset.mem_univ, true_and]
+      constructor
+      · rintro ((⟨h1, h0, hup⟩ | ⟨h1, h0, hup⟩) | (⟨h1, h0, hdn⟩ | ⟨h1, h0, hdn⟩))
+        · exact Or.inl ⟨⟨h1, h0⟩, (ne_of_lt hup).symm⟩
+        · exact Or.inr ⟨⟨h1, h0⟩, (ne_of_lt hup).symm⟩
+        · exact Or.inl ⟨⟨h1, h0⟩, ne_of_lt hdn⟩
+        · exact Or.inr ⟨⟨h1, h0⟩, ne_of_lt hdn⟩
+      · rintro (⟨⟨h1, h0⟩, hne⟩ | ⟨⟨h1, h0⟩, hne⟩)
+        · rcases lt_or_gt_of_ne hne with hlt | hgt
+          · exact Or.inr (Or.inl ⟨h1, h0, hlt⟩)
+          · exact Or.inl (Or.inl ⟨h1, h0, hgt⟩)
+        · rcases lt_or_gt_of_ne hne with hlt | hgt
+          · exact Or.inr (Or.inr ⟨h1, h0, hlt⟩)
+          · exact Or.inl (Or.inr ⟨h1, h0, hgt⟩)
+    have hUDdisj : Disjoint (J.upLeftEdges P) (J.downLeftEdges P) := by
+      rw [Finset.disjoint_left]
+      intro i hiU hiD
+      simp only [upLeftEdges, downLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and]
+        at hiU hiD
+      rcases hiU with ⟨h1, -, hup⟩ | ⟨h1, -, hup⟩ <;>
+        rcases hiD with ⟨h1', -, hdn⟩ | ⟨h1', -, hdn⟩ <;> linarith
+    have hABdisj : Disjoint A B := by
+      rw [Finset.disjoint_left]
+      intro i hiA hiB
+      simp only [hA, hB, Finset.mem_filter, Finset.mem_univ, true_and] at hiA hiB
+      exact hiB.2 hiA.1.1
+    rw [← Finset.card_union_of_disjoint hUDdisj, ← Finset.card_union_of_disjoint hABdisj, hUD]
+  -- count A against the left vertices whose outgoing edge is horizontal
+  have hAcount : A.card +
+      ((J.leftVertices P).filter fun k => (J.vertex (k + 1)) 1 = h).card =
+        (J.leftVertices P).card := by
+    have hdisj : Disjoint A ((J.leftVertices P).filter fun k => (J.vertex (k + 1)) 1 = h) := by
+      rw [Finset.disjoint_left]
+      intro i hiA hiL
+      simp only [hA, Finset.mem_filter, Finset.mem_univ, true_and] at hiA hiL
+      exact hiA.2 hiL.2
+    have hunion : A ∪ ((J.leftVertices P).filter fun k => (J.vertex (k + 1)) 1 = h) =
+        J.leftVertices P := by
+      ext i
+      simp only [hA, leftVertices, Finset.mem_union, Finset.mem_filter, Finset.mem_univ,
+        true_and, hh]
+      tauto
+    rw [← Finset.card_union_of_disjoint hdisj, hunion]
+  -- count B against the left vertices whose incoming edge is horizontal, via the shift bijection
+  have hBcount : B.card +
+      ((J.leftVertices P).filter fun k => (J.vertex (k - 1)) 1 = h).card =
+        (J.leftVertices P).card := by
+    have hBimg : B = ((J.leftVertices P).filter fun k => ¬ (J.vertex (k - 1)) 1 = h).image
+        (fun k => k - 1) := by
+      ext i
+      simp only [hB, leftVertices, Finset.mem_filter, Finset.mem_univ, true_and, hh,
+        Finset.mem_image]
+      constructor
+      · rintro ⟨⟨h1, h0⟩, hne⟩
+        exact ⟨i + 1, ⟨⟨h1, h0⟩, by simpa using hne⟩, by ring⟩
+      · rintro ⟨k, ⟨⟨h1, h0⟩, hne⟩, rfl⟩
+        refine ⟨⟨by simpa using h1, by simpa using h0⟩, by simpa using hne⟩
+    have himgcard : B.card =
+        ((J.leftVertices P).filter fun k => ¬ (J.vertex (k - 1)) 1 = h).card := by
+      rw [hBimg]
+      exact Finset.card_image_of_injective _ sub_left_injective
+    have hdisj : Disjoint ((J.leftVertices P).filter fun k => ¬ (J.vertex (k - 1)) 1 = h)
+        ((J.leftVertices P).filter fun k => (J.vertex (k - 1)) 1 = h) := by
+      rw [Finset.disjoint_left]
+      intro i hiA hiL
+      simp only [Finset.mem_filter] at hiA hiL
+      exact hiA.2 hiL.2
+    have hunion : ((J.leftVertices P).filter fun k => ¬ (J.vertex (k - 1)) 1 = h) ∪
+        ((J.leftVertices P).filter fun k => (J.vertex (k - 1)) 1 = h) = J.leftVertices P := by
+      ext i
+      simp only [Finset.mem_union, Finset.mem_filter]
+      tauto
+    rw [himgcard, ← Finset.card_union_of_disjoint hdisj, hunion]
+  -- horizontal partners stay left, so the two horizontal counts agree via the shift bijection
+  have hhoriz : ((J.leftVertices P).filter fun k => (J.vertex (k + 1)) 1 = h).card =
+      ((J.leftVertices P).filter fun k => (J.vertex (k - 1)) 1 = h).card := by
+    apply Finset.card_bij (fun k _ => k + 1)
+    · intro k hk
+      simp only [leftVertices, Finset.mem_filter, Finset.mem_univ, true_and, hh] at hk ⊢
+      obtain ⟨⟨h1, h0⟩, hpart⟩ := hk
+      have hleft : (J.vertex (k + 1)) 0 < P 0 :=
+        J.left_of_horizontal_partner hP h1 h0 hpart
+          (Or.inl (J.edgeSegment_subset_carrier k))
+      exact ⟨⟨hpart, hleft⟩, by simpa using h1⟩
+    · intro a _ b _ hab
+      exact add_left_injective 1 hab
+    · intro k hk
+      simp only [leftVertices, Finset.mem_filter, Finset.mem_univ, true_and, hh] at hk
+      obtain ⟨⟨h1, h0⟩, hpart⟩ := hk
+      refine ⟨k - 1, ?_, by ring⟩
+      simp only [leftVertices, Finset.mem_filter, Finset.mem_univ, true_and, hh]
+      have hseg : segment ℝ (J.vertex (k - 1)) (J.vertex k) ⊆ J.carrier := by
+        have hsub := J.edgeSegment_subset_carrier (k - 1)
+        rwa [show k - 1 + 1 = k by ring] at hsub
+      have hleft : (J.vertex (k - 1)) 0 < P 0 :=
+        J.left_of_horizontal_partner hP h1 h0 (l := k - 1) hpart (Or.inr hseg)
+      exact ⟨⟨hpart, hleft⟩, by rwa [show k - 1 + 1 = k by ring]⟩
+  rw [hsplit, Nat.even_iff]
+  omega
+
 /-- **Sub-boundary** (Moise Ch. 2, Thm. 1, Lemma 2, local constancy of the index).
 
 Off the polygon the crossing index is locally constant.  The proof is elementary casework: for
