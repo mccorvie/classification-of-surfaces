@@ -67,28 +67,14 @@ example : ¬ Nonempty (GeometricTriangulation ℚ) := by
   have hcompact := T.compactSpace
   exact not_compactSpace_iff.mpr inferInstance hcompact
 
-/-! ## Vacuity record for the retiring predicate
+/-! ## Vacuity record
 
-`SurfaceTriangulable` (the legacy predicate) is satisfied by **every** topological space via the
-empty triangulation, because its `realization` field is arbitrary and unlinked to the
-combinatorial data.  This proof is kept as the permanent record of that defect; it should be
-deleted together with the predicate.  If you find yourself writing a proof like this for
+The legacy predicate `SurfaceTriangulable` was satisfied by **every** topological space via the
+empty triangulation, because its `realization` field was arbitrary and unlinked to the
+combinatorial data.  The predicate and the machine-checked vacuity proof were deleted together
+(per the Definition Faithfulness rules); the proof is preserved in git history on the commit that
+introduced this file.  If you find yourself able to write such a proof for
 `GeometricTriangulation`, the definition has been broken. -/
-
-example (S : Type) [TopologicalSpace S] : SurfaceTriangulable S := by
-  refine ⟨{ Vertex := Empty, Edge := Empty, Triangle := Empty,
-            vertexFintype := inferInstance, vertexDecidableEq := inferInstance,
-            edgeFintype := inferInstance, triangleFintype := inferInstance,
-            realization := S, realizationTop := inferInstance,
-            edgeVertices := Empty.elim, triangleVertices := Empty.elim,
-            edgeSource := Empty.elim, edgeTarget := Empty.elim,
-            triangleBoundary := Empty.elim, edgeIsBoundary := Empty.elim,
-            isSurfaceTriangulation := ?_,
-            homeomorphSurface := ⟨Homeomorph.refl S⟩ }, ⟨Homeomorph.refl S⟩⟩
-  exact { edge_card := fun e => e.elim, triangle_card := fun t => t.elim,
-          edgeSource_mem := fun e => e.elim, edgeTarget_mem := fun e => e.elim,
-          edgeSource_ne_edgeTarget := fun e => e.elim,
-          boundary_edge_vertices_subset := fun t => t.elim }
 
 end Countermodels
 end ClassificationOfSurfaces

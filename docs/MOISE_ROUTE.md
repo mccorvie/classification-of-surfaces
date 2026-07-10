@@ -66,8 +66,10 @@ is the key lemma — see `Moise/Anchors.lean` for the pattern.
    `#print axioms <name>` — the target is `[propext, Classical.choice, Quot.sound]`, and
    `sorryAx` should disappear one leaf at a time.
 4. A hard-named theorem that closes without new mathematics is a statement bug, not progress.
-5. Do not extend anything listed in `docs/KNOWN_WEAK.md` (in particular all of `PL.lean`, which
-   is kept compiling only as a quarry for its concrete triangle geometry, PL.lean:4685–5320).
+5. Do not extend anything listed in `docs/KNOWN_WEAK.md`.  The legacy `PL.lean` layer has been
+   deleted; its one quarry — the concrete closed-triangle geometry with explicit estimates — is
+   recoverable via `git show 868b8d9:ClassificationOfSurfaces/PL.lean` (lines 4685–5320 and the
+   `EuclideanComplex.Examples` section).
 
 ## Suggested next targets, in order
 

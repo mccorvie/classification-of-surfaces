@@ -35,58 +35,16 @@ project skeleton and documents the intended handoff points between teams.
 * `moise_triangulation` (`Triangulation.lean`)
 * anchors and countermodels: `Moise/Anchors.lean`, `Moise/Countermodels.lean`
 
-## Legacy PL route (retired; kept compiling as a quarry — do not extend, see docs/KNOWN_WEAK.md)
-
-* `EuclideanComplex`
-* `EuclideanComplex.Subdivision`
-* `PLMap`
-* `PLHomeomorph`
-* `CombinatorialTwoManifoldWithBoundary`
-* `CombinatorialTwoManifoldWithBoundary.sharedFace_mem_oneSkeleton`
-* `CombinatorialTwoCell`
-* `SharedBoundaryCompatibilityData`
-* `ExtensionsAgreeOnSharedBoundary`
-* `BoundaryVertexImageData`
-* `BoundaryEdgeImageData`
-* `BoundaryRespectingMap`
-* `RadoChartPair.chartAt_extend_mem_frontier_target_of_manifold_boundary`
-* `mathlib_bordered_surface_finiteChartPairCover`
-* `mathlib_bordered_surface_finiteChartPairCover_boundarySet`
-* `mathlib_bordered_surface_boundary_subset_finiteChartPairCover_boundaryCarrier`
-* `PLComplexInSpace`
-* `FinitePLTriangulationData`
-* `MoiseTwoManifold`
-* `MoiseTwoManifold.finitePLTriangulationData`
-* `MoiseExtractionData.finiteStagePLTriangulationData`
-* `mathlib_bordered_surface_moiseExtractionData_finiteCover`
-* `mathlib_bordered_surface_moiseExtractionData_finiteCover_boundarySet`
-* `moise_extraction_finitely_triangulable`
-* `mathlib_bordered_surface_finitely_triangulable`
-* `compact_eval_surface_finitely_triangulable`
-
-The Moise route should produce `FiniteSurfaceTriangulation`; it should not import or depend on the
-Gallier-Xu normal-form proof.
+The legacy `PL.lean` layer (`EuclideanComplex`, `PLMap`, `PLComplexInSpace`, `MoiseTwoManifold`,
+the `mathlib_bordered_surface_*` chain) was deleted after the definition-faithfulness audit — see
+`docs/KNOWN_WEAK.md` for the record and git history (`git log -- ClassificationOfSurfaces/PL.lean`)
+for the quarry, in particular the concrete closed-triangle geometry.
 
 ## Shared triangulation and cell-complex boundary
 
 * `OrientedEdge`
-* `FiniteSurfaceTriangulation`
-* `PLComplexInSpace.mem_support_iff`
-* `PLComplexInSpace.support_eq_iUnion_simplexCarrier`
-* `PLComplexInSpace.FiniteSupportData.OneSimplex`
-* `PLComplexInSpace.FiniteSupportData.TwoSimplex`
-* `PLComplexInSpace.FiniteSupportData.mem_support_iff`
-* `PLComplexInSpace.FiniteSupportData.support_eq_iUnion_simplexCarrier`
-* `PLComplexInSpace.FiniteSupportData.edgeTargetVertex_ne_source`
-* `PLComplexInSpace.FiniteSupportData.triangleBoundaryWord`
-* `StagewisePLComplexInSpace.mem_support_iff`
-* `StagewisePLComplexInSpace.support_eq_iUnion_simplexCarrier`
-* `PLComplexInSpace.BoundarySubcomplexData.mem_boundarySupport_iff`
-* `PLComplexInSpace.BoundarySubcomplexData.boundarySupport_eq_iUnion_simplexCarrier`
-* `StagewisePLComplexInSpace.mem_boundarySupport_iff`
-* `StagewisePLComplexInSpace.boundarySupport_eq_iUnion_simplexCarrier`
-* `PLComplexInSpace.toFiniteSurfaceTriangulation`
-* `FinitePLTriangulationData.toFiniteSurfaceTriangulation`
+* `FiniteSurfaceTriangulation` (ledgered; fed by the `GeometricTriangulation` bridge)
+* `compact_eval_surface_finitely_triangulable`
 * `FiniteSurfaceTriangulation.toCellComplex`
 * `FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic`
 * `finite_triangulation_to_cell_complex`
@@ -103,8 +61,8 @@ Gallier-Xu normal-form proof.
 * `SurfaceCellComplex.realizationCongr`
 * `SurfaceCellComplex.realizationCongrRight`
 
-The legacy names `CellComplex`, `FiniteTriangulation`, and `Triangulable` remain as compatibility
-aliases. New code should prefer the `SurfaceCellComplex` and `FiniteSurfaceTriangulation` names.
+The legacy names `CellComplex` and `FiniteTriangulation` remain as compatibility aliases.  New
+code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTriangulation`.
 
 ## Gallier-Xu tail
 

@@ -7,7 +7,15 @@ here. If you must consume one, add yourself to its dependents list.
 Entries found by the 2026-07-08 audit. Status values: `placeholder` (intentional scaffold),
 `vacuous` (satisfiable by junk witnesses), `retiring` (superseded by the Moise route rebuild).
 
-## Triangulation route (being replaced by `ClassificationOfSurfaces/Moise/`)
+## Triangulation route — DELETED
+
+**`PL.lean` and the vacuous predicates below were deleted** (last present at commit `868b8d9`;
+recover with `git show 868b8d9:ClassificationOfSurfaces/PL.lean`).  The entries are kept as the
+record of the failure mode.  The quarry worth mining from git history: the concrete
+closed-triangle geometry with explicit estimates (PL.lean:4685–5320 and the
+`EuclideanComplex.Examples` section), useful for the Ch. 2–3 proofs.  `SurfaceTriangulable`,
+`Triangulable`, and the machine-checked vacuity proof in `Countermodels.lean` were deleted
+together with the layer.
 
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
