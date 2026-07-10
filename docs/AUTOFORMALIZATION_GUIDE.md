@@ -76,24 +76,23 @@ the weakness ledger instead.
 
 ## Project Boundaries
 
-- The Moise/PL route should produce `FiniteSurfaceTriangulation`.
+- The Moise route produces `GeometricTriangulation`; the compatibility bridge feeds the legacy
+  `FiniteSurfaceTriangulation` interface consumed by the cell-complex conversion.
 - Shared infrastructure converts finite triangulations to `SurfaceCellComplex`.
 - The Gallier-Xu route consumes only `SurfaceCellComplex` and quotient-realization APIs.
-- PL maps, Moise manifolds, and chart machinery should not appear in Gallier-Xu normal-form
+- PL maps, Moise charts, and manifold machinery should not appear in Gallier-Xu normal-form
   declarations.
-- Do not create a second realization theory inside the Moise route. Use
-  `SurfaceCellComplex.Realization`.
 
 ## Good Agent Tasks
 
 Good prompts have a bounded subsystem, a concrete deliverable, and a verification command:
 
 ```text
-Work on the PL bottom layer. Replace placeholder definitions in PL.lean with a usable finite
-complex API sufficient for later combinatorial surfaces. Keep existing public theorem names
-compiling. Add small examples/tests. Do not weaken any statement to close a goal — if the honest
-statement is stuck, leave a named sorry. Run the vacuity probe on every definition you touch and
-keep Countermodels.lean compiling. Run lake build.
+Prove index_locallyConstant in ClassificationOfSurfaces/Moise/PolygonalJordan.lean (Moise Ch. 2,
+Thm. 1, Lemma 2 casework; the proof sketch is in the docstring). Do not weaken any statement to
+close a goal — if the honest statement is stuck, leave a named sorry and report where. Run the
+vacuity probe on every definition you touch and keep Countermodels.lean compiling. Verify with
+lake build and #print axioms before reporting.
 ```
 
 Prefer tasks like:

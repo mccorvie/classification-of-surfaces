@@ -40,12 +40,12 @@ The final theorem should be a short assembly proof using those two bridge theore
 
 ## Current Baseline
 
-The repository currently builds. The Moise/PL triangulation route and the
-triangulation-to-cell-complex bridge are closed relative to the explicit C0
-`ChartBoundaryInvariant` hypothesis; positive-regularity bordered surfaces supply that hypothesis
-through mathlib. Several theorem-boundary fields are still intentionally propositional scaffold
-data, especially in the quotient realization and Gallier-Xu normal-form layers. The bottom API is in
-place:
+The repository builds. On the triangulation side, the Radó assembly, finite chart cover, and
+chart extraction are proved sorry-free relative to the explicit C0 `ChartBoundaryInvariant`
+hypothesis; the open leaves (Moise Ch. 2-3, Ch. 5-6, and the Ch. 8 induction step) are named
+sorried boundaries — see `docs/MOISE_ROUTE.md` for the live status. The quotient realization and
+Gallier-Xu normal-form layers are still placeholder scaffolding (see `docs/KNOWN_WEAK.md`). The
+bottom API is in place:
 
 - `EvalSurface` packages the Lean Eval hypotheses.
 - `ChartBoundaryInvariant` isolates the deferred pure topological boundary-invariance theorem for
@@ -69,8 +69,9 @@ compatibility. New code should use the preferred names above.
 
 - `ClassificationOfSurfaces/API.lean`: public API map and collaborator entry point.
 - `ClassificationOfSurfaces/Surface.lean`: Eval hypothesis wrapper.
-- `ClassificationOfSurfaces/PL.lean`: Moise/PL definitions and theorem boundaries.
-- `ClassificationOfSurfaces/Triangulation.lean`: finite triangulation API.
+- `ClassificationOfSurfaces/Moise/`: the triangulation route (see `docs/MOISE_ROUTE.md`).
+- `ClassificationOfSurfaces/Triangulation.lean`: legacy triangulation interface, fed by the
+  `GeometricTriangulation` bridge.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
 - `ClassificationOfSurfaces/Representatives.lean`: Eval quotient representative names.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
