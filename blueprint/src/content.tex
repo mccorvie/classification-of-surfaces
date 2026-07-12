@@ -138,8 +138,9 @@ support, by barycentric coordinates in the face containing each point.
 \end{lemma}
 
 \begin{proof}
-Elementary affine geometry; a designated starter task
-(\texttt{docs/MOISE\_ROUTE.md}).
+\leanok
+Elementary affine geometry and uniqueness of barycentric coordinates on
+affinely independent faces, glued using the face-to-face intersection axiom.
 \end{proof}
 
 \section{The Jordan curve theorem for polygons (Moise Ch.~2)}
@@ -192,6 +193,7 @@ Off the polygon the index is locally constant.
 \end{lemma}
 
 \begin{proof}
+\leanok
 Casework: near a point off the polygon, the crossing status of each edge is
 unchanged unless the ray height passes a vertex height, where the half-open
 convention makes the count change by $0$ or $2$.
@@ -206,6 +208,7 @@ Some point off the polygon has index one.
 \end{lemma}
 
 \begin{proof}
+\leanok
 Choose a non-vertex height attained by the polygon, take the leftmost polygon
 point at that height, and move slightly right of it (Moise's construction;
 requires that the polygon is not contained in a single horizontal line, which
@@ -237,11 +240,18 @@ frontier of each.
 \end{theorem}
 
 \begin{proof}
-At least two components is \ref{moise:lem:complement_disconnected}.  At most
-two components is Moise's strip-neighborhood walk (Ch.~2, Thm.~1, Lemma 1):
-every point of the complement joins the strip neighborhood of the polygon by a
-segment, and the strip minus the polygon has at most two sides.  The frontier
-statements are Moise Thms.~5--6.
+\leanok
+The crossing-index argument, boundedness distinction, visibility segment to
+the strip, and the global assembly from a two-gate strip are formalized.  The
+explicit strip is also constructed: quantitative vertex balls and isolated
+central edge rectangles cover the polygon, and its punctured part decomposes
+into local sectors and half-rectangles.  Explicit rotated points prove the
+four endpoint overlaps for each edge.  A finite cyclic graph argument makes
+the two resulting bands path-connected, while closure of the parameter
+rectangles proves that both bands approach every point of the polygon.  These
+data instantiate \texttt{TwoGateStrip}; the crossing index and the
+visibility-to-strip lemma then give exactly two complementary components,
+their bounded/unbounded distinction, and both frontier equalities.
 \end{proof}
 
 \begin{definition}[Interior, exterior, closed region]
@@ -261,14 +271,16 @@ closed region is the closure of the interior, and it is compact.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.closedRegion_is_polyhedron}
 \leanok
 \uses{moise:def:polygon_regions,moise:def:plane_complex}
-The closed region bounded by a polygon is the support of a purely
-two-dimensional plane complex whose edge skeleton along the polygon refines the
-polygon's edges.
+The closed region bounded by a polygon is the support of a finite, purely
+two-dimensional plane complex.
 \end{theorem}
 
 \begin{proof}
-Cut the region by the finitely many lines through the polygon's edges and
-triangulate each convex piece.
+Place the compact closed region in a large triangle, subdivide that triangle
+successively by the finitely many affine lines through the polygon's edges, and
+retain the chambers on the bounded side of polygonal Jordan.  Each chamber
+interior misses the polygon because it lies on one closed side of every cutting
+line.  The resulting finite submesh has support exactly the closed region.
 \end{proof}
 
 \begin{lemma}[Polygonal disks are triangulable]
@@ -287,22 +299,20 @@ Combine \ref{moise:thm:region_polyhedron} with the realization bridge.
 \begin{theorem}[Schoenflies for polygons; Moise Ch.~3, Thm.~5]
 \label{moise:thm:polygonal_schoenflies}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.polygonal_schoenflies}
-\leanok
-\uses{moise:def:polygonal_circle,moise:thm:region_polyhedron}
+\uses{moise:thm:polygonal_schoenflies_rel}
 Any two polygons in the plane are equivalent under a homeomorphism of the whole
 plane.
 \end{theorem}
 
 \begin{proof}
-Free-triangle removal induction over a triangulation of the closed region
-(Moise Ch.~3, Thm.~4), then compose two normalizations.
+Apply relative straightening to both polygons and compose the resulting maps
+with the affine ambient equivalence between the two target triangles.
 \end{proof}
 
 \begin{theorem}[Relative Schoenflies for polygons; Moise Ch.~3, Thm.~7]
 \label{moise:thm:polygonal_schoenflies_rel}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.polygonal_schoenflies_rel}
-\leanok
-\uses{moise:thm:polygonal_schoenflies}
+\uses{moise:thm:region_polyhedron}
 The straightening homeomorphism can be chosen supported in any prescribed open
 set containing the closed region: it sends the polygon to the frontier of a
 triangle and is the identity outside the open set.

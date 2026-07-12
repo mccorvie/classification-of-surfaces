@@ -5,6 +5,7 @@ Authors: ClassificationOfSurfaces contributors
 -/
 import Mathlib.Analysis.Convex.Topology
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.Normed.Affine.AddTorsor
 import Mathlib.LinearAlgebra.AffineSpace.Independent
 import ClassificationOfSurfaces.Moise.GeometricTriangulation
 
@@ -35,6 +36,156 @@ namespace Moise
 /-- The Euclidean plane used throughout the Moise route. -/
 abbrev Plane : Type :=
   EuclideanSpace ℝ (Fin 2)
+
+/-- Two plane points with equal coordinates are equal. -/
+theorem plane_ext {p q : Plane} (h0 : p 0 = q 0) (h1 : p 1 = q 1) : p = q := by
+  ext i
+  fin_cases i
+  · exact h0
+  · exact h1
+
+/-- Affine independence transports to the inclusion of a finite set of points contained in the
+range of the independent family. -/
+theorem affineIndependent_finset_coe {ι : Type*} {f : ι → Plane}
+    (hf : AffineIndependent ℝ f) {S : Finset Plane} (hS : ∀ a ∈ S, a ∈ Set.range f) :
+    AffineIndependent ℝ ((↑) : S → Plane) := by
+  classical
+  choose g hg using fun a : S => hS a.1 a.2
+  have hinj : Function.Injective g := by
+    intro a b hab
+    apply Subtype.ext
+    rw [← hg a, ← hg b, hab]
+  have heq : ((↑) : S → Plane) = f ∘ g := by
+    funext a
+    exact (hg a).symm
+  rw [heq]
+  exact hf.comp_embedding ⟨g, hinj⟩
+
+/-- Adjacent edges of an affinely independent triple meet exactly in the shared vertex. -/
+theorem segment_inter_segment_of_affineIndependent {x y z : Plane}
+    (h : AffineIndependent ℝ ![x, y, z]) :
+    segment ℝ x y ∩ segment ℝ y z = {y} := by
+  classical
+  have hxz : x ≠ z := h.injective.ne (show (0 : Fin 3) ≠ 2 by decide)
+  have hS : AffineIndependent ℝ ((↑) : ({x, y, z} : Finset Plane) → Plane) := by
+    refine affineIndependent_finset_coe h fun a ha => ?_
+    simp only [Finset.mem_insert, Finset.mem_singleton] at ha
+    rcases ha with rfl | rfl | rfl
+    · exact ⟨0, rfl⟩
+    · exact ⟨1, rfl⟩
+    · exact ⟨2, rfl⟩
+  have hsub₁ : ({x, y} : Finset Plane) ⊆ {x, y, z} := by
+    intro a ha
+    simp only [Finset.mem_insert, Finset.mem_singleton] at ha ⊢
+    tauto
+  have hsub₂ : ({y, z} : Finset Plane) ⊆ {x, y, z} := by
+    intro a ha
+    simp only [Finset.mem_insert, Finset.mem_singleton] at ha ⊢
+    tauto
+  have hmain := hS.convexHull_inter hsub₁ hsub₂
+  have hinter : ({x, y} ∩ {y, z} : Finset Plane) = {y} := by
+    ext a
+    simp only [Finset.mem_inter, Finset.mem_insert, Finset.mem_singleton]
+    constructor
+    · rintro ⟨h₁, rfl | rfl⟩
+      · rfl
+      · rcases h₁ with rfl | rfl
+        · exact absurd rfl hxz
+        · rfl
+    · rintro rfl
+      exact ⟨Or.inr rfl, Or.inl rfl⟩
+  rw [← Finset.coe_inter, hinter] at hmain
+  simpa [Finset.coe_insert, Finset.coe_singleton, convexHull_pair, convexHull_singleton]
+    using hmain.symm
+
+/-- Every positive ball about one endpoint of a nondegenerate segment contains a relative
+interior point of that segment. -/
+theorem exists_mem_openSegment_inter_ball {a b : Plane} (hab : a ≠ b)
+    {r : ℝ} (hr : 0 < r) :
+    ∃ x : Plane, x ∈ openSegment ℝ a b ∧ x ∈ Metric.ball a r := by
+  let d := dist a b
+  have hd : 0 < d := dist_pos.mpr hab
+  let t := min ((1 : ℝ) / 2) (r / (2 * d))
+  have ht : 0 < t := by
+    dsimp [t]
+    exact lt_min (by norm_num) (div_pos hr (by positivity))
+  have ht1 : t < 1 := lt_of_le_of_lt (min_le_left _ _) (by norm_num)
+  let x := AffineMap.lineMap a b t
+  refine ⟨x, ?_, ?_⟩
+  · rw [openSegment_eq_image_lineMap]
+    exact ⟨t, ⟨ht, ht1⟩, rfl⟩
+  · rw [Metric.mem_ball, show dist x a = ‖t‖ * d by
+      simpa [x, d] using dist_lineMap_left a b t]
+    rw [Real.norm_eq_abs, abs_of_pos ht]
+    have htle : t ≤ r / (2 * d) := min_le_right _ _
+    have hmul := mul_le_mul_of_nonneg_right htle hd.le
+    have hcalc : (r / (2 * d)) * d = r / 2 := by
+      field_simp [hd.ne']
+    rw [hcalc] at hmul
+    linarith
+
+/-- An endpoint of a nondegenerate segment cannot lie strictly between two distinct points of
+that segment. -/
+theorem endpoint_not_mem_openSegment_of_mem_segment {a b x y : Plane}
+    (hab : a ≠ b) (hxy : x ≠ y) (hx : x ∈ segment ℝ a b)
+    (hy : y ∈ segment ℝ a b) : a ∉ openSegment ℝ x y := by
+  rw [segment_eq_image_lineMap] at hx hy
+  obtain ⟨s, hs, rfl⟩ := hx
+  obtain ⟨t, ht, rfl⟩ := hy
+  intro ha
+  rw [openSegment_eq_image_lineMap] at ha
+  obtain ⟨u, hu, huEq⟩ := ha
+  let c := (1 - u) * s + u * t
+  have hmaps : AffineMap.lineMap (k := ℝ) a b 0 = AffineMap.lineMap (k := ℝ) a b c := by
+    calc
+      AffineMap.lineMap (k := ℝ) a b 0 = a := by simp
+      _ = AffineMap.lineMap (k := ℝ) (AffineMap.lineMap (k := ℝ) a b s)
+          (AffineMap.lineMap (k := ℝ) a b t) u := huEq.symm
+      _ = AffineMap.lineMap (k := ℝ) a b c := by
+        ext i
+        simp [c, AffineMap.lineMap_apply_module]
+        ring
+  have hc : c = 0 := by
+    exact (AffineMap.lineMap_injective ℝ hab hmaps).symm
+  have hcoeff : 0 < 1 - u := sub_pos.mpr hu.2
+  have htermS : 0 ≤ (1 - u) * s := mul_nonneg hcoeff.le hs.1
+  have htermT : 0 ≤ u * t := mul_nonneg hu.1.le ht.1
+  have htermS0 : (1 - u) * s = 0 := by
+    dsimp [c] at hc
+    nlinarith
+  have htermT0 : u * t = 0 := by
+    dsimp [c] at hc
+    nlinarith
+  have hs0 : s = 0 := (mul_eq_zero.mp htermS0).resolve_left hcoeff.ne'
+  have ht0 : t = 0 := (mul_eq_zero.mp htermT0).resolve_left hu.1.ne'
+  apply hxy
+  rw [hs0, ht0]
+
+/-- If a nondegenerate segment contains two distinct points on the horizontal axis, then both
+endpoints lie on that axis. -/
+theorem endpoint_secondCoords_eq_zero_of_two_axis_points {a b x y : Plane}
+    (hab : a ≠ b) (hxy : x ≠ y) (hx : x ∈ segment ℝ a b)
+    (hy : y ∈ segment ℝ a b) (hx0 : x 1 = 0) (hy0 : y 1 = 0) :
+    a 1 = 0 ∧ b 1 = 0 := by
+  rw [segment_eq_image_lineMap] at hx hy
+  obtain ⟨s, hs, hsx⟩ := hx
+  obtain ⟨t, ht, hty⟩ := hy
+  have hst : s ≠ t := by
+    intro h
+    apply hxy
+    rw [← hsx, ← hty, h]
+  have hsCoord := congrArg (fun p : Plane => p 1) hsx
+  have htCoord := congrArg (fun p : Plane => p 1) hty
+  simp [AffineMap.lineMap_apply_module, hx0] at hsCoord
+  simp [AffineMap.lineMap_apply_module, hy0] at htCoord
+  have hprod : (s - t) * (b 1 - a 1) = 0 := by
+    nlinarith
+  have hba : b 1 = a 1 := by
+    exact sub_eq_zero.mp ((mul_eq_zero.mp hprod).resolve_left (sub_ne_zero.mpr hst))
+  have ha : a 1 = 0 := by
+    rw [hba] at hsCoord
+    nlinarith
+  exact ⟨ha, hba.trans ha⟩
 
 /-- A finite simplicial complex of affine simplexes in the plane: finitely many vertices at
 genuine positions, faces of at most three affinely independent vertices, closed under nonempty
@@ -67,8 +218,308 @@ structure PlaneComplex where
     convexHull ℝ (position '' s) ∩ convexHull ℝ (position '' t) =
       convexHull ℝ (position '' ((s ∩ t : Finset Vertex) : Set Vertex))
 
+/-- A finite mesh specified only by its maximal triangles.  This is the convenient construction
+interface for line subdivision: all vertices, edges, and singleton faces are generated by
+`TriangleMesh.toPlaneComplex`. -/
+structure TriangleMesh where
+  Vertex : Type
+  [vertexFintype : Fintype Vertex]
+  [vertexDecidableEq : DecidableEq Vertex]
+  position : Vertex → Plane
+  position_injective : Function.Injective position
+  triangles : Finset (Finset Vertex)
+  card_triangle : ∀ t ∈ triangles, t.card = 3
+  affineIndependent_triangle : ∀ t ∈ triangles,
+    AffineIndependent ℝ fun v : t => position v
+  triangle_inter : ∀ s ∈ triangles, ∀ t ∈ triangles,
+    convexHull ℝ (position '' s) ∩ convexHull ℝ (position '' t) =
+      convexHull ℝ (position '' ((s ∩ t : Finset Vertex) : Set Vertex))
+
 attribute [instance] PlaneComplex.vertexFintype
 attribute [instance] PlaneComplex.vertexDecidableEq
+attribute [instance] TriangleMesh.vertexFintype
+attribute [instance] TriangleMesh.vertexDecidableEq
+
+namespace TriangleMesh
+
+variable (M : TriangleMesh)
+
+/-- The mesh consisting of one geometric triangle. -/
+noncomputable def single (p : Fin 3 → Plane) (hp : AffineIndependent ℝ p) : TriangleMesh where
+  Vertex := Fin 3
+  position := p
+  position_injective := hp.injective
+  triangles := {Finset.univ}
+  card_triangle := by simp
+  affineIndependent_triangle := by
+    intro t ht
+    simp only [Finset.mem_singleton] at ht
+    subst t
+    exact hp.comp_embedding (Function.Embedding.subtype _)
+  triangle_inter := by
+    intro s hs t ht
+    simp only [Finset.mem_singleton] at hs ht
+    subst s
+    subst t
+    simp
+
+/-- Transport a triangle mesh by an affine equivalence of the plane. -/
+noncomputable def mapAffineEquiv (e : Plane ≃ᵃ[ℝ] Plane) : TriangleMesh where
+  Vertex := M.Vertex
+  position := e ∘ M.position
+  position_injective := e.injective.comp M.position_injective
+  triangles := M.triangles
+  card_triangle := M.card_triangle
+  affineIndependent_triangle := by
+    intro t ht
+    exact (M.affineIndependent_triangle t ht).map' e.toAffineMap e.injective
+  triangle_inter := by
+    intro s hs t ht
+    have hinter := M.triangle_inter s hs t ht
+    simp only [Function.comp_apply, ← Set.image_image]
+    change convexHull ℝ (e.toAffineMap '' (M.position '' (s : Set M.Vertex))) ∩
+        convexHull ℝ (e.toAffineMap '' (M.position '' (t : Set M.Vertex))) =
+      convexHull ℝ (e.toAffineMap '' (M.position '' ((s ∩ t : Finset M.Vertex) : Set M.Vertex)))
+    rw [← e.toAffineMap.image_convexHull, ← e.toAffineMap.image_convexHull,
+      ← e.toAffineMap.image_convexHull]
+    have hinj : Function.Injective e.toAffineMap := e.injective
+    rw [← Set.image_inter hinj, hinter]
+
+/-- Reposition the vertices of a triangle mesh while retaining its abstract triangles.  The
+caller supplies the geometric nondegeneracy and face-to-face proofs for the new positions. -/
+noncomputable def reposition (position' : M.Vertex → Plane)
+    (hposition_injective : Function.Injective position')
+    (haffineIndependent : ∀ t ∈ M.triangles,
+      AffineIndependent ℝ fun v : t => position' v)
+    (htriangle_inter : ∀ s ∈ M.triangles, ∀ t ∈ M.triangles,
+      convexHull ℝ (position' '' s) ∩ convexHull ℝ (position' '' t) =
+        convexHull ℝ (position' '' ((s ∩ t : Finset M.Vertex) : Set M.Vertex))) :
+    TriangleMesh where
+  Vertex := M.Vertex
+  position := position'
+  position_injective := hposition_injective
+  triangles := M.triangles
+  card_triangle := M.card_triangle
+  affineIndependent_triangle := haffineIndependent
+  triangle_inter := htriangle_inter
+
+@[simp] theorem reposition_triangles (position' : M.Vertex → Plane)
+    (hposition_injective : Function.Injective position')
+    (haffineIndependent : ∀ t ∈ M.triangles,
+      AffineIndependent ℝ fun v : t => position' v)
+    (htriangle_inter : ∀ s ∈ M.triangles, ∀ t ∈ M.triangles,
+      convexHull ℝ (position' '' s) ∩ convexHull ℝ (position' '' t) =
+        convexHull ℝ (position' '' ((s ∩ t : Finset M.Vertex) : Set M.Vertex))) :
+    (M.reposition position' hposition_injective haffineIndependent htriangle_inter).triangles =
+      M.triangles := rfl
+
+/-- Delete one maximal triangle from a mesh.  Vertices no longer used by any triangle are retained;
+this keeps the vertex type and geometric positions definitionally unchanged. -/
+noncomputable def eraseTriangle (t : Finset M.Vertex) : TriangleMesh where
+  Vertex := M.Vertex
+  position := M.position
+  position_injective := M.position_injective
+  triangles := M.triangles.erase t
+  card_triangle := by
+    intro s hs
+    exact M.card_triangle s (Finset.mem_of_mem_erase hs)
+  affineIndependent_triangle := by
+    intro s hs
+    exact M.affineIndependent_triangle s (Finset.mem_of_mem_erase hs)
+  triangle_inter := by
+    intro s hs u hu
+    exact M.triangle_inter s (Finset.mem_of_mem_erase hs) u (Finset.mem_of_mem_erase hu)
+
+@[simp] theorem eraseTriangle_triangles (t : Finset M.Vertex) :
+    (M.eraseTriangle t).triangles = M.triangles.erase t := rfl
+
+theorem card_eraseTriangle_triangles {t : Finset M.Vertex} (ht : t ∈ M.triangles) :
+    (M.eraseTriangle t).triangles.card + 1 = M.triangles.card := by
+  change (M.triangles.erase t).card + 1 = M.triangles.card
+  rw [Finset.card_erase_of_mem ht]
+  have : 0 < M.triangles.card := Finset.card_pos.mpr ⟨t, ht⟩
+  omega
+
+/-- Reindex a triangle mesh inside a larger finite vertex type without changing any geometric
+positions.  Extra vertices of the target type may be unused. -/
+noncomputable def reindex {V' : Type} [Fintype V'] [DecidableEq V']
+    (position' : V' → Plane) (hposition_injective : Function.Injective position')
+    (e : M.Vertex ↪ V')
+    (hposition : ∀ v, position' (e v) = M.position v) : TriangleMesh where
+  Vertex := V'
+  position := position'
+  position_injective := hposition_injective
+  triangles := M.triangles.image fun t => t.map e
+  card_triangle := by
+    intro t ht
+    obtain ⟨s, hs, rfl⟩ := Finset.mem_image.mp ht
+    rw [Finset.card_map, M.card_triangle s hs]
+  affineIndependent_triangle := by
+    intro t ht
+    obtain ⟨s, hs, rfl⟩ := Finset.mem_image.mp ht
+    let es : s ≃ s.map e := Equiv.ofBijective
+      (fun v => ⟨e v, Finset.mem_map.mpr ⟨v, v.2, rfl⟩⟩)
+      ⟨fun u v huv => Subtype.ext (e.injective (congrArg Subtype.val huv)), by
+        rintro ⟨v', hv'⟩
+        obtain ⟨v, hv, rfl⟩ := Finset.mem_map.mp hv'
+        exact ⟨⟨v, hv⟩, rfl⟩⟩
+    apply (affineIndependent_equiv es).mp
+    have h := M.affineIndependent_triangle s hs
+    convert h using 1
+    funext v
+    exact hposition v
+  triangle_inter := by
+    intro s hs t ht
+    obtain ⟨S, hS, rfl⟩ := Finset.mem_image.mp hs
+    obtain ⟨T, hT, rfl⟩ := Finset.mem_image.mp ht
+    have hinter := M.triangle_inter S hS T hT
+    have himage (A : Finset M.Vertex) :
+        position' '' ((A.map e : Finset V') : Set V') = M.position '' (A : Set M.Vertex) := by
+      ext x
+      simp only [Set.mem_image, Finset.mem_coe, Finset.mem_map]
+      constructor
+      · rintro ⟨v', ⟨v, hv, rfl⟩, rfl⟩
+        exact ⟨v, hv, (hposition v).symm⟩
+      · rintro ⟨v, hv, rfl⟩
+        exact ⟨e v, ⟨v, hv, rfl⟩, hposition v⟩
+    rw [himage, himage]
+    rw [← Finset.map_inter, himage]
+    exact hinter
+
+/-- Keep a selected collection of maximal triangles.  Unused vertices remain in the ambient
+finite vertex type; they do not contribute faces or support. -/
+noncomputable def restrictTriangles (p : Finset M.Vertex → Prop) [DecidablePred p] :
+    TriangleMesh where
+  Vertex := M.Vertex
+  position := M.position
+  position_injective := M.position_injective
+  triangles := M.triangles.filter p
+  card_triangle := fun t ht => M.card_triangle t (Finset.mem_filter.mp ht).1
+  affineIndependent_triangle := fun t ht =>
+    M.affineIndependent_triangle t (Finset.mem_filter.mp ht).1
+  triangle_inter := fun s hs t ht =>
+    M.triangle_inter s (Finset.mem_filter.mp hs).1 t (Finset.mem_filter.mp ht).1
+
+@[simp] theorem mem_restrictTriangles_triangles (p : Finset M.Vertex → Prop)
+    [DecidablePred p] {t : Finset M.Vertex} :
+    t ∈ (M.restrictTriangles p).triangles ↔ t ∈ M.triangles ∧ p t := by
+  change t ∈ M.triangles.filter p ↔ t ∈ M.triangles ∧ p t
+  rw [Finset.mem_filter]
+
+theorem mapAffineEquiv_triangles (e : Plane ≃ᵃ[ℝ] Plane) :
+    (M.mapAffineEquiv e).triangles = M.triangles := rfl
+
+/-- The nonempty subfaces of all maximal triangles in a triangle mesh. -/
+def faces : Finset (Finset M.Vertex) :=
+  M.triangles.biUnion fun t => t.powerset.filter (·.Nonempty)
+
+theorem mem_faces_iff {s : Finset M.Vertex} :
+    s ∈ M.faces ↔ s.Nonempty ∧ ∃ t ∈ M.triangles, s ⊆ t := by
+  simp only [faces, Finset.mem_biUnion, Finset.mem_filter, Finset.mem_powerset]
+  aesop
+
+/-- Every finite triangle mesh determines a finite plane complex. -/
+noncomputable def toPlaneComplex : PlaneComplex where
+  Vertex := M.Vertex
+  position := M.position
+  position_injective := M.position_injective
+  simplexes := M.faces
+  nonempty_of_mem := fun _ hs => (M.mem_faces_iff.mp hs).1
+  card_le_three := by
+    intro s hs
+    obtain ⟨-, t, ht, hst⟩ := M.mem_faces_iff.mp hs
+    exact (Finset.card_le_card hst).trans (M.card_triangle t ht).le
+  down_closed := by
+    intro s hs s' hs's hs'ne
+    obtain ⟨-, t, ht, hst⟩ := M.mem_faces_iff.mp hs
+    exact M.mem_faces_iff.mpr ⟨hs'ne, t, ht, hs's.trans hst⟩
+  affineIndependent := by
+    intro s hs
+    obtain ⟨-, t, ht, hst⟩ := M.mem_faces_iff.mp hs
+    exact (M.affineIndependent_triangle t ht).comp_embedding
+      ⟨fun v : s => (⟨v.1, hst v.2⟩ : t), by
+        intro a b h
+        apply Subtype.ext
+        exact congrArg (fun q : t => q.1) h⟩
+  face_inter := by
+    intro s hs t ht
+    obtain ⟨-, S, hS, hsS⟩ := M.mem_faces_iff.mp hs
+    obtain ⟨-, T, hT, htT⟩ := M.mem_faces_iff.mp ht
+    have hparent := M.triangle_inter S hS T hT
+    have hposS : M.position '' (s : Set M.Vertex) ⊆ M.position '' (S : Set M.Vertex) :=
+      Set.image_mono hsS
+    have hposT : M.position '' (t : Set M.Vertex) ⊆ M.position '' (T : Set M.Vertex) :=
+      Set.image_mono htT
+    apply Set.Subset.antisymm
+    · intro x hx
+      have hxparent : x ∈ convexHull ℝ (M.position '' (S : Set M.Vertex)) ∩
+          convexHull ℝ (M.position '' (T : Set M.Vertex)) :=
+        ⟨convexHull_mono hposS hx.1, convexHull_mono hposT hx.2⟩
+      rw [hparent] at hxparent
+      have hSI : AffineIndependent ℝ
+          ((↑) : (S.image M.position) → Plane) := by
+        let e : S ≃ S.image M.position := Equiv.ofBijective
+          (fun v => ⟨M.position v, Finset.mem_image.mpr ⟨v, v.2, rfl⟩⟩)
+          ⟨fun a b hab => Subtype.ext (M.position_injective (congrArg Subtype.val hab)), by
+            rintro ⟨p, hp⟩
+            obtain ⟨v, hv, rfl⟩ := Finset.mem_image.mp hp
+            exact ⟨⟨v, hv⟩, rfl⟩⟩
+        have heq : ((↑) : (S.image M.position) → Plane) ∘ e =
+            (fun v : S => M.position v) := by rfl
+        have hmono : AffineIndependent ℝ (((↑) : (S.image M.position) → Plane) ∘ e) := by
+          rw [heq]
+          exact M.affineIndependent_triangle S hS
+        exact (affineIndependent_equiv e).mp hmono
+      have hTI : AffineIndependent ℝ
+          ((↑) : (T.image M.position) → Plane) := by
+        let e : T ≃ T.image M.position := Equiv.ofBijective
+          (fun v => ⟨M.position v, Finset.mem_image.mpr ⟨v, v.2, rfl⟩⟩)
+          ⟨fun a b hab => Subtype.ext (M.position_injective (congrArg Subtype.val hab)), by
+            rintro ⟨p, hp⟩
+            obtain ⟨v, hv, rfl⟩ := Finset.mem_image.mp hp
+            exact ⟨⟨v, hv⟩, rfl⟩⟩
+        have heq : ((↑) : (T.image M.position) → Plane) ∘ e =
+            (fun v : T => M.position v) := by rfl
+        have hmono : AffineIndependent ℝ (((↑) : (T.image M.position) → Plane) ∘ e) := by
+          rw [heq]
+          exact M.affineIndependent_triangle T hT
+        exact (affineIndependent_equiv e).mp hmono
+      have hsImage : s.image M.position ⊆ S.image M.position :=
+        Finset.image_subset_image hsS
+      have hSTImage : (S ∩ T).image M.position ⊆ S.image M.position :=
+        Finset.image_subset_image Finset.inter_subset_left
+      have hfirst := hSI.convexHull_inter hsImage hSTImage
+      rw [← Finset.coe_inter] at hfirst
+      have hxfirst : x ∈ convexHull ℝ ((s ∩ (S ∩ T)).image M.position : Set Plane) := by
+        rw [Finset.image_inter _ _ M.position_injective, hfirst]
+        constructor
+        · simpa only [Finset.coe_image] using hx.1
+        · simpa only [Finset.coe_image] using hxparent
+      have hsST : s ∩ (S ∩ T) = s ∩ T := by
+        ext v
+        simp only [Finset.mem_inter]
+        aesop
+      rw [hsST] at hxfirst
+      have hsTImage : (s ∩ T).image M.position ⊆ T.image M.position :=
+        Finset.image_subset_image Finset.inter_subset_right
+      have htImage : t.image M.position ⊆ T.image M.position :=
+        Finset.image_subset_image htT
+      have hsecond := hTI.convexHull_inter hsTImage htImage
+      rw [← Finset.coe_inter] at hsecond
+      have hxsecond : x ∈ convexHull ℝ (((s ∩ T) ∩ t).image M.position : Set Plane) := by
+        rw [Finset.image_inter _ _ M.position_injective, hsecond]
+        exact ⟨hxfirst, by simpa only [Finset.coe_image] using hx.2⟩
+      have hinter : (s ∩ T) ∩ t = s ∩ t := by
+        ext v
+        simp only [Finset.mem_inter]
+        aesop
+      rw [hinter] at hxsecond
+      simpa only [Finset.coe_image] using hxsecond
+    · intro x hx
+      exact ⟨convexHull_mono (Set.image_mono Finset.inter_subset_left) hx,
+        convexHull_mono (Set.image_mono Finset.inter_subset_right) hx⟩
+
+end TriangleMesh
 
 namespace PlaneComplex
 
@@ -104,6 +555,147 @@ def edges : Finset (Finset K.Vertex) :=
 /-- A complex is purely two-dimensional when every face lies in a two-dimensional one. -/
 def IsPure2 : Prop :=
   ∀ s ∈ K.simplexes, ∃ t ∈ K.simplexes, s ⊆ t ∧ t.card = 3
+
+end PlaneComplex
+
+namespace TriangleMesh
+
+variable (M : TriangleMesh)
+
+theorem toPlaneComplex_support :
+    M.toPlaneComplex.support = ⋃ t ∈ M.triangles,
+      convexHull ℝ (M.position '' (t : Set M.Vertex)) := by
+  ext x
+  rw [PlaneComplex.support]
+  simp only [toPlaneComplex, PlaneComplex.cellCarrier, Set.mem_iUnion]
+  constructor
+  · rintro ⟨s, hs, hxs⟩
+    obtain ⟨-, t, ht, hst⟩ := M.mem_faces_iff.mp hs
+    exact ⟨t, ht, convexHull_mono (Set.image_mono hst) hxs⟩
+  · rintro ⟨t, ht, hxt⟩
+    refine ⟨t, ?_, hxt⟩
+    exact M.mem_faces_iff.mpr ⟨Finset.card_pos.mp (by rw [M.card_triangle t ht]; omega),
+      t, ht, subset_rfl⟩
+
+theorem eraseTriangle_support_subset (t : Finset M.Vertex) :
+    (M.eraseTriangle t).toPlaneComplex.support ⊆ M.toPlaneComplex.support := by
+  rw [TriangleMesh.toPlaneComplex_support, TriangleMesh.toPlaneComplex_support]
+  intro p hp
+  simp only [eraseTriangle_triangles, Set.mem_iUnion] at hp ⊢
+  obtain ⟨s, hs, hps⟩ := hp
+  obtain ⟨_, hsM⟩ := Finset.mem_erase.mp hs
+  exact ⟨s, hsM, hps⟩
+
+/-- The support of a mesh is the union of one maximal triangle and the support left after
+deleting it. -/
+theorem support_eq_eraseTriangle_union_triangleCarrier {t : Finset M.Vertex}
+    (ht : t ∈ M.triangles) :
+    M.toPlaneComplex.support =
+      (M.eraseTriangle t).toPlaneComplex.support ∪
+        convexHull ℝ (M.position '' (t : Set M.Vertex)) := by
+  rw [TriangleMesh.toPlaneComplex_support, TriangleMesh.toPlaneComplex_support]
+  ext p
+  simp only [eraseTriangle_triangles, Set.mem_iUnion, Set.mem_union]
+  constructor
+  · rintro ⟨s, hs, hps⟩
+    by_cases hst : s = t
+    · exact Or.inr (hst ▸ hps)
+    · exact Or.inl ⟨s, Finset.mem_erase.mpr ⟨hst, hs⟩, hps⟩
+  · rintro (⟨s, hs, hps⟩ | hpt)
+    · exact ⟨s, (Finset.mem_erase.mp hs).2, hps⟩
+    · exact ⟨t, ht, hpt⟩
+
+theorem single_support (p : Fin 3 → Plane) (hp : AffineIndependent ℝ p) :
+    (single p hp).toPlaneComplex.support = convexHull ℝ (Set.range p) := by
+  rw [toPlaneComplex_support]
+  ext x
+  simp only [Set.mem_iUnion]
+  unfold single
+  constructor
+  · rintro ⟨t, ht, hxt⟩
+    change t ∈ ({Finset.univ} : Finset (Finset (Fin 3))) at ht
+    have ht' : t = Finset.univ := Finset.mem_singleton.mp ht
+    subst t
+    change x ∈ convexHull ℝ
+      (p '' (↑(Finset.univ : Finset (Fin 3)) : Set (Fin 3))) at hxt
+    simpa using hxt
+  · intro hx
+    refine ⟨Finset.univ, ?_, ?_⟩
+    · change (Finset.univ : Finset (Fin 3)) ∈
+        ({Finset.univ} : Finset (Finset (Fin 3)))
+      exact Finset.mem_singleton_self _
+    · change x ∈ convexHull ℝ
+        (p '' (↑(Finset.univ : Finset (Fin 3)) : Set (Fin 3)))
+      simpa using hx
+
+theorem toPlaneComplex_isPure2 : M.toPlaneComplex.IsPure2 := by
+  intro s hs
+  obtain ⟨-, t, ht, hst⟩ := M.mem_faces_iff.mp hs
+  exact ⟨t, M.mem_faces_iff.mpr ⟨Finset.card_pos.mp (by rw [M.card_triangle t ht]; omega),
+      t, ht, subset_rfl⟩, hst, M.card_triangle t ht⟩
+
+/-- Affine transport carries the support of a triangle mesh to the affine image of its original
+support. -/
+theorem mapAffineEquiv_support (e : Plane ≃ᵃ[ℝ] Plane) :
+    (M.mapAffineEquiv e).toPlaneComplex.support = e '' M.toPlaneComplex.support := by
+  rw [toPlaneComplex_support, toPlaneComplex_support]
+  change (⋃ t ∈ M.triangles,
+      convexHull ℝ ((fun a : M.Vertex => e (M.position a)) '' (t : Set M.Vertex))) =
+    e '' (⋃ t ∈ M.triangles, convexHull ℝ (M.position '' (t : Set M.Vertex)))
+  have hcarrier (t : Finset M.Vertex) :
+      convexHull ℝ ((fun a : M.Vertex => e (M.position a)) '' (t : Set M.Vertex)) =
+        e '' convexHull ℝ (M.position '' (t : Set M.Vertex)) := by
+    have himage : (fun a : M.Vertex => e (M.position a)) '' (t : Set M.Vertex) =
+        e '' (M.position '' (t : Set M.Vertex)) := by
+      exact (Set.image_image e M.position (t : Set M.Vertex)).symm
+    rw [himage]
+    change convexHull ℝ (e.toAffineMap '' (M.position '' (t : Set M.Vertex))) =
+      e.toAffineMap '' convexHull ℝ (M.position '' (t : Set M.Vertex))
+    exact (e.toAffineMap.image_convexHull _).symm
+  ext x
+  simp only [Set.mem_iUnion, Set.mem_image]
+  constructor
+  · rintro ⟨t, ht, hxt⟩
+    rw [hcarrier] at hxt
+    obtain ⟨y, hyt, rfl⟩ := hxt
+    exact ⟨y, ⟨t, ht, hyt⟩, rfl⟩
+  · rintro ⟨y, ⟨t, ht, hyt⟩, rfl⟩
+    exact ⟨t, ht, by rw [hcarrier]; exact ⟨y, hyt, rfl⟩⟩
+
+/-- Reindexing without changing positions preserves support. -/
+theorem reindex_support {V' : Type} [Fintype V'] [DecidableEq V']
+    (position' : V' → Plane) (hposition_injective : Function.Injective position')
+    (e : M.Vertex ↪ V') (hposition : ∀ v, position' (e v) = M.position v) :
+    (M.reindex position' hposition_injective e hposition).toPlaneComplex.support =
+      M.toPlaneComplex.support := by
+  rw [toPlaneComplex_support, toPlaneComplex_support]
+  change (⋃ t ∈ M.triangles.image fun s => s.map e,
+      convexHull ℝ (position' '' (t : Set V'))) =
+    ⋃ s ∈ M.triangles, convexHull ℝ (M.position '' (s : Set M.Vertex))
+  have himage (s : Finset M.Vertex) :
+      position' '' ((s.map e : Finset V') : Set V') = M.position '' (s : Set M.Vertex) := by
+    ext x
+    simp only [Set.mem_image, Finset.mem_coe, Finset.mem_map]
+    constructor
+    · rintro ⟨v', ⟨v, hv, rfl⟩, rfl⟩
+      exact ⟨v, hv, (hposition v).symm⟩
+    · rintro ⟨v, hv, rfl⟩
+      exact ⟨e v, ⟨v, hv, rfl⟩, hposition v⟩
+  ext x
+  simp only [Set.mem_iUnion]
+  constructor
+  · rintro ⟨t, ht, hxt⟩
+    obtain ⟨s, hs, rfl⟩ := Finset.mem_image.mp ht
+    exact ⟨s, hs, by rw [← himage]; exact hxt⟩
+  · rintro ⟨s, hs, hxs⟩
+    exact ⟨s.map e, Finset.mem_image.mpr ⟨s, hs, rfl⟩,
+      by rw [himage]; exact hxs⟩
+
+end TriangleMesh
+
+namespace PlaneComplex
+
+variable (K : PlaneComplex)
 
 /-- `K'` subdivides `K`: same support, and every face carrier of `K'` lies inside some face
 carrier of `K`. -/
@@ -239,19 +831,17 @@ theorem baryEval_injOn_face {t : Finset K.Vertex} (ht : t ∈ K.simplexes)
 
 end PlaneComplex
 
-/-- **Realization bridge** (elementary): a purely two-dimensional plane complex induces a
-geometric triangulation of its support, by barycentric coordinates in the face containing each
-point.  Injectivity is the uniqueness of barycentric coordinates on each affinely independent
-face, glued across faces by the face-to-face intersection condition. -/
-theorem PlaneComplex.toGeometricTriangulation (K : PlaneComplex) (hpure : K.IsPure2) :
-    Nonempty (GeometricTriangulation K.support) := by
+/-- The canonical barycentric homeomorphism from the abstract realization of a pure plane
+complex to its geometric support. -/
+noncomputable def PlaneComplex.realizationHomeomorph (K : PlaneComplex) (hpure : K.IsPure2) :
+    GeometricRealization K.Vertex K.cells ≃ₜ K.support := by
   classical
   have hmem : ∀ x : GeometricRealization K.Vertex K.cells, K.baryEval x.1 ∈ K.support := by
     rintro ⟨x, ⟨h0, h1⟩, t, ht, hsupp⟩
     exact Set.mem_biUnion (K.mem_simplexes_of_mem_cells ht)
       (K.baryEval_mem_cellCarrier hsupp h0 h1)
-  set φ : GeometricRealization K.Vertex K.cells → K.support :=
-    fun x => ⟨K.baryEval x.1, hmem x⟩ with hφ
+  let φ : GeometricRealization K.Vertex K.cells → K.support :=
+    fun x => ⟨K.baryEval x.1, hmem x⟩
   have hcont : Continuous φ :=
     Continuous.subtype_mk (K.continuous_baryEval.comp continuous_subtype_val) _
   have hinj : Function.Injective φ := by
@@ -279,20 +869,32 @@ theorem PlaneComplex.toGeometricTriangulation (K : PlaneComplex) (hpure : K.IsPu
     exact Subtype.ext (hxz.trans hyz.symm)
   have hsurj : Function.Surjective φ := by
     rintro ⟨p, hp⟩
-    rw [support, Set.mem_iUnion₂] at hp
+    rw [PlaneComplex.support, Set.mem_iUnion₂] at hp
     obtain ⟨σ, hσ, hpσ⟩ := hp
     obtain ⟨t, ht, hσt, htcard⟩ := hpure σ hσ
     have hpt : p ∈ K.cellCarrier t := by
-      rw [cellCarrier] at hpσ ⊢
+      rw [PlaneComplex.cellCarrier] at hpσ ⊢
       exact convexHull_mono (Set.image_mono (Finset.coe_subset.mpr hσt)) hpσ
     have htcells : t ∈ K.cells := Finset.mem_filter.mpr ⟨ht, htcard⟩
     obtain ⟨x, hxsupp, hx0, hx1, hxeval⟩ := K.exists_weights_of_mem_cellCarrier hpt
     exact ⟨⟨x, ⟨hx0, hx1⟩, t, htcells, hxsupp⟩, Subtype.ext hxeval⟩
+  exact Continuous.homeoOfEquivCompactToT2
+    (f := Equiv.ofBijective φ ⟨hinj, hsurj⟩) hcont
+
+@[simp] theorem PlaneComplex.realizationHomeomorph_apply (K : PlaneComplex)
+    (hpure : K.IsPure2) (x : GeometricRealization K.Vertex K.cells) :
+    ((K.realizationHomeomorph hpure) x).1 = K.baryEval x.1 := rfl
+
+/-- **Realization bridge** (elementary): a purely two-dimensional plane complex induces a
+geometric triangulation of its support, by barycentric coordinates in the face containing each
+point.  Injectivity is the uniqueness of barycentric coordinates on each affinely independent
+face, glued across faces by the face-to-face intersection condition. -/
+theorem PlaneComplex.toGeometricTriangulation (K : PlaneComplex) (hpure : K.IsPure2) :
+    Nonempty (GeometricTriangulation K.support) := by
   exact ⟨{ Vertex := K.Vertex
            faces := K.cells
            faces_card := fun t ht => K.card_of_mem_cells ht
-           homeo := Continuous.homeoOfEquivCompactToT2
-             (f := Equiv.ofBijective φ ⟨hinj, hsurj⟩) hcont }⟩
+           homeo := K.realizationHomeomorph hpure }⟩
 
 end Moise
 end ClassificationOfSurfaces

@@ -1,7 +1,7 @@
 # The Moise triangulation route: status and handoff map
 
 The authoritative onboarding doc for the triangulation half of the project (the
-`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-09. Supersedes
+`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-10. Supersedes
 `codex_strategy_moise_pl.md` and the "Moise / PL route" section of `API.lean`, which describe
 the retired `PL.lean` layer (see `docs/KNOWN_WEAK.md` for why it was retired).
 
@@ -34,6 +34,17 @@ deliberately stated as the two provable clauses only — do not strengthen it to
 - Broken-line connectivity of open connected plane sets (`Moise/BrokenLine.lean`) — Moise Ch. 1.
 - Ch. 2, Lemma 2 assembly: `compl_carrier_not_isPreconnected` (`Moise/PolygonalJordan.lean`),
   from the crossing-index machinery (half-open edge convention — no general-position choices).
+- Ch. 2, Lemma 2 details: `index_locallyConstant` and `exists_index_eq_one`, including the
+  finite crossing-set parity argument and Moise's generic-height/leftmost-crossing construction.
+- Ch. 2 strip infrastructure: a uniform feature radius, exact two-sector vertex-ball model,
+  isolated two-scale edge tubes, an open strip covering the carrier, and a finite decomposition
+  of its complement into local vertex sectors and edge half-rectangles.
+- Ch. 2 polygonal Jordan theorem: explicit endpoint overlaps assemble the local strip pieces into
+  two path-connected bands, both bands accumulate on the full carrier, and `toTwoGateStrip`
+  supplies the geometric input to `polygonal_jordan_of_twoGateStrip`.  Thus `polygonal_jordan`
+  proves both complementary regions connected, their bounded/unbounded distinction, and both
+  frontier equalities.
+- The realization bridge `PlaneComplex.toGeometricTriangulation`.
 - Concrete anchors (`Moise/Anchors.lean`) and countermodels (`Moise/Countermodels.lean`), which
   are the executable definition-faithfulness checks (see `docs/AUTOFORMALIZATION_GUIDE.md`).
 
@@ -41,16 +52,11 @@ deliberately stated as the two provable clauses only — do not strengthen it to
 
 | Leaf | File | Moise | Difficulty |
 |---|---|---|---|
-| `index_locallyConstant` | PolygonalJordan.lean | Ch. 2 Thm 1 Lemma 2 | medium casework |
-| `exists_index_eq_one` | PolygonalJordan.lean | Ch. 2 Thm 1 Lemma 2 | medium |
-| `polygonal_jordan` (master; needs Lemma 1 strip walk + frontier Thms 5/6) | PolygonalJordan.lean | Ch. 2 Thms 1/5/6 | medium-hard |
-| `closedRegion_is_polyhedron` | PolygonalSchoenflies.lean | Ch. 2 Thm 2 | medium |
-| `polygonal_schoenflies`, `polygonal_schoenflies_rel` | PolygonalSchoenflies.lean | Ch. 3 Thms 5/7 | medium |
+| `polygonal_schoenflies_rel` | PolygonalSchoenflies.lean | Ch. 3 Thms 4/7 | hard |
 | `pl_extension_of_triangle_boundary` | PLApproximation.lean | Ch. 5 Thms 3–6 | medium |
 | `pl_approximation_one_skeleton` | PLApproximation.lean | Ch. 6 Thm 2 | hard |
 | `pl_approximation_two_manifold` | PLApproximation.lean | Ch. 6 Thm 3 | **the crux** |
 | `moise_induction_step` | ChartInduction.lean | Ch. 8 Thm 3 step | hard; design interface with the proof |
-| `PlaneComplex.toGeometricTriangulation` | PlaneComplex.lean | realization bridge | starter task |
 
 Also needed (no sorry yet, but the chapter proofs will want it): a `PlaneComplex` API layer —
 subdivisions, barycentric subdivision, stars, gluing along a subcomplex (Moise Thm 7.6).
@@ -73,10 +79,7 @@ is the key lemma — see `Moise/Anchors.lean` for the pattern.
 
 ## Suggested next targets, in order
 
-1. `index_locallyConstant` — for `Q` near `P` the crossing status of each edge is stable except
-   at vertex heights, where the half-open convention makes the count change by 0 or 2.
-2. `exists_index_eq_one` — leftmost polygon point on a generic-height horizontal line; needs the
-   small fact that the polygon is not contained in one horizontal line (from the embedding
-   fields).
-3. Lemma 1 (strip walk, Moise Fig. 2.1–2.2) + frontier theorems, closing `polygonal_jordan`.
-4. `closedRegion_is_polyhedron`, then Ch. 3, then Ch. 5–6, then the Ch. 8 step.
+1. Prove `polygonal_schoenflies_rel` by Moise's supported free-triangle-removal induction.  Chapter
+   2 is complete, and ordinary `polygonal_schoenflies` now follows formally from the relative
+   theorem and affine equivalence of triangles.
+2. Continue with Ch. 5–6, then the Ch. 8 induction step.

@@ -75,60 +75,6 @@ theorem standardTriangleVertex_triple_affineIndependent (a b c : Fin 3)
   rw [he]
   exact standardTriangleVertex_affineIndependent.comp_embedding ⟨![a, b, c], h⟩
 
-/-- Affine independence of a family transports to the finset inclusion of any finite set of
-points contained in its range. -/
-theorem affineIndependent_finset_coe {ι : Type*} {f : ι → Plane}
-    (hf : AffineIndependent ℝ f) {S : Finset Plane} (hS : ∀ a ∈ S, a ∈ Set.range f) :
-    AffineIndependent ℝ ((↑) : S → Plane) := by
-  classical
-  choose g hg using fun a : S => hS a.1 a.2
-  have hinj : Function.Injective g := by
-    intro a b hab
-    apply Subtype.ext
-    rw [← hg a, ← hg b, hab]
-  have heq : ((↑) : S → Plane) = f ∘ g := by
-    funext a
-    exact (hg a).symm
-  rw [heq]
-  exact hf.comp_embedding ⟨g, hinj⟩
-
-/-- Adjacent edges of an affinely independent triple meet exactly in the shared vertex. -/
-theorem segment_inter_segment_of_affineIndependent {x y z : Plane}
-    (h : AffineIndependent ℝ ![x, y, z]) :
-    segment ℝ x y ∩ segment ℝ y z = {y} := by
-  classical
-  have hxz : x ≠ z := h.injective.ne (show (0 : Fin 3) ≠ 2 by decide)
-  have hS : AffineIndependent ℝ ((↑) : ({x, y, z} : Finset Plane) → Plane) := by
-    refine affineIndependent_finset_coe h fun a ha => ?_
-    simp only [Finset.mem_insert, Finset.mem_singleton] at ha
-    rcases ha with rfl | rfl | rfl
-    · exact ⟨0, rfl⟩
-    · exact ⟨1, rfl⟩
-    · exact ⟨2, rfl⟩
-  have hsub₁ : ({x, y} : Finset Plane) ⊆ {x, y, z} := by
-    intro a ha
-    simp only [Finset.mem_insert, Finset.mem_singleton] at ha ⊢
-    tauto
-  have hsub₂ : ({y, z} : Finset Plane) ⊆ {x, y, z} := by
-    intro a ha
-    simp only [Finset.mem_insert, Finset.mem_singleton] at ha ⊢
-    tauto
-  have hmain := hS.convexHull_inter hsub₁ hsub₂
-  have hinter : ({x, y} ∩ {y, z} : Finset Plane) = {y} := by
-    ext a
-    simp only [Finset.mem_inter, Finset.mem_insert, Finset.mem_singleton]
-    constructor
-    · rintro ⟨h₁, rfl | rfl⟩
-      · rfl
-      · rcases h₁ with rfl | rfl
-        · exact absurd rfl hxz
-        · rfl
-    · rintro rfl
-      exact ⟨Or.inr rfl, Or.inl rfl⟩
-  rw [← Finset.coe_inter, hinter] at hmain
-  simpa [Finset.coe_insert, Finset.coe_singleton, convexHull_pair, convexHull_singleton]
-    using hmain.symm
-
 /-- **Positive anchor** for `PolygonalCircle`: the boundary of the standard triangle with
 vertices `(0,0)`, `(1,0)`, `(0,1)` is a polygonal simple closed curve. -/
 def standardTriangleCircle : PolygonalCircle where
