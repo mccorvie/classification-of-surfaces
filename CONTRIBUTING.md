@@ -1,44 +1,51 @@
-# Contributing
+## Claiming work
 
-This is a collaborative Lean formalization project for the classification of compact surfaces.
+**Work is claimed on the issue tracker** 
 
-## Workflow
+- Every open task is a GitHub issue. Start at
+  [open issues](https://github.com/mccorvie/classification-of-surfaces/issues);
+  `good first issue` is the shallow end, `blocking` is where the leverage is.
+- **To claim:** self-assign the issue. If you cannot assign yourself, comment "taking this" and a
+  maintainer will assign you. One issue at a time.
+- **To release:** unassign yourself, or say so in a comment. No explanation is owed and no apology
+  is wanted. Dropping a claim is a normal event, don't stress about it.
+- A claim with no visible activity for two weeks and no comment may be unassigned by the organizer for bookkeeping.  You are welcome to re-claim it.
 
-- Keep PRs small and centered on one mathematical interface or one file.
-- Run `lake build` before handing work to someone else.
-- It is acceptable to introduce `sorry` for a named theorem boundary, but avoid anonymous local
-  `sorry`s inside definitions or routine lemmas.
-- State theorem boundaries at the level where another contributor could plausibly work on them.
-- Prefer definitions that support computation and examples before proving large theorems over them.
+A claim is on an **issue**, not on a file and not on the repository. Several people can and should hold live claims in the same directory. Nothing is locked.
 
-## Coordination
+## Branches and PRs
 
-Start with `ClassificationOfSurfaces/API.lean` for the current Lean API map. The short architecture
-summary is in `docs/ARCHITECTURE.md`; the triangulation route's status and handoff map is
-`docs/MOISE_ROUTE.md`. All work must follow `docs/AUTOFORMALIZATION_GUIDE.md` (in particular the
-Definition Faithfulness section) and respect the ledger in `docs/KNOWN_WEAK.md`.
+- Branch off `master`: `git checkout -b NN-short-name` where `NN` is the issue number.
+- One issue per branch, one branch per PR. Put `Closes #NN` in the PR body.
+- `lake build` must be green before you open the PR, and `Moise/Countermodels.lean` must stay green.
+- Draft PRs are welcome and encouraged early. A draft PR with `sorry`d theorem boundaries is a useful artifact: it lets someone else see the shape of your interface before you have finished the proofs, and it lets the sub-lemmas be split off and claimed by other people.
 
-When starting a task, record which file and theorem boundary you are working on. If a definition
-choice affects both the topology and combinatorics tracks, document the decision before building on
-it heavily.
+## Touching shared definitions
 
-## API Boundaries
+If your work needs to change anything in `API.lean`, `Surface.lean`, `CellComplex.lean`,
+`Representatives.lean`, or `Triangulation.lean`, **say so in the issue before you write the code.**
+These are the seams between the Moise route and the Gallier-Xu route, and a silent change to one
+will break the other. Record the outcome in `docs/DESIGN_DECISIONS.md`.
 
-- New triangulation work targets `GeometricTriangulation` (`ClassificationOfSurfaces/Moise/`);
-  `FiniteSurfaceTriangulation` is a ledgered compatibility interface fed by the bridge, and
-  `CellComplex`/`FiniteTriangulation` are aliases only.
-- The Moise route produces `GeometricTriangulation`; it should not depend on Gallier-Xu
-  normal-form definitions.
-- Shared infrastructure should convert finite triangulations to `SurfaceCellComplex`.
-- The Gallier-Xu route should consume only `SurfaceCellComplex` and quotient-realization APIs. It
-  should not mention PL maps, Moise manifolds, or manifold chart machinery.
-- Public theorem names listed in `ClassificationOfSurfaces/API.lean` should not be renamed casually
-  once another file or collaborator depends on them.
+If two open issues genuinely collide on a definition, that is a design decision to be settled in a
+comment on both issues, not a race to push first.
 
-## Useful Commands
+## Sorry discipline
 
-```bash
-lake build
-lake env lean ClassificationOfSurfaces/API.lean
-lake env lean ClassificationOfSurfaces/NormalForm.lean
-```
+- A named theorem boundary may carry a `sorry` with a citation in its docstring. That is how work
+  gets handed off, and it is encouraged.
+- Anonymous `sorry`s inside definitions or routine lemmas are not acceptable.
+- **Never weaken a statement to close a goal.** Leave the honest statement with a named `sorry`.
+- A hard-named theorem that closes without new mathematics is a statement bug, not progress.
+- Verify each closure: `lake build`, then `#print axioms <name>`. The target is
+  `[propext, Classical.choice, Quot.sound]`; `sorryAx` should disappear leaf-by-leaf.
+- `native_decide` is banned in committed proofs. Scratchpad only.
+
+## Definition faithfulness
+
+Read `docs/AUTOFORMALIZATION_GUIDE.md` before your first PR, in particular the Definition
+Faithfulness section. New definitions need a vacuity probe and, where feasible, an anchor in
+`Moise/Countermodels.lean` or `Moise/Anchors.lean`.
+
+**Do not extend anything listed in `docs/KNOWN_WEAK.md`.** Strengthen it first. If you must consume
+a ledgered entry, add yourself to its dependents list.
