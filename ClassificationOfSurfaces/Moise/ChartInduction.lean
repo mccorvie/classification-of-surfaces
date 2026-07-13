@@ -3,8 +3,14 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
-import ClassificationOfSurfaces.Moise.ChartExtraction
+import ClassificationOfSurfaces.Moise.ChartPatch
+import ClassificationOfSurfaces.Moise.IntrinsicComplex
+import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
+import ClassificationOfSurfaces.Moise.IntrinsicCellwiseExtension
 import ClassificationOfSurfaces.Moise.PLApproximation
+import ClassificationOfSurfaces.Moise.AdaptiveTriangulation
+import ClassificationOfSurfaces.Moise.LocallyFiniteControlledApproximation
+import ClassificationOfSurfaces.Moise.FrontierGlue
 
 /-!
 # The Radó chart induction
@@ -69,13 +75,156 @@ namespace PartialTriangulation
 
 variable {S : Type*} [TopologicalSpace S] (T : PartialTriangulation S)
 
+/-- Forget the ambient embedding and retain the intrinsic finite complex. -/
+def toIntrinsic : IntrinsicTwoComplex where
+  Vertex := T.Vertex
+  faces := T.faces
+  faces_card := T.faces_card
+
+@[simp] theorem toIntrinsic_faces : T.toIntrinsic.faces = T.faces := rfl
+
 /-- The part of `S` covered by the partial triangulation. -/
 def support : Set S :=
   Set.range T.embed
 
+/-- Restrict the ambient embedding to a set known to contain the support. -/
+def embedIntoDomain {U : Set S} (hU : T.support ⊆ U) :
+    T.toIntrinsic.realization → U :=
+  fun x => ⟨T.embed x, hU ⟨x, rfl⟩⟩
+
+theorem isEmbedding_embedIntoDomain {U : Set S} (hU : T.support ⊆ U) :
+    _root_.Topology.IsEmbedding (T.embedIntoDomain hU) :=
+  T.isEmbedding.codRestrict U (fun x => hU ⟨x, rfl⟩)
+
 /-- The support of a partial triangulation is compact. -/
 theorem isCompact_support : IsCompact T.support :=
   isCompact_range T.isEmbedding.continuous
+
+/-- Re-embed the same finite intrinsic complex in the ambient space.  This is the bookkeeping
+operation used after Moise's vanishing chart replacement: only the coordinate embedding changes;
+the abstract vertices and maximal faces do not. -/
+def reembed (f : T.toIntrinsic.realization → S)
+    (hf : _root_.Topology.IsEmbedding f) : PartialTriangulation S where
+  Vertex := T.Vertex
+  faces := T.faces
+  faces_card := T.faces_card
+  embed := f
+  isEmbedding := hf
+
+@[simp] theorem reembed_toIntrinsic (f : T.toIntrinsic.realization → S)
+    (hf : _root_.Topology.IsEmbedding f) :
+    (T.reembed f hf).toIntrinsic = T.toIntrinsic := rfl
+
+theorem reembed_support (f : T.toIntrinsic.realization → S)
+    (hf : _root_.Topology.IsEmbedding f) :
+    (T.reembed f hf).support = Set.range f := rfl
+
+/-- Replace the ambient embedding on a selected part of the intrinsic realization and retain
+the old embedding outside.  The analytic frontier argument is deliberately supplied as an
+embedding certificate, so this constructor works in the nonmetrized ambient surface. -/
+noncomputable def replaceOnOpen (U : Set T.toIntrinsic.realization)
+    (g : T.toIntrinsic.realization → S)
+    (he : _root_.Topology.IsEmbedding (frontierGlue U g T.embed)) :
+    PartialTriangulation S :=
+  T.reembed (frontierGlue U g T.embed)
+    he
+
+theorem replaceOnOpen_support (U : Set T.toIntrinsic.realization)
+    (g : T.toIntrinsic.realization → S)
+    (he : _root_.Topology.IsEmbedding (frontierGlue U g T.embed)) :
+    (T.replaceOnOpen U g he).support =
+      g '' U ∪ T.embed '' Uᶜ := by
+  change Set.range (frontierGlue U g T.embed) = g '' U ∪ T.embed '' Uᶜ
+  exact range_frontierGlue
+
+/-- Restrict a partial triangulation to a selected finite family of maximal faces. -/
+def restrictFaces (p : Finset T.Vertex → Prop) [DecidablePred p] : PartialTriangulation S where
+  Vertex := T.Vertex
+  faces := T.faces.filter p
+  faces_card := by
+    intro t ht
+    exact T.faces_card t (Finset.mem_filter.mp ht).1
+  embed := T.embed ∘ T.toIntrinsic.restrictFacesInclusion p
+  isEmbedding := T.isEmbedding.comp (T.toIntrinsic.isEmbedding_restrictFacesInclusion p)
+
+theorem restrictFaces_support_subset (p : Finset T.Vertex → Prop) [DecidablePred p] :
+    (T.restrictFaces p).support ⊆ T.support := by
+  rintro x ⟨y, rfl⟩
+  exact ⟨T.toIntrinsic.restrictFacesInclusion p y, rfl⟩
+
+/-- Exact support formula for a finite face restriction. -/
+theorem restrictFaces_support (p : Finset T.Vertex → Prop) [DecidablePred p] :
+    (T.restrictFaces p).support =
+      T.embed '' {x : T.toIntrinsic.realization |
+        ∃ t ∈ T.faces, p t ∧ x ∈ T.toIntrinsic.faceCarrier t} := by
+  ext y
+  constructor
+  · rintro ⟨z, rfl⟩
+    let x : T.toIntrinsic.realization := T.toIntrinsic.restrictFacesInclusion p z
+    refine ⟨x, ?_, rfl⟩
+    rcases z.2.2 with ⟨t, ht, hzt⟩
+    exact ⟨t, (Finset.mem_filter.mp ht).1, (Finset.mem_filter.mp ht).2, hzt⟩
+  · rintro ⟨x, ⟨t, ht, hpt, hxt⟩, rfl⟩
+    let z : (T.toIntrinsic.restrictFaces p).realization :=
+      ⟨x.1, x.2.1, ⟨t, Finset.mem_filter.mpr ⟨ht, hpt⟩, hxt⟩⟩
+    exact ⟨z, rfl⟩
+
+/-- Replace a partial triangulation by a faithful finite intrinsic subdivision. -/
+noncomputable def refine (R : T.toIntrinsic.Subdivision) : PartialTriangulation S where
+  Vertex := R.refined.Vertex
+  faces := R.refined.faces
+  faces_card := R.refined.faces_card
+  embed := T.embed ∘ R.homeo
+  isEmbedding := T.isEmbedding.comp R.homeo.isEmbedding
+
+@[simp] theorem refine_toIntrinsic (R : T.toIntrinsic.Subdivision) :
+    (T.refine R).toIntrinsic = R.refined := rfl
+
+/-- Faithful subdivision changes the finite triangulation data but not its ambient support. -/
+theorem refine_support (R : T.toIntrinsic.Subdivision) :
+    (T.refine R).support = T.support := by
+  apply Set.Subset.antisymm
+  · rintro y ⟨x, rfl⟩
+    exact ⟨R.homeo x, rfl⟩
+  · rintro y ⟨x, rfl⟩
+    refine ⟨R.homeo.symm x, ?_⟩
+    exact congrArg T.embed (R.homeo.apply_symm_apply x)
+
+/-- A compact part of a partial triangulation lying in an ambient open set is carried by a
+finite face restriction of a faithful refinement which still lies in that open set.
+
+This is the finite collar extracted from Moise Ch. 8, Thm. 2.  It is the compact ingredient of
+the Radó step; the full proof additionally needs the noncompact, locally finite collar whose
+mesh tends to zero at its frontier. -/
+theorem exists_refinedSubcomplex_between {C U : Set S}
+    (hC : IsCompact C) (hCT : C ⊆ T.support) (hU : IsOpen U) (hCU : C ⊆ U) :
+    ∃ (R : T.toIntrinsic.Subdivision)
+      (keep : Finset (Finset R.refined.Vertex)),
+      C ⊆ ((T.refine R).restrictFaces (fun t => t ∈ keep)).support ∧
+      ((T.refine R).restrictFaces (fun t => t ∈ keep)).support ⊆ U := by
+  classical
+  let C₀ : Set T.toIntrinsic.realization := T.embed ⁻¹' C
+  let U₀ : Set T.toIntrinsic.realization := T.embed ⁻¹' U
+  have hC₀ : IsCompact C₀ := by
+    exact T.isEmbedding.isInducing.isCompact_preimage' hC hCT
+  have hU₀ : IsOpen U₀ := hU.preimage T.isEmbedding.continuous
+  have hC₀U₀ : C₀ ⊆ U₀ := fun x hx => hCU hx
+  obtain ⟨L⟩ := T.toIntrinsic.exists_openSubcomplex hC₀ hU₀ hC₀U₀
+  refine ⟨L.subdivision, L.keptFaces, ?_, ?_⟩
+  · intro z hz
+    obtain ⟨x, hx⟩ := hCT hz
+    have hxC₀ : x ∈ C₀ := by
+      change T.embed x ∈ C
+      simpa [hx] using hz
+    obtain ⟨y, hy⟩ := L.covers hxC₀
+    refine ⟨y, ?_⟩
+    change T.embed (L.subdivision.homeo
+      (L.subdivision.refined.restrictFacesInclusion
+        (fun t => t ∈ L.keptFaces) y)) = z
+    exact (congrArg T.embed hy).trans hx
+  · rintro z ⟨y, rfl⟩
+    apply L.contained
+    exact ⟨y, rfl⟩
 
 /-- A partial triangulation covering all of `S` is a geometric triangulation.  This is the final
 conversion at the top of the Radó induction. -/
@@ -90,6 +239,10 @@ noncomputable def toGeometricTriangulation (hcovers : T.support = Set.univ) :
 /-- The edges of a partial triangulation: the two-element subsets of its faces. -/
 def edges : Finset (Finset T.Vertex) :=
   T.faces.biUnion fun t => t.powersetCard 2
+
+theorem card_of_mem_edges {e : Finset T.Vertex} (he : e ∈ T.edges) : e.card = 2 := by
+  rcases Finset.mem_biUnion.mp he with ⟨t, ht, het⟩
+  exact (Finset.mem_powersetCard.mp het).2
 
 /-- The boundary edges: edges lying in exactly one face. -/
 def boundaryEdges : Finset (Finset T.Vertex) :=
@@ -108,6 +261,31 @@ def combInterior : Set S :=
 
 theorem combInterior_subset_support : T.combInterior ⊆ T.support :=
   Set.sdiff_subset
+
+/-- Transport a pure finite plane complex into an ambient space.  The abstract realization is
+identified with the geometric support by barycentric coordinates, then followed by the supplied
+ambient embedding. -/
+noncomputable def ofPlaneComplex {S : Type*} [TopologicalSpace S]
+    (K : PlaneComplex) (hpure : K.IsPure2)
+    (e : K.support → S) (he : _root_.Topology.IsEmbedding e) :
+    PartialTriangulation S where
+  Vertex := K.Vertex
+  faces := K.cells
+  faces_card := fun t ht => K.card_of_mem_cells ht
+  embed := e ∘ K.realizationHomeomorph hpure
+  isEmbedding := he.comp (K.realizationHomeomorph hpure).isEmbedding
+
+/-- The transported plane patch covers exactly the ambient range of its support embedding. -/
+theorem ofPlaneComplex_support {S : Type*} [TopologicalSpace S]
+    (K : PlaneComplex) (hpure : K.IsPure2)
+    (e : K.support → S) (he : _root_.Topology.IsEmbedding e) :
+    (ofPlaneComplex K hpure e he).support = Set.range e := by
+  apply Set.Subset.antisymm
+  · rintro x ⟨z, rfl⟩
+    exact ⟨K.realizationHomeomorph hpure z, rfl⟩
+  · rintro x ⟨z, rfl⟩
+    obtain ⟨w, rfl⟩ := (K.realizationHomeomorph hpure).surjective z
+    exact ⟨w, rfl⟩
 
 /-- The empty partial triangulation. -/
 def empty (S : Type*) [TopologicalSpace S] : PartialTriangulation S where
@@ -133,9 +311,384 @@ theorem support_eq_empty_of_faces_eq_empty {S : Type*} [TopologicalSpace S]
 
 end PartialTriangulation
 
-/-- The invariant carried through the Radó induction (Moise Ch. 8, Thm. 3, invariants (3)-(4)):
-the built complex is a combinatorial surface (every edge in at most two faces), and the region
-`A` absorbed so far lies in its combinatorial interior.
+namespace LocallyFiniteTriangleComplex
+
+variable {S : Type*} [TopologicalSpace S] (K : LocallyFiniteTriangleComplex S)
+
+/-- A finite compatible ambient triangle family is a partial triangulation of the ambient
+space.  Its support is exactly the union of the face carriers. -/
+noncomputable def toPartialTriangulation [Finite K.Face] [T2Space S] :
+    PartialTriangulation S := by
+  let G := K.finiteSupportGeometricTriangulation
+  exact
+    { Vertex := G.Vertex
+      faces := G.faces
+      faces_card := G.faces_card
+      embed := Subtype.val ∘ G.homeo
+      isEmbedding := _root_.Topology.IsEmbedding.subtypeVal.comp G.homeo.isEmbedding }
+
+theorem toPartialTriangulation_support [Finite K.Face] [T2Space S] :
+    K.toPartialTriangulation.support = K.support := by
+  let G := K.finiteSupportGeometricTriangulation
+  change Set.range (Subtype.val ∘ G.homeo) = K.support
+  apply Set.Subset.antisymm
+  · rintro y ⟨x, rfl⟩
+    exact (G.homeo x).2
+  · intro y hy
+    let z : K.support := ⟨y, hy⟩
+    refine ⟨G.homeo.symm z, ?_⟩
+    exact congrArg Subtype.val (G.homeo.apply_symm_apply z)
+
+end LocallyFiniteTriangleComplex
+
+namespace MoiseChart
+
+variable {S : Type*} [TopologicalSpace S] (c : MoiseChart S)
+
+/-- The plane embedding of an intrinsic partial triangulation whose support lies in this chart.
+This is the source embedding consumed by intrinsic PL approximation in the Rado step. -/
+def partialChartMap (T : PartialTriangulation S) (hdom : T.support ⊆ c.domain) :
+    T.toIntrinsic.realization → Plane :=
+  fun x => (c.chart (T.embedIntoDomain hdom x) : Plane)
+
+theorem isEmbedding_partialChartMap (T : PartialTriangulation S)
+    (hdom : T.support ⊆ c.domain) :
+    _root_.Topology.IsEmbedding (c.partialChartMap T hdom) :=
+  _root_.Topology.IsEmbedding.subtypeVal.comp
+    (c.chart.isEmbedding.comp (T.isEmbedding_embedIntoDomain hdom))
+
+/-- Include the fixed polygonal model patch into this chart's model region. -/
+def patchToModelRegion : c.kind.patchComplex.support → c.kind.modelRegion :=
+  fun x => ⟨x.1, c.kind.patchComplex_support_subset_modelRegion x.2⟩
+
+theorem isEmbedding_patchToModelRegion :
+    _root_.Topology.IsEmbedding c.patchToModelRegion :=
+  _root_.Topology.IsEmbedding.subtypeVal.codRestrict _ _
+
+/-- Embed the fixed polygonal patch into the ambient surface through the inverse chart. -/
+def patchEmbed : c.kind.patchComplex.support → S :=
+  fun x => (c.chart.symm (c.patchToModelRegion x)).1
+
+theorem isEmbedding_patchEmbed : _root_.Topology.IsEmbedding c.patchEmbed :=
+  _root_.Topology.IsEmbedding.subtypeVal.comp
+    (c.chart.symm.isEmbedding.comp c.isEmbedding_patchToModelRegion)
+
+/-- The concrete finite partial triangulation supplied by one Moise chart. -/
+noncomputable def patchPartialTriangulation : PartialTriangulation S :=
+  PartialTriangulation.ofPlaneComplex c.kind.patchComplex c.kind.patchComplex_pure
+    c.patchEmbed c.isEmbedding_patchEmbed
+
+theorem patchPartialTriangulation_support :
+    c.patchPartialTriangulation.support = Set.range c.patchEmbed :=
+  PartialTriangulation.ofPlaneComplex_support c.kind.patchComplex
+    c.kind.patchComplex_pure c.patchEmbed c.isEmbedding_patchEmbed
+
+/-- The concrete chart patch covers the marked chart core. -/
+theorem core_subset_patchPartialTriangulation_support :
+    c.core ⊆ c.patchPartialTriangulation.support := by
+  rw [c.patchPartialTriangulation_support]
+  intro y hy
+  rcases c.mem_core_iff.mp hy with ⟨hyDomain, hyCore⟩
+  let p : c.kind.modelRegion := c.chart ⟨y, hyDomain⟩
+  let q : c.kind.patchComplex.support :=
+    ⟨p.1, c.kind.modelCore_subset_patchComplex_support hyCore⟩
+  refine ⟨q, ?_⟩
+  change (c.chart.symm ⟨q.1, c.kind.patchComplex_support_subset_modelRegion q.2⟩).1 = y
+  exact congrArg Subtype.val (c.chart.symm_apply_apply ⟨y, hyDomain⟩)
+
+/-- The model-region subset occupied by the fixed polygonal patch. -/
+def patchInModelRegion : Set c.kind.modelRegion :=
+  {p | (p : Plane) ∈ c.kind.patchComplex.support}
+
+theorem range_patchToModelRegion :
+    Set.range c.patchToModelRegion = c.patchInModelRegion := by
+  ext p
+  constructor
+  · rintro ⟨q, rfl⟩
+    exact q.2
+  · intro hp
+    let q : c.kind.patchComplex.support := ⟨p.1, hp⟩
+    exact ⟨q, Subtype.ext rfl⟩
+
+/-- Exact chart-domain description of the transported patch support. -/
+theorem patchPartialTriangulation_support_eq_chartImage :
+    c.patchPartialTriangulation.support =
+      Subtype.val '' (c.chart.symm '' c.patchInModelRegion) := by
+  rw [c.patchPartialTriangulation_support]
+  ext y
+  constructor
+  · rintro ⟨q, rfl⟩
+    refine ⟨c.chart.symm (c.patchToModelRegion q), ?_, rfl⟩
+    exact ⟨c.patchToModelRegion q, q.2, rfl⟩
+  · rintro ⟨z, ⟨p, hp, rfl⟩, rfl⟩
+    let q : c.kind.patchComplex.support := ⟨p.1, hp⟩
+    exact ⟨q, congrArg Subtype.val (congrArg c.chart.symm (Subtype.ext rfl))⟩
+
+/-- The marked core lies in the ambient topological interior of the concrete chart patch. -/
+theorem core_subset_interior_patchPartialTriangulation_support :
+    c.core ⊆ interior c.patchPartialTriangulation.support := by
+  intro y hy
+  rcases c.mem_core_iff.mp hy with ⟨hyDomain, hyCore⟩
+  let p : c.kind.modelRegion := c.chart ⟨y, hyDomain⟩
+  have hpInterior : p ∈ interior c.patchInModelRegion :=
+    c.kind.modelCore_subset_interior_patchInRegion hyCore
+  have hzInterior : c.chart.symm p ∈ interior (c.chart.symm '' c.patchInModelRegion) := by
+    rw [← c.chart.symm.image_interior]
+    exact ⟨p, hpInterior, rfl⟩
+  let O : Set S := Subtype.val '' interior (c.chart.symm '' c.patchInModelRegion)
+  have hOopen : IsOpen O :=
+    c.isOpen_domain.isOpenEmbedding_subtypeVal.isOpenMap _ isOpen_interior
+  have hOsub : O ⊆ c.patchPartialTriangulation.support := by
+    rw [c.patchPartialTriangulation_support_eq_chartImage]
+    exact Set.image_mono interior_subset
+  apply interior_maximal hOsub hOopen
+  refine ⟨c.chart.symm p, hzInterior, ?_⟩
+  exact congrArg Subtype.val (c.chart.symm_apply_apply ⟨y, hyDomain⟩)
+
+end MoiseChart
+
+/-! ## The locally finite old-complex overlap in one chart -/
+
+namespace ChartKind
+
+/-- The open disk in which chart-coordinate perturbations are performed.  For a half-disk chart
+the model region is a closed subset of this disk; the later bordered approximation must preserve
+that half-disk rather than use the extra side. -/
+def perturbationRegion (_k : ChartKind) : Set Plane := Metric.ball 0 1
+
+theorem isOpen_perturbationRegion (k : ChartKind) : IsOpen k.perturbationRegion :=
+  Metric.isOpen_ball
+
+theorem modelRegion_subset_perturbationRegion (k : ChartKind) :
+    k.modelRegion ⊆ k.perturbationRegion := by
+  cases k <;> intro p hp
+  · exact hp
+  · exact hp.1
+
+/-- The chart model, regarded as a subset of its open perturbation disk. -/
+def modelInPerturbation (k : ChartKind) : Set k.perturbationRegion :=
+  {p | p.1 ∈ k.modelRegion}
+
+theorem isClosed_modelInPerturbation (k : ChartKind) :
+    IsClosed k.modelInPerturbation := by
+  cases k with
+  | disk =>
+      have hAll : ChartKind.disk.modelInPerturbation = Set.univ := by
+        ext p
+        simp [modelInPerturbation, modelRegion, perturbationRegion]
+      rw [hAll]
+      exact isClosed_univ
+  | halfDisk =>
+      have hset : ChartKind.halfDisk.modelInPerturbation =
+          {p : Metric.ball (0 : Plane) 1 | 0 ≤ p.1 0} := by
+        ext p
+        constructor
+        · intro hp
+          exact hp.2
+        · intro hp
+          exact ⟨p.2, hp⟩
+      rw [hset]
+      exact (isClosed_le continuous_const
+        (continuous_coordZero.comp continuous_subtype_val))
+
+/-- Identify the model-region subtype with its nested closed subtype in the perturbation disk. -/
+def modelToPerturbationRange (k : ChartKind) :
+    k.modelRegion ≃ₜ k.modelInPerturbation where
+  toFun p := ⟨⟨p.1, k.modelRegion_subset_perturbationRegion p.2⟩, p.2⟩
+  invFun p := ⟨p.1.1, p.2⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+  continuous_toFun := by fun_prop
+  continuous_invFun := by fun_prop
+
+/-- Include a disk or half-disk model into the open disk used for perturbations. -/
+def modelToPerturbation (k : ChartKind) :
+    k.modelRegion → k.perturbationRegion :=
+  fun p ↦ ⟨p.1, k.modelRegion_subset_perturbationRegion p.2⟩
+
+theorem isClosedEmbedding_modelToPerturbation (k : ChartKind) :
+    _root_.Topology.IsClosedEmbedding k.modelToPerturbation := by
+  have h := (k.isClosed_modelInPerturbation.isClosedEmbedding_subtypeVal).comp
+    k.modelToPerturbationRange.isClosedEmbedding
+  have heq : k.modelToPerturbation =
+      (Subtype.val : k.modelInPerturbation → k.perturbationRegion) ∘
+        k.modelToPerturbationRange := by
+    funext p
+    rfl
+  rw [heq]
+  exact h
+
+end ChartKind
+
+namespace PartialTriangulation
+
+variable {S : Type*} [TopologicalSpace S]
+
+/-- The part of the intrinsic realization whose ambient image lies in a Rado chart domain. -/
+def chartOverlap (T : PartialTriangulation S) (c : MoiseChart S) :
+    Set T.toIntrinsic.realization :=
+  T.embed ⁻¹' c.domain
+
+theorem isOpen_chartOverlap (T : PartialTriangulation S) (c : MoiseChart S) :
+    IsOpen (T.chartOverlap c) :=
+  c.isOpen_domain.preimage T.isEmbedding.continuous
+
+/-- Include an overlap point into the chart domain through the old partial triangulation. -/
+def chartOverlapToDomain (T : PartialTriangulation S) (c : MoiseChart S) :
+    T.chartOverlap c → c.domain :=
+  fun x ↦ ⟨T.embed x.1, x.2⟩
+
+theorem isEmbedding_chartOverlapToDomain (T : PartialTriangulation S)
+    (c : MoiseChart S) :
+    _root_.Topology.IsEmbedding (T.chartOverlapToDomain c) :=
+  (T.isEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal).codRestrict
+    c.domain fun x ↦ x.2
+
+/-- Chart coordinates of the old partial triangulation on the overlap. -/
+def chartOverlapMap (T : PartialTriangulation S) (c : MoiseChart S) :
+    T.chartOverlap c → Plane :=
+  fun x ↦ (c.chart (T.chartOverlapToDomain c x) : Plane)
+
+theorem isEmbedding_chartOverlapMap (T : PartialTriangulation S)
+    (c : MoiseChart S) :
+    _root_.Topology.IsEmbedding (T.chartOverlapMap c) :=
+  _root_.Topology.IsEmbedding.subtypeVal.comp
+    (c.chart.isEmbedding.comp (T.isEmbedding_chartOverlapToDomain c))
+
+/-- The adaptive conforming triangulation of the whole old-complex/chart overlap. -/
+noncomputable abbrev adaptiveOverlapComplex (T : PartialTriangulation S)
+    (c : MoiseChart S) :=
+  T.toIntrinsic.adaptiveLocallyFiniteTriangleComplex (T.chartOverlap c)
+    (T.isOpen_chartOverlap c)
+
+/-- Chart coordinates on the support of the adaptive overlap triangulation. -/
+noncomputable def adaptiveOverlapChartMap (T : PartialTriangulation S)
+    (c : MoiseChart S) : (T.adaptiveOverlapComplex c).support → Plane :=
+  fun p ↦ T.chartOverlapMap c p.1
+
+theorem isEmbedding_adaptiveOverlapChartMap (T : PartialTriangulation S)
+    (c : MoiseChart S) :
+    _root_.Topology.IsEmbedding (T.adaptiveOverlapChartMap c) :=
+  (T.isEmbedding_chartOverlapMap c).comp
+    _root_.Topology.IsEmbedding.subtypeVal
+
+/-- The overlap map with the chart model retained as codomain. -/
+def chartOverlapModelMap (T : PartialTriangulation S) (c : MoiseChart S) :
+    T.chartOverlap c → c.kind.modelRegion :=
+  fun x ↦ c.chart (T.chartOverlapToDomain c x)
+
+theorem isEmbedding_chartOverlapModelMap (T : PartialTriangulation S)
+    (c : MoiseChart S) :
+    _root_.Topology.IsEmbedding (T.chartOverlapModelMap c) :=
+  c.chart.isEmbedding.comp (T.isEmbedding_chartOverlapToDomain c)
+
+/-- The overlap map into the open perturbation disk. -/
+def chartOverlapPerturbationMap (T : PartialTriangulation S) (c : MoiseChart S) :
+    T.chartOverlap c → c.kind.perturbationRegion :=
+  c.kind.modelToPerturbation ∘ T.chartOverlapModelMap c
+
+theorem isEmbedding_chartOverlapPerturbationMap (T : PartialTriangulation S)
+    (c : MoiseChart S) :
+    _root_.Topology.IsEmbedding (T.chartOverlapPerturbationMap c) :=
+  c.kind.isClosedEmbedding_modelToPerturbation.isEmbedding.comp
+    (T.isEmbedding_chartOverlapModelMap c)
+
+/-- The old polyhedral overlap is closed in the chart model. -/
+theorem isClosedEmbedding_chartOverlapModelMap [T2Space S]
+    (T : PartialTriangulation S) (c : MoiseChart S) :
+    _root_.Topology.IsClosedEmbedding (T.chartOverlapModelMap c) := by
+  let A : Set c.domain := {y | y.1 ∈ T.support}
+  have hAclosed : IsClosed A :=
+    T.isCompact_support.isClosed.preimage continuous_subtype_val
+  have hrange : Set.range (T.chartOverlapModelMap c) = c.chart '' A := by
+    apply Set.Subset.antisymm
+    · rintro z ⟨x, rfl⟩
+      refine ⟨T.chartOverlapToDomain c x, ?_, rfl⟩
+      exact ⟨x.1, rfl⟩
+    · rintro z ⟨y, hyA, rfl⟩
+      obtain ⟨x, hx⟩ := hyA
+      let xU : T.chartOverlap c := ⟨x, by
+        change T.embed x ∈ c.domain
+        rw [hx]
+        exact y.2⟩
+      refine ⟨xU, ?_⟩
+      change c.chart (T.chartOverlapToDomain c xU) = c.chart y
+      apply congrArg c.chart
+      apply Subtype.ext
+      exact hx
+  refine ⟨T.isEmbedding_chartOverlapModelMap c, ?_⟩
+  rw [hrange]
+  exact c.chart.isClosedMap A hAclosed
+
+theorem isClosedEmbedding_chartOverlapPerturbationMap [T2Space S]
+    (T : PartialTriangulation S) (c : MoiseChart S) :
+    _root_.Topology.IsClosedEmbedding (T.chartOverlapPerturbationMap c) :=
+  c.kind.isClosedEmbedding_modelToPerturbation.comp
+    (T.isClosedEmbedding_chartOverlapModelMap c)
+
+/-- Forget the support proof of the adaptive overlap complex.  Coverage makes this a
+homeomorphism onto the whole overlap, hence a closed embedding. -/
+noncomputable def adaptiveOverlapToOverlap (T : PartialTriangulation S)
+    (c : MoiseChart S) : (T.adaptiveOverlapComplex c).support → T.chartOverlap c :=
+  Subtype.val
+
+theorem isClosedEmbedding_adaptiveOverlapToOverlap (T : PartialTriangulation S)
+    (c : MoiseChart S) :
+    _root_.Topology.IsClosedEmbedding (T.adaptiveOverlapToOverlap c) := by
+  refine ⟨_root_.Topology.IsEmbedding.subtypeVal, ?_⟩
+  rw [show Set.range (T.adaptiveOverlapToOverlap c) =
+      (T.adaptiveOverlapComplex c).support by
+    exact Subtype.range_val]
+  rw [T.toIntrinsic.adaptiveLocallyFiniteTriangleComplex_support
+    (T.chartOverlap c) (T.isOpen_chartOverlap c)]
+  exact isClosed_univ
+
+/-- Chart coordinates of the adaptive overlap, with the open perturbation disk retained as
+codomain. -/
+noncomputable def adaptiveOverlapPerturbationMap (T : PartialTriangulation S)
+    (c : MoiseChart S) :
+    (T.adaptiveOverlapComplex c).support → c.kind.perturbationRegion :=
+  T.chartOverlapPerturbationMap c ∘ T.adaptiveOverlapToOverlap c
+
+theorem isClosedEmbedding_adaptiveOverlapPerturbationMap [T2Space S]
+    (T : PartialTriangulation S) (c : MoiseChart S) :
+    _root_.Topology.IsClosedEmbedding (T.adaptiveOverlapPerturbationMap c) :=
+  (T.isClosedEmbedding_chartOverlapPerturbationMap c).comp
+    (T.isClosedEmbedding_adaptiveOverlapToOverlap c)
+
+/-- The adaptive overlap as the relative plane graph realization used by the locally finite
+Chapter 6 approximation. -/
+noncomputable def adaptiveOverlapGraphRealization [T2Space S]
+    (T : PartialTriangulation S) (c : MoiseChart S) :
+    (T.adaptiveOverlapComplex c).PlaneGraphRealization :=
+  LocallyFiniteTriangleComplex.PlaneGraphRealization.ofEmbeddingInOpenRegion
+    c.kind.perturbationRegion
+    c.kind.isOpen_perturbationRegion (T.adaptiveOverlapChartMap c)
+    (T.isEmbedding_adaptiveOverlapChartMap c)
+    (fun p ↦ (T.adaptiveOverlapPerturbationMap c p).2)
+    (by
+      have heq : (fun p ↦
+          (⟨T.adaptiveOverlapChartMap c p,
+            (T.adaptiveOverlapPerturbationMap c p).2⟩ :
+            c.kind.perturbationRegion)) = T.adaptiveOverlapPerturbationMap c := by
+        funext p
+        apply Subtype.ext
+        rfl
+      rw [heq]
+      exact (T.isClosedEmbedding_adaptiveOverlapPerturbationMap c).isClosed_range)
+
+end PartialTriangulation
+
+/-- The invariant carried through the bordered Radó induction: the built complex is a
+combinatorial surface (every edge in at most two faces), and the region `A` absorbed so far lies
+in the topological interior of its support in `S`.
+
+For a surface without boundary this agrees with Moise Ch. 8, Thm. 3, invariant (4), after the
+usual identification of topological and combinatorial interior.  The ambient topological
+interior is essential in the bordered case: a half-disk core contains points of `∂S`, and those
+points belong to the interior of a half-disk neighborhood *as a subset of `S`*, although they lie
+on its combinatorial boundary.  Requiring such points to lie in `combInterior` would make the
+bordered induction statement false.
 
 This invariant is expected to be *strengthened* during the proof of `moise_induction_step`
 (candidates: connected vertex links, and the bordered bookkeeping locating `∂S ∩ support` inside
@@ -144,13 +697,53 @@ together and keeps the assembly proof below valid; weakening the step's conclusi
 the failure mode this rebuild exists to prevent. -/
 structure RadoInvariant {S : Type*} [TopologicalSpace S]
     (T : PartialTriangulation S) (A : Set S) : Prop where
+  /-- The finitely many absorbed chart cores form a compact set.  This is needed to choose the
+  finite collars and positive separation scales in the induction step. -/
+  coresCompact : IsCompact A
   combSurface : ∀ e ∈ T.edges, (T.faces.filter fun t => e ⊆ t).card ≤ 2
-  coresInside : A ⊆ T.combInterior
+  coresInside : A ⊆ interior T.support
+
+theorem RadoInvariant.coresCovered {S : Type*} [TopologicalSpace S]
+    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A) :
+    A ⊆ T.support :=
+  hT.coresInside.trans interior_subset
+
+/-- Enlarge the recorded absorbed set without changing the triangulation when the added set is
+already in the interior of its support. -/
+theorem RadoInvariant.absorb_of_subset {S : Type*} [TopologicalSpace S]
+    {T : PartialTriangulation S} {A B : Set S} (hT : RadoInvariant T A)
+    (hBcompact : IsCompact B) (hB : B ⊆ interior T.support) :
+    RadoInvariant T (A ∪ B) where
+  coresCompact := hT.coresCompact.union hBcompact
+  combSurface := hT.combSurface
+  coresInside := Set.union_subset hT.coresInside hB
+
+/-- A single chart has a concrete finite partial triangulation satisfying the bordered Rado
+invariant.  This is the honest nonempty base patch used by the induction step. -/
+theorem radoInvariant_chartPatch {S : Type*} [TopologicalSpace S] (c : MoiseChart S) :
+    RadoInvariant c.patchPartialTriangulation c.core where
+  coresCompact := c.isCompact_core
+  combSurface := by
+    intro e he
+    have hecard := c.patchPartialTriangulation.card_of_mem_edges he
+    change (c.kind.patchComplex.cells.filter fun t => e ⊆ t).card ≤ 2
+    exact c.kind.patchComplex_edge_valence e hecard
+  coresInside := c.core_subset_interior_patchPartialTriangulation_support
+
+/-- If the fixed patch of the new chart already contains the previously absorbed region in its
+ambient interior, that patch alone is a valid next induction stage. -/
+theorem radoInvariant_chartPatch_absorb {S : Type*} [TopologicalSpace S]
+    (c : MoiseChart S) {A : Set S} (hAcompact : IsCompact A)
+    (hA : A ⊆ interior c.patchPartialTriangulation.support) :
+    RadoInvariant c.patchPartialTriangulation (A ∪ c.core) :=
+  by simpa [Set.union_comm] using
+    (radoInvariant_chartPatch c).absorb_of_subset hAcompact hA
 
 /-- The empty partial triangulation satisfies the invariant for the empty region: the base case
 of the Radó induction. -/
 theorem radoInvariant_empty (S : Type*) [TopologicalSpace S] :
     RadoInvariant (PartialTriangulation.empty S) ∅ where
+  coresCompact := isCompact_empty
   combSurface := by
     intro e he
     simp only [PartialTriangulation.edges, PartialTriangulation.empty,
@@ -206,7 +799,13 @@ Hypothesis refinement is expected here (see `RadoInvariant`); conclusion weakeni
 theorem moise_induction_step (c : MoiseChart S) (hc : c.BoundaryFaithful)
     {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A) :
     ∃ T' : PartialTriangulation S, RadoInvariant T' (A ∪ c.core) := by
-  sorry
+  classical
+  by_cases hcore : c.core ⊆ interior T.support
+  · exact ⟨T, hT.absorb_of_subset c.isCompact_core hcore⟩
+  by_cases hA : A ⊆ interior c.patchPartialTriangulation.support
+  · exact ⟨c.patchPartialTriangulation,
+      radoInvariant_chartPatch_absorb c hT.coresCompact hA⟩
+  · sorry
 
 /-- The Radó induction assembled: a compact Eval surface admits a geometric triangulation.
 
@@ -279,11 +878,10 @@ theorem moise_triangulation_of_boundaries :
     · rintro ⟨i, hx⟩
       exact ⟨i, i.isLt, hx⟩
   have hsupport : T.support = Set.univ := by
-    have huniv : (Set.univ : Set S) ⊆ T.combInterior := by
+    have huniv : (Set.univ : Set S) ⊆ T.support := by
       rw [← hall]
-      exact hT.coresInside
-    exact Set.eq_univ_of_univ_subset
-      (huniv.trans T.combInterior_subset_support)
+      exact hT.coresCovered
+    exact Set.eq_univ_of_univ_subset huniv
   exact ⟨T.toGeometricTriangulation hsupport⟩
 
 end EvalHypotheses

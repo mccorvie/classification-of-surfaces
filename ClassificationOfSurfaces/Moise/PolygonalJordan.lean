@@ -89,6 +89,75 @@ theorem isClosed_carrier : IsClosed J.carrier :=
 theorem isClosed_edgeSegment (i : ZMod J.n) : IsClosed (J.edgeSegment i) :=
   (J.isCompact_edgeSegment i).isClosed
 
+/-- Transport a polygon through a function which is injective on its carrier and straight on
+each edge.  No extension to an ambient homeomorphism is needed. -/
+noncomputable def mapEmbedding (f : Plane → Plane)
+    (hinj : Set.InjOn f J.carrier)
+    (hedge : ∀ i : ZMod J.n,
+      f '' J.edgeSegment i = segment ℝ (f (J.vertex i)) (f (J.vertex (i + 1)))) :
+    PolygonalCircle where
+  n := J.n
+  three_le := J.three_le
+  vertex i := f (J.vertex i)
+  adjacent_ne i := by
+    intro heq
+    exact J.adjacent_ne i
+      (hinj (J.vertex_mem_carrier i) (J.vertex_mem_carrier (i + 1)) heq)
+  consecutive_inter i := by
+    have hedgeNext : f '' J.edgeSegment (i + 1) =
+        segment ℝ (f (J.vertex (i + 1))) (f (J.vertex (i + 2))) := by
+      convert hedge (i + 1) using 1 <;> ring
+    have hsub (k : ZMod J.n) : J.edgeSegment k ⊆ J.carrier := fun x hx =>
+      Set.mem_iUnion.mpr ⟨k, hx⟩
+    rw [← hedge i, ← hedgeNext, ← hinj.image_inter (hsub i) (hsub (i + 1))]
+    have hJ : J.edgeSegment i ∩ J.edgeSegment (i + 1) = {J.vertex (i + 1)} := by
+      simpa only [edgeSegment, add_assoc, one_add_one_eq_two] using J.consecutive_inter i
+    rw [hJ]
+    simp
+  nonadjacent_disjoint i j hij hprev hnext := by
+    have hsub (k : ZMod J.n) : J.edgeSegment k ⊆ J.carrier := fun x hx =>
+      Set.mem_iUnion.mpr ⟨k, hx⟩
+    rw [← hedge i, ← hedge j, ← hinj.image_inter (hsub i) (hsub j)]
+    have hdis : J.edgeSegment i ∩ J.edgeSegment j = ∅ :=
+      J.nonadjacent_disjoint i j hij hprev hnext
+    rw [hdis]
+    simp
+
+@[simp] theorem mapEmbedding_n (f : Plane → Plane) (hinj : Set.InjOn f J.carrier)
+    (hedge : ∀ i : ZMod J.n,
+      f '' J.edgeSegment i = segment ℝ (f (J.vertex i)) (f (J.vertex (i + 1)))) :
+    (J.mapEmbedding f hinj hedge).n = J.n := rfl
+
+@[simp] theorem mapEmbedding_vertex (f : Plane → Plane) (hinj : Set.InjOn f J.carrier)
+    (hedge : ∀ i : ZMod J.n,
+      f '' J.edgeSegment i = segment ℝ (f (J.vertex i)) (f (J.vertex (i + 1))))
+    (i : ZMod J.n) :
+    (J.mapEmbedding f hinj hedge).vertex i = f (J.vertex i) := rfl
+
+theorem mapEmbedding_edgeSegment (f : Plane → Plane) (hinj : Set.InjOn f J.carrier)
+    (hedge : ∀ i : ZMod J.n,
+      f '' J.edgeSegment i = segment ℝ (f (J.vertex i)) (f (J.vertex (i + 1))))
+    (i : ZMod J.n) :
+    (J.mapEmbedding f hinj hedge).edgeSegment i = f '' J.edgeSegment i := by
+  rw [edgeSegment, mapEmbedding_vertex, mapEmbedding_vertex]
+  exact (hedge i).symm
+
+theorem mapEmbedding_carrier (f : Plane → Plane) (hinj : Set.InjOn f J.carrier)
+    (hedge : ∀ i : ZMod J.n,
+      f '' J.edgeSegment i = segment ℝ (f (J.vertex i)) (f (J.vertex (i + 1)))) :
+    (J.mapEmbedding f hinj hedge).carrier = f '' J.carrier := by
+  apply Set.Subset.antisymm
+  · intro p hp
+    obtain ⟨i, hpi⟩ := Set.mem_iUnion.mp hp
+    rw [J.mapEmbedding_edgeSegment f hinj hedge i] at hpi
+    obtain ⟨q, hqi, rfl⟩ := hpi
+    exact ⟨q, Set.mem_iUnion.mpr ⟨i, hqi⟩, rfl⟩
+  · rintro p ⟨q, hq, rfl⟩
+    obtain ⟨i, hqi⟩ := Set.mem_iUnion.mp hq
+    exact Set.mem_iUnion.mpr ⟨i, by
+      rw [J.mapEmbedding_edgeSegment f hinj hedge i]
+      exact ⟨q, hqi, rfl⟩⟩
+
 /-- Transport a polygon through a homeomorphism which is straight on each polygon edge. -/
 noncomputable def mapHomeomorph (h : Plane ≃ₜ Plane)
     (hedge : ∀ i : ZMod J.n,

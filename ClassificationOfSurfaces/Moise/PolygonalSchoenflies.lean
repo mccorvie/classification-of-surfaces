@@ -3,7 +3,7 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
-import ClassificationOfSurfaces.Moise.FreeTriangleMove
+import ClassificationOfSurfaces.Moise.PLMoves
 import ClassificationOfSurfaces.Moise.PolygonalPolyhedron
 import ClassificationOfSurfaces.Moise.PolygonalCrosscut
 import Mathlib.Analysis.LocallyConvex.Separation
@@ -28,10 +28,6 @@ namespace Topology
 namespace ClassificationOfSurfaces
 namespace Moise
 
-/-- A closed triangle in the plane: the convex hull of three affinely independent points. -/
-def IsTriangle (C : Set Plane) : Prop :=
-  ∃ p : Fin 3 → Plane, AffineIndependent ℝ p ∧ C = convexHull ℝ (Set.range p)
-
 /-- A triangle mesh with exactly one maximal triangle has triangular support. -/
 theorem TriangleMesh.isTriangle_support_of_card_triangles_eq_one (M : TriangleMesh)
     (hcard : M.triangles.card = 1) : IsTriangle M.toPlaneComplex.support := by
@@ -53,6 +49,19 @@ inductive TriangleMesh.AmbientShellingIn (U : Set Plane) : TriangleMesh → Prop
       (hfrontier : g '' frontier M.toPlaneComplex.support =
         frontier (M.eraseTriangle t).toPlaneComplex.support)
       (tail : (M.eraseTriangle t).AmbientShellingIn U) : M.AmbientShellingIn U
+
+/-- A shelling carrying the finite-PL certificate and support image equality required to
+compose each elementary move on the whole current disk. -/
+inductive TriangleMesh.PLAmbientShellingIn (U : Set Plane) : TriangleMesh → Prop
+  | single (M : TriangleMesh) (hcard : M.triangles.card = 1) : M.PLAmbientShellingIn U
+  | remove (M : TriangleMesh) (t : Finset M.Vertex) (ht : t ∈ M.triangles)
+      (g : Plane ≃ₜ Plane) (hpl : FinitePLHomeomorphOn g M.toPlaneComplex.support)
+      (hfix : Set.EqOn g id Uᶜ)
+      (hsupport : g '' M.toPlaneComplex.support =
+        (M.eraseTriangle t).toPlaneComplex.support)
+      (hfrontier : g '' frontier M.toPlaneComplex.support =
+        frontier (M.eraseTriangle t).toPlaneComplex.support)
+      (tail : (M.eraseTriangle t).PLAmbientShellingIn U) : M.PLAmbientShellingIn U
 
 /-- A supported ambient shelling composes to a single relative Schoenflies homeomorphism. -/
 theorem TriangleMesh.AmbientShellingIn.straightens {M : TriangleMesh} {U : Set Plane}
@@ -78,6 +87,34 @@ theorem TriangleMesh.AmbientShellingIn.straightens {M : TriangleMesh} {U : Set P
         rw [hfix hp]
         simpa using hfixTail hp
 
+/-- A PL-aware shelling composes to a finite PL ambient straightening of its original disk. -/
+theorem TriangleMesh.PLAmbientShellingIn.straightens {M : TriangleMesh} {U : Set Plane}
+    (S : M.PLAmbientShellingIn U) :
+    ∃ h : Plane ≃ₜ Plane, ∃ C : Set Plane,
+      ∃ _ : FinitePLHomeomorphOn h M.toPlaneComplex.support,
+      IsTriangle C ∧ h '' frontier M.toPlaneComplex.support = frontier C ∧
+        h '' M.toPlaneComplex.support = C ∧ Set.EqOn h id Uᶜ := by
+  induction S with
+  | single M hcard =>
+      refine ⟨Homeomorph.refl Plane, M.toPlaneComplex.support,
+        FinitePLHomeomorphOn.refl M.toPlaneComplex M.toPlaneComplex_isPure2,
+        M.isTriangle_support_of_card_triangles_eq_one hcard, ?_, ?_, ?_⟩
+      · simp
+      · simp
+      · intro p hp
+        rfl
+  | remove M t ht g hpl hfix hsupport hmove tail ih =>
+      obtain ⟨h, C, hplTail, hC, hfrontier, hsupportTail, hfixTail⟩ := ih
+      refine ⟨g.trans h, C, hpl.trans (hplTail.congrSet hsupport.symm), hC, ?_, ?_, ?_⟩
+      · change (fun x => h (g x)) '' frontier M.toPlaneComplex.support = frontier C
+        rw [← Set.image_image, hmove, hfrontier]
+      · change (fun x => h (g x)) '' M.toPlaneComplex.support = C
+        rw [← Set.image_image, hsupport, hsupportTail]
+      · intro p hp
+        change h (g p) = p
+        rw [hfix hp]
+        simpa using hfixTail hp
+
 /-- An affine equivalence of the Euclidean plane is an ambient homeomorphism. -/
 noncomputable def triangleAffineHomeomorph (p q : Fin 3 → Plane)
     (hp : AffineIndependent ℝ p) (hq : AffineIndependent ℝ q) : Plane ≃ₜ Plane where
@@ -98,6 +135,281 @@ theorem triangle_ambient_homeomorphic {C C' : Set Plane} (hC : IsTriangle C)
     triangleAffineEquiv_image_convexHull p q hp hq
   refine ⟨h, himage, ?_⟩
   rw [h.image_frontier, himage]
+
+/-! ## The edge complex of a polygon -/
+
+/-- Polygon edges meet exactly in the convex hull of their shared abstract vertices. -/
+theorem PolygonalCircle.edgeSegment_inter_eq_shared_vertices
+    (J : PolygonalCircle) (i j : ZMod J.n) :
+    J.edgeSegment i ∩ J.edgeSegment j =
+      convexHull ℝ (J.vertex ''
+        ((({i, i + 1} : Finset (ZMod J.n)) ∩ {j, j + 1} :
+          Finset (ZMod J.n)) : Set (ZMod J.n))) := by
+  have hpairCarrier (k : ZMod J.n) :
+      convexHull ℝ (J.vertex '' (({k, k + 1} : Finset (ZMod J.n)) :
+        Set (ZMod J.n))) = J.edgeSegment k := by
+    rw [PolygonalCircle.edgeSegment, ← convexHull_pair]
+    congr 1
+    ext x
+    simp [eq_comm]
+  have hsucc (k : ZMod J.n) : k ≠ k + 1 := by
+    intro hk
+    exact J.adjacent_ne k (congrArg J.vertex hk)
+  have htwo (k : ZMod J.n) : k ≠ k + 2 := by
+    intro hk
+    have hx : J.vertex k ∈ J.edgeSegment k ∩ J.edgeSegment (k + 1) := by
+      constructor
+      · exact left_mem_segment ℝ _ _
+      · rw [PolygonalCircle.edgeSegment,
+          show k + 1 + 1 = k + 2 by ring, ← hk]
+        exact right_mem_segment ℝ _ _
+    have hinter : J.edgeSegment k ∩ J.edgeSegment (k + 1) =
+        {J.vertex (k + 1)} := by
+      simpa only [PolygonalCircle.edgeSegment, add_assoc, one_add_one_eq_two] using
+        J.consecutive_inter k
+    rw [hinter] at hx
+    exact J.adjacent_ne k (Set.mem_singleton_iff.mp hx)
+  have hadjacent (k : ZMod J.n) :
+      ({k, k + 1} : Finset (ZMod J.n)) ∩ {k + 1, k + 2} = {k + 1} := by
+    ext x
+    simp only [Finset.mem_inter, Finset.mem_insert, Finset.mem_singleton]
+    constructor
+    · rintro ⟨(h | h), (h' | h')⟩
+      · subst x
+        exact (hsucc k h').elim
+      · subst x
+        exact (htwo k (by simpa [add_assoc] using h')).elim
+      · subst x
+        rfl
+      · subst x
+        rfl
+    · rintro rfl
+      exact ⟨Or.inr rfl, Or.inl rfl⟩
+  by_cases hij : i = j
+  · subst j
+    rw [Finset.inter_self, hpairCarrier]
+    simp
+  by_cases hnext : j = i + 1
+  · subst j
+    have hfin :
+        ({i, i + 1} : Finset (ZMod J.n)) ∩ {i + 1, i + 1 + 1} = {i + 1} := by
+      convert hadjacent i using 1 <;> ring
+    change J.edgeSegment i ∩ J.edgeSegment (i + 1) = _
+    rw [hfin, show convexHull ℝ (J.vertex '' (({i + 1} :
+      Finset (ZMod J.n)) : Set (ZMod J.n))) = {J.vertex (i + 1)} by simp]
+    simpa only [PolygonalCircle.edgeSegment, add_assoc, one_add_one_eq_two] using
+      J.consecutive_inter i
+  by_cases hprev : i = j + 1
+  · have h := J.consecutive_inter j
+    rw [Set.inter_comm] at h
+    have hfin :
+        ({j + 1, j + 1 + 1} : Finset (ZMod J.n)) ∩ {j, j + 1} = {j + 1} := by
+      rw [Finset.inter_comm]
+      convert hadjacent j using 1 <;> ring
+    rw [hprev]
+    change J.edgeSegment (j + 1) ∩ J.edgeSegment j = _
+    rw [hfin, show convexHull ℝ (J.vertex '' (({j + 1} :
+      Finset (ZMod J.n)) : Set (ZMod J.n))) = {J.vertex (j + 1)} by simp]
+    simpa only [PolygonalCircle.edgeSegment, add_assoc, one_add_one_eq_two] using h
+  · have hdis := J.nonadjacent_disjoint i j hij hprev hnext
+    have hdis' :
+        segment ℝ (J.vertex i) (J.vertex (i + 1)) ∩
+          segment ℝ (J.vertex j) (J.vertex (j + 1)) = ∅ :=
+      hdis
+    have hinter :
+        ({i, i + 1} : Finset (ZMod J.n)) ∩ {j, j + 1} = ∅ := by
+      ext x
+      simp only [Finset.mem_inter, Finset.mem_insert, Finset.mem_singleton]
+      constructor
+      · rintro ⟨(rfl | rfl), (h | h)⟩
+        · exact (hij h).elim
+        · exact (hprev h).elim
+        · exact (hnext h.symm).elim
+        · exact (hij (add_right_cancel h)).elim
+      · intro hx
+        simp at hx
+    change segment ℝ (J.vertex i) (J.vertex (i + 1)) ∩
+      segment ℝ (J.vertex j) (J.vertex (j + 1)) = _
+    rw [hdis', hinter]
+    simp
+
+/-- The nonempty abstract faces of the cyclic edges of a polygon. -/
+noncomputable def PolygonalCircle.edgeFaces (J : PolygonalCircle) :
+    Finset (Finset (ZMod J.n)) := by
+  classical
+  exact (Finset.univ : Finset (ZMod J.n)).biUnion fun i =>
+    ({i, i + 1} : Finset (ZMod J.n)).powerset.filter (·.Nonempty)
+
+theorem PolygonalCircle.mem_edgeFaces_iff (J : PolygonalCircle)
+    {s : Finset (ZMod J.n)} :
+    s ∈ J.edgeFaces ↔ s.Nonempty ∧ ∃ i, s ⊆ {i, i + 1} := by
+  classical
+  simp [PolygonalCircle.edgeFaces, and_assoc, and_comm, and_left_comm]
+
+/-- A polygon, regarded as its finite one-dimensional geometric complex. -/
+noncomputable def PolygonalCircle.edgeComplex (J : PolygonalCircle) : PlaneComplex where
+  Vertex := ZMod J.n
+  position := J.vertex
+  position_injective := J.vertex_injective
+  simplexes := J.edgeFaces
+  nonempty_of_mem := fun s hs => (J.mem_edgeFaces_iff.mp hs).1
+  card_le_three := by
+    intro s hs
+    obtain ⟨-, i, hsi⟩ := J.mem_edgeFaces_iff.mp hs
+    have hp : ({i, i + 1} : Finset (ZMod J.n)).card ≤ 2 := by
+      rcases (Finset.card_pair_eq_one_or_two (a := i) (b := i + 1)) with h | h <;> omega
+    exact (Finset.card_le_card hsi).trans hp |>.trans (by omega)
+  down_closed := by
+    intro s hs t hts ht
+    obtain ⟨-, i, hsi⟩ := J.mem_edgeFaces_iff.mp hs
+    exact J.mem_edgeFaces_iff.mpr ⟨ht, i, hts.trans hsi⟩
+  affineIndependent := by
+    intro s hs
+    let A : Finset Plane := s.image J.vertex
+    have hAcard : A.card ≤ 2 := by
+      exact Finset.card_image_le.trans (by
+        obtain ⟨-, i, hsi⟩ := J.mem_edgeFaces_iff.mp hs
+        have hp : ({i, i + 1} : Finset (ZMod J.n)).card ≤ 2 := by
+          rcases (Finset.card_pair_eq_one_or_two (a := i) (b := i + 1)) with h | h <;>
+            omega
+        exact (Finset.card_le_card hsi).trans hp)
+    let e : s ↪ A :=
+      { toFun := fun v =>
+          ⟨J.vertex v, Finset.mem_image.mpr ⟨v, v.2, rfl⟩⟩
+        inj' := by
+          intro v w hvw
+          apply Subtype.ext
+          exact J.vertex_injective (congrArg Subtype.val hvw) }
+    exact (affineIndependent_finset_of_card_le_two A hAcard).comp_embedding e
+  face_inter := by
+    intro s hs t ht
+    have vertex_mem_of_mem_carrier
+        {u : Finset (ZMod J.n)} (hu : u ∈ J.edgeFaces)
+        {v : ZMod J.n}
+        (hv : J.vertex v ∈ convexHull ℝ (J.vertex '' (u : Set (ZMod J.n)))) :
+        v ∈ u := by
+      obtain ⟨hune, i, hui⟩ := J.mem_edgeFaces_iff.mp hu
+      have hupos : 0 < u.card := Finset.card_pos.mpr hune
+      have hpairle : ({i, i + 1} : Finset (ZMod J.n)).card ≤ 2 := by
+        rcases (Finset.card_pair_eq_one_or_two (a := i) (b := i + 1)) with h | h <;>
+          omega
+      have hule : u.card ≤ 2 := (Finset.card_le_card hui).trans hpairle
+      rcases (show u.card = 1 ∨ u.card = 2 by omega) with huone | hutwo
+      · obtain ⟨w, rfl⟩ := Finset.card_eq_one.mp huone
+        have hvw : J.vertex v = J.vertex w := by simpa using hv
+        simp [J.vertex_injective hvw]
+      · have hueq : u = {i, i + 1} := by
+          apply Finset.eq_of_subset_of_card_le hui
+          have := Finset.card_le_card hui
+          omega
+        rw [hueq] at hv ⊢
+        have hpair : convexHull ℝ (J.vertex '' (({i, i + 1} :
+            Finset (ZMod J.n)) : Set (ZMod J.n))) = J.edgeSegment i := by
+          rw [PolygonalCircle.edgeSegment, ← convexHull_pair]
+          congr 1
+          ext x
+          simp [eq_comm]
+        simpa only [Finset.mem_insert, Finset.mem_singleton] using
+          (J.vertex_mem_edgeSegment_iff v i).mp (by
+            rw [← hpair]
+            exact hv)
+    have hspos : 0 < s.card := Finset.card_pos.mpr (J.mem_edgeFaces_iff.mp hs).1
+    have htpos : 0 < t.card := Finset.card_pos.mpr (J.mem_edgeFaces_iff.mp ht).1
+    have hsle : s.card ≤ 2 := by
+      obtain ⟨-, i, hsi⟩ := J.mem_edgeFaces_iff.mp hs
+      have hp : ({i, i + 1} : Finset (ZMod J.n)).card ≤ 2 := by
+        rcases (Finset.card_pair_eq_one_or_two (a := i) (b := i + 1)) with h | h <;>
+          omega
+      exact (Finset.card_le_card hsi).trans hp
+    have htle : t.card ≤ 2 := by
+      obtain ⟨-, i, hti⟩ := J.mem_edgeFaces_iff.mp ht
+      have hp : ({i, i + 1} : Finset (ZMod J.n)).card ≤ 2 := by
+        rcases (Finset.card_pair_eq_one_or_two (a := i) (b := i + 1)) with h | h <;>
+          omega
+      exact (Finset.card_le_card hti).trans hp
+    rcases (show s.card = 1 ∨ s.card = 2 by omega) with hsone | hstwo
+    · obtain ⟨v, rfl⟩ := Finset.card_eq_one.mp hsone
+      apply Set.Subset.antisymm
+      · intro x hx
+        have hxv : x = J.vertex v := by simpa using hx.1
+        subst x
+        have hvt := vertex_mem_of_mem_carrier ht hx.2
+        exact subset_convexHull ℝ _ ⟨v, by simpa using hvt, rfl⟩
+      · intro x hx
+        exact ⟨convexHull_mono (Set.image_mono Finset.inter_subset_left) hx,
+          convexHull_mono (Set.image_mono Finset.inter_subset_right) hx⟩
+    · rcases (show t.card = 1 ∨ t.card = 2 by omega) with htone | httwo
+      · obtain ⟨v, rfl⟩ := Finset.card_eq_one.mp htone
+        apply Set.Subset.antisymm
+        · intro x hx
+          have hxv : x = J.vertex v := by simpa using hx.2
+          subst x
+          have hvs := vertex_mem_of_mem_carrier hs hx.1
+          exact subset_convexHull ℝ _ ⟨v, by simpa using hvs, rfl⟩
+        · intro x hx
+          exact ⟨convexHull_mono (Set.image_mono Finset.inter_subset_left) hx,
+            convexHull_mono (Set.image_mono Finset.inter_subset_right) hx⟩
+      · obtain ⟨-, i, hsi⟩ := J.mem_edgeFaces_iff.mp hs
+        obtain ⟨-, j, htj⟩ := J.mem_edgeFaces_iff.mp ht
+        have hseq : s = {i, i + 1} := by
+          apply Finset.eq_of_subset_of_card_le hsi
+          rw [Finset.card_pair (by
+            intro hi
+            exact J.adjacent_ne i (congrArg J.vertex hi))]
+          exact hstwo.ge
+        have hteq : t = {j, j + 1} := by
+          apply Finset.eq_of_subset_of_card_le htj
+          rw [Finset.card_pair (by
+            intro hj
+            exact J.adjacent_ne j (congrArg J.vertex hj))]
+          exact httwo.ge
+        subst s
+        subst t
+        rw [show convexHull ℝ (J.vertex '' (({i, i + 1} :
+          Finset (ZMod J.n)) : Set (ZMod J.n))) = J.edgeSegment i by
+            rw [PolygonalCircle.edgeSegment, ← convexHull_pair]
+            congr 1
+            ext x
+            simp [eq_comm]]
+        rw [show convexHull ℝ (J.vertex '' (({j, j + 1} :
+          Finset (ZMod J.n)) : Set (ZMod J.n))) = J.edgeSegment j by
+            rw [PolygonalCircle.edgeSegment, ← convexHull_pair]
+            congr 1
+            ext x
+            simp [eq_comm]]
+        exact J.edgeSegment_inter_eq_shared_vertices i j
+
+/-- The support of the polygon edge complex is exactly the polygon carrier. -/
+theorem PolygonalCircle.edgeComplex_support (J : PolygonalCircle) :
+    J.edgeComplex.support = J.carrier := by
+  have hpairCarrier (i : ZMod J.n) :
+      J.edgeComplex.cellCarrier ({i, i + 1} : Finset (ZMod J.n)) =
+        J.edgeSegment i := by
+    change convexHull ℝ (J.vertex '' (({i, i + 1} : Finset (ZMod J.n)) :
+      Set (ZMod J.n))) = segment ℝ (J.vertex i) (J.vertex (i + 1))
+    rw [← convexHull_pair]
+    congr 1
+    ext x
+    simp [eq_comm]
+  apply Set.Subset.antisymm
+  · intro x hx
+    rw [PlaneComplex.support] at hx
+    simp only [Set.mem_iUnion] at hx
+    obtain ⟨s, hs, hxs⟩ := hx
+    obtain ⟨-, i, hsi⟩ := J.mem_edgeFaces_iff.mp hs
+    apply J.edgeSegment_subset_carrier i
+    have hxPair : x ∈ J.edgeComplex.cellCarrier
+        ({i, i + 1} : Finset (ZMod J.n)) :=
+      convexHull_mono (Set.image_mono hsi) hxs
+    rw [hpairCarrier i] at hxPair
+    exact hxPair
+  · intro x hx
+    rw [PolygonalCircle.carrier] at hx
+    simp only [Set.mem_iUnion] at hx
+    obtain ⟨i, hxi⟩ := hx
+    rw [← hpairCarrier i] at hxi
+    exact J.edgeComplex.cellCarrier_subset_support
+      (J.mem_edgeFaces_iff.mpr ⟨by simp, i, Finset.Subset.rfl⟩) hxi
 
 /-- Removing finitely many points from a polygon carrier leaves a dense subset of that carrier.
 This lets incidence arguments move away from the finite mesh vertex set. -/
@@ -161,6 +473,30 @@ theorem TriangleMesh.boundaryCarrier_eq_frontier_of_polygonalDisk
     exact ⟨e, M.mem_allBoundaryEdges_iff.mpr he, hqe⟩
   have hpBoundaryClosure : p ∈ closure M.boundaryCarrier := closure_mono hsub hpClosure
   rwa [M.isCompact_boundaryCarrier.isClosed.closure_eq] at hpBoundaryClosure
+
+/-- Restrict a finite PL certificate on a polygonal disk to its polygonal frontier. -/
+theorem FinitePLHomeomorphOn.isPLOnSet_polygonal_frontier
+    {h : Plane ≃ₜ Plane} {A : Set Plane} (F : FinitePLHomeomorphOn h A)
+    (J : PolygonalCircle) (hA : A = J.closedRegion) :
+    IsPLOnSet J.carrier h := by
+  let M := F.complex.toTriangleMesh
+  let B := M.boundaryComplex
+  have hMdisk : M.toPlaneComplex.support = J.closedRegion := by
+    exact (F.complex.toTriangleMesh_support F.pure).trans (F.support_eq.trans hA)
+  have hBsupport : B.support = J.carrier := by
+    calc
+      B.support = M.boundaryCarrier := M.boundaryComplex_support
+      _ = frontier M.toPlaneComplex.support :=
+        M.boundaryCarrier_eq_frontier_of_polygonalDisk J hMdisk
+      _ = J.carrier := by rw [hMdisk, J.frontier_closedRegion]
+  refine ⟨B, hBsupport, B, PlaneComplex.Subdivides.refl B, ?_⟩
+  intro s hs
+  have hsM : s ∈ M.toPlaneComplex.simplexes :=
+    M.boundaryComplex_simplex_mem_toPlaneComplex hs
+  obtain ⟨hsne, t, ht, hst⟩ := M.mem_faces_iff.mp hsM
+  have hsF : s ∈ F.complex.simplexes := by
+    apply F.complex.down_closed t (F.complex.mem_simplexes_of_mem_cells ht) s hst hsne
+  exact F.affineOn s hsF
 
 /-- After the three Figure 3.3 base breakpoints have been made polygon vertices, each polygon
 edge is contained in one base half or avoids the open base altogether. -/
@@ -2147,6 +2483,35 @@ theorem eq_closedRegion_of_isCompact_frontier_eq
   exact Set.union_subset (hInteriorSub.trans interior_subset)
     (by rw [← hfrontier]; exact frontier_subset_closure.trans_eq hSclosed.closure_eq)
 
+/-- A homeomorphism carrying the frontier of one polygonal mesh disk to another carries the
+whole closed disk to the other closed disk. -/
+theorem TriangleMesh.image_support_eq_of_polygonalDisk_frontier
+    (M : TriangleMesh) (J' : PolygonalCircle)
+    (htriangles : M.triangles.Nonempty)
+    (g : Plane ≃ₜ Plane) (N : TriangleMesh)
+    (hfrontier : g '' frontier M.toPlaneComplex.support =
+      frontier N.toPlaneComplex.support)
+    (hN : N.toPlaneComplex.support = J'.closedRegion) :
+    g '' M.toPlaneComplex.support = N.toPlaneComplex.support := by
+  have hcompact : IsCompact (g '' M.toPlaneComplex.support) :=
+    M.toPlaneComplex.isCompact_support.image g.continuous
+  have hfrontierImage :
+      frontier (g '' M.toPlaneComplex.support) = J'.carrier := by
+    rw [← g.image_frontier, hfrontier, hN, J'.frontier_closedRegion]
+  have hinterior : (interior (g '' M.toPlaneComplex.support)).Nonempty := by
+    obtain ⟨t, ht⟩ := htriangles
+    let T : M.Triangle := ⟨t, ht⟩
+    obtain ⟨p, hp⟩ := M.interior_triangleCarrier_nonempty T
+    have htriangle : M.triangleCarrier t ⊆ M.toPlaneComplex.support := by
+      rw [M.toPlaneComplex_support]
+      exact Set.subset_iUnion_of_subset t
+        (Set.subset_iUnion_of_subset ht subset_rfl)
+    refine ⟨g p, ?_⟩
+    rw [← g.image_interior]
+    exact ⟨p, interior_mono htriangle hp, rfl⟩
+  exact (J'.eq_closedRegion_of_isCompact_frontier_eq
+    hcompact hfrontierImage hinterior).trans hN.symm
+
 /-- The one-edge Figure 3.3 move removes an ear through polygonal disks, relative to any open
 neighborhood of that ear. -/
 theorem TriangleMesh.exists_supported_polygonalDisk_move_of_oneEdgeFree
@@ -2156,6 +2521,7 @@ theorem TriangleMesh.exists_supported_polygonalDisk_move_of_oneEdgeFree
     (hmore : 1 < M.triangles.card)
     (U : Set Plane) (hU : IsOpen U) (hTU : M.triangleCarrier T.1 ⊆ U) :
     ∃ g : Plane ≃ₜ Plane, ∃ J' : PolygonalCircle,
+      ∃ _ : FinitePLHomeomorphOn g M.toPlaneComplex.support,
       Set.EqOn g id Uᶜ ∧
         g '' frontier M.toPlaneComplex.support =
           frontier (M.eraseTriangle T.1).toPlaneComplex.support ∧
@@ -2343,7 +2709,10 @@ theorem TriangleMesh.exists_supported_polygonalDisk_move_of_oneEdgeFree
   have hremaining : (M.eraseTriangle T.1).toPlaneComplex.support = J'.closedRegion :=
     J'.eq_closedRegion_of_isCompact_frontier_eq
       (M.eraseTriangle T.1).toPlaneComplex.isCompact_support hnewFrontier hinterior
-  exact ⟨g, J', hfixU, hfrontier, hremaining⟩
+  exact ⟨g, J',
+    transportedThinKiteHomeomorph_finitePLOn E δ hδ M.toPlaneComplex
+      M.toPlaneComplex_isPure2,
+    hfixU, hfrontier, hremaining⟩
 
 /-- The inverse two-edge Figure 3.3 move removes an ear through polygonal disks, relative to any
 open neighborhood of the ear. -/
@@ -2353,6 +2722,7 @@ theorem TriangleMesh.exists_supported_polygonalDisk_move_of_twoEdgeFree
     (T : M.Triangle) (k : Fin 3) (hfree : M.IsTwoEdgeFreeTriangle T k)
     (U : Set Plane) (hU : IsOpen U) (hTU : M.triangleCarrier T.1 ⊆ U) :
     ∃ g : Plane ≃ₜ Plane, ∃ J' : PolygonalCircle,
+      ∃ _ : FinitePLHomeomorphOn g M.toPlaneComplex.support,
       Set.EqOn g id Uᶜ ∧
         g '' frontier M.toPlaneComplex.support =
           frontier (M.eraseTriangle T.1).toPlaneComplex.support ∧
@@ -2527,7 +2897,10 @@ theorem TriangleMesh.exists_supported_polygonalDisk_move_of_twoEdgeFree
       frontier (M.eraseTriangle T.1).toPlaneComplex.support := by
     rw [← hpush, Set.image_image]
     simp [pull]
-  exact ⟨pull, J', hpullFix, hpull, hremaining⟩
+  exact ⟨pull, J',
+    transportedThinKiteHomeomorph_symm_finitePLOn E δ hδ M.toPlaneComplex
+      M.toPlaneComplex_isPure2,
+    hpullFix, hpull, hremaining⟩
 
 /-- **Theorem boundary** (Moise Ch. 2, Thm. 2: polygonal disks are finite polyhedra).
 
@@ -2557,12 +2930,15 @@ identity off `U`.  This is the version used to reconcile chart triangulations wi
 the part of the complex already built. -/
 theorem polygonal_schoenflies_rel (U : Set Plane) (hU : IsOpen U)
     (hregion : J.closedRegion ⊆ U) :
-    ∃ h : Plane ≃ₜ Plane, (∃ C : Set Plane, IsTriangle C ∧ h '' J.carrier = frontier C) ∧
-      Set.EqOn h id Uᶜ := by
-  have hshelling : J.closedRegionMesh.AmbientShellingIn U := by
+    ∃ h : Plane ≃ₜ Plane,
+      ∃ _ : FinitePLHomeomorphOn h J.closedRegionMesh.toPlaneComplex.support,
+        (∃ C : Set Plane, IsTriangle C ∧ h '' J.carrier = frontier C ∧
+          h '' J.closedRegion = C) ∧
+          Set.EqOn h id Uᶜ := by
+  have hshelling : J.closedRegionMesh.PLAmbientShellingIn U := by
     have shelling (M : TriangleMesh) (K : PolygonalCircle)
         (hsupport : M.toPlaneComplex.support = K.closedRegion)
-        (hsubset : M.toPlaneComplex.support ⊆ U) : M.AmbientShellingIn U := by
+        (hsubset : M.toPlaneComplex.support ⊆ U) : M.PLAmbientShellingIn U := by
       induction hcardM : M.triangles.card using Nat.strong_induction_on generalizing M K with
       | h n ih =>
           have htriangles : M.triangles.Nonempty := by
@@ -2578,7 +2954,7 @@ theorem polygonal_schoenflies_rel (U : Set Plane) (hU : IsOpen U)
             exact hvertexClosed
           have hpos : 0 < M.triangles.card := Finset.card_pos.mpr htriangles
           by_cases hcard : M.triangles.card = 1
-          · exact TriangleMesh.AmbientShellingIn.single M hcard
+          · exact TriangleMesh.PLAmbientShellingIn.single M hcard
           · have hmore : 1 < M.triangles.card := by omega
             obtain ⟨T, -, -, hTfree, -⟩ :=
               M.exists_two_geometricallyFreeTriangles_of_polygonalDisk K hsupport hmore
@@ -2592,37 +2968,47 @@ theorem polygonal_schoenflies_rel (U : Set Plane) (hU : IsOpen U)
             have hsubsetErase : (M.eraseTriangle T.1).toPlaneComplex.support ⊆ U :=
               (M.eraseTriangle_support_subset T.1).trans hsubset
             obtain ⟨k, hTone | hTtwo⟩ := hTfree
-            · obtain ⟨g, K', hfix, hfrontier, hsupport'⟩ :=
+            · obtain ⟨g, K', hpl, hfix, hfrontier, hsupport'⟩ :=
                 PolygonalCircle.TriangleMesh.exists_supported_polygonalDisk_move_of_oneEdgeFree
                   M K hsupport
                   T k hTone hmore U hU hTU
+              have himage :=
+                PolygonalCircle.TriangleMesh.image_support_eq_of_polygonalDisk_frontier
+                  M K' htriangles g (M.eraseTriangle T.1) hfrontier hsupport'
               have htail := ih (M.eraseTriangle T.1).triangles.card
                 (by simpa [hcardM] using hlt) (M.eraseTriangle T.1) K'
                 hsupport' hsubsetErase rfl
-              exact TriangleMesh.AmbientShellingIn.remove M T.1 T.2 g hfix hfrontier htail
-            · obtain ⟨g, K', hfix, hfrontier, hsupport'⟩ :=
+              exact TriangleMesh.PLAmbientShellingIn.remove M T.1 T.2 g hpl hfix
+                himage hfrontier htail
+            · obtain ⟨g, K', hpl, hfix, hfrontier, hsupport'⟩ :=
                 PolygonalCircle.TriangleMesh.exists_supported_polygonalDisk_move_of_twoEdgeFree
                   M K hsupport
                   T k hTtwo U hU hTU
+              have himage :=
+                PolygonalCircle.TriangleMesh.image_support_eq_of_polygonalDisk_frontier
+                  M K' htriangles g (M.eraseTriangle T.1) hfrontier hsupport'
               have htail := ih (M.eraseTriangle T.1).triangles.card
                 (by simpa [hcardM] using hlt) (M.eraseTriangle T.1) K'
                 hsupport' hsubsetErase rfl
-              exact TriangleMesh.AmbientShellingIn.remove M T.1 T.2 g hfix hfrontier htail
+              exact TriangleMesh.PLAmbientShellingIn.remove M T.1 T.2 g hpl hfix
+                himage hfrontier htail
     exact shelling J.closedRegionMesh J J.closedRegionMesh_support
       (J.closedRegionMesh_support.trans_le hregion)
-  obtain ⟨h, C, hC, hfrontier, hfix⟩ := hshelling.straightens
-  refine ⟨h, ⟨C, hC, ?_⟩, hfix⟩
-  rw [← J.frontier_closedRegion, ← J.closedRegionMesh_support]
-  exact hfrontier
+  obtain ⟨h, C, hpl, hC, hfrontier, hsupportImage, hfix⟩ := hshelling.straightens
+  refine ⟨h, hpl, ⟨C, hC, ?_, ?_⟩, hfix⟩
+  · rw [← J.frontier_closedRegion, ← J.closedRegionMesh_support]
+    exact hfrontier
+  · rw [← J.closedRegionMesh_support]
+    exact hsupportImage
 
 /-- Moise Ch. 3, Thm. 5: any two polygons in the plane are equivalent under an ambient
 homeomorphism.  This follows from relative straightening and the affine equivalence of the two
 resulting triangles. -/
 theorem polygonal_schoenflies (J' : PolygonalCircle) :
     ∃ h : Plane ≃ₜ Plane, h '' J.carrier = J'.carrier := by
-  obtain ⟨h, ⟨C, hC, hJC⟩, -⟩ := J.polygonal_schoenflies_rel Set.univ isOpen_univ
+  obtain ⟨h, -, ⟨C, hC, hJC, -⟩, -⟩ := J.polygonal_schoenflies_rel Set.univ isOpen_univ
     (Set.subset_univ _)
-  obtain ⟨h', ⟨C', hC', hJ'C'⟩, -⟩ := J'.polygonal_schoenflies_rel Set.univ isOpen_univ
+  obtain ⟨h', -, ⟨C', hC', hJ'C', -⟩, -⟩ := J'.polygonal_schoenflies_rel Set.univ isOpen_univ
     (Set.subset_univ _)
   obtain ⟨a, -, ha⟩ := triangle_ambient_homeomorphic hC hC'
   refine ⟨h.trans (a.trans h'.symm), ?_⟩

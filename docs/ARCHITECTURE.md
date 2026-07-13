@@ -40,10 +40,14 @@ The final theorem should be a short assembly proof using those two bridge theore
 
 ## Current Baseline
 
-The repository builds. On the triangulation side, the Radó assembly, finite chart cover, and
-chart extraction are proved sorry-free relative to the explicit C0 `ChartBoundaryInvariant`
-hypothesis; the open leaves (Moise Ch. 2-3, Ch. 5-6, and the Ch. 8 induction step) are named
-sorried boundaries — see `docs/MOISE_ROUTE.md` for the live status. The quotient realization and
+The repository builds. On the triangulation side, Moise Chapters 1--6, the Radó assembly, finite
+chart cover, and chart extraction are proved sorry-free relative to the explicit C0
+`ChartBoundaryInvariant` hypothesis.  The single open triangulation leaf is the Chapter 8 Radó
+induction step; its intrinsic-complex source API is now in place.  See `docs/MOISE_ROUTE.md` for
+the live status.  The intrinsic one-skeleton approximation is an actual embedded polygonal
+graph, every face has an exact polygonal boundary cycle, and faithful fine subdivision plus
+finite compact-collar extraction are proved.  Cellwise polygonal filling and the locally finite
+frontier-compatible chart-overlap glue remain. The quotient realization and
 Gallier-Xu normal-form layers are still placeholder scaffolding (see `docs/KNOWN_WEAK.md`). The
 bottom API is in place:
 

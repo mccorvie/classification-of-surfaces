@@ -1032,20 +1032,27 @@ theorem diamondFanPatchHomeomorph_fixed_frontier (a b : ℝ)
 /-- The elementary fan move extended by the identity to the whole plane. -/
 noncomputable def diamondFanAmbientHomeomorph (a b : ℝ)
     (ha0 : -2 < a) (ha1 : a < 2) (hb0 : -2 < b) (hb1 : b < 2) : Plane ≃ₜ Plane :=
-  extendHomeomorphByIdentity
-    (diamondFanMesh a ha0 ha1).toPlaneComplex.isCompact_support.isClosed
-    (diamondFanPatchHomeomorph a b ha0 ha1 hb0 hb1)
+  (diamondFanMesh a ha0 ha1).ambientRepositionHomeomorph (diamondFanPosition b)
+    (diamondFanPosition_injective hb0 hb1)
+    (diamondFanMesh b hb0 hb1).affineIndependent_triangle
+    (diamondFanMesh b hb0 hb1).triangle_inter
+    (diamondFanReposition_support_eq_source a b ha0 ha1 hb0 hb1)
     (diamondFanPatchHomeomorph_fixed_frontier a b ha0 ha1 hb0 hb1)
 
 theorem diamondFanAmbientHomeomorph_center (a b : ℝ)
     (ha0 : -2 < a) (ha1 : a < 2) (hb0 : -2 < b) (hb1 : b < 2) :
-    diamondFanAmbientHomeomorph a b ha0 ha1 hb0 hb1 (planePoint 0 a) =
+  diamondFanAmbientHomeomorph a b ha0 ha1 hb0 hb1 (planePoint 0 a) =
       planePoint 0 b := by
-  rw [diamondFanAmbientHomeomorph,
+  rw [diamondFanAmbientHomeomorph, TriangleMesh.ambientRepositionHomeomorph,
     extendHomeomorphByIdentity_apply_mem _ _ _ (by
       rw [diamondFanMesh_support a ha0 ha1, diamondPatch_eq_inDiamond]
       simp [InDiamond]
       constructor <;> linarith)]
+  change (diamondFanPatchHomeomorph a b ha0 ha1 hb0 hb1
+    ⟨planePoint 0 a, by
+      rw [diamondFanMesh_support a ha0 ha1, diamondPatch_eq_inDiamond]
+      simp [InDiamond]
+      constructor <;> linarith⟩ : Plane) = planePoint 0 b
   rw [diamondFanPatchHomeomorph_apply_val]
   exact diamondFanSupportHomeomorph_center a b ha0 ha1 hb0 hb1
 
@@ -1053,7 +1060,12 @@ theorem diamondFanAmbientHomeomorph_eqOn_compl (a b : ℝ)
     (ha0 : -2 < a) (ha1 : a < 2) (hb0 : -2 < b) (hb1 : b < 2) :
     Set.EqOn (diamondFanAmbientHomeomorph a b ha0 ha1 hb0 hb1) id diamondPatchᶜ := by
   intro p hp
-  apply extendHomeomorphByIdentity_apply_not_mem
+  apply (diamondFanMesh a ha0 ha1).ambientRepositionHomeomorph_eqOn_compl
+    (diamondFanPosition b) (diamondFanPosition_injective hb0 hb1)
+    (diamondFanMesh b hb0 hb1).affineIndependent_triangle
+    (diamondFanMesh b hb0 hb1).triangle_inter
+    (diamondFanReposition_support_eq_source a b ha0 ha1 hb0 hb1)
+    (diamondFanPatchHomeomorph_fixed_frontier a b ha0 ha1 hb0 hb1)
   rwa [diamondFanMesh_support a ha0 ha1]
 
 end Moise

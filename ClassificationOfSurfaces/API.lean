@@ -5,6 +5,15 @@ Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
+import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
+import ClassificationOfSurfaces.Moise.IntrinsicGraphPL
+import ClassificationOfSurfaces.Moise.IntrinsicFaceBoundary
+import ClassificationOfSurfaces.Moise.IntrinsicFaceExtension
+import ClassificationOfSurfaces.Moise.IntrinsicFaceFilling
+import ClassificationOfSurfaces.Moise.IntrinsicFaceModel
+import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
+import ClassificationOfSurfaces.Moise.FrontierGlue
+import ClassificationOfSurfaces.Moise.PlaneCycle
 
 /-!
 # Public API map
@@ -24,6 +33,17 @@ project skeleton and documents the intended handoff points between teams.
 
 * `GeometricTriangulation` and `GeometricRealization` (`Moise/GeometricTriangulation.lean`)
 * `PlaneComplex`, `IsPLOn`, `IsPLOnSet` (`Moise/PlaneComplex.lean`)
+* `IntrinsicTwoComplex`, its faithful `Subdivision`, `IsPLMap`, and `PLHomeomorph`
+  (`Moise/IntrinsicComplex.lean`)
+* intrinsic one-skeleton polygonal replacement, exact finite edge complexes, and embedding
+  (`Moise/IntrinsicGraphApproximation.lean`, `Moise/IntrinsicGraphPL.lean`)
+* standard plane models, exact polygonal face-boundary cycles, certified relative PL fillings,
+  and faithful arbitrarily fine midpoint subdivisions (`Moise/IntrinsicFaceModel.lean`,
+  `Moise/IntrinsicFaceBoundary.lean`, `Moise/IntrinsicFaceExtension.lean`,
+  `Moise/IntrinsicFaceFilling.lean`, `Moise/IntrinsicCellwiseExtension.lean`,
+  `Moise/IntrinsicFineSubdivision.lean`)
+* strongly positive frontier controls and continuous vanishing-error gluing
+  (`Moise/FrontierGlue.lean`)
 * `PolygonalCircle`, `polygonal_jordan`, the crossing `index` (`Moise/PolygonalJordan.lean`)
 * `closedRegion_is_polyhedron`, `polygonal_schoenflies_rel` (`Moise/PolygonalSchoenflies.lean`)
 * `pl_approximation_two_manifold` (`Moise/PLApproximation.lean`)

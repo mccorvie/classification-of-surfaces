@@ -3779,6 +3779,21 @@ theorem lineRefinementMesh_support :
   rw [TriangleMesh.toPlaneComplex_support]
   exact M.lineRefinementTriangles_support f
 
+/-- Cutting every triangle of a mesh by one affine line gives a subdivision of the original
+plane complex. -/
+theorem lineRefinementMesh_subdivides :
+    (M.lineRefinementMesh f).toPlaneComplex.Subdivides M.toPlaneComplex := by
+  constructor
+  · exact M.lineRefinementMesh_support f
+  · intro s hs
+    obtain ⟨-, u, hu, hsu⟩ :=
+      (M.lineRefinementMesh f).mem_faces_iff.mp hs
+    obtain ⟨t, hut⟩ := M.mem_lineRefinementTriangles_iff f |>.mp hu
+    refine ⟨t.1, M.mem_faces_iff.mpr ⟨?_, t.1, t.2, subset_rfl⟩, ?_⟩
+    · exact Finset.card_pos.mp (by rw [M.card_triangle t.1 t.2]; omega)
+    · exact (convexHull_mono (Set.image_mono hsu)).trans
+        (M.convexHull_child_subset_parent f t hut)
+
 theorem lineRefinementMesh_isMonochromatic :
     (M.lineRefinementMesh f).IsMonochromatic f := by
   intro s hs
@@ -3814,6 +3829,16 @@ theorem refineByLines_support (lines : List (Plane →ᵃ[ℝ] ℝ)) :
   | nil => rfl
   | cons g gs ih =>
       rw [refineByLines, ih, lineRefinementMesh_support]
+
+/-- Successive line cuts remain a subdivision of the original mesh. -/
+theorem refineByLines_subdivides (lines : List (Plane →ᵃ[ℝ] ℝ)) :
+    (M.refineByLines lines).toPlaneComplex.Subdivides M.toPlaneComplex := by
+  induction lines generalizing M with
+  | nil => exact PlaneComplex.Subdivides.refl M.toPlaneComplex
+  | cons g gs ih =>
+      change (M.lineRefinementMesh g).refineByLines gs |>.toPlaneComplex |>.Subdivides
+        M.toPlaneComplex
+      exact (ih (M := M.lineRefinementMesh g)).trans (M.lineRefinementMesh_subdivides g)
 
 theorem refineByLines_preserves_monochromatic
     (lines : List (Plane →ᵃ[ℝ] ℝ)) (g : Plane →ᵃ[ℝ] ℝ)

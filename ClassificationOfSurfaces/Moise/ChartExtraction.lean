@@ -135,6 +135,13 @@ def ChartKind.modelCore : ChartKind → Set Plane
   | .disk => Metric.closedBall 0 (1 / 2)
   | .halfDisk => {x ∈ Metric.closedBall 0 (1 / 2) | 0 ≤ x 0}
 
+theorem ChartKind.isCompact_modelCore (k : ChartKind) : IsCompact k.modelCore := by
+  cases k with
+  | disk => exact isCompact_closedBall _ _
+  | halfDisk =>
+      exact (isCompact_closedBall (0 : Plane) (1 / 2)).inter_right
+        (isClosed_le continuous_const continuous_coordZero)
+
 theorem ChartKind.modelCore_subset_modelRegion (k : ChartKind) :
     k.modelCore ⊆ k.modelRegion := by
   cases k with
@@ -167,6 +174,30 @@ def core : Set S :=
 theorem core_subset_domain : c.core ⊆ c.domain := by
   rintro x ⟨p, -, rfl⟩
   exact p.2
+
+/-- Chart cores are compact closed disks or half-disks transported through the chart. -/
+theorem isCompact_core : IsCompact c.core := by
+  let C : Set c.kind.modelRegion :=
+    Subtype.val ⁻¹' c.kind.modelCore
+  have hC : IsCompact C := by
+    exact _root_.Topology.IsEmbedding.subtypeVal.isInducing.isCompact_preimage'
+      c.kind.isCompact_modelCore fun x hx ↦
+        ⟨⟨x, c.kind.modelCore_subset_modelRegion hx⟩, rfl⟩
+  let f : c.kind.modelRegion → S := fun p ↦ (c.chart.symm p).1
+  have hf : Continuous f :=
+    continuous_subtype_val.comp c.chart.symm.continuous
+  have hcore : c.core = f '' C := by
+    ext x
+    constructor
+    · rintro ⟨y, hy, rfl⟩
+      let p : c.kind.modelRegion := c.chart y
+      refine ⟨p, hy, ?_⟩
+      exact congrArg Subtype.val (c.chart.symm_apply_apply y)
+    · rintro ⟨p, hp, rfl⟩
+      refine ⟨c.chart.symm p, ?_, rfl⟩
+      simpa [C] using hp
+  rw [hcore]
+  exact hC.image hf
 
 theorem mem_core_iff {s : S} :
     s ∈ c.core ↔ ∃ hs : s ∈ c.domain, ((c.chart ⟨s, hs⟩ : Plane) ∈ c.kind.modelCore) := by

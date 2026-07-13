@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import Mathlib.Analysis.Normed.Module.Convex
+import Mathlib.Topology.Connected.Clopen
+import Mathlib.Topology.MetricSpace.Thickening
 import ClassificationOfSurfaces.Moise.PlaneComplex
 
 /-!
@@ -142,6 +144,66 @@ theorem IsPreconnected.joinedByBrokenLine {U : Set Plane} (hU : IsOpen U)
   have hne' : (U ∩ W').Nonempty := ⟨b, hb, hb, hbN⟩
   obtain ⟨x, -, ⟨-, hxJ⟩, ⟨-, hxN⟩⟩ := hconn W W' hWopen hW'open hsub hne hne'
   exact hxN hxJ
+
+/-- A positive metric thickening of a preconnected plane set is preconnected. -/
+theorem IsPreconnected.thickening {A : Set Plane} (hA : IsPreconnected A)
+    {ε : ℝ} (hε : 0 < ε) : IsPreconnected (Metric.thickening ε A) := by
+  let add : Plane × Plane → Plane := fun p => p.1 + p.2
+  have hball : IsPreconnected (Metric.ball (0 : Plane) ε) :=
+    (convex_ball (0 : Plane) ε).isPreconnected
+  have hprod : IsPreconnected (A ×ˢ Metric.ball (0 : Plane) ε) :=
+    IsPreconnected.prod hA hball
+  have hadd : Continuous add := continuous_fst.add continuous_snd
+  have himage : add '' (A ×ˢ Metric.ball 0 ε) = Metric.thickening ε A := by
+    rw [Metric.thickening_eq_biUnion_ball]
+    ext x
+    simp only [Set.mem_image, Set.mem_prod, Metric.mem_ball, Set.mem_iUnion]
+    constructor
+    · rintro ⟨⟨a, v⟩, ⟨ha, hv⟩, rfl⟩
+      refine ⟨a, ha, ?_⟩
+      simpa [add, dist_eq_norm] using hv
+    · rintro ⟨a, ha, hxa⟩
+      refine ⟨(a, x - a), ⟨ha, ?_⟩, ?_⟩
+      · simpa [dist_eq_norm] using hxa
+      · simp [add]
+  rw [← himage]
+  exact IsPreconnected.image hprod add hadd.continuousOn
+
+/-- Moise Chapter 6, Theorem 1: the endpoints of an embedded edge can be joined by a broken
+line in every positive metric neighborhood of its image. -/
+theorem brokenLine_in_thickening_of_preconnected {A : Set Plane}
+    (hA : IsPreconnected A) {a b : Plane} (ha : a ∈ A) (hb : b ∈ A)
+    {ε : ℝ} (hε : 0 < ε) :
+    JoinedByBrokenLine (Metric.thickening ε A) a b := by
+  apply IsPreconnected.joinedByBrokenLine Metric.isOpen_thickening
+    (IsPreconnected.thickening hA hε)
+  · exact Metric.self_subset_thickening hε A ha
+  · exact Metric.self_subset_thickening hε A hb
+
+/-- A preconnected set admits broken-line approximations whose vertices stay in its convex hull.
+
+The thickening supplies room for the polygonal chain, while convex-hull containment records the
+extra fact needed to preserve convex target regions such as a half-plane. -/
+theorem brokenLine_in_thickening_inter_convexHull_of_preconnected {A : Set Plane}
+    (hA : IsPreconnected A) {a b : Plane} (ha : a ∈ A) (hb : b ∈ A)
+    {ε : ℝ} (hε : 0 < ε) :
+    JoinedByBrokenLine (Metric.thickening ε A ∩ convexHull ℝ A) a b := by
+  let U := Metric.thickening ε A ∩ convexHull ℝ A
+  apply hA.induction₂ (fun x y => JoinedByBrokenLine U x y)
+  · intro x hx
+    filter_upwards [inter_mem_nhdsWithin A (Metric.ball_mem_nhds x hε)] with y hy
+    apply JoinedByBrokenLine.of_segment
+    intro z hz
+    refine ⟨?_, segment_subset_convexHull hx hy.1 hz⟩
+    apply Metric.mem_thickening_iff.mpr
+    refine ⟨x, hx, ?_⟩
+    exact (convex_ball x ε).segment_subset (Metric.mem_ball_self hε) hy.2 hz
+  · intro x y z _ _ _ hxy hyz
+    exact hxy.trans hyz
+  · intro x y _ _ hxy
+    exact hxy.symm
+  · exact ha
+  · exact hb
 
 end Moise
 end ClassificationOfSurfaces

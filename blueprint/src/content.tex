@@ -394,11 +394,15 @@ at the end of Ch.~8).
 \end{theorem}
 
 \begin{proof}
+\leanok
 Approximate on the one-skeleton by \ref{moise:thm:one_skeleton_approx}, extend
 across each $2$-cell by the combinatorial Schoenflies theorem
 (\ref{moise:thm:cone_extension}, via \ref{moise:thm:polygonal_schoenflies_rel}),
-with the subdivision fine enough that extended images of distinct cells have
-disjoint interiors.
+choosing the graph perturbation below a uniform vertex--cell separation scale.
+A bounded Tietze extension of the boundary displacement and no-retraction
+detect the correct side of every image polygon.  Finite side propagation then
+shows that distinct cell interiors are disjoint, so the cellwise extensions
+glue to the required PL embedding.
 \end{proof}
 
 \section{Chart extraction (Moise Ch.~8, Thm.~1)}
@@ -465,8 +469,13 @@ Finite subcover of the core interiors.
 \uses{moise:def:geometric_realization}
 A \emph{partial triangulation} of $S$ is a finite face family together with a
 topological embedding of its geometric realization into $S$.  Its support is
-compact; its combinatorial interior is the support minus the image of the
-boundary edges (edges lying in exactly one face).
+compact.  Its combinatorial interior is the support minus the image of the
+boundary edges (edges lying in exactly one face); for the bordered induction,
+the ambient topological interior of the support is the relevant neighborhood
+notion.
+The fixed disk/half-disk diamond patch transports through any Moise chart to
+an explicit partial triangulation whose ambient interior contains the chart
+core; it satisfies the Rad\'o invariant for that single core.
 \end{definition}
 
 \begin{definition}[The Rad\'o invariant]
@@ -474,20 +483,73 @@ boundary edges (edges lying in exactly one face).
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.RadoInvariant}
 \leanok
 \uses{moise:def:partial_triangulation}
-The invariant carried through the induction (Moise's conditions (3)--(4)): the
-complex is a combinatorial surface (every edge in at most two faces) and the
-absorbed region lies in its combinatorial interior.  The empty partial
-triangulation satisfies the invariant for the empty region.  This invariant is
-expected to be strengthened during the proof of
+The invariant carried through the bordered induction: the complex is a
+combinatorial surface (every edge in at most two faces) and the absorbed region
+lies in the topological interior of the support as a subset of the ambient
+surface.  This includes genuine boundary points of half-disk cores, unlike
+combinatorial interior.  The empty partial triangulation satisfies the
+invariant for the empty region.  This invariant is expected to be strengthened during the proof of
 \ref{moise:thm:induction_step}; weakening the step's conclusion is not
 permitted.
 \end{definition}
 
+\begin{lemma}[Faithful intrinsic fine subdivision]
+\label{moise:lem:intrinsic_fine_subdivision}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.IntrinsicTwoComplex.exists_subdivision_mesh_lt}
+\leanok
+\uses{moise:def:partial_triangulation}
+Every finite intrinsic two-complex has a faithful subdivision of arbitrarily
+small barycentric mesh.  Iterated one-to-four midpoint subdivision supplies
+the subdivision and divides the mesh bound by two at every step.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Construct the midpoint complex with old vertices and one vertex for each old
+edge.  Explicit barycentric recovery proves that its affine evaluation is a
+homeomorphism onto the old realization.  Corner and central triangles have at
+most half the old diameter; iterate.
+\end{proof}
+
+\begin{lemma}[Finite compact collar]
+\label{moise:lem:finite_compact_collar}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation.exists_refinedSubcomplex_between}
+\leanok
+\uses{moise:lem:intrinsic_fine_subdivision}
+If a compact subset of a partial triangulation lies in an ambient open set,
+then it is carried by a finite face restriction of a faithful refinement whose
+support still lies in that open set.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Apply the Lebesgue-number lemma to the two-set cover consisting of the open set
+and the complement of the compact set, then retain exactly the refined faces
+subordinate to the open set.
+\end{proof}
+
+\begin{lemma}[Vanishing-error frontier glue]
+\label{moise:lem:frontier_glue}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.continuous_frontierGlue}
+\leanok
+If a continuous map is replaced on an open set by a continuous approximation
+whose error tends to zero at the frontier, the replacement and the unchanged
+map glue to a continuous global map.  Distance to the complement is strongly
+positive on compact subsets of the open set and gives a canonical
+frontier-vanishing control.
+\end{lemma}
+
+\begin{proof}
+\leanok
+At interior and exterior points continuity is local.  At a frontier point,
+combine the approximation bound with continuity of the unchanged map and the
+triangle inequality.
+\end{proof}
+
 \begin{theorem}[The induction step; Moise Ch.~8, Thm.~3, step]
 \label{moise:thm:induction_step}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.moise_induction_step}
-\leanok
-\uses{moise:def:rado_invariant,moise:def:boundary_faithful,moise:thm:pl_approximation,moise:thm:polygonal_schoenflies_rel}
+\uses{moise:def:rado_invariant,moise:def:boundary_faithful,moise:thm:pl_approximation,moise:thm:polygonal_schoenflies_rel,moise:lem:finite_compact_collar,moise:lem:frontier_glue}
 Given a partial triangulation satisfying the invariant for a region $A$ and one
 more boundary-faithful chart, some partial triangulation satisfies the
 invariant for $A$ together with the chart's core.
@@ -497,8 +559,21 @@ invariant for $A$ together with the chart's core.
 Work in the chart's model coordinates; take a polyhedral neighborhood of the
 part of the built complex meeting the chart (Moise Thm.~8.2); adjust it by
 \ref{moise:thm:pl_approximation} so that it meets a fine complex containing
-the model core simplicially (Moise's conditions (a)--(h)); glue (Moise
-Thm.~7.6).
+the model core simplicially (Moise's conditions (a)--(h)).  Because the old
+patch is an intrinsic finite complex rather than a globally straight plane
+complex, this requires the intrinsic-source form of the approximation theorem,
+faithful fine subdivision/open-subcomplex extraction, and gluing along a common
+intrinsic subcomplex (Moise Thm.~7.6).  The intrinsic one-skeleton portion is
+now formalized: its simultaneous polygonal replacement is embedded, each
+replacement edge has an exact finite plane-complex model, and different edges
+meet only at shared abstract vertices.  The three edge models around every
+face are now assembled into an exact simple polygonal cycle, and faithful
+arbitrarily fine intrinsic subdivision and finite compact collars are proved.
+The frontier convergence lemma for Moise's strongly positive control is also
+proved.  What remains is the locally finite, conforming open-subcomplex
+construction of Thm.~8.2, intrinsic cellwise extension, and the common-complex
+glue.  A merely finite closed collar does not replace this step without an
+additional relative annulus/Schoenflies theorem.
 \end{proof}
 
 \begin{theorem}[Assembled Rad\'o induction]

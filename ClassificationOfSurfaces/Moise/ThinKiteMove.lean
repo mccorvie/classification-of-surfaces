@@ -880,9 +880,12 @@ private theorem diamondFanAmbientHomeomorph_leftSpoke (a b : ℝ)
       (diamondFanMesh a ha0 ha1).toPlaneComplex.support := by
     rw [← diamondFanLeftSpokePoint_val a ha0 ha1 c hc]
     exact (diamondFanLeftSpokePoint a ha0 ha1 c hc).property
-  rw [diamondFanAmbientHomeomorph,
-    extendHomeomorphByIdentity_apply_mem _ _ _ hmem,
-    diamondFanPatchHomeomorph_apply_val]
+  rw [diamondFanAmbientHomeomorph, TriangleMesh.ambientRepositionHomeomorph,
+    extendHomeomorphByIdentity_apply_mem _ _ _ hmem]
+  change (diamondFanPatchHomeomorph a b ha0 ha1 hb0 hb1
+    ⟨AffineMap.lineMap (planePoint (-1) 0) (planePoint 0 a) c, hmem⟩ : Plane) =
+      AffineMap.lineMap (planePoint (-1) 0) (planePoint 0 b) c
+  rw [diamondFanPatchHomeomorph_apply_val]
   have hz :
       (⟨AffineMap.lineMap (planePoint (-1) 0) (planePoint 0 a) c, hmem⟩ :
         (diamondFanMesh a ha0 ha1).toPlaneComplex.support) =
@@ -945,9 +948,12 @@ private theorem diamondFanAmbientHomeomorph_rightSpoke (a b : ℝ)
       (diamondFanMesh a ha0 ha1).toPlaneComplex.support := by
     rw [← diamondFanRightSpokePoint_val a ha0 ha1 c hc]
     exact (diamondFanRightSpokePoint a ha0 ha1 c hc).property
-  rw [diamondFanAmbientHomeomorph,
-    extendHomeomorphByIdentity_apply_mem _ _ _ hmem,
-    diamondFanPatchHomeomorph_apply_val]
+  rw [diamondFanAmbientHomeomorph, TriangleMesh.ambientRepositionHomeomorph,
+    extendHomeomorphByIdentity_apply_mem _ _ _ hmem]
+  change (diamondFanPatchHomeomorph a b ha0 ha1 hb0 hb1
+    ⟨AffineMap.lineMap (planePoint 1 0) (planePoint 0 a) c, hmem⟩ : Plane) =
+      AffineMap.lineMap (planePoint 1 0) (planePoint 0 b) c
+  rw [diamondFanPatchHomeomorph_apply_val]
   have hz :
       (⟨AffineMap.lineMap (planePoint 1 0) (planePoint 0 a) c, hmem⟩ :
         (diamondFanMesh a ha0 ha1).toPlaneComplex.support) =

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.Moise.Anchors
+import ClassificationOfSurfaces.Moise.IntrinsicCloseCellwiseExtension
 import ClassificationOfSurfaces.Moise.ChartInduction
 import ClassificationOfSurfaces.Triangulation
 import Mathlib.Topology.Instances.Rat

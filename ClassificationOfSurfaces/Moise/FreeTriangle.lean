@@ -440,6 +440,37 @@ theorem disjoint_interior_triangleCarrier_edgeCarrier (T : M.Triangle)
     (M.disjoint_interior_triangleCarrier_convexHull_of_subset_card_le_two T
       Finset.inter_subset_left hInterCard) hpT hpInter
 
+/-- The interior of one maximal triangle misses the full carrier of every distinct maximal
+triangle. -/
+theorem disjoint_interior_triangleCarrier_triangleCarrier {T U : M.Triangle}
+    (hne : T.1 ≠ U.1) :
+    Disjoint (interior (M.triangleCarrier T.1)) (M.triangleCarrier U.1) := by
+  have hInterCard : (T.1 ∩ U.1 : Finset M.Vertex).card ≤ 2 := by
+    by_contra h
+    have hcard : (T.1 ∩ U.1 : Finset M.Vertex).card = 3 := by
+      have hle : (T.1 ∩ U.1 : Finset M.Vertex).card ≤ T.1.card :=
+        Finset.card_le_card Finset.inter_subset_left
+      rw [M.card_triangle T.1 T.2] at hle
+      omega
+    have hsubset : T.1 ⊆ U.1 := by
+      have hinterT : T.1 ∩ U.1 = T.1 :=
+        Finset.eq_of_subset_of_card_le Finset.inter_subset_left (by
+          rw [hcard, M.card_triangle T.1 T.2])
+      rw [← hinterT]
+      exact Finset.inter_subset_right
+    have heq : T.1 = U.1 := Finset.eq_of_subset_of_card_le hsubset (by
+      rw [M.card_triangle T.1 T.2, M.card_triangle U.1 U.2])
+    exact hne heq
+  rw [Set.disjoint_left]
+  intro p hpT hpU
+  have hpInter : p ∈ convexHull ℝ
+      (M.position '' ((T.1 ∩ U.1 : Finset M.Vertex) : Set M.Vertex)) := by
+    rw [← M.triangle_inter T.1 T.2 U.1 U.2]
+    exact ⟨interior_subset hpT, hpU⟩
+  exact Set.disjoint_left.mp
+    (M.disjoint_interior_triangleCarrier_convexHull_of_subset_card_le_two T
+      Finset.inter_subset_left hInterCard) hpT hpInter
+
 /-- Maximal triangles in a face-to-face mesh have disjoint interiors. -/
 theorem eq_of_interior_triangleCarrier_inter_nonempty (T U : M.Triangle)
     (hinterior : (interior (M.triangleCarrier T.1) ∩
