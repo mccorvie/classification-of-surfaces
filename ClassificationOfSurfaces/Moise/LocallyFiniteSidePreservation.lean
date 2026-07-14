@@ -33,6 +33,24 @@ theorem faceBoundaryLift_mem_faceInSupport (f : K.Face) (q : StandardFaceBoundar
     ((K.facePlaneHomeomorph f).symm
       ⟨q.1, standardFaceBoundary_mem_region q⟩)
 
+/-- A replacement graph pointwise finer than the canonical vertex-separation control is
+facewise close at the canonical per-face separation radii.  This is the bridge from a
+tolerance-parametrized one-skeleton replacement to the side-preservation entry
+`FaceBoundariesClose G (faceVertexSeparationRadius G)`. -/
+theorem faceBoundariesClose_of_lt_vertexSeparationControl
+    (harc : ∀ p : oneSkeletonInSupport (K := K),
+      dist (G.graphReplacementMap p) (G.map p.1) < vertexSeparationControl G p.1) :
+    FaceBoundariesClose G (faceVertexSeparationRadius G) := by
+  intro f q
+  have heq : faceOriginalMap G f q.1 = G.map (K.faceBoundaryLift f q).1 := by
+    change faceOriginalMap G f
+        (⟨q.1, standardFaceBoundary_mem_region q⟩ : standardFaceRegion).1 = _
+    rw [faceOriginalMap_apply]
+    rfl
+  rw [heq]
+  exact (harc (K.faceBoundaryLift f q)).trans_le
+    (vertexSeparationControl_le (faceBoundaryLift_mem_faceInSupport f q))
+
 /-- Every selected face boundary is part of the single global replacement graph. -/
 theorem facePolygonalCircle_carrier_subset_graphReplacement (f : K.Face) :
     (K.facePolygonalCircle (G := G) f).carrier ⊆

@@ -167,6 +167,35 @@ The precise remaining work inside this leaf, in dependency order:
 3. **Conforming layer** (Moise's conditions (a)–(h)): common subdivision of the straightened
    trace with the fixed patch complex, and selection of the patch sub-mesh keeping the cores
    interior (Moise's L, conditions (b) and (d)).
+
+   **Refined map (2026-07-14), after verifying every entry of the replacement pipeline.**  The
+   crux blocking the straightened complex is now precisely identified: a
+   **tolerance-parametrized one-skeleton replacement for a FIXED locally finite complex** — the
+   locally finite analogue of the proved finite `exists_closeGraphApproximation`
+   (`IntrinsicCloseGraphApproximation.lean`), i.e. arcs whose pointwise deviation is below any
+   given strongly positive `rho`.  Why the existing entries cannot be discharged from outside:
+   the canonical `graphReplacementMap` arcs only satisfy the mesh-scale bound
+   `< 2 * diam (edgeImage e)` (`replacementEdgeMap_dist_lt_two_mul_edgeImage_diam`), while both
+   side-preservation entries (`SeparatesVerticesFromFaces`+`FaceBoundariesControlled` with one
+   control, or `FaceBoundariesClose G (faceVertexSeparationRadius G)`) compare against the
+   complex's own Classical.choose-selected separation radii, computed only after the complex is
+   fixed.  Choosing the mesh control `phi` cannot win that race: in the adaptive fan complex,
+   consecutive interval vertices on one tile edge can have image gaps arbitrarily small
+   relative to the tile's cover scale, so `2 * diam < radius` genuinely fails for `R(phi)` for
+   every `phi`.  The finite pipeline escaped exactly here by choosing many-breakpoint arcs at
+   tolerance `ρ = min r η` AFTER the complex (`exists_intrinsic_pl_approximation` sequencing);
+   the locally finite arc layer must be given the same flexibility (a per-edge refinement
+   parameter at strongly-positive scale; `GraphSubdivision`/`LineSubdivision` are the natural
+   quarries).  Once that layer exists, the consumers are ready:
+   `faceBoundariesClose_of_lt_vertexSeparationControl`
+   (`LocallyFiniteSidePreservation.lean`, proved) bridges arcs finer than the part-1
+   `vertexSeparationControl` to the `FaceBoundariesClose` entry, and
+   `exists_controlled_polygonalReplacement_of_facewise_close` (proved) consumes it together
+   with the adaptive `FaceBoundariesControlled`/`UniformFrontierControl` (proved) — the
+   containment/local-finiteness role and the side-preservation role take different controls
+   there, so no single-control coupling remains.  The straightening tolerance is then
+   `min (regionSafeControl …) (matching control) (vertexSeparationControl)` — all three
+   strongly positive, every condition downward monotone.
 4. **Assembly**: read off the common-vertex welded presentation and the interior coverage of
    `A ∪ core`; `PartialTriangulation.exists_glued` (proved) consumes it.
 
