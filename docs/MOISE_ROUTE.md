@@ -105,7 +105,19 @@ deliberately stated as the two provable clauses only — do not strengthen it to
 
 | Leaf | File | Moise | Difficulty |
 |---|---|---|---|
-| `moise_induction_step` | ChartInduction.lean | Ch. 8 Thm 3 step | hard; design interface with the proof |
+| `MoiseChart.exists_crossing_weld` | ChartInduction.lean | Ch. 8 Thm 3 step, crossing case | hard |
+
+`moise_induction_step` itself is now proved: its two absorption branches were already closed, and
+the crossing branch is derived from `PartialTriangulation.exists_glued` (Moise Thm. 7.6 on a
+common vertex type — **proved**: the union family's realization is the set-union of the two
+realizations, so the glued embedding is a two-sided paste, an embedding by compactness) together
+with the single remaining leaf `exists_crossing_weld`: in the genuine crossing case, the
+straightened old complex and the chart patch admit a common welded presentation (common vertex
+type, exact agreement on the shared realization, joint edge-face bound, `A ∪ core` interior to
+the united image).  Its intended proof is the adaptive overlap machinery already in this
+repository (`adaptiveOverlapGraphRealization`, the locally finite controlled polygonal
+replacement, `replaceOnOpen`/`frontierGlue`, `CommonSubdivision`), respecting the
+vanishing-tolerance warning below.
 
 The remaining mismatch is now precise.  Chapter 6.3 is proved for a finite source
 `PlaneComplex`, while the old complex near the next Rado chart is intrinsically PL and need not
