@@ -144,10 +144,26 @@ The precise remaining work inside this leaf, in dependency order:
    `exists_polygonalReplacement` to decouple the separation control from the mesh control.
    This mirrors the proved finite sequencing in `exists_intrinsic_pl_approximation`
    (complex fixed, then `ρ = min r η` chosen for the arcs only).
-2. **Frontier-glue application**: derive `MatchesAtFrontier` from the `≤ regionSafeControl`
-   replacement bound, and prove the crossing-disjointness `Disjoint (g '' U) (h '' Uᶜ)` from the
-   control being dominated by the distance to the overlap frontier; then
-   `T.replaceOnOpen`/`isEmbedding_frontierGlue_of_matches` yields the straightened old complex.
+2. **Frontier-glue application** — analytic halves **DONE** (2026-07-14, clean axioms); only
+   the assembly with the part-3 replacement remains.
+   `PartialTriangulation.exists_chartMatchingControl` (with its metric-target core
+   `exists_chartMatchingControl_of_metricSpace`) produces one strongly positive control on the
+   chart overlap such that EVERY chart-coordinate replacement within it satisfies
+   `MatchesAtFrontier` against `T.embed`; `disjoint_image_chartOverlap_embed_compl` is the
+   crossing disjointness (free once the replacement stays in the chart domain).
+   **Statement caveat, discovered while proving it**: the original plan item — derive
+   `MatchesAtFrontier` from the `≤ regionSafeControl` bound alone — is FALSE for a C0 chart:
+   compose a chart with the disk twist `(r, θ) ↦ (r, θ + 1/(1-r))` and a radial displacement of
+   `frontierDistance/4` is sheared to unbounded angular displacement, so `chart.symm` of the
+   replacement need not converge at the frontier.  The matching control must be extracted from
+   the chart homeomorphism itself (sSup of admissible moduli against a surface scale vanishing
+   at the frontier trace; strong positivity by Heine–Cantor on compact products).  Consumers
+   must intersect the part-1 separation control, this matching control, and the
+   `regionSafeControl` reduction; each is strongly positive and each condition is monotone
+   downward, so the minimum serves all three.  The final assembly is
+   `T.replaceOnOpen`/`isEmbedding_frontierGlue_of_matches` on the part-3 replacement (which
+   supplies `ContinuousOn`/`InjOn` on the overlap and containment in the model region — the
+   half-plane preservation results already exist).
 3. **Conforming layer** (Moise's conditions (a)–(h)): common subdivision of the straightened
    trace with the fixed patch complex, and selection of the patch sub-mesh keeping the cores
    interior (Moise's L, conditions (b) and (d)).

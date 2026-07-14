@@ -3,6 +3,7 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
+import Mathlib.Topology.Metrizable.Urysohn
 import ClassificationOfSurfaces.Moise.ChartPatch
 import ClassificationOfSurfaces.Moise.IntrinsicComplex
 import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
@@ -466,6 +467,22 @@ theorem modelRegion_subset_perturbationRegion (k : ChartKind) :
   · exact hp
   · exact hp.1
 
+/-- Inside the open perturbation disk, the closure of the model region adds nothing: closure
+only touches the unit sphere and, for a half-disk, the model already contains its edge line. -/
+theorem ball_inter_closure_modelRegion_subset (k : ChartKind) :
+    Metric.ball (0 : Plane) 1 ∩ closure k.modelRegion ⊆ k.modelRegion := by
+  cases k with
+  | disk =>
+      intro z hz
+      exact hz.1
+  | halfDisk =>
+      rintro z ⟨hzball, hzcl⟩
+      refine ⟨hzball, ?_⟩
+      have hsub : closure ChartKind.halfDisk.modelRegion ⊆ {x : Plane | 0 ≤ x 0} :=
+        closure_minimal (fun x hx ↦ hx.2)
+          (isClosed_le continuous_const continuous_coordZero)
+      exact hsub hzcl
+
 /-- The chart model, regarded as a subset of its open perturbation disk. -/
 def modelInPerturbation (k : ChartKind) : Set k.perturbationRegion :=
   {p | p.1 ∈ k.modelRegion}
@@ -720,6 +737,229 @@ theorem exists_separating_control_adaptiveOverlap [T2Space S]
         (G := T.adaptiveOverlapGraphRealization c))
     intro p
     exact regionSafeControl_le_left _ _ _ _
+
+/-- Crossing-weld plan, item 2, disjointness half: a replacement taking its overlap values in
+the chart domain never collides with the old embedding outside the overlap.  Together with
+`range_frontierGlue`, this is the crossing-disjointness input of
+`isEmbedding_frontierGlue_of_matches`. -/
+theorem disjoint_image_chartOverlap_embed_compl (T : PartialTriangulation S)
+    (c : MoiseChart S) {g : T.toIntrinsic.realization → S}
+    (hg : ∀ x ∈ T.chartOverlap c, g x ∈ c.domain) :
+    Disjoint (g '' T.chartOverlap c) (T.embed '' (T.chartOverlap c)ᶜ) := by
+  rw [Set.disjoint_left]
+  rintro z ⟨x, hx, rfl⟩ ⟨y, hy, hyz⟩
+  apply hy
+  change T.embed y ∈ c.domain
+  rw [hyz]
+  exact hg x hx
+
+/-- Crossing-weld plan, item 2, matching half (Moise's vanishing tolerance).  One strongly
+positive control on the chart overlap such that EVERY chart-coordinate replacement of the old
+embedding within that control matches the old embedding at the overlap frontier.
+
+The plane-metric reduction `regionSafeControl` is deliberately not enough here: a C0 chart may
+shear plane-close points apart near its frontier (compose a chart with the twist
+`(r, θ) ↦ (r, θ + 1/(1-r))` of the disk: a radial displacement of a quarter of the distance to
+the sphere is torn to unbounded angular displacement).  The modulus must therefore be extracted
+from the chart homeomorphism itself.  This is the metric-target version; the surface version
+`exists_chartMatchingControl` metrizes the compact second-countable surface and applies it. -/
+theorem exists_chartMatchingControl_of_metricSpace {S' : Type*} [MetricSpace S']
+    (T : PartialTriangulation S') (c : MoiseChart S') :
+    ∃ mu : T.chartOverlap c → ℝ,
+      StronglyPositiveOn Set.univ mu ∧
+      ∀ (g' : T.chartOverlap c → c.kind.modelRegion)
+        (g : T.toIntrinsic.realization → S'),
+        (∀ y : T.chartOverlap c, g y.1 = (c.chart.symm (g' y)).1) →
+        (∀ y : T.chartOverlap c,
+          dist (g' y : Plane) (T.chartOverlapMap c y) ≤ mu y) →
+        MatchesAtFrontier (T.chartOverlap c) g T.embed := by
+  classical
+  by_cases hFr : (frontier (T.chartOverlap c)).Nonempty
+  swap
+  · refine ⟨fun _ ↦ 1, fun C _ _ ↦ ⟨1, one_pos, fun _ _ ↦ le_rfl⟩, ?_⟩
+    intro g' g hgval hclose x hx
+    exact absurd ⟨x, hx⟩ hFr
+  -- the compact frontier trace on the old complex
+  have hFrCompact : IsCompact (T.embed '' frontier (T.chartOverlap c)) :=
+    isClosed_frontier.isCompact.image T.isEmbedding.continuous
+  have hFrNe : (T.embed '' frontier (T.chartOverlap c)).Nonempty := hFr.image _
+  -- the surface scale, vanishing at the frontier
+  set sS : T.chartOverlap c → ℝ := fun y ↦
+    Metric.infDist (T.embed y.1) (T.embed '' frontier (T.chartOverlap c)) with hsS
+  have hsSpos : ∀ y : T.chartOverlap c, 0 < sS y := by
+    intro y
+    apply (hFrCompact.isClosed.notMem_iff_infDist_pos hFrNe).mp
+    rintro ⟨x, hxFr, hxy⟩
+    have hxval : x = y.1 := T.isEmbedding.injective hxy
+    rw [hxval] at hxFr
+    exact hxFr.2 (mem_interior_iff_mem_nhds.mpr
+      ((T.isOpen_chartOverlap c).mem_nhds y.2))
+  have hsScont : Continuous sS :=
+    (Metric.continuous_infDist_pt _).comp
+      (T.isEmbedding.continuous.comp continuous_subtype_val)
+  -- the inverse chart on the model region
+  set psi : c.kind.modelRegion → S' := fun z ↦ (c.chart.symm z).1 with hpsi
+  have hpsiCont : Continuous psi :=
+    continuous_subtype_val.comp c.chart.symm.continuous
+  have hpsiModel : ∀ y : T.chartOverlap c,
+      psi (T.chartOverlapModelMap c y) = T.embed y.1 := by
+    intro y
+    change (c.chart.symm (c.chart (T.chartOverlapToDomain c y))).1 = T.embed y.1
+    rw [c.chart.symm_apply_apply]
+    rfl
+  -- the admissible chart moduli at one overlap point
+  set A : T.chartOverlap c → Set ℝ := fun y ↦
+    {r | 0 ≤ r ∧ r ≤ 1 ∧ ∀ z : c.kind.modelRegion,
+      dist (z : Plane) (T.chartOverlapMap c y) < r →
+        dist (psi z) (T.embed y.1) ≤ sS y} with hA
+  have hANe : ∀ y, (A y).Nonempty := by
+    intro y
+    refine ⟨0, le_rfl, zero_le_one, ?_⟩
+    intro z hz
+    exact absurd hz (not_lt.mpr dist_nonneg)
+  have hAbdd : ∀ y, BddAbove (A y) := fun y ↦ ⟨1, fun r hr ↦ hr.2.1⟩
+  -- one admissible modulus works uniformly on every compact set of the overlap
+  have hUniform : ∀ C : Set (T.chartOverlap c), IsCompact C → C.Nonempty →
+      ∃ δ : ℝ, 0 < δ ∧ ∀ y ∈ C, min δ 1 ∈ A y := by
+    intro C hC hCne
+    obtain ⟨y₀, hy₀C, hy₀min⟩ := hC.exists_isMinOn hCne hsScont.continuousOn
+    have hmpos : 0 < sS y₀ := hsSpos y₀
+    -- the compact model trace of C and a compact plane neighborhood inside the model
+    have hmodelCont : Continuous fun y : T.chartOverlap c ↦
+        (T.chartOverlapModelMap c y : Plane) :=
+      continuous_subtype_val.comp (T.isEmbedding_chartOverlapModelMap c).continuous
+    set Z : Set Plane := (fun y : T.chartOverlap c ↦
+      (T.chartOverlapModelMap c y : Plane)) '' C with hZ
+    have hZcompact : IsCompact Z := hC.image hmodelCont
+    have hZball : Z ⊆ Metric.ball (0 : Plane) 1 := by
+      rintro z ⟨y, -, rfl⟩
+      exact c.kind.modelRegion_subset_perturbationRegion
+        (T.chartOverlapModelMap c y).2
+    obtain ⟨δ₀, hδ₀, hthick⟩ :=
+      hZcompact.exists_cthickening_subset_open Metric.isOpen_ball hZball
+    set Kpl : Set Plane :=
+      Metric.cthickening δ₀ Z ∩ closure c.kind.modelRegion with hKpl
+    have hKplCompact : IsCompact Kpl :=
+      hZcompact.cthickening.inter_right isClosed_closure
+    have hKplModel : Kpl ⊆ c.kind.modelRegion := by
+      rintro z ⟨hzthick, hzcl⟩
+      exact c.kind.ball_inter_closure_modelRegion_subset ⟨hthick hzthick, hzcl⟩
+    set KM : Set c.kind.modelRegion := Subtype.val ⁻¹' Kpl with hKM
+    have hKMcompact : IsCompact KM :=
+      LocallyFiniteTriangleComplex.PlaneGraphRealization.isCompact_preimage_subtypeVal_of_subset
+        hKplCompact hKplModel
+    -- uniform continuity of the compared distance on the compact product
+    set Phi : T.chartOverlap c × c.kind.modelRegion → ℝ := fun p ↦
+      dist (psi p.2) (T.embed p.1.1) with hPhi
+    have hPhiCont : Continuous Phi := by
+      apply Continuous.dist
+      · exact hpsiCont.comp continuous_snd
+      · exact T.isEmbedding.continuous.comp
+          (continuous_subtype_val.comp continuous_fst)
+    obtain ⟨δ₁, hδ₁, hδ₁close⟩ :=
+      (Metric.uniformContinuousOn_iff.mp
+        ((hC.prod hKMcompact).uniformContinuousOn_of_continuous
+          hPhiCont.continuousOn)) (sS y₀) hmpos
+    refine ⟨min δ₁ δ₀, lt_min hδ₁ hδ₀, ?_⟩
+    intro y hyC
+    refine ⟨le_min (lt_min hδ₁ hδ₀).le zero_le_one, min_le_right _ _, ?_⟩
+    intro z hz
+    have hzδ : dist (z : Plane) (T.chartOverlapModelMap c y : Plane) <
+        min δ₁ δ₀ := by
+      have hval : T.chartOverlapMap c y = (T.chartOverlapModelMap c y : Plane) := rfl
+      rw [← hval]
+      exact lt_of_lt_of_le hz (min_le_left _ _)
+    have hcenter : (T.chartOverlapModelMap c y : Plane) ∈ Z :=
+      Set.mem_image_of_mem _ hyC
+    -- the perturbed point stays in the compact model neighborhood
+    have hzK : z ∈ KM := by
+      have hzball : (z : Plane) ∈ Metric.closedBall
+          (T.chartOverlapModelMap c y : Plane) δ₀ :=
+        Metric.mem_closedBall.mpr ((hzδ.trans_le (min_le_right _ _)).le)
+      have hz1 : (z : Plane) ∈ Metric.cthickening δ₀ Z :=
+        Metric.closedBall_subset_cthickening hcenter δ₀ hzball
+      exact ⟨hz1, subset_closure z.2⟩
+    -- compare with the unperturbed model point through uniform continuity
+    have hpair : ((y, z) : T.chartOverlap c × c.kind.modelRegion) ∈ C ×ˢ KM :=
+      ⟨hyC, hzK⟩
+    have hbase : ((y, T.chartOverlapModelMap c y) :
+        T.chartOverlap c × c.kind.modelRegion) ∈ C ×ˢ KM := by
+      refine ⟨hyC, Metric.self_subset_cthickening _ hcenter, ?_⟩
+      exact subset_closure (T.chartOverlapModelMap c y).2
+    have hdistPair : dist ((y, z) : T.chartOverlap c × c.kind.modelRegion)
+        (y, T.chartOverlapModelMap c y) < δ₁ := by
+      rw [Prod.dist_eq]
+      apply max_lt (by simpa using hδ₁)
+      rw [Subtype.dist_eq]
+      exact hzδ.trans_le (min_le_left _ _)
+    have hPhiZero : Phi (y, T.chartOverlapModelMap c y) = 0 := by
+      simp only [hPhi]
+      rw [hpsiModel y, dist_self]
+    have hlt := hδ₁close _ hpair _ hbase hdistPair
+    rw [hPhiZero, Real.dist_eq, sub_zero, abs_of_nonneg dist_nonneg] at hlt
+    exact hlt.le.trans (hy₀min hyC)
+  -- the chart matching control: half the supremum of the admissible moduli
+  have hsSupPos : ∀ y : T.chartOverlap c, 0 < sSup (A y) := by
+    intro y
+    obtain ⟨δ, hδ, hmem⟩ := hUniform {y} isCompact_singleton ⟨y, rfl⟩
+    exact lt_of_lt_of_le (lt_min hδ one_pos) (le_csSup (hAbdd y) (hmem y rfl))
+  refine ⟨fun y ↦ sSup (A y) / 2, ?_, ?_⟩
+  · intro C hC _
+    rcases C.eq_empty_or_nonempty with rfl | hCne
+    · exact ⟨1, one_pos, fun x hx ↦ absurd hx (Set.notMem_empty x)⟩
+    obtain ⟨δ, hδ, hmem⟩ := hUniform C hC hCne
+    refine ⟨min δ 1 / 2, by positivity, ?_⟩
+    intro y hy
+    have := le_csSup (hAbdd y) (hmem y hy)
+    linarith
+  · intro g' g hgval hclose x hx
+    rw [tendsto_iff_dist_tendsto_zero]
+    have hbase : Filter.Tendsto (fun y' : T.toIntrinsic.realization ↦
+        2 * dist (T.embed y') (T.embed x))
+        (nhdsWithin x (T.chartOverlap c)) (nhds 0) := by
+      have hcont : Filter.Tendsto (fun y' : T.toIntrinsic.realization ↦
+          dist (T.embed y') (T.embed x))
+          (nhdsWithin x (T.chartOverlap c)) (nhds 0) :=
+        tendsto_iff_dist_tendsto_zero.mp
+          ((T.isEmbedding.continuous.tendsto x).mono_left nhdsWithin_le_nhds)
+      have h2 := hcont.const_mul (2 : ℝ)
+      rw [mul_zero] at h2
+      exact h2
+    apply squeeze_zero' (Filter.Eventually.of_forall fun _ ↦ dist_nonneg) ?_ hbase
+    filter_upwards [self_mem_nhdsWithin] with y' hy'
+    have hkey : dist (g y') (T.embed y') ≤ sS ⟨y', hy'⟩ := by
+      obtain ⟨r, hrA, hr⟩ := exists_lt_of_lt_csSup (hANe ⟨y', hy'⟩)
+        (half_lt_self (hsSupPos ⟨y', hy'⟩))
+      have hdist : dist ((g' ⟨y', hy'⟩ : Plane)) (T.chartOverlapMap c ⟨y', hy'⟩) < r :=
+        lt_of_le_of_lt (hclose ⟨y', hy'⟩) hr
+      have hval := hrA.2.2 (g' ⟨y', hy'⟩) hdist
+      rw [show g y' = psi (g' ⟨y', hy'⟩) from hgval ⟨y', hy'⟩]
+      exact hval
+    have hSle : sS ⟨y', hy'⟩ ≤ dist (T.embed y') (T.embed x) :=
+      Metric.infDist_le_dist_of_mem ⟨x, hx, rfl⟩
+    calc
+      dist (g y') (T.embed x) ≤
+          dist (g y') (T.embed y') + dist (T.embed y') (T.embed x) :=
+        dist_triangle _ _ _
+      _ ≤ dist (T.embed y') (T.embed x) + dist (T.embed y') (T.embed x) :=
+        add_le_add (hkey.trans hSle) le_rfl
+      _ = 2 * dist (T.embed y') (T.embed x) := by ring
+
+/-- Crossing-weld plan, item 2, matching half, on the ambient surface.  The statement is
+metric-free; the compact second-countable surface is metrized and the metric-target version is
+applied at the compatible metric. -/
+theorem exists_chartMatchingControl [T2Space S] [CompactSpace S]
+    [SecondCountableTopology S] (T : PartialTriangulation S) (c : MoiseChart S) :
+    ∃ mu : T.chartOverlap c → ℝ,
+      StronglyPositiveOn Set.univ mu ∧
+      ∀ (g' : T.chartOverlap c → c.kind.modelRegion)
+        (g : T.toIntrinsic.realization → S),
+        (∀ y : T.chartOverlap c, g y.1 = (c.chart.symm (g' y)).1) →
+        (∀ y : T.chartOverlap c,
+          dist (g' y : Plane) (T.chartOverlapMap c y) ≤ mu y) →
+        MatchesAtFrontier (T.chartOverlap c) g T.embed := by
+  letI : MetricSpace S := TopologicalSpace.metrizableSpaceMetric S
+  exact exists_chartMatchingControl_of_metricSpace T c
 
 end PartialTriangulation
 
