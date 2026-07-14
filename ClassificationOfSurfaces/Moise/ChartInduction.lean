@@ -679,6 +679,34 @@ noncomputable def adaptiveOverlapGraphRealization [T2Space S]
 
 end PartialTriangulation
 
+/-- **Theorem boundary** (Moise Thm. 7.6 for partial triangulations).
+
+Two partial triangulations presented on a common vertex type, whose embeddings agree exactly on
+the shared part of their realizations (`hagree` and `hsep` together say the images meet only
+where the barycentric points coincide), glue to a single partial triangulation on the union face
+family, supported on the union of the two images.
+
+The realization of the union family is the set-union of the two realizations, so the glued
+embedding is the pasting of the two embeddings along a closed common part; it is a continuous
+injection from a compact space into a Hausdorff space, hence an embedding.  The edge-face count
+hypothesis is passed through to the glued complex. -/
+theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Space S]
+    (V : Type) [Fintype V] [DecidableEq V]
+    (F₁ F₂ : Finset (Finset V))
+    (hcard : ∀ t ∈ F₁ ∪ F₂, t.card = 3)
+    (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S)
+    (he₁ : _root_.Topology.IsEmbedding e₁) (he₂ : _root_.Topology.IsEmbedding e₂)
+    (hagree : ∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+      (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y)
+    (hsep : ∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+      e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ))
+    (hsurf : ∀ e ∈ (F₁ ∪ F₂).biUnion fun t => t.powersetCard 2,
+      ((F₁ ∪ F₂).filter fun t => e ⊆ t).card ≤ 2) :
+    ∃ T' : PartialTriangulation S,
+      T'.support = Set.range e₁ ∪ Set.range e₂ ∧
+      ∀ e ∈ T'.edges, (T'.faces.filter fun t => e ⊆ t).card ≤ 2 := by
+  sorry
+
 /-- The invariant carried through the bordered Radó induction: the built complex is a
 combinatorial surface (every edge in at most two faces), and the region `A` absorbed so far lies
 in the topological interior of its support in `S`.
@@ -783,6 +811,39 @@ theorem moise_finite_chart_cover :
   exact Set.mem_iUnion.mpr ⟨e' ⟨y, hyt⟩, by
     simpa using interior_subset hxy⟩
 
+/-- **Theorem boundary** (Moise Ch. 8, Thm. 3, crossing-case preparation).
+
+In the genuine crossing case (the chart core is not yet covered, and the absorbed region is not
+inside the chart patch), the adjusted old complex and the chart patch admit a common welded
+presentation: a common vertex type carrying both face families, with embeddings that agree
+exactly on the shared realization, satisfy the combinatorial-surface bound jointly, and whose
+united image contains `A ∪ c.core` in its topological interior.
+
+The intended proof is the machinery already in place: straighten the old complex over the
+chart overlap by the locally finite controlled polygonal replacement over
+`adaptiveOverlapGraphRealization` with tolerance vanishing at the overlap frontier
+(`replaceOnOpen`/`frontierGlue`), refine the straightened trace and the fixed patch complex to
+a common plane subdivision (`CommonSubdivision`, Moise's conditions (e)-(h)), and read off the
+welded presentation.  Per `docs/MOISE_ROUTE.md`, the finite compact-collar theorem must not be
+silently substituted for the vanishing-tolerance construction. -/
+theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaithful)
+    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
+    (hcore : ¬ c.core ⊆ interior T.support)
+    (hA : ¬ A ⊆ interior c.patchPartialTriangulation.support) :
+    ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
+      (F₁ F₂ : Finset (Finset V))
+      (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S),
+      (∀ t ∈ F₁ ∪ F₂, t.card = 3) ∧
+      _root_.Topology.IsEmbedding e₁ ∧ _root_.Topology.IsEmbedding e₂ ∧
+      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+        (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y) ∧
+      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+        e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) ∧
+      (∀ e ∈ (F₁ ∪ F₂).biUnion fun t => t.powersetCard 2,
+        ((F₁ ∪ F₂).filter fun t => e ⊆ t).card ≤ 2) ∧
+      A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) := by
+  sorry
+
 /-- **Theorem boundary** (Moise Ch. 8, Thm. 3, the induction step; bordered version).
 
 Given a partial triangulation satisfying the Radó invariant for the absorbed region `A`, and one
@@ -805,7 +866,15 @@ theorem moise_induction_step (c : MoiseChart S) (hc : c.BoundaryFaithful)
   by_cases hA : A ⊆ interior c.patchPartialTriangulation.support
   · exact ⟨c.patchPartialTriangulation,
       radoInvariant_chartPatch_absorb c hT.coresCompact hA⟩
-  · sorry
+  · -- the crossing case: weld the adjusted old complex and the chart patch, then glue
+    obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep, hsurf, hcover⟩ :=
+      MoiseChart.exists_crossing_weld S c hc hT hcore hA
+    obtain ⟨T', hsupport, hsurf'⟩ :=
+      PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂ hagree hsep hsurf
+    refine ⟨T', ?_, hsurf', ?_⟩
+    · exact (hT.coresCompact.union c.isCompact_core)
+    · rw [hsupport]
+      exact hcover
 
 /-- The Radó induction assembled: a compact Eval surface admits a geometric triangulation.
 
