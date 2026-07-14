@@ -119,6 +119,25 @@ repository (`adaptiveOverlapGraphRealization`, the locally finite controlled pol
 replacement, `replaceOnOpen`/`frontierGlue`, `CommonSubdivision`), respecting the
 vanishing-tolerance warning below.
 
+The precise remaining work inside this leaf, in dependency order (verified 2026-07-13: the
+first item's lemmas exist nowhere — `SeparatesVerticesFromFaces` and the
+`RegionControlledAdaptiveComplex` side conditions occur only as hypotheses):
+
+1. **Instantiation lemmas at the adaptive overlap**: `Function.Injective faceVertices` for the
+   adaptive overlap complex, and `SeparatesVerticesFromFaces (adaptiveOverlapGraphRealization)
+   (regionSafeControl …)` — the locally finite analogue of the proved finite
+   `exists_uniform_vertex_face_separation`.  These are the entry ticket to
+   `exists_polygonalReplacement`.
+2. **Frontier-glue application**: derive `MatchesAtFrontier` from the `≤ regionSafeControl`
+   replacement bound, and prove the crossing-disjointness `Disjoint (g '' U) (h '' Uᶜ)` from the
+   control being dominated by the distance to the overlap frontier; then
+   `T.replaceOnOpen`/`isEmbedding_frontierGlue_of_matches` yields the straightened old complex.
+3. **Conforming layer** (Moise's conditions (a)–(h)): common subdivision of the straightened
+   trace with the fixed patch complex, and selection of the patch sub-mesh keeping the cores
+   interior (Moise's L, conditions (b) and (d)).
+4. **Assembly**: read off the common-vertex welded presentation and the interior coverage of
+   `A ∪ core`; `PartialTriangulation.exists_glued` (proved) consumes it.
+
 The remaining mismatch is now precise.  Chapter 6.3 is proved for a finite source
 `PlaneComplex`, while the old complex near the next Rado chart is intrinsically PL and need not
 be straight in one global plane.  The intrinsic one-skeleton replacement, exact face cycles,
