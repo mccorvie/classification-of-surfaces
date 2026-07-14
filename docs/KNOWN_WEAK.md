@@ -31,7 +31,8 @@ together with the layer.
 **Salvageable from PL.lean** (real content, to be ported, not weak): `RadoChartPair` +
 `fromChartAt` (3749–4060), `FiniteChartPairCover.exists_of_compact_local` (4248),
 triangle/homothety fitting lemmas (4685–5320), `euclideanHalfSpace` polygonal-neighborhood
-theorems (8077–8460), `ChartBoundaryInvariant` isolation (Surface.lean).
+theorems (8077–8460), and the historical `ChartBoundaryInvariant` isolation (now discharged in
+`Moise/BoundaryInvariant.lean`).
 
 ## Cell-complex / normal-form side (owned separately; listed so nobody extends them)
 

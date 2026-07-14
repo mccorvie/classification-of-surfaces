@@ -25,25 +25,24 @@ live in \texttt{ClassificationOfSurfaces/Moise/}.
 
 \begin{definition}[C0 chart-boundary invariance]
 \label{moise:def:chart_boundary_invariant}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartBoundaryInvariant}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartBoundaryInvariant, LeanEval.Topology.ClassificationOfSurfaces.chartBoundaryInvariant_of_invarianceOfDomain}
 \leanok
-The one deliberate assumption of the project: a mathlib manifold-boundary point
+The chart-extraction interface says that a mathlib manifold-boundary point
 lying in any preferred half-plane chart is sent by that chart to the frontier of
-the chart's extended target.  Mathlib proves this for positive regularity
-(\texttt{ModelWithCorners.isBoundaryPoint\_iff\_of\_mem\_atlas}); at regularity
-$C^0$ it is the invariance-of-boundary theorem, deferred as this typeclass.
-Only this implication is assumed; its converse is never used.
+the chart's extended target.  At regularity $C^0$ this is proved from planar
+no-retraction, Brouwer's fixed-point theorem, and invariance of domain.  The
+typeclass keeps the low-level dependency modular, while
+\texttt{chartBoundaryInvariant\_of\_invarianceOfDomain} supplies it
+unconditionally.  Only this implication is used by the Rad\'o route.
 \end{definition}
 
 \begin{definition}[Lean Eval compact surface with boundary]
 \label{moise:def:eval_surface}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.EvalSurface}
 \leanok
-\uses{moise:def:chart_boundary_invariant}
 An \emph{Eval surface} is a Hausdorff, connected, compact type charted over the
 Euclidean half-plane, a $C^0$ manifold for
-\texttt{modelWithCornersEuclideanHalfSpace 2}, together with the
-\ref{moise:def:chart_boundary_invariant} bridge.
+\texttt{modelWithCornersEuclideanHalfSpace 2}.
 \end{definition}
 
 \section{Geometric triangulations}
@@ -424,8 +423,8 @@ out by the model disk of radius one half.
 A chart is boundary-faithful when disk charts contain no manifold-boundary
 points and half-disk charts send manifold-boundary points to the model edge
 line.  This is exactly what \ref{moise:def:chart_boundary_invariant} yields;
-the converse of the half-disk clause is $C^0$ invariance of the boundary and is
-deliberately not part of the interface.
+the converse of the half-disk clause is not needed and is deliberately not part
+of this interface.
 \end{definition}
 
 \begin{lemma}[Local chart extraction]

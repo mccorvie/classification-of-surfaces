@@ -41,9 +41,10 @@ The final theorem should be a short assembly proof using those two bridge theore
 ## Current Baseline
 
 The repository builds. On the triangulation side, Moise Chapters 1--6, the Radó assembly, finite
-chart cover, and chart extraction are proved sorry-free relative to the explicit C0
-`ChartBoundaryInvariant` hypothesis.  The single open triangulation leaf is the Chapter 8 Radó
-induction step; its intrinsic-complex source API is now in place.  See `docs/MOISE_ROUTE.md` for
+chart cover, and chart extraction are proved sorry-free.  The former C0 chart-boundary hypothesis
+is discharged by planar no-retraction, Brouwer's fixed-point theorem, and invariance of domain.
+The single open triangulation leaf is the Chapter 8 Radó induction step; its intrinsic-complex
+source API is now in place.  See `docs/MOISE_ROUTE.md` for
 the live status.  The intrinsic one-skeleton approximation is an actual embedded polygonal
 graph, every face has an exact polygonal boundary cycle, and faithful fine subdivision plus
 finite compact-collar extraction are proved.  Cellwise polygonal filling and the locally finite
@@ -52,8 +53,8 @@ Gallier-Xu normal-form layers are still placeholder scaffolding (see `docs/KNOWN
 bottom API is in place:
 
 - `EvalSurface` packages the Lean Eval hypotheses.
-- `ChartBoundaryInvariant` isolates the deferred pure topological boundary-invariance theorem for
-  C0 half-space charts.
+- `ChartBoundaryInvariant` is the low-level chart-extraction interface; its unconditional C0
+  instance is proved in `Moise/BoundaryInvariant.lean`.
 - `OrientedEdge` records oriented triangle sides.
 - `FiniteSurfaceTriangulation` stores finite vertices, edges, triangles, oriented triangle boundary
   words, boundary-edge flags, and a homeomorphism from its realization to the target surface.
@@ -90,5 +91,3 @@ compatibility. New code should use the preferred names above.
 3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
 5. Make `OrientableRel` and `NonOrientableRel` genuine quotient relations over polygon models.
-6. Decide whether to prove `ChartBoundaryInvariant` for C0 half-space manifolds directly or keep
-   the main theorem relative to it while developing the Gallier-Xu tail.

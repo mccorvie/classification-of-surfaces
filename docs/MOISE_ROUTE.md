@@ -1,7 +1,7 @@
 # The Moise triangulation route: status and handoff map
 
 The authoritative onboarding doc for the triangulation half of the project (the
-`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-12. Supersedes
+`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-14. Supersedes
 `codex_strategy_moise_pl.md` and the "Moise / PL route" section of `API.lean`, which describe
 the retired `PL.lean` layer (see `docs/KNOWN_WEAK.md` for why it was retired).
 
@@ -20,10 +20,12 @@ Thm 6.3         ←  6.2 (← 6.1 broken lines, Ch. 1)  +  5.3/5.4 combinatorial
 Thm 5.3         ←  Ch. 2 polygonal Jordan  +  Ch. 3 polygonal Schoenflies
 ```
 
-Full JCT (Ch. 4) and full Schoenflies (Ch. 9) are **not** on this route. The one deliberate
-assumption is `ChartBoundaryInvariant` (`Surface.lean`): C0 invariance of the boundary. Its
-consequences are isolated in `MoiseChart.BoundaryFaithful` (`Moise/ChartExtraction.lean`),
-deliberately stated as the two provable clauses only — do not strengthen it to an iff.
+Full JCT (Ch. 4) and full Schoenflies (Ch. 9) are **not** on this route. C0 invariance of the
+boundary is now proved: `Moise/Brouwer.lean` derives planar Brouwer from the existing
+no-retraction theorem, `Topology/InvarianceOfDomain.lean` derives invariance of domain, and
+`Moise/BoundaryInvariant.lean` supplies `ChartBoundaryInvariant` unconditionally. Its consequences
+remain isolated in `MoiseChart.BoundaryFaithful` (`Moise/ChartExtraction.lean`) and deliberately
+use only the two clauses needed by the Radó route.
 
 ## What is already proved (sorry-free, axioms `[propext, Classical.choice, Quot.sound]`)
 
@@ -68,6 +70,10 @@ deliberately stated as the two provable clauses only — do not strengthen it to
   `Moise/PLApproximation.lean`): no retraction of a closed triangle to its frontier, bounded
   vector-valued Tietze extension, and stability of the inside/outside certificate under a small
   boundary perturbation.
+- The C0 boundary-invariance layer (`Moise/Brouwer.lean`,
+  `Topology/InvarianceOfDomain.lean`, and `Moise/BoundaryInvariant.lean`): planar Brouwer from
+  no-retraction, invariance of domain, chart-independence of the boundary stratum, and the
+  unconditional `ChartBoundaryInvariant` instance.
 - Common graph-refinement support: `GraphSubdivision.lean` and `GraphRefinement.lean` provide
   fine sampled subdivisions, marked refinements, exact support/subdivision theorems, and the
   interval-face lemma used by the PL proof.  `PlaneComplex.used` removes genuinely unused

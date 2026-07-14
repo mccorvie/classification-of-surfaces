@@ -757,7 +757,6 @@ variable (S : Type*) [TopologicalSpace S]
 variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
-variable [ChartBoundaryInvariant S]
 
 omit [T2Space S] [ConnectedSpace S] [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
 /-- A compact Eval surface has a finite cover by boundary-faithful Moise chart cores (Moise
