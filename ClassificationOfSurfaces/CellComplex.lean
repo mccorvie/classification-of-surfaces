@@ -19,9 +19,11 @@ namespace ClassificationOfSurfaces
 
 /-- A deliberately small API for Gallier-Xu finite surface cell complexes.
 
-The real version should include all incidence and surface-validity conditions from Gallier-Xu
-Definition 6.1. The current fields already expose the main finite types, oriented darts, pairing,
-vertices, face boundary words, and realization type expected by downstream APIs. -/
+The fields expose the main finite types, oriented darts, pairing, vertices, face boundary words,
+and realization type expected by downstream APIs. Surface validity and connectivity are not data:
+they are the predicates `SurfaceCellComplex.IsSurfaceValid` and `SurfaceCellComplex.IsConnected`,
+computed from the incidence data below and assumed as explicit hypotheses by the theorems that
+need them. -/
 structure SurfaceCellComplex where
   Face : Type
   Dart : Type
@@ -39,8 +41,6 @@ structure SurfaceCellComplex where
   inv_involutive : ∀ d, inv (inv d) = d
   inv_source : ∀ d, source (inv d) = target d
   inv_target : ∀ d, target (inv d) = source d
-  surfaceValid : Prop
-  connected : Prop
 
 attribute [instance] SurfaceCellComplex.faceFintype
 attribute [instance] SurfaceCellComplex.dartFintype
@@ -65,6 +65,40 @@ def numVertices (K : SurfaceCellComplex) : ℕ :=
 def faceBoundaryLength (K : SurfaceCellComplex) (f : K.Face) : ℕ :=
   (K.boundary f).length
 
+open Classical in
+/-- Number of occurrences, across all face boundary words, of the unoriented edge underlying the
+dart `d`: occurrences of either `d` itself or of its reversal `K.inv d`.
+
+Stated with classical decidability so that it makes sense for an arbitrary complex; on concrete
+complexes it is computed through `oneFacePresentation_edgePairOccurrences` and its analogues. -/
+noncomputable def edgePairOccurrences (K : SurfaceCellComplex) (d : K.Dart) : ℕ :=
+  ∑ f : K.Face, (K.boundary f).countP fun x => decide (x = d ∨ x = K.inv d)
+
+/-- Surface validity computed from the incidence data, after Gallier-Xu Definition 6.1: no dart
+is its own reversal, being a boundary dart is orientation-invariant, every interior edge occurs
+exactly twice among the face boundary words, and every boundary edge occurs exactly once.
+
+This is deliberately a `Prop`-valued predicate rather than a field of `SurfaceCellComplex`:
+theorems that need validity must assume it explicitly, and junk complexes are refutable (see the
+vacuity probes in `Examples.lean`). -/
+structure IsSurfaceValid (K : SurfaceCellComplex) : Prop where
+  inv_ne : ∀ d, K.inv d ≠ d
+  isBoundaryDart_inv : ∀ d, K.isBoundaryDart (K.inv d) ↔ K.isBoundaryDart d
+  interior_pair : ∀ d, ¬K.isBoundaryDart d → K.edgePairOccurrences d = 2
+  boundary_single : ∀ d, K.isBoundaryDart d → K.edgePairOccurrences d = 1
+
+/-- One-step adjacency between vertices: some dart runs from `v` to `w`. -/
+def VertexAdj (K : SurfaceCellComplex) (v w : K.Vertex) : Prop :=
+  ∃ d, K.source d = v ∧ K.target d = w
+
+/-- Combinatorial connectivity computed from the incidence data: the vertex set is nonempty and
+any two vertices are joined by a chain of darts.
+
+Like `IsSurfaceValid`, this is a predicate assumed by theorems as needed, not a data field. -/
+structure IsConnected (K : SurfaceCellComplex) : Prop where
+  nonempty : Nonempty K.Vertex
+  joined : ∀ v w : K.Vertex, Relation.ReflTransGen K.VertexAdj v w
+
 /-- A signed occurrence of a named edge in a polygonal boundary word. -/
 inductive SignedDart (α : Type*) where
   | pos : α → SignedDart α
@@ -87,6 +121,9 @@ def flipEquiv (α : Type*) : SignedDart α ≃ SignedDart α where
   invFun := flip
   left_inv := flip_flip
   right_inv := flip_flip
+
+@[simp] theorem flipEquiv_apply {α : Type*} (d : SignedDart α) : flipEquiv α d = flip d :=
+  rfl
 
 end SignedDart
 
@@ -119,15 +156,40 @@ def oneFacePresentation (Edge : Type) [Fintype Edge]
   inv_target := by
     intro d
     rfl
-  surfaceValid :=
-    ∀ d : SignedDart Edge,
-      (match d with
-        | SignedDart.pos e => boundaryEdge e
-        | SignedDart.neg e => boundaryEdge e) →
-      (match SignedDart.flip d with
-        | SignedDart.pos e => boundaryEdge e
-        | SignedDart.neg e => boundaryEdge e)
-  connected := ∀ v : PUnit.{1}, v = PUnit.unit
+
+/-- A one-face presentation is combinatorially connected: it has a single vertex. -/
+theorem oneFacePresentation_isConnected (Edge : Type) [Fintype Edge]
+    (word : List (SignedDart Edge)) (boundaryEdge : Edge → Prop := fun _ => False) :
+    (oneFacePresentation Edge word boundaryEdge).IsConnected :=
+  ⟨⟨PUnit.unit⟩, fun v w => by cases v; cases w; exact Relation.ReflTransGen.refl⟩
+
+/-- No dart of a one-face presentation is its own reversal. -/
+theorem oneFacePresentation_inv_ne (Edge : Type) [Fintype Edge]
+    (word : List (SignedDart Edge)) (boundaryEdge : Edge → Prop) :
+    ∀ d, (oneFacePresentation Edge word boundaryEdge).inv d ≠ d := by
+  intro d h
+  have h' : SignedDart.flip d = d := h
+  cases d <;> simp [SignedDart.flip] at h'
+
+/-- Boundary-dart marking of a one-face presentation is orientation-invariant. -/
+theorem oneFacePresentation_isBoundaryDart_inv (Edge : Type) [Fintype Edge]
+    (word : List (SignedDart Edge)) (boundaryEdge : Edge → Prop) :
+    ∀ d, (oneFacePresentation Edge word boundaryEdge).isBoundaryDart
+        ((oneFacePresentation Edge word boundaryEdge).inv d) ↔
+      (oneFacePresentation Edge word boundaryEdge).isBoundaryDart d := by
+  intro d
+  cases d <;> exact Iff.rfl
+
+/-- In a one-face presentation the edge-pair occurrence count is a count in the single boundary
+word, computed with the decidable equality of `SignedDart`. -/
+theorem oneFacePresentation_edgePairOccurrences (Edge : Type) [Fintype Edge] [DecidableEq Edge]
+    (word : List (SignedDart Edge)) (boundaryEdge : Edge → Prop) (d : SignedDart Edge) :
+    (oneFacePresentation Edge word boundaryEdge).edgePairOccurrences d =
+      word.countP fun x => decide (x = d ∨ x = SignedDart.flip d) := by
+  simp only [edgePairOccurrences, oneFacePresentation, Finset.univ_unique, Finset.sum_singleton]
+  refine List.countP_congr fun x _ => ?_
+  simp only [decide_eq_true_eq]
+  exact Iff.rfl
 
 /-- Convert an oriented triangulation edge occurrence to a cell-complex signed dart. -/
 def signedDartOfOrientedEdge {Edge : Type*} :
@@ -179,8 +241,16 @@ def sphere : SurfaceCellComplex where
   inv_target := by
     intro d
     cases d
-  surfaceValid := ∀ d : Empty, False
-  connected := ∀ v : PUnit.{1}, v = PUnit.unit
+
+/-- The placeholder sphere complex is surface-valid: it has no darts at all. -/
+theorem sphere_isSurfaceValid : sphere.IsSurfaceValid := by
+  constructor <;> intro d <;> cases d
+
+/-- The placeholder sphere complex is combinatorially connected: it has a single vertex. -/
+theorem sphere_isConnected : sphere.IsConnected := by
+  refine ⟨⟨PUnit.unit⟩, fun v w => ?_⟩
+  cases v; cases w
+  exact Relation.ReflTransGen.refl
 
 /-- Equivalence generated by the allowed Gallier-Xu cut/glue transformations. -/
 def Equivalent (K L : SurfaceCellComplex) : Prop :=
@@ -253,10 +323,6 @@ def FiniteSurfaceTriangulation.toCellComplex {S : Type*} [TopologicalSpace S]
   inv_target := by
     intro d
     cases d <;> rfl
-  surfaceValid :=
-    FiniteSurfaceTriangulation.Valid T.Vertex T.Edge T.Triangle T.edgeVertices
-      T.triangleVertices T.edgeSource T.edgeTarget T.triangleBoundary
-  connected := ConnectedSpace T.realization
 
 /-- The realization of the associated cell complex agrees with the triangulation realization. -/
 theorem FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic

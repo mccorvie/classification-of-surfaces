@@ -109,6 +109,144 @@ example : projectivePlaneCellComplex.faceBoundaryLength PUnit.unit = 2 := by
 example : mobiusStripCellComplex.faceBoundaryLength PUnit.unit = 3 := by
   rfl
 
+section ValidityProbes
+
+/-! Machine-checked probes that the computed predicates `SurfaceCellComplex.IsSurfaceValid` and
+`SurfaceCellComplex.IsConnected` hold on the standard presentations and, crucially, *fail* on junk
+complexes (issue #9: the former `surfaceValid`/`connected` data fields were vacuous). -/
+
+open SurfaceCellComplex in
+/-- Regression check: the disk presentation is surface-valid (its single edge is boundary). -/
+theorem disk_isSurfaceValid : diskCellComplex.IsSurfaceValid := by
+  constructor
+  · exact oneFacePresentation_inv_ne _ _ _
+  · exact oneFacePresentation_isBoundaryDart_inv _ _ _
+  · intro d hd
+    cases d <;> simp [diskCellComplex, oneFacePresentation] at hd
+  · intro d hd
+    clear hd
+    unfold diskCellComplex
+    rw [oneFacePresentation_edgePairOccurrences]
+    revert d
+    decide
+
+open SurfaceCellComplex in
+/-- Regression check: the annulus presentation is surface-valid (both contours are boundary). -/
+theorem annulus_isSurfaceValid : annulusCellComplex.IsSurfaceValid := by
+  constructor
+  · exact oneFacePresentation_inv_ne _ _ _
+  · exact oneFacePresentation_isBoundaryDart_inv _ _ _
+  · intro d hd
+    cases d <;> simp [annulusCellComplex, oneFacePresentation] at hd
+  · intro d hd
+    clear hd
+    unfold annulusCellComplex
+    rw [oneFacePresentation_edgePairOccurrences]
+    revert d
+    decide
+
+open SurfaceCellComplex in
+/-- Regression check: the torus word `a b a⁻¹ b⁻¹` is surface-valid (every edge pairs up). -/
+theorem torus_isSurfaceValid : torusCellComplex.IsSurfaceValid := by
+  constructor
+  · exact oneFacePresentation_inv_ne _ _ _
+  · exact oneFacePresentation_isBoundaryDart_inv _ _ _
+  · intro d hd
+    clear hd
+    unfold torusCellComplex
+    rw [oneFacePresentation_edgePairOccurrences]
+    revert d
+    decide
+  · intro d hd
+    cases d <;> simp [torusCellComplex, oneFacePresentation] at hd
+
+open SurfaceCellComplex in
+/-- Regression check: the projective-plane word `a a` is surface-valid: the two same-orientation
+occurrences of `a` pair up, which the old membership-free data fields could not even express. -/
+theorem projective_plane_isSurfaceValid : projectivePlaneCellComplex.IsSurfaceValid := by
+  constructor
+  · exact oneFacePresentation_inv_ne _ _ _
+  · exact oneFacePresentation_isBoundaryDart_inv _ _ _
+  · intro d hd
+    clear hd
+    unfold projectivePlaneCellComplex
+    rw [oneFacePresentation_edgePairOccurrences]
+    revert d
+    decide
+  · intro d hd
+    cases d <;> simp [projectivePlaneCellComplex, oneFacePresentation] at hd
+
+open SurfaceCellComplex in
+/-- Regression check: the Mobius-strip word `a a h` is surface-valid, mixing an interior edge that
+occurs twice with the same orientation and a boundary edge that occurs once. -/
+theorem mobius_strip_isSurfaceValid : mobiusStripCellComplex.IsSurfaceValid := by
+  constructor
+  · exact oneFacePresentation_inv_ne _ _ _
+  · exact oneFacePresentation_isBoundaryDart_inv _ _ _
+  · intro d hd
+    unfold mobiusStripCellComplex at hd ⊢
+    rw [oneFacePresentation_edgePairOccurrences]
+    obtain e | e := d <;> cases e <;>
+      first
+        | decide
+        | simp [oneFacePresentation] at hd
+  · intro d hd
+    unfold mobiusStripCellComplex at hd ⊢
+    rw [oneFacePresentation_edgePairOccurrences]
+    obtain e | e := d <;> cases e <;>
+      first
+        | decide
+        | simp [oneFacePresentation] at hd
+
+/-- Regression check: all one-face presentations are combinatorially connected. -/
+example : torusCellComplex.IsConnected :=
+  SurfaceCellComplex.oneFacePresentation_isConnected _ _ _
+
+/-- Edge names for the unpaired-dart vacuity probe. -/
+inductive UnpairedEdge where
+  | a
+deriving DecidableEq, Repr, Fintype
+
+/-- Vacuity probe: a one-face word whose single interior dart has no partner. -/
+def unpairedCellComplex : CellComplex :=
+  SurfaceCellComplex.oneFacePresentation UnpairedEdge [pos UnpairedEdge.a]
+
+/-- The validity predicate has teeth: an unpaired non-boundary dart is rejected. -/
+theorem unpaired_not_isSurfaceValid : ¬unpairedCellComplex.IsSurfaceValid := by
+  intro h
+  have h2 := h.interior_pair (pos UnpairedEdge.a) fun hF => hF
+  unfold unpairedCellComplex at h2
+  rw [SurfaceCellComplex.oneFacePresentation_edgePairOccurrences] at h2
+  exact absurd h2 (by decide)
+
+/-- Vacuity probe: two isolated vertices and no darts at all. -/
+def twoVertexCellComplex : CellComplex where
+  Face := Empty
+  Dart := Empty
+  Vertex := Bool
+  realization := PUnit
+  faceFintype := inferInstance
+  dartFintype := inferInstance
+  vertexFintype := inferInstance
+  realizationTop := inferInstance
+  inv := Equiv.refl Empty
+  source := Empty.elim
+  target := Empty.elim
+  boundary := fun f => f.elim
+  isBoundaryDart := fun d => d.elim
+  inv_involutive := fun d => d.elim
+  inv_source := fun d => d.elim
+  inv_target := fun d => d.elim
+
+/-- The connectivity predicate has teeth: isolated vertices are rejected. -/
+theorem twoVertex_not_isConnected : ¬twoVertexCellComplex.IsConnected := by
+  intro h
+  rcases (h.joined false true).cases_head with heq | ⟨c, ⟨d, -, -⟩, -⟩
+  · exact Bool.noConfusion heq
+  · cases d
+
+end ValidityProbes
+
 /-- A minimal one-triangle triangulation of `PUnit`, used only to test the data conversion API. -/
 def oneTriangleTriangulation : FiniteSurfaceTriangulation PUnit where
   Vertex := Fin 3
