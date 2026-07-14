@@ -705,7 +705,110 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
     ∃ T' : PartialTriangulation S,
       T'.support = Set.range e₁ ∪ Set.range e₂ ∧
       ∀ e ∈ T'.edges, (T'.faces.filter fun t => e ⊆ t).card ≤ 2 := by
-  sorry
+  classical
+  -- the realization of the union family is the union of the realizations
+  have hunion : ∀ x : V → ℝ, x ∈ GeometricRealization V (F₁ ∪ F₂) ↔
+      x ∈ GeometricRealization V F₁ ∨ x ∈ GeometricRealization V F₂ := by
+    intro x
+    simp only [GeometricRealization, Set.mem_setOf_eq, Finset.mem_union]
+    constructor
+    · rintro ⟨hstd, t, ht | ht, hsupp⟩
+      · exact Or.inl ⟨hstd, t, ht, hsupp⟩
+      · exact Or.inr ⟨hstd, t, ht, hsupp⟩
+    · rintro (⟨hstd, t, ht, hsupp⟩ | ⟨hstd, t, ht, hsupp⟩)
+      · exact ⟨hstd, t, Or.inl ht, hsupp⟩
+      · exact ⟨hstd, t, Or.inr ht, hsupp⟩
+  -- the pasted embedding
+  have hmem₂ : ∀ x : GeometricRealization V (F₁ ∪ F₂),
+      (x : V → ℝ) ∉ GeometricRealization V F₁ → (x : V → ℝ) ∈ GeometricRealization V F₂ :=
+    fun x hx => ((hunion x.1).mp x.2).resolve_left hx
+  set glue : GeometricRealization V (F₁ ∪ F₂) → S := fun x =>
+    if hx : (x : V → ℝ) ∈ GeometricRealization V F₁ then e₁ ⟨x.1, hx⟩
+    else e₂ ⟨x.1, hmem₂ x hx⟩ with hglue
+  -- the glued value is independent of the side used
+  have hglue_left : ∀ (x : GeometricRealization V (F₁ ∪ F₂))
+      (hx : (x : V → ℝ) ∈ GeometricRealization V F₁), glue x = e₁ ⟨x.1, hx⟩ := by
+    intro x hx
+    simp [hglue, hx]
+  have hglue_right : ∀ (x : GeometricRealization V (F₁ ∪ F₂))
+      (hx : (x : V → ℝ) ∈ GeometricRealization V F₂), glue x = e₂ ⟨x.1, hx⟩ := by
+    intro x hx
+    by_cases hx₁ : (x : V → ℝ) ∈ GeometricRealization V F₁
+    · rw [hglue_left x hx₁]
+      exact hagree ⟨x.1, hx₁⟩ ⟨x.1, hx⟩ rfl
+    · simp [hglue, hx₁]
+  -- injectivity
+  have hinj : Function.Injective glue := by
+    intro x y hxy
+    apply Subtype.ext
+    by_cases hx : (x : V → ℝ) ∈ GeometricRealization V F₁ <;>
+      by_cases hy : (y : V → ℝ) ∈ GeometricRealization V F₁
+    · rw [hglue_left x hx, hglue_left y hy] at hxy
+      exact Subtype.mk_eq_mk.mp (he₁.injective hxy)
+    · rw [hglue_left x hx, hglue_right y (hmem₂ y hy)] at hxy
+      exact hsep ⟨x.1, hx⟩ ⟨y.1, hmem₂ y hy⟩ hxy
+    · rw [hglue_right x (hmem₂ x hx), hglue_left y hy] at hxy
+      exact (hsep ⟨y.1, hy⟩ ⟨x.1, hmem₂ x hx⟩ hxy.symm).symm
+    · rw [hglue_right x (hmem₂ x hx), hglue_right y (hmem₂ y hy)] at hxy
+      exact Subtype.mk_eq_mk.mp (he₂.injective hxy)
+  -- continuity via closed preimages: both restriction inclusions have compact images
+  have hcont : Continuous glue := by
+    rw [continuous_iff_isClosed]
+    intro C hC
+    -- describe the preimage as a union of two compact images
+    have hdesc : glue ⁻¹' C =
+        ((fun z : GeometricRealization V F₁ =>
+          (⟨z.1, (hunion z.1).mpr (Or.inl z.2)⟩ : GeometricRealization V (F₁ ∪ F₂))) ''
+            (e₁ ⁻¹' C)) ∪
+        ((fun z : GeometricRealization V F₂ =>
+          (⟨z.1, (hunion z.1).mpr (Or.inr z.2)⟩ : GeometricRealization V (F₁ ∪ F₂))) ''
+            (e₂ ⁻¹' C)) := by
+      ext x
+      constructor
+      · intro hx
+        by_cases hx₁ : (x : V → ℝ) ∈ GeometricRealization V F₁
+        · refine Or.inl ⟨⟨x.1, hx₁⟩, ?_, Subtype.ext rfl⟩
+          rw [Set.mem_preimage, ← hglue_left x hx₁]
+          exact hx
+        · refine Or.inr ⟨⟨x.1, hmem₂ x hx₁⟩, ?_, Subtype.ext rfl⟩
+          rw [Set.mem_preimage, ← hglue_right x (hmem₂ x hx₁)]
+          exact hx
+      · rintro (⟨z, hz, rfl⟩ | ⟨z, hz, rfl⟩)
+        · show glue _ ∈ C
+          rw [hglue_left _ z.2]
+          exact hz
+        · show glue _ ∈ C
+          rw [hglue_right _ z.2]
+          exact hz
+    rw [hdesc]
+    have hcompact : ∀ (F : Finset (Finset V)) (e : GeometricRealization V F → S)
+        (he : _root_.Topology.IsEmbedding e)
+        (ι : GeometricRealization V F → GeometricRealization V (F₁ ∪ F₂))
+        (hι : Continuous ι),
+        IsCompact (ι '' (e ⁻¹' C)) := by
+      intro F e he ι hιc
+      exact ((hC.preimage he.continuous).isCompact).image hιc
+    refine IsClosed.union ?_ ?_
+    · exact (hcompact F₁ e₁ he₁ _
+        (Continuous.subtype_mk continuous_subtype_val _)).isClosed
+    · exact (hcompact F₂ e₂ he₂ _
+        (Continuous.subtype_mk continuous_subtype_val _)).isClosed
+  -- assemble the glued partial triangulation
+  refine ⟨{ Vertex := V, faces := F₁ ∪ F₂, faces_card := hcard, embed := glue,
+            isEmbedding := ?_ }, ?_, ?_⟩
+  · exact (hcont.isClosedEmbedding hinj).isEmbedding
+  · -- the support is the union of the two images
+    apply Set.Subset.antisymm
+    · rintro y ⟨x, rfl⟩
+      by_cases hx : (x : V → ℝ) ∈ GeometricRealization V F₁
+      · exact Or.inl ⟨⟨x.1, hx⟩, (hglue_left x hx).symm⟩
+      · exact Or.inr ⟨⟨x.1, hmem₂ x hx⟩, (hglue_right x (hmem₂ x hx)).symm⟩
+    · rintro y (⟨x, rfl⟩ | ⟨x, rfl⟩)
+      · exact ⟨⟨x.1, (hunion x.1).mpr (Or.inl x.2)⟩, hglue_left _ x.2⟩
+      · exact ⟨⟨x.1, (hunion x.1).mpr (Or.inr x.2)⟩, hglue_right _ x.2⟩
+  · -- the edge-face bound is inherited from the joint hypothesis
+    intro e he
+    exact hsurf e he
 
 /-- The invariant carried through the bordered Radó induction: the built complex is a
 combinatorial surface (every edge in at most two faces), and the region `A` absorbed so far lies
