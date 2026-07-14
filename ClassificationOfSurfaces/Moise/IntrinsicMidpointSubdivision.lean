@@ -95,7 +95,7 @@ theorem midpointCornerFace_card (t : K.Face) (i : ZMod 3) :
 theorem midpointCentralFace_card (t : K.Face) :
     (K.midpointCentralFace t).card = 3 := by
   rw [midpointCentralFace, Finset.card_image_iff.mpr]
-  · native_decide
+  · decide
   · intro i _ j _ hij
     exact K.faceEdge_injective t (Sum.inr.inj hij)
 

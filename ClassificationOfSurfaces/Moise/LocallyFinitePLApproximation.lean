@@ -379,6 +379,107 @@ def SeparatesVerticesFromFaces (G : K.PlaneGraphRealization)
     ∀ p ∈ faceInSupport (K := K) f,
       phi p < dist (G.vertexImage v) (G.map p)
 
+/-- Any pointwise smaller tolerance inherits vertex-to-face separation. -/
+theorem SeparatesVerticesFromFaces.mono {phi psi : K.support → ℝ}
+    (hsep : SeparatesVerticesFromFaces G phi) (hle : ∀ p, psi p ≤ phi p) :
+    SeparatesVerticesFromFaces G psi :=
+  fun f v hvf p hp ↦ (hle p).trans_lt (hsep f v hvf p hp)
+
+/-- Local finiteness leaves only finitely many faces through any one support point. -/
+theorem finite_setOf_mem_faceInSupport (p : K.support) :
+    {f : K.Face | p ∈ faceInSupport (K := K) f}.Finite :=
+  K.locallyFinite_faceInSupport.point_finite p
+
+theorem mem_faceInSupport_supportFace (p : K.support) :
+    p ∈ faceInSupport (K := K) (K.supportFace p) := by
+  rw [K.faceInSupport_eq_preimage]
+  exact K.mem_faceCarrier_supportFace p
+
+/-- The finite set of maximal faces through one support point. -/
+noncomputable def facesContaining (p : K.support) : Finset K.Face :=
+  (finite_setOf_mem_faceInSupport (K := K) p).toFinset
+
+theorem mem_facesContaining {p : K.support} {f : K.Face} :
+    f ∈ facesContaining (K := K) p ↔ p ∈ faceInSupport (K := K) f :=
+  Set.Finite.mem_toFinset _
+
+theorem facesContaining_nonempty (p : K.support) :
+    (facesContaining (K := K) p).Nonempty :=
+  ⟨K.supportFace p, mem_facesContaining.mpr (mem_faceInSupport_supportFace p)⟩
+
+/-- The pointwise vertex-to-face separation control: the smallest per-face separation radius
+among the finitely many faces through the point.  This is the locally finite analogue of the
+finite `exists_uniform_vertex_face_separation`: positive at every point, strongly positive on
+compact sets, and smaller than the distance from any face through the point to any vertex not
+incident to that face. -/
+noncomputable def vertexSeparationControl (G : K.PlaneGraphRealization)
+    (p : K.support) : ℝ :=
+  ((facesContaining (K := K) p).image (faceVertexSeparationRadius G)).min'
+    ((facesContaining_nonempty p).image _)
+
+theorem vertexSeparationControl_le {p : K.support} {f : K.Face}
+    (hf : p ∈ faceInSupport (K := K) f) :
+    vertexSeparationControl G p ≤ faceVertexSeparationRadius G f :=
+  Finset.min'_le _ _ (Finset.mem_image_of_mem _ (mem_facesContaining.mpr hf))
+
+theorem vertexSeparationControl_pos (p : K.support) :
+    0 < vertexSeparationControl G p := by
+  have hmem := Finset.min'_mem
+    ((facesContaining (K := K) p).image (faceVertexSeparationRadius G))
+    ((facesContaining_nonempty p).image _)
+  obtain ⟨f, -, hf⟩ := Finset.mem_image.mp hmem
+  rw [vertexSeparationControl, ← hf]
+  exact faceVertexSeparationRadius_pos (G := G) f
+
+/-- The canonical control separates every nonincident vertex from every face: each face image
+is a positive thickening away from the vertex, and the control is below that radius. -/
+theorem separatesVerticesFromFaces_vertexSeparationControl :
+    SeparatesVerticesFromFaces G (vertexSeparationControl G) := by
+  intro f v hvf p hp
+  have hgap : faceVertexSeparationRadius G f < dist (G.vertexImage v) (G.map p) := by
+    by_contra hle
+    push Not at hle
+    have hball : G.map p ∈
+        Metric.closedBall (G.vertexImage v) (faceVertexSeparationRadius G f) := by
+      rw [Metric.mem_closedBall, dist_comm]
+      exact hle
+    have hthick : G.map p ∈
+        Metric.cthickening (faceVertexSeparationRadius G f)
+          (G.map '' faceInSupport (K := K) f) :=
+      Metric.self_subset_cthickening _ ⟨p, hp, rfl⟩
+    exact Set.disjoint_left.mp
+      (faceVertexSeparationRadius_separates (G := G) f v hvf) hball hthick
+  exact (vertexSeparationControl_le hp).trans_lt hgap
+
+/-- On every compact set the canonical separation control has a positive lower bound: only
+finitely many faces meet the compact set, and each contributes a positive radius. -/
+theorem stronglyPositiveOn_vertexSeparationControl :
+    StronglyPositiveOn Set.univ (vertexSeparationControl G) := by
+  intro C hC _
+  rcases C.eq_empty_or_nonempty with rfl | hCne
+  · exact ⟨1, one_pos, fun x hx ↦ absurd hx (Set.notMem_empty x)⟩
+  have hfin : {f : K.Face | (faceInSupport (K := K) f ∩ C).Nonempty}.Finite :=
+    K.locallyFinite_faceInSupport.finite_nonempty_inter_compact hC
+  obtain ⟨p₀, hp₀⟩ := hCne
+  have hFne : hfin.toFinset.Nonempty :=
+    ⟨K.supportFace p₀, (Set.Finite.mem_toFinset _).mpr
+      ⟨p₀, mem_faceInSupport_supportFace p₀, hp₀⟩⟩
+  refine ⟨(hfin.toFinset.image (faceVertexSeparationRadius G)).min' (hFne.image _),
+    ?_, ?_⟩
+  · have hmem := Finset.min'_mem
+      (hfin.toFinset.image (faceVertexSeparationRadius G)) (hFne.image _)
+    obtain ⟨f, -, hf⟩ := Finset.mem_image.mp hmem
+    rw [← hf]
+    exact faceVertexSeparationRadius_pos (G := G) f
+  · intro p hp
+    apply Finset.le_min'
+    intro r hr
+    obtain ⟨f, hfp, rfl⟩ := Finset.mem_image.mp hr
+    apply Finset.min'_le
+    apply Finset.mem_image_of_mem
+    exact (Set.Finite.mem_toFinset _).mpr
+      ⟨p, mem_facesContaining.mp hfp, hp⟩
+
 /-- The vertex-side compatibility condition used in Moise's side-preservation argument. -/
 def FaceFillingsVerticesAvoidClosedRegions (G : K.PlaneGraphRealization) : Prop :=
   ∀ (f : K.Face) (v : K.Vertex), v ∉ K.faceVertices f →

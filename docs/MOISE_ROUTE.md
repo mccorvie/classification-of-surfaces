@@ -119,15 +119,31 @@ repository (`adaptiveOverlapGraphRealization`, the locally finite controlled pol
 replacement, `replaceOnOpen`/`frontierGlue`, `CommonSubdivision`), respecting the
 vanishing-tolerance warning below.
 
-The precise remaining work inside this leaf, in dependency order (verified 2026-07-13: the
-first item's lemmas exist nowhere — `SeparatesVerticesFromFaces` and the
-`RegionControlledAdaptiveComplex` side conditions occur only as hypotheses):
+The precise remaining work inside this leaf, in dependency order:
 
-1. **Instantiation lemmas at the adaptive overlap**: `Function.Injective faceVertices` for the
-   adaptive overlap complex, and `SeparatesVerticesFromFaces (adaptiveOverlapGraphRealization)
-   (regionSafeControl …)` — the locally finite analogue of the proved finite
-   `exists_uniform_vertex_face_separation`.  These are the entry ticket to
-   `exists_polygonalReplacement`.
+1. **Instantiation lemmas at the adaptive overlap** — **DONE** (2026-07-13, clean axioms; the
+   layer's stray `native_decide` in `midpointCentralFace_card` was also replaced by kernel
+   `decide`).  `AdaptiveOpenCover.faceVertices_injective` and
+   `RegionControlledAdaptiveComplex.faceVertices_injective` discharge the `hfaces` entry of
+   `exists_polygonalReplacement` unconditionally;
+   `PartialTriangulation.injective_faceVertices_adaptiveOverlapComplex` is the overlap
+   instance.  The separation entry is
+   `PartialTriangulation.exists_separating_control_adaptiveOverlap`, built on the new generic
+   `LocallyFiniteTriangleComplex.vertexSeparationControl` (`LocallyFinitePLApproximation.lean`):
+   the locally finite analogue of the finite `exists_uniform_vertex_face_separation`, with
+   positivity, strong positivity on compacts, `SeparatesVerticesFromFaces`, and a `mono` lemma.
+   **Statement caveat, discovered while proving it**: separation had to be stated
+   existentially (`∃ phi` strongly positive) for a *fixed* complex.  It is *not* provable with
+   the same `phi` that builds `regionControlledAdaptiveComplex`, because the control bounds the
+   local image mesh only from above while nonincident vertex gaps in the chart image can be
+   smaller than the cover scale wherever the chart map contracts.  Consumers must therefore
+   either fix the complex first and shrink only the arc approximation controls
+   (`withApproximationControls`), entering through
+   `exists_controlled_polygonalReplacement_of_facewise_close` /
+   `faceVertexSeparationRadius` (whose separation half is already proved), or generalize
+   `exists_polygonalReplacement` to decouple the separation control from the mesh control.
+   This mirrors the proved finite sequencing in `exists_intrinsic_pl_approximation`
+   (complex fixed, then `ρ = min r η` chosen for the arcs only).
 2. **Frontier-glue application**: derive `MatchesAtFrontier` from the `≤ regionSafeControl`
    replacement bound, and prove the crossing-disjointness `Disjoint (g '' U) (h '' Uᶜ)` from the
    control being dominated by the distance to the overlap frontier; then

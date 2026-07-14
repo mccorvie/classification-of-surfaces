@@ -9,6 +9,7 @@ import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
 import ClassificationOfSurfaces.Moise.IntrinsicCellwiseExtension
 import ClassificationOfSurfaces.Moise.PLApproximation
 import ClassificationOfSurfaces.Moise.AdaptiveTriangulation
+import ClassificationOfSurfaces.Moise.AdaptiveControlledApproximation
 import ClassificationOfSurfaces.Moise.LocallyFiniteControlledApproximation
 import ClassificationOfSurfaces.Moise.FrontierGlue
 
@@ -676,6 +677,49 @@ noncomputable def adaptiveOverlapGraphRealization [T2Space S]
         rfl
       rw [heq]
       exact (T.isClosedEmbedding_adaptiveOverlapPerturbationMap c).isClosed_range)
+
+/-- Crossing-weld plan, item 1, first entry condition: distinct faces of the adaptive overlap
+complex carry distinct vertex triples. -/
+theorem injective_faceVertices_adaptiveOverlapComplex (T : PartialTriangulation S)
+    (c : MoiseChart S) :
+    Function.Injective (T.adaptiveOverlapComplex c).faceVertices :=
+  T.toIntrinsic.adaptiveGlobalFanFaceVertices_injective (T.chartOverlap c)
+    (T.isOpen_chartOverlap c)
+
+/-- Crossing-weld plan, item 1, second entry condition, in honest existential form: a strongly
+positive tolerance on the chart overlap whose region-safe reduction separates every vertex of
+the adaptive overlap complex from every face not containing it, in chart coordinates.  This is
+the locally finite analogue of the finite `exists_uniform_vertex_face_separation`. -/
+theorem exists_separating_control_adaptiveOverlap [T2Space S]
+    (T : PartialTriangulation S) (c : MoiseChart S) :
+    ∃ phi : T.chartOverlap c → ℝ,
+      StronglyPositiveOn Set.univ phi ∧
+      LocallyFiniteTriangleComplex.SeparatesVerticesFromFaces
+        (T.adaptiveOverlapGraphRealization c)
+        (fun p ↦ regionSafeControl c.kind.perturbationRegion
+          (T.chartOverlapMap c) phi p.1) := by
+  classical
+  have hmem : ∀ x : T.chartOverlap c,
+      x ∈ (T.adaptiveOverlapComplex c).support := by
+    intro x
+    rw [T.toIntrinsic.adaptiveLocallyFiniteTriangleComplex_support
+      (T.chartOverlap c) (T.isOpen_chartOverlap c)]
+    trivial
+  refine ⟨fun x ↦ LocallyFiniteTriangleComplex.vertexSeparationControl
+    (T.adaptiveOverlapGraphRealization c) ⟨x, hmem x⟩, ?_, ?_⟩
+  · intro C hC _
+    have himage : IsCompact ((fun x : T.chartOverlap c ↦
+        (⟨x, hmem x⟩ : (T.adaptiveOverlapComplex c).support)) '' C) :=
+      hC.image (continuous_id.subtype_mk _)
+    obtain ⟨eps, heps, hepsLe⟩ :=
+      LocallyFiniteTriangleComplex.stronglyPositiveOn_vertexSeparationControl
+        (G := T.adaptiveOverlapGraphRealization c) _ himage (Set.subset_univ _)
+    exact ⟨eps, heps, fun x hx ↦ hepsLe _ ⟨x, hx, rfl⟩⟩
+  · apply LocallyFiniteTriangleComplex.SeparatesVerticesFromFaces.mono
+      (LocallyFiniteTriangleComplex.separatesVerticesFromFaces_vertexSeparationControl
+        (G := T.adaptiveOverlapGraphRealization c))
+    intro p
+    exact regionSafeControl_le_left _ _ _ _
 
 end PartialTriangulation
 
