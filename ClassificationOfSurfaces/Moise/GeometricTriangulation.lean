@@ -79,6 +79,48 @@ instance : IsEmpty (GeometricRealization V (∅ : Finset (Finset V))) :=
 
 end GeometricRealization
 
+namespace TriangleFamily
+
+variable {Vertex : Type*} [DecidableEq Vertex]
+
+/-- A listed maximal face of a finite triangle family. -/
+abbrev Face (faces : Finset (Finset Vertex)) :=
+  {t : Finset Vertex // t ∈ faces}
+
+/-- The two-vertex faces occurring in a finite triangle family. -/
+def edges (faces : Finset (Finset Vertex)) : Finset (Finset Vertex) :=
+  faces.biUnion fun t => t.powersetCard 2
+
+/-- Two listed triangles are dual-adjacent when they share a two-vertex face. -/
+def FaceAdjacent (faces : Finset (Finset Vertex)) (f g : Face faces) : Prop :=
+  ∃ e : Finset Vertex, e.card = 2 ∧ e ⊆ f.1 ∧ e ⊆ g.1
+
+omit [DecidableEq Vertex] in
+theorem faceAdjacent_symm {faces : Finset (Finset Vertex)} {f g : Face faces}
+    (h : FaceAdjacent faces f g) : FaceAdjacent faces g f := by
+  rcases h with ⟨e, hecard, hef, heg⟩
+  exact ⟨e, hecard, heg, hef⟩
+
+omit [DecidableEq Vertex] in
+theorem reflTransGen_faceAdjacent_symm {faces : Finset (Finset Vertex)}
+    {f g : Face faces} (h : Relation.ReflTransGen (FaceAdjacent faces) f g) :
+    Relation.ReflTransGen (FaceAdjacent faces) g f := by
+  exact h.swap.mono fun _ _ hab => faceAdjacent_symm hab
+
+/-- Every two listed triangles are connected by a finite chain of shared edges. -/
+def IsDualConnected (faces : Finset (Finset Vertex)) : Prop :=
+  ∀ f g : Face faces, Relation.ReflTransGen (FaceAdjacent faces) f g
+
+/-- Incidence conditions making a finite family of triangles a connected pseudomanifold with
+boundary: it is nonempty, no edge has valence above two, and its dual graph is connected. -/
+structure SurfaceIncidence (faces : Finset (Finset Vertex)) : Prop where
+  faces_nonempty : faces.Nonempty
+  edge_valence_le_two :
+    ∀ e ∈ edges faces, (faces.filter fun t => e ⊆ t).card ≤ 2
+  dual_connected : IsDualConnected faces
+
+end TriangleFamily
+
 /-- A finite triangulation of the topological space `S` by geometric 2-simplexes: a finite vertex
 type, a finite family of 3-element faces, and a homeomorphism from the geometric realization of
 that family onto `S`.
@@ -106,6 +148,10 @@ attribute [instance] GeometricTriangulation.vertexDecidableEq
 namespace GeometricTriangulation
 
 variable {S : Type*} [TopologicalSpace S] (T : GeometricTriangulation S)
+
+/-- Surface-incidence certificate for a faithful geometric triangulation. -/
+abbrev SurfaceIncidence : Prop :=
+  TriangleFamily.SurfaceIncidence T.faces
 
 /-- The realization of the triangulation, as a polyhedron in barycentric coordinates. -/
 abbrev realization : Set (T.Vertex → ℝ) :=
