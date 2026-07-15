@@ -168,34 +168,47 @@ The precise remaining work inside this leaf, in dependency order:
    trace with the fixed patch complex, and selection of the patch sub-mesh keeping the cores
    interior (Moise's L, conditions (b) and (d)).
 
-   **Refined map (2026-07-14), after verifying every entry of the replacement pipeline.**  The
-   crux blocking the straightened complex is now precisely identified: a
-   **tolerance-parametrized one-skeleton replacement for a FIXED locally finite complex** — the
-   locally finite analogue of the proved finite `exists_closeGraphApproximation`
-   (`IntrinsicCloseGraphApproximation.lean`), i.e. arcs whose pointwise deviation is below any
-   given strongly positive `rho`.  Why the existing entries cannot be discharged from outside:
-   the canonical `graphReplacementMap` arcs only satisfy the mesh-scale bound
-   `< 2 * diam (edgeImage e)` (`replacementEdgeMap_dist_lt_two_mul_edgeImage_diam`), while both
-   side-preservation entries (`SeparatesVerticesFromFaces`+`FaceBoundariesControlled` with one
-   control, or `FaceBoundariesClose G (faceVertexSeparationRadius G)`) compare against the
-   complex's own Classical.choose-selected separation radii, computed only after the complex is
-   fixed.  Choosing the mesh control `phi` cannot win that race: in the adaptive fan complex,
+   **Refined map (2026-07-14, sharpened 2026-07-15), after verifying every entry of the
+   replacement pipeline.**  The apparent crux was that the canonical `graphReplacementMap`
+   arcs only satisfy the mesh-scale pointwise bound `< 2 * diam (edgeImage e)`, while the
+   side-preservation entries compare against the complex's own Classical.choose-selected
+   separation radii — a race no mesh control `phi` can win (in the adaptive fan complex,
    consecutive interval vertices on one tile edge can have image gaps arbitrarily small
-   relative to the tile's cover scale, so `2 * diam < radius` genuinely fails for `R(phi)` for
-   every `phi`.  The finite pipeline escaped exactly here by choosing many-breakpoint arcs at
-   tolerance `ρ = min r η` AFTER the complex (`exists_intrinsic_pl_approximation` sequencing);
-   the locally finite arc layer must be given the same flexibility (a per-edge refinement
-   parameter at strongly-positive scale; `GraphSubdivision`/`LineSubdivision` are the natural
-   quarries).  Once that layer exists, the consumers are ready:
-   `faceBoundariesClose_of_lt_vertexSeparationControl`
-   (`LocallyFiniteSidePreservation.lean`, proved) bridges arcs finer than the part-1
-   `vertexSeparationControl` to the `FaceBoundariesClose` entry, and
-   `exists_controlled_polygonalReplacement_of_facewise_close` (proved) consumes it together
-   with the adaptive `FaceBoundariesControlled`/`UniformFrontierControl` (proved) — the
-   containment/local-finiteness role and the side-preservation role take different controls
-   there, so no single-control coupling remains.  The straightening tolerance is then
-   `min (regionSafeControl …) (matching control) (vertexSeparationControl)` — all three
-   strongly positive, every condition downward monotone.
+   relative to the tile's cover scale).  **The resolution does NOT require new arcs.**  The
+   `CentralPolygonalArc` structure already carries `curve_close`: the arc's parametrized curve
+   tracks the trimmed original edge curve pointwise within `centralTubeRadius e ≤
+   edgeApproximationControl e` — an approximation control we may shrink freely
+   (`withApproximationControls`).  The mesh-scale weakness is purely a PARAMETRIZATION
+   artifact: `completePath` splits its parameter by `Path.trans` at 1/2, 3/4, misaligned with
+   the edge trim, so the same-parameter comparison against `faceOriginalMap` picks up the edge
+   diameter.  Accordingly the consumer was generalized (2026-07-15, proved clean):
+   `faceFillingsVerticesAvoidClosedRegions_of_comparison` and
+   `cellwiseCompatibility_of_comparison` (`LocallyFiniteSidePreservation.lean`) accept ANY
+   continuous comparison map `comp f` on the standard region with values in the
+   `r f / 2`-cthickening of the original face image and within `r f / 2` of the replacement
+   boundary on the frontier — the Tietze/no-retraction argument never needed the original
+   parametrization, only continuity, frontier closeness, and set-proximity to the face image.
+   The remaining work for the straightened complex is the per-face comparison map: on each
+   side of the standard triangle, (i) on the arc's middle range, `chartEdgeCurve` composed
+   with the trim-affine reparametrization matched to `middlePath`'s parameter — pointwise
+   `< centralTubeRadius` by `curve_close`; (ii) on the spoke ranges, the straight segment from
+   the shared vertex image to the matched trimmed curve point, pointwise `< tube` against the
+   spoke (two segments from a common start differ by at most the distance of their far
+   endpoints) and within `vertexIsolationRadius + tube` of the face image (the far endpoints
+   lie in the vertex disk); junction values agree by construction, and corners carry the
+   shared vertex images.  Note the trim is a LAST-exit trim (`EdgeTrimData.after_left`), so
+   the trimmed-off original curve may wander outside the vertex disk — the comparison must be
+   the disk segment, not a reparametrized original; that is exactly why the `of_comparison`
+   generalization measures `comp` against the face image by cthickening membership rather
+   than requiring frontier values.  Discharging the `r f / 2` bounds needs the controls shrunk
+   below the finitely many incident faces' radii (per-vertex and per-edge minima; the
+   `edgeFaceSeparationRadius` machinery and part-1 `vertexSeparationControl` supply them).
+   `exists_controlled_polygonalReplacement_of_facewise_close` (proved) then assembles the
+   replacement with the adaptive `FaceBoundariesControlled`/`UniformFrontierControl` (proved);
+   containment/local-finiteness and side-preservation take different controls there, so no
+   single-control coupling remains.  The straightening tolerance is
+   `min (regionSafeControl …) (matching control) (control-shrunk radii)` — all strongly
+   positive, every condition downward monotone.
 4. **Assembly**: read off the common-vertex welded presentation and the interior coverage of
    `A ∪ core`; `PartialTriangulation.exists_glued` (proved) consumes it.
 
