@@ -62,7 +62,8 @@ bottom API is in place:
 - `SurfaceCellComplex.SignedDart` and `SurfaceCellComplex.oneFacePresentation` support concrete
   polygonal examples.
 - `FiniteSurfaceTriangulation.toCellComplex` preserves triangle faces, vertices, oriented edge
-  darts, boundary flags, and oriented triangle boundary words.
+  darts, and oriented triangle boundary words; boundary status is then derived from occurrence
+  multiplicity.
 - Examples for the disk, annulus, torus, projective plane, and Mobius strip compile as concrete
   boundary-word presentations.
 

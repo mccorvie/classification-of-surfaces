@@ -35,12 +35,18 @@ theorems (8077–8460), `ChartBoundaryInvariant` isolation (Surface.lean).
 
 ## Cell-complex / normal-form side (owned separately; listed so nobody extends them)
 
+The former `SurfaceCellComplex.surfaceValid` and `.connected` entries were removed: they are now
+incidence-derived predicates `SurfaceCellComplex.IsSurfaceValid` and `.IsConnected`, with positive
+anchors and countermodels. The legacy triangulation bridge does not yet prove these predicates; its
+missing multiplicity/connectivity assumptions remain part of the `FiniteSurfaceTriangulation` entry
+above. Consequently the normal-form and Eval call chain cannot yet take the explicit validity and
+connectedness hypotheses that issue #9 ultimately requires.
+
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
-| `SurfaceCellComplex.surfaceValid`, `.connected` | CellComplex.lean | vacuous | `Prop`-typed *data* fields, never required to hold | proper hypothesis fields about the incidence data |
 | `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | realization = quotient of polygon disjoint union by boundary-word gluing |
 | `SurfaceCellModel`, `OrientableRel`, `NonOrientableRel` | Representatives.lean | placeholder | `PUnit` with `⊥` relations: `Quot (OrientableRel p n)` is a point, so the eval conclusion's non-sphere branches assert `S ≃ₜ point` | actual polygon quotient representatives |
-| `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | **false as stated** | with placeholder representatives the statement is disprovable (a complex with `realization := Bool` is homeomorphic to neither the sphere nor a point); the `sorry` cannot be filled until Representatives is fixed | re-state after real representatives land |
+| `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | **false as stated** | besides the placeholder-representative counterexample (`realization := Bool`), the signature still lacks explicit `IsSurfaceValid` and `IsConnected` hypotheses because the triangulation bridge cannot yet supply them | implement representatives, certify triangulation incidence, then re-state with both hypotheses |
 
 Dependents of the cell-complex entries: `NormalForm.lean`, `EvalStatement.lean`,
 `Examples.lean` (all pre-existing; no new dependents allowed).

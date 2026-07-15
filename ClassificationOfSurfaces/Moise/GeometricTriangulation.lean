@@ -79,6 +79,126 @@ instance : IsEmpty (GeometricRealization V (∅ : Finset (Finset V))) :=
 
 end GeometricRealization
 
+namespace TriangleFamily
+
+variable {Vertex : Type*} [DecidableEq Vertex]
+
+/-- A listed maximal face of a finite triangle family. -/
+abbrev Face (faces : Finset (Finset Vertex)) :=
+  {t : Finset Vertex // t ∈ faces}
+
+/-- The two-vertex faces occurring in a finite triangle family. -/
+def edges (faces : Finset (Finset Vertex)) : Finset (Finset Vertex) :=
+  faces.biUnion fun t => t.powersetCard 2
+
+/-- Two listed triangles are dual-adjacent when they share a two-vertex face. -/
+def FaceAdjacent (faces : Finset (Finset Vertex)) (f g : Face faces) : Prop :=
+  ∃ e : Finset Vertex, e.card = 2 ∧ e ⊆ f.1 ∧ e ⊆ g.1
+
+omit [DecidableEq Vertex] in
+theorem faceAdjacent_symm {faces : Finset (Finset Vertex)} {f g : Face faces}
+    (h : FaceAdjacent faces f g) : FaceAdjacent faces g f := by
+  rcases h with ⟨e, hecard, hef, heg⟩
+  exact ⟨e, hecard, heg, hef⟩
+
+omit [DecidableEq Vertex] in
+theorem reflTransGen_faceAdjacent_symm {faces : Finset (Finset Vertex)}
+    {f g : Face faces} (h : Relation.ReflTransGen (FaceAdjacent faces) f g) :
+    Relation.ReflTransGen (FaceAdjacent faces) g f := by
+  exact h.swap.mono fun _ _ hab => faceAdjacent_symm hab
+
+/-- Every two listed triangles are connected by a finite chain of shared edges. -/
+def IsDualConnected (faces : Finset (Finset Vertex)) : Prop :=
+  ∀ f g : Face faces, Relation.ReflTransGen (FaceAdjacent faces) f g
+
+/-- Regard a face of a subfamily as a face of a larger family. -/
+def faceOfSubset {faces faces' : Finset (Finset Vertex)} (h : faces ⊆ faces') :
+    Face faces → Face faces' :=
+  fun f => ⟨f.1, h f.2⟩
+
+omit [DecidableEq Vertex] in
+@[simp]
+theorem faceOfSubset_val {faces faces' : Finset (Finset Vertex)} (h : faces ⊆ faces')
+    (f : Face faces) : (faceOfSubset h f).1 = f.1 :=
+  rfl
+
+omit [DecidableEq Vertex] in
+theorem faceAdjacent_faceOfSubset {faces faces' : Finset (Finset Vertex)}
+    (h : faces ⊆ faces') {f g : Face faces} (hfg : FaceAdjacent faces f g) :
+    FaceAdjacent faces' (faceOfSubset h f) (faceOfSubset h g) := by
+  rcases hfg with ⟨e, hecard, hef, heg⟩
+  exact ⟨e, hecard, hef, heg⟩
+
+omit [DecidableEq Vertex] in
+theorem reflTransGen_faceAdjacent_faceOfSubset
+    {faces faces' : Finset (Finset Vertex)} (h : faces ⊆ faces') {f g : Face faces}
+    (hfg : Relation.ReflTransGen (FaceAdjacent faces) f g) :
+    Relation.ReflTransGen (FaceAdjacent faces') (faceOfSubset h f) (faceOfSubset h g) := by
+  induction hfg with
+  | refl => exact Relation.ReflTransGen.refl
+  | tail _hab hbc ih =>
+      exact ih.tail (faceAdjacent_faceOfSubset h hbc)
+
+/-- Two dual-connected face families with a cross-adjacent pair have dual-connected union. -/
+theorem isDualConnected_union {left right : Finset (Finset Vertex)}
+    (hleft : IsDualConnected left) (hright : IsDualConnected right)
+    (fleft : Face left) (fright : Face right)
+    (hcross : FaceAdjacent (left ∪ right)
+      (faceOfSubset Finset.subset_union_left fleft)
+      (faceOfSubset Finset.subset_union_right fright)) :
+    IsDualConnected (left ∪ right) := by
+  intro f g
+  rcases Finset.mem_union.mp f.2 with hf | hf <;>
+    rcases Finset.mem_union.mp g.2 with hg | hg
+  · let f' : Face left := ⟨f.1, hf⟩
+    let g' : Face left := ⟨g.1, hg⟩
+    have hpath := reflTransGen_faceAdjacent_faceOfSubset (faces' := left ∪ right)
+      Finset.subset_union_left (hleft f' g')
+    simpa [f', g', faceOfSubset] using hpath
+  · let f' : Face left := ⟨f.1, hf⟩
+    let g' : Face right := ⟨g.1, hg⟩
+    have hfirst := reflTransGen_faceAdjacent_faceOfSubset (faces' := left ∪ right)
+      Finset.subset_union_left (hleft f' fleft)
+    have hlast := reflTransGen_faceAdjacent_faceOfSubset (faces' := left ∪ right)
+      Finset.subset_union_right (hright fright g')
+    have hpath := (hfirst.tail hcross).trans hlast
+    simpa [f', g', faceOfSubset] using hpath
+  · let f' : Face right := ⟨f.1, hf⟩
+    let g' : Face left := ⟨g.1, hg⟩
+    have hfirst := reflTransGen_faceAdjacent_faceOfSubset (faces' := left ∪ right)
+      Finset.subset_union_right (hright f' fright)
+    have hlast := reflTransGen_faceAdjacent_faceOfSubset (faces' := left ∪ right)
+      Finset.subset_union_left (hleft fleft g')
+    have hpath := (hfirst.tail (faceAdjacent_symm hcross)).trans hlast
+    simpa [f', g', faceOfSubset] using hpath
+  · let f' : Face right := ⟨f.1, hf⟩
+    let g' : Face right := ⟨g.1, hg⟩
+    have hpath := reflTransGen_faceAdjacent_faceOfSubset (faces' := left ∪ right)
+      Finset.subset_union_right (hright f' g')
+    simpa [f', g', faceOfSubset] using hpath
+
+/-- Existential form of dual connectivity for a union, convenient for gluing constructions. -/
+theorem isDualConnected_union_of_exists_faceAdjacent
+    {left right : Finset (Finset Vertex)}
+    (hleft : IsDualConnected left) (hright : IsDualConnected right)
+    (hcross : ∃ (fleft : Face left) (fright : Face right),
+      FaceAdjacent (left ∪ right)
+        (faceOfSubset Finset.subset_union_left fleft)
+        (faceOfSubset Finset.subset_union_right fright)) :
+    IsDualConnected (left ∪ right) := by
+  rcases hcross with ⟨fleft, fright, hcross⟩
+  exact isDualConnected_union hleft hright fleft fright hcross
+
+/-- Incidence conditions making a finite family of triangles a connected pseudomanifold with
+boundary: it is nonempty, no edge has valence above two, and its dual graph is connected. -/
+structure SurfaceIncidence (faces : Finset (Finset Vertex)) : Prop where
+  faces_nonempty : faces.Nonempty
+  edge_valence_le_two :
+    ∀ e ∈ edges faces, (faces.filter fun t => e ⊆ t).card ≤ 2
+  dual_connected : IsDualConnected faces
+
+end TriangleFamily
+
 /-- A finite triangulation of the topological space `S` by geometric 2-simplexes: a finite vertex
 type, a finite family of 3-element faces, and a homeomorphism from the geometric realization of
 that family onto `S`.
@@ -106,6 +226,10 @@ attribute [instance] GeometricTriangulation.vertexDecidableEq
 namespace GeometricTriangulation
 
 variable {S : Type*} [TopologicalSpace S] (T : GeometricTriangulation S)
+
+/-- Surface-incidence certificate for a faithful geometric triangulation. -/
+abbrev SurfaceIncidence : Prop :=
+  TriangleFamily.SurfaceIncidence T.faces
 
 /-- The realization of the triangulation, as a polyhedron in barycentric coordinates. -/
 abbrev realization : Set (T.Vertex → ℝ) :=
