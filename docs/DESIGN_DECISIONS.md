@@ -90,9 +90,11 @@ not degenerate. Side identifications use either the identity parameter or the af
 pair boundary *occurrences* rather than dart values. The additive adapter in
 `CellComplexQuotient.lean` now does so and records the occurrence-count conditions needed for a
 unique internal partner. `SurfaceCellComplex.sphere` now uses the required two-monogon
-presentation rather than a side-free disk. The atomic cutover still needs corrected standard
-examples and the triangulation bridge. This topological carrier does not by itself supply the
-straight-edged convex polygons requested for the explicit normal-form representatives.
+presentation rather than a side-free disk. The standard examples now satisfy the occurrence-level
+criterion, including the length-six annulus word. The adapter must next be reconciled with the
+incidence-derived validity API, followed by the certified triangulation-to-quotient bridge. This
+topological carrier does not by itself supply the straight-edged convex polygons requested for the
+explicit normal-form representatives.
 
 Status: open.
 

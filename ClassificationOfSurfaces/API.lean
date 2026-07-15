@@ -100,15 +100,18 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `SurfaceCellComplex.BoundaryOccurrence`
 * `SurfaceCellComplex.BoundaryPairing`
 * `SurfaceCellComplex.OccurrencePairingValid`
+* `SurfaceCellComplex.wordEdgeOccurrences`
+* `SurfaceCellComplex.oneFacePresentation_occurrencePairingValid`
 * `SurfaceCellComplex.PolygonalRealization`
 
 This generic layer supports disk cells with any number of marked sides and generated side
 identifications. The additive cell-complex adapter now maps boundary occurrences to polygon sides
 and, given an `OccurrencePairingValid` witness, generates all compatible internal pairings.
 `SurfaceCellComplex.Realization` does not use it yet; the atomic cutover still depends on the
-triangulation bridge and corrected standard examples. The marked sides are circular arcs; issue
-#6's straight-edged convex representatives still require a separate PL bridge or a different
-concrete carrier.
+reconciliation with the incidence-derived validity API and a certified triangulation-to-quotient
+bridge. The standard one-face examples now have occurrence-validity witnesses, including the
+corrected length-six annulus word. The marked sides are circular arcs; issue #6's straight-edged
+convex representatives still require a separate PL bridge or a different concrete carrier.
 
 ## Gallier-Xu tail
 

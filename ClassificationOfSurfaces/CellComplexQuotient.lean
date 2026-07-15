@@ -19,10 +19,11 @@ occurrence-count conditions under which every internal side has exactly one unor
 The public polygonal gluing relation requires a witness of this predicate.
 
 The definitions here are additive. `SurfaceCellComplex.Realization` still denotes the stored
-placeholder realization until the triangulation bridge and standard examples can be cut over
-atomically. `SurfaceCellComplex.sphere` now uses the explicit two-monogon presentation needed by
-this polygonal realization; the remaining cutover blockers are the triangulation bridge and
-corrected standard examples.
+placeholder realization until the triangulation bridge can be cut over atomically.
+`SurfaceCellComplex.sphere` uses the explicit two-monogon presentation needed by this polygonal
+realization, and the standard one-face examples have occurrence-validity witnesses. Before the
+cutover, this adapter must be reconciled with the incidence-derived validity API and connected
+through a certified triangulation-to-quotient homeomorphism.
 -/
 
 namespace LeanEval
@@ -127,6 +128,101 @@ theorem exists_pairing_source {K : SurfaceCellComplex} (h : K.OccurrencePairingV
   · exact makePairing o₁ (hsource₂.trans_ne hne.symm) ((hcover o₁).mpr (Or.inl rfl))
 
 end OccurrencePairingValid
+
+/-! ## One-face presentation criterion -/
+
+namespace SignedDart
+
+/-- The unoriented edge name carried by a signed dart. -/
+def edgeName {Edge : Type} : SignedDart Edge → Edge
+  | pos e => e
+  | neg e => e
+
+@[simp]
+theorem edgeName_flip {Edge : Type} (d : SignedDart Edge) :
+    edgeName (flip d) = edgeName d := by
+  cases d <;> rfl
+
+theorem eq_or_eq_flip_iff_edgeName_eq {Edge : Type} (x d : SignedDart Edge) :
+    x = d ∨ x = flip d ↔ edgeName x = edgeName d := by
+  cases x <;> cases d <;> simp [edgeName, flip]
+
+end SignedDart
+
+/-- Positions in a boundary word carrying either orientation of `e`. -/
+def wordEdgeOccurrences {Edge : Type} [DecidableEq Edge]
+    (word : List (SignedDart Edge)) (e : Edge) : Finset (Fin word.length) :=
+  Finset.univ.filter fun i ↦ SignedDart.edgeName (word.get i) = e
+
+@[simp]
+theorem mem_wordEdgeOccurrences {Edge : Type} [DecidableEq Edge]
+    (word : List (SignedDart Edge)) (e : Edge) (i : Fin word.length) :
+    i ∈ wordEdgeOccurrences word e ↔ SignedDart.edgeName (word.get i) = e := by
+  simp [wordEdgeOccurrences]
+
+/-- A one-face presentation is occurrence-pairing-valid when each boundary edge name occurs once
+and each internal edge name occurs twice, with orientation ignored. -/
+theorem oneFacePresentation_occurrencePairingValid
+    {Edge : Type} [Fintype Edge] [DecidableEq Edge]
+    (word : List (SignedDart Edge)) (boundaryEdge : Edge → Prop)
+    [DecidablePred boundaryEdge] (hword : word ≠ [])
+    (hcard : ∀ e, (wordEdgeOccurrences word e).card = if boundaryEdge e then 1 else 2) :
+    (oneFacePresentation Edge word boundaryEdge).OccurrencePairingValid := by
+  let K := oneFacePresentation Edge word boundaryEdge
+  let occurrence : Fin word.length → K.BoundaryOccurrence := fun i ↦ ⟨PUnit.unit, i⟩
+  have occurrence_injective : Function.Injective occurrence := by
+    intro i j hij
+    have hval : i.val = j.val := congrArg (fun o : K.BoundaryOccurrence ↦ o.2.val) hij
+    exact Fin.ext hval
+  have occurrence_surjective : Function.Surjective occurrence := by
+    rintro ⟨f, i⟩
+    cases f
+    exact ⟨i, rfl⟩
+  have occurrenceDart_occurrence (i : Fin word.length) :
+      K.occurrenceDart (occurrence i) = word.get i := by
+    rfl
+  have orbit_iff (i : Fin word.length) (d : SignedDart Edge) :
+      K.occurrenceDart (occurrence i) = d ∨
+          K.occurrenceDart (occurrence i) = K.inv d ↔
+        i ∈ wordEdgeOccurrences word (SignedDart.edgeName d) := by
+    rw [occurrenceDart_occurrence]
+    change word.get i = d ∨ word.get i = SignedDart.flip d ↔ _
+    rw [SignedDart.eq_or_eq_flip_iff_edgeName_eq]
+    exact (mem_wordEdgeOccurrences word (SignedDart.edgeName d) i).symm
+  constructor
+  · exact ⟨PUnit.unit⟩
+  · intro f
+    cases f
+    exact List.length_pos_of_ne_nil hword
+  · intro d
+    cases d <;> intro h <;> cases h
+  · intro d
+    cases d <;> rfl
+  · intro d hd
+    have hboundary : boundaryEdge (SignedDart.edgeName d) := by
+      cases d <;> exact hd
+    have hone : (wordEdgeOccurrences word (SignedDart.edgeName d)).card = 1 := by
+      simpa [hboundary] using hcard (SignedDart.edgeName d)
+    obtain ⟨i, hi⟩ := Finset.card_eq_one.mp hone
+    refine ⟨occurrence i, (orbit_iff i d).mpr ?_, ?_⟩
+    · simp [hi]
+    · intro o ho
+      obtain ⟨j, rfl⟩ := occurrence_surjective o
+      apply congrArg occurrence
+      have hj : j ∈ wordEdgeOccurrences word (SignedDart.edgeName d) :=
+        (orbit_iff j d).mp ho
+      simpa [hi] using hj
+  · intro d hd
+    have hinterior : ¬boundaryEdge (SignedDart.edgeName d) := by
+      cases d <;> exact hd
+    have htwo : (wordEdgeOccurrences word (SignedDart.edgeName d)).card = 2 := by
+      simpa [hinterior] using hcard (SignedDart.edgeName d)
+    obtain ⟨i, j, hij, hindices⟩ := Finset.card_eq_two.mp htwo
+    refine ⟨occurrence i, occurrence j, occurrence_injective.ne hij, ?_⟩
+    intro o
+    obtain ⟨k, rfl⟩ := occurrence_surjective o
+    rw [orbit_iff]
+    simp [hindices, occurrence_injective.eq_iff]
 
 namespace BoundaryPairing
 
