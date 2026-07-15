@@ -14,6 +14,7 @@ import ClassificationOfSurfaces.Moise.IntrinsicFaceModel
 import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
 import ClassificationOfSurfaces.Moise.FrontierGlue
 import ClassificationOfSurfaces.Moise.PlaneCycle
+import ClassificationOfSurfaces.PolygonalQuotient
 
 /-!
 # Public API map
@@ -83,6 +84,23 @@ for the quarry, in particular the concrete closed-triangle geometry.
 
 The legacy names `CellComplex` and `FiniteTriangulation` remain as compatibility aliases.  New
 code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTriangulation`.
+
+## Polygonal quotient foundation
+
+* `PolygonCell`
+* `PolygonCell.side`
+* `PolygonGluing.PreRealization`
+* `PolygonGluing.Side`
+* `PolygonGluing.Identification`
+* `PolygonGluing.setoid`
+* `PolygonGluing.Realization`
+* `PolygonGluing.realizationCongr`
+
+This generic layer supports disk cells with any number of marked sides and generated side
+identifications. `SurfaceCellComplex.Realization` does not use it yet; that adapter depends on
+settling boundary-occurrence semantics and the empty-word sphere. The marked sides are circular
+arcs; issue #6's straight-edged convex representatives still require a separate PL bridge or a
+different concrete carrier.
 
 ## Gallier-Xu tail
 

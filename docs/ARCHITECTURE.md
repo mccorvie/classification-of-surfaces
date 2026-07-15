@@ -61,6 +61,10 @@ bottom API is in place:
   face boundary words.
 - `SurfaceCellComplex.SignedDart` and `SurfaceCellComplex.oneFacePresentation` support concrete
   polygonal examples.
+- `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
+  arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
+  independently of the still-placeholder `SurfaceCellComplex.Realization` adapter. Straight-edged
+  convex models for the representatives remain separate work.
 - `FiniteSurfaceTriangulation.toCellComplex` preserves triangle faces, vertices, oriented edge
   darts, boundary flags, and oriented triangle boundary words.
 - Examples for the disk, annulus, torus, projective plane, and Mobius strip compile as concrete
@@ -84,8 +88,8 @@ compatibility. New code should use the preferred names above.
 
 ## Next Tasks
 
-1. Replace placeholder `SurfaceCellComplex.Realization` with a quotient of polygonal
-   pre-realizations.
+1. Connect boundary occurrences in `SurfaceCellComplex` to the generic `PolygonGluing` layer,
+   including the empty-word sphere case, then replace the placeholder realization atomically.
 2. Define cyclic-word infrastructure for face boundary words and Gallier-Xu rewrites.
 3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.

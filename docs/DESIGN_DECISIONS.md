@@ -83,8 +83,13 @@ Options:
 - quotient of abstract faces/edges/vertices with topology induced later;
 - bridge through finite CW complexes.
 
-Current leaning: polygon quotient is closest to the eval representatives, but requires quotient-map
-work. Keep placeholder until the combinatorial structure is clearer.
+Current leaning: use the generic quotient foundation in `PolygonalQuotient.lean`. It models an
+`n`-sided cell as a closed disk with `n` marked circular boundary arcs, so monogons and digons do
+not degenerate. Side identifications use either the identity parameter or the affine reversal
+`t ↦ 1 - t`, and their equivalence closure has the quotient topology. The remaining adapter must
+pair boundary *occurrences* rather than dart values and must explicitly handle an empty boundary
+word: a disk with no marked sides is not a sphere. This topological carrier does not by itself
+supply the straight-edged convex polygons requested for the explicit normal-form representatives.
 
 Status: open.
 
