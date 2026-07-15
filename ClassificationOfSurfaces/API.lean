@@ -3,6 +3,7 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
+import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -96,12 +97,18 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `PolygonGluing.setoid`
 * `PolygonGluing.Realization`
 * `PolygonGluing.realizationCongr`
+* `SurfaceCellComplex.BoundaryOccurrence`
+* `SurfaceCellComplex.BoundaryPairing`
+* `SurfaceCellComplex.OccurrencePairingValid`
+* `SurfaceCellComplex.PolygonalRealization`
 
 This generic layer supports disk cells with any number of marked sides and generated side
-identifications. `SurfaceCellComplex.Realization` does not use it yet; that adapter depends on
-settling boundary-occurrence semantics and the empty-word sphere. The marked sides are circular
-arcs; issue #6's straight-edged convex representatives still require a separate PL bridge or a
-different concrete carrier.
+identifications. The additive cell-complex adapter now maps boundary occurrences to polygon sides
+and, given an `OccurrencePairingValid` witness, generates all compatible internal pairings.
+`SurfaceCellComplex.Realization` does not use it yet; the atomic cutover still depends on the
+triangulation bridge and corrected standard examples. The marked sides are circular arcs; issue
+#6's straight-edged convex representatives still require a separate PL bridge or a different
+concrete carrier.
 
 ## Gallier-Xu tail
 

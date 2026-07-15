@@ -86,10 +86,13 @@ Options:
 Current leaning: use the generic quotient foundation in `PolygonalQuotient.lean`. It models an
 `n`-sided cell as a closed disk with `n` marked circular boundary arcs, so monogons and digons do
 not degenerate. Side identifications use either the identity parameter or the affine reversal
-`t ↦ 1 - t`, and their equivalence closure has the quotient topology. The remaining adapter must
-pair boundary *occurrences* rather than dart values and must explicitly handle an empty boundary
-word: a disk with no marked sides is not a sphere. This topological carrier does not by itself
-supply the straight-edged convex polygons requested for the explicit normal-form representatives.
+`t ↦ 1 - t`, and their equivalence closure has the quotient topology. The required adapter must
+pair boundary *occurrences* rather than dart values. The additive adapter in
+`CellComplexQuotient.lean` now does so and records the occurrence-count conditions needed for a
+unique internal partner. `SurfaceCellComplex.sphere` now uses the required two-monogon
+presentation rather than a side-free disk. The atomic cutover still needs corrected standard
+examples and the triangulation bridge. This topological carrier does not by itself supply the
+straight-edged convex polygons requested for the explicit normal-form representatives.
 
 Status: open.
 

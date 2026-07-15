@@ -38,7 +38,7 @@ theorems (8077–8460), `ChartBoundaryInvariant` isolation (Surface.lean).
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
 | `SurfaceCellComplex.surfaceValid`, `.connected` | CellComplex.lean | vacuous | `Prop`-typed *data* fields, never required to hold | proper hypothesis fields about the incidence data |
-| `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks, side maps, generated gluing, and quotient topology now live in `PolygonalQuotient.lean`; remaining work is the occurrence-based adapter and atomic realization cutover |
+| `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
 | `SurfaceCellModel`, `OrientableRel`, `NonOrientableRel` | Representatives.lean | placeholder | `PUnit` with `⊥` relations: `Quot (OrientableRel p n)` is a point, so the eval conclusion's non-sphere branches assert `S ≃ₜ point` | actual polygon quotient representatives |
 | `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | **false as stated** | with placeholder representatives the statement is disprovable (a complex with `realization := Bool` is homeomorphic to neither the sphere nor a point); the `sorry` cannot be filled until Representatives is fixed | re-state after real representatives land |
 

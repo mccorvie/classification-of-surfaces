@@ -63,12 +63,16 @@ bottom API is in place:
   polygonal examples.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
-  independently of the still-placeholder `SurfaceCellComplex.Realization` adapter. Straight-edged
-  convex models for the representatives remain separate work.
+  independently of the still-placeholder `SurfaceCellComplex.Realization`.
+- `SurfaceCellComplex.BoundaryOccurrence`, `BoundaryPairing`, and `PolygonalRealization` provide
+  an additive occurrence-indexed adapter to that quotient. The atomic realization cutover remains
+  blocked on the triangulation bridge and corrected standard examples. Straight-edged convex
+  models for the representatives remain separate work.
 - `FiniteSurfaceTriangulation.toCellComplex` preserves triangle faces, vertices, oriented edge
   darts, boundary flags, and oriented triangle boundary words.
-- Examples for the disk, annulus, torus, projective plane, and Mobius strip compile as concrete
-  boundary-word presentations.
+- Boundary-word examples for the disk, annulus, torus, projective plane, and Mobius strip compile;
+  their occurrence-validity and topology still need to be established, starting with correcting
+  the current annulus presentation.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
 compatibility. New code should use the preferred names above.
@@ -88,8 +92,8 @@ compatibility. New code should use the preferred names above.
 
 ## Next Tasks
 
-1. Connect boundary occurrences in `SurfaceCellComplex` to the generic `PolygonGluing` layer,
-   including the empty-word sphere case, then replace the placeholder realization atomically.
+1. Correct the standard boundary-word examples, prove their occurrence-validity, connect finite
+   triangulations to the polygonal adapter, then replace the placeholder realization atomically.
 2. Define cyclic-word infrastructure for face boundary words and Gallier-Xu rewrites.
 3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.

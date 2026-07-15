@@ -24,9 +24,9 @@ A set of `PolygonGluing.Identification`s prescribes either the identity or the a
 by those point identifications, and `PolygonGluing.Realization` has the quotient topology.
 
 `PolygonCell 0` is a disk with no marked sides. It is deliberately not identified with the
-empty-word sphere: the eventual cell-complex adapter must explicitly collapse its boundary or use
-a nonempty sphere presentation. Keeping that choice out of this generic layer prevents the current
-placeholder sphere constructor from silently acquiring the wrong topology.
+empty-word sphere. The cell-complex adapter therefore presents the sphere as two oppositely
+oriented monogons instead of using `PolygonCell 0`. Keeping that choice out of this generic layer
+prevents a side-free disk from silently acquiring the wrong topology.
 -/
 
 namespace LeanEval
