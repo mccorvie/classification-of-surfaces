@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.Triangulation
+import Mathlib.Data.Fintype.Sigma
+import Mathlib.Data.List.Rotate
 
 /-!
 # Finite surface cell complexes
@@ -17,11 +19,11 @@ namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
 
-/-- A deliberately small API for Gallier-Xu finite surface cell complexes.
+/-- The raw finite incidence data underlying a Gallier-Xu surface cell complex.
 
-The real version should include all incidence and surface-validity conditions from Gallier-Xu
-Definition 6.1. The current fields already expose the main finite types, oriented darts, pairing,
-vertices, face boundary words, and realization type expected by downstream APIs. -/
+Validity and connectedness are derived from this data by `IsSurfaceValid` and `IsConnected`, rather
+than stored as unconstrained propositions. The realization is still a placeholder until the
+polygon-quotient construction is implemented. -/
 structure SurfaceCellComplex where
   Face : Type
   Dart : Type
@@ -35,12 +37,9 @@ structure SurfaceCellComplex where
   source : Dart → Vertex
   target : Dart → Vertex
   boundary : Face → List Dart
-  isBoundaryDart : Dart → Prop
   inv_involutive : ∀ d, inv (inv d) = d
   inv_source : ∀ d, source (inv d) = target d
   inv_target : ∀ d, target (inv d) = source d
-  surfaceValid : Prop
-  connected : Prop
 
 attribute [instance] SurfaceCellComplex.faceFintype
 attribute [instance] SurfaceCellComplex.dartFintype
@@ -64,6 +63,64 @@ def numVertices (K : SurfaceCellComplex) : ℕ :=
 /-- The length of a face boundary word. -/
 def faceBoundaryLength (K : SurfaceCellComplex) (f : K.Face) : ℕ :=
   (K.boundary f).length
+
+/-- A position in one of the stored, positively oriented face boundaries. -/
+abbrev BoundaryOccurrence (K : SurfaceCellComplex) :=
+  Σ f : K.Face, Fin (K.boundary f).length
+
+instance boundaryOccurrenceFintype (K : SurfaceCellComplex) : Fintype K.BoundaryOccurrence :=
+  inferInstance
+
+/-- The dart stored at a boundary occurrence. -/
+def BoundaryOccurrence.dart {K : SurfaceCellComplex} (o : K.BoundaryOccurrence) : K.Dart :=
+  (K.boundary o.1).get o.2
+
+/-- Two darts name the same unoriented edge. -/
+def SameEdge (K : SurfaceCellComplex) (d e : K.Dart) : Prop :=
+  e = d ∨ e = K.inv d
+
+/-- A boundary position belongs to the unoriented edge named by `d`. -/
+def Occurs (K : SurfaceCellComplex) (d : K.Dart) (o : K.BoundaryOccurrence) : Prop :=
+  K.SameEdge d o.dart
+
+/-- The unoriented edge named by `d` occurs at exactly one boundary position. -/
+def OccursExactlyOnce (K : SurfaceCellComplex) (d : K.Dart) : Prop :=
+  ∃ o, K.Occurs d o ∧ ∀ o', K.Occurs d o' → o' = o
+
+/-- The unoriented edge named by `d` occurs at exactly two boundary positions. -/
+def OccursExactlyTwice (K : SurfaceCellComplex) (d : K.Dart) : Prop :=
+  ∃ o₁ o₂, o₁ ≠ o₂ ∧ K.Occurs d o₁ ∧ K.Occurs d o₂ ∧
+    ∀ o, K.Occurs d o → o = o₁ ∨ o = o₂
+
+/-- Boundary status derived from incidence: the edge orbit of `d` occurs exactly once. -/
+def IsBoundaryDart (K : SurfaceCellComplex) (d : K.Dart) : Prop :=
+  K.OccursExactlyOnce d
+
+/-- Deprecated accessor spelling for the former stored boundary-dart label. -/
+@[deprecated IsBoundaryDart (since := "2026-07-15")]
+abbrev isBoundaryDart (K : SurfaceCellComplex) (d : K.Dart) : Prop :=
+  K.IsBoundaryDart d
+
+/-- Incidence validity for the stored face-boundary system.
+
+There is at least one face, different faces have different cyclic boundary words, inverse darts are
+distinct, and every unoriented edge occurs either once (a boundary edge) or twice (an inner edge).
+Boundary status and occurrence counts are derived from explicit boundary positions, so repeated
+darts such as the projective-plane word `a a` are retained. The stored vertex endpoints are an
+enrichment of Gallier--Xu's boundary-word data and are deliberately not part of this predicate. -/
+def IsSurfaceValid (K : SurfaceCellComplex) : Prop :=
+  Nonempty K.Face ∧
+    (∀ f g, (K.boundary f).IsRotated (K.boundary g) → f = g) ∧
+    (∀ d, K.inv d ≠ d) ∧
+    ∀ d, K.OccursExactlyOnce d ∨ K.OccursExactlyTwice d
+
+/-- Two faces are adjacent when their boundaries use the same unoriented edge. -/
+def FaceAdjacent (K : SurfaceCellComplex) (f g : K.Face) : Prop :=
+  ∃ d ∈ K.boundary f, ∃ e ∈ K.boundary g, K.SameEdge d e
+
+/-- Gallier-Xu connectivity of the face-edge incidence system. -/
+def IsConnected (K : SurfaceCellComplex) : Prop :=
+  Nonempty K.Face ∧ ∀ f g, Relation.ReflTransGen K.FaceAdjacent f g
 
 /-- A signed occurrence of a named edge in a polygonal boundary word. -/
 inductive SignedDart (α : Type*) where
@@ -95,7 +152,7 @@ end SignedDart
 This constructor is intentionally simple. It is useful for normal-form examples and for testing the
 Gallier-Xu boundary-word API before the full realization/gluing semantics are implemented. -/
 def oneFacePresentation (Edge : Type) [Fintype Edge]
-    (word : List (SignedDart Edge)) (boundaryEdge : Edge → Prop := fun _ => False) :
+    (word : List (SignedDart Edge)) :
     SurfaceCellComplex where
   Face := PUnit
   Dart := SignedDart Edge
@@ -109,9 +166,6 @@ def oneFacePresentation (Edge : Type) [Fintype Edge]
   source := fun _ => PUnit.unit
   target := fun _ => PUnit.unit
   boundary := fun _ => word
-  isBoundaryDart := fun
-    | SignedDart.pos e => boundaryEdge e
-    | SignedDart.neg e => boundaryEdge e
   inv_involutive := SignedDart.flip_flip
   inv_source := by
     intro d
@@ -119,15 +173,16 @@ def oneFacePresentation (Edge : Type) [Fintype Edge]
   inv_target := by
     intro d
     rfl
-  surfaceValid :=
-    ∀ d : SignedDart Edge,
-      (match d with
-        | SignedDart.pos e => boundaryEdge e
-        | SignedDart.neg e => boundaryEdge e) →
-      (match SignedDart.flip d with
-        | SignedDart.pos e => boundaryEdge e
-        | SignedDart.neg e => boundaryEdge e)
-  connected := ∀ v : PUnit.{1}, v = PUnit.unit
+
+/-- Every one-face presentation is connected in the face-edge incidence sense. -/
+theorem oneFacePresentation_isConnected (Edge : Type) [Fintype Edge]
+    (word : List (SignedDart Edge)) :
+    (oneFacePresentation Edge word).IsConnected := by
+  refine ⟨⟨PUnit.unit⟩, ?_⟩
+  intro f g
+  cases f
+  cases g
+  exact Relation.ReflTransGen.refl
 
 /-- Convert an oriented triangulation edge occurrence to a cell-complex signed dart. -/
 def signedDartOfOrientedEdge {Edge : Type*} :
@@ -169,7 +224,6 @@ def sphere : SurfaceCellComplex where
   source := Empty.elim
   target := Empty.elim
   boundary := fun _ => []
-  isBoundaryDart := Empty.elim
   inv_involutive := by
     intro d
     cases d
@@ -179,8 +233,26 @@ def sphere : SurfaceCellComplex where
   inv_target := by
     intro d
     cases d
-  surfaceValid := ∀ d : Empty, False
-  connected := ∀ v : PUnit.{1}, v = PUnit.unit
+
+/-- The empty-edge presentation of the sphere has valid incidence data. -/
+theorem sphere_isSurfaceValid : sphere.IsSurfaceValid := by
+  refine ⟨⟨PUnit.unit⟩, ?_, ?_, ?_⟩
+  · intro f g _h
+    cases f
+    cases g
+    rfl
+  · intro d
+    exact Empty.elim d
+  · intro d
+    exact Empty.elim d
+
+/-- The one-face sphere presentation is connected. -/
+theorem sphere_isConnected : sphere.IsConnected := by
+  refine ⟨⟨PUnit.unit⟩, ?_⟩
+  intro f g
+  cases f
+  cases g
+  exact Relation.ReflTransGen.refl
 
 /-- Equivalence generated by the allowed Gallier-Xu cut/glue transformations. -/
 def Equivalent (K L : SurfaceCellComplex) : Prop :=
@@ -243,9 +315,6 @@ def FiniteSurfaceTriangulation.toCellComplex {S : Type*} [TopologicalSpace S]
     | SurfaceCellComplex.SignedDart.pos e => T.edgeTarget e
     | SurfaceCellComplex.SignedDart.neg e => T.edgeSource e
   boundary := fun f => (T.triangleBoundary f).map SurfaceCellComplex.signedDartOfOrientedEdge
-  isBoundaryDart := fun
-    | SurfaceCellComplex.SignedDart.pos e => T.edgeIsBoundary e
-    | SurfaceCellComplex.SignedDart.neg e => T.edgeIsBoundary e
   inv_involutive := SurfaceCellComplex.SignedDart.flip_flip
   inv_source := by
     intro d
@@ -253,10 +322,6 @@ def FiniteSurfaceTriangulation.toCellComplex {S : Type*} [TopologicalSpace S]
   inv_target := by
     intro d
     cases d <;> rfl
-  surfaceValid :=
-    FiniteSurfaceTriangulation.Valid T.Vertex T.Edge T.Triangle T.edgeVertices
-      T.triangleVertices T.edgeSource T.edgeTarget T.triangleBoundary
-  connected := ConnectedSpace T.realization
 
 /-- The realization of the associated cell complex agrees with the triangulation realization. -/
 theorem FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic

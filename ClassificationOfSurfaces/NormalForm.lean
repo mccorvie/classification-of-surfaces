@@ -60,7 +60,11 @@ theorem SurfaceCellComplex.hasNormalFormOfRealizes (K : SurfaceCellComplex) (N :
     K.HasNormalForm N :=
   ⟨K, ⟨Homeomorph.refl K.Realization⟩, h⟩
 
-/-- Combinatorial bridge: every finite connected surface cell complex reduces to normal form. -/
+/-- Combinatorial bridge: every finite connected surface cell complex reduces to normal form.
+
+This theorem is already blocked by the placeholder quotient representatives. Its corrected
+statement must also take explicit `K.IsSurfaceValid` and `K.IsConnected` hypotheses once the
+triangulation bridge can produce them; see `docs/KNOWN_WEAK.md`. -/
 theorem surface_cell_complex_reduces_to_normal_form (K : SurfaceCellComplex) :
     ∃ N : NormalForm, N.IsEvalAdmissible ∧ K.HasNormalForm N := by
   sorry
