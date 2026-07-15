@@ -75,6 +75,10 @@ namespace PartialTriangulation
 
 variable {S : Type*} [TopologicalSpace S] (T : PartialTriangulation S)
 
+/-- Surface-incidence certificate for a partial triangulation's finite face family. -/
+abbrev SurfaceIncidence : Prop :=
+  TriangleFamily.SurfaceIncidence T.faces
+
 /-- Forget the ambient embedding and retain the intrinsic finite complex. -/
 def toIntrinsic : IntrinsicTwoComplex where
   Vertex := T.Vertex
@@ -236,6 +240,13 @@ noncomputable def toGeometricTriangulation (hcovers : T.support = Set.univ) :
   homeo :=
     T.isEmbedding.toHomeomorphOfSurjective (Set.range_eq_univ.mp hcovers)
 
+/-- Passing a fully covering partial triangulation to the faithful geometric object preserves
+its surface-incidence certificate definitionally. -/
+theorem surfaceIncidence_toGeometricTriangulation (hcovers : T.support = Set.univ)
+    (h : T.SurfaceIncidence) :
+    (T.toGeometricTriangulation hcovers).SurfaceIncidence :=
+  h
+
 /-- The edges of a partial triangulation: the two-element subsets of its faces. -/
 def edges : Finset (Finset T.Vertex) :=
   T.faces.biUnion fun t => t.powersetCard 2
@@ -304,6 +315,19 @@ theorem support_eq_empty_of_faces_eq_empty {S : Type*} [TopologicalSpace S]
   rcases p.2.2 with ⟨t, ht, -⟩
   rw [h] at ht
   exact absurd ht (Finset.notMem_empty t)
+
+/-- A partial triangulation covering a nonempty ambient space has a listed triangle. -/
+theorem faces_nonempty_of_support_eq_univ [Nonempty S]
+    (h : T.support = Set.univ) : T.faces.Nonempty := by
+  rw [Finset.nonempty_iff_ne_empty]
+  intro hfaces
+  obtain ⟨x⟩ := ‹Nonempty S›
+  have hx : x ∈ T.support := by
+    rw [h]
+    exact Set.mem_univ x
+  have hempty := T.support_eq_empty_of_faces_eq_empty hfaces
+  have hxempty : x ∈ (∅ : Set S) := hempty ▸ hx
+  exact Set.notMem_empty x hxempty
 
 @[simp] theorem empty_support (S : Type*) [TopologicalSpace S] :
     (empty S).support = ∅ :=
@@ -676,6 +700,131 @@ noncomputable def adaptiveOverlapGraphRealization [T2Space S]
         rfl
       rw [heq]
       exact (T.isClosedEmbedding_adaptiveOverlapPerturbationMap c).isClosed_range)
+
+end PartialTriangulation
+
+/-- The four-triangle disk patch has connected dual graph. -/
+theorem diamondFanTriangles_dualConnected :
+    TriangleFamily.IsDualConnected diamondFanTriangles := by
+  let a : TriangleFamily.Face diamondFanTriangles :=
+    ⟨{0, 4, 2}, by simp [diamondFanTriangles]⟩
+  let b : TriangleFamily.Face diamondFanTriangles :=
+    ⟨{1, 2, 4}, by simp [diamondFanTriangles]⟩
+  let c : TriangleFamily.Face diamondFanTriangles :=
+    ⟨{0, 3, 4}, by simp [diamondFanTriangles]⟩
+  let d : TriangleFamily.Face diamondFanTriangles :=
+    ⟨{1, 4, 3}, by simp [diamondFanTriangles]⟩
+  have hab : TriangleFamily.FaceAdjacent diamondFanTriangles a b := by
+    exact ⟨{2, 4}, by decide, by decide, by decide⟩
+  have hac : TriangleFamily.FaceAdjacent diamondFanTriangles a c := by
+    exact ⟨{0, 4}, by decide, by decide, by decide⟩
+  have hcd : TriangleFamily.FaceAdjacent diamondFanTriangles c d := by
+    exact ⟨{3, 4}, by decide, by decide, by decide⟩
+  have reach : ∀ f : TriangleFamily.Face diamondFanTriangles,
+      Relation.ReflTransGen (TriangleFamily.FaceAdjacent diamondFanTriangles) a f := by
+    intro f
+    have hf := f.2
+    simp only [diamondFanTriangles, Finset.mem_insert, Finset.mem_singleton] at hf
+    rcases hf with hf | hf | hf | hf
+    · have : f = a := Subtype.ext hf
+      subst f
+      exact Relation.ReflTransGen.refl
+    · have : f = b := Subtype.ext hf
+      subst f
+      exact Relation.ReflTransGen.single hab
+    · have : f = c := Subtype.ext hf
+      subst f
+      exact Relation.ReflTransGen.single hac
+    · have : f = d := Subtype.ext hf
+      subst f
+      exact (Relation.ReflTransGen.single hac).trans
+        (Relation.ReflTransGen.single hcd)
+  intro f g
+  exact (TriangleFamily.reflTransGen_faceAdjacent_symm (reach f)).trans (reach g)
+
+/-- The two-triangle half-disk patch has connected dual graph. -/
+theorem halfDiamondTriangles_dualConnected :
+    TriangleFamily.IsDualConnected
+      (diamondFanTriangles.filter fun t : Finset (Fin 5) => 1 ∈ t) := by
+  let faces := diamondFanTriangles.filter fun t : Finset (Fin 5) => 1 ∈ t
+  let b : TriangleFamily.Face faces :=
+    ⟨{1, 2, 4}, by simp [faces, diamondFanTriangles]⟩
+  let d : TriangleFamily.Face faces :=
+    ⟨{1, 4, 3}, by simp [faces, diamondFanTriangles]⟩
+  have hbd : TriangleFamily.FaceAdjacent faces b d := by
+    exact ⟨{1, 4}, by decide, by decide, by decide⟩
+  have reach : ∀ f : TriangleFamily.Face faces,
+      Relation.ReflTransGen (TriangleFamily.FaceAdjacent faces) b f := by
+    intro f
+    have hf := f.2
+    simp only [faces, diamondFanTriangles, Finset.mem_filter, Finset.mem_insert,
+      Finset.mem_singleton] at hf
+    rcases hf with ⟨hf, hone⟩
+    rcases hf with hf | hf | hf | hf
+    · exfalso
+      rw [hf] at hone
+      simp at hone
+    · have : f = b := Subtype.ext hf
+      subst f
+      exact Relation.ReflTransGen.refl
+    · exfalso
+      rw [hf] at hone
+      simp at hone
+    · have : f = d := Subtype.ext hf
+      subst f
+      exact Relation.ReflTransGen.single hbd
+  intro f g
+  exact (TriangleFamily.reflTransGen_faceAdjacent_symm (reach f)).trans (reach g)
+
+/-- Both fixed chart patches have connected dual graph. -/
+theorem ChartKind.patchComplex_dualConnected (k : ChartKind) :
+    TriangleFamily.IsDualConnected k.patchComplex.cells := by
+  cases k with
+  | disk =>
+      change TriangleFamily.IsDualConnected chartDiamondMesh.toPlaneComplex.cells
+      rw [TriangleMesh.toPlaneComplex_cells]
+      exact diamondFanTriangles_dualConnected
+  | halfDisk =>
+      change TriangleFamily.IsDualConnected chartHalfDiamondMesh.toPlaneComplex.cells
+      rw [TriangleMesh.toPlaneComplex_cells]
+      exact halfDiamondTriangles_dualConnected
+
+/-- Every fixed chart patch carries the full surface-incidence certificate. -/
+theorem MoiseChart.patchPartialTriangulation_surfaceIncidence
+    {S : Type*} [TopologicalSpace S] (c : MoiseChart S) :
+    c.patchPartialTriangulation.SurfaceIncidence where
+  faces_nonempty := by
+    change c.kind.patchComplex.cells.Nonempty
+    cases c.kind with
+    | disk =>
+        change chartDiamondMesh.toPlaneComplex.cells.Nonempty
+        rw [TriangleMesh.toPlaneComplex_cells]
+        change diamondFanTriangles.Nonempty
+        exact ⟨{0, 4, 2}, by simp [diamondFanTriangles]⟩
+    | halfDisk =>
+        change chartHalfDiamondMesh.toPlaneComplex.cells.Nonempty
+        rw [TriangleMesh.toPlaneComplex_cells]
+        change (diamondFanTriangles.filter fun t : Finset (Fin 5) => 1 ∈ t).Nonempty
+        exact ⟨{1, 2, 4}, by simp [diamondFanTriangles]⟩
+  edge_valence_le_two := by
+    intro e he
+    have he' : e ∈ c.patchPartialTriangulation.edges := by
+      simpa only [TriangleFamily.edges, PartialTriangulation.edges] using he
+    have hecard := c.patchPartialTriangulation.card_of_mem_edges he'
+    change (c.kind.patchComplex.cells.filter fun t => e ⊆ t).card ≤ 2
+    exact c.kind.patchComplex_edge_valence e hecard
+  dual_connected := by
+    change TriangleFamily.IsDualConnected c.kind.patchComplex.cells
+    exact c.kind.patchComplex_dualConnected
+
+namespace PartialTriangulation
+
+/-- The empty Radó base has vacuously connected dual graph. -/
+theorem empty_dualConnected (S : Type*) [TopologicalSpace S] :
+    TriangleFamily.IsDualConnected (PartialTriangulation.empty S).faces := by
+  intro f _g
+  simp only [PartialTriangulation.empty] at f
+  exact (Finset.notMem_empty f.1 f.2).elim
 
 end PartialTriangulation
 
