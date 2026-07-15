@@ -89,6 +89,7 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 
 * `PolygonCell`
 * `PolygonCell.side`
+* `PolygonCell.iUnion_range_side`
 * `PolygonGluing.PreRealization`
 * `PolygonGluing.Side`
 * `PolygonGluing.Identification`
