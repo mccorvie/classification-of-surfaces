@@ -25,6 +25,7 @@ project skeleton and documents the intended handoff points between teams.
 
 * `EvalSurface`
 * `ChartBoundaryInvariant`
+* `chartBoundaryInvariant_of_invarianceOfDomain`
 * `evalSurface`
 * `eval_surface_hypotheses`
 * the typeclass hypothesis block used by `classification_of_surfaces`
@@ -106,8 +107,8 @@ should not mention PL maps, Moise triangulation, or manifold chart machinery.
 
 The final theorem should remain a short assembly proof using
 `compact_surface_homeomorphic_to_cell_complex` and `SurfaceCellComplex.hasEvalRepresentative`.
-The C0 Eval route is relative to `ChartBoundaryInvariant`; positive-regularity surfaces obtain this
-class from mathlib's boundary-point theorem.
+The C0 `ChartBoundaryInvariant` interface is discharged unconditionally by planar no-retraction,
+Brouwer's fixed-point theorem, and invariance of domain.
 -/
 
 namespace LeanEval

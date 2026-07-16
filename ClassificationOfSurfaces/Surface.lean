@@ -6,7 +6,7 @@ Authors: ClassificationOfSurfaces contributors
 import Mathlib.Geometry.Manifold.Instances.Real
 
 /-!
-# Surface hypotheses
+# Surface hypotheses and boundary interface
 
 This file records the manifold assumptions used by the Lean Eval target.
 -/
@@ -17,12 +17,12 @@ namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
 
-/-- Topological invariance of the boundary stratum for C0 half-space charts.
+/-- Topological invariance of the boundary stratum for C0 half-space charts: a mathlib
+manifold-boundary point is sent by every preferred half-space chart containing it to the frontier
+of that chart's extended target.
 
-This is the explicit extra hypothesis isolating the hard pure-topology theorem: a point that is a
-mathlib manifold-boundary point is sent by every preferred half-space chart containing it to the
-frontier of that chart's extended target.  Mathlib proves this automatically for positive
-regularity, but the C0 case is the deferred invariance-of-boundary project. -/
+The unconditional C0 instance is proved in `Moise/BoundaryInvariant.lean`; the interface remains
+here so low-level surface declarations do not import the invariance-of-domain development. -/
 class ChartBoundaryInvariant (S : Type*) [TopologicalSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S] where
   chartAt_extend_mem_frontier_target_of_boundary :
@@ -45,7 +45,7 @@ instance chartBoundaryInvariant_of_contMDiff
       (I.isBoundaryPoint_iff_of_mem_atlas (M := S) (n := 1) (by norm_num)
         (chart_mem_atlas (EuclideanHalfSpace 2) x) hySource).mp hyBoundary
 
-/-- The Eval topological hypotheses plus the current C0 boundary-invariance bridge.
+/-- The topological hypotheses in the Lean Eval statement.
 
 Most theorem statements should keep using the typeclass hypotheses directly. This wrapper is useful
 for blueprint references and for APIs that want to pass the full Eval-surface bundle as data. -/
@@ -55,7 +55,6 @@ structure EvalSurface (S : Type*) [TopologicalSpace S] where
   compact : CompactSpace S
   charted : ChartedSpace (EuclideanHalfSpace 2) S
   manifold : IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S
-  boundaryInvariant : ChartBoundaryInvariant S
 
 section EvalHypotheses
 
@@ -63,7 +62,6 @@ variable (S : Type*) [TopologicalSpace S]
 variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
-variable [ChartBoundaryInvariant S]
 
 /-- Package the active typeclass hypotheses as an `EvalSurface`. -/
 def evalSurface : EvalSurface S where
@@ -72,9 +70,8 @@ def evalSurface : EvalSurface S where
   compact := inferInstance
   charted := inferInstance
   manifold := inferInstance
-  boundaryInvariant := inferInstance
 
-/-- Marker theorem packaging the active Eval and boundary-invariance assumptions. -/
+/-- Marker theorem packaging the active Eval assumptions. -/
 theorem eval_surface_hypotheses : Nonempty (EvalSurface S) :=
   ⟨evalSurface S⟩
 

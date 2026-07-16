@@ -47,6 +47,19 @@ existence-side arguments.
 
 Status: accepted.
 
+### D4. C0 Boundary Invariance
+
+Decision: keep `ChartBoundaryInvariant` as a low-level interface in `Surface.lean`, but discharge
+it unconditionally in `Moise/BoundaryInvariant.lean`. The proof derives planar Brouwer's
+fixed-point theorem from the existing no-retraction theorem, applies the completed
+invariance-of-domain argument, and transports boundary membership between charts.
+
+Reason: this removes a hypothesis not present in the Lean Eval statement while avoiding a
+dependency cycle from the foundational surface interface into the Moise topology development.
+The chart-extraction API continues to consume only the one-way consequence it needs.
+
+Status: accepted.
+
 ## Open Decisions
 
 ### O1. Cyclic Words
