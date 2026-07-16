@@ -45,7 +45,7 @@ connectedness hypotheses that issue #9 ultimately requires.
 
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
-| `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | realization = quotient of polygon disjoint union by boundary-word gluing |
+| `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
 | `SurfaceCellModel`, `OrientableRel`, `NonOrientableRel` | Representatives.lean | placeholder | `PUnit` with `⊥` relations: `Quot (OrientableRel p n)` is a point, so the eval conclusion's non-sphere branches assert `S ≃ₜ point` | actual polygon quotient representatives |
 | `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | **false as stated** | besides the placeholder-representative counterexample (`realization := Bool`), the signature still lacks explicit `IsSurfaceValid` and `IsConnected` hypotheses because the triangulation bridge cannot yet supply them | implement representatives, certify triangulation incidence, then re-state with both hypotheses |
 

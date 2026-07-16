@@ -109,8 +109,18 @@ Options:
 - quotient of abstract faces/edges/vertices with topology induced later;
 - bridge through finite CW complexes.
 
-Current leaning: polygon quotient is closest to the eval representatives, but requires quotient-map
-work. Keep placeholder until the combinatorial structure is clearer.
+Current leaning: use the generic quotient foundation in `PolygonalQuotient.lean`. It models an
+`n`-sided cell as a closed disk with `n` marked circular boundary arcs, so monogons and digons do
+not degenerate. Side identifications use either the identity parameter or the affine reversal
+`t ↦ 1 - t`, and their equivalence closure has the quotient topology. The required adapter must
+pair boundary *occurrences* rather than dart values. The additive adapter in
+`CellComplexQuotient.lean` now does so. Its unique-partner theorem derives the once-or-twice orbit
+condition and inverse-invariance of boundary status from `IsSurfaceValid`; only nonempty face
+boundaries remain adapter-specific. `SurfaceCellComplex.sphere` uses the required two-monogon
+presentation rather than a side-free disk. The standard examples satisfy both incidence and
+occurrence-level criteria, including the length-six annulus word. The next dependency is the
+certified triangulation-to-quotient bridge. This topological carrier does not by itself supply the
+straight-edged convex polygons requested for the explicit normal-form representatives.
 
 Status: open.
 

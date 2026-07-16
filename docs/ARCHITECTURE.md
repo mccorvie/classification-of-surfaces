@@ -62,11 +62,21 @@ bottom API is in place:
   face boundary words.
 - `SurfaceCellComplex.SignedDart` and `SurfaceCellComplex.oneFacePresentation` support concrete
   polygonal examples.
+- `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
+  arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
+  independently of the still-placeholder `SurfaceCellComplex.Realization`.
+- `SurfaceCellComplex.BoundaryOccurrence`, `BoundaryPairing`, and `PolygonalRealization` provide
+  an additive occurrence-indexed adapter to that quotient. Its pairing facts are derived from
+  `IsSurfaceValid`, with nonempty face boundaries as the only polygon-specific extra condition.
+  The atomic realization cutover remains blocked on the certified triangulation-to-quotient
+  bridge. Straight-edged convex models remain separate work.
 - `FiniteSurfaceTriangulation.toCellComplex` preserves triangle faces, vertices, oriented edge
   darts, and oriented triangle boundary words; boundary status is then derived from occurrence
-  multiplicity.
-- Examples for the disk, annulus, torus, projective plane, and Mobius strip compile as concrete
-  boundary-word presentations.
+  multiplicity rather than copied from the triangulation's boundary flags.
+- Boundary-word examples for the disk, annulus, torus, projective plane, and Mobius strip have
+  incidence- and occurrence-validity witnesses. The annulus now uses the length-six, two-contour
+  word.
+  Homeomorphisms identifying these polygonal quotients with the named surfaces remain future work.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
 compatibility. New code should use the preferred names above.
@@ -86,8 +96,8 @@ compatibility. New code should use the preferred names above.
 
 ## Next Tasks
 
-1. Replace placeholder `SurfaceCellComplex.Realization` with a quotient of polygonal
-   pre-realizations.
+1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
+   realization homeomorphism, then replace the placeholder realization atomically.
 2. Define cyclic-word infrastructure for face boundary words and Gallier-Xu rewrites.
 3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.

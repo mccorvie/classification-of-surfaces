@@ -114,6 +114,49 @@ def IsSurfaceValid (K : SurfaceCellComplex) : Prop :=
     (∀ d, K.inv d ≠ d) ∧
     ∀ d, K.OccursExactlyOnce d ∨ K.OccursExactlyTwice d
 
+/-- Inverting the chosen representative does not change its unoriented edge. -/
+@[simp]
+theorem sameEdge_inv_left_iff (K : SurfaceCellComplex) (d e : K.Dart) :
+    K.SameEdge (K.inv d) e ↔ K.SameEdge d e := by
+  simp only [SameEdge, K.inv_involutive]
+  exact or_comm
+
+/-- Inverting the chosen representative does not change which boundary positions it occupies. -/
+@[simp]
+theorem occurs_inv_iff (K : SurfaceCellComplex) (d : K.Dart) (o : K.BoundaryOccurrence) :
+    K.Occurs (K.inv d) o ↔ K.Occurs d o :=
+  K.sameEdge_inv_left_iff d o.dart
+
+/-- Boundary status is invariant under reversing the representative dart. -/
+@[simp]
+theorem isBoundaryDart_inv_iff (K : SurfaceCellComplex) (d : K.Dart) :
+    K.IsBoundaryDart (K.inv d) ↔ K.IsBoundaryDart d := by
+  constructor
+  · rintro ⟨o, ho, hunique⟩
+    refine ⟨o, (K.occurs_inv_iff d o).mp ho, ?_⟩
+    intro o' ho'
+    exact hunique o' ((K.occurs_inv_iff d o').mpr ho')
+  · rintro ⟨o, ho, hunique⟩
+    refine ⟨o, (K.occurs_inv_iff d o).mpr ho, ?_⟩
+    intro o' ho'
+    exact hunique o' ((K.occurs_inv_iff d o').mp ho')
+
+namespace IsSurfaceValid
+
+/-- Inverse darts in a valid incidence system are distinct. -/
+theorem inv_ne {K : SurfaceCellComplex} (h : K.IsSurfaceValid) (d : K.Dart) :
+    K.inv d ≠ d :=
+  h.2.2.1 d
+
+/-- A non-boundary edge in a valid incidence system occurs exactly twice. -/
+theorem occurs_twice_of_not_boundary {K : SurfaceCellComplex} (h : K.IsSurfaceValid)
+    {d : K.Dart} (hd : ¬K.IsBoundaryDart d) : K.OccursExactlyTwice d := by
+  rcases h.2.2.2 d with hone | htwo
+  · exact False.elim (hd hone)
+  · exact htwo
+
+end IsSurfaceValid
+
 /-- Two faces are adjacent when their boundaries use the same unoriented edge. -/
 def FaceAdjacent (K : SurfaceCellComplex) (f g : K.Face) : Prop :=
   ∃ d ∈ K.boundary f, ∃ e ∈ K.boundary g, K.SameEdge d e
@@ -144,6 +187,10 @@ def flipEquiv (α : Type*) : SignedDart α ≃ SignedDart α where
   invFun := flip
   left_inv := flip_flip
   right_inv := flip_flip
+
+@[simp]
+theorem flipEquiv_apply {α : Type*} (d : SignedDart α) : flipEquiv α d = flip d :=
+  rfl
 
 end SignedDart
 
@@ -210,49 +257,93 @@ abbrev Realization (K : SurfaceCellComplex) : Type := K.realization
 instance (K : SurfaceCellComplex) : TopologicalSpace K.Realization :=
   K.realizationTop
 
-/-- Placeholder sphere surface cell complex. -/
+/-- The sphere presented as two monogons with oppositely oriented copies of one edge.
+
+The stored realization remains a placeholder until the polygonal quotient cutover. The nonempty
+boundary presentation is equivalent to Gallier--Xu's empty-word sphere and is directly compatible
+with the polygonal occurrence adapter. -/
 def sphere : SurfaceCellComplex where
-  Face := PUnit
-  Dart := Empty
+  Face := Bool
+  Dart := SignedDart PUnit
   Vertex := PUnit
   realization := PUnit
   faceFintype := inferInstance
   dartFintype := inferInstance
   vertexFintype := inferInstance
   realizationTop := inferInstance
-  inv := Equiv.refl Empty
-  source := Empty.elim
-  target := Empty.elim
-  boundary := fun _ => []
-  inv_involutive := by
-    intro d
-    cases d
+  inv := SignedDart.flipEquiv PUnit
+  source := fun _ => PUnit.unit
+  target := fun _ => PUnit.unit
+  boundary := fun
+    | false => [SignedDart.pos PUnit.unit]
+    | true => [SignedDart.neg PUnit.unit]
+  inv_involutive := SignedDart.flip_flip
   inv_source := by
     intro d
-    cases d
+    rfl
   inv_target := by
     intro d
-    cases d
-
-/-- The empty-edge presentation of the sphere has valid incidence data. -/
-theorem sphere_isSurfaceValid : sphere.IsSurfaceValid := by
-  refine ⟨⟨PUnit.unit⟩, ?_, ?_, ?_⟩
-  · intro f g _h
-    cases f
-    cases g
     rfl
-  · intro d
-    exact Empty.elim d
-  · intro d
-    exact Empty.elim d
 
-/-- The one-face sphere presentation is connected. -/
+/-- The two-monogon presentation of the sphere has valid incidence data. -/
+theorem sphere_isSurfaceValid : sphere.IsSurfaceValid := by
+  refine ⟨⟨false⟩, ?_, ?_, ?_⟩
+  · intro f g hfg
+    cases f <;> cases g
+    · rfl
+    · simp [sphere] at hfg
+    · simp [sphere] at hfg
+    · rfl
+  · intro d
+    cases d <;> intro hd <;> cases hd
+  · intro d
+    right
+    let o₀ : sphere.BoundaryOccurrence :=
+      ⟨false, ⟨0, by simp [sphere]⟩⟩
+    let o₁ : sphere.BoundaryOccurrence :=
+      ⟨true, ⟨0, by simp [sphere]⟩⟩
+    refine ⟨o₀, o₁, ?_, ?_, ?_, ?_⟩
+    · simp [o₀, o₁]
+    · cases d with
+      | pos e =>
+          cases e
+          exact Or.inl rfl
+      | neg e =>
+          cases e
+          exact Or.inr rfl
+    · cases d with
+      | pos e =>
+          cases e
+          exact Or.inr rfl
+      | neg e =>
+          cases e
+          exact Or.inl rfl
+    · rintro ⟨f, i⟩ _hi
+      cases f
+      · left
+        change Fin 1 at i
+        have hi : i = 0 := Fin.eq_zero i
+        subst i
+        rfl
+      · right
+        change Fin 1 at i
+        have hi : i = 0 := Fin.eq_zero i
+        subst i
+        rfl
+
+/-- The two faces of the sphere presentation are connected through their common edge. -/
 theorem sphere_isConnected : sphere.IsConnected := by
-  refine ⟨⟨PUnit.unit⟩, ?_⟩
+  refine ⟨⟨false⟩, ?_⟩
   intro f g
-  cases f
-  cases g
-  exact Relation.ReflTransGen.refl
+  cases f <;> cases g
+  · exact Relation.ReflTransGen.refl
+  · apply Relation.ReflTransGen.single
+    refine ⟨SignedDart.pos PUnit.unit, List.mem_cons_self,
+      SignedDart.neg PUnit.unit, List.mem_cons_self, Or.inr rfl⟩
+  · apply Relation.ReflTransGen.single
+    refine ⟨SignedDart.neg PUnit.unit, List.mem_cons_self,
+      SignedDart.pos PUnit.unit, List.mem_cons_self, Or.inr rfl⟩
+  · exact Relation.ReflTransGen.refl
 
 /-- Equivalence generated by the allowed Gallier-Xu cut/glue transformations. -/
 def Equivalent (K L : SurfaceCellComplex) : Prop :=

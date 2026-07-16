@@ -3,6 +3,7 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
+import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.NormalForm
 
 /-!
@@ -49,7 +50,9 @@ deriving DecidableEq, Repr, Fintype
 
 /-- Edge names for the annulus example. -/
 inductive AnnulusEdge where
+  | d₀
   | c₀
+  | d₁
   | c₁
 deriving DecidableEq, Repr, Fintype
 
@@ -76,10 +79,15 @@ open SurfaceCellComplex.SignedDart
 def diskCellComplex : CellComplex :=
   SurfaceCellComplex.oneFacePresentation DiskEdge [pos DiskEdge.h]
 
-/-- One-face boundary-word presentation for the annulus, with two boundary contours. -/
+/-- One-face boundary-word presentation for the annulus: `d₀ c₀ d₀⁻¹ d₁ c₁ d₁⁻¹`.
+
+The `dᵢ` pairs are internal seams and the single occurrences `cᵢ` are the two boundary
+contours. This is a renaming of the genus-zero, two-contour normal form from Gallier--Xu
+Definition 6.5. -/
 def annulusCellComplex : CellComplex :=
   SurfaceCellComplex.oneFacePresentation AnnulusEdge
-    [pos AnnulusEdge.c₀, pos AnnulusEdge.c₁]
+    [pos AnnulusEdge.d₀, pos AnnulusEdge.c₀, neg AnnulusEdge.d₀,
+      pos AnnulusEdge.d₁, pos AnnulusEdge.c₁, neg AnnulusEdge.d₁]
 
 /-- One-face boundary-word presentation for the torus: `a b a⁻¹ b⁻¹`. -/
 def torusCellComplex : CellComplex :=
@@ -100,6 +108,17 @@ def mobiusStripCellComplex : CellComplex :=
 example : torusCellComplex.faceBoundaryLength PUnit.unit = 4 := by
   rfl
 
+/-- The annulus has the full length-six, two-contour boundary word. -/
+theorem annulusCellComplex_boundary :
+    annulusCellComplex.boundary PUnit.unit =
+      [pos AnnulusEdge.d₀, pos AnnulusEdge.c₀, neg AnnulusEdge.d₀,
+        pos AnnulusEdge.d₁, pos AnnulusEdge.c₁, neg AnnulusEdge.d₁] := by
+  rfl
+
+/-- Regression check: the annulus boundary word has six side occurrences. -/
+example : annulusCellComplex.faceBoundaryLength PUnit.unit = 6 := by
+  rfl
+
 /-- Regression check: the projective-plane example has the expected two-letter boundary word. -/
 example : projectivePlaneCellComplex.faceBoundaryLength PUnit.unit = 2 := by
   rfl
@@ -107,61 +126,74 @@ example : projectivePlaneCellComplex.faceBoundaryLength PUnit.unit = 2 := by
 /-- Regression check: edge-orbit multiplicity accepts the non-orientable word `a a`. -/
 theorem projectivePlaneCellComplex_isSurfaceValid :
     projectivePlaneCellComplex.IsSurfaceValid := by
-  refine ⟨⟨PUnit.unit⟩, ?_, ?_, ?_⟩
-  · intro f g _h
-    cases f
-    cases g
-    rfl
-  · intro d
-    cases d with
-    | pos e =>
-        change neg e ≠ pos e
-        intro h
-        cases h
-    | neg e =>
-        change pos e ≠ neg e
-        intro h
-        cases h
-  · intro d
-    right
-    let o₀ : projectivePlaneCellComplex.BoundaryOccurrence :=
-        ⟨PUnit.unit, ⟨0, by simp [projectivePlaneCellComplex,
-          SurfaceCellComplex.oneFacePresentation]⟩⟩
-    let o₁ : projectivePlaneCellComplex.BoundaryOccurrence :=
-        ⟨PUnit.unit, ⟨1, by simp [projectivePlaneCellComplex,
-          SurfaceCellComplex.oneFacePresentation]⟩⟩
-    refine ⟨o₀, o₁, ?_, ?_, ?_, ?_⟩
-    · intro h
-      have hval := congrArg (fun o => o.2.val) h
-      simp [o₀, o₁] at hval
-    · cases d with
-      | pos e =>
-          cases e
-          change pos ProjectivePlaneEdge.a = pos ProjectivePlaneEdge.a ∨ _
-          exact Or.inl rfl
-      | neg e =>
-          cases e
-          change _ ∨ pos ProjectivePlaneEdge.a = pos ProjectivePlaneEdge.a
-          exact Or.inr rfl
-    · cases d with
-      | pos e =>
-          cases e
-          change pos ProjectivePlaneEdge.a = pos ProjectivePlaneEdge.a ∨ _
-          exact Or.inl rfl
-      | neg e =>
-          cases e
-          change _ ∨ pos ProjectivePlaneEdge.a = pos ProjectivePlaneEdge.a
-          exact Or.inr rfl
-    · rintro ⟨f, i⟩ _hi
-      cases f
-      change Fin 2 at i
-      fin_cases i
-      · exact Or.inl rfl
-      · exact Or.inr rfl
+  apply SurfaceCellComplex.oneFacePresentation_isSurfaceValid
+  intro e
+  cases e
+  decide
 
 /-- Regression check: the Mobius-strip example has the expected three-letter boundary word. -/
 example : mobiusStripCellComplex.faceBoundaryLength PUnit.unit = 3 := by
   rfl
+
+/-! ## Occurrence-pairing validity -/
+
+/-- The disk word has one boundary occurrence and no internal pairings. -/
+theorem diskCellComplex_occurrencePairingValid :
+    diskCellComplex.OccurrencePairingValid := by
+  apply SurfaceCellComplex.oneFacePresentation_occurrencePairingValid
+  · decide
+  · intro e
+    cases e
+    decide
+
+/-- The corrected annulus word has two internal seam pairs and two boundary occurrences. -/
+theorem annulusCellComplex_occurrencePairingValid :
+    annulusCellComplex.OccurrencePairingValid := by
+  apply SurfaceCellComplex.oneFacePresentation_occurrencePairingValid
+  · decide
+  · intro e
+    cases e <;> decide
+
+/-- The torus word pairs both of its edge names internally. -/
+theorem torusCellComplex_occurrencePairingValid :
+    torusCellComplex.OccurrencePairingValid := by
+  apply SurfaceCellComplex.oneFacePresentation_occurrencePairingValid
+  · decide
+  · intro e
+    cases e <;> decide
+
+/-- The two copies of the projective-plane edge form one internal pair. -/
+theorem projectivePlaneCellComplex_occurrencePairingValid :
+    projectivePlaneCellComplex.OccurrencePairingValid := by
+  apply SurfaceCellComplex.oneFacePresentation_occurrencePairingValid
+  · decide
+  · intro e
+    cases e
+    decide
+
+/-- The Mobius-strip word has one internal pair and one boundary occurrence. -/
+theorem mobiusStripCellComplex_occurrencePairingValid :
+    mobiusStripCellComplex.OccurrencePairingValid := by
+  apply SurfaceCellComplex.oneFacePresentation_occurrencePairingValid
+  · decide
+  · intro e
+    cases e <;> decide
+
+/-- Incidence validity of the disk presentation. -/
+theorem diskCellComplex_isSurfaceValid : diskCellComplex.IsSurfaceValid :=
+  diskCellComplex_occurrencePairingValid.surface_valid
+
+/-- Incidence validity of the corrected annulus presentation. -/
+theorem annulusCellComplex_isSurfaceValid : annulusCellComplex.IsSurfaceValid :=
+  annulusCellComplex_occurrencePairingValid.surface_valid
+
+/-- Incidence validity of the torus presentation. -/
+theorem torusCellComplex_isSurfaceValid : torusCellComplex.IsSurfaceValid :=
+  torusCellComplex_occurrencePairingValid.surface_valid
+
+/-- Incidence validity of the Mobius-strip presentation. -/
+theorem mobiusStripCellComplex_isSurfaceValid : mobiusStripCellComplex.IsSurfaceValid :=
+  mobiusStripCellComplex_occurrencePairingValid.surface_valid
 
 /-- A minimal one-triangle triangulation of `PUnit`, used only to test the data conversion API. -/
 def oneTriangleTriangulation : FiniteSurfaceTriangulation PUnit where

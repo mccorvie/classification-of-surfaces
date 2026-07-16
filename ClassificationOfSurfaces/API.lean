@@ -3,6 +3,7 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
+import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -14,6 +15,7 @@ import ClassificationOfSurfaces.Moise.IntrinsicFaceModel
 import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
 import ClassificationOfSurfaces.Moise.FrontierGlue
 import ClassificationOfSurfaces.Moise.PlaneCycle
+import ClassificationOfSurfaces.PolygonalQuotient
 
 /-!
 # Public API map
@@ -89,6 +91,36 @@ for the quarry, in particular the concrete closed-triangle geometry.
 
 The legacy names `CellComplex` and `FiniteTriangulation` remain as compatibility aliases.  New
 code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTriangulation`.
+
+## Polygonal quotient foundation
+
+* `PolygonCell`
+* `PolygonCell.side`
+* `PolygonCell.iUnion_range_side`
+* `PolygonGluing.PreRealization`
+* `PolygonGluing.Side`
+* `PolygonGluing.Identification`
+* `PolygonGluing.setoid`
+* `PolygonGluing.Realization`
+* `PolygonGluing.realizationCongr`
+* `SurfaceCellComplex.BoundaryOccurrence`
+* `SurfaceCellComplex.BoundaryPairing`
+* `SurfaceCellComplex.OccurrencePairingValid`
+* `SurfaceCellComplex.wordEdgeOccurrences`
+* `SurfaceCellComplex.oneFacePresentation_isSurfaceValid`
+* `SurfaceCellComplex.oneFacePresentation_occurrencePairingValid`
+* `SurfaceCellComplex.PolygonalRealization`
+
+This generic layer supports disk cells with any number of marked sides and generated side
+identifications. The additive cell-complex adapter now maps boundary occurrences to polygon sides
+and, given incidence validity plus nonempty face boundaries, generates all compatible internal
+pairings. Edge-orbit counts and inverse-invariance of boundary status are derived from
+`IsSurfaceValid`, not repeated as adapter assumptions. `SurfaceCellComplex.Realization` does not
+use the quotient yet; the atomic cutover still depends on a certified
+triangulation-to-quotient bridge. The standard one-face examples now have incidence- and
+occurrence-validity witnesses, including the corrected length-six annulus word. The marked sides
+are circular arcs; issue #6's straight-edged convex representatives still require a separate PL
+bridge or a different concrete carrier.
 
 ## Gallier-Xu tail
 
