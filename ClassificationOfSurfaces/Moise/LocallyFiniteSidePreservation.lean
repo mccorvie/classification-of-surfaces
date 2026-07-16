@@ -33,6 +33,24 @@ theorem faceBoundaryLift_mem_faceInSupport (f : K.Face) (q : StandardFaceBoundar
     ((K.facePlaneHomeomorph f).symm
       ⟨q.1, standardFaceBoundary_mem_region q⟩)
 
+/-- A replacement graph pointwise finer than the canonical vertex-separation control is
+facewise close at the canonical per-face separation radii.  This is the bridge from a
+tolerance-parametrized one-skeleton replacement to the side-preservation entry
+`FaceBoundariesClose G (faceVertexSeparationRadius G)`. -/
+theorem faceBoundariesClose_of_lt_vertexSeparationControl
+    (harc : ∀ p : oneSkeletonInSupport (K := K),
+      dist (G.graphReplacementMap p) (G.map p.1) < vertexSeparationControl G p.1) :
+    FaceBoundariesClose G (faceVertexSeparationRadius G) := by
+  intro f q
+  have heq : faceOriginalMap G f q.1 = G.map (K.faceBoundaryLift f q).1 := by
+    change faceOriginalMap G f
+        (⟨q.1, standardFaceBoundary_mem_region q⟩ : standardFaceRegion).1 = _
+    rw [faceOriginalMap_apply]
+    rfl
+  rw [heq]
+  exact (harc (K.faceBoundaryLift f q)).trans_le
+    (vertexSeparationControl_le (faceBoundaryLift_mem_faceInSupport f q))
+
 /-- Every selected face boundary is part of the single global replacement graph. -/
 theorem facePolygonalCircle_carrier_subset_graphReplacement (f : K.Face) :
     (K.facePolygonalCircle (G := G) f).carrier ⊆
@@ -246,6 +264,66 @@ theorem faceFillingsVerticesAvoidClosedRegions_of_close
         (G.map '' faceInSupport (K := K) f)
       · exact faceOriginalMap_mem_face_image (G := G) f ⟨p, hp⟩
       · exact hFclose p hp
+    exact Set.disjoint_left.mp (hsep f v hvf) hvBall (hFp ▸ hFthick)
+  have hvExterior : G.vertexImage v ∈
+      (K.facePolygonalCircle (G := G) f).exteriorRegion := by
+    apply (K.facePolygonalCircle (G := G) f).mem_exteriorRegion_of_continuous_extension
+      standardTrianglePlaneComplex_isTriangle hbcont
+      (K.faceBoundaryMap_injectiveOn (G := G) f)
+      (K.faceBoundaryMap_image_polygon (G := G) f)
+      hFcont hFeq hvAvoid
+  intro hvClosed
+  exact Set.disjoint_left.mp
+    (K.facePolygonalCircle (G := G) f).disjoint_closedRegion_exteriorRegion
+      hvClosed hvExterior
+
+/-- Parametrization-independent form of `faceFillingsVerticesAvoidClosedRegions_of_close`: the
+comparison map on the standard region may be ANY continuous map whose values stay within half
+the separation radius of the original face image, and which is within half that radius of the
+replacement boundary on the frontier.  This absorbs the parameter misalignment between the
+replacement arcs' `Path.trans` splits and the original edge trims: an aligned comparison built
+from `CentralPolygonalArc.curve_close` can discharge the closeness at the approximation-control
+scale, which the crude same-parameter comparison with `faceOriginalMap` cannot. -/
+theorem faceFillingsVerticesAvoidClosedRegions_of_comparison
+    {r : K.Face → ℝ} (hr : ∀ f, 0 < r f)
+    (hsep : FaceVertexThickeningsSeparated G r)
+    (comp : K.Face → Plane → Plane)
+    (hcompCont : ∀ f, ContinuousOn (comp f) standardFaceRegion)
+    (hcompMem : ∀ (f : K.Face), ∀ p ∈ standardFaceRegion,
+      comp f p ∈ Metric.cthickening (r f / 2) (G.map '' faceInSupport (K := K) f))
+    (hclose : ∀ (f : K.Face) (q : StandardFaceBoundary),
+      dist (G.graphReplacementMap (K.faceBoundaryLift f q)) (comp f q.1) < r f / 2) :
+    FaceFillingsVerticesAvoidClosedRegions G := by
+  intro f v hvf
+  let b := K.faceBoundaryMap (G := G) f
+  have hbcont : ContinuousOn b (frontier standardFaceRegion) :=
+    K.continuousOn_faceBoundaryMap (G := G) f
+  have hbclose : ∀ p ∈ frontier standardFaceRegion,
+      dist (b p) (comp f p) < r f / 2 := by
+    intro p hp
+    let q : StandardFaceBoundary := ⟨p, hp⟩
+    change dist (K.faceBoundaryMap (G := G) f p) (comp f p) < r f / 2
+    rw [K.faceBoundaryMap_apply (G := G) f q]
+    exact hclose f q
+  obtain ⟨F, hFcont, hFeq, hFclose⟩ :=
+    exists_continuous_extension_of_close_on_frontier
+      standardTrianglePlaneComplex.isCompact_support.isClosed (half_pos (hr f))
+      hbcont (hcompCont f) hbclose
+  have hvAvoid : G.vertexImage v ∉ F '' standardFaceRegion := by
+    rintro ⟨p, hp, hFp⟩
+    have hvBall : G.vertexImage v ∈
+        Metric.closedBall (G.vertexImage v) (r f) :=
+      Metric.mem_closedBall_self (hr f).le
+    have hFhalf : F p ∈ Metric.cthickening (r f / 2)
+        (Metric.cthickening (r f / 2) (G.map '' faceInSupport (K := K) f)) :=
+      Metric.mem_cthickening_of_dist_le (F p) (comp f p) (r f / 2) _
+        (hcompMem f p hp) (hFclose p hp)
+    have hFthick : F p ∈
+        Metric.cthickening (r f) (G.map '' faceInSupport (K := K) f) := by
+      have hmem := Metric.cthickening_cthickening_subset
+        (half_pos (hr f)).le (half_pos (hr f)).le
+        (G.map '' faceInSupport (K := K) f) hFhalf
+      rwa [add_halves] at hmem
     exact Set.disjoint_left.mp (hsep f v hvf) hvBall (hFp ▸ hFthick)
   have hvExterior : G.vertexImage v ∈
       (K.facePolygonalCircle (G := G) f).exteriorRegion := by
@@ -501,6 +579,40 @@ theorem cellwiseCompatibility_of_facewise_close
   have hvertices := faceFillingsVerticesAvoidClosedRegions_of_close
     (G := G) (faceVertexSeparationRadius_pos (G := G))
       (faceVertexSeparationRadius_separates (G := G)) hclose
+  have hside := faceFillingsGraphAvoidInteriors_of_verticesAvoid
+    (G := G) hvertices
+  exact
+    { faceVertices_injective := hfaces
+      graphAvoidsInteriors := hside
+      interiorsDisjoint := disjoint_facePolygonalCircle_interiors
+        (G := G) hfaces hside
+      closedRegions_mem_region := hregion
+      locallyFiniteClosedRegions := hloc }
+
+/-- The compatibility package from a parametrization-independent comparison map at the
+canonical separation radii.  This is the entry matched to the locally finite replacement arcs:
+their `curve_close` tracking is stated against the trimmed original curve, not against the
+`Path.trans` parameter, so only a reparametrized comparison can be discharged at the
+approximation-control scale. -/
+theorem cellwiseCompatibility_of_comparison
+    (hfaces : Function.Injective K.faceVertices)
+    (comp : K.Face → Plane → Plane)
+    (hcompCont : ∀ f, ContinuousOn (comp f) standardFaceRegion)
+    (hcompMem : ∀ (f : K.Face), ∀ p ∈ standardFaceRegion,
+      comp f p ∈ Metric.cthickening (faceVertexSeparationRadius G f / 2)
+        (G.map '' faceInSupport (K := K) f))
+    (hclose : ∀ (f : K.Face) (q : StandardFaceBoundary),
+      dist (G.graphReplacementMap (K.faceBoundaryLift f q)) (comp f q.1) <
+        faceVertexSeparationRadius G f / 2)
+    (hregion : ∀ f : K.Face,
+      (K.facePolygonalCircle (G := G) f).closedRegion ⊆ G.region)
+    (hloc : LocallyFinite fun f : K.Face ↦
+      {q : G.region | q.1 ∈
+        (K.facePolygonalCircle (G := G) f).closedRegion}) :
+    K.CellwiseCompatibility G := by
+  have hvertices := faceFillingsVerticesAvoidClosedRegions_of_comparison
+    (G := G) (faceVertexSeparationRadius_pos (G := G))
+      (faceVertexSeparationRadius_separates (G := G)) comp hcompCont hcompMem hclose
   have hside := faceFillingsGraphAvoidInteriors_of_verticesAvoid
     (G := G) hvertices
   exact

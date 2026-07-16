@@ -203,7 +203,6 @@ variable (S : Type*) [TopologicalSpace S]
 variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
-variable [ChartBoundaryInvariant S]
 
 /-- Radó's theorem (Moise, *Geometric Topology in Dimensions 2 and 3*, Ch. 8, Thm. 3; bordered
 version): every compact surface in the Eval sense admits a finite geometric triangulation — a

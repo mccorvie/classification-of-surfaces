@@ -64,8 +64,9 @@ compatibility, but new code should use the preferred names above.
   data-preserving triangulation-to-cell-complex conversion.
 - Standard example boundary words for the disk, annulus, torus, projective plane, and Mobius strip
   compile as `SurfaceCellComplex` values.
-- The Moise/PL triangulation route and the triangulation-to-cell-complex bridge compile relative to
-  the explicit C0 `ChartBoundaryInvariant` hypothesis. Positive-regularity surfaces supply this
-  hypothesis through mathlib.
+- The C0 chart-boundary seam is discharged: planar no-retraction gives Brouwer's fixed-point
+  theorem, hence invariance of domain and an unconditional `ChartBoundaryInvariant` instance.
+- The Moise/PL triangulation route and the triangulation-to-cell-complex bridge therefore use only
+  the hypotheses in the Lean Eval statement.
 - Quotient realizations and Gallier-Xu normal-form reductions are still theorem boundaries marked
   by named `sorry`s.

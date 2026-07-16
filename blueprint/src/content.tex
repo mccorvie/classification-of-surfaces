@@ -25,25 +25,24 @@ live in \texttt{ClassificationOfSurfaces/Moise/}.
 
 \begin{definition}[C0 chart-boundary invariance]
 \label{moise:def:chart_boundary_invariant}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartBoundaryInvariant}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.ChartBoundaryInvariant, LeanEval.Topology.ClassificationOfSurfaces.chartBoundaryInvariant_of_invarianceOfDomain}
 \leanok
-The one deliberate assumption of the project: a mathlib manifold-boundary point
+The chart-extraction interface says that a mathlib manifold-boundary point
 lying in any preferred half-plane chart is sent by that chart to the frontier of
-the chart's extended target.  Mathlib proves this for positive regularity
-(\texttt{ModelWithCorners.isBoundaryPoint\_iff\_of\_mem\_atlas}); at regularity
-$C^0$ it is the invariance-of-boundary theorem, deferred as this typeclass.
-Only this implication is assumed; its converse is never used.
+the chart's extended target.  At regularity $C^0$ this is proved from planar
+no-retraction, Brouwer's fixed-point theorem, and invariance of domain.  The
+typeclass keeps the low-level dependency modular, while
+\texttt{chartBoundaryInvariant\_of\_invarianceOfDomain} supplies it
+unconditionally.  Only this implication is used by the Rad\'o route.
 \end{definition}
 
 \begin{definition}[Lean Eval compact surface with boundary]
 \label{moise:def:eval_surface}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.EvalSurface}
 \leanok
-\uses{moise:def:chart_boundary_invariant}
 An \emph{Eval surface} is a Hausdorff, connected, compact type charted over the
 Euclidean half-plane, a $C^0$ manifold for
-\texttt{modelWithCornersEuclideanHalfSpace 2}, together with the
-\ref{moise:def:chart_boundary_invariant} bridge.
+\texttt{modelWithCornersEuclideanHalfSpace 2}.
 \end{definition}
 
 \section{Geometric triangulations}
@@ -424,8 +423,8 @@ out by the model disk of radius one half.
 A chart is boundary-faithful when disk charts contain no manifold-boundary
 points and half-disk charts send manifold-boundary points to the model edge
 line.  This is exactly what \ref{moise:def:chart_boundary_invariant} yields;
-the converse of the half-disk clause is $C^0$ invariance of the boundary and is
-deliberately not part of the interface.
+the converse of the half-disk clause is not needed and is deliberately not part
+of this interface.
 \end{definition}
 
 \begin{lemma}[Local chart extraction]
@@ -546,34 +545,64 @@ combine the approximation bound with continuity of the unchanged map and the
 triangle inequality.
 \end{proof}
 
+\begin{theorem}[Gluing along a common presentation; Moise Thm.~7.6]
+\label{moise:thm:partial_glue}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation.exists_glued}
+\leanok
+\uses{moise:def:geometric_realization}
+Two partial triangulations presented on a common vertex type, whose embeddings
+agree exactly on the shared part of their realizations, glue to a single
+partial triangulation on the union face family, supported on the union of the
+two images, with the joint edge-face bound inherited.
+\end{theorem}
+
+\begin{proof}
+\leanok
+The realization of the union family is the set-union of the two realizations,
+so the glued embedding is the two-sided paste; it is injective by the exact
+agreement hypotheses, continuous because each side's preimage of a closed set
+is a compact inclusion image, and an embedding as a continuous injection from
+a compact realization into a Hausdorff surface.
+\end{proof}
+
+\begin{theorem}[Crossing-case welding; Moise Ch.~8, Thm.~3 preparation]
+\label{moise:thm:crossing_weld}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.MoiseChart.exists_crossing_weld}
+\leanok
+\uses{moise:def:rado_invariant,moise:def:boundary_faithful,moise:thm:pl_approximation,moise:lem:finite_compact_collar,moise:lem:frontier_glue}
+In the genuine crossing case, the straightened old complex and the chart patch
+admit a common welded presentation: a common vertex type carrying both face
+families, embeddings agreeing exactly on the shared realization, the joint
+edge-face bound, and the united image containing the absorbed region and the
+new core in its topological interior.
+\end{theorem}
+
+\begin{proof}
+Straighten the old complex over the chart overlap by the locally finite
+controlled polygonal replacement with tolerance vanishing at the overlap
+frontier, refine the straightened trace and the fixed patch complex to a
+common plane subdivision (Moise's conditions (a)--(h)), and read off the
+welded presentation.  The finite compact-collar theorem must not be silently
+substituted for the vanishing-tolerance construction.
+\end{proof}
+
 \begin{theorem}[The induction step; Moise Ch.~8, Thm.~3, step]
 \label{moise:thm:induction_step}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.moise_induction_step}
-\uses{moise:def:rado_invariant,moise:def:boundary_faithful,moise:thm:pl_approximation,moise:thm:polygonal_schoenflies_rel,moise:lem:finite_compact_collar,moise:lem:frontier_glue}
+\leanok
+\uses{moise:def:rado_invariant,moise:def:boundary_faithful,moise:thm:partial_glue,moise:thm:crossing_weld}
 Given a partial triangulation satisfying the invariant for a region $A$ and one
 more boundary-faithful chart, some partial triangulation satisfies the
 invariant for $A$ together with the chart's core.
 \end{theorem}
 
 \begin{proof}
-Work in the chart's model coordinates; take a polyhedral neighborhood of the
-part of the built complex meeting the chart (Moise Thm.~8.2); adjust it by
-\ref{moise:thm:pl_approximation} so that it meets a fine complex containing
-the model core simplicially (Moise's conditions (a)--(h)).  Because the old
-patch is an intrinsic finite complex rather than a globally straight plane
-complex, this requires the intrinsic-source form of the approximation theorem,
-faithful fine subdivision/open-subcomplex extraction, and gluing along a common
-intrinsic subcomplex (Moise Thm.~7.6).  The intrinsic one-skeleton portion is
-now formalized: its simultaneous polygonal replacement is embedded, each
-replacement edge has an exact finite plane-complex model, and different edges
-meet only at shared abstract vertices.  The three edge models around every
-face are now assembled into an exact simple polygonal cycle, and faithful
-arbitrarily fine intrinsic subdivision and finite compact collars are proved.
-The frontier convergence lemma for Moise's strongly positive control is also
-proved.  What remains is the locally finite, conforming open-subcomplex
-construction of Thm.~8.2, intrinsic cellwise extension, and the common-complex
-glue.  A merely finite closed collar does not replace this step without an
-additional relative annulus/Schoenflies theorem.
+\leanok
+If the new core already lies in the interior of the built support, absorb it
+directly; if the absorbed region lies inside the chart patch, replace the
+built complex by the patch.  In the remaining crossing case, apply the welding
+theorem and glue the two presentations by \ref{moise:thm:partial_glue}; the
+invariant for the union follows from the welding conclusions.
 \end{proof}
 
 \begin{theorem}[Assembled Rad\'o induction]

@@ -101,6 +101,13 @@ theorem locallyFiniteTriangleComplex_support (hU : IsOpen U) :
   letI : AdaptiveSafety.IsAdmissible (K := K) (U := U) := C.safety_isAdmissible
   exact K.adaptiveLocallyFiniteTriangleComplex_support U hU
 
+/-- Distinct faces of the cover-subordinate adaptive complex carry distinct vertex triples. -/
+theorem faceVertices_injective (hU : IsOpen U) :
+    Function.Injective (locallyFiniteTriangleComplex K U C hU).faceVertices := by
+  letI : K.AdaptiveSafety U := C.safety
+  letI : AdaptiveSafety.IsAdmissible (K := K) (U := U) := C.safety_isAdmissible
+  exact K.adaptiveGlobalFanFaceVertices_injective U hU
+
 /-- Every adaptive tile selected by `C` lies in one member of the cover. -/
 theorem exists_cover_set_of_adaptiveFace
     (t : @IntrinsicTwoComplex.AdaptiveFace K U C.safety) :

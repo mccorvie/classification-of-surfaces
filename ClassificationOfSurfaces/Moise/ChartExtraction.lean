@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.Moise.PlaneComplex
-import ClassificationOfSurfaces.Surface
+import ClassificationOfSurfaces.Moise.BoundaryInvariant
 
 /-!
 # Extraction of Moise charts from the mathlib atlas
@@ -19,7 +19,7 @@ model by the recentering homeomorphism `v ↦ ε⁻¹ • (v - p)`.
 The construction: take the preferred chart `φ = chartAt (EuclideanHalfSpace 2) x` and let
 `p = (φ x).1` in the closed half-plane.  Either `0 < p 0` (then a small ball about `p` lies in
 the chart image away from the edge, giving a disk chart) or `p 0 = 0` (then a small relative
-half-ball lies in the chart image, giving a half-disk chart).  `ChartBoundaryInvariant` supplies
+half-ball lies in the chart image, giving a half-disk chart).  C0 invariance of domain supplies
 boundary-faithfulness: manifold-boundary points in the chart land on the frontier of the extended
 target, hence on the model edge line.
 -/
@@ -223,9 +223,8 @@ disk charts contain no manifold-boundary points, and half-disk charts send every
 manifold-boundary point of their domain to the model edge line.
 
 This is exactly what `ChartBoundaryInvariant` yields.  The *converse* of the half-disk clause —
-a point on the model edge line is a manifold-boundary point — is C0 invariance of the boundary,
-the deferred hard theorem behind `ChartBoundaryInvariant`; it is deliberately not part of this
-interface, and the Radó induction step must not rely on it. -/
+a point on the model edge line is a manifold-boundary point — is deliberately not part of this
+interface, and the Radó induction step does not rely on it. -/
 def MoiseChart.BoundaryFaithful {S : Type*} [TopologicalSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S] (c : MoiseChart S) : Prop :=
   (c.kind = ChartKind.disk →
@@ -252,9 +251,6 @@ theorem chartImage_eq_inter (x : S) :
     range_modelWithCornersEuclideanHalfSpace 2
   rw [← hval, ← h2, h1, hrange]
 
-variable [ChartBoundaryInvariant S]
-
-omit [ChartBoundaryInvariant S] in
 /-- The chart image is an ambient plane neighborhood of the center's image when the latter is
 away from the edge. -/
 theorem chartImage_mem_nhds_of_coord_pos (x : S)
@@ -278,7 +274,6 @@ theorem chartImage_mem_nhds_of_coord_pos (x : S)
       show (0 : ℝ) ≤ v 0 from le_of_lt hv
   exact Filter.inter_mem (hVopen.mem_nhds hptE.1) hH
 
-omit [ChartBoundaryInvariant S] in
 /-- The chart image is a relative half-plane neighborhood of the center's image. -/
 theorem chartImage_mem_nhdsWithin (x : S) :
     Subtype.val '' (chartAt (EuclideanHalfSpace 2) x).target ∈
@@ -295,8 +290,8 @@ theorem chartImage_mem_nhdsWithin (x : S) :
       (modelWithCornersEuclideanHalfSpace 2).continuous_symm
   exact mem_nhdsWithin.mpr ⟨_, hVopen, hptE.1, subset_rfl⟩
 
-/-- Boundary points of the chart source have edge-line chart coordinates: the consequence of
-`ChartBoundaryInvariant` in ambient plane coordinates. -/
+/-- Boundary points of the chart source have edge-line chart coordinates: the chart-level
+consequence of planar invariance of domain. -/
 theorem coordZero_of_boundary (x : S) {y : S}
     (hy : y ∈ (chartAt (EuclideanHalfSpace 2) x).source)
     (hybd : y ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S) :
@@ -530,8 +525,8 @@ theorem exists_moiseChart_of_coord_zero (x : S)
 /-- **Local chart extraction** (Moise Ch. 8, Thm. 1, local part; bordered version).
 
 Every point of an Eval surface has a boundary-faithful Moise chart whose core is a neighborhood
-of the point: interior points get disk charts, edge points get half-disk charts, and
-`ChartBoundaryInvariant` supplies boundary-faithfulness. -/
+of the point: interior points get disk charts, edge points get half-disk charts, and invariance of
+domain supplies boundary-faithfulness. -/
 theorem exists_moiseChart_core_mem_nhds (x : S) :
     ∃ c : MoiseChart S, c.BoundaryFaithful ∧ c.core ∈ 𝓝 x := by
   rcases lt_or_eq_of_le

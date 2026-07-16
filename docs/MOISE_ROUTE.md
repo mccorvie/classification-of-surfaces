@@ -1,7 +1,7 @@
 # The Moise triangulation route: status and handoff map
 
 The authoritative onboarding doc for the triangulation half of the project (the
-`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-12. Supersedes
+`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-14. Supersedes
 `codex_strategy_moise_pl.md` and the "Moise / PL route" section of `API.lean`, which describe
 the retired `PL.lean` layer (see `docs/KNOWN_WEAK.md` for why it was retired).
 
@@ -20,10 +20,12 @@ Thm 6.3         ←  6.2 (← 6.1 broken lines, Ch. 1)  +  5.3/5.4 combinatorial
 Thm 5.3         ←  Ch. 2 polygonal Jordan  +  Ch. 3 polygonal Schoenflies
 ```
 
-Full JCT (Ch. 4) and full Schoenflies (Ch. 9) are **not** on this route. The one deliberate
-assumption is `ChartBoundaryInvariant` (`Surface.lean`): C0 invariance of the boundary. Its
-consequences are isolated in `MoiseChart.BoundaryFaithful` (`Moise/ChartExtraction.lean`),
-deliberately stated as the two provable clauses only — do not strengthen it to an iff.
+Full JCT (Ch. 4) and full Schoenflies (Ch. 9) are **not** on this route. C0 invariance of the
+boundary is now proved: `Moise/Brouwer.lean` derives planar Brouwer from the existing
+no-retraction theorem, `Topology/InvarianceOfDomain.lean` derives invariance of domain, and
+`Moise/BoundaryInvariant.lean` supplies `ChartBoundaryInvariant` unconditionally. Its consequences
+remain isolated in `MoiseChart.BoundaryFaithful` (`Moise/ChartExtraction.lean`) and deliberately
+use only the two clauses needed by the Radó route.
 
 ## What is already proved (sorry-free, axioms `[propext, Classical.choice, Quot.sound]`)
 
@@ -68,6 +70,10 @@ deliberately stated as the two provable clauses only — do not strengthen it to
   `Moise/PLApproximation.lean`): no retraction of a closed triangle to its frontier, bounded
   vector-valued Tietze extension, and stability of the inside/outside certificate under a small
   boundary perturbation.
+- The C0 boundary-invariance layer (`Moise/Brouwer.lean`,
+  `Topology/InvarianceOfDomain.lean`, and `Moise/BoundaryInvariant.lean`): planar Brouwer from
+  no-retraction, invariance of domain, chart-independence of the boundary stratum, and the
+  unconditional `ChartBoundaryInvariant` instance.
 - Common graph-refinement support: `GraphSubdivision.lean` and `GraphRefinement.lean` provide
   fine sampled subdivisions, marked refinements, exact support/subdivision theorems, and the
   interval-face lemma used by the PL proof.  `PlaneComplex.used` removes genuinely unused
@@ -105,7 +111,112 @@ deliberately stated as the two provable clauses only — do not strengthen it to
 
 | Leaf | File | Moise | Difficulty |
 |---|---|---|---|
-| `moise_induction_step` | ChartInduction.lean | Ch. 8 Thm 3 step | hard; design interface with the proof |
+| `MoiseChart.exists_crossing_weld` | ChartInduction.lean | Ch. 8 Thm 3 step, crossing case | hard |
+
+`moise_induction_step` itself is now proved: its two absorption branches were already closed, and
+the crossing branch is derived from `PartialTriangulation.exists_glued` (Moise Thm. 7.6 on a
+common vertex type — **proved**: the union family's realization is the set-union of the two
+realizations, so the glued embedding is a two-sided paste, an embedding by compactness) together
+with the single remaining leaf `exists_crossing_weld`: in the genuine crossing case, the
+straightened old complex and the chart patch admit a common welded presentation (common vertex
+type, exact agreement on the shared realization, joint edge-face bound, `A ∪ core` interior to
+the united image).  Its intended proof is the adaptive overlap machinery already in this
+repository (`adaptiveOverlapGraphRealization`, the locally finite controlled polygonal
+replacement, `replaceOnOpen`/`frontierGlue`, `CommonSubdivision`), respecting the
+vanishing-tolerance warning below.
+
+The precise remaining work inside this leaf, in dependency order:
+
+1. **Instantiation lemmas at the adaptive overlap** — **DONE** (2026-07-13, clean axioms; the
+   layer's stray `native_decide` in `midpointCentralFace_card` was also replaced by kernel
+   `decide`).  `AdaptiveOpenCover.faceVertices_injective` and
+   `RegionControlledAdaptiveComplex.faceVertices_injective` discharge the `hfaces` entry of
+   `exists_polygonalReplacement` unconditionally;
+   `PartialTriangulation.injective_faceVertices_adaptiveOverlapComplex` is the overlap
+   instance.  The separation entry is
+   `PartialTriangulation.exists_separating_control_adaptiveOverlap`, built on the new generic
+   `LocallyFiniteTriangleComplex.vertexSeparationControl` (`LocallyFinitePLApproximation.lean`):
+   the locally finite analogue of the finite `exists_uniform_vertex_face_separation`, with
+   positivity, strong positivity on compacts, `SeparatesVerticesFromFaces`, and a `mono` lemma.
+   **Statement caveat, discovered while proving it**: separation had to be stated
+   existentially (`∃ phi` strongly positive) for a *fixed* complex.  It is *not* provable with
+   the same `phi` that builds `regionControlledAdaptiveComplex`, because the control bounds the
+   local image mesh only from above while nonincident vertex gaps in the chart image can be
+   smaller than the cover scale wherever the chart map contracts.  Consumers must therefore
+   either fix the complex first and shrink only the arc approximation controls
+   (`withApproximationControls`), entering through
+   `exists_controlled_polygonalReplacement_of_facewise_close` /
+   `faceVertexSeparationRadius` (whose separation half is already proved), or generalize
+   `exists_polygonalReplacement` to decouple the separation control from the mesh control.
+   This mirrors the proved finite sequencing in `exists_intrinsic_pl_approximation`
+   (complex fixed, then `ρ = min r η` chosen for the arcs only).
+2. **Frontier-glue application** — analytic halves **DONE** (2026-07-14, clean axioms); only
+   the assembly with the part-3 replacement remains.
+   `PartialTriangulation.exists_chartMatchingControl` (with its metric-target core
+   `exists_chartMatchingControl_of_metricSpace`) produces one strongly positive control on the
+   chart overlap such that EVERY chart-coordinate replacement within it satisfies
+   `MatchesAtFrontier` against `T.embed`; `disjoint_image_chartOverlap_embed_compl` is the
+   crossing disjointness (free once the replacement stays in the chart domain).
+   **Statement caveat, discovered while proving it**: the original plan item — derive
+   `MatchesAtFrontier` from the `≤ regionSafeControl` bound alone — is FALSE for a C0 chart:
+   compose a chart with the disk twist `(r, θ) ↦ (r, θ + 1/(1-r))` and a radial displacement of
+   `frontierDistance/4` is sheared to unbounded angular displacement, so `chart.symm` of the
+   replacement need not converge at the frontier.  The matching control must be extracted from
+   the chart homeomorphism itself (sSup of admissible moduli against a surface scale vanishing
+   at the frontier trace; strong positivity by Heine–Cantor on compact products).  Consumers
+   must intersect the part-1 separation control, this matching control, and the
+   `regionSafeControl` reduction; each is strongly positive and each condition is monotone
+   downward, so the minimum serves all three.  The final assembly is
+   `T.replaceOnOpen`/`isEmbedding_frontierGlue_of_matches` on the part-3 replacement (which
+   supplies `ContinuousOn`/`InjOn` on the overlap and containment in the model region — the
+   half-plane preservation results already exist).
+3. **Conforming layer** (Moise's conditions (a)–(h)): common subdivision of the straightened
+   trace with the fixed patch complex, and selection of the patch sub-mesh keeping the cores
+   interior (Moise's L, conditions (b) and (d)).
+
+   **Refined map (2026-07-14, sharpened 2026-07-15), after verifying every entry of the
+   replacement pipeline.**  The apparent crux was that the canonical `graphReplacementMap`
+   arcs only satisfy the mesh-scale pointwise bound `< 2 * diam (edgeImage e)`, while the
+   side-preservation entries compare against the complex's own Classical.choose-selected
+   separation radii — a race no mesh control `phi` can win (in the adaptive fan complex,
+   consecutive interval vertices on one tile edge can have image gaps arbitrarily small
+   relative to the tile's cover scale).  **The resolution does NOT require new arcs.**  The
+   `CentralPolygonalArc` structure already carries `curve_close`: the arc's parametrized curve
+   tracks the trimmed original edge curve pointwise within `centralTubeRadius e ≤
+   edgeApproximationControl e` — an approximation control we may shrink freely
+   (`withApproximationControls`).  The mesh-scale weakness is purely a PARAMETRIZATION
+   artifact: `completePath` splits its parameter by `Path.trans` at 1/2, 3/4, misaligned with
+   the edge trim, so the same-parameter comparison against `faceOriginalMap` picks up the edge
+   diameter.  Accordingly the consumer was generalized (2026-07-15, proved clean):
+   `faceFillingsVerticesAvoidClosedRegions_of_comparison` and
+   `cellwiseCompatibility_of_comparison` (`LocallyFiniteSidePreservation.lean`) accept ANY
+   continuous comparison map `comp f` on the standard region with values in the
+   `r f / 2`-cthickening of the original face image and within `r f / 2` of the replacement
+   boundary on the frontier — the Tietze/no-retraction argument never needed the original
+   parametrization, only continuity, frontier closeness, and set-proximity to the face image.
+   The remaining work for the straightened complex is the per-face comparison map: on each
+   side of the standard triangle, (i) on the arc's middle range, `chartEdgeCurve` composed
+   with the trim-affine reparametrization matched to `middlePath`'s parameter — pointwise
+   `< centralTubeRadius` by `curve_close`; (ii) on the spoke ranges, the straight segment from
+   the shared vertex image to the matched trimmed curve point, pointwise `< tube` against the
+   spoke (two segments from a common start differ by at most the distance of their far
+   endpoints) and within `vertexIsolationRadius + tube` of the face image (the far endpoints
+   lie in the vertex disk); junction values agree by construction, and corners carry the
+   shared vertex images.  Note the trim is a LAST-exit trim (`EdgeTrimData.after_left`), so
+   the trimmed-off original curve may wander outside the vertex disk — the comparison must be
+   the disk segment, not a reparametrized original; that is exactly why the `of_comparison`
+   generalization measures `comp` against the face image by cthickening membership rather
+   than requiring frontier values.  Discharging the `r f / 2` bounds needs the controls shrunk
+   below the finitely many incident faces' radii (per-vertex and per-edge minima; the
+   `edgeFaceSeparationRadius` machinery and part-1 `vertexSeparationControl` supply them).
+   `exists_controlled_polygonalReplacement_of_facewise_close` (proved) then assembles the
+   replacement with the adaptive `FaceBoundariesControlled`/`UniformFrontierControl` (proved);
+   containment/local-finiteness and side-preservation take different controls there, so no
+   single-control coupling remains.  The straightening tolerance is
+   `min (regionSafeControl …) (matching control) (control-shrunk radii)` — all strongly
+   positive, every condition downward monotone.
+4. **Assembly**: read off the common-vertex welded presentation and the interior coverage of
+   `A ∪ core`; `PartialTriangulation.exists_glued` (proved) consumes it.
 
 The remaining mismatch is now precise.  Chapter 6.3 is proved for a finite source
 `PlaneComplex`, while the old complex near the next Rado chart is intrinsically PL and need not

@@ -498,6 +498,14 @@ theorem locallyFinite_closedRegions
     G (faceBoundariesControlled K U hU V hV f hf hmem phi hphi G hmap)
       (uniformFrontierControl K U hU V hV f hf hmem phi hphi G hmap hregion)
 
+/-- The region-controlled adaptive complex carries distinct vertex triples on distinct faces:
+the `hfaces` entry condition of `exists_polygonalReplacement` holds unconditionally. -/
+theorem faceVertices_injective :
+    Function.Injective (R K U hU V hV f hf hmem phi hphi).faceVertices :=
+  AdaptiveOpenCover.faceVertices_injective K U
+    (K.controlledAdaptiveOpenCover U hU f hf (regionSafeControl V f phi)
+      (stronglyPositiveOn_regionSafeControl hV hf hmem hphi)) hU
+
 /-- Complete locally finite cellwise replacement once the remaining side-separation condition
 is supplied.  Region containment and local finiteness are now consequences, not hypotheses. -/
 theorem exists_polygonalReplacement
