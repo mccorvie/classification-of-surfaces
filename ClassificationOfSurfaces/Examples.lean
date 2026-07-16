@@ -74,12 +74,12 @@ open SurfaceCellComplex.SignedDart
 
 /-- One-face boundary-word presentation for the disk. -/
 def diskCellComplex : CellComplex :=
-  SurfaceCellComplex.oneFacePresentation DiskEdge [pos DiskEdge.h] (fun _ => True)
+  SurfaceCellComplex.oneFacePresentation DiskEdge [pos DiskEdge.h]
 
 /-- One-face boundary-word presentation for the annulus, with two boundary contours. -/
 def annulusCellComplex : CellComplex :=
   SurfaceCellComplex.oneFacePresentation AnnulusEdge
-    [pos AnnulusEdge.c₀, pos AnnulusEdge.c₁] (fun _ => True)
+    [pos AnnulusEdge.c₀, pos AnnulusEdge.c₁]
 
 /-- One-face boundary-word presentation for the torus: `a b a⁻¹ b⁻¹`. -/
 def torusCellComplex : CellComplex :=
@@ -95,7 +95,6 @@ def projectivePlaneCellComplex : CellComplex :=
 def mobiusStripCellComplex : CellComplex :=
   SurfaceCellComplex.oneFacePresentation MobiusStripEdge
     [pos MobiusStripEdge.a, pos MobiusStripEdge.a, pos MobiusStripEdge.h]
-    (fun e => e = MobiusStripEdge.h)
 
 /-- Regression check: the torus example has the expected four-letter boundary word. -/
 example : torusCellComplex.faceBoundaryLength PUnit.unit = 4 := by
@@ -104,6 +103,61 @@ example : torusCellComplex.faceBoundaryLength PUnit.unit = 4 := by
 /-- Regression check: the projective-plane example has the expected two-letter boundary word. -/
 example : projectivePlaneCellComplex.faceBoundaryLength PUnit.unit = 2 := by
   rfl
+
+/-- Regression check: edge-orbit multiplicity accepts the non-orientable word `a a`. -/
+theorem projectivePlaneCellComplex_isSurfaceValid :
+    projectivePlaneCellComplex.IsSurfaceValid := by
+  refine ⟨⟨PUnit.unit⟩, ?_, ?_, ?_⟩
+  · intro f g _h
+    cases f
+    cases g
+    rfl
+  · intro d
+    cases d with
+    | pos e =>
+        change neg e ≠ pos e
+        intro h
+        cases h
+    | neg e =>
+        change pos e ≠ neg e
+        intro h
+        cases h
+  · intro d
+    right
+    let o₀ : projectivePlaneCellComplex.BoundaryOccurrence :=
+        ⟨PUnit.unit, ⟨0, by simp [projectivePlaneCellComplex,
+          SurfaceCellComplex.oneFacePresentation]⟩⟩
+    let o₁ : projectivePlaneCellComplex.BoundaryOccurrence :=
+        ⟨PUnit.unit, ⟨1, by simp [projectivePlaneCellComplex,
+          SurfaceCellComplex.oneFacePresentation]⟩⟩
+    refine ⟨o₀, o₁, ?_, ?_, ?_, ?_⟩
+    · intro h
+      have hval := congrArg (fun o => o.2.val) h
+      simp [o₀, o₁] at hval
+    · cases d with
+      | pos e =>
+          cases e
+          change pos ProjectivePlaneEdge.a = pos ProjectivePlaneEdge.a ∨ _
+          exact Or.inl rfl
+      | neg e =>
+          cases e
+          change _ ∨ pos ProjectivePlaneEdge.a = pos ProjectivePlaneEdge.a
+          exact Or.inr rfl
+    · cases d with
+      | pos e =>
+          cases e
+          change pos ProjectivePlaneEdge.a = pos ProjectivePlaneEdge.a ∨ _
+          exact Or.inl rfl
+      | neg e =>
+          cases e
+          change _ ∨ pos ProjectivePlaneEdge.a = pos ProjectivePlaneEdge.a
+          exact Or.inr rfl
+    · rintro ⟨f, i⟩ _hi
+      cases f
+      change Fin 2 at i
+      fin_cases i
+      · exact Or.inl rfl
+      · exact Or.inr rfl
 
 /-- Regression check: the Mobius-strip example has the expected three-letter boundary word. -/
 example : mobiusStripCellComplex.faceBoundaryLength PUnit.unit = 3 := by

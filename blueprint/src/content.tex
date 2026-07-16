@@ -635,13 +635,16 @@ implemented first and the statement re-audited.
 
 \begin{definition}[Finite surface cell complex]
 \label{moise:def:surface_cell_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Realization}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex,
+  LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.IsSurfaceValid,
+  LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.IsConnected,
+  LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Realization}
 \leanok
 A finite combinatorial presentation of a compact bordered surface by faces,
 oriented darts, pairing, and boundary words, with a realization space.
-\emph{Ledger note:} the realization is currently an arbitrary stored type and
-the surface-validity fields are stored propositions; the final model should be
-the polygon-quotient realization.
+Validity and connectedness are incidence-derived predicates rather than stored
+propositions.  \emph{Ledger note:} the realization is currently an arbitrary
+stored type; the final model should be the polygon-quotient realization.
 \end{definition}
 
 \begin{definition}[Finite surface triangulation (legacy interface)]
@@ -763,9 +766,11 @@ realization to the named Eval quotient.
 Every finite connected surface cell complex has an admissible named normal-form
 witness.  \emph{Warning (ledger): with the placeholder representatives of
 \ref{moise:def:eval_quotient_representatives}, the current Lean statement is
-false for complexes whose realization is not a point or a sphere; the sorry
-cannot be discharged until the representatives are implemented and this
-statement is re-audited.}
+false for complexes whose realization is not a point or a sphere.  Its Lean
+signature also still lacks explicit incidence-validity and face-connectivity
+hypotheses because the legacy triangulation bridge does not yet provide their
+certificates.  The sorry cannot be discharged until the representatives and
+that certified bridge are implemented and the statement is re-audited.}
 \end{theorem}
 
 \begin{proof}

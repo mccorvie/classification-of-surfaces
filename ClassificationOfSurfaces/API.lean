@@ -74,6 +74,11 @@ for the quarry, in particular the concrete closed-triangle geometry.
 ## Shared finite surface cell complexes
 
 * `SurfaceCellComplex`
+* `SurfaceCellComplex.BoundaryOccurrence`
+* `SurfaceCellComplex.IsBoundaryDart`
+* `SurfaceCellComplex.IsSurfaceValid`
+* `SurfaceCellComplex.FaceAdjacent`
+* `SurfaceCellComplex.IsConnected`
 * `SurfaceCellComplex.SignedDart`
 * `SurfaceCellComplex.oneFacePresentation`
 * `SurfaceCellComplex.PreRealization`
