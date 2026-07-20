@@ -1,7 +1,7 @@
 # The Moise triangulation route: status and handoff map
 
 The authoritative onboarding doc for the triangulation half of the project (the
-`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-14. Supersedes
+`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-19. Supersedes
 `codex_strategy_moise_pl.md` and the "Moise / PL route" section of `API.lean`, which describe
 the retired `PL.lean` layer (see `docs/KNOWN_WEAK.md` for why it was retired).
 
@@ -104,6 +104,12 @@ use only the two clauses needed by the Radó route.
   transport through a `MoiseChart` gives `patchPartialTriangulation`, and
   `radoInvariant_chartPatch` proves the full corrected Rado invariant for one chart, including
   genuine boundary-line points.
+- The facewise comparison layer (`Moise/FacewiseComparison.lean`): the per-face comparison
+  map for the locally finite side-preservation interface, its two-sided uniform-continuity
+  comparison scale, the shrunken-control choice, and the adaptive corollary
+  `exists_polygonalReplacement_of_comparison` — the locally finite Chapter 6 cellwise
+  replacement with no residual separation hypothesis (crossing-weld plan, item 3,
+  side-preservation half).
 - Concrete anchors (`Moise/Anchors.lean`) and countermodels (`Moise/Countermodels.lean`), which
   are the executable definition-faithfulness checks (see `docs/AUTOFORMALIZATION_GUIDE.md`).
 
@@ -174,47 +180,42 @@ The precise remaining work inside this leaf, in dependency order:
    trace with the fixed patch complex, and selection of the patch sub-mesh keeping the cores
    interior (Moise's L, conditions (b) and (d)).
 
-   **Refined map (2026-07-14, sharpened 2026-07-15), after verifying every entry of the
-   replacement pipeline.**  The apparent crux was that the canonical `graphReplacementMap`
-   arcs only satisfy the mesh-scale pointwise bound `< 2 * diam (edgeImage e)`, while the
-   side-preservation entries compare against the complex's own Classical.choose-selected
-   separation radii — a race no mesh control `phi` can win (in the adaptive fan complex,
-   consecutive interval vertices on one tile edge can have image gaps arbitrarily small
-   relative to the tile's cover scale).  **The resolution does NOT require new arcs.**  The
-   `CentralPolygonalArc` structure already carries `curve_close`: the arc's parametrized curve
-   tracks the trimmed original edge curve pointwise within `centralTubeRadius e ≤
-   edgeApproximationControl e` — an approximation control we may shrink freely
-   (`withApproximationControls`).  The mesh-scale weakness is purely a PARAMETRIZATION
-   artifact: `completePath` splits its parameter by `Path.trans` at 1/2, 3/4, misaligned with
-   the edge trim, so the same-parameter comparison against `faceOriginalMap` picks up the edge
-   diameter.  Accordingly the consumer was generalized (2026-07-15, proved clean):
-   `faceFillingsVerticesAvoidClosedRegions_of_comparison` and
-   `cellwiseCompatibility_of_comparison` (`LocallyFiniteSidePreservation.lean`) accept ANY
-   continuous comparison map `comp f` on the standard region with values in the
-   `r f / 2`-cthickening of the original face image and within `r f / 2` of the replacement
-   boundary on the frontier — the Tietze/no-retraction argument never needed the original
-   parametrization, only continuity, frontier closeness, and set-proximity to the face image.
-   The remaining work for the straightened complex is the per-face comparison map: on each
-   side of the standard triangle, (i) on the arc's middle range, `chartEdgeCurve` composed
-   with the trim-affine reparametrization matched to `middlePath`'s parameter — pointwise
-   `< centralTubeRadius` by `curve_close`; (ii) on the spoke ranges, the straight segment from
-   the shared vertex image to the matched trimmed curve point, pointwise `< tube` against the
-   spoke (two segments from a common start differ by at most the distance of their far
-   endpoints) and within `vertexIsolationRadius + tube` of the face image (the far endpoints
-   lie in the vertex disk); junction values agree by construction, and corners carry the
-   shared vertex images.  Note the trim is a LAST-exit trim (`EdgeTrimData.after_left`), so
-   the trimmed-off original curve may wander outside the vertex disk — the comparison must be
-   the disk segment, not a reparametrized original; that is exactly why the `of_comparison`
-   generalization measures `comp` against the face image by cthickening membership rather
-   than requiring frontier values.  Discharging the `r f / 2` bounds needs the controls shrunk
-   below the finitely many incident faces' radii (per-vertex and per-edge minima; the
-   `edgeFaceSeparationRadius` machinery and part-1 `vertexSeparationControl` supply them).
-   `exists_controlled_polygonalReplacement_of_facewise_close` (proved) then assembles the
-   replacement with the adaptive `FaceBoundariesControlled`/`UniformFrontierControl` (proved);
-   containment/local-finiteness and side-preservation take different controls there, so no
-   single-control coupling remains.  The straightening tolerance is
-   `min (regionSafeControl …) (matching control) (control-shrunk radii)` — all strongly
-   positive, every condition downward monotone.
+   **Side-preservation half — DONE (2026-07-19, clean axioms;
+   `Moise/FacewiseComparison.lean`).**  The per-face comparison map planned on 2026-07-15 was
+   built, and it came out *simpler* than the plan: the entire map factors through the original
+   face chart.  `facewiseComparison G f` is `faceOriginalMap G f` composed with a clamped
+   radial reparametrization of the standard triangle (`sidePiece`, glued over three closed
+   sectors by opposite-coordinate minimality; interfaces agree by the corner-evaluation
+   lemmas, no minimality needed).  On each side the boundary parameter is redistributed so
+   the replacement's middle range covers exactly the matched trim window
+   (`sideParamProfile`), and the spoke ranges cover the trimmed-off end pieces.  All values
+   lie in the face image, so cthickening membership is automatic — no plane-level spoke
+   segments or corner interpolation zones were needed.  The 2026-07-15 worry that the
+   last-exit trim lets the trimmed-off original piece wander is neutralized by the TWO-SIDED
+   uniform-continuity modulus (`exists_comparisonScale`): the face chart and its inverse are
+   both uniformly continuous on the compact standard triangle, so once
+   `vertexIsolationRadius + centralTubeRadius` is below the per-face `comparisonScale`
+   (per-vertex/per-edge finite minima: `comparisonVertexControl`/`comparisonEdgeControl`),
+   the trimmed-off pieces' *endpoints* have close images, hence close standard parameters
+   (inverse modulus), hence the whole reparametrized piece is image-small (forward modulus).
+   Entry points: `cellwiseCompatibility_of_comparisonScale` (compatibility from
+   scale-small isolation/tube radii), `exists_controls_cellwiseCompatibility` (chooses the
+   shrunken controls; `faceVertexSeparationRadius`/`comparisonScale` are invariant under
+   `withApproximationControls` by `rfl`), and the adaptive-complex corollary
+   `RegionControlledAdaptiveComplex.exists_polygonalReplacement_of_comparison`
+   (`AdaptiveControlledApproximation.lean`): the full cellwise replacement with `dist ≤ phi`
+   and NO residual separation hypothesis — the `hsep` entry of
+   `exists_polygonalReplacement` is discharged for good.
+
+   **Still open in item 3**: the genuine conforming layer — apply the item-2 analytic halves
+   (`exists_chartMatchingControl`, `disjoint_image_chartOverlap_embed_compl`) to the
+   replacement produced above (`replaceOnOpen`/`isEmbedding_frontierGlue_of_matches`; the
+   replacement's chart-coordinate closeness `≤ phi ≤ mu` feeds `MatchesAtFrontier`), then
+   the common subdivision of the straightened trace with the fixed patch complex
+   (`CommonSubdivision`, Moise's conditions (a)–(h)) and the selection of the patch sub-mesh
+   keeping the cores interior.  The straightening tolerance is
+   `min (regionSafeControl …) (matching control)` — both strongly positive, both conditions
+   downward monotone; the arc controls are now chosen separately and do not interact.
 4. **Assembly**: read off the common-vertex welded presentation and the interior coverage of
    `A ∪ core`; `PartialTriangulation.exists_glued` (proved) consumes it.
 
