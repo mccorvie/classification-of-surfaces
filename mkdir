@@ -1,0 +1,47 @@
+prefix_rule(
+    pattern = ["head"],
+    decision = "allow",
+    justification = "Allow ordinary file inspection with head.",
+)
+
+prefix_rule(
+    pattern = ["tail"],
+    decision = "allow",
+    justification = "Allow ordinary file inspection with tail.",
+)
+
+prefix_rule(
+    pattern = ["awk"],
+    decision = "allow",
+    justification = "Allow text processing with awk.",
+)
+
+prefix_rule(
+    pattern = ["sed"],
+    decision = "allow",
+    justification = "Allow text processing with sed.",
+)
+
+prefix_rule(
+    pattern = ["grep"],
+    decision = "allow",
+    justification = "Allow file searching with grep.",
+)
+
+prefix_rule(
+    pattern = ["rg"],
+    decision = "allow",
+    justification = "Allow file searching with ripgrep.",
+)
+
+prefix_rule(
+    pattern = ["lake"],
+    decision = "allow",
+    justification = "Allow Lean builds and commands.",
+)
+
+prefix_rule(
+    pattern = ["lean"],
+    decision = "allow",
+    justification = "Allow the Lean compiler.",
+)

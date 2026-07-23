@@ -119,6 +119,529 @@ theorem extendFaceCoordinates_map_subset
       simp
     · rw [extendFaceCoordinates_of_notMem t _ hvt]
 
+/-! ## Relabeling a finite face along an embedding -/
+
+/-- The vertices of a finite face are equivalent to the vertices of its image under an
+embedding. -/
+noncomputable def finsetMapSubtypeEquiv
+    {A B : Type*} [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (t : Finset A) :
+    {a // a ∈ t} ≃ {b // b ∈ t.map e} := by
+  let f : {a // a ∈ t} → {b // b ∈ t.map e} :=
+    fun a ↦ ⟨e a.1, Finset.mem_map.mpr
+      ⟨a.1, a.2, rfl⟩⟩
+  refine Equiv.ofBijective f ⟨?_, ?_⟩
+  · intro a b hab
+    apply Subtype.ext
+    exact e.injective (congrArg Subtype.val hab)
+  · rintro ⟨b, hb⟩
+    obtain ⟨a, ha, hab⟩ := Finset.mem_map.mp hb
+    refine ⟨⟨a, ha⟩, ?_⟩
+    apply Subtype.ext
+    exact hab
+
+@[simp] theorem finsetMapSubtypeEquiv_apply_val
+    {A B : Type*} [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (t : Finset A) (a : {a // a ∈ t}) :
+    (finsetMapSubtypeEquiv e t a).1 = e a.1 := rfl
+
+/-- Pull simplex coordinates on a relabeled face back to the original face. -/
+noncomputable def relabelFaceSimplex
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (t : Finset A)
+    (x : stdSimplex ℝ {b // b ∈ t.map e}) :
+    stdSimplex ℝ {a // a ∈ t} :=
+  stdSimplex.map (finsetMapSubtypeEquiv e t).symm x
+
+/-- Face relabeling along an embedding is onto. -/
+theorem relabelFaceSimplex_surjective
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (t : Finset A) :
+    Function.Surjective (relabelFaceSimplex e t) := by
+  intro x
+  refine ⟨stdSimplex.map (finsetMapSubtypeEquiv e t) x, ?_⟩
+  unfold relabelFaceSimplex
+  rw [stdSimplex.map_comp_apply]
+  have hcomp :
+      (finsetMapSubtypeEquiv e t).symm ∘
+          (finsetMapSubtypeEquiv e t) = id := by
+    funext a
+    exact (finsetMapSubtypeEquiv e t).symm_apply_apply a
+  rw [hcomp, stdSimplex.map_id_apply]
+
+/-- Pulling coordinates back along a face relabeling preserves the coordinate at every
+original vertex. -/
+theorem relabelFaceSimplex_extended_apply
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (t : Finset A)
+    (x : stdSimplex ℝ {b // b ∈ t.map e}) (a : A) :
+    extendFaceCoordinates t (relabelFaceSimplex e t x) a =
+      extendFaceCoordinates (t.map e) x (e a) := by
+  classical
+  by_cases ha : a ∈ t
+  · have hea : e a ∈ t.map e :=
+      Finset.mem_map.mpr ⟨a, ha, rfl⟩
+    rw [extendFaceCoordinates_of_mem t _ ha,
+      extendFaceCoordinates_of_mem (t.map e) _ hea]
+    simp only [relabelFaceSimplex, stdSimplex.map_coe,
+      FunOnFinite.linearMap_apply_apply]
+    let q : {b // b ∈ t.map e} := ⟨e a, hea⟩
+    have hfilter :
+        Finset.univ.filter
+            (fun z : {b // b ∈ t.map e} ↦
+              (finsetMapSubtypeEquiv e t).symm z = ⟨a, ha⟩) =
+          {q} := by
+      ext z
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+        Finset.mem_singleton]
+      constructor
+      · intro hz
+        apply (finsetMapSubtypeEquiv e t).symm.injective
+        calc
+          (finsetMapSubtypeEquiv e t).symm z = ⟨a, ha⟩ := hz
+          _ = (finsetMapSubtypeEquiv e t).symm q := by
+            rw [show q = finsetMapSubtypeEquiv e t ⟨a, ha⟩ by
+              apply Subtype.ext
+              rfl,
+              (finsetMapSubtypeEquiv e t).symm_apply_apply]
+      · intro hz
+        subst z
+        rw [show q = finsetMapSubtypeEquiv e t ⟨a, ha⟩ by
+          apply Subtype.ext
+          rfl,
+          (finsetMapSubtypeEquiv e t).symm_apply_apply]
+    rw [hfilter]
+    simp [q]
+  · have hea : e a ∉ t.map e := by
+      intro hea
+      obtain ⟨b, hb, hba⟩ := Finset.mem_map.mp hea
+      exact ha (e.injective hba ▸ hb)
+    rw [extendFaceCoordinates_of_notMem t _ ha,
+      extendFaceCoordinates_of_notMem (t.map e) _ hea]
+
+/-- Relabeling two faces by the same embedding preserves equality of their global
+zero-extended coordinate functions. -/
+theorem relabelFaceSimplex_extended_eq_iff
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) {s t : Finset A}
+    {x : stdSimplex ℝ {b // b ∈ s.map e}}
+    {y : stdSimplex ℝ {b // b ∈ t.map e}} :
+    extendFaceCoordinates s (relabelFaceSimplex e s x) =
+        extendFaceCoordinates t (relabelFaceSimplex e t y) ↔
+      extendFaceCoordinates (s.map e) x =
+        extendFaceCoordinates (t.map e) y := by
+  constructor
+  · intro h
+    funext b
+    by_cases hb : b ∈ Set.range e
+    · obtain ⟨a, rfl⟩ := hb
+      rw [← relabelFaceSimplex_extended_apply e s x a,
+        ← relabelFaceSimplex_extended_apply e t y a,
+        congrFun h a]
+    · have hbs : b ∉ s.map e := by
+        intro hbs
+        obtain ⟨a, -, hab⟩ := Finset.mem_map.mp hbs
+        exact hb ⟨a, hab⟩
+      have hbt : b ∉ t.map e := by
+        intro hbt
+        obtain ⟨a, -, hab⟩ := Finset.mem_map.mp hbt
+        exact hb ⟨a, hab⟩
+      rw [extendFaceCoordinates_of_notMem _ _ hbs,
+        extendFaceCoordinates_of_notMem _ _ hbt]
+  · intro h
+    funext a
+    rw [relabelFaceSimplex_extended_apply e s x a,
+      relabelFaceSimplex_extended_apply e t y a,
+      congrFun h (e a)]
+
+/-- Relabeling does not change a weighted evaluation of the zero-extended coordinates. -/
+theorem sum_extendFaceCoordinates_relabelFaceSimplex
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (t : Finset A)
+    (x : stdSimplex ℝ {b // b ∈ t.map e}) (F : B → ℝ) :
+    (∑ b : B, extendFaceCoordinates (t.map e) x b * F b) =
+      ∑ a : A,
+        extendFaceCoordinates t (relabelFaceSimplex e t x) a *
+          F (e a) := by
+  classical
+  calc
+    (∑ b : B, extendFaceCoordinates (t.map e) x b * F b) =
+        ∑ b ∈ t.map e,
+          extendFaceCoordinates (t.map e) x b * F b := by
+      symm
+      apply Finset.sum_subset (Finset.subset_univ _)
+      intro b _ hb
+      rw [extendFaceCoordinates_of_notMem _ _ hb, zero_mul]
+    _ = ∑ a ∈ t,
+          extendFaceCoordinates (t.map e) x (e a) * F (e a) := by
+      rw [Finset.sum_map]
+    _ = ∑ a ∈ t,
+          extendFaceCoordinates t (relabelFaceSimplex e t x) a *
+            F (e a) := by
+      apply Finset.sum_congr rfl
+      intro a _
+      rw [relabelFaceSimplex_extended_apply]
+    _ = ∑ a : A,
+          extendFaceCoordinates t (relabelFaceSimplex e t x) a *
+            F (e a) := by
+      apply Finset.sum_subset (Finset.subset_univ _)
+      intro a _ ha
+      rw [extendFaceCoordinates_of_notMem _ _ ha, zero_mul]
+
+/-- When the source face is the whole finite type, remove the vacuous membership subtype after
+pulling coordinates back along an embedding. -/
+noncomputable def univMapSubtypeEquiv
+    {A B : Type*} [Fintype A] [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) :
+    {b // b ∈ (Finset.univ : Finset A).map e} ≃ A :=
+  (finsetMapSubtypeEquiv e Finset.univ).symm.trans
+    { toFun := fun a ↦ a.1
+      invFun := fun a ↦ ⟨a, Finset.mem_univ a⟩
+      left_inv := fun a ↦ Subtype.ext rfl
+      right_inv := fun _ ↦ rfl }
+
+/-- Pull simplex coordinates on the image of a finite type back to that finite type. -/
+noncomputable def relabelUnivSimplex
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B)
+    (x : stdSimplex ℝ {b // b ∈ (Finset.univ : Finset A).map e}) :
+    stdSimplex ℝ A :=
+  stdSimplex.map (univMapSubtypeEquiv e) x
+
+/-- Pullback along an embedded whole finite vertex type is onto: its inverse simply pushes
+coordinates forward along the inverse equivalence onto the image. -/
+theorem relabelUnivSimplex_surjective
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) :
+    Function.Surjective (relabelUnivSimplex e) := by
+  intro x
+  refine ⟨stdSimplex.map (univMapSubtypeEquiv e).symm x, ?_⟩
+  unfold relabelUnivSimplex
+  rw [stdSimplex.map_comp_apply]
+  have hcomp :
+      (univMapSubtypeEquiv e) ∘
+          (univMapSubtypeEquiv e).symm = id := by
+    funext a
+    exact (univMapSubtypeEquiv e).apply_symm_apply a
+  rw [hcomp, stdSimplex.map_id_apply]
+
+/-- The whole-type relabeling preserves the coordinate of every embedded source vertex. -/
+theorem relabelUnivSimplex_apply
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B)
+    (x : stdSimplex ℝ {b // b ∈ (Finset.univ : Finset A).map e})
+    (a : A) :
+    relabelUnivSimplex e x a =
+      extendFaceCoordinates ((Finset.univ : Finset A).map e) x (e a) := by
+  classical
+  let ea : {b // b ∈ (Finset.univ : Finset A).map e} :=
+    ⟨e a, Finset.mem_map.mpr ⟨a, Finset.mem_univ a, rfl⟩⟩
+  rw [extendFaceCoordinates_of_mem _ _ ea.2]
+  simp only [relabelUnivSimplex, stdSimplex.map_coe,
+    FunOnFinite.linearMap_apply_apply]
+  have hfilter :
+      Finset.univ.filter
+          (fun z : {b // b ∈ (Finset.univ : Finset A).map e} ↦
+            univMapSubtypeEquiv e z = a) =
+        {ea} := by
+    have hea : univMapSubtypeEquiv e ea = a := by
+      have heainv : (univMapSubtypeEquiv e).symm a = ea := by
+        apply Subtype.ext
+        rfl
+      calc
+        univMapSubtypeEquiv e ea =
+            univMapSubtypeEquiv e ((univMapSubtypeEquiv e).symm a) :=
+          congrArg (univMapSubtypeEquiv e) heainv.symm
+        _ = a := (univMapSubtypeEquiv e).apply_symm_apply a
+    ext z
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+      Finset.mem_singleton]
+    constructor
+    · intro hz
+      apply (univMapSubtypeEquiv e).injective
+      rw [hz, hea]
+    · intro hz
+      subst z
+      exact hea
+  rw [hfilter]
+  simp [ea]
+
+/-- An injective vertex map preserves the coordinate at each source vertex. -/
+theorem stdSimplex_map_embedding_apply
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (x : stdSimplex ℝ A) (a : A) :
+    stdSimplex.map e x (e a) = x a := by
+  simp only [stdSimplex.map_coe, FunOnFinite.linearMap_apply_apply]
+  have hfilter :
+      Finset.univ.filter (fun q : A ↦ e q = e a) = {a} := by
+    ext q
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+      Finset.mem_singleton]
+    exact e.injective.eq_iff
+  rw [hfilter]
+  simp
+
+/-- An injective vertex map has zero coordinate away from its image. -/
+theorem stdSimplex_map_embedding_apply_of_notMem_range
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (x : stdSimplex ℝ A) {b : B}
+    (hb : b ∉ Set.range e) :
+    stdSimplex.map e x b = 0 := by
+  simp only [stdSimplex.map_coe, FunOnFinite.linearMap_apply_apply]
+  have hfilter :
+      Finset.univ.filter (fun q : A ↦ e q = b) = ∅ := by
+    ext q
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+      Finset.notMem_empty, iff_false]
+    exact fun hq ↦ hb ⟨q, hq⟩
+  rw [hfilter]
+  simp
+
+/-- Relabel a finite face family along an embedding of its vertex type. -/
+def relabelFaceFamily
+    {A B : Type*} [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A)) : Finset (Finset B) :=
+  F.image fun t ↦ t.map e
+
+/-- Push a geometric realization forward along an injective relabeling of all vertices. -/
+noncomputable def pushGeometricRealization
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A)) :
+    GeometricRealization A F →
+      GeometricRealization B (relabelFaceFamily e F) := by
+  intro x
+  refine ⟨stdSimplex.map e ⟨x.1, x.2.1⟩,
+    (stdSimplex.map e ⟨x.1, x.2.1⟩).2, ?_⟩
+  obtain ⟨t, ht, hxt⟩ := x.2.2
+  refine ⟨t.map e, Finset.mem_image.mpr ⟨t, ht, rfl⟩, ?_⟩
+  intro b hb
+  by_cases hbrange : b ∈ Set.range e
+  · obtain ⟨a, rfl⟩ := hbrange
+    rw [stdSimplex_map_embedding_apply]
+    apply hxt
+    intro hat
+    exact hb (Finset.mem_map.mpr ⟨a, hat, rfl⟩)
+  · exact stdSimplex_map_embedding_apply_of_notMem_range e _ hbrange
+
+/-- Pull a point of a relabeled realization back to its original vertex type. -/
+noncomputable def pullGeometricRealization
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A)) :
+    GeometricRealization B (relabelFaceFamily e F) →
+      GeometricRealization A F := by
+  intro y
+  let u : Finset B := Classical.choose y.2.2
+  have huData := Classical.choose_spec y.2.2
+  have hu : u ∈ relabelFaceFamily e F := huData.1
+  have hyu : ∀ b ∉ u, y.1 b = 0 := huData.2
+  let t : Finset A := Classical.choose (Finset.mem_image.mp hu)
+  have htData := Classical.choose_spec (Finset.mem_image.mp hu)
+  have ht : t ∈ F := htData.1
+  have hut : t.map e = u := htData.2
+  have hyt : ∀ b ∉ t.map e, y.1 b = 0 := by
+    intro b hb
+    apply hyu b
+    rwa [← hut]
+  let x : A → ℝ := fun a ↦ y.1 (e a)
+  have hx_nonneg : ∀ a, 0 ≤ x a := fun a ↦ y.2.1.1 (e a)
+  have hx_sum : ∑ a, x a = 1 := by
+    calc
+      ∑ a, x a = ∑ a ∈ t, x a := by
+        symm
+        apply Finset.sum_subset (Finset.subset_univ t)
+        intro a _ ha
+        apply hyt (e a)
+        intro hea
+        obtain ⟨b, hb, hba⟩ := Finset.mem_map.mp hea
+        exact ha (e.injective hba ▸ hb)
+      _ = ∑ b ∈ t.map e, y.1 b := by
+        rw [Finset.sum_map]
+      _ = ∑ b, y.1 b := by
+        apply Finset.sum_subset (Finset.subset_univ (t.map e))
+        intro b _ hb
+        exact hyt b hb
+      _ = 1 := y.2.1.2
+  refine ⟨x, ⟨hx_nonneg, hx_sum⟩, t, ht, ?_⟩
+  intro a ha
+  apply hyt (e a)
+  intro hea
+  obtain ⟨b, hb, hba⟩ := Finset.mem_map.mp hea
+  exact ha (e.injective hba ▸ hb)
+
+@[simp] theorem pushGeometricRealization_val
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A))
+    (x : GeometricRealization A F) :
+    (pushGeometricRealization e F x).1 =
+      stdSimplex.map e ⟨x.1, x.2.1⟩ := rfl
+
+@[simp] theorem pushGeometricRealization_apply_embedding
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A))
+    (x : GeometricRealization A F) (a : A) :
+    (pushGeometricRealization e F x).1 (e a) = x.1 a := by
+  rw [pushGeometricRealization_val,
+    stdSimplex_map_embedding_apply]
+  rfl
+
+theorem pushGeometricRealization_apply_of_notMem_range
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A))
+    (x : GeometricRealization A F) {b : B}
+    (hb : b ∉ Set.range e) :
+    (pushGeometricRealization e F x).1 b = 0 := by
+  rw [pushGeometricRealization_val]
+  exact stdSimplex_map_embedding_apply_of_notMem_range e _ hb
+
+theorem pushGeometricRealization_val_eq_of_val_eq
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F G : Finset (Finset A))
+    (x : GeometricRealization A F)
+    (y : GeometricRealization A G) (hxy : x.1 = y.1) :
+    (pushGeometricRealization e F x).1 =
+      (pushGeometricRealization e G y).1 := by
+  funext b
+  by_cases hb : b ∈ Set.range e
+  · obtain ⟨a, rfl⟩ := hb
+    rw [pushGeometricRealization_apply_embedding,
+      pushGeometricRealization_apply_embedding]
+    exact congrFun hxy a
+  · rw [pushGeometricRealization_apply_of_notMem_range e F x hb,
+      pushGeometricRealization_apply_of_notMem_range e G y hb]
+
+@[simp] theorem pullGeometricRealization_apply
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A))
+    (y : GeometricRealization B (relabelFaceFamily e F)) (a : A) :
+    (pullGeometricRealization e F y).1 a = y.1 (e a) := by
+  rfl
+
+@[simp] theorem pull_pushGeometricRealization
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A))
+    (x : GeometricRealization A F) :
+    pullGeometricRealization e F (pushGeometricRealization e F x) = x := by
+  apply Subtype.ext
+  funext a
+  rw [pullGeometricRealization_apply, pushGeometricRealization_val]
+  exact stdSimplex_map_embedding_apply e ⟨x.1, x.2.1⟩ a
+
+@[simp] theorem push_pullGeometricRealization
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A))
+    (y : GeometricRealization B (relabelFaceFamily e F)) :
+    pushGeometricRealization e F (pullGeometricRealization e F y) = y := by
+  apply Subtype.ext
+  funext b
+  by_cases hbrange : b ∈ Set.range e
+  · obtain ⟨a, rfl⟩ := hbrange
+    rw [pushGeometricRealization_val]
+    rw [stdSimplex_map_embedding_apply]
+    exact pullGeometricRealization_apply e F y a
+  · rw [pushGeometricRealization_val,
+      stdSimplex_map_embedding_apply_of_notMem_range _ _ hbrange]
+    obtain ⟨u, hu, hyu⟩ := y.2.2
+    obtain ⟨t, -, hut⟩ := Finset.mem_image.mp hu
+    symm
+    apply hyu
+    subst u
+    intro hb
+    obtain ⟨a, -, hab⟩ := Finset.mem_map.mp hb
+    exact hbrange ⟨a, hab⟩
+
+theorem continuous_pushGeometricRealization
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A)) :
+    Continuous (pushGeometricRealization e F) := by
+  apply Continuous.subtype_mk
+  have hin :
+      Continuous fun x : GeometricRealization A F ↦
+        (⟨x.1, x.2.1⟩ : stdSimplex ℝ A) := by
+    apply Continuous.subtype_mk
+    exact continuous_subtype_val
+  exact continuous_subtype_val.comp
+    ((stdSimplex.continuous_map e).comp hin)
+
+theorem continuous_pullGeometricRealization
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A)) :
+    Continuous (pullGeometricRealization e F) := by
+  apply Continuous.subtype_mk
+  change Continuous fun y :
+      GeometricRealization B (relabelFaceFamily e F) ↦
+        fun a ↦ y.1 (e a)
+  exact continuous_pi fun a ↦
+    (continuous_apply (e a)).comp continuous_subtype_val
+
+/-- Relabeling a finite face family along a vertex embedding does not change its realization. -/
+noncomputable def relabelGeometricRealizationHomeomorph
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A)) :
+    GeometricRealization A F ≃ₜ
+      GeometricRealization B (relabelFaceFamily e F) where
+  toFun := pushGeometricRealization e F
+  invFun := pullGeometricRealization e F
+  left_inv := pull_pushGeometricRealization e F
+  right_inv := push_pullGeometricRealization e F
+  continuous_toFun := continuous_pushGeometricRealization e F
+  continuous_invFun := continuous_pullGeometricRealization e F
+
+/-- Weighted evaluation is unchanged by whole-type relabeling. -/
+theorem sum_extendFaceCoordinates_relabelUnivSimplex
+    {A B : Type*} [Fintype A] [Fintype B]
+    [DecidableEq A] [DecidableEq B]
+    (e : A ↪ B)
+    (x : stdSimplex ℝ
+      {b // b ∈ (Finset.univ : Finset A).map e})
+    (F : B → ℝ) :
+    (∑ b : B,
+        extendFaceCoordinates
+          ((Finset.univ : Finset A).map e) x b * F b) =
+      ∑ a : A, relabelUnivSimplex e x a * F (e a) := by
+  classical
+  calc
+    (∑ b : B,
+        extendFaceCoordinates
+          ((Finset.univ : Finset A).map e) x b * F b) =
+        ∑ b ∈ (Finset.univ : Finset A).map e,
+          extendFaceCoordinates
+            ((Finset.univ : Finset A).map e) x b * F b := by
+      symm
+      apply Finset.sum_subset (Finset.subset_univ _)
+      intro b _ hb
+      rw [extendFaceCoordinates_of_notMem _ _ hb, zero_mul]
+    _ = ∑ a : A,
+          extendFaceCoordinates
+            ((Finset.univ : Finset A).map e) x (e a) *
+              F (e a) := by
+      rw [Finset.sum_map]
+    _ = ∑ a : A, relabelUnivSimplex e x a * F (e a) := by
+      apply Finset.sum_congr rfl
+      intro a _
+      rw [relabelUnivSimplex_apply]
+
 /-- A sum over the subtype of a finite face is the corresponding sum of its zero-extended
 coordinates over the underlying vertex set. -/
 theorem sum_attach_mul_eq_sum_extendFaceCoordinates
@@ -978,7 +1501,7 @@ noncomputable def compactIntrinsic [CompactSpace S] : IntrinsicTwoComplex := by
       letI : Fintype K.Face := K.faceFintype
       exact Finset.univ.image K.faceVertices := rfl
 
-private theorem compactIntrinsic_face_mem [CompactSpace S] (f : K.Face) :
+theorem compactIntrinsic_face_mem [CompactSpace S] (f : K.Face) :
     K.faceVertices f ∈ K.compactIntrinsic.faces := by
   letI : Fintype K.Face := K.faceFintype
   exact Finset.mem_image.mpr ⟨f, Finset.mem_univ _, rfl⟩
@@ -1233,6 +1756,21 @@ noncomputable def faceStandardMap (t : K.Face)
     simp
   exact ⟨x0, x0.2, ⟨t.1, t.2, hxSupport⟩⟩
 
+/-- Restrict an intrinsic realization point supported on one maximal face to that face's
+standard simplex. -/
+noncomputable def restrictToFaceSimplex (t : K.Face) (x : K.realization)
+    (hx : ∀ v ∉ t.1, x.1 v = 0) :
+    stdSimplex ℝ {v // v ∈ t.1} := by
+  refine ⟨fun v ↦ x.1 v.1, fun v ↦ x.2.1.1 v.1, ?_⟩
+  calc
+    ∑ v : {v // v ∈ t.1}, x.1 v.1 = ∑ v ∈ t.1, x.1 v := by
+      exact Finset.sum_coe_sort t.1 fun v ↦ x.1 v
+    _ = ∑ v, x.1 v := by
+      apply Finset.sum_subset (Finset.subset_univ t.1)
+      intro v _ hv
+      exact hx v hv
+    _ = 1 := x.2.1.2
+
 theorem faceStandardMap_val (t : K.Face)
     (x : stdSimplex ℝ {v // v ∈ t.1}) :
     (K.faceStandardMap t x).1 = extendFaceCoordinates t.1 x := by
@@ -1262,6 +1800,17 @@ theorem faceStandardMap_val (t : K.Face)
       exact fun hw ↦ hv (hw ▸ w.2)
     rw [hempty]
     simp
+
+theorem faceStandardMap_restrictToFaceSimplex (t : K.Face) (x : K.realization)
+    (hx : ∀ v ∉ t.1, x.1 v = 0) :
+    K.faceStandardMap t (K.restrictToFaceSimplex t x hx) = x := by
+  apply Subtype.ext
+  rw [K.faceStandardMap_val]
+  funext v
+  by_cases hv : v ∈ t.1
+  · rw [extendFaceCoordinates_of_mem _ _ hv]
+    rfl
+  · rw [extendFaceCoordinates_of_notMem _ _ hv, hx v hv]
 
 theorem continuous_faceStandardMap (t : K.Face) : Continuous (K.faceStandardMap t) := by
   apply Continuous.subtype_mk

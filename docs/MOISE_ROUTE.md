@@ -1,7 +1,7 @@
 # The Moise triangulation route: status and handoff map
 
 The authoritative onboarding doc for the triangulation half of the project (the
-`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-19. Supersedes
+`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-22. Supersedes
 `codex_strategy_moise_pl.md` and the "Moise / PL route" section of `API.lean`, which describe
 the retired `PL.lean` layer (see `docs/KNOWN_WEAK.md` for why it was retired).
 
@@ -25,7 +25,10 @@ boundary is now proved: `Moise/Brouwer.lean` derives planar Brouwer from the exi
 no-retraction theorem, `Topology/InvarianceOfDomain.lean` derives invariance of domain, and
 `Moise/BoundaryInvariant.lean` supplies `ChartBoundaryInvariant` unconditionally. Its consequences
 remain isolated in `MoiseChart.BoundaryFaithful` (`Moise/ChartExtraction.lean`) and deliberately
-use only the two clauses needed by the Radó route.
+record exactly the clauses needed by the Radó route: disk domains avoid the manifold boundary,
+while in a half-disk domain the manifold boundary is equivalent to the zero normal coordinate.
+`BoundaryInvariant.lean` also proves relative invariance of domain for a boundary-line-preserving
+half-plane embedding by doubling it across the boundary.
 
 ## What is already proved (sorry-free, axioms `[propext, Classical.choice, Quot.sound]`)
 
@@ -156,8 +159,8 @@ The precise remaining work inside this leaf, in dependency order:
    `exists_polygonalReplacement` to decouple the separation control from the mesh control.
    This mirrors the proved finite sequencing in `exists_intrinsic_pl_approximation`
    (complex fixed, then `ρ = min r η` chosen for the arcs only).
-2. **Frontier-glue application** — analytic halves **DONE** (2026-07-14, clean axioms); only
-   the assembly with the part-3 replacement remains.
+2. **Frontier-glue application on the full chart overlap** — **DONE** (2026-07-22, clean
+   axioms).
    `PartialTriangulation.exists_chartMatchingControl` (with its metric-target core
    `exists_chartMatchingControl_of_metricSpace`) produces one strongly positive control on the
    chart overlap such that EVERY chart-coordinate replacement within it satisfies
@@ -175,7 +178,23 @@ The precise remaining work inside this leaf, in dependency order:
    downward, so the minimum serves all three.  The final assembly is
    `T.replaceOnOpen`/`isEmbedding_frontierGlue_of_matches` on the part-3 replacement (which
    supplies `ContinuousOn`/`InjOn` on the overlap and containment in the model region — the
-   half-plane preservation results already exist).
+   half-plane preservation results already exist).  This assembly is now the theorem
+   `PartialTriangulation.exists_straightenedChartOverlap`: it constructs the locally finite
+   replacement, proves disk/half-disk model containment, establishes frontier matching and
+   crossing disjointness, and returns the global pasted embedding.  The compact Eval hypotheses
+   also now have the explicit finite-chart consequence `moise_secondCountableTopology`.
+
+   **Relative protected-set version — DONE (2026-07-22, clean axioms).**
+   `PartialTriangulation.exists_chartMatchingControlOn_of_metricSpace` works on an arbitrary
+   open `U ⊆ chartOverlap`; one surface-distance control simultaneously proves frontier
+   matching and separation from the entire unchanged complement.  The graph approximation
+   requires its coordinate trace to be closed relative to its perturbation region, so
+   `exists_straightenedChartOpen` records precisely that hypothesis.
+   `exists_straightenedChartAway` supplies the Moise specialization: delete the closed chart
+   trace of the protected set from the perturbation region, restrict the overlap to its open
+   complement, and apply the relative construction.  The resulting global embedding fixes every
+   old source point whose image lies in `A` exactly.  Thus preservation of the already absorbed
+   physical set is no longer part of the crossing-weld gap.
 3. **Conforming layer** (Moise's conditions (a)–(h)): common subdivision of the straightened
    trace with the fixed patch complex, and selection of the patch sub-mesh keeping the cores
    interior (Moise's L, conditions (b) and (d)).
@@ -207,15 +226,175 @@ The precise remaining work inside this leaf, in dependency order:
    and NO residual separation hypothesis — the `hsep` entry of
    `exists_polygonalReplacement` is discharged for good.
 
-   **Still open in item 3**: the genuine conforming layer — apply the item-2 analytic halves
-   (`exists_chartMatchingControl`, `disjoint_image_chartOverlap_embed_compl`) to the
-   replacement produced above (`replaceOnOpen`/`isEmbedding_frontierGlue_of_matches`; the
-   replacement's chart-coordinate closeness `≤ phi ≤ mu` feeds `MatchesAtFrontier`), then
-   the common subdivision of the straightened trace with the fixed patch complex
-   (`CommonSubdivision`, Moise's conditions (a)–(h)) and the selection of the patch sub-mesh
-   keeping the cores interior.  The straightening tolerance is
-   `min (regionSafeControl …) (matching control)` — both strongly positive, both conditions
-   downward monotone; the arc controls are now chosen separately and do not interact.
+   **Finite synchronized patch weld — DONE (2026-07-22, clean axioms).**
+   `PolygonalFamily.selectedClosedRegionMesh` restricts the one common supporting-line
+   arrangement by an arbitrary predicate on the polygon family, and
+   `selectedClosedRegionMesh_support` proves that its support is exactly the selected union.
+   `TriangleMesh.refineToSupport` now handles unequal supports: it cuts the ambient mesh by the
+   target coordinate lines, retains exactly the chambers meeting the target, proves exact target
+   support, and proves subdivision of both sides.  On top of it,
+   `PolygonalFamily.synchronizedArrangement`, `selectedSynchronizedMesh`, and
+   `targetSynchronizedMesh` give the old and patch sides literally the same ambient vertices;
+   their exact supports and joint edge-valence bound are proved.
+
+   `ChartKind.patchInPerturbation` is compact.  For a full-overlap polygonal presentation `Q`,
+   `Q.PatchFaces` is therefore the finite family of replacement faces meeting the patch, and
+   `support_inter_patch_subset_closedRegion` is the compact-to-finite carrier cut.  The patch is
+   proved to lie in this family's enclosing arrangement.  `Q.patchOldMesh` and `Q.patchNewMesh`
+   have respectively the selected polygonal support and the exact fixed-patch support.
+   Their barycentric coordinate embeddings are embeddings and agree iff their common coordinate
+   functions agree.  After transport by the disk/half-disk chart, the same is true in the
+   surface (`patchOldSurfaceEmbed`, `patchNewSurfaceEmbed`, `patchSurfaceEmbed_eq_iff`).
+   `exists_patch_local_weld` packages face cardinality, both embeddings, exact agreement,
+   exact separation, and the joint edge-valence condition in precisely the interface consumed
+   by `PartialTriangulation.exists_glued`.  The full-overlap straightening theorem now exposes
+   the `PolygonalReplacementPresentation` and its coordinate equality, rather than discarding
+   that certificate.
+
+   The finite selection is now closed under whole adaptive tiles.  For the common midpoint
+   level supplied by `adaptiveFaceCommonLevel`, `Q.patchTiles` is finite and
+   `Q.PatchTileFaces` is exactly the finite source subcomplex made from all common-level faces
+   in those tiles (`sourcePatchTiles_eq_faces`, `sourcePatchTileFaces_eq_levelFaces`).  The
+   generic `SynchronizedPatch` construction gives synchronized old/new meshes for any such
+   finite polygon family, and `exists_patchTile_local_weld` specializes it to this tile-closed
+   source family.  Its coordinate preimage is exactly the selected adaptive source carriers
+   (`sourcePatchTileFaces_eq_coordinatePreimage`).
+
+   The presentation now retains the actual finite PL certificate for every polygonal face
+   (`faceFillingMap`, `faceMap_eq`, `faceCertificate`), rather than only its carrier.  The
+   tile-closed source union is proved compact, contained in the replacement open set, and to
+   carry the whole old trace over the fixed patch
+   (`isCompact_sourcePatchTileFaces`, `sourcePatchTileFaces_subset_open`,
+   `coordinatePreimage_patch_subset_sourcePatchTileFaces`).  The general relative theorem
+   `exists_straightenedChartOpen`, and hence `exists_straightenedChartAway`, now returns its
+   `PolygonalReplacementSourceAtlas`; the relative crossing proof no longer loses this data
+   when it chooses the open set disjoint from the protected old buffer.
+
+   `FinitePLHomeomorphBetween.pullbackSubdivision` now performs the next facewise operation:
+   for any prescribed pure target mesh with the polygonal closed region as support, it takes a
+   common target refinement with the retained certificate and maps that refinement back through
+   the certified inverse.  `PullbackSubdivision.source_support`, `source_pure`, and
+   `image_source_cellCarrier` prove exact source support, purity, and face-by-face transport.
+   `SynchronizedPatch.singlePolygonMesh` and
+   `PolygonalReplacementSourceAtlas.patchTileFacePullback` specialize this construction to
+   every face in the tile-closed synchronized family.  Thus pulling synchronized arrangement
+   boundary marks back to each selected standard source triangle is no longer an open leaf.
+   The new pullback and coverage declarations have the clean axiom set
+   `[propext, Classical.choice, Quot.sound]`.
+
+   **Protected-trace-relative target selection — DONE (2026-07-22).**
+   The fixed-full-patch specialization is no longer used as a substitute for the relative
+   crossing construction.  `PolygonalReplacementSourceAtlas.tilesMeeting`,
+   `TileFacesMeeting`, and `sourceTileFacesMeeting_eq_levelFaces` close the replacement faces
+   meeting an arbitrary compact subset of the actual coordinate region `V` under whole adaptive
+   tiles, retaining exact common-level source support, compactness, open-set containment, and
+   coordinate-preimage coverage.  `tileFacePolygonMeeting` packages the corresponding finite
+   polygon family.
+
+   `FineSubdivision.lean` now proves
+   `PlaneComplex.exists_subdivision_subordinate_openCover` and
+   `PlaneComplex.exists_openSubmesh`: a compact subset of an open part of a pure finite plane
+   complex is covered by a finite triangle submesh contained in that open set and subordinate
+   facewise to the original complex.  `SynchronizedTarget.exists_local_weld` synchronizes an
+   arbitrary such finite target mesh with an arbitrary finite polygon family; it is not tied to
+   the full chart patch.
+
+   `exists_straightenedChartAway` additionally exposes the exact complement fact for its
+   coordinate region: a model point outside `V` maps back into the protected closed trace.
+   In `exists_crossing_weld`, the genuinely uncovered compact set
+   `c.core \ interior T.support` is transported to plane coordinates, proved disjoint from that
+   protected trace, and covered by an `OpenSubmesh` `N ⊆ V` of the fixed patch.  The whole support
+   of `N`, regarded as a compact subset of `V`, now selects the tile-closed old family, and
+   `exists_tileFacesMeeting_local_weld` produces the finite synchronized old/new local weld.
+   Thus the relative construction now has the correct compact target and no longer assumes that
+   the deleted protected trace is disjoint from the entire fixed patch.
+
+   **Relative boundary-subdivision extension — DONE (2026-07-22).**  The selected
+   common-level faces are retained with their synchronized source triangulation.  Every refined
+   old edge receives a midpoint mark in addition to all synchronized source vertices; globally
+   ordered consecutive marks are coned to the centers of precisely the unselected faces.
+   Selected edge midpoints are synchronized anchors, while an unselected edge whose endpoints
+   happen to be local has a nonlocal midpoint.  This supplies the full-subcomplex attaching
+   condition and makes the independently pulled-back copies agree on every shared intrinsic
+   edge.  Source factorization, whole-tile closure, finite face extraction, outside-chamber
+   selection, coordinate support, both surface embeddings, and exact interface agreement and
+   separation are now closed.  The remaining joint-valence bookkeeping is recorded below.
+
+   **Global marked-edge fan — DONE (2026-07-22,
+   `Moise/IntrinsicMarkedFan.lean`).**  A finite intrinsic `EdgeMarking` now enlarges arbitrary
+   prescribed source points by every old edge endpoint, filters and orders the marks once on
+   each global abstract edge, and constructs its consecutive intervals.  The ordering is
+   independent of incident face charts; it proves strict endpoint order, coverage of every old
+   edge, and exclusion of further marks from interval interiors.  Coning those intervals to the
+   barycentric center of each incident old face now gives genuine three-point fan faces with
+   continuous injective affine parametrizations.  Every marked edge is exactly covered by their
+   bases, every old closed face is covered by its fan triangles, and the local geometric points
+   have been relabeled into one finite global used-vertex type.  Equality of global barycentric
+   coordinates is already proved sufficient for equality of fan images.
+
+   The converse face-to-face statement is now proved
+   (`globalFanExtendedCoordinates_eq_of_faceMap_eq` /
+   `globalFanFaceMap_eq_iff`), as are the full finite intrinsic subdivision,
+   its support, and its evaluation homeomorphism (`markedFanSubdivision`,
+   `markedFanHomeomorph`).  The crossing proof instantiates the marking from every synchronized
+   source vertex and the midpoint of every refined intrinsic edge, retains synchronized faces
+   over the selected common-level subcomplex, and uses the fan on exactly the unselected faces.
+
+   **Relative attaching interface — DONE (2026-07-22, clean Lean check).**
+   `exists_crossing_weld` now includes the complete mixed old complex and common-vertex
+   relabeling.  The additional midpoint marks enforce the full-subcomplex condition: if both
+   ends of a consecutive outside fan interval are synchronized local vertices, its old edge is
+   contained in a selected common-level face
+   (`selectedFace_of_fanInterval_endpoints_local`).  Positive common-coordinate weights force
+   the corresponding fan vertices to be local, so every common-coordinate fan point lies in
+   the selected source subcomplex (`fanFace_oldPoint_mem_selected_of_common`).  Consequently
+   both exact weld-interface directions are proved: `hagree` by the retained-face/fan-face
+   split, and `hsep` by the protected chart-overlap argument.
+
+   **Embedded-complex edge valence — DONE (2026-07-22, clean Lean check).**
+   `Moise/EmbeddedComplexValence.lean` proves that any finite family of abstract triangles
+   embedded in a surface has edge valence at most two.  The proof builds an explicit open
+   two-page fan around the midpoint of a putative edge, applies invariance of domain, and rules
+   out a third page.  `PartialTriangulation.exists_glued` now derives its output valence bound
+   from the pasted embedding, so the former selected/fan incidence obligation and the explicit
+   crossing-weld valence output have both disappeared.
+
+   **Still open in the final crossing assembly: the bordered seam in Moise conditions
+   (a)--(c).**  The checked `hagree`/`hsep` construction does *not* imply
+   ```
+   c.core ∩ interior T.support ⊆ interior T₀.support.
+   ```
+   That proposed last step is false: a small re-embedding of a disk can move its boundary
+   inward and lose old physical interior points, and on a bordered surface an embedding of a
+   half-plane can additionally push its boundary stratum into the ambient interior.  Pointwise
+   fixation of a closed buffer only preserves the interior of that buffer, not its frontier.
+
+   That false shortcut has now been removed from the Lean proof.  The target mesh is selected
+   from the actual compact loss
+   ```
+   D = c.core \ interior T₀.support,
+   ```
+   so the final old/target union coverage follows directly once `D` lies in the permitted
+   perturbation region.  Fixed protected points in the ambient interior are proved to remain
+   interior by ordinary invariance of domain.
+
+   The one remaining leaf is exactly the manifold-boundary part of the protected seam:
+   ```
+   c.core ∩ C ∩ (modelWithCornersEuclideanHalfSpace 2).boundary S
+     ⊆ interior T₀.support.
+   ```
+   `BoundaryInvariant.lean` now proves the relative half-plane invariance-of-domain theorem
+   needed for this implication.  What remains is to extract exact zero-coordinate preservation
+   for the relative polygonal replacement from the synchronized arrangement (equivalently,
+   construct the replacement relative to its boundary-line subcomplex).  Once this is supplied,
+   the actual loss avoids the deleted protected trace and the existing finite target construction
+   covers it.
+
+   This is the bordered counterpart of Moise's choice of the finite new complex `L` so that
+   (a) both `|L|` and `W = |L| ∪ f'_n(|K_n|)` are 2-manifolds with boundary,
+   (b) all old cores and the new core lie in `Int W`, and
+   (c) the old and new pieces meet along their boundaries.  The theorem still has one named
+   `sorry`, now at this boundary-stratum leaf; no weaker conclusion has been introduced.
 4. **Assembly**: read off the common-vertex welded presentation and the interior coverage of
    `A ∪ core`; `PartialTriangulation.exists_glued` (proved) consumes it.
 
@@ -260,12 +439,11 @@ the boundary-line points of every half-disk core and make the bordered induction
 
 ## Suggested next targets, in order
 
-1. Generalize the proved graph/cell approximation argument to an intrinsic source mapped into
-   the plane; reuse the exact face cycles and all target-plane polygonal Jordan, Schoenflies,
-   Tietze, and side-control results unchanged.
-2. Add the locally finite open-complex/strongly-positive layer used in Moise Ch. 8, Thm. 2 and
-   Ch. 6, Thm. 3, including the frontier convergence glue.  A finite replacement is acceptable
-   only if it proves an explicit relative annulus extension theorem.
-3. Prove faithful gluing along the resulting common intrinsic subcomplex (Moise Thm. 7.6), then
-   close the genuine crossing branch of `moise_induction_step`.  The already-covered and
-   chart-patch-contained branches are proved.
+1. Prove exact boundary-line preservation for the locally finite relative polygonal
+   replacement.  Use the complete-carrier convex-hull theorem on marked boundary edges and the
+   facewise filling/half-plane side theorem to show that zero normal coordinate is preserved
+   exactly.
+2. Apply `isOpen_range_halfSpace_of_isOpen_of_isEmbedding_of_boundary` (or its corresponding-point
+   corollary) at the fixed protected boundary seam, close `hProtectedBoundaryPoint`, and thereby
+   close `MoiseChart.exists_crossing_weld`.  `PartialTriangulation.exists_glued`, including its
+   edge-valence output, and the rest of the induction are already proved.

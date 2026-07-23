@@ -151,6 +151,11 @@ theorem restrictFacesInclusion_range (p : Finset K.Vertex → Prop) [DecidablePr
 def edges : Finset (Finset K.Vertex) :=
   K.faces.biUnion fun t => t.powersetCard 2
 
+/-- The abstract two-complex has surface edge valence when every edge is contained in at most
+two maximal triangles. -/
+def HasSurfaceEdgeValence : Prop :=
+  ∀ e ∈ K.edges, (K.faces.filter fun t => e ⊆ t).card ≤ 2
+
 theorem card_of_mem_edges {e : Finset K.Vertex} (he : e ∈ K.edges) : e.card = 2 := by
   rcases Finset.mem_biUnion.mp he with ⟨t, ht, het⟩
   exact (Finset.mem_powersetCard.mp het).2

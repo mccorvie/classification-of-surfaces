@@ -32,6 +32,8 @@ namespace Topology
 namespace ClassificationOfSurfaces
 namespace Moise
 
+open InvarianceOfDomain
+
 /-- The closed right half-plane, the ambient model for `EuclideanHalfSpace 2`. -/
 def HalfPlaneSet : Set Plane :=
   {v : Plane | 0 ≤ v 0}
@@ -151,6 +153,186 @@ theorem ChartKind.modelCore_subset_modelRegion (k : ChartKind) :
       rintro x ⟨hx, hx0⟩
       exact ⟨Metric.closedBall_subset_ball (by norm_num) hx, hx0⟩
 
+/-- Forget the unit-ball condition on a half-disk model point while retaining its
+half-space coordinate. -/
+def halfDiskModelToHalfSpace :
+    ChartKind.halfDisk.modelRegion → EuclideanHalfSpace 2 :=
+  fun p => ⟨p.1, p.2.2⟩
+
+@[simp] theorem halfDiskModelToHalfSpace_val
+    (p : ChartKind.halfDisk.modelRegion) :
+    (halfDiskModelToHalfSpace p).1 = p.1 :=
+  rfl
+
+/-- The half-disk model is an open subset of the Euclidean half-space. -/
+theorem isOpenEmbedding_halfDiskModelToHalfSpace :
+    _root_.Topology.IsOpenEmbedding halfDiskModelToHalfSpace := by
+  have hembed :
+      _root_.Topology.IsEmbedding halfDiskModelToHalfSpace :=
+    by
+      apply (_root_.Topology.IsEmbedding.subtypeVal.of_comp_iff).mp
+      have h :=
+        (_root_.Topology.IsEmbedding.subtypeVal :
+          _root_.Topology.IsEmbedding
+            (Subtype.val : ChartKind.halfDisk.modelRegion → Plane))
+      convert h using 1
+      funext p
+      rfl
+  refine ⟨hembed, ?_⟩
+  have hrange :
+      Set.range halfDiskModelToHalfSpace =
+        {p : EuclideanHalfSpace 2 | p.1 ∈ Metric.ball (0 : Plane) 1} := by
+    ext p
+    constructor
+    · rintro ⟨q, rfl⟩
+      exact q.2.1
+    · intro hp
+      let q : ChartKind.halfDisk.modelRegion :=
+        ⟨p.1, hp, p.2⟩
+      exact ⟨q, EuclideanHalfSpace.ext _ _ rfl⟩
+  rw [hrange]
+  exact Metric.isOpen_ball.preimage continuous_subtype_val
+
+/-- Boundary-relative invariance of domain in a half-disk chart.
+
+Suppose two embeddings of the same source preserve the ambient manifold-boundary stratum.
+If the corresponding source point is fixed and its old physical image is an interior point of
+the old range, then that physical point remains in the interior of the new range.  The proof
+restricts to the old physical interior, writes both embeddings in the half-disk chart, applies
+the half-plane doubling theorem, and transports the resulting open coordinate image back to
+the surface. -/
+theorem mem_interior_range_of_fixed_boundary_preserving_in_halfDiskChart
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    {X : Type*} [TopologicalSpace X]
+    (D : Set S) (hD : IsOpen D)
+    (chart : D ≃ₜ ChartKind.halfDisk.modelRegion)
+    (hchartBoundary :
+      ∀ y (hy : y ∈ D),
+        y ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+          ((chart ⟨y, hy⟩ : Plane) 0 = 0))
+    {f g : X → S}
+    (hf : _root_.Topology.IsEmbedding f)
+    (hg : _root_.Topology.IsEmbedding g)
+    (hboundary :
+      ∀ y : X,
+        g y ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+          f y ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S)
+    {x : X} (hxInterior : f x ∈ interior (Set.range f))
+    (hxDomain : f x ∈ D) (hxFixed : g x = f x) :
+    f x ∈ interior (Set.range g) := by
+  let O : Set S := interior (Set.range f)
+  let intoOldRange : O → Set.range f :=
+    Set.inclusion interior_subset
+  let source : O → X :=
+    hf.toHomeomorph.symm ∘ intoOldRange
+  have hsourceEmbedding : _root_.Topology.IsEmbedding source :=
+    hf.toHomeomorph.symm.isEmbedding.comp
+      (_root_.Topology.IsEmbedding.inclusion interior_subset)
+  have hsourceValue (z : O) : f (source z) = z.1 := by
+    exact congrArg Subtype.val
+      (hf.toHomeomorph.apply_symm_apply (intoOldRange z))
+  let transition : O → S := g ∘ source
+  have htransitionEmbedding : _root_.Topology.IsEmbedding transition :=
+    hg.comp hsourceEmbedding
+  let W : Set O :=
+    {z | z.1 ∈ D ∧ transition z ∈ D}
+  have hWopen : IsOpen W := by
+    exact
+      (hD.preimage continuous_subtype_val).inter
+        (hD.preimage htransitionEmbedding.continuous)
+  let oldToDomain : W → D :=
+    fun z => ⟨z.1.1, z.2.1⟩
+  have holdToDomainOpen :
+      _root_.Topology.IsOpenEmbedding oldToDomain := by
+    let e : O → S := Subtype.val
+    have he : _root_.Topology.IsOpenEmbedding e :=
+      isOpen_interior.isOpenEmbedding_subtypeVal
+    have hrestrict :=
+      he.restrict (s := W) (t := D)
+        (fun z hz => hz.1) hWopen
+    convert hrestrict using 1
+    funext z
+    rfl
+  let newToDomain : W → D :=
+    fun z => ⟨transition z.1, z.2.2⟩
+  have hnewToDomainEmbedding :
+      _root_.Topology.IsEmbedding newToDomain := by
+    have he :
+        _root_.Topology.IsEmbedding
+          (transition ∘ (Subtype.val : W → O)) :=
+      htransitionEmbedding.comp _root_.Topology.IsEmbedding.subtypeVal
+    apply he.codRestrict D
+  let surfaceChart : D → EuclideanHalfSpace 2 :=
+    halfDiskModelToHalfSpace ∘ chart
+  have hsurfaceChartOpen :
+      _root_.Topology.IsOpenEmbedding surfaceChart :=
+    isOpenEmbedding_halfDiskModelToHalfSpace.comp chart.isOpenEmbedding
+  let oldMap : W → EuclideanHalfSpace 2 :=
+    surfaceChart ∘ oldToDomain
+  have holdMapOpen : _root_.Topology.IsOpenEmbedding oldMap :=
+    hsurfaceChartOpen.comp holdToDomainOpen
+  let newMap : W → EuclideanHalfSpace 2 :=
+    surfaceChart ∘ newToDomain
+  have hnewMapEmbedding : _root_.Topology.IsEmbedding newMap :=
+    hsurfaceChartOpen.isEmbedding.comp hnewToDomainEmbedding
+  have hmapBoundary :
+      ∀ z : W, (newMap z).1 0 = 0 ↔ (oldMap z).1 0 = 0 := by
+    intro z
+    change
+      ((chart ⟨transition z.1, z.2.2⟩ : Plane) 0 = 0) ↔
+        ((chart ⟨z.1.1, z.2.1⟩ : Plane) 0 = 0)
+    rw [← hchartBoundary (transition z.1) z.2.2,
+      ← hchartBoundary z.1.1 z.2.1]
+    change
+      g (source z.1) ∈
+          (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+        z.1.1 ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S
+    rw [hboundary (source z.1), hsourceValue z.1]
+  have hnewMapOpen : IsOpen (Set.range newMap) := by
+    rw [isOpen_iff_mem_nhds]
+    rintro y ⟨z, rfl⟩
+    apply mem_interior_iff_mem_nhds.mp
+    apply mem_interior_range_halfSpace_of_isEmbedding_of_boundary
+      holdMapOpen.isEmbedding hnewMapEmbedding hmapBoundary
+    rw [holdMapOpen.isOpen_range.interior_eq]
+    exact Set.mem_range_self z
+  let z : O := ⟨f x, hxInterior⟩
+  have hsourceZ : source z = x := by
+    apply hf.injective
+    exact hsourceValue z
+  have hzW : z ∈ W := by
+    refine ⟨hxDomain, ?_⟩
+    change g (source z) ∈ D
+    rw [hsourceZ, hxFixed]
+    exact hxDomain
+  let zw : W := ⟨z, hzW⟩
+  let N : Set D := surfaceChart ⁻¹' Set.range newMap
+  have hNopen : IsOpen N :=
+    hnewMapOpen.preimage hsurfaceChartOpen.continuous
+  have hxN : (⟨f x, hxDomain⟩ : D) ∈ N := by
+    refine ⟨zw, ?_⟩
+    change
+      surfaceChart ⟨transition z, hzW.2⟩ =
+        surfaceChart ⟨f x, hxDomain⟩
+    apply congrArg surfaceChart
+    apply Subtype.ext
+    change g (source z) = f x
+    rw [hsourceZ, hxFixed]
+  have hNsubset :
+      Subtype.val '' N ⊆ Set.range g := by
+    rintro y ⟨yd, hyN, rfl⟩
+    obtain ⟨w, hw⟩ := hyN
+    have hdomainEq : newToDomain w = yd := by
+      apply hsurfaceChartOpen.injective
+      exact hw
+    refine ⟨source w.1, ?_⟩
+    exact congrArg Subtype.val hdomainEq
+  have hNimageOpen : IsOpen (Subtype.val '' N) :=
+    hD.isOpenEmbedding_subtypeVal.isOpenMap N hNopen
+  apply interior_maximal hNsubset hNimageOpen
+  exact ⟨⟨f x, hxDomain⟩, hxN, rfl⟩
+
 /-- A chart of the Moise cover: an open domain homeomorphic to the model disk or half-disk, with
 the compact core marked out by the chart. -/
 structure MoiseChart (S : Type*) [TopologicalSpace S] where
@@ -219,19 +401,19 @@ variable (S : Type*) [TopologicalSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 
 /-- A chart is boundary-faithful when its model kind honestly reflects the manifold boundary:
-disk charts contain no manifold-boundary points, and half-disk charts send every
-manifold-boundary point of their domain to the model edge line.
+disk charts contain no manifold-boundary points, and in a half-disk chart the
+manifold-boundary stratum is exactly the model edge line.
 
-This is exactly what `ChartBoundaryInvariant` yields.  The *converse* of the half-disk clause —
-a point on the model edge line is a manifold-boundary point — is deliberately not part of this
-interface, and the Radó induction step does not rely on it. -/
+The forward half-disk implication is `ChartBoundaryInvariant`.  The reverse implication follows
+from the same invariance-of-domain layer: chart independence identifies a zero normal coordinate
+with the frontier of the half-space model. -/
 def MoiseChart.BoundaryFaithful {S : Type*} [TopologicalSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S] (c : MoiseChart S) : Prop :=
   (c.kind = ChartKind.disk →
     ∀ y ∈ c.domain, y ∉ (modelWithCornersEuclideanHalfSpace 2).boundary S) ∧
   (c.kind = ChartKind.halfDisk →
     ∀ y (hy : y ∈ c.domain),
-      y ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S →
+      y ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
         ((c.chart ⟨y, hy⟩ : Plane) 0 = 0))
 
 /-- The image of the preferred chart's target in the plane is a relatively open subset of the
@@ -491,14 +673,30 @@ theorem exists_moiseChart_of_coord_zero (x : S)
   · -- vacuous: the kind is not disk
     intro hk
     simp at hk
-  · -- manifold-boundary points land on the model edge line
-    intro _ y hydom hybd
-    have h0 := coordZero_of_boundary S x (hdom_sub hydom) hybd
-    change (f ⟨y, hydom⟩) 0 = 0
-    rw [hfdef]
-    simp only [recenter_coordZero, hpt, sub_zero]
-    rw [h0]
-    ring
+  · -- the manifold boundary is exactly the model edge line
+    intro _ y hydom
+    constructor
+    · intro hybd
+      have h0 := coordZero_of_boundary S x (hdom_sub hydom) hybd
+      change (f ⟨y, hydom⟩) 0 = 0
+      rw [hfdef]
+      simp only [recenter_coordZero, hpt, sub_zero]
+      rw [h0]
+      ring
+    · intro hline
+      have h0 :
+          (((chartAt (EuclideanHalfSpace 2) x) y)).1 0 = 0 := by
+        change (f ⟨y, hydom⟩) 0 = 0 at hline
+        rw [hfdef] at hline
+        simp only [recenter_coordZero, hpt, sub_zero] at hline
+        exact (mul_eq_zero.mp hline).resolve_left (inv_ne_zero hε.ne')
+      apply
+        (isBoundaryPoint_iff_any_chart
+          (M := S) (modelWithCornersEuclideanHalfSpace 2)
+          (f := chartAt (EuclideanHalfSpace 2) x)
+          (hdom_sub hydom)).mpr
+      rw [frontier_range_modelWithCornersEuclideanHalfSpace]
+      exact h0.symm
   · -- the core is a neighborhood of the center
     have hNopen : IsOpen ((chartAt (EuclideanHalfSpace 2) x).source ∩
         (chartAt (EuclideanHalfSpace 2) x) ⁻¹' (Subtype.val ⁻¹' Metric.ball pt (ε / 2))) :=
