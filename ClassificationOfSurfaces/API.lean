@@ -53,9 +53,11 @@ project skeleton and documents the intended handoff points between teams.
 * `JoinedByBrokenLine` (`Moise/BrokenLine.lean`)
 * `MoiseChart`, `MoiseChart.BoundaryFaithful`, `exists_moiseChart_core_mem_nhds`
   (`Moise/ChartExtraction.lean`)
-* `PartialTriangulation`, `RadoInvariant`, `moise_finite_chart_cover`, `moise_induction_step`,
-  `moise_triangulation_of_boundaries` (`Moise/ChartInduction.lean`)
-* `moise_triangulation` (`Triangulation.lean`)
+* `PartialTriangulation`, `RadoInvariant`, `moise_finite_chart_cover`,
+  `moise_induction_step_boundaryless`, `moise_triangulation_boundaryless`
+  (`Moise/ChartInduction.lean`)
+* `moise_triangulation_boundaryless` (public wrapper) and the still-bordered
+  `moise_triangulation` (`Triangulation.lean`)
 * anchors and countermodels: `Moise/Anchors.lean`, `Moise/Countermodels.lean`
 
 The legacy `PL.lean` layer (`EuclideanComplex`, `PLMap`, `PLComplexInSpace`, `MoiseTwoManifold`,

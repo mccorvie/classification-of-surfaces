@@ -5338,6 +5338,79 @@ theorem moise_secondCountableTopology : SecondCountableTopology S := by
       (show x ∈ ⋃ i, (charts i).core from ‹_›)
     exact Set.mem_iUnion.mpr ⟨i, (charts i).core_subset_domain hi⟩
 
+/-- Two embeddings of the same source preserve the ambient manifold-boundary stratum
+pointwise.  This is the exact relative certificate needed by the crossing weld. -/
+def PreservesManifoldBoundary {X : Type*} (f g : X → S) : Prop :=
+  ∀ x,
+    f x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+      g x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S
+
+/-- The raw chart straightening, augmented only with the certificate that its frontier-glued
+embedding preserves ambient boundary membership.  The large crossing-weld implementation
+consumes this proposition, so the bordered and boundaryless routes share all later geometry. -/
+def PartialTriangulation.BoundaryPreservingStraightening
+    (T : PartialTriangulation S) (c : MoiseChart S) : Prop :=
+  ∀ (A : Set S), IsClosed A →
+    ∃ (U : Set T.toIntrinsic.realization) (hU : IsOpen U)
+      (V : Set Plane) (hV : IsOpen V)
+      (Q : PolygonalReplacementPresentation U V)
+      (Qatlas : PolygonalReplacementSourceAtlas T.toIntrinsic U V Q)
+      (g' : U → c.kind.modelRegion)
+      (g : T.toIntrinsic.realization → S),
+      V ⊆ c.kind.perturbationRegion ∧
+      (∀ z : c.kind.modelRegion, (z : Plane) ∉ V →
+        (c.chart.symm z).1 ∈ A) ∧
+      (∀ y : T.chartOverlap c, T.embed y.1 ∈ A →
+        T.chartOverlapMap c y ∉ V) ∧
+      (∀ y : T.chartOverlap c, y.1 ∉ U → T.embed y.1 ∈ A) ∧
+      (∀ y : U, (g' y : Plane) = (Q.sourceHomeomorph y).1.1) ∧
+      U ⊆ T.chartOverlap c ∧
+      (∀ y : U, g y.1 = (c.chart.symm (g' y)).1) ∧
+      (∀ x, T.embed x ∈ A → g x = T.embed x) ∧
+      MatchesAtFrontier U g T.embed ∧
+      ContinuousOn g U ∧
+      Set.InjOn g U ∧
+      Disjoint (g '' U) (T.embed '' Uᶜ) ∧
+      _root_.Topology.IsEmbedding (frontierGlue U g T.embed) ∧
+      PreservesManifoldBoundary S
+        (frontierGlue U g T.embed) T.embed
+
+/-- The single open bordered capability: the relative polygonal straightening preserves the
+ambient boundary stratum.  All raw straightening data are already constructed; only the final
+pointwise boundary certificate remains to be extracted from the synchronized arrangement. -/
+theorem PartialTriangulation.exists_boundaryPreservingStraightening
+    (T : PartialTriangulation S) (c : MoiseChart S) (_hc : c.BoundaryFaithful) :
+    PartialTriangulation.BoundaryPreservingStraightening S T c := by
+  letI : SecondCountableTopology S := moise_secondCountableTopology S
+  intro A hA
+  obtain ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
+      hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
+      hembed⟩ :=
+    T.exists_straightenedChartAway c A hA
+  refine ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
+    hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
+    hembed, ?_⟩
+  sorry
+
+/-- On a boundaryless manifold every raw chart straightening automatically carries the relative
+boundary certificate, because both boundary-membership propositions are false. -/
+theorem PartialTriangulation.exists_boundaryPreservingStraightening_boundaryless
+    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S]
+    (T : PartialTriangulation S) (c : MoiseChart S) :
+    PartialTriangulation.BoundaryPreservingStraightening S T c := by
+  letI : SecondCountableTopology S := moise_secondCountableTopology S
+  intro A hA
+  obtain ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
+      hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
+      hembed⟩ :=
+    T.exists_straightenedChartAway c A hA
+  refine ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
+    hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
+    hembed, ?_⟩
+  intro y
+  rw [ModelWithCorners.Boundaryless.boundary_eq_empty]
+  simp
+
 omit [ConnectedSpace S]
   [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
 /-- The controlled locally finite polygonal replacement on the full chart overlap assembles
@@ -5652,7 +5725,70 @@ theorem PartialTriangulation.exists_straightenedChartOverlap
 
 open PartialTriangulation.PolygonalReplacementSourceAtlas
 
-/-- **Theorem boundary** (Moise Ch. 8, Thm. 3, crossing-case preparation).
+/-- If a convex average lies strictly inside a gap avoided by every positively weighted value,
+then some positive weight occurs on each side of the gap.  Keeping this order argument separate
+prevents the crossing-weld elaborator from repeatedly reducing its large dependent local types. -/
+private theorem exists_positive_weight_on_both_sides_of_gap
+    {ι : Type*} [Fintype ι]
+    (weight value : ι → ℝ) (a b z : ℝ)
+    (hweight : ∀ i, 0 ≤ weight i)
+    (hweightSum : ∑ i, weight i = 1)
+    (hzAverage : z = ∑ i, weight i * value i)
+    (hgap : ∀ i, 0 < weight i → ¬ value i ∈ Set.Ioo a b)
+    (hzGap : z ∈ Set.Ioo a b) :
+    (∃ i, 0 < weight i ∧ value i ≤ a) ∧
+      ∃ i, 0 < weight i ∧ b ≤ value i := by
+  classical
+  constructor
+  · by_contra hLow
+    have hterm (i : ι) : weight i * b ≤ weight i * value i := by
+      by_cases hi : weight i = 0
+      · simp [hi]
+      · have hiPos : 0 < weight i :=
+          lt_of_le_of_ne (hweight i) (Ne.symm hi)
+        have hiNotLow : ¬ value i ≤ a := by
+          intro hiLow
+          exact hLow ⟨i, hiPos, hiLow⟩
+        have hiAbove : b ≤ value i := by
+          apply le_of_not_gt
+          intro hiBelow
+          exact hgap i hiPos ⟨lt_of_not_ge hiNotLow, hiBelow⟩
+        exact mul_le_mul_of_nonneg_left hiAbove (hweight i)
+    have hsum : b ≤ ∑ i, weight i * value i := by
+      calc
+        b = (∑ i, weight i) * b := by rw [hweightSum, one_mul]
+        _ = ∑ i, weight i * b := by rw [Finset.sum_mul]
+        _ ≤ _ := Finset.sum_le_sum fun i _ ↦ hterm i
+    rw [← hzAverage] at hsum
+    exact (not_le_of_gt hzGap.2) hsum
+  · by_contra hHigh
+    have hterm (i : ι) : weight i * value i ≤ weight i * a := by
+      by_cases hi : weight i = 0
+      · simp [hi]
+      · have hiPos : 0 < weight i :=
+          lt_of_le_of_ne (hweight i) (Ne.symm hi)
+        have hiNotHigh : ¬ b ≤ value i := by
+          intro hiHigh
+          exact hHigh ⟨i, hiPos, hiHigh⟩
+        have hiBelow : value i ≤ a := by
+          apply le_of_not_gt
+          intro hiAbove
+          exact hgap i hiPos ⟨hiAbove, lt_of_not_ge hiNotHigh⟩
+        exact mul_le_mul_of_nonneg_left hiBelow (hweight i)
+    have hsum : (∑ i, weight i * value i) ≤ a := by
+      calc
+        _ ≤ ∑ i, weight i * a :=
+          Finset.sum_le_sum fun i _ ↦ hterm i
+        _ = (∑ i, weight i) * a := by rw [Finset.sum_mul]
+        _ = a := by rw [hweightSum, one_mul]
+    rw [← hzAverage] at hsum
+    exact (not_le_of_gt hzGap.1) hsum
+
+set_option maxHeartbeats 1500000 in
+-- This 4,500-line assembly needs over 1.45M cumulative elaboration heartbeats even after its
+-- expensive edge-order argument is factored out; 1.45M fails in the final face-agreement proof.
+/-- Shared implementation of the Moise crossing weld once the chart straightening is certified
+to preserve the ambient manifold-boundary stratum.
 
 In the genuine crossing case (the chart core is not yet covered, and the absorbed region is not
 inside the chart patch), the adjusted old complex and the chart patch admit a common welded
@@ -5667,10 +5803,13 @@ chart overlap by the locally finite controlled polygonal replacement over
 a common plane subdivision (`CommonSubdivision`, Moise's conditions (e)-(h)), and read off the
 welded presentation.  Per `docs/MOISE_ROUTE.md`, the finite compact-collar theorem must not be
 silently substituted for the vanishing-tolerance construction. -/
-theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaithful)
+theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
+    (c : MoiseChart S) (hc : c.BoundaryFaithful)
     {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
     (hcore : ¬ c.core ⊆ interior T.support)
-    (hA : ¬ A ⊆ interior c.patchPartialTriangulation.support) :
+    (hA : ¬ A ⊆ interior c.patchPartialTriangulation.support)
+    (hstraight :
+      PartialTriangulation.BoundaryPreservingStraightening S T c) :
     ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
       (F₁ F₂ : Finset (Finset V))
       (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S),
@@ -5688,8 +5827,8 @@ theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaith
   obtain ⟨C, hCclosed, hAC, hCT⟩ := hT.exists_closedBuffer
   obtain ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
       hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
-      hembed⟩ :=
-    T.exists_straightenedChartAway c C hCclosed
+      hembed, hBoundaryPreservation⟩ :=
+    hstraight C hCclosed
   let T₀ : PartialTriangulation S := T.replaceOnOpen U g hembed
   have hA₀ : A ⊆ interior T₀.support := by
     change A ⊆ interior (Set.range (frontierGlue U g T.embed))
@@ -5717,18 +5856,6 @@ theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaith
       rw [hy]
       exact hxC
     · exact Set.mem_singleton x
-  -- This is the remaining bordered form of Moise conditions (a)--(c): the relative
-  -- polygonal replacement must preserve the fixed manifold-boundary stratum.  The
-  -- half-plane doubling theorem in `BoundaryInvariant.lean` proves the required relative
-  -- invariance of domain once exact boundary-line preservation of the replacement has been
-  -- extracted from the synchronized arrangement.
-  have hBoundaryPreservation :
-      ∀ y : T.toIntrinsic.realization,
-        frontierGlue U g T.embed y ∈
-            (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
-          T.embed y ∈
-            (modelWithCornersEuclideanHalfSpace 2).boundary S := by
-    sorry
   have hProtectedBoundaryPoint :
       c.core ∩ C ∩
           (modelWithCornersEuclideanHalfSpace 2).boundary S ⊆
@@ -7652,25 +7779,25 @@ theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaith
   have selectedFace_of_fanInterval_endpoints_local
       (f : OutsideFanFace)
       (hp₀ :
-        (boundaryMarking.fanFirstVertex f.1).1 ∈
+        boundaryMarking.edgeIntervalFirst
+            (Rlevel.refined.faceEdge f.1.1 f.1.2.1) f.1.2.2 ∈
           localVertexLevelPoints)
       (hp₁ :
-        (boundaryMarking.fanSecondVertex f.1).1 ∈
+        boundaryMarking.edgeIntervalSecond
+            (Rlevel.refined.faceEdge f.1.1 f.1.2.1) f.1.2.2 ∈
           localVertexLevelPoints) :
       ∃ s : {s : T.toIntrinsic.LevelFace n //
           s ∈ selectedLevelFaces},
         (Rlevel.refined.faceEdge f.1.1 f.1.2.1).1 ⊆ s.1.1 := by
     let e := Rlevel.refined.faceEdge f.1.1 f.1.2.1
-    let p₀ := (boundaryMarking.fanFirstVertex f.1).1
-    let p₁ := (boundaryMarking.fanSecondVertex f.1).1
+    let p₀ :=
+      boundaryMarking.edgeIntervalFirst e f.1.2.2
+    let p₁ :=
+      boundaryMarking.edgeIntervalSecond e f.1.2.2
     have hp₀Edge : p₀ ∈ Rlevel.refined.faceCarrier e.1 :=
-      ((boundaryMarking.mem_edgeMarks_iff e p₀).mp
-        (boundaryMarking.edgeIntervalFirst_mem_edgeMarks
-          e f.1.2.2)).2
+      boundaryMarking.edgeIntervalFirst_mem_faceCarrier e f.1.2.2
     have hp₁Edge : p₁ ∈ Rlevel.refined.faceCarrier e.1 :=
-      ((boundaryMarking.mem_edgeMarks_iff e p₁).mp
-        (boundaryMarking.edgeIntervalSecond_mem_edgeMarks
-          e f.1.2.2)).2
+      boundaryMarking.edgeIntervalSecond_mem_faceCarrier e f.1.2.2
     rcases localMark_endpoint_or_selectedEdge e p₀ hp₀Edge hp₀ with hs | hp₀End
     · exact hs
     rcases localMark_endpoint_or_selectedEdge e p₁ hp₁Edge hp₁ with hs | hp₁End
@@ -8070,8 +8197,8 @@ theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaith
             0 < y₀ (boundaryMarking.fanSecondVertex f.1)
       · let e := Rlevel.refined.faceEdge f.1.1 f.1.2.1
         let q := mixedOldFaceMap (Sum.inl t) x
-        let p₀ := (boundaryMarking.fanFirstVertex f.1).1
-        let p₁ := (boundaryMarking.fanSecondVertex f.1).1
+        let p₀ := boundaryMarking.edgeIntervalFirst e f.1.2.2
+        let p₁ := boundaryMarking.edgeIntervalSecond e f.1.2.2
         let a₀ := boundaryMarking.edgeParameterValue e p₀
         let a₁ := boundaryMarking.edgeParameterValue e p₁
         let z₀ := boundaryMarking.edgeParameterValue e q
@@ -8113,129 +8240,29 @@ theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaith
                   (localVertexLevelPoint
                     ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) := by
           exact localFace_edgeParameter_eq_sum t x₀ e hqEdge
-        have existsLow :
-            ∃ v : {v // v ∈ t.1},
-              0 < x₀ v ∧
-                boundaryMarking.edgeParameterValue e
-                    (localVertexLevelPoint
-                      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) ≤ a₀ := by
-          by_contra hLow
-          have hterm (v : {v // v ∈ t.1}) :
-              x₀ v * a₁ ≤
-                x₀ v *
-                  boundaryMarking.edgeParameterValue e
-                    (localVertexLevelPoint
-                      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) := by
-            by_cases hvZero : x₀ v = 0
-            · simp [hvZero]
-            · have hvPos : 0 < x₀ v :=
-                lt_of_le_of_ne (x₀.2.1 v) (Ne.symm hvZero)
-              have hvNotLow :
-                  ¬boundaryMarking.edgeParameterValue e
-                      (localVertexLevelPoint
-                        ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) ≤ a₀ := by
-                intro hv
-                exact hLow ⟨v, hvPos, hv⟩
-              have hvEdge :=
-                positive_localVertex_mem_edge t x₀ e hqEdge v hvPos
-              have hvMark :
-                  localVertexLevelPoint
-                      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈
-                    boundaryMarking.edgeMarks e :=
-                (boundaryMarking.mem_edgeMarks_iff e _).mpr
-                  ⟨localVertexLevelPoint_mem_marking
-                    ⟨v.1, ⟨t.1, t.2, v.2⟩⟩, hvEdge⟩
-              have hvNotOpen :=
-                boundaryMarking.not_edgeMark_parameter_mem_Ioo
-                  e f.1.2.2 hvMark
-              have hvAbove :
-                  a₁ ≤
-                    boundaryMarking.edgeParameterValue e
-                      (localVertexLevelPoint
-                        ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) := by
-                apply le_of_not_gt
-                intro hvBelow
-                apply hvNotOpen
-                exact ⟨lt_of_not_ge hvNotLow, hvBelow⟩
-              exact mul_le_mul_of_nonneg_left hvAbove (x₀.2.1 v)
-          have hsum :
-              a₁ ≤
-                ∑ v : {v // v ∈ t.1}, x₀ v *
-                  boundaryMarking.edgeParameterValue e
-                    (localVertexLevelPoint
-                      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) := by
-            calc
-              a₁ = (∑ v : {v // v ∈ t.1}, x₀ v) * a₁ := by
-                have hxSum :
-                    ∑ v : {v // v ∈ t.1}, x₀ v = 1 := x₀.2.2
-                rw [hxSum, one_mul]
-              _ = ∑ v : {v // v ∈ t.1}, x₀ v * a₁ := by
-                rw [Finset.sum_mul]
-              _ ≤ _ := Finset.sum_le_sum fun v _ ↦ hterm v
-          rw [← hzAverage] at hsum
-          exact (not_le_of_gt hzInterval.2) hsum
-        have existsHigh :
-            ∃ v : {v // v ∈ t.1},
-              0 < x₀ v ∧
-                a₁ ≤
-                  boundaryMarking.edgeParameterValue e
-                    (localVertexLevelPoint
-                      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) := by
-          by_contra hHigh
-          have hterm (v : {v // v ∈ t.1}) :
-              x₀ v *
-                  boundaryMarking.edgeParameterValue e
-                    (localVertexLevelPoint
-                      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) ≤
-                x₀ v * a₀ := by
-            by_cases hvZero : x₀ v = 0
-            · simp [hvZero]
-            · have hvPos : 0 < x₀ v :=
-                lt_of_le_of_ne (x₀.2.1 v) (Ne.symm hvZero)
-              have hvNotHigh :
-                  ¬a₁ ≤
-                    boundaryMarking.edgeParameterValue e
-                      (localVertexLevelPoint
-                        ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) := by
-                intro hv
-                exact hHigh ⟨v, hvPos, hv⟩
-              have hvEdge :=
-                positive_localVertex_mem_edge t x₀ e hqEdge v hvPos
-              have hvMark :
-                  localVertexLevelPoint
-                      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈
-                    boundaryMarking.edgeMarks e :=
-                (boundaryMarking.mem_edgeMarks_iff e _).mpr
-                  ⟨localVertexLevelPoint_mem_marking
-                    ⟨v.1, ⟨t.1, t.2, v.2⟩⟩, hvEdge⟩
-              have hvNotOpen :=
-                boundaryMarking.not_edgeMark_parameter_mem_Ioo
-                  e f.1.2.2 hvMark
-              have hvBelow :
-                  boundaryMarking.edgeParameterValue e
-                      (localVertexLevelPoint
-                        ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) ≤ a₀ := by
-                apply le_of_not_gt
-                intro hvAbove
-                apply hvNotOpen
-                exact ⟨hvAbove, lt_of_not_ge hvNotHigh⟩
-              exact mul_le_mul_of_nonneg_left hvBelow (x₀.2.1 v)
-          have hsum :
-              (∑ v : {v // v ∈ t.1}, x₀ v *
-                  boundaryMarking.edgeParameterValue e
-                    (localVertexLevelPoint
-                      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩)) ≤ a₀ := by
-            calc
-              _ ≤ ∑ v : {v // v ∈ t.1}, x₀ v * a₀ :=
-                Finset.sum_le_sum fun v _ ↦ hterm v
-              _ = (∑ v : {v // v ∈ t.1}, x₀ v) * a₀ := by
-                rw [Finset.sum_mul]
-              _ = a₀ := by
-                have hxSum :
-                    ∑ v : {v // v ∈ t.1}, x₀ v = 1 := x₀.2.2
-                rw [hxSum, one_mul]
-          rw [← hzAverage] at hsum
-          exact (not_le_of_gt hzInterval.1) hsum
+        have hgap (v : {v // v ∈ t.1}) (hvPos : 0 < x₀ v) :
+            ¬boundaryMarking.edgeParameterValue e
+                (localVertexLevelPoint
+                  ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) ∈ Set.Ioo a₀ a₁ := by
+          have hvEdge :=
+            positive_localVertex_mem_edge t x₀ e hqEdge v hvPos
+          have hvMark :
+              localVertexLevelPoint
+                  ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈
+                boundaryMarking.edgeMarks e :=
+            (boundaryMarking.mem_edgeMarks_iff e _).mpr
+              ⟨localVertexLevelPoint_mem_marking
+                ⟨v.1, ⟨t.1, t.2, v.2⟩⟩, hvEdge⟩
+          exact boundaryMarking.not_edgeMark_parameter_mem_Ioo
+            e f.1.2.2 hvMark
+        obtain ⟨existsLow, existsHigh⟩ :=
+          exists_positive_weight_on_both_sides_of_gap
+            (weight := fun v : {v // v ∈ t.1} ↦ x₀ v)
+            (value := fun v ↦
+              boundaryMarking.edgeParameterValue e
+                (localVertexLevelPoint
+                  ⟨v.1, ⟨t.1, t.2, v.2⟩⟩))
+            a₀ a₁ z₀ x₀.2.1 x₀.2.2 hzAverage hgap hzInterval
         obtain ⟨lo, hloPos, hlo⟩ := existsLow
         obtain ⟨hi, hhiPos, hhi⟩ := existsHigh
         have hloEdge :=
@@ -10291,6 +10318,51 @@ theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaith
       · apply interior_mono Set.subset_union_right
         exact hDtarget ⟨hxCore, hxOld⟩
 
+/-- **Theorem boundary** for the bordered crossing case.
+
+The weld implementation is shared with the boundaryless theorem.  Its only open dependency is
+`PartialTriangulation.exists_boundaryPreservingStraightening`, which asserts exact preservation
+of the ambient boundary stratum by the relative polygonal replacement. -/
+theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaithful)
+    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
+    (hcore : ¬ c.core ⊆ interior T.support)
+    (hA : ¬ A ⊆ interior c.patchPartialTriangulation.support) :
+    ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
+      (F₁ F₂ : Finset (Finset V))
+      (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S),
+      (∀ t ∈ F₁ ∪ F₂, t.card = 3) ∧
+      _root_.Topology.IsEmbedding e₁ ∧ _root_.Topology.IsEmbedding e₂ ∧
+      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+        (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y) ∧
+      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+        e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) ∧
+      A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) :=
+  MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
+    S c hc hT hcore hA
+      (PartialTriangulation.exists_boundaryPreservingStraightening S T c hc)
+
+/-- The crossing weld on a boundaryless surface.  Boundarylessness discharges the sole relative
+certificate before entering the shared weld implementation. -/
+theorem MoiseChart.exists_crossing_weld_boundaryless
+    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S]
+    (c : MoiseChart S) (hc : c.BoundaryFaithful)
+    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
+    (hcore : ¬ c.core ⊆ interior T.support)
+    (hA : ¬ A ⊆ interior c.patchPartialTriangulation.support) :
+    ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
+      (F₁ F₂ : Finset (Finset V))
+      (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S),
+      (∀ t ∈ F₁ ∪ F₂, t.card = 3) ∧
+      _root_.Topology.IsEmbedding e₁ ∧ _root_.Topology.IsEmbedding e₂ ∧
+      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+        (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y) ∧
+      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+        e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) ∧
+      A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) :=
+  MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
+    S c hc hT hcore hA
+      (PartialTriangulation.exists_boundaryPreservingStraightening_boundaryless S T c)
+
 /-- **Theorem boundary** (Moise Ch. 8, Thm. 3, the induction step; bordered version).
 
 Given a partial triangulation satisfying the Radó invariant for the absorbed region `A`, and one
@@ -10323,13 +10395,34 @@ theorem moise_induction_step (c : MoiseChart S) (hc : c.BoundaryFaithful)
     · rw [hsupport]
       exact hcover
 
-/-- The Radó induction assembled: a compact Eval surface admits a geometric triangulation.
+/-- The Radó induction step for a boundaryless surface.  Its easy branches are identical to the
+bordered step; the crossing branch uses the sorry-free boundaryless weld certificate. -/
+theorem moise_induction_step_boundaryless
+    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S]
+    (c : MoiseChart S) (hc : c.BoundaryFaithful)
+    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A) :
+    ∃ T' : PartialTriangulation S, RadoInvariant T' (A ∪ c.core) := by
+  classical
+  by_cases hcore : c.core ⊆ interior T.support
+  · exact ⟨T, hT.absorb_of_subset c.isCompact_core hcore⟩
+  by_cases hA : A ⊆ interior c.patchPartialTriangulation.support
+  · exact ⟨c.patchPartialTriangulation,
+      radoInvariant_chartPatch_absorb c hT.coresCompact hA⟩
+  · obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep, hcover⟩ :=
+      MoiseChart.exists_crossing_weld_boundaryless S c hc hT hcore hA
+    obtain ⟨T', hsupport, hsurf'⟩ :=
+      PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂ hagree hsep
+    refine ⟨T', ?_, hsurf', ?_⟩
+    · exact hT.coresCompact.union c.isCompact_core
+    · rw [hsupport]
+      exact hcover
 
-This is a genuine proof from the two theorem boundaries above: starting from the empty complex,
-absorb the finitely many chart cores one at a time by `moise_induction_step`; when all cores are
-absorbed the invariant forces the support to be everything, and a fully covering partial
-triangulation is a geometric triangulation. -/
-theorem moise_triangulation_of_boundaries :
+/-- Shared finite Radó induction assembler.  It turns any clean one-chart absorption step with the
+full `RadoInvariant` conclusion into an end-to-end geometric triangulation. -/
+theorem moise_triangulation_of_induction
+    (hstep : ∀ (c : MoiseChart S), c.BoundaryFaithful →
+      ∀ {T : PartialTriangulation S} {A : Set S}, RadoInvariant T A →
+        ∃ T' : PartialTriangulation S, RadoInvariant T' (A ∪ c.core)) :
     Nonempty (GeometricTriangulation S) := by
   classical
   obtain ⟨m, charts, hcover, hbd⟩ := moise_finite_chart_cover S
@@ -10349,7 +10442,7 @@ theorem moise_triangulation_of_boundaries :
         rcases ih with ⟨T, hT⟩
         by_cases hk : k < m
         · obtain ⟨T', hT'⟩ :=
-            moise_induction_step S (charts ⟨k, hk⟩) (hbd ⟨k, hk⟩) hT
+            hstep (charts ⟨k, hk⟩) (hbd ⟨k, hk⟩) hT
           refine ⟨T', ?_⟩
           have hA : (⋃ i : Fin m, ⋃ (_ : (i : ℕ) < k + 1), (charts i).core) =
               (⋃ i : Fin m, ⋃ (_ : (i : ℕ) < k), (charts i).core) ∪
@@ -10399,6 +10492,21 @@ theorem moise_triangulation_of_boundaries :
       exact hT.coresCovered
     exact Set.eq_univ_of_univ_subset huniv
   exact ⟨T.toGeometricTriangulation hsupport⟩
+
+/-- The bordered Radó induction assembled from its one-chart step.  Until the relative
+boundary-preservation capability is proved, this generic endpoint retains that single
+`sorryAx` dependency. -/
+theorem moise_triangulation_of_boundaries :
+    Nonempty (GeometricTriangulation S) :=
+  moise_triangulation_of_induction S (moise_induction_step S)
+
+/-- Radó's triangulation theorem for compact boundaryless Eval surfaces.  This endpoint shares
+the raw straightening, crossing weld, gluing, and finite chart induction with the bordered route,
+but discharges the only open relative seam from emptiness of the ambient manifold boundary. -/
+theorem moise_triangulation_boundaryless
+    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S] :
+    Nonempty (GeometricTriangulation S) :=
+  moise_triangulation_of_induction S (moise_induction_step_boundaryless S)
 
 end EvalHypotheses
 

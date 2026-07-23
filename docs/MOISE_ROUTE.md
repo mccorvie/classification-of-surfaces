@@ -1,16 +1,20 @@
 # The Moise triangulation route: status and handoff map
 
 The authoritative onboarding doc for the triangulation half of the project (the
-`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-22. Supersedes
+`ClassificationOfSurfaces/Moise/` directory). Updated 2026-07-23. Supersedes
 `codex_strategy_moise_pl.md` and the "Moise / PL route" section of `API.lean`, which describe
 the retired `PL.lean` layer (see `docs/KNOWN_WEAK.md` for why it was retired).
 
 ## Goal and shape
 
-Prove `moise_triangulation` (in `Triangulation.lean`): every compact Eval surface admits a
+The boundaryless checkpoint is now proved:
+`moise_triangulation_boundaryless` (in both `Moise/ChartInduction.lean` and the public
+`Triangulation.lean` wrapper) shows that every compact boundaryless Eval surface admits a
 `GeometricTriangulation` — a homeomorphism onto the realization of a finite two-dimensional
 simplicial complex, computed from the combinatorial data in barycentric coordinates
-(`Moise/GeometricTriangulation.lean`). The proof follows Moise, *Geometric Topology in
+(`Moise/GeometricTriangulation.lean`).  The remaining goal is to remove the single relative
+boundary-preservation dependency from the generic bordered `moise_triangulation`.
+The proof follows Moise, *Geometric Topology in
 Dimensions 2 and 3* (PDF in the repo root), Ch. 8 (Radó's theorem), whose honest dependency
 tree is:
 
@@ -32,8 +36,16 @@ half-plane embedding by doubling it across the boundary.
 
 ## What is already proved (sorry-free, axioms `[propext, Classical.choice, Quot.sound]`)
 
-- The Radó induction assembly: `moise_triangulation_of_boundaries` (`Moise/ChartInduction.lean`)
-  — reduces `moise_triangulation` to the leaves below.
+- The complete boundaryless Radó chain:
+  `PartialTriangulation.exists_boundaryPreservingStraightening_boundaryless`,
+  `MoiseChart.exists_crossing_weld_boundaryless`, `moise_induction_step_boundaryless`, and
+  `moise_triangulation_boundaryless` (`Moise/ChartInduction.lean`), plus the public
+  `moise_triangulation_boundaryless` wrapper (`Triangulation.lean`).  The final theorem has the
+  faithful conclusion `Nonempty (GeometricTriangulation S)` and no `sorryAx`.
+- The shared crossing and induction implementations:
+  `MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening` and
+  `moise_triangulation_of_induction`.  The boundaryless and bordered routes do not duplicate the
+  long crossing construction.
 - The finite chart cover `moise_finite_chart_cover` and the local chart extraction
   `exists_moiseChart_core_mem_nhds` (`Moise/ChartExtraction.lean`) — Moise Thm 8.1.
 - Broken-line connectivity of open connected plane sets and the broken-line-in-thickening form
@@ -120,21 +132,17 @@ half-plane embedding by doubling it across the boundary.
 
 | Leaf | File | Moise | Difficulty |
 |---|---|---|---|
-| `MoiseChart.exists_crossing_weld` | ChartInduction.lean | Ch. 8 Thm 3 step, crossing case | hard |
+| `PartialTriangulation.exists_boundaryPreservingStraightening` | ChartInduction.lean | Ch. 8 Thm 3, relative boundary seam | hard |
 
-`moise_induction_step` itself is now proved: its two absorption branches were already closed, and
-the crossing branch is derived from `PartialTriangulation.exists_glued` (Moise Thm. 7.6 on a
-common vertex type — **proved**: the union family's realization is the set-union of the two
-realizations, so the glued embedding is a two-sided paste, an embedding by compactness) together
-with the single remaining leaf `exists_crossing_weld`: in the genuine crossing case, the
-straightened old complex and the chart patch admit a common welded presentation (common vertex
-type, exact agreement on the shared realization, joint edge-face bound, `A ∪ core` interior to
-the united image).  Its intended proof is the adaptive overlap machinery already in this
-repository (`adaptiveOverlapGraphRealization`, the locally finite controlled polygonal
-replacement, `replaceOnOpen`/`frontierGlue`, `CommonSubdivision`), respecting the
-vanishing-tolerance warning below.
+The long crossing weld, `PartialTriangulation.exists_glued`, both easy absorption branches, and
+the finite Radó assembly are proved.  The shared declaration
+`MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening` consumes the single
+certificate above.  The generic `exists_crossing_weld` obtains it from the open bordered
+provider; `exists_crossing_weld_boundaryless` obtains it cleanly from emptiness of the manifold
+boundary.  Thus the genuine crossing presentation (common vertex type, exact agreement and
+separation, joint surface incidence, and `A ∪ core` interior coverage) is already checked.
 
-The precise remaining work inside this leaf, in dependency order:
+The completion history leading to this single remaining certificate is:
 
 1. **Instantiation lemmas at the adaptive overlap** — **DONE** (2026-07-13, clean axioms; the
    layer's stray `native_decide` in `midpointCentralFace_card` was also replaced by kernel
@@ -318,7 +326,7 @@ The precise remaining work inside this leaf, in dependency order:
    condition and makes the independently pulled-back copies agree on every shared intrinsic
    edge.  Source factorization, whole-tile closure, finite face extraction, outside-chamber
    selection, coordinate support, both surface embeddings, and exact interface agreement and
-   separation are now closed.  The remaining joint-valence bookkeeping is recorded below.
+   separation are now closed.  The joint-valence bookkeeping is closed below.
 
    **Global marked-edge fan — DONE (2026-07-22,
    `Moise/IntrinsicMarkedFan.lean`).**  A finite intrinsic `EdgeMarking` now enlarges arbitrary
@@ -378,13 +386,26 @@ The precise remaining work inside this leaf, in dependency order:
    perturbation region.  Fixed protected points in the ambient interior are proved to remain
    interior by ordinary invariance of domain.
 
-   The one remaining leaf is exactly the manifold-boundary part of the protected seam:
+   The long crossing proof now consumes the named proposition
+   `PartialTriangulation.BoundaryPreservingStraightening`.  The one remaining bordered leaf is
+   exactly its provider
+   `PartialTriangulation.exists_boundaryPreservingStraightening`, under the existing
+   `MoiseChart.BoundaryFaithful` hypothesis, whose final conjunct says
+   ```lean
+   PreservesManifoldBoundary
+     (frontierGlue U g T.embed) T.embed
    ```
-   c.core ∩ C ∩ (modelWithCornersEuclideanHalfSpace 2).boundary S
-     ⊆ interior T₀.support.
+   or, unfolded,
+   ```
+   ∀ y,
+     frontierGlue U g T.embed y ∈
+         (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+       T.embed y ∈
+         (modelWithCornersEuclideanHalfSpace 2).boundary S.
    ```
    `BoundaryInvariant.lean` now proves the relative half-plane invariance-of-domain theorem
-   needed for this implication.  What remains is to extract exact zero-coordinate preservation
+   that turns this certificate into preservation of protected boundary points.  What remains is
+   to extract exact zero-coordinate preservation
    for the relative polygonal replacement from the synchronized arrangement (equivalently,
    construct the replacement relative to its boundary-line subcomplex).  Once this is supplied,
    the actual loss avoids the deleted protected trace and the existing finite target construction
@@ -393,31 +414,23 @@ The precise remaining work inside this leaf, in dependency order:
    This is the bordered counterpart of Moise's choice of the finite new complex `L` so that
    (a) both `|L|` and `W = |L| ∪ f'_n(|K_n|)` are 2-manifolds with boundary,
    (b) all old cores and the new core lie in `Int W`, and
-   (c) the old and new pieces meet along their boundaries.  The theorem still has one named
-   `sorry`, now at this boundary-stratum leaf; no weaker conclusion has been introduced.
+   (c) the old and new pieces meet along their boundaries.  The bordered provider still has one
+   named `sorry` at this exact boundary-stratum leaf; no weaker conclusion has been introduced.
+   Under `BoundarylessManifold`, `ModelWithCorners.Boundaryless.boundary_eq_empty` proves the
+   certificate immediately.  The clean provider then runs through the same weld and finite
+   induction to `moise_triangulation_boundaryless`.
 4. **Assembly**: read off the common-vertex welded presentation and the interior coverage of
    `A ∪ core`; `PartialTriangulation.exists_glued` (proved) consumes it.
 
-The remaining mismatch is now precise.  Chapter 6.3 is proved for a finite source
-`PlaneComplex`, while the old complex near the next Rado chart is intrinsically PL and need not
-be straight in one global plane.  The intrinsic one-skeleton replacement, exact face cycles,
-faithful fine subdivisions, and finite compact collars are proved.  Chapter 8 still needs
-cellwise polygonal filling and gluing along a common intrinsic subcomplex (Moise Thm. 7.6).
-
-There is an important finiteness issue in that last sentence.  Moise applies Chapter 6.3 on the
-open complex `K_U` supplied by Thm. 8.2, with a strongly positive tolerance tending to zero at
-the frontier of `U`.  `K_U` is generally locally finite and infinite even when the old complex
-is finite.  That vanishing-mesh construction is what makes the modified transition map agree
-continuously with the unchanged map outside `U`.  The proved finite compact-collar theorem does
-not replace it: doing so would require a new relative annulus/Schoenflies extension theorem.
-The implementation must therefore either formalize the locally finite open-complex step used by
-Moise or deliberately prove that additional relative theorem; it must not silently identify the
-two.  Do not solve this by restoring the
-deleted `PL.lean` chart-union witness: its carrier and simplex data were unrelated.
-
-Chart initialization is no longer part of the open leaf: the fixed chart patch gives an explicit
-finite base.  What remains is extending an already nonempty intrinsic partial triangulation
-across the overlap with the next chart.
+The former finite-versus-locally-finite mismatch is resolved in the checked crossing
+implementation: the old complex is replaced on the locally finite open complex with a strongly
+positive tolerance tending to zero at the frontier, and `frontierGlue` assembles it continuously
+with the unchanged embedding.  Cellwise filling, synchronized common subdivision, intrinsic
+fan completion, the exact attaching interface, finite target extraction, and Thm. 7.6 gluing are
+all present.  The boundaryless endpoint verifies that these pieces compose end-to-end.  The
+bordered route must retain this construction and make it relative to the boundary-line
+subcomplex; it must not substitute a finite compact-collar shortcut or restore the deleted
+`PL.lean` witness.
 
 The bordered invariant now correctly requires absorbed cores to lie in the *topological interior
 in the ambient surface* of the partial support.  Requiring combinatorial interior would exclude

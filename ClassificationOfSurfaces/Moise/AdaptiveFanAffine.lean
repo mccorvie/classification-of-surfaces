@@ -79,10 +79,41 @@ variable {K : IntrinsicTwoComplex} {U : Set K.realization}
 variable [K.AdaptiveSafety U]
 variable [AdaptiveSafety.IsAdmissible (K := K) (U := U)]
 
+/-- Relabeling a global adaptive fan simplex preserves the source-weighted affine sum. -/
+theorem adaptiveFanRelabel_source_sum_apply
+    (hU : IsOpen U) (f : K.AdaptiveFanFace U hU)
+    (x : stdSimplex ℝ
+      {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f})
+    (v : (K.safeSubdivision f.1.1).refined.Vertex) :
+    (∑ p : {p // p ∈ K.adaptiveFanFaceVertices U hU f},
+        (K.adaptiveFanRelabelSimplex U hU f x) p *
+          (K.adaptiveFanVertexSource U hU f p).1 v) =
+      ∑ p : {p // p ∈ K.adaptiveFanFaceVertices U hU f},
+        x ((K.adaptiveFanFaceVertexEquiv U hU f).symm p) *
+          (K.adaptiveFanVertexSource U hU f p).1 v := by
+  classical
+  apply Finset.sum_congr rfl
+  intro p _
+  congr 1
+  let q : {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f} :=
+    (K.adaptiveFanFaceVertexEquiv U hU f).symm p
+  have hweight :=
+    K.adaptiveFanRelabel_extended_apply U hU f x q.1
+  change
+    extendFaceCoordinates (K.adaptiveFanFaceVertices U hU f)
+        (K.adaptiveFanRelabelSimplex U hU f x) p.1 =
+      extendFaceCoordinates (K.adaptiveGlobalFanFaceVertices U hU f) x q.1
+    at hweight
+  rw [extendFaceCoordinates_of_mem _ _ p.2,
+    extendFaceCoordinates_of_mem _ _ q.2] at hweight
+  exact hweight
+
 /- One adaptive global fan face is affine, in original intrinsic barycentric coordinates, as a
 function of its standard planar face coordinates.  Elaborating the dependent fan relabeling and
 the original affine realization together needs a larger local heartbeat budget. -/
-set_option maxHeartbeats 1600000 in
+set_option maxHeartbeats 300000 in
+-- The relabeling sum is factored out above; the remaining dependent affine assembly needs
+-- between 250k and 300k heartbeats.
 theorem adaptiveGlobalFanFaceMap_standardAffine
     (hU : IsOpen U) (f : K.AdaptiveFanFace U hU) :
     ∃ a : Plane →ᵃ[ℝ] (K.Vertex → ℝ),
@@ -131,20 +162,7 @@ theorem adaptiveGlobalFanFaceMap_standardAffine
       b x.1 v
   simp only [b, LinearMap.sum_apply, LinearMap.smulRight_apply,
     LinearMap.proj_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
-  apply Finset.sum_congr rfl
-  intro p _
-  congr 1
-  let q : {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f} :=
-    (K.adaptiveFanFaceVertexEquiv U hU f).symm p
-  have hweight :=
-    K.adaptiveFanRelabel_extended_apply U hU f x q.1
-  change
-    extendFaceCoordinates (K.adaptiveFanFaceVertices U hU f) y p.1 =
-      extendFaceCoordinates (K.adaptiveGlobalFanFaceVertices U hU f) x q.1
-    at hweight
-  rw [extendFaceCoordinates_of_mem _ _ p.2,
-    extendFaceCoordinates_of_mem _ _ q.2] at hweight
-  exact hweight
+  exact K.adaptiveFanRelabel_source_sum_apply hU f x v
 
 end IntrinsicTwoComplex
 

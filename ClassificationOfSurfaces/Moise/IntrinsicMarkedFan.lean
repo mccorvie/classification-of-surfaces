@@ -332,6 +332,20 @@ theorem edgeIntervalSecond_mem_edgeMarks (e : K.Edge)
   rw [← M.mem_edgeMarkList_iff e]
   exact List.get_mem _ _
 
+/-- The first endpoint of a marked edge interval lies on the underlying geometric edge. -/
+theorem edgeIntervalFirst_mem_faceCarrier (e : K.Edge)
+    (j : M.EdgeInterval e) :
+    M.edgeIntervalFirst e j ∈ K.faceCarrier e.1 :=
+  ((M.mem_edgeMarks_iff e _).mp
+    (M.edgeIntervalFirst_mem_edgeMarks e j)).2
+
+/-- The second endpoint of a marked edge interval lies on the underlying geometric edge. -/
+theorem edgeIntervalSecond_mem_faceCarrier (e : K.Edge)
+    (j : M.EdgeInterval e) :
+    M.edgeIntervalSecond e j ∈ K.faceCarrier e.1 :=
+  ((M.mem_edgeMarks_iff e _).mp
+    (M.edgeIntervalSecond_mem_edgeMarks e j)).2
+
 theorem edgeIntervalFirst_ne_second (e : K.Edge)
     (j : M.EdgeInterval e) :
     M.edgeIntervalFirst e j ≠ M.edgeIntervalSecond e j := by
@@ -1180,7 +1194,6 @@ theorem affineIndependent_fanVertex_val (f : M.FanFace) :
     exact hthree.range
   · exact M.fanVertex_val_injective f
 
-set_option maxHeartbeats 800000 in
 theorem fanFaceMap_injective (f : M.FanFace) :
     Function.Injective (M.fanFaceMap f) := by
   classical
@@ -1298,7 +1311,6 @@ noncomputable def fanSimplexLineMap (f : M.FanFace)
   ⟨AffineMap.lineMap x.1 y.1 r.1,
     (convex_stdSimplex ℝ _).lineMap_mem x.2 y.2 r.2⟩
 
-set_option maxHeartbeats 800000 in
 theorem fanFaceMap_simplexLineMap (f : M.FanFace)
     (x y : stdSimplex ℝ {p // p ∈ M.fanFaceVertices f})
     (r : Set.Icc (0 : ℝ) 1) :
@@ -3328,7 +3340,6 @@ noncomputable def markedFanHomeomorph :
       M.markedFanLocallyFiniteTriangleComplex.compactEval x :=
   rfl
 
-set_option maxHeartbeats 800000 in
 /-- Subdividing every old edge at the global marks and coning the consecutive intervals to the
 old face centers gives a faithful finite intrinsic subdivision. -/
 noncomputable def markedFanSubdivision : K.Subdivision where
