@@ -24,8 +24,9 @@ vertices to an affinely independent triple.
 The hypothesis is deliberately local.  This is the form needed when a facewise-affine
 embedding is known to be injective only on the simplex on which its affine formula is valid. -/
 theorem affineIndependent_comp_of_injOn_convexHull
+    {V : Type*} [AddCommGroup V] [Module ℝ V]
     (p : Fin 3 → Plane) (hp : AffineIndependent ℝ p)
-    (f : Plane →ᵃ[ℝ] Plane)
+    (f : Plane →ᵃ[ℝ] V)
     (hf : Set.InjOn f (convexHull ℝ (Set.range p))) :
     AffineIndependent ℝ (f ∘ p) := by
   classical

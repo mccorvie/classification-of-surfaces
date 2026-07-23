@@ -212,16 +212,14 @@ Semantic anchors: the conclusion implies `CompactSpace S` and `T2Space S`
 (`GeometricTriangulation.compactSpace`, `GeometricTriangulation.t2Space`), and is refuted for
 non-compact spaces (`Moise/Countermodels.lean`), so it cannot be discharged by a junk witness.
 
-The proof is the assembled Radó chart induction (`Moise.moise_triangulation_of_boundaries`).
-Its sole remaining open dependency is exact preservation of the ambient boundary stratum by the
-relative polygonal straightening; `moise_triangulation_boundaryless` below discharges that seam
-without `sorryAx`. -/
+The proof is the assembled boundary-preserving Radó chart induction
+(`Moise.moise_triangulation_of_boundaries`). -/
 theorem moise_triangulation : Nonempty (GeometricTriangulation S) :=
   Moise.moise_triangulation_of_boundaries S
 
-/-- Radó's theorem for compact boundaryless Eval surfaces.  Unlike the generic bordered wrapper,
-this theorem has a sorry-free proof term: emptiness of the ambient manifold boundary discharges
-the sole relative straightening obligation before the shared crossing-weld implementation. -/
+/-- Radó's theorem for compact boundaryless Eval surfaces.  This specialization uses emptiness of
+the ambient manifold boundary to supply a simpler certificate to the shared crossing-weld
+implementation. -/
 theorem moise_triangulation_boundaryless
     [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S] :
     Nonempty (GeometricTriangulation S) :=

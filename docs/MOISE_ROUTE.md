@@ -36,7 +36,12 @@ half-plane embedding by doubling it across the boundary.
 
 ## What is already proved (sorry-free, axioms `[propext, Classical.choice, Quot.sound]`)
 
-- The complete boundaryless Radó chain:
+- The complete bordered Radó chain:
+  `PartialTriangulation.exists_boundaryPreservingStraightening`,
+  `MoiseChart.exists_crossing_weld`, `moise_induction_step`, and
+  `moise_triangulation_of_boundaries` (`Moise/ChartInduction.lean`), plus the public
+  `moise_triangulation` wrapper (`Triangulation.lean`).
+- The boundaryless specialization:
   `PartialTriangulation.exists_boundaryPreservingStraightening_boundaryless`,
   `MoiseChart.exists_crossing_weld_boundaryless`, `moise_induction_step_boundaryless`, and
   `moise_triangulation_boundaryless` (`Moise/ChartInduction.lean`), plus the public
@@ -427,10 +432,9 @@ implementation: the old complex is replaced on the locally finite open complex w
 positive tolerance tending to zero at the frontier, and `frontierGlue` assembles it continuously
 with the unchanged embedding.  Cellwise filling, synchronized common subdivision, intrinsic
 fan completion, the exact attaching interface, finite target extraction, and Thm. 7.6 gluing are
-all present.  The boundaryless endpoint verifies that these pieces compose end-to-end.  The
-bordered route must retain this construction and make it relative to the boundary-line
-subcomplex; it must not substitute a finite compact-collar shortcut or restore the deleted
-`PL.lean` witness.
+all present.  The bordered endpoint verifies that these pieces compose end-to-end while retaining
+the boundary-line subcomplex; it does not substitute a finite compact-collar shortcut or restore
+the deleted `PL.lean` witness.
 
 The bordered invariant now correctly requires absorbed cores to lie in the *topological interior
 in the ambient surface* of the partial support.  Requiring combinatorial interior would exclude
@@ -450,13 +454,7 @@ the boundary-line points of every half-disk core and make the bordered induction
    recoverable via `git show 868b8d9:ClassificationOfSurfaces/PL.lean` (lines 4685–5320 and the
    `EuclideanComplex.Examples` section).
 
-## Suggested next targets, in order
+## Suggested next targets
 
-1. Prove exact boundary-line preservation for the locally finite relative polygonal
-   replacement.  Use the complete-carrier convex-hull theorem on marked boundary edges and the
-   facewise filling/half-plane side theorem to show that zero normal coordinate is preserved
-   exactly.
-2. Apply `isOpen_range_halfSpace_of_isOpen_of_isEmbedding_of_boundary` (or its corresponding-point
-   corollary) at the fixed protected boundary seam, close `hProtectedBoundaryPoint`, and thereby
-   close `MoiseChart.exists_crossing_weld`.  `PartialTriangulation.exists_glued`, including its
-   edge-valence output, and the rest of the induction are already proved.
+The Moise triangulation route itself is complete.  The remaining project-level targets are the
+quotient-realization and normal-form layers listed in `docs/KNOWN_WEAK.md`.

@@ -315,6 +315,650 @@ theorem card_of_mem_edges {e : Finset T.Vertex} (he : e ∈ T.edges) : e.card = 
 def boundaryEdges : Finset (Finset T.Vertex) :=
   T.edges.filter fun e => (T.faces.filter fun t => e ⊆ t).card = 1
 
+/-- Edges whose entire intrinsic carrier is mapped to the ambient manifold boundary.
+
+This differs from `boundaryEdges`: a partial patch also has combinatorial boundary arcs in the
+ambient interior of the surface.  Only the edges selected here model the actual boundary stratum
+of `S`. -/
+noncomputable def manifoldBoundaryEdges
+    [ChartedSpace (EuclideanHalfSpace 2) S] : Finset (Finset T.Vertex) :=
+  by
+    classical
+    exact T.edges.filter fun e =>
+      ∀ x : T.toIntrinsic.realization,
+        x ∈ T.toIntrinsic.faceCarrier e →
+          T.embed x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S
+
+/-- The intrinsic carrier of the edges modeling the ambient manifold boundary. -/
+noncomputable def manifoldBoundaryCarrier
+    [ChartedSpace (EuclideanHalfSpace 2) S] :
+    Set T.toIntrinsic.realization :=
+  {x | ∃ e ∈ T.manifoldBoundaryEdges, x ∈ T.toIntrinsic.faceCarrier e}
+
+/-- A partial triangulation is boundary-compatible when the inverse image of the ambient
+manifold boundary is exactly an intrinsic edge subcomplex.
+
+The edge family is canonical: it consists of all edges whose whole carrier lies in the ambient
+boundary.  Consequently this proposition carries no hidden choice that would be lost when a
+proof in `Prop` is eliminated. -/
+def BoundaryCompatible [ChartedSpace (EuclideanHalfSpace 2) S] : Prop :=
+  ∀ x : T.toIntrinsic.realization,
+    T.embed x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+      x ∈ T.manifoldBoundaryCarrier
+
+/-- On each maximal triangle, the ambient manifold boundary is one exposed simplicial face of
+dimension at most one.
+
+This is the missing regularity behind the bordered Moise argument.  Merely asking for the
+boundary to be an edge subcomplex permits an interior chord joining two boundary vertices.  An
+arbitrary convex-hull polygonalization can flatten such a chord onto the model boundary.  The
+facewise condition rules that out and is stable under affine subdivision: the pullback of its
+supporting face to every new triangle is again empty, a vertex, or an edge. -/
+def BoundaryFacewiseRegular [ChartedSpace (EuclideanHalfSpace 2) S] : Prop :=
+  ∀ t ∈ T.faces, ∃ b : Finset T.Vertex,
+    b ⊆ t ∧ b.card ≤ 2 ∧
+      ∀ x : T.toIntrinsic.realization, x ∈ T.toIntrinsic.faceCarrier t →
+        (T.embed x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+          x ∈ T.toIntrinsic.faceCarrier b)
+
+/-- Facewise boundary regularity for an embedding of a raw finite geometric realization.
+
+This is the side-local form used by the gluing theorem.  It deliberately mentions only
+barycentric coordinates, so it transports transparently across vertex relabelings. -/
+def BoundaryFacewiseRegularEmbedding
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    {V : Type*} [Fintype V] (F : Finset (Finset V))
+    (e : GeometricRealization V F → S) : Prop :=
+  ∀ t ∈ F, ∃ b : Finset V,
+    b ⊆ t ∧ b.card ≤ 2 ∧
+      ∀ x : GeometricRealization V F, (∀ v ∉ t, x.1 v = 0) →
+        (e x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+          ∀ v ∉ b, x.1 v = 0)
+
+/-- In a nondegenerate affine triangle lying in the closed half-plane, the zero-normal locus is
+the convex hull of exactly those vertices on the boundary line.  Affine independence rules out
+all three vertices lying on that line, so this is an exposed face of cardinality at most two. -/
+theorem planeComplex_baryEval_coordZero_exposed
+    (K : PlaneComplex) {t : Finset K.Vertex} (ht : t ∈ K.cells)
+    (hnonneg : ∀ v ∈ t, 0 ≤ K.position v 0) :
+    ∃ b : Finset K.Vertex,
+      b ⊆ t ∧ b.card ≤ 2 ∧
+        ∀ x : GeometricRealization K.Vertex K.cells,
+          (∀ v ∉ t, x.1 v = 0) →
+            (K.baryEval x.1 0 = 0 ↔ ∀ v ∉ b, x.1 v = 0) := by
+  classical
+  let b := t.filter fun v ↦ K.position v 0 = 0
+  have hbt : b ⊆ t := Finset.filter_subset _ _
+  have hbcard : b.card ≤ 2 := by
+    by_contra hcard
+    have htcard : t.card = 3 := K.card_of_mem_cells ht
+    have hble : b.card ≤ t.card := Finset.card_le_card hbt
+    have hbcard3 : b.card = 3 := by omega
+    have hbeq : b = t :=
+      Finset.eq_of_subset_of_card_le hbt (by omega)
+    let H : AffineSubspace ℝ Plane :=
+      (LinearMap.ker
+        (PiLp.projₗ 2 (fun _ : Fin 2 ↦ ℝ) 0)).toAffineSubspace
+    have hspanTop :
+        affineSpan ℝ (Set.range fun v : t ↦ K.position v) = ⊤ :=
+      ((K.affineIndependent t (K.mem_simplexes_of_mem_cells ht)).affineSpan_eq_top_iff_card_eq_finrank_add_one).mpr (by
+          simpa [Plane] using htcard)
+    have hspanH :
+        affineSpan ℝ (Set.range fun v : t ↦ K.position v) ≤ H := by
+      apply affineSpan_le.mpr
+      rintro p ⟨v, rfl⟩
+      change K.position v.1 0 = 0
+      have hvb : v.1 ∈ b := by rw [hbeq]; exact v.2
+      exact (Finset.mem_filter.mp hvb).2
+    have htopH : (⊤ : AffineSubspace ℝ Plane) ≤ H := by
+      rw [← hspanTop]
+      exact hspanH
+    let p : Plane := EuclideanSpace.single 0 1
+    have hpTop : p ∈ (⊤ : AffineSubspace ℝ Plane) := by simp
+    have hpH := htopH hpTop
+    change p 0 = 0 at hpH
+    simp [p] at hpH
+  refine ⟨b, hbt, hbcard, ?_⟩
+  intro x hxt
+  rw [K.baryEval_eq_sum_of_support hxt]
+  have hcoord :
+      (∑ v ∈ t, x.1 v • K.position v : Plane) 0 =
+        ∑ v ∈ t, x.1 v * K.position v 0 := by
+    change
+      ((PiLp.projₗ 2 (fun _ : Fin 2 ↦ ℝ) 0) : Plane →ₗ[ℝ] ℝ)
+          (∑ v ∈ t, x.1 v • K.position v) =
+        ∑ v ∈ t, x.1 v * K.position v 0
+    simp
+  rw [hcoord]
+  constructor
+  · intro hsum
+    have hterms : ∀ v ∈ t, x.1 v * K.position v 0 = 0 :=
+      (Finset.sum_eq_zero_iff_of_nonneg
+        (fun v hv ↦ mul_nonneg (x.2.1.1 v) (hnonneg v hv))).mp hsum
+    intro v hvb
+    by_cases hvt : v ∈ t
+    · have hvpos : K.position v 0 ≠ 0 := by
+        intro hvzero
+        exact hvb (Finset.mem_filter.mpr ⟨hvt, hvzero⟩)
+      exact (mul_eq_zero.mp (hterms v hvt)).resolve_right hvpos
+    · exact hxt v hvt
+  · intro hx
+    apply Finset.sum_eq_zero
+    intro v hv
+    by_cases hvb : v ∈ b
+    · rw [(Finset.mem_filter.mp hvb).2, mul_zero]
+    · rw [hx v hvb, zero_mul]
+
+/-- The barycentric realization of a plane triangle mesh lying in a boundary-faithful chart is
+facewise boundary regular. -/
+theorem TriangleMesh.boundaryFacewiseRegularEmbedding_chart
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    (M : TriangleMesh) (c : MoiseChart S) (hc : c.BoundaryFaithful)
+    (hmodel : M.toPlaneComplex.support ⊆ c.kind.modelRegion) :
+    BoundaryFacewiseRegularEmbedding M.triangles
+      (fun x ↦
+        (c.chart.symm
+          (M.coordinateEmbedInto c.kind.modelRegion hmodel x)).1) := by
+  classical
+  intro t ht
+  by_cases hk : c.kind = ChartKind.disk
+  · refine ⟨∅, Finset.empty_subset _, by simp, ?_⟩
+    intro x hxt
+    constructor
+    · intro hx
+      exact False.elim <|
+        (hc.1 hk
+          (c.chart.symm
+            (M.coordinateEmbedInto c.kind.modelRegion hmodel x)).1
+          (c.chart.symm
+            (M.coordinateEmbedInto c.kind.modelRegion hmodel x)).2) hx
+    · intro hx
+      have hzero : ∀ v, x.1 v = 0 :=
+        fun v ↦ hx v (Finset.notMem_empty v)
+      have hsum := x.2.1.2
+      simp only [hzero, Finset.sum_const_zero] at hsum
+      norm_num at hsum
+  · have hkHalf : c.kind = ChartKind.halfDisk := by
+      cases hkind : c.kind
+      · exact (hk hkind).elim
+      · rfl
+    have htCells : t ∈ M.toPlaneComplex.cells := by
+      rwa [M.toPlaneComplex_cells]
+    have hnonneg : ∀ v ∈ t, 0 ≤ M.position v 0 := by
+      intro v hv
+      have hvCarrier :
+          M.position v ∈ M.toPlaneComplex.cellCarrier t := by
+        rw [PlaneComplex.cellCarrier]
+        apply subset_convexHull ℝ
+        exact ⟨v, hv, rfl⟩
+      have hvSupport : M.position v ∈ M.toPlaneComplex.support := by
+        exact
+          M.toPlaneComplex.cellCarrier_subset_support
+            (M.toPlaneComplex.mem_simplexes_of_mem_cells htCells) hvCarrier
+      have hvModel := hmodel hvSupport
+      rw [hkHalf] at hvModel
+      exact hvModel.2
+    obtain ⟨b, hbt, hbcard, hb⟩ :=
+      planeComplex_baryEval_coordZero_exposed M.toPlaneComplex htCells hnonneg
+    refine ⟨b, hbt, hbcard, ?_⟩
+    intro x hxt
+    have hchart :=
+      hc.2 hkHalf
+        (c.chart.symm
+          (M.coordinateEmbedInto c.kind.modelRegion hmodel x)).1
+        (c.chart.symm
+          (M.coordinateEmbedInto c.kind.modelRegion hmodel x)).2
+    have happly :=
+      c.chart.apply_symm_apply
+        (M.coordinateEmbedInto c.kind.modelRegion hmodel x)
+    have hplane :=
+      congrArg (fun z : c.kind.modelRegion ↦ (z : Plane)) happly
+    rw [hplane] at hchart
+    let x' :
+        GeometricRealization M.toPlaneComplex.Vertex
+          M.toPlaneComplex.cells :=
+      ⟨x.1, x.2.1, by
+        rw [M.toPlaneComplex_cells]
+        exact x.2.2⟩
+    have hb' := hb x' hxt
+    change
+      M.toPlaneComplex.baryEval x.1 0 = 0 ↔
+        ∀ v ∉ b, x.1 v = 0 at hb'
+    exact hchart.trans hb'
+
+/-- Boundary-face regularity depends only on which source points map to the ambient boundary. -/
+theorem boundaryFacewiseRegularEmbedding_congr
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    {V : Type*} [Fintype V] [DecidableEq V]
+    {F : Finset (Finset V)}
+    {e e' : GeometricRealization V F → S}
+    (h : BoundaryFacewiseRegularEmbedding F e)
+    (hee : ∀ x,
+      (e' x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+        e x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S)) :
+    BoundaryFacewiseRegularEmbedding F e' := by
+  intro t ht
+  obtain ⟨b, hbt, hbcard, hb⟩ := h t ht
+  refine ⟨b, hbt, hbcard, ?_⟩
+  intro x hxt
+  exact (hee x).trans (hb x hxt)
+
+/-- Facewise boundary regularity is invariant under an injective relabeling of the vertex type. -/
+theorem boundaryFacewiseRegularEmbedding_relabel
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    {A B : Type*} [Fintype A] [Fintype B] [DecidableEq A] [DecidableEq B]
+    (ι : A ↪ B) (F : Finset (Finset A))
+    (e : GeometricRealization A F → S)
+    (h : BoundaryFacewiseRegularEmbedding F e) :
+    BoundaryFacewiseRegularEmbedding (relabelFaceFamily ι F)
+      (e ∘ (relabelGeometricRealizationHomeomorph ι F).symm) := by
+  classical
+  intro t ht
+  obtain ⟨s, hsF, rfl⟩ := Finset.mem_image.mp ht
+  obtain ⟨b, hbs, hbcard, hb⟩ := h s hsF
+  let b' : Finset B := b.map ι
+  have hbsub : b' ⊆ s.map ι := by
+    intro w hw
+    obtain ⟨v, hvb, rfl⟩ := Finset.mem_map.mp hw
+    exact Finset.mem_map.mpr ⟨v, hbs hvb, rfl⟩
+  have hbcard' : b'.card ≤ 2 := by
+    simpa [b'] using hbcard
+  refine ⟨b', hbsub, hbcard', ?_⟩
+  intro x hxs
+  let xA : GeometricRealization A F :=
+    (relabelGeometricRealizationHomeomorph ι F).symm x
+  have hxAs : ∀ v ∉ s, xA.1 v = 0 := by
+    intro v hv
+    rw [show xA.1 v = x.1 (ι v) by
+      exact pullGeometricRealization_apply ι F x v]
+    apply hxs
+    intro hvmap
+    obtain ⟨w, hws, hwv⟩ := Finset.mem_map.mp hvmap
+    exact hv (ι.injective hwv ▸ hws)
+  have hboundary := hb xA hxAs
+  change e xA ∈
+      (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+    ∀ w ∉ b', x.1 w = 0
+  refine hboundary.trans ?_
+  constructor
+  · intro hx w hwb
+    by_cases hwRange : w ∈ Set.range ι
+    · obtain ⟨v, rfl⟩ := hwRange
+      rw [← pullGeometricRealization_apply ι F x v]
+      apply hx v
+      intro hvb
+      exact hwb (Finset.mem_map.mpr ⟨v, hvb, rfl⟩)
+    · have hpush :=
+        congrArg Subtype.val (push_pullGeometricRealization ι F x)
+      rw [← congrFun hpush w]
+      exact pushGeometricRealization_apply_of_notMem_range ι F xA hwRange
+  · intro hx v hvb
+    change (pullGeometricRealization ι F x).1 v = 0
+    rw [pullGeometricRealization_apply ι F x v]
+    apply hx (ι v)
+    intro hmem
+    obtain ⟨w, hwb, hwv⟩ := Finset.mem_map.mp hmem
+    exact hvb (ι.injective hwv ▸ hwb)
+
+/-- The images of the three vertices of a refined face under a faithful affine subdivision are
+affinely independent in the old barycentric coordinate space. -/
+theorem IntrinsicTwoComplex.Subdivision.affineIndependent_vertexImages
+    {K : IntrinsicTwoComplex} (R : K.Subdivision)
+    (t : R.refined.Face) :
+    AffineIndependent ℝ
+      (fun v : t.1 ↦ (R.homeo (R.refined.facePoint t v)).1) := by
+  classical
+  obtain ⟨a, ha⟩ := R.affineOnFace t.1 t.2
+  let f : Plane →ᵃ[ℝ] (K.Vertex → ℝ) :=
+    a.comp (R.refined.facePlaneInverseAffine t)
+  have hfInj :
+      Set.InjOn f (convexHull ℝ (Set.range standardTriangleVertex)) := by
+    intro x hx y hy hxy
+    have hxSupport : x ∈ standardTrianglePlaneComplex.support := by
+      rw [standardTrianglePlaneComplex_support]
+      exact hx
+    have hySupport : y ∈ standardTrianglePlaneComplex.support := by
+      rw [standardTrianglePlaneComplex_support]
+      exact hy
+    let xp : standardTrianglePlaneComplex.support := ⟨x, hxSupport⟩
+    let yp : standardTrianglePlaneComplex.support := ⟨y, hySupport⟩
+    let X : R.refined.ClosedFace t :=
+      (R.refined.facePlaneHomeomorph t).symm xp
+    let Y : R.refined.ClosedFace t :=
+      (R.refined.facePlaneHomeomorph t).symm yp
+    have hXval :
+        X.1.1 = R.refined.facePlaneInverseAffine t x := by
+      simpa only [X, xp] using
+        R.refined.facePlaneHomeomorph_symm_val t xp
+    have hYval :
+        Y.1.1 = R.refined.facePlaneInverseAffine t y := by
+      simpa only [Y, yp] using
+        R.refined.facePlaneHomeomorph_symm_val t yp
+    have hRX : (R.homeo X.1).1 = f x := by
+      rw [ha X.1 X.2]
+      change a X.1.1 = a (R.refined.facePlaneInverseAffine t x)
+      rw [hXval]
+    have hRY : (R.homeo Y.1).1 = f y := by
+      rw [ha Y.1 Y.2]
+      change a Y.1.1 = a (R.refined.facePlaneInverseAffine t y)
+      rw [hYval]
+    have hRXY : R.homeo X.1 = R.homeo Y.1 := by
+      apply Subtype.ext
+      rw [hRX, hRY]
+      exact hxy
+    have hXY : X = Y := by
+      apply Subtype.ext
+      exact R.homeo.injective hRXY
+    have hplane :=
+      congrArg (R.refined.facePlaneHomeomorph t) hXY
+    have hxySub : xp = yp := by
+      simpa only [X, Y,
+        (R.refined.facePlaneHomeomorph t).apply_symm_apply] using hplane
+    exact congrArg Subtype.val hxySub
+  have hfin :
+      AffineIndependent ℝ (f ∘ standardTriangleVertex) :=
+    affineIndependent_comp_of_injOn_convexHull standardTriangleVertex
+      standardTriangleVertex_affineIndependent f hfInj
+  apply (affineIndependent_equiv (R.refined.faceVertexEquiv t)).mp
+  convert hfin using 1
+  funext i
+  change
+    (R.homeo
+        (R.refined.facePoint t (R.refined.faceVertexEquiv t i))).1 =
+      f (standardTriangleVertex i)
+  rw [ha _ (R.refined.facePoint_mem_faceCarrier t _)]
+  change
+    a (R.refined.facePoint t (R.refined.faceVertexEquiv t i)).1 =
+      a (R.refined.facePlaneInverseAffine t (standardTriangleVertex i))
+  rw [R.refined.facePlaneInverseAffine_standardVertex,
+    R.refined.facePoint_val]
+  rfl
+
+/-- A barycentric point supported on `b` lies in the convex hull of the corresponding unit
+coordinate vectors. -/
+theorem IntrinsicTwoComplex.mem_convexHull_unitVectors_of_mem_faceCarrier
+    (K : IntrinsicTwoComplex) (b : Finset K.Vertex)
+    (x : K.realization) (hx : x ∈ K.faceCarrier b) :
+    x.1 ∈ convexHull ℝ
+      (((b.image fun v ↦ Pi.single v 1 : Finset (K.Vertex → ℝ))) :
+        Set (K.Vertex → ℝ)) := by
+  classical
+  have hsum : ∑ v ∈ b, x.1 v = 1 := by
+    calc
+      ∑ v ∈ b, x.1 v = ∑ v, x.1 v :=
+        Finset.sum_subset (Finset.subset_univ b)
+          (fun v _ hv ↦ hx v hv)
+      _ = 1 := x.2.1.2
+  have hcenter :
+      b.centerMass x.1 (fun v ↦ Pi.single v 1) = x.1 := by
+    rw [Finset.centerMass_eq_of_sum_1 _ _ hsum]
+    funext w
+    simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    by_cases hw : w ∈ b
+    · rw [Finset.sum_eq_single w]
+      · simp
+      · intro v hv hvw
+        simp [Pi.single_apply, hvw]
+      · simp [hw]
+    · rw [hx w hw]
+      apply Finset.sum_eq_zero
+      intro v hv
+      have hvw : v ≠ w := fun h ↦ hw (h ▸ hv)
+      simp [Pi.single_apply, hvw]
+  rw [← hcenter]
+  apply Finset.centerMass_mem_convexHull b
+  · exact fun v _ ↦ x.2.1.1 v
+  · rw [hsum]
+    norm_num
+  · intro v hv
+    exact Finset.mem_coe.mpr (Finset.mem_image.mpr ⟨v, hv, rfl⟩)
+
+/-- Facewise boundary regularity survives every faithful affine intrinsic subdivision. -/
+theorem boundaryFacewiseRegular_refine
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    (T : PartialTriangulation S) (hboundary : T.BoundaryFacewiseRegular)
+    (R : T.toIntrinsic.Subdivision) :
+    (T.refine R).BoundaryFacewiseRegular := by
+  classical
+  intro t ht
+  change Finset R.refined.Vertex at t
+  change t ∈ R.refined.faces at ht
+  obtain ⟨u, hu, htu⟩ := R.subordinate t ht
+  obtain ⟨b, hbu, hbcard, hb⟩ := hboundary u hu
+  let q : t → T.toIntrinsic.realization :=
+    fun v ↦ R.homeo
+      (R.refined.facePoint (⟨t, ht⟩ : R.refined.Face) v)
+  let d : Finset t :=
+    Finset.univ.filter fun v ↦ q v ∈ T.toIntrinsic.faceCarrier b
+  let vertexEmbedding : t ↪ R.refined.Vertex :=
+    ⟨Subtype.val, Subtype.val_injective⟩
+  let b' : Finset R.refined.Vertex := d.map vertexEmbedding
+  have hb't : b' ⊆ t := by
+    intro v hv
+    obtain ⟨w, hwd, rfl⟩ := Finset.mem_map.mp hv
+    exact w.2
+  have hdcard : d.card ≤ 2 := by
+    by_contra hd
+    have htcard : Fintype.card t = 3 := by
+      rw [Fintype.card_coe, R.refined.faces_card t ht]
+    have hdle : d.card ≤ Fintype.card t := by
+      calc
+        d.card ≤ (Finset.univ : Finset t).card :=
+          Finset.card_le_card (Finset.filter_subset _ _)
+        _ = Fintype.card t := Finset.card_univ
+    have hdcard3 : d.card = 3 := by omega
+    have hdeq : d = Finset.univ :=
+      Finset.eq_of_subset_of_card_le (Finset.subset_univ _)
+        (by simpa only [Finset.card_univ] using (show Fintype.card t ≤ d.card by omega))
+    have hall (v : t) : q v ∈ T.toIntrinsic.faceCarrier b := by
+      have hvd : v ∈ d := by rw [hdeq]; simp
+      exact (Finset.mem_filter.mp hvd).2
+    let B : Finset (T.toIntrinsic.Vertex → ℝ) :=
+      b.image fun v ↦ Pi.single v 1
+    have hspan :
+        Set.range (fun v : t ↦ (q v).1) ⊆
+          affineSpan ℝ (B : Set (T.toIntrinsic.Vertex → ℝ)) := by
+      rintro z ⟨v, rfl⟩
+      apply convexHull_subset_affineSpan
+        (B : Set (T.toIntrinsic.Vertex → ℝ))
+      exact
+        IntrinsicTwoComplex.mem_convexHull_unitVectors_of_mem_faceCarrier
+          T.toIntrinsic b (q v) (hall v)
+    have hAI :
+        AffineIndependent ℝ
+          (fun v : t ↦
+            (R.homeo
+              (R.refined.facePoint
+                (⟨t, ht⟩ : R.refined.Face) v)).1) :=
+      IntrinsicTwoComplex.Subdivision.affineIndependent_vertexImages R
+        (⟨t, ht⟩ : R.refined.Face)
+    let A : Finset (T.toIntrinsic.Vertex → ℝ) :=
+      Finset.univ.image fun v : t ↦ (q v).1
+    have hqInjective : Function.Injective (fun v : t ↦ (q v).1) :=
+      hAI.injective
+    let toA : t → A := fun v ↦
+      ⟨(q v).1, Finset.mem_image.mpr
+        ⟨v, Finset.mem_univ _, rfl⟩⟩
+    have htoAInjective : Function.Injective toA := by
+      intro v w hvw
+      apply hqInjective
+      exact congrArg
+        (fun z : A ↦ (z : T.toIntrinsic.Vertex → ℝ)) hvw
+    have htoASurjective : Function.Surjective toA := by
+      rintro ⟨z, hz⟩
+      obtain ⟨v, _, hvz⟩ := Finset.mem_image.mp hz
+      refine ⟨v, Subtype.ext ?_⟩
+      exact hvz
+    let e : t ≃ A :=
+      Equiv.ofBijective toA ⟨htoAInjective, htoASurjective⟩
+    have hAI' : AffineIndependent ℝ
+        ((↑) : A → (T.toIntrinsic.Vertex → ℝ)) := by
+      apply (affineIndependent_equiv e).mp
+      convert hAI using 1
+      funext v
+      rfl
+    have hAspan :
+        (A : Set (T.toIntrinsic.Vertex → ℝ)) ⊆
+          affineSpan ℝ (B : Set (T.toIntrinsic.Vertex → ℝ)) := by
+      intro z hz
+      obtain ⟨v, _, rfl⟩ := Finset.mem_image.mp hz
+      exact hspan ⟨v, rfl⟩
+    have hcardAB : A.card ≤ B.card :=
+      hAI'.card_le_card_of_subset_affineSpan hAspan
+    have hAcard : A.card = Fintype.card t := by
+      change
+        (Finset.univ.image fun v : t ↦ (q v).1).card =
+          Fintype.card t
+      rw [Finset.card_image_iff.mpr hqInjective.injOn,
+        Finset.card_univ]
+    have hcardle : Fintype.card t ≤ B.card := hAcard ▸ hcardAB
+    have hBcard : B.card ≤ b.card := Finset.card_image_le
+    omega
+  have hb'card : b'.card ≤ 2 := by
+    simpa only [b', Finset.card_map] using hdcard
+  refine ⟨b', hb't, hb'card, ?_⟩
+  intro x hxt
+  change R.refined.realization at x
+  change x ∈ R.refined.faceCarrier t at hxt
+  obtain ⟨a, ha⟩ := R.affineOnFace t ht
+  have hsum : ∑ v : t, x.1 v.1 = 1 :=
+    R.refined.sum_face_coords (⟨t, ht⟩ : R.refined.Face) x hxt
+  have hsource :
+      (R.homeo x).1 =
+        ∑ v : t, x.1 v.1 • (q v).1 := by
+    calc
+      (R.homeo x).1 = a x.1 := ha x hxt
+      _ = a (Finset.univ.affineCombination ℝ
+          (fun v : t ↦
+            (R.refined.facePoint
+              (⟨t, ht⟩ : R.refined.Face) v).1)
+          (fun v : t ↦ x.1 v.1)) := by
+        rw [R.refined.face_affineCombination_eq
+          (⟨t, ht⟩ : R.refined.Face) x hxt]
+      _ = Finset.univ.affineCombination ℝ
+          (a ∘ fun v : t ↦
+            (R.refined.facePoint
+              (⟨t, ht⟩ : R.refined.Face) v).1)
+          (fun v : t ↦ x.1 v.1) :=
+        Finset.map_affineCombination _ _ _ hsum a
+      _ = ∑ v : t, x.1 v.1 • (q v).1 := by
+        rw [Finset.affineCombination_eq_linear_combination _ _ _ hsum]
+        apply Finset.sum_congr rfl
+        intro v hv
+        change
+          x.1 v.1 •
+              a (R.refined.facePoint
+                (⟨t, ht⟩ : R.refined.Face) v).1 =
+            x.1 v.1 • (q v).1
+        congr 1
+        exact (ha _
+          (R.refined.facePoint_mem_faceCarrier
+            (⟨t, ht⟩ : R.refined.Face) v)).symm
+  have hboundaryOld :=
+    hb (R.homeo x) (htu x hxt)
+  change
+    T.embed (R.homeo x) ∈
+        (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+      ∀ v ∉ b', x.1 v = 0
+  refine hboundaryOld.trans ?_
+  change
+    (∀ k ∉ b, (R.homeo x).1 k = 0) ↔
+      ∀ v ∉ b', x.1 v = 0
+  constructor
+  · intro hx v hvb'
+    by_cases hvt : v ∈ t
+    · let vt : t := ⟨v, hvt⟩
+      have hvd : vt ∉ d := by
+        intro hvd
+        apply hvb'
+        exact Finset.mem_map.mpr ⟨vt, hvd, rfl⟩
+      have hqNot : q vt ∉ T.toIntrinsic.faceCarrier b := by
+        intro hq
+        exact hvd (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hq⟩)
+      rw [T.toIntrinsic.mem_faceCarrier_iff] at hqNot
+      simp only [not_forall] at hqNot
+      obtain ⟨k, hkb, hqk⟩ := hqNot
+      have hsumk :
+          ∑ w : t, x.1 w.1 * (q w).1 k = 0 := by
+        rw [← hx k hkb, hsource]
+        simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+      have hterm :
+          x.1 vt.1 * (q vt).1 k = 0 :=
+        (Finset.sum_eq_zero_iff_of_nonneg
+          (fun w hw ↦ mul_nonneg (x.2.1.1 w.1)
+            ((q w).2.1.1 k))).mp hsumk vt (Finset.mem_univ _)
+      exact (mul_eq_zero.mp hterm).resolve_right hqk
+    · exact hxt v hvt
+  · intro hx k hkb
+    rw [hsource]
+    simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    apply Finset.sum_eq_zero
+    intro v hv
+    by_cases hvd : v ∈ d
+    · have hqCarrier := (Finset.mem_filter.mp hvd).2
+      rw [hqCarrier k hkb, mul_zero]
+    · have hvb' : v.1 ∉ b' := by
+        intro hvmap
+        obtain ⟨w, hwd, hwv⟩ := Finset.mem_map.mp hvmap
+        have hwEq : w = v := Subtype.ext hwv
+        exact hvd (hwEq ▸ hwd)
+      rw [hx v.1 hvb', zero_mul]
+
+/-- On a boundaryless manifold every raw finite realization has empty boundary face. -/
+theorem boundaryFacewiseRegularEmbedding_of_boundaryless
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S]
+    {V : Type*} [Fintype V] {F : Finset (Finset V)}
+    (e : GeometricRealization V F → S) :
+    BoundaryFacewiseRegularEmbedding F e := by
+  classical
+  intro t ht
+  refine ⟨∅, Finset.empty_subset _, by simp, ?_⟩
+  intro x hxt
+  rw [ModelWithCorners.Boundaryless.boundary_eq_empty]
+  constructor
+  · simp
+  · intro hx
+    have hzero : ∀ v, x.1 v = 0 := fun v ↦ hx v (Finset.notMem_empty v)
+    have hsum := x.2.1.2
+    simp only [hzero, Finset.sum_const_zero] at hsum
+    norm_num at hsum
+
+/-- On a boundaryless manifold every face has the empty exposed ambient-boundary face. -/
+theorem boundaryFacewiseRegular_of_boundaryless
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S] :
+    T.BoundaryFacewiseRegular := by
+  classical
+  intro t ht
+  refine ⟨∅, Finset.empty_subset _, by simp, ?_⟩
+  intro x hxt
+  rw [ModelWithCorners.Boundaryless.boundary_eq_empty]
+  constructor
+  · simp
+  · intro hx
+    have hsum := x.2.1.2
+    have hzero : ∀ v, x.1 v = 0 := by
+      intro v
+      exact hx v (Finset.notMem_empty v)
+    simp only [hzero, Finset.sum_const_zero] at hsum
+    norm_num at hsum
+
+/-- Membership in the canonical ambient-boundary edge carrier always implies ambient-boundary
+membership.  Thus `BoundaryCompatible` only has substantive content in the forward direction:
+every ambient-boundary point of the partial triangulation must be carried by one of these edges. -/
+theorem mem_boundary_of_mem_manifoldBoundaryCarrier
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    {x : T.toIntrinsic.realization} (hx : x ∈ T.manifoldBoundaryCarrier) :
+    T.embed x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S := by
+  classical
+  obtain ⟨e, he, hxe⟩ := hx
+  exact (Finset.mem_filter.mp he).2 x hxe
+
 /-- The image in `S` of the combinatorial boundary: points of the realization supported on a
 boundary edge. -/
 def boundarySupport : Set S :=
@@ -375,6 +1019,26 @@ theorem support_eq_empty_of_faces_eq_empty {S : Type*} [TopologicalSpace S]
 @[simp] theorem empty_support (S : Type*) [TopologicalSpace S] :
     (empty S).support = ∅ :=
   support_eq_empty_of_faces_eq_empty _ rfl
+
+theorem empty_boundaryCompatible
+    (S : Type*) [TopologicalSpace S] [ChartedSpace (EuclideanHalfSpace 2) S] :
+    (empty S).BoundaryCompatible := by
+  intro x
+  obtain ⟨t, ht, -⟩ := x.2.2
+  exact (Finset.notMem_empty t ht).elim
+
+theorem boundaryCompatible_of_boundaryless
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S] :
+    T.BoundaryCompatible := by
+  intro x
+  constructor
+  · rw [ModelWithCorners.Boundaryless.boundary_eq_empty]
+    simp
+  · intro hx
+    have := T.mem_boundary_of_mem_manifoldBoundaryCarrier hx
+    rw [ModelWithCorners.Boundaryless.boundary_eq_empty] at this
+    exact this.elim
 
 end PartialTriangulation
 
@@ -450,6 +1114,64 @@ theorem patchPartialTriangulation_support :
   PartialTriangulation.ofPlaneComplex_support c.kind.patchComplex
     c.kind.patchComplex_pure c.patchEmbed c.isEmbedding_patchEmbed
 
+theorem patchPartialTriangulation_embed_mem_domain
+    (x : c.patchPartialTriangulation.toIntrinsic.realization) :
+    c.patchPartialTriangulation.embed x ∈ c.domain := by
+  change
+    (c.chart.symm
+      (c.patchToModelRegion
+        (c.kind.patchComplex.realizationHomeomorph c.kind.patchComplex_pure x))).1 ∈ c.domain
+  exact
+    (c.chart.symm
+      (c.patchToModelRegion
+        (c.kind.patchComplex.realizationHomeomorph c.kind.patchComplex_pure x))).2
+
+theorem patchPartialTriangulation_chart_coord
+    (x : c.patchPartialTriangulation.toIntrinsic.realization) :
+    (c.chart
+      ⟨c.patchPartialTriangulation.embed x,
+        c.patchPartialTriangulation_embed_mem_domain x⟩ : Plane) =
+      c.kind.patchComplex.baryEval x.1 := by
+  change
+    (c.chart
+      ⟨(c.chart.symm
+          (c.patchToModelRegion
+            (c.kind.patchComplex.realizationHomeomorph c.kind.patchComplex_pure x))).1, _⟩ :
+        Plane) =
+      c.kind.patchComplex.baryEval x.1
+  have h :=
+    c.chart.apply_symm_apply
+      (c.patchToModelRegion
+        (c.kind.patchComplex.realizationHomeomorph c.kind.patchComplex_pure x))
+  exact (congrArg (fun z : c.kind.modelRegion => (z : Plane)) h).trans
+    (c.kind.patchComplex.realizationHomeomorph_apply c.kind.patchComplex_pure x)
+
+theorem BoundaryFaithful.mem_boundary_iff_isModelBoundary
+    [ChartedSpace (EuclideanHalfSpace 2) S] (hc : c.BoundaryFaithful)
+    (y : S) (hy : y ∈ c.domain) :
+    y ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+      c.kind.IsModelBoundary (c.chart ⟨y, hy⟩ : Plane) := by
+  let p : Plane := (c.chart ⟨y, hy⟩ : Plane)
+  change y ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+    c.kind.IsModelBoundary p
+  by_cases hk : c.kind = ChartKind.disk
+  · have hmodel :
+        c.kind.IsModelBoundary p = False := by
+      rw [hk]
+      rfl
+    rw [hmodel]
+    exact iff_false_intro (hc.1 hk y hy)
+  · have hkHalf : c.kind = ChartKind.halfDisk := by
+      cases hkind : c.kind
+      · exact (hk hkind).elim
+      · rfl
+    have hmodel :
+        c.kind.IsModelBoundary p = (p 0 = 0) := by
+      rw [hkHalf]
+      rfl
+    rw [hmodel]
+    simpa only [p] using hc.2 hkHalf y hy
+
 /-- The concrete chart patch covers the marked chart core. -/
 theorem core_subset_patchPartialTriangulation_support :
     c.core ⊆ c.patchPartialTriangulation.support := by
@@ -511,6 +1233,67 @@ theorem core_subset_interior_patchPartialTriangulation_support :
   apply interior_maximal hOsub hOopen
   refine ⟨c.chart.symm p, hzInterior, ?_⟩
   exact congrArg Subtype.val (c.chart.symm_apply_apply ⟨y, hyDomain⟩)
+
+/-- The concrete disk/half-disk chart patch carries the ambient manifold boundary on an explicit
+edge subcomplex.  In the half-disk case these are exactly the two vertical edges of the fixed
+half-diamond; in the disk case there are no ambient-boundary points. -/
+theorem patchPartialTriangulation_boundaryCompatible
+    [ChartedSpace (EuclideanHalfSpace 2) S] (hc : c.BoundaryFaithful) :
+    c.patchPartialTriangulation.BoundaryCompatible := by
+  classical
+  intro x
+  constructor
+  · intro hxBoundary
+    have hmodel :
+        c.kind.IsModelBoundary (c.kind.patchComplex.baryEval x.1) := by
+      rw [← c.patchPartialTriangulation_chart_coord x]
+      exact
+        (MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary c hc
+          (c.patchPartialTriangulation.embed x)
+          (c.patchPartialTriangulation_embed_mem_domain x)).mp hxBoundary
+    obtain ⟨e, heBoundary, hxe⟩ :=
+      (c.kind.patchComplex_isModelBoundary_iff x).mp hmodel
+    refine ⟨e, Finset.mem_filter.mpr ⟨?_, ?_⟩, hxe⟩
+    · exact c.kind.mem_patchComplex_edges_of_mem_patchBoundaryEdges heBoundary
+    · intro y hye
+      apply
+        (MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary c hc
+          (c.patchPartialTriangulation.embed y)
+          (c.patchPartialTriangulation_embed_mem_domain y)).mpr
+      rw [c.patchPartialTriangulation_chart_coord y]
+      exact (c.kind.patchComplex_isModelBoundary_iff y).mpr
+        ⟨e, heBoundary, hye⟩
+  · exact c.patchPartialTriangulation.mem_boundary_of_mem_manifoldBoundaryCarrier
+
+/-- The fixed disk/half-disk patch has no boundary chords.  In a half-disk face its boundary
+face is obtained by deleting the unique positive-normal vertex `1`; in a disk face it is empty. -/
+theorem patchPartialTriangulation_boundaryFacewiseRegular
+    [ChartedSpace (EuclideanHalfSpace 2) S] (hc : c.BoundaryFaithful) :
+    c.patchPartialTriangulation.BoundaryFacewiseRegular := by
+  classical
+  intro t ht
+  obtain ⟨b, hbt, hbcard, hb⟩ :=
+    c.kind.patchComplex_isModelBoundary_facewise t ht
+  refine ⟨b, hbt, hbcard, ?_⟩
+  intro x hxt
+  have hxt' : ∀ v ∉ t, x.1 v = 0 :=
+    (c.patchPartialTriangulation.toIntrinsic.mem_faceCarrier_iff t x).mp hxt
+  have hb' := hb x hxt'
+  rw [c.patchPartialTriangulation.toIntrinsic.mem_faceCarrier_iff]
+  have hsurfaceModel :
+      c.patchPartialTriangulation.embed x ∈
+          (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+        c.kind.IsModelBoundary (c.kind.patchComplex.baryEval x.1) := by
+    calc
+      _ ↔ c.kind.IsModelBoundary
+          (c.chart
+            ⟨c.patchPartialTriangulation.embed x,
+              c.patchPartialTriangulation_embed_mem_domain x⟩ : Plane) :=
+        MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary c hc
+          (c.patchPartialTriangulation.embed x)
+          (c.patchPartialTriangulation_embed_mem_domain x)
+      _ ↔ _ := by rw [c.patchPartialTriangulation_chart_coord x]
+  exact hsurfaceModel.trans hb'
 
 end MoiseChart
 
@@ -4584,7 +5367,10 @@ coordinate image is closed relative to the chosen plane perturbation region. -/
 theorem exists_straightenedChartOpen
     {S' : Type*} [TopologicalSpace S'] [T2Space S'] [CompactSpace S']
     [SecondCountableTopology S']
+    [ChartedSpace (EuclideanHalfSpace 2) S']
     (T : PartialTriangulation S') (c : MoiseChart S')
+    (hc : c.BoundaryFaithful)
+    (hboundary : T.BoundaryFacewiseRegular)
     (U : Set T.toIntrinsic.realization) (hU : IsOpen U)
     (hsub : U ⊆ T.chartOverlap c)
     (V : Set Plane) (hV : IsOpen V)
@@ -4599,6 +5385,10 @@ theorem exists_straightenedChartOpen
       (g' : U → c.kind.modelRegion)
       (g : T.toIntrinsic.realization → S'),
       (∀ y : U, (g' y : Plane) = (Q.sourceHomeomorph y).1.1) ∧
+      (∀ (_hk : c.kind = ChartKind.halfDisk) (y : U),
+        (Q.sourceHomeomorph y).1.1 0 = 0 ↔
+          T.embed y.1 ∈
+            (modelWithCornersEuclideanHalfSpace 2).boundary S') ∧
       (∀ y : U, g y.1 = (c.chart.symm (g' y)).1) ∧
       (∀ x, x ∉ U → g x = T.embed x) ∧
       MatchesAtFrontier U g T.embed ∧
@@ -4676,6 +5466,104 @@ theorem exists_straightenedChartOpen
       faceCertificate := fun f ↦ (R.facePLFilling (G := G') f).certificate
       faceClosedRegion_subset := fun f ↦ H.closedRegions_mem_region f
       faceCarrier_eq := fun f ↦ R.polygonalReplacementComplex_faceCarrier H f }
+  have hqzero :
+      ∀ (_hk : c.kind = ChartKind.halfDisk) (y : U),
+        (q y).1.1 0 = 0 ↔
+          T.embed y.1 ∈
+            (modelWithCornersEuclideanHalfSpace 2).boundary S' := by
+    intro hk y
+    have hfHalf : Set.range G'.map ⊆ HalfPlaneSet := by
+      rintro z ⟨p, rfl⟩
+      change f p.1 ∈ HalfPlaneSet
+      have hpModel :
+          f p.1 ∈ c.kind.modelRegion :=
+        (T.chartOverlapModelMap c (toOverlap p.1)).2
+      rw [hk] at hpModel
+      change 0 ≤ f p.1 0
+      exact hpModel.2
+    have hGface :
+        LocallyFiniteTriangleComplex.PlaneGraphRealization.FacewiseCoordZeroExposed
+          G' := by
+      intro a
+      let Rt := T.toIntrinsic.safeSubdivision a.1.1
+      let hs := Rt.subordinate a.1.2.1.1 a.1.2.1.2
+      let t : T.toIntrinsic.Face :=
+        ⟨Classical.choose hs, (Classical.choose_spec hs).1⟩
+      obtain ⟨b, hbt, hbcard, hb⟩ :=
+        hboundary t.1 t.2
+      let E :=
+        T.toIntrinsic.adaptiveFanFaceVertexEquiv U hU a
+      let v₀ :
+          {v // v ∈
+            T.toIntrinsic.adaptiveGlobalFanFaceVertices U hU a} :=
+        E.symm
+          (T.toIntrinsic.adaptiveFanCenterVertex U hU a)
+      have hv₀ :
+          v₀.1.1 ∉ T.toIntrinsic.faceCarrier b := by
+        change
+          T.toIntrinsic.adaptiveFaceCenter U a.1 ∉
+            T.toIntrinsic.faceCarrier b
+        apply
+          T.toIntrinsic.adaptiveFaceCenter_not_mem_faceCarrier_of_subordinate
+            hU a t
+        · exact (Classical.choose_spec hs).2
+        · exact hbt
+        · exact hbcard
+      obtain ⟨d, hda, hdcard, hd⟩ :=
+        T.toIntrinsic.adaptiveGlobalFanFaceMap_exists_exposedFace
+          hU a b v₀ hv₀
+      refine ⟨d, hda, hdcard, ?_⟩
+      intro x
+      let z : U :=
+        T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a x
+      have hzt : z.1 ∈ T.toIntrinsic.faceCarrier t.1 := by
+        exact (Classical.choose_spec hs).2
+          (T.toIntrinsic.adaptiveFanSourcePoint U hU a
+            (T.toIntrinsic.adaptiveFanRelabelSimplex U hU a x))
+          (T.toIntrinsic.adaptiveFanSourcePoint_mem_carrier U hU a _)
+      have hsurface :
+          T.embed z.1 ∈
+              (modelWithCornersEuclideanHalfSpace 2).boundary S' ↔
+            z.1 ∈ T.toIntrinsic.faceCarrier b :=
+        hb z.1 hzt
+      have hchart :
+          T.embed z.1 ∈
+              (modelWithCornersEuclideanHalfSpace 2).boundary S' ↔
+            f z 0 = 0 := by
+        have h :=
+          MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary
+            c hc (T.embed z.1) (hsub z.2)
+        have hmodel :
+            c.kind.IsModelBoundary
+                (c.chart ⟨T.embed z.1, hsub z.2⟩ : Plane) ↔
+              f z 0 = 0 := by
+          change c.kind.IsModelBoundary (f z) ↔ f z 0 = 0
+          rw [hk]
+          rfl
+        exact h.trans hmodel
+      have hsource :
+          G'.map
+              (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
+                (K := R) a x) 0 = 0 ↔
+            z.1 ∈ T.toIntrinsic.faceCarrier b := by
+        change f z 0 = 0 ↔ _
+        exact hchart.symm.trans hsurface
+      exact hsource.trans (hd x)
+    have hzero :=
+      LocallyFiniteTriangleComplex.polygonalReplacementHomeomorph_coordZero_iff_of_facewiseCoordZeroExposed
+        G' H hfHalf hGface (eU y)
+    change (q y).1.1 0 = 0 ↔ f y 0 = 0 at hzero
+    have hchart :=
+      MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary
+        c hc (T.embed y.1) (hsub y.2)
+    have hmodel :
+        c.kind.IsModelBoundary
+            (c.chart ⟨T.embed y.1, hsub y.2⟩ : Plane) ↔
+          f y 0 = 0 := by
+      change c.kind.IsModelBoundary (f y) ↔ f y 0 = 0
+      rw [hk]
+      rfl
+    exact hzero.trans (hchart.trans hmodel).symm
   let sourceParent (a : T.toIntrinsic.AdaptiveFanFace U hU) :
       T.toIntrinsic.Face := by
     let Rt := T.toIntrinsic.safeSubdivision a.1.1
@@ -4891,7 +5779,7 @@ theorem exists_straightenedChartOpen
   have hembed : _root_.Topology.IsEmbedding (frontierGlue U g T.embed) :=
     isEmbedding_frontierGlue_of_matches hU hgcont T.isEmbedding.continuous
       hgmatch hginj T.isEmbedding.injective hcross
-  exact ⟨Q, A, g', g, fun _ ↦ rfl, hgval, hgoutside, hgmatch, hgcont,
+  exact ⟨Q, A, g', g, fun _ ↦ rfl, hqzero, hgval, hgoutside, hgmatch, hgcont,
     hginj, hcross, hembed⟩
 
 /-- Straighten the old complex in a chart while fixing every source point whose old image lies
@@ -4901,7 +5789,10 @@ closed in that new open region. -/
 theorem exists_straightenedChartAway
     {S' : Type*} [TopologicalSpace S'] [T2Space S'] [CompactSpace S']
     [SecondCountableTopology S']
+    [ChartedSpace (EuclideanHalfSpace 2) S']
     (T : PartialTriangulation S') (c : MoiseChart S')
+    (hc : c.BoundaryFaithful)
+    (hboundary : T.BoundaryFacewiseRegular)
     (A : Set S') (hA : IsClosed A) :
     ∃ (U : Set T.toIntrinsic.realization) (hU : IsOpen U)
       (V : Set Plane) (hV : IsOpen V)
@@ -4916,6 +5807,10 @@ theorem exists_straightenedChartAway
         T.chartOverlapMap c y ∉ V) ∧
       (∀ y : T.chartOverlap c, y.1 ∉ U → T.embed y.1 ∈ A) ∧
       (∀ y : U, (g' y : Plane) = (Q.sourceHomeomorph y).1.1) ∧
+      (∀ (_hk : c.kind = ChartKind.halfDisk) (y : U),
+        (Q.sourceHomeomorph y).1.1 0 = 0 ↔
+          T.embed y.1 ∈
+            (modelWithCornersEuclideanHalfSpace 2).boundary S') ∧
       U ⊆ T.chartOverlap c ∧
       (∀ y : U, g y.1 = (c.chart.symm (g' y)).1) ∧
       (∀ x, T.embed x ∈ A → g x = T.embed x) ∧
@@ -5048,9 +5943,10 @@ theorem exists_straightenedChartAway
     rw [hrange]
     exact (T.isClosedEmbedding_chartOverlapPerturbationMap c).isClosed_range.preimage
       hjcont
-  obtain ⟨Q, Qatlas, g', g, hgcoord, hgval, hgoutside, hgmatch, hgcont, hginj,
-      hcross, hembed⟩ :=
-    exists_straightenedChartOpen T c U hU hsub V hV hVsub hmem hfVclosed
+  obtain ⟨Q, Qatlas, g', g, hgcoord, hqzero, hgval, hgoutside, hgmatch, hgcont,
+      hginj, hcross, hembed⟩ :=
+    exists_straightenedChartOpen T c hc hboundary U hU hsub V hV hVsub hmem
+      hfVclosed
   have hgfix : ∀ x, T.embed x ∈ A → g x = T.embed x := by
     intro x hxA
     apply hgoutside x
@@ -5061,7 +5957,8 @@ theorem exists_straightenedChartAway
     rw [hyval]
     exact hxA
   exact ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
-    hUprotected, hgcoord, hsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross, hembed⟩
+    hUprotected, hgcoord, hqzero, hsub, hgval, hgfix, hgmatch, hgcont, hginj,
+    hcross, hembed⟩
 
 end PartialTriangulation
 
@@ -5086,10 +5983,13 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
     (hagree : ∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
       (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y)
     (hsep : ∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
-      e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) :
+      e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ))
+    (hboundary₁ : BoundaryFacewiseRegularEmbedding F₁ e₁)
+    (hboundary₂ : BoundaryFacewiseRegularEmbedding F₂ e₂) :
     ∃ T' : PartialTriangulation S,
       T'.support = Set.range e₁ ∪ Set.range e₂ ∧
-      ∀ e ∈ T'.edges, (T'.faces.filter fun t => e ⊆ t).card ≤ 2 := by
+      (∀ e ∈ T'.edges, (T'.faces.filter fun t => e ⊆ t).card ≤ 2) ∧
+      T'.BoundaryFacewiseRegular := by
   classical
   -- the realization of the union family is the union of the realizations
   have hunion : ∀ x : V → ℝ, x ∈ GeometricRealization V (F₁ ∪ F₂) ↔
@@ -5180,7 +6080,7 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
         (Continuous.subtype_mk continuous_subtype_val _)).isClosed
   -- assemble the glued partial triangulation
   refine ⟨{ Vertex := V, faces := F₁ ∪ F₂, faces_card := hcard, embed := glue,
-            isEmbedding := ?_ }, ?_, ?_⟩
+            isEmbedding := ?_ }, ?_, ?_, ?_⟩
   · exact (hcont.isClosedEmbedding hinj).isEmbedding
   · -- the support is the union of the two images
     apply Set.Subset.antisymm
@@ -5197,6 +6097,30 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
       ((hcont.isClosedEmbedding hinj).isEmbedding) e
     rcases Finset.mem_biUnion.mp he with ⟨t, ht, het⟩
     exact (Finset.mem_powersetCard.mp het).2
+  · intro t ht
+    rcases Finset.mem_union.mp ht with ht₁ | ht₂
+    · obtain ⟨b, hbt, hbcard, hb⟩ := hboundary₁ t ht₁
+      refine ⟨b, hbt, hbcard, ?_⟩
+      intro x hxt
+      have hxt' : ∀ v ∉ t, x.1 v = 0 := hxt
+      let x₁ : GeometricRealization V F₁ :=
+        ⟨x.1, x.2.1, t, ht₁, hxt'⟩
+      change glue x ∈
+          (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+        ∀ v ∉ b, x.1 v = 0
+      rw [hglue_left x x₁.2]
+      exact hb x₁ hxt'
+    · obtain ⟨b, hbt, hbcard, hb⟩ := hboundary₂ t ht₂
+      refine ⟨b, hbt, hbcard, ?_⟩
+      intro x hxt
+      have hxt' : ∀ v ∉ t, x.1 v = 0 := hxt
+      let x₂ : GeometricRealization V F₂ :=
+        ⟨x.1, x.2.1, t, ht₂, hxt'⟩
+      change glue x ∈
+          (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+        ∀ v ∉ b, x.1 v = 0
+      rw [hglue_right x x₂.2]
+      exact hb x₂ hxt'
 
 /-- The invariant carried through the bordered Radó induction: the built complex is a
 combinatorial surface (every edge in at most two faces), and the region `A` absorbed so far lies
@@ -5215,14 +6139,18 @@ the combinatorial boundary).  Strengthening tightens the step's hypothesis and c
 together and keeps the assembly proof below valid; weakening the step's conclusion instead is
 the failure mode this rebuild exists to prevent. -/
 structure RadoInvariant {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
     (T : PartialTriangulation S) (A : Set S) : Prop where
   /-- The finitely many absorbed chart cores form a compact set.  This is needed to choose the
   finite collars and positive separation scales in the induction step. -/
   coresCompact : IsCompact A
   combSurface : ∀ e ∈ T.edges, (T.faces.filter fun t => e ⊆ t).card ≤ 2
+  /-- Every triangle meets the ambient manifold boundary in one exposed simplicial face. -/
+  boundaryFacewiseRegular : T.BoundaryFacewiseRegular
   coresInside : A ⊆ interior T.support
 
 theorem RadoInvariant.coresCovered {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
     {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A) :
     A ⊆ T.support :=
   hT.coresInside.trans interior_subset
@@ -5232,6 +6160,7 @@ the old support.  Protecting this whole buffer during chart straightening, rathe
 protecting `A` pointwise, makes preservation of the Radó interior invariant immediate. -/
 theorem RadoInvariant.exists_closedBuffer {S : Type*} [TopologicalSpace S]
     [T2Space S] [CompactSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
     {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A) :
     ∃ C : Set S,
       IsClosed C ∧ A ⊆ interior C ∧ C ⊆ interior T.support := by
@@ -5247,16 +6176,20 @@ theorem RadoInvariant.exists_closedBuffer {S : Type*} [TopologicalSpace S]
 /-- Enlarge the recorded absorbed set without changing the triangulation when the added set is
 already in the interior of its support. -/
 theorem RadoInvariant.absorb_of_subset {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
     {T : PartialTriangulation S} {A B : Set S} (hT : RadoInvariant T A)
     (hBcompact : IsCompact B) (hB : B ⊆ interior T.support) :
     RadoInvariant T (A ∪ B) where
   coresCompact := hT.coresCompact.union hBcompact
   combSurface := hT.combSurface
+  boundaryFacewiseRegular := hT.boundaryFacewiseRegular
   coresInside := Set.union_subset hT.coresInside hB
 
 /-- A single chart has a concrete finite partial triangulation satisfying the bordered Rado
 invariant.  This is the honest nonempty base patch used by the induction step. -/
-theorem radoInvariant_chartPatch {S : Type*} [TopologicalSpace S] (c : MoiseChart S) :
+theorem radoInvariant_chartPatch {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    (c : MoiseChart S) (hc : c.BoundaryFaithful) :
     RadoInvariant c.patchPartialTriangulation c.core where
   coresCompact := c.isCompact_core
   combSurface := by
@@ -5264,20 +6197,24 @@ theorem radoInvariant_chartPatch {S : Type*} [TopologicalSpace S] (c : MoiseChar
     have hecard := c.patchPartialTriangulation.card_of_mem_edges he
     change (c.kind.patchComplex.cells.filter fun t => e ⊆ t).card ≤ 2
     exact c.kind.patchComplex_edge_valence e hecard
+  boundaryFacewiseRegular := c.patchPartialTriangulation_boundaryFacewiseRegular hc
   coresInside := c.core_subset_interior_patchPartialTriangulation_support
 
 /-- If the fixed patch of the new chart already contains the previously absorbed region in its
 ambient interior, that patch alone is a valid next induction stage. -/
 theorem radoInvariant_chartPatch_absorb {S : Type*} [TopologicalSpace S]
-    (c : MoiseChart S) {A : Set S} (hAcompact : IsCompact A)
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    (c : MoiseChart S) (hc : c.BoundaryFaithful)
+    {A : Set S} (hAcompact : IsCompact A)
     (hA : A ⊆ interior c.patchPartialTriangulation.support) :
     RadoInvariant c.patchPartialTriangulation (A ∪ c.core) :=
   by simpa [Set.union_comm] using
-    (radoInvariant_chartPatch c).absorb_of_subset hAcompact hA
+    (radoInvariant_chartPatch c hc).absorb_of_subset hAcompact hA
 
 /-- The empty partial triangulation satisfies the invariant for the empty region: the base case
 of the Radó induction. -/
-theorem radoInvariant_empty (S : Type*) [TopologicalSpace S] :
+theorem radoInvariant_empty (S : Type*) [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S] :
     RadoInvariant (PartialTriangulation.empty S) ∅ where
   coresCompact := isCompact_empty
   combSurface := by
@@ -5285,6 +6222,12 @@ theorem radoInvariant_empty (S : Type*) [TopologicalSpace S] :
     simp only [PartialTriangulation.edges, PartialTriangulation.empty,
       Finset.biUnion_empty] at he
     exact absurd he (Finset.notMem_empty e)
+  boundaryFacewiseRegular := by
+    intro t ht
+    have ht' :
+        t ∈ (∅ :
+          Finset (Finset (PartialTriangulation.empty S).Vertex)) := ht
+    exact (Finset.notMem_empty t ht').elim
   coresInside := Set.empty_subset _
 
 section EvalHypotheses
@@ -5379,31 +6322,69 @@ def PartialTriangulation.BoundaryPreservingStraightening
 ambient boundary stratum.  All raw straightening data are already constructed; only the final
 pointwise boundary certificate remains to be extracted from the synchronized arrangement. -/
 theorem PartialTriangulation.exists_boundaryPreservingStraightening
-    (T : PartialTriangulation S) (c : MoiseChart S) (_hc : c.BoundaryFaithful) :
+    (T : PartialTriangulation S) (c : MoiseChart S) (hc : c.BoundaryFaithful)
+    (hboundary : T.BoundaryFacewiseRegular) :
     PartialTriangulation.BoundaryPreservingStraightening S T c := by
   letI : SecondCountableTopology S := moise_secondCountableTopology S
   intro A hA
   obtain ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
-      hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
-      hembed⟩ :=
-    T.exists_straightenedChartAway c A hA
+      hUprotected, hgcoord, hqzero, hUsub, hgval, hgfix, hgmatch, hgcont, hginj,
+      hcross, hembed⟩ :=
+    T.exists_straightenedChartAway c hc hboundary A hA
   refine ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
     hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
     hembed, ?_⟩
-  sorry
+  intro y
+  by_cases hyU : y ∈ U
+  · let yU : U := ⟨y, hyU⟩
+    rw [frontierGlue_of_mem hyU, hgval yU]
+    by_cases hk : c.kind = ChartKind.disk
+    · constructor
+      · exact fun hy ↦ False.elim
+          ((hc.1 hk (c.chart.symm (g' yU)).1
+            (c.chart.symm (g' yU)).2) hy)
+      · exact fun hy ↦ False.elim
+          ((hc.1 hk (T.embed y) (hUsub hyU)) hy)
+    · have hkHalf : c.kind = ChartKind.halfDisk := by
+        cases hkind : c.kind
+        · exact (hk hkind).elim
+        · rfl
+      have hnew :
+          (c.chart.symm (g' yU)).1 ∈
+              (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+            (g' yU : Plane) 0 = 0 := by
+        have h :=
+          hc.2 hkHalf (c.chart.symm (g' yU)).1
+            (c.chart.symm (g' yU)).2
+        have happly := c.chart.apply_symm_apply (g' yU)
+        have hplane :=
+          congrArg (fun z : c.kind.modelRegion ↦ (z : Plane)) happly
+        rw [hplane] at h
+        exact h
+      calc
+        (c.chart.symm (g' yU)).1 ∈
+              (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+            (g' yU : Plane) 0 = 0 := hnew
+        _ ↔ (Q.sourceHomeomorph yU).1.1 0 = 0 := by
+          rw [hgcoord yU]
+        _ ↔ T.embed y ∈
+              (modelWithCornersEuclideanHalfSpace 2).boundary S :=
+          hqzero hkHalf yU
+  · rw [frontierGlue_of_notMem hyU]
 
 /-- On a boundaryless manifold every raw chart straightening automatically carries the relative
 boundary certificate, because both boundary-membership propositions are false. -/
 theorem PartialTriangulation.exists_boundaryPreservingStraightening_boundaryless
     [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S]
-    (T : PartialTriangulation S) (c : MoiseChart S) :
+    (T : PartialTriangulation S) (c : MoiseChart S) (hc : c.BoundaryFaithful)
+    (hboundary : T.BoundaryFacewiseRegular) :
     PartialTriangulation.BoundaryPreservingStraightening S T c := by
   letI : SecondCountableTopology S := moise_secondCountableTopology S
   intro A hA
   obtain ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
-      hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
-      hembed⟩ :=
-    T.exists_straightenedChartAway c A hA
+      hUprotected, hgcoord, _hqzero, hUsub, hgval, hgfix, hgmatch, hgcont, hginj,
+      hcross, hembed⟩ :=
+    T.exists_straightenedChartAway c hc hboundary A hA
   refine ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
     hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
     hembed, ?_⟩
@@ -5784,9 +6765,9 @@ private theorem exists_positive_weight_on_both_sides_of_gap
     rw [← hzAverage] at hsum
     exact (not_le_of_gt hzGap.1) hsum
 
-set_option maxHeartbeats 1500000 in
--- This 4,500-line assembly needs over 1.45M cumulative elaboration heartbeats even after its
--- expensive edge-order argument is factored out; 1.45M fails in the final face-agreement proof.
+set_option maxHeartbeats 2500000 in
+-- This large assembly includes the boundary-regular subdivision certificate as well as the
+-- crossing weld; keep one explicit cumulative budget for the whole construction.
 /-- Shared implementation of the Moise crossing weld once the chart straightening is certified
 to preserve the ambient manifold-boundary stratum.
 
@@ -5819,6 +6800,8 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
         (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y) ∧
       (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
         e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) ∧
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₁ e₁ ∧
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₂ e₂ ∧
       A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) := by
   classical
   letI : SecondCountableTopology S := moise_secondCountableTopology S
@@ -8761,6 +9744,41 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
           (fun z : UsedOldVertex ↦ z.1) hv ▸ v.2)
       rw [extendFaceCoordinates_of_notMem _ _ hpUsed,
         extendFaceCoordinates_of_notMem _ _ hp]
+  have mixedUsedFaceMap_val
+      (f : MixedOldFace)
+      (x : stdSimplex ℝ {v // v ∈ mixedUsedFaceVertices f}) :
+      (mixedUsedFaceMap f x).1 =
+        fun k ↦ ∑ v : UsedOldVertex,
+          extendFaceCoordinates (mixedUsedFaceVertices f) x v *
+            v.1.1.1 k := by
+    rw [show mixedUsedFaceMap f x =
+        mixedOldFaceMap f
+          (relabelUnivSimplex (mixedFaceUsedEmbedding f) x) by rfl,
+      mixedOldFaceMap_val]
+    funext k
+    have hused :=
+      sum_extendFaceCoordinates_relabelUnivSimplex
+        (mixedFaceUsedEmbedding f) x
+          (fun v : UsedOldVertex ↦ v.1.1.1 k)
+    have hold :
+        (∑ v : OldVertex,
+            extendFaceCoordinates (mixedOldFaceVertices f)
+                (relabelUnivSimplex (mixedFaceUsedEmbedding f) x) v *
+              v.1.1 k) =
+          ∑ v ∈ mixedOldFaceVertices f,
+            extendFaceCoordinates (mixedOldFaceVertices f)
+                (relabelUnivSimplex (mixedFaceUsedEmbedding f) x) v *
+              v.1.1 k := by
+      symm
+      apply Finset.sum_subset (Finset.subset_univ _)
+      intro v _ hv
+      rw [extendFaceCoordinates_of_notMem _ _ hv, zero_mul]
+    rw [hused, hold,
+      ← sum_attach_mul_eq_sum_extendFaceCoordinates
+        (mixedOldFaceVertices f)
+        (relabelUnivSimplex (mixedFaceUsedEmbedding f) x)
+        (fun v : OldVertex ↦ v.1.1 k)]
+    rfl
   have mixedUsedFaceMap_eq_iff
       {f g : MixedOldFace}
       {x : stdSimplex ℝ {v // v ∈ mixedUsedFaceVertices f}}
@@ -8916,6 +9934,115 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
             (relabelUnivSimplex
               (mixedFaceUsedEmbedding (Sum.inr f)) x₂)) = p
       rw [hx₂, hx₁, hz']
+  let mixedOldHomeomorph :
+      mixedOldComplex.compactIntrinsic.realization ≃ₜ
+        Rlevel.refined.realization := by
+    let e :
+        mixedOldComplex.compactIntrinsic.realization ≃
+          Rlevel.refined.realization :=
+      Equiv.ofBijective mixedOldComplex.compactEval
+        ⟨mixedOldComplex.injective_compactEval, by
+          intro y
+          have hy : y ∈ mixedOldComplex.support := by
+            rw [mixedOldComplex_support]
+            exact Set.mem_univ y
+          rw [← mixedOldComplex.range_compactEval] at hy
+          exact hy⟩
+    exact Continuous.homeoOfEquivCompactToT2
+      (f := e) mixedOldComplex.continuous_compactEval
+  let mixedUsedBarycentricAffine :
+      (UsedOldVertex → ℝ) →ᵃ[ℝ]
+        (Rlevel.refined.Vertex → ℝ) :=
+    (∑ v : UsedOldVertex,
+      (LinearMap.proj v).smulRight
+        (v.1.1.1 : Rlevel.refined.Vertex → ℝ)).toAffineMap
+  have mixedUsedBarycentricAffine_apply
+      (z : UsedOldVertex → ℝ) :
+      mixedUsedBarycentricAffine z =
+        fun k ↦ ∑ v : UsedOldVertex, z v * v.1.1.1 k := by
+    funext k
+    simp [mixedUsedBarycentricAffine, Finset.sum_apply,
+      Pi.smul_apply, smul_eq_mul]
+  let mixedSubdivision : Rlevel.refined.Subdivision := by
+    letI : Fintype mixedOldComplex.Vertex :=
+      mixedOldComplex.compactIntrinsic.vertexFintype
+    exact
+      { refined := mixedOldComplex.compactIntrinsic
+        homeo := mixedOldHomeomorph
+        affineOnFace := by
+          intro s hs
+          change s ∈ mixedOldComplex.compactIntrinsic.faces at hs
+          rw [mixedOldComplex.compactIntrinsic_faces] at hs
+          obtain ⟨f, -, rfl⟩ := Finset.mem_image.mp hs
+          refine ⟨mixedUsedBarycentricAffine, ?_⟩
+          intro x hx
+          have heval :=
+            mixedOldComplex.compactEval_eq_faceMap f x hx
+          have hhomeo :
+              (mixedOldHomeomorph x).1 =
+                (mixedOldComplex.compactEval x).1 :=
+            congrArg Subtype.val (show
+              mixedOldHomeomorph x =
+                mixedOldComplex.compactEval x by rfl)
+          rw [hhomeo, heval]
+          change
+            (mixedUsedFaceMap f
+                (mixedOldComplex.restrictToFace
+                  (mixedUsedFaceVertices f) ⟨x.1, x.2.1⟩ hx)).1 =
+              mixedUsedBarycentricAffine x.1
+          rw [mixedUsedFaceMap_val,
+            mixedUsedBarycentricAffine_apply,
+            mixedOldComplex.extendFaceCoordinates_restrictToFace]
+          funext k
+          apply Finset.sum_congr rfl
+          intro v hv
+          rfl
+        subordinate := by
+          intro s hs
+          change s ∈ mixedOldComplex.compactIntrinsic.faces at hs
+          rw [mixedOldComplex.compactIntrinsic_faces] at hs
+          obtain ⟨f, -, rfl⟩ := Finset.mem_image.mp hs
+          rcases f with t | f
+          · refine ⟨(localFaceLevelFace t).1.1,
+                (localFaceLevelFace t).1.2, ?_⟩
+            intro x hx
+            have heval :=
+              mixedOldComplex.compactEval_eq_faceMap
+                (Sum.inl t) x hx
+            change mixedOldHomeomorph x ∈
+              Rlevel.refined.faceCarrier (localFaceLevelFace t).1.1
+            rw [show mixedOldHomeomorph x =
+                mixedOldComplex.compactEval x by rfl, heval]
+            change mixedUsedFaceMap (Sum.inl t)
+                (mixedOldComplex.restrictToFace
+                  (mixedUsedFaceVertices (Sum.inl t))
+                  ⟨x.1, x.2.1⟩ hx) ∈
+              Rlevel.refined.faceCarrier (localFaceLevelFace t).1.1
+            exact localMixedFaceMap_mem_parent t _
+          · refine ⟨f.1.1.1, f.1.1.2, ?_⟩
+            intro x hx
+            have heval :=
+              mixedOldComplex.compactEval_eq_faceMap
+                (Sum.inr f) x hx
+            change mixedOldHomeomorph x ∈
+              Rlevel.refined.faceCarrier f.1.1.1
+            rw [show mixedOldHomeomorph x =
+                mixedOldComplex.compactEval x by rfl, heval]
+            change mixedUsedFaceMap (Sum.inr f)
+                (mixedOldComplex.restrictToFace
+                  (mixedUsedFaceVertices (Sum.inr f))
+                  ⟨x.1, x.2.1⟩ hx) ∈
+              Rlevel.refined.faceCarrier f.1.1.1
+            exact boundaryMarking.globalFanFaceMap_mem_faceCarrier
+              f.1 _ }
+  have hRlevelBoundary :
+      (T.refine Rlevel).BoundaryFacewiseRegular :=
+    PartialTriangulation.boundaryFacewiseRegular_refine
+      T hT.boundaryFacewiseRegular Rlevel
+  have hMixedBoundaryForT :
+      ((T.refine Rlevel).refine mixedSubdivision).BoundaryFacewiseRegular :=
+    PartialTriangulation.boundaryFacewiseRegular_refine
+      (T.refine Rlevel) hRlevelBoundary mixedSubdivision
   have hsource₁U (z) : source₁ z ∈ U := by
     change
       (Q.sourceHomeomorph.symm
@@ -8947,6 +10074,29 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
   have he₂ : _root_.Topology.IsEmbedding e₂ :=
     PartialTriangulation.RelativeSynchronizedTarget.isEmbedding_newSurfaceEmbed
       c J N lines hN_arrangement hN_model
+  have he₂Boundary :
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding
+        (PartialTriangulation.RelativeSynchronizedTarget.newMesh
+          J N lines).triangles e₂ := by
+    have hmeshModel :
+        (PartialTriangulation.RelativeSynchronizedTarget.newMesh
+          J N lines).toPlaneComplex.support ⊆ c.kind.modelRegion := by
+      rw [PartialTriangulation.RelativeSynchronizedTarget.newMesh_support
+        J N lines hN_arrangement]
+      exact hN_model
+    apply PartialTriangulation.boundaryFacewiseRegularEmbedding_congr
+      (PartialTriangulation.TriangleMesh.boundaryFacewiseRegularEmbedding_chart
+        (PartialTriangulation.RelativeSynchronizedTarget.newMesh J N lines)
+        c hc hmeshModel)
+    intro x
+    have heq :
+        e₂ x =
+          (c.chart.symm
+            ((PartialTriangulation.RelativeSynchronizedTarget.newMesh
+              J N lines).coordinateEmbedInto
+                c.kind.modelRegion hmeshModel x)).1 := by
+      rfl
+    rw [heq]
   have hDtarget : D ⊆ interior (Set.range e₂) := by
     intro x hx
     let xD : D := ⟨x, hx⟩
@@ -9074,6 +10224,37 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
   have heOld : _root_.Topology.IsEmbedding eOld :=
     T₀.isEmbedding.comp
       (Rlevel.homeo.isEmbedding.comp heCompactEval)
+  have hMixedBoundaryEmbedding :
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding
+        mixedOldComplex.compactIntrinsic.faces
+        (fun x ↦
+          T.embed
+            (Rlevel.homeo (mixedOldComplex.compactEval x))) := by
+    change
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding
+        mixedOldComplex.compactIntrinsic.faces
+        (fun x ↦
+          T.embed
+            (Rlevel.homeo (mixedOldHomeomorph x)))
+        at hMixedBoundaryForT
+    convert hMixedBoundaryForT using 1
+    funext x
+    rfl
+  have heOldBoundary :
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding
+        mixedOldComplex.compactIntrinsic.faces eOld := by
+    apply PartialTriangulation.boundaryFacewiseRegularEmbedding_congr
+      hMixedBoundaryEmbedding
+    intro x
+    change
+      T₀.embed
+          (Rlevel.homeo (mixedOldComplex.compactEval x)) ∈
+            (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
+        T.embed
+          (Rlevel.homeo (mixedOldComplex.compactEval x)) ∈
+            (modelWithCornersEuclideanHalfSpace 2).boundary S
+    exact hBoundaryPreservation
+      (Rlevel.homeo (mixedOldComplex.compactEval x))
   let F₁ : Finset (Finset CommonVertex) :=
     relabelFaceFamily oldCompactToCommon
       mixedOldComplex.compactIntrinsic.faces
@@ -9104,11 +10285,41 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       convert h using 1
       funext x
       rfl
+  have he₁Boundary :
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₁ e₁ := by
+    apply PartialTriangulation.boundaryFacewiseRegularEmbedding_congr
+      (PartialTriangulation.boundaryFacewiseRegularEmbedding_relabel
+        oldCompactToCommon mixedOldComplex.compactIntrinsic.faces
+          eOld heOldBoundary)
+    intro x
+    have heq :
+        e₁ x =
+          (eOld ∘
+            (relabelGeometricRealizationHomeomorph oldCompactToCommon
+              mixedOldComplex.compactIntrinsic.faces).symm) x := by
+      rfl
+    rw [heq]
   have he₂common : _root_.Topology.IsEmbedding e₂common :=
     he₂.comp
       (relabelGeometricRealizationHomeomorph targetToCommon
         (PartialTriangulation.RelativeSynchronizedTarget.newMesh
           J N lines).triangles).symm.isEmbedding
+  have he₂commonBoundary :
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₂ e₂common := by
+    change
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding
+        (relabelFaceFamily targetToCommon
+          (PartialTriangulation.RelativeSynchronizedTarget.newMesh
+            J N lines).triangles)
+        (e₂ ∘
+          (relabelGeometricRealizationHomeomorph targetToCommon
+            (PartialTriangulation.RelativeSynchronizedTarget.newMesh
+              J N lines).triangles).symm)
+    exact
+      PartialTriangulation.boundaryFacewiseRegularEmbedding_relabel
+        targetToCommon
+        (PartialTriangulation.RelativeSynchronizedTarget.newMesh
+          J N lines).triangles e₂ he₂Boundary
   have hcard : ∀ t ∈ F₁ ∪ F₂, t.card = 3 := by
     intro t ht
     rcases Finset.mem_union.mp ht with ht | ht
@@ -10307,7 +11518,8 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     · exact localFace_oldTarget_agree tf xb yb hxb hcoords
     · exact fanFace_oldTarget_agree f xb yb hxb hcoords
   refine ⟨CommonVertex, inferInstance, inferInstance,
-    F₁, F₂, e₁, e₂common, hcard, he₁, he₂common, hagree, hsep, ?_⟩
+    F₁, F₂, e₁, e₂common, hcard, he₁, he₂common, hagree, hsep,
+      he₁Boundary, he₂commonBoundary, ?_⟩
   · rw [range_e₁, range_e₂common]
     intro x hx
     rcases hx with hxA | hxCore
@@ -10336,10 +11548,13 @@ theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaith
         (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y) ∧
       (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
         e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) ∧
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₁ e₁ ∧
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₂ e₂ ∧
       A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) :=
   MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     S c hc hT hcore hA
-      (PartialTriangulation.exists_boundaryPreservingStraightening S T c hc)
+      (PartialTriangulation.exists_boundaryPreservingStraightening S T c hc
+        hT.boundaryFacewiseRegular)
 
 /-- The crossing weld on a boundaryless surface.  Boundarylessness discharges the sole relative
 certificate before entering the shared weld implementation. -/
@@ -10358,10 +11573,13 @@ theorem MoiseChart.exists_crossing_weld_boundaryless
         (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y) ∧
       (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
         e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) ∧
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₁ e₁ ∧
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₂ e₂ ∧
       A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) :=
   MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     S c hc hT hcore hA
-      (PartialTriangulation.exists_boundaryPreservingStraightening_boundaryless S T c)
+      (PartialTriangulation.exists_boundaryPreservingStraightening_boundaryless
+        S T c hc (PartialTriangulation.boundaryFacewiseRegular_of_boundaryless T))
 
 /-- **Theorem boundary** (Moise Ch. 8, Thm. 3, the induction step; bordered version).
 
@@ -10384,13 +11602,15 @@ theorem moise_induction_step (c : MoiseChart S) (hc : c.BoundaryFaithful)
   · exact ⟨T, hT.absorb_of_subset c.isCompact_core hcore⟩
   by_cases hA : A ⊆ interior c.patchPartialTriangulation.support
   · exact ⟨c.patchPartialTriangulation,
-      radoInvariant_chartPatch_absorb c hT.coresCompact hA⟩
+      radoInvariant_chartPatch_absorb c hc hT.coresCompact hA⟩
   · -- the crossing case: weld the adjusted old complex and the chart patch, then glue
-    obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep, hcover⟩ :=
+    obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep,
+        hboundary₁, hboundary₂, hcover⟩ :=
       MoiseChart.exists_crossing_weld S c hc hT hcore hA
-    obtain ⟨T', hsupport, hsurf'⟩ :=
-      PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂ hagree hsep
-    refine ⟨T', ?_, hsurf', ?_⟩
+    obtain ⟨T', hsupport, hsurf', hboundary'⟩ :=
+      PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂
+        hagree hsep hboundary₁ hboundary₂
+    refine ⟨T', ?_, hsurf', hboundary', ?_⟩
     · exact (hT.coresCompact.union c.isCompact_core)
     · rw [hsupport]
       exact hcover
@@ -10407,12 +11627,14 @@ theorem moise_induction_step_boundaryless
   · exact ⟨T, hT.absorb_of_subset c.isCompact_core hcore⟩
   by_cases hA : A ⊆ interior c.patchPartialTriangulation.support
   · exact ⟨c.patchPartialTriangulation,
-      radoInvariant_chartPatch_absorb c hT.coresCompact hA⟩
-  · obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep, hcover⟩ :=
+      radoInvariant_chartPatch_absorb c hc hT.coresCompact hA⟩
+  · obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep,
+        hboundary₁, hboundary₂, hcover⟩ :=
       MoiseChart.exists_crossing_weld_boundaryless S c hc hT hcore hA
-    obtain ⟨T', hsupport, hsurf'⟩ :=
-      PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂ hagree hsep
-    refine ⟨T', ?_, hsurf', ?_⟩
+    obtain ⟨T', hsupport, hsurf', hboundary'⟩ :=
+      PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂
+        hagree hsep hboundary₁ hboundary₂
+    refine ⟨T', ?_, hsurf', hboundary', ?_⟩
     · exact hT.coresCompact.union c.isCompact_core
     · rw [hsupport]
       exact hcover
@@ -10493,16 +11715,14 @@ theorem moise_triangulation_of_induction
     exact Set.eq_univ_of_univ_subset huniv
   exact ⟨T.toGeometricTriangulation hsupport⟩
 
-/-- The bordered Radó induction assembled from its one-chart step.  Until the relative
-boundary-preservation capability is proved, this generic endpoint retains that single
-`sorryAx` dependency. -/
+/-- The bordered Radó induction assembled from its boundary-preserving one-chart step. -/
 theorem moise_triangulation_of_boundaries :
     Nonempty (GeometricTriangulation S) :=
   moise_triangulation_of_induction S (moise_induction_step S)
 
-/-- Radó's triangulation theorem for compact boundaryless Eval surfaces.  This endpoint shares
-the raw straightening, crossing weld, gluing, and finite chart induction with the bordered route,
-but discharges the only open relative seam from emptiness of the ambient manifold boundary. -/
+/-- Radó's triangulation theorem for compact boundaryless Eval surfaces.  This specialization
+shares the straightening, crossing weld, gluing, and finite chart induction with the bordered
+route; boundarylessness supplies the simpler empty-boundary certificate. -/
 theorem moise_triangulation_boundaryless
     [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S] :
     Nonempty (GeometricTriangulation S) :=

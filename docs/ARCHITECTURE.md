@@ -41,21 +41,20 @@ The final theorem should be a short assembly proof using those two bridge theore
 ## Current Baseline
 
 The repository builds. On the triangulation side, the Moise/Radó chain is complete end-to-end for
-compact boundaryless Eval surfaces:
+compact Eval surfaces, including manifolds with boundary:
 
 ```lean
-moise_triangulation_boundaryless :
+moise_triangulation :
   Nonempty (GeometricTriangulation S)
 ```
 
-Its checked axioms are `[propext, Classical.choice, Quot.sound]`.  The long crossing-weld proof,
-finite chart induction, and final conversion are shared with the bordered route.  The generic
-bordered endpoint has one named open dependency:
-`PartialTriangulation.exists_boundaryPreservingStraightening`, asserting exact preservation of
-the ambient manifold-boundary stratum by the relative polygonal replacement.  The former C0
-chart-boundary hypothesis itself is discharged by planar no-retraction, Brouwer's fixed-point
-theorem, and invariance of domain.  See `docs/MOISE_ROUTE.md` and
-`docs/BOUNDARYLESS_CHECKPOINT.md` for the live status.
+The boundaryless specialization remains available.  The long crossing-weld proof, finite chart
+induction, and final conversion are shared.  The relative polygonal replacement preserves the
+ambient boundary stratum exactly, and the exposed-boundary-face invariant is carried through
+affine subdivision, common relabeling, and gluing.  The former C0 chart-boundary hypothesis itself
+is discharged by planar no-retraction, Brouwer's fixed-point theorem, and invariance of domain.
+See `docs/MOISE_ROUTE.md` for the live status and `docs/BOUNDARYLESS_CHECKPOINT.md` for the
+historical intermediate checkpoint.
 
 The quotient realization and Gallier-Xu normal-form layers are still placeholder scaffolding
 (see `docs/KNOWN_WEAK.md`). The bottom API is in place:
