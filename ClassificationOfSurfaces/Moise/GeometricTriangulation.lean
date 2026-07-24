@@ -40,9 +40,44 @@ the geometric simplexes of `F`, glued along shared barycentric-coordinate faces.
 def GeometricRealization (V : Type*) [Fintype V] (F : Finset (Finset V)) : Set (V → ℝ) :=
   {x | x ∈ stdSimplex ℝ V ∧ ∃ t ∈ F, ∀ v ∉ t, x v = 0}
 
+/-- The geometric simplex carried by one finite set of vertices. -/
+def GeometricFace (V : Type*) [Fintype V] (t : Finset V) : Set (V → ℝ) :=
+  {x | x ∈ stdSimplex ℝ V ∧ ∀ v ∉ t, x v = 0}
+
+namespace GeometricFace
+
+variable {V : Type*} [Fintype V] [DecidableEq V]
+
+/-- Semantic anchor: two barycentric faces meet in exactly their common face. -/
+theorem inter (t u : Finset V) :
+    GeometricFace V t ∩ GeometricFace V u = GeometricFace V (t ∩ u) := by
+  ext x
+  constructor
+  · rintro ⟨⟨hx, ht⟩, _, hu⟩
+    refine ⟨hx, ?_⟩
+    intro v hv
+    rw [Finset.mem_inter, not_and_or] at hv
+    rcases hv with hv | hv
+    · exact ht v hv
+    · exact hu v hv
+  · rintro ⟨hx, htu⟩
+    refine ⟨⟨hx, ?_⟩, hx, ?_⟩
+    · intro v hv
+      exact htu v (fun hmem => hv (Finset.mem_inter.mp hmem).1)
+    · intro v hv
+      exact htu v (fun hmem => hv (Finset.mem_inter.mp hmem).2)
+
+end GeometricFace
+
 namespace GeometricRealization
 
 variable {V : Type*} [Fintype V] {F : Finset (Finset V)}
+
+/-- The global realization is literally the finite union of its geometric faces. -/
+theorem eq_biUnion_geometricFace :
+    GeometricRealization V F = ⋃ t ∈ F, GeometricFace V t := by
+  ext x
+  simp [GeometricRealization, GeometricFace]
 
 theorem subset_stdSimplex : GeometricRealization V F ⊆ stdSimplex ℝ V :=
   fun _ hx => hx.1
@@ -103,6 +138,25 @@ structure GeometricTriangulation (S : Type*) [TopologicalSpace S] where
 attribute [instance] GeometricTriangulation.vertexFintype
 attribute [instance] GeometricTriangulation.vertexDecidableEq
 
+/-- Expanded, independently inspectable form of `GeometricTriangulation`.
+
+This theorem pins the public meaning of the structure: no realization or incidence data is hidden
+behind an additional field. -/
+theorem nonempty_geometricTriangulation_iff_explicit
+    {S : Type*} [TopologicalSpace S] :
+    Nonempty (GeometricTriangulation S) ↔
+      ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
+        (F : Finset (Finset V)),
+        (∀ t ∈ F, t.card = 3) ∧ Nonempty (GeometricRealization V F ≃ₜ S) := by
+  constructor
+  · rintro ⟨T⟩
+    exact ⟨T.Vertex, T.vertexFintype, T.vertexDecidableEq, T.faces,
+      T.faces_card, ⟨T.homeo⟩⟩
+  · rintro ⟨V, hVfinite, hVdecidable, F, hF, ⟨h⟩⟩
+    letI : Fintype V := hVfinite
+    letI : DecidableEq V := hVdecidable
+    exact ⟨{ Vertex := V, faces := F, faces_card := hF, homeo := h }⟩
+
 namespace GeometricTriangulation
 
 variable {S : Type*} [TopologicalSpace S] (T : GeometricTriangulation S)
@@ -122,6 +176,20 @@ include T in
 of a finite product of lines). -/
 theorem t2Space : T2Space S :=
   Topology.IsEmbedding.t2Space (Homeomorph.isEmbedding T.homeo.symm)
+
+/-- A triangulation of a nonempty space has at least one two-dimensional face. -/
+theorem faces_nonempty [Nonempty S] : T.faces.Nonempty := by
+  let s : S := Classical.choice inferInstance
+  rcases (T.homeo.symm s).2.2 with ⟨t, ht, _⟩
+  exact ⟨t, ht⟩
+
+/-- A triangulation of a nonempty space has at least three available vertices. -/
+theorem three_le_card_vertex [Nonempty S] : 3 ≤ Fintype.card T.Vertex := by
+  obtain ⟨t, ht⟩ := T.faces_nonempty
+  calc
+    3 = t.card := (T.faces_card t ht).symm
+    _ ≤ Finset.univ.card := Finset.card_le_card (Finset.subset_univ t)
+    _ = Fintype.card T.Vertex := Finset.card_univ
 
 /-- The edges of the triangulation: the 2-element subsets of its faces. -/
 def edges : Finset (Finset T.Vertex) :=

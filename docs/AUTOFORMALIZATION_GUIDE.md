@@ -27,7 +27,8 @@ The 2026-07 audit found a repo that satisfied every proof-layer check in this gu
 sorries, clean axioms, green builds) while the top-level triangulation predicate was provable for
 *every* topological space. The lesson: rules about honesty do not bind autonomous sessions unless
 each rule has an executable test. The proof layer is checked by `lake build` and `#print axioms`;
-the definition layer is checked by the mechanisms below.
+the definition layer is checked by the mechanisms below.  `docs/RADO_AUDIT.md` applies this
+checklist to the completed Radó theorem and records the remaining weak compatibility bridge.
 
 **Countermodels.** Every load-bearing definition ships with, in `Countermodels.lean` (part of the
 default build target):
@@ -161,6 +162,7 @@ probes in the Definition Faithfulness section.
 - `docs/KNOWN_WEAK.md` is the weakness ledger: placeholder definitions, their intended final
   meaning, and their dependents.
 - `docs/MOISE_ROUTE.md` is the triangulation route status and handoff map.
+- `docs/RADO_AUDIT.md` is the triangulation theorem's primary-source and faithfulness audit.
 - `blueprint/src/content.tex` is the proof dependency blueprint.
 
 If a doc becomes stale, either update it immediately or delete/merge it. Stale plans are worse than

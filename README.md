@@ -12,7 +12,8 @@ quotient.
 - `ClassificationOfSurfaces/API.lean`: public Lean API map and preferred collaborator entry point.
 - `docs/ARCHITECTURE.md`: concise architecture overview and current next tasks.
 - `docs/AUTOFORMALIZATION_GUIDE.md`: operating rules for human-plus-agent formalization work.
-- `docs/MOISE_ROUTE.md`: the triangulation route — status, open leaves, and handoff map.
+- `docs/MOISE_ROUTE.md`: the completed triangulation route and handoff map.
+- `docs/RADO_AUDIT.md`: primary-source and executable definition-faithfulness audit.
 - `docs/KNOWN_WEAK.md`: weakness ledger (placeholder definitions; do not extend).
 - `blueprint/src/content.tex`: Lean blueprint, kept in sync with the repository state.
 - `docs/MATHLIB_SURVEY.md`: current mathlib starting points and gaps.
@@ -37,13 +38,18 @@ SurfaceCellComplex
 SurfaceCellComplex.Realization
 ```
 
-The topological route, currently planned through Moise/Rado PL triangulation, should produce:
+The completed Moise–Radó topological route produces a faithful `GeometricTriangulation`, then
+passes through the ledgered compatibility records:
 
 ```lean
+GeometricTriangulation S
 FiniteSurfaceTriangulation S
 FiniteSurfaceTriangulation.toCellComplex
 compact_surface_homeomorphic_to_cell_complex
 ```
+
+The last handoff currently preserves raw data and a stored realization but does not yet certify
+`SurfaceCellComplex.IsSurfaceValid`, `.IsConnected`, or the polygonal quotient realization.
 
 The Gallier-Xu normal-form route should consume only `SurfaceCellComplex` and prove:
 
@@ -66,7 +72,9 @@ compatibility, but new code should use the preferred names above.
   compile as `SurfaceCellComplex` values.
 - The C0 chart-boundary seam is discharged: planar no-retraction gives Brouwer's fixed-point
   theorem, hence invariance of domain and an unconditional `ChartBoundaryInvariant` instance.
-- The Moise/PL triangulation route and the triangulation-to-cell-complex bridge therefore use only
-  the hypotheses in the Lean Eval statement.
+- The Moise/PL triangulation route is complete for compact connected Eval surfaces, including
+  surfaces with manifold boundary, and uses only the hypotheses in the Lean Eval statement.
+- The triangulation-to-cell-presentation compatibility bridge remains deliberately weak as
+  recorded in `docs/KNOWN_WEAK.md`.
 - Quotient realizations and Gallier-Xu normal-form reductions are still theorem boundaries marked
   by named `sorry`s.

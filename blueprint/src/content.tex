@@ -13,9 +13,11 @@
 
 \chapter{The triangulation theorem: the Moise route}
 
-This chapter records the formalization of Rad\'o's theorem (every compact
-bordered surface admits a finite triangulation) following Moise,
-\emph{Geometric Topology in Dimensions 2 and 3}, Ch.~8, whose inputs are the
+This chapter records a bordered extension of Rad\'o's triangulation theorem,
+following the induction in Moise, \emph{Geometric Topology in Dimensions 2
+and 3}, Ch.~8.  Moise states the theorem for $2$-manifolds in his
+boundary-free sense; the Lean route carries the construction through
+half-disk charts for the Eval statement.  Its inputs are the
 \emph{polygonal} Jordan and Schoenflies theorems (Ch.~2--3) and the PL
 approximation theorem (Ch.~5--6).  The full Jordan curve theorem (Ch.~4) and
 the full Schoenflies theorem (Ch.~9) are not on this route.  The Lean files
@@ -49,18 +51,23 @@ Euclidean half-plane, a $C^0$ manifold for
 
 \begin{definition}[Geometric realization of a face family]
 \label{moise:def:geometric_realization}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.GeometricRealization}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.GeometricRealization,
+LeanEval.Topology.ClassificationOfSurfaces.GeometricFace}
 \leanok
 For a finite vertex type $V$ and a family $F$ of three-element vertex sets, the
 realization is the set of points of the standard simplex
 $\Delta^V\subseteq V\to\mathbb R$ supported on some face of $F$: the finite
 union of the geometric $2$-simplexes of $F$, glued along shared barycentric
-faces.  It is compact and Hausdorff by construction.
+faces.  The executable anchor
+\texttt{GeometricFace.inter} proves that two such faces intersect in exactly
+their common barycentric face.  The realization is compact and Hausdorff by
+construction.
 \end{definition}
 
 \begin{definition}[Geometric triangulation]
 \label{moise:def:geometric_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.GeometricTriangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.GeometricTriangulation,
+LeanEval.Topology.ClassificationOfSurfaces.nonempty_geometricTriangulation_iff_explicit}
 \leanok
 \uses{moise:def:geometric_realization}
 A \emph{geometric triangulation} of a space $S$ is a finite face family
@@ -68,6 +75,7 @@ together with a homeomorphism from its geometric realization onto $S$.  There
 is no independent realization field: the realization is computed from the
 combinatorial data, so the definition cannot be satisfied by degenerate
 witnesses.  Executable anchors: the standard $2$-simplex triangulates itself,
+nonempty targets force a nonempty face family with at least three vertices,
 and $\mathbb R$ and $\mathbb Q$ admit no geometric triangulation
 (\texttt{Moise/Countermodels.lean}).
 \end{definition}
@@ -86,18 +94,23 @@ The realization is a closed subset of the compact standard simplex inside the
 Hausdorff space $V\to\mathbb R$; transport along the homeomorphism.
 \end{proof}
 
-\begin{theorem}[Rad\'o; Moise Ch.~8, Thm.~3]
+\begin{theorem}[Bordered Rad\'o triangulation; after Moise Ch.~8, Thm.~3]
 \label{moise:thm:moise_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.moise_triangulation}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.moise_triangulation,
+LeanEval.Topology.ClassificationOfSurfaces.moise_triangulation_explicit}
 \leanok
 \uses{moise:def:eval_surface,moise:def:geometric_triangulation,moise:thm:rado_assembly}
-Every Eval surface admits a geometric triangulation.
+Every compact connected Eval surface, including one with manifold boundary,
+admits a geometric triangulation.  Moise's stated theorem treats $2$-manifolds in his
+boundary-free sense; the Lean theorem is the half-disk-chart extension of his
+induction.
 \end{theorem}
 
 \begin{proof}
 \leanok
-This is \ref{moise:thm:rado_assembly}; the remaining mathematical content
-lives on that theorem's open inputs.
+This is \ref{moise:thm:rado_assembly}.  The second Lean declaration exposes
+the vertex type, three-element face family, and realization homeomorphism
+explicitly, so the conclusion does not rely on an opaque structure name.
 \end{proof}
 
 \section{Plane complexes and piecewise-linear maps}
@@ -463,15 +476,13 @@ Finite subcover of the core interiors.
 
 \begin{definition}[Partial triangulation]
 \label{moise:def:partial_triangulation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation, LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation.combInterior}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation}
 \leanok
 \uses{moise:def:geometric_realization}
 A \emph{partial triangulation} of $S$ is a finite face family together with a
 topological embedding of its geometric realization into $S$.  Its support is
-compact.  Its combinatorial interior is the support minus the image of the
-boundary edges (edges lying in exactly one face); for the bordered induction,
-the ambient topological interior of the support is the relevant neighborhood
-notion.
+compact.  For the bordered induction, the ambient topological interior of the
+support is the relevant neighborhood notion.
 The fixed disk/half-disk diamond patch transports through any Moise chart to
 an explicit partial triangulation whose ambient interior contains the chart
 core; it satisfies the Rad\'o invariant for that single core.
@@ -482,14 +493,15 @@ core; it satisfies the Rad\'o invariant for that single core.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.RadoInvariant}
 \leanok
 \uses{moise:def:partial_triangulation}
-The invariant carried through the bordered induction: the complex is a
-combinatorial surface (every edge in at most two faces) and the absorbed region
-lies in the topological interior of the support as a subset of the ambient
-surface.  This includes genuine boundary points of half-disk cores, unlike
-combinatorial interior.  The empty partial triangulation satisfies the
-invariant for the empty region.  This invariant is expected to be strengthened during the proof of
-\ref{moise:thm:induction_step}; weakening the step's conclusion is not
-permitted.
+The invariant carried through the bordered induction records that every edge
+lies in at most two faces, every triangle meets the ambient manifold boundary
+in one exposed simplicial face, and the absorbed region lies in the
+topological interior of the support as a subset of the ambient surface.  This
+includes genuine boundary points of half-disk cores.  It does not assert
+connected vertex links or call the intermediate support a combinatorial
+manifold; after the final support is all of the surface, the realization
+homeomorphism supplies the topological surface conclusion directly.  The
+empty partial triangulation satisfies the invariant for the empty region.
 \end{definition}
 
 \begin{lemma}[Faithful intrinsic fine subdivision]
@@ -578,6 +590,7 @@ new core in its topological interior.
 \end{theorem}
 
 \begin{proof}
+\leanok
 Straighten the old complex over the chart overlap by the locally finite
 controlled polygonal replacement with tolerance vanishing at the overlap
 frontier, refine the straightened trace and the fixed patch complex to a
@@ -610,7 +623,7 @@ invariant for the union follows from the welding conclusions.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.moise_triangulation_of_boundaries}
 \leanok
 \uses{moise:lem:finite_chart_cover,moise:thm:induction_step,moise:def:rado_invariant,moise:def:geometric_triangulation}
-A compact Eval surface admits a geometric triangulation.
+A compact connected Eval surface admits a geometric triangulation.
 \end{theorem}
 
 \begin{proof}
@@ -658,28 +671,33 @@ through the compatibility bridge; the legacy object itself is in the weakness
 ledger and should not be extended.
 \end{definition}
 
-\begin{definition}[Triangulation as a cell complex]
+\begin{definition}[Raw triangulation-to-cell-presentation bridge]
 \label{moise:def:triangulation_cell_complex}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex}
 \leanok
 \uses{moise:def:finite_surface_triangulation,moise:def:surface_cell_complex}
-A finite surface triangulation yields a surface cell complex with one face per
-triangle and signed darts for the oriented edge occurrences.
+The compatibility bridge copies each triangle to a face and each edge to a
+signed dart, and retains the legacy stored realization.  It does not prove
+\texttt{IsSurfaceValid}, \texttt{IsConnected}, or agreement with the
+polygonal quotient realization.
 \end{definition}
 
-\begin{theorem}[Topological bridge]
+\begin{theorem}[Stored-realization handoff]
 \label{moise:thm:compact_surface_cellulable}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.compact_surface_homeomorphic_to_cell_complex}
 \leanok
 \uses{moise:def:eval_surface,moise:thm:moise_triangulation,moise:def:triangulation_cell_complex}
-Every Eval surface is homeomorphic to the realization of some finite surface
-cell complex.
+Every Eval surface is homeomorphic to the \emph{stored realization} of some raw
+finite cell presentation.  This deliberately does not yet assert that the
+presentation is a certified surface cellulation.
 \end{theorem}
 
 \begin{proof}
 \leanok
-Triangulate by \ref{moise:thm:moise_triangulation}, convert through the
-bridge, and compose the homeomorphisms.
+Triangulate by \ref{moise:thm:moise_triangulation}, copy the raw incidence
+data, and compose the homeomorphisms to the stored realization.  The
+executable legacy countermodel in \texttt{Moise/Countermodels.lean} shows why
+validity and connectivity must remain separate obligations.
 \end{proof}
 
 \section{Quotient realizations}
@@ -812,6 +830,6 @@ normal-form quotient spaces named in the Eval problem.
 \leanok
 Apply the topological bridge and the normal-form reduction, and compose.  (The
 Lean proof of this assembly contains no sorry of its own; the open content is
-on \ref{moise:thm:gx_normal_form} and the triangulation leaves, as the
-dependency graph shows.)
+on \ref{moise:thm:gx_normal_form} and the ledgered stored-realization handoff,
+as the dependency graph shows.)
 \end{proof}

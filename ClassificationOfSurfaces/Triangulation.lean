@@ -204,8 +204,11 @@ variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 
-/-- Radó's theorem (Moise, *Geometric Topology in Dimensions 2 and 3*, Ch. 8, Thm. 3; bordered
-version): every compact surface in the Eval sense admits a finite geometric triangulation — a
+/-- The compact bordered extension of Radó's theorem.  Moise, *Geometric Topology in Dimensions
+2 and 3*, Ch. 8, Thm. 3 proves the boundaryless case; the proof assembled here carries the same
+induction through half-disk charts while preserving the manifold-boundary stratum.
+
+Every compact connected surface in the Eval sense admits a finite geometric triangulation — a
 homeomorphism onto the realization of a finite two-dimensional simplicial complex.
 
 Semantic anchors: the conclusion implies `CompactSpace S` and `T2Space S`
@@ -217,26 +220,28 @@ The proof is the assembled boundary-preserving Radó chart induction
 theorem moise_triangulation : Nonempty (GeometricTriangulation S) :=
   Moise.moise_triangulation_of_boundaries S
 
-/-- Radó's theorem for compact boundaryless Eval surfaces.  This specialization uses emptiness of
-the ambient manifold boundary to supply a simpler certificate to the shared crossing-weld
-implementation. -/
-theorem moise_triangulation_boundaryless
-    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S] :
-    Nonempty (GeometricTriangulation S) :=
-  Moise.moise_triangulation_boundaryless S
+/-- Radó's theorem with its conclusion expanded into the finite vertex type, the family of
+three-vertex faces, and the homeomorphism from their barycentric realization.  This is a
+definition-audit surface for `moise_triangulation`, not a second proof. -/
+theorem moise_triangulation_explicit :
+    ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
+      (F : Finset (Finset V)),
+      (∀ t ∈ F, t.card = 3) ∧ Nonempty (GeometricRealization V F ≃ₜ S) :=
+  nonempty_geometricTriangulation_iff_explicit.mp (moise_triangulation S)
 
-/-- The named finite surface triangulation produced for a compact Eval surface, obtained from the
-geometric triangulation boundary `moise_triangulation` through the compatibility bridge. -/
+/-- The named finite surface triangulation produced for a compact connected Eval surface, obtained
+from the geometric triangulation boundary `moise_triangulation` through the compatibility
+bridge. -/
 noncomputable def compact_eval_surface_finiteSurfaceTriangulation :
     FiniteSurfaceTriangulation S :=
   (Classical.choice (moise_triangulation S)).toFiniteSurfaceTriangulation
 
-/-- The named compact Eval surface triangulation realizes the ambient surface. -/
+/-- The named compact connected Eval surface triangulation realizes the ambient surface. -/
 theorem compact_eval_surface_finiteSurfaceTriangulation_homeomorphSurface :
     Nonempty ((compact_eval_surface_finiteSurfaceTriangulation S).realization ≃ₜ S) :=
   (compact_eval_surface_finiteSurfaceTriangulation S).homeomorphSurface
 
-/-- Moise/PL theorem boundary: compact Eval surfaces admit finite triangulations. -/
+/-- Moise/PL theorem boundary: compact connected Eval surfaces admit finite triangulations. -/
 theorem compact_eval_surface_finitely_triangulable :
     ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
   exact ⟨compact_eval_surface_finiteSurfaceTriangulation S,

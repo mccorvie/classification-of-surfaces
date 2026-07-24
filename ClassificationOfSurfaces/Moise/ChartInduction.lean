@@ -38,16 +38,10 @@ This file provides the honest objects for that induction:
   is computed from the combinatorial data exactly as in `GeometricTriangulation`, so junk
   witnesses cannot inhabit it;
 * `MoiseChart S` — a disk or half-disk chart with an explicit compact core;
-* `moise_finite_chart_cover` — the finite-cover boundary (Moise Thm. 8.1 plus compactness; the
-  bordered version).  `PL.lean` already contains a genuine proof of essentially this statement
-  (`FiniteChartPairCover.exists_of_compact_local` and the `fromChartAt` constructions); filling
-  this boundary is a port, not new mathematics.
-
-**Deliberately not yet stated**: the induction-step boundary.  Its hypothesis package (Moise's
-invariants (3)-(5): the built support is a 2-manifold with boundary, previously absorbed cores
-lie in its combinatorial interior) is a design decision that should be made together with the
-proof attempt, per the Definition Faithfulness rules: refining hypotheses later is expected,
-weakening conclusions is not.  Designing that interface is the next task on this route.
+* `moise_finite_chart_cover` — the finite chart-core cover (Moise Thm. 8.1 plus compactness);
+* `RadoInvariant` and `moise_induction_step` — the boundary-aware absorption invariant and the
+  complete one-chart step;
+* `moise_triangulation_of_boundaries` — the finite induction and final geometric realization.
 -/
 
 open scoped Manifold
@@ -310,41 +304,6 @@ def edges : Finset (Finset T.Vertex) :=
 theorem card_of_mem_edges {e : Finset T.Vertex} (he : e ∈ T.edges) : e.card = 2 := by
   rcases Finset.mem_biUnion.mp he with ⟨t, ht, het⟩
   exact (Finset.mem_powersetCard.mp het).2
-
-/-- The boundary edges: edges lying in exactly one face. -/
-def boundaryEdges : Finset (Finset T.Vertex) :=
-  T.edges.filter fun e => (T.faces.filter fun t => e ⊆ t).card = 1
-
-/-- Edges whose entire intrinsic carrier is mapped to the ambient manifold boundary.
-
-This differs from `boundaryEdges`: a partial patch also has combinatorial boundary arcs in the
-ambient interior of the surface.  Only the edges selected here model the actual boundary stratum
-of `S`. -/
-noncomputable def manifoldBoundaryEdges
-    [ChartedSpace (EuclideanHalfSpace 2) S] : Finset (Finset T.Vertex) :=
-  by
-    classical
-    exact T.edges.filter fun e =>
-      ∀ x : T.toIntrinsic.realization,
-        x ∈ T.toIntrinsic.faceCarrier e →
-          T.embed x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S
-
-/-- The intrinsic carrier of the edges modeling the ambient manifold boundary. -/
-noncomputable def manifoldBoundaryCarrier
-    [ChartedSpace (EuclideanHalfSpace 2) S] :
-    Set T.toIntrinsic.realization :=
-  {x | ∃ e ∈ T.manifoldBoundaryEdges, x ∈ T.toIntrinsic.faceCarrier e}
-
-/-- A partial triangulation is boundary-compatible when the inverse image of the ambient
-manifold boundary is exactly an intrinsic edge subcomplex.
-
-The edge family is canonical: it consists of all edges whose whole carrier lies in the ambient
-boundary.  Consequently this proposition carries no hidden choice that would be lost when a
-proof in `Prop` is eliminated. -/
-def BoundaryCompatible [ChartedSpace (EuclideanHalfSpace 2) S] : Prop :=
-  ∀ x : T.toIntrinsic.realization,
-    T.embed x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
-      x ∈ T.manifoldBoundaryCarrier
 
 /-- On each maximal triangle, the ambient manifold boundary is one exposed simplicial face of
 dimension at most one.
@@ -908,71 +867,6 @@ theorem boundaryFacewiseRegular_refine
         exact hvd (hwEq ▸ hwd)
       rw [hx v.1 hvb', zero_mul]
 
-/-- On a boundaryless manifold every raw finite realization has empty boundary face. -/
-theorem boundaryFacewiseRegularEmbedding_of_boundaryless
-    [ChartedSpace (EuclideanHalfSpace 2) S]
-    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S]
-    {V : Type*} [Fintype V] {F : Finset (Finset V)}
-    (e : GeometricRealization V F → S) :
-    BoundaryFacewiseRegularEmbedding F e := by
-  classical
-  intro t ht
-  refine ⟨∅, Finset.empty_subset _, by simp, ?_⟩
-  intro x hxt
-  rw [ModelWithCorners.Boundaryless.boundary_eq_empty]
-  constructor
-  · simp
-  · intro hx
-    have hzero : ∀ v, x.1 v = 0 := fun v ↦ hx v (Finset.notMem_empty v)
-    have hsum := x.2.1.2
-    simp only [hzero, Finset.sum_const_zero] at hsum
-    norm_num at hsum
-
-/-- On a boundaryless manifold every face has the empty exposed ambient-boundary face. -/
-theorem boundaryFacewiseRegular_of_boundaryless
-    [ChartedSpace (EuclideanHalfSpace 2) S]
-    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S] :
-    T.BoundaryFacewiseRegular := by
-  classical
-  intro t ht
-  refine ⟨∅, Finset.empty_subset _, by simp, ?_⟩
-  intro x hxt
-  rw [ModelWithCorners.Boundaryless.boundary_eq_empty]
-  constructor
-  · simp
-  · intro hx
-    have hsum := x.2.1.2
-    have hzero : ∀ v, x.1 v = 0 := by
-      intro v
-      exact hx v (Finset.notMem_empty v)
-    simp only [hzero, Finset.sum_const_zero] at hsum
-    norm_num at hsum
-
-/-- Membership in the canonical ambient-boundary edge carrier always implies ambient-boundary
-membership.  Thus `BoundaryCompatible` only has substantive content in the forward direction:
-every ambient-boundary point of the partial triangulation must be carried by one of these edges. -/
-theorem mem_boundary_of_mem_manifoldBoundaryCarrier
-    [ChartedSpace (EuclideanHalfSpace 2) S]
-    {x : T.toIntrinsic.realization} (hx : x ∈ T.manifoldBoundaryCarrier) :
-    T.embed x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S := by
-  classical
-  obtain ⟨e, he, hxe⟩ := hx
-  exact (Finset.mem_filter.mp he).2 x hxe
-
-/-- The image in `S` of the combinatorial boundary: points of the realization supported on a
-boundary edge. -/
-def boundarySupport : Set S :=
-  T.embed '' {x | ∃ e ∈ T.boundaryEdges, ∀ v ∉ e, x.1 v = 0}
-
-/-- The combinatorial interior of the covered region: the support minus the image of the
-combinatorial boundary.  The Radó induction keeps every absorbed chart core inside this set
-(Moise Ch. 8, Thm. 3, invariant (4)). -/
-def combInterior : Set S :=
-  T.support \ T.boundarySupport
-
-theorem combInterior_subset_support : T.combInterior ⊆ T.support :=
-  Set.sdiff_subset
-
 /-- Transport a pure finite plane complex into an ambient space.  The abstract realization is
 identified with the geometric support by barycentric coordinates, then followed by the supplied
 ambient embedding. -/
@@ -1019,26 +913,6 @@ theorem support_eq_empty_of_faces_eq_empty {S : Type*} [TopologicalSpace S]
 @[simp] theorem empty_support (S : Type*) [TopologicalSpace S] :
     (empty S).support = ∅ :=
   support_eq_empty_of_faces_eq_empty _ rfl
-
-theorem empty_boundaryCompatible
-    (S : Type*) [TopologicalSpace S] [ChartedSpace (EuclideanHalfSpace 2) S] :
-    (empty S).BoundaryCompatible := by
-  intro x
-  obtain ⟨t, ht, -⟩ := x.2.2
-  exact (Finset.notMem_empty t ht).elim
-
-theorem boundaryCompatible_of_boundaryless
-    [ChartedSpace (EuclideanHalfSpace 2) S]
-    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S] :
-    T.BoundaryCompatible := by
-  intro x
-  constructor
-  · rw [ModelWithCorners.Boundaryless.boundary_eq_empty]
-    simp
-  · intro hx
-    have := T.mem_boundary_of_mem_manifoldBoundaryCarrier hx
-    rw [ModelWithCorners.Boundaryless.boundary_eq_empty] at this
-    exact this.elim
 
 end PartialTriangulation
 
@@ -1233,37 +1107,6 @@ theorem core_subset_interior_patchPartialTriangulation_support :
   apply interior_maximal hOsub hOopen
   refine ⟨c.chart.symm p, hzInterior, ?_⟩
   exact congrArg Subtype.val (c.chart.symm_apply_apply ⟨y, hyDomain⟩)
-
-/-- The concrete disk/half-disk chart patch carries the ambient manifold boundary on an explicit
-edge subcomplex.  In the half-disk case these are exactly the two vertical edges of the fixed
-half-diamond; in the disk case there are no ambient-boundary points. -/
-theorem patchPartialTriangulation_boundaryCompatible
-    [ChartedSpace (EuclideanHalfSpace 2) S] (hc : c.BoundaryFaithful) :
-    c.patchPartialTriangulation.BoundaryCompatible := by
-  classical
-  intro x
-  constructor
-  · intro hxBoundary
-    have hmodel :
-        c.kind.IsModelBoundary (c.kind.patchComplex.baryEval x.1) := by
-      rw [← c.patchPartialTriangulation_chart_coord x]
-      exact
-        (MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary c hc
-          (c.patchPartialTriangulation.embed x)
-          (c.patchPartialTriangulation_embed_mem_domain x)).mp hxBoundary
-    obtain ⟨e, heBoundary, hxe⟩ :=
-      (c.kind.patchComplex_isModelBoundary_iff x).mp hmodel
-    refine ⟨e, Finset.mem_filter.mpr ⟨?_, ?_⟩, hxe⟩
-    · exact c.kind.mem_patchComplex_edges_of_mem_patchBoundaryEdges heBoundary
-    · intro y hye
-      apply
-        (MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary c hc
-          (c.patchPartialTriangulation.embed y)
-          (c.patchPartialTriangulation_embed_mem_domain y)).mpr
-      rw [c.patchPartialTriangulation_chart_coord y]
-      exact (c.kind.patchComplex_isModelBoundary_iff y).mpr
-        ⟨e, heBoundary, hye⟩
-  · exact c.patchPartialTriangulation.mem_boundary_of_mem_manifoldBoundaryCarrier
 
 /-- The fixed disk/half-disk patch has no boundary chords.  In a half-disk face its boundary
 face is obtained by deleting the unique positive-normal vertex `1`; in a disk face it is empty. -/
@@ -6122,22 +5965,22 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
       rw [hglue_right x x₂.2]
       exact hb x₂ hxt'
 
-/-- The invariant carried through the bordered Radó induction: the built complex is a
-combinatorial surface (every edge in at most two faces), and the region `A` absorbed so far lies
-in the topological interior of its support in `S`.
+/-- The invariant carried through the bordered Radó induction: every edge of the built complex
+lies in at most two faces, every triangle has a regular exposed intersection with the ambient
+manifold boundary, and the region `A` absorbed so far lies in the topological interior of its
+support in `S`.
 
 For a surface without boundary this agrees with Moise Ch. 8, Thm. 3, invariant (4), after the
 usual identification of topological and combinatorial interior.  The ambient topological
 interior is essential in the bordered case: a half-disk core contains points of `∂S`, and those
 points belong to the interior of a half-disk neighborhood *as a subset of `S`*, although they lie
-on its combinatorial boundary.  Requiring such points to lie in `combInterior` would make the
-bordered induction statement false.
+on its combinatorial boundary.  Requiring such points to lie in a combinatorial-interior subset
+would make the bordered induction statement false.
 
-This invariant is expected to be *strengthened* during the proof of `moise_induction_step`
-(candidates: connected vertex links, and the bordered bookkeeping locating `∂S ∩ support` inside
-the combinatorial boundary).  Strengthening tightens the step's hypothesis and conclusion
-together and keeps the assembly proof below valid; weakening the step's conclusion instead is
-the failure mode this rebuild exists to prevent. -/
+This deliberately does not call the intermediate support a combinatorial manifold: edge valence
+alone does not imply connected vertex links.  The crossing construction needs the stated
+edge/boundary regularity and exact embedded gluing; after the final support is all of `S`, the
+homeomorphism to `S` supplies the topological surface conclusion directly. -/
 structure RadoInvariant {S : Type*} [TopologicalSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
     (T : PartialTriangulation S) (A : Set S) : Prop where
@@ -6289,8 +6132,8 @@ def PreservesManifoldBoundary {X : Type*} (f g : X → S) : Prop :=
       g x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S
 
 /-- The raw chart straightening, augmented only with the certificate that its frontier-glued
-embedding preserves ambient boundary membership.  The large crossing-weld implementation
-consumes this proposition, so the bordered and boundaryless routes share all later geometry. -/
+embedding preserves ambient boundary membership.  The crossing-weld implementation consumes this
+proposition to retain the boundary-line subcomplex during the bordered induction. -/
 def PartialTriangulation.BoundaryPreservingStraightening
     (T : PartialTriangulation S) (c : MoiseChart S) : Prop :=
   ∀ (A : Set S), IsClosed A →
@@ -6318,9 +6161,9 @@ def PartialTriangulation.BoundaryPreservingStraightening
       PreservesManifoldBoundary S
         (frontierGlue U g T.embed) T.embed
 
-/-- The single open bordered capability: the relative polygonal straightening preserves the
-ambient boundary stratum.  All raw straightening data are already constructed; only the final
-pointwise boundary certificate remains to be extracted from the synchronized arrangement. -/
+omit [ConnectedSpace S]
+  [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
+/-- The relative polygonal straightening preserves the ambient boundary stratum. -/
 theorem PartialTriangulation.exists_boundaryPreservingStraightening
     (T : PartialTriangulation S) (c : MoiseChart S) (hc : c.BoundaryFaithful)
     (hboundary : T.BoundaryFacewiseRegular) :
@@ -6371,26 +6214,6 @@ theorem PartialTriangulation.exists_boundaryPreservingStraightening
               (modelWithCornersEuclideanHalfSpace 2).boundary S :=
           hqzero hkHalf yU
   · rw [frontierGlue_of_notMem hyU]
-
-/-- On a boundaryless manifold every raw chart straightening automatically carries the relative
-boundary certificate, because both boundary-membership propositions are false. -/
-theorem PartialTriangulation.exists_boundaryPreservingStraightening_boundaryless
-    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S]
-    (T : PartialTriangulation S) (c : MoiseChart S) (hc : c.BoundaryFaithful)
-    (hboundary : T.BoundaryFacewiseRegular) :
-    PartialTriangulation.BoundaryPreservingStraightening S T c := by
-  letI : SecondCountableTopology S := moise_secondCountableTopology S
-  intro A hA
-  obtain ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
-      hUprotected, hgcoord, _hqzero, hUsub, hgval, hgfix, hgmatch, hgcont, hginj,
-      hcross, hembed⟩ :=
-    T.exists_straightenedChartAway c hc hboundary A hA
-  refine ⟨U, hU, V, hV, Q, Qatlas, g', g, hVsub, hVavoid, hVprotected,
-    hUprotected, hgcoord, hUsub, hgval, hgfix, hgmatch, hgcont, hginj, hcross,
-    hembed, ?_⟩
-  intro y
-  rw [ModelWithCorners.Boundaryless.boundary_eq_empty]
-  simp
 
 omit [ConnectedSpace S]
   [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
@@ -6777,7 +6600,7 @@ presentation: a common vertex type carrying both face families, with embeddings 
 exactly on the shared realization, satisfy the combinatorial-surface bound jointly, and whose
 united image contains `A ∪ c.core` in its topological interior.
 
-The intended proof is the machinery already in place: straighten the old complex over the
+The proof straightens the old complex over the
 chart overlap by the locally finite controlled polygonal replacement over
 `adaptiveOverlapGraphRealization` with tolerance vanishing at the overlap frontier
 (`replaceOnOpen`/`frontierGlue`), refine the straightened trace and the fixed patch complex to
@@ -6787,8 +6610,6 @@ silently substituted for the vanishing-tolerance construction. -/
 theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     (c : MoiseChart S) (hc : c.BoundaryFaithful)
     {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
-    (hcore : ¬ c.core ⊆ interior T.support)
-    (hA : ¬ A ⊆ interior c.patchPartialTriangulation.support)
     (hstraight :
       PartialTriangulation.BoundaryPreservingStraightening S T c) :
     ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
@@ -11530,15 +11351,10 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       · apply interior_mono Set.subset_union_right
         exact hDtarget ⟨hxCore, hxOld⟩
 
-/-- **Theorem boundary** for the bordered crossing case.
-
-The weld implementation is shared with the boundaryless theorem.  Its only open dependency is
-`PartialTriangulation.exists_boundaryPreservingStraightening`, which asserts exact preservation
-of the ambient boundary stratum by the relative polygonal replacement. -/
+/-- The bordered crossing weld.  The relative straightening preserves the ambient boundary
+stratum, and the synchronized source/target presentations retain it as a simplicial face. -/
 theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaithful)
-    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
-    (hcore : ¬ c.core ⊆ interior T.support)
-    (hA : ¬ A ⊆ interior c.patchPartialTriangulation.support) :
+    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A) :
     ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
       (F₁ F₂ : Finset (Finset V))
       (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S),
@@ -11552,34 +11368,9 @@ theorem MoiseChart.exists_crossing_weld (c : MoiseChart S) (hc : c.BoundaryFaith
       PartialTriangulation.BoundaryFacewiseRegularEmbedding F₂ e₂ ∧
       A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) :=
   MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
-    S c hc hT hcore hA
+    S c hc hT
       (PartialTriangulation.exists_boundaryPreservingStraightening S T c hc
         hT.boundaryFacewiseRegular)
-
-/-- The crossing weld on a boundaryless surface.  Boundarylessness discharges the sole relative
-certificate before entering the shared weld implementation. -/
-theorem MoiseChart.exists_crossing_weld_boundaryless
-    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S]
-    (c : MoiseChart S) (hc : c.BoundaryFaithful)
-    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
-    (hcore : ¬ c.core ⊆ interior T.support)
-    (hA : ¬ A ⊆ interior c.patchPartialTriangulation.support) :
-    ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
-      (F₁ F₂ : Finset (Finset V))
-      (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S),
-      (∀ t ∈ F₁ ∪ F₂, t.card = 3) ∧
-      _root_.Topology.IsEmbedding e₁ ∧ _root_.Topology.IsEmbedding e₂ ∧
-      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
-        (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y) ∧
-      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
-        e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) ∧
-      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₁ e₁ ∧
-      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₂ e₂ ∧
-      A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) :=
-  MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
-    S c hc hT hcore hA
-      (PartialTriangulation.exists_boundaryPreservingStraightening_boundaryless
-        S T c hc (PartialTriangulation.boundaryFacewiseRegular_of_boundaryless T))
 
 /-- **Theorem boundary** (Moise Ch. 8, Thm. 3, the induction step; bordered version).
 
@@ -11606,7 +11397,7 @@ theorem moise_induction_step (c : MoiseChart S) (hc : c.BoundaryFaithful)
   · -- the crossing case: weld the adjusted old complex and the chart patch, then glue
     obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep,
         hboundary₁, hboundary₂, hcover⟩ :=
-      MoiseChart.exists_crossing_weld S c hc hT hcore hA
+      MoiseChart.exists_crossing_weld S c hc hT
     obtain ⟨T', hsupport, hsurf', hboundary'⟩ :=
       PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂
         hagree hsep hboundary₁ hboundary₂
@@ -11615,30 +11406,8 @@ theorem moise_induction_step (c : MoiseChart S) (hc : c.BoundaryFaithful)
     · rw [hsupport]
       exact hcover
 
-/-- The Radó induction step for a boundaryless surface.  Its easy branches are identical to the
-bordered step; the crossing branch uses the sorry-free boundaryless weld certificate. -/
-theorem moise_induction_step_boundaryless
-    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S]
-    (c : MoiseChart S) (hc : c.BoundaryFaithful)
-    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A) :
-    ∃ T' : PartialTriangulation S, RadoInvariant T' (A ∪ c.core) := by
-  classical
-  by_cases hcore : c.core ⊆ interior T.support
-  · exact ⟨T, hT.absorb_of_subset c.isCompact_core hcore⟩
-  by_cases hA : A ⊆ interior c.patchPartialTriangulation.support
-  · exact ⟨c.patchPartialTriangulation,
-      radoInvariant_chartPatch_absorb c hc hT.coresCompact hA⟩
-  · obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep,
-        hboundary₁, hboundary₂, hcover⟩ :=
-      MoiseChart.exists_crossing_weld_boundaryless S c hc hT hcore hA
-    obtain ⟨T', hsupport, hsurf', hboundary'⟩ :=
-      PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂
-        hagree hsep hboundary₁ hboundary₂
-    refine ⟨T', ?_, hsurf', hboundary', ?_⟩
-    · exact hT.coresCompact.union c.isCompact_core
-    · rw [hsupport]
-      exact hcover
-
+omit [T2Space S] [ConnectedSpace S]
+  [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
 /-- Shared finite Radó induction assembler.  It turns any clean one-chart absorption step with the
 full `RadoInvariant` conclusion into an end-to-end geometric triangulation. -/
 theorem moise_triangulation_of_induction
@@ -11719,14 +11488,6 @@ theorem moise_triangulation_of_induction
 theorem moise_triangulation_of_boundaries :
     Nonempty (GeometricTriangulation S) :=
   moise_triangulation_of_induction S (moise_induction_step S)
-
-/-- Radó's triangulation theorem for compact boundaryless Eval surfaces.  This specialization
-shares the straightening, crossing weld, gluing, and finite chart induction with the bordered
-route; boundarylessness supplies the simpler empty-boundary certificate. -/
-theorem moise_triangulation_boundaryless
-    [BoundarylessManifold (modelWithCornersEuclideanHalfSpace 2) S] :
-    Nonempty (GeometricTriangulation S) :=
-  moise_triangulation_of_induction S (moise_induction_step_boundaryless S)
 
 end EvalHypotheses
 
