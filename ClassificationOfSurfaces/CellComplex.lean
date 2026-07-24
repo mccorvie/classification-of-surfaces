@@ -387,7 +387,13 @@ abbrev Equivalent (K L : CellComplex) : Prop :=
 
 end CellComplex
 
-/-- Bridge from a finite triangulation to a finite surface cell complex. -/
+/-- Raw compatibility bridge from the ledgered triangulation record to stored cell-presentation
+data.
+
+This conversion does not prove `IsSurfaceValid` or `IsConnected`; in particular, those properties
+do not follow from `FiniteSurfaceTriangulation.Valid`.  New geometric work should start from
+`GeometricTriangulation`, and downstream cellulation work must separately certify the incidence
+predicates. -/
 def FiniteSurfaceTriangulation.toCellComplex {S : Type*} [TopologicalSpace S]
     (T : FiniteSurfaceTriangulation S) : SurfaceCellComplex where
   Face := T.Triangle
@@ -425,7 +431,8 @@ abbrev FiniteTriangulation.toCellComplex {S : Type*} [TopologicalSpace S]
     (T : FiniteTriangulation S) : CellComplex :=
   FiniteSurfaceTriangulation.toCellComplex T
 
-/-- A finite triangulation produces a finite surface cell complex realizing the same space. -/
+/-- A legacy finite-triangulation record produces raw finite cell-presentation data with the same
+stored realization.  No incidence validity or face-edge connectivity is asserted. -/
 theorem finite_triangulation_to_cell_complex
     {S : Type*} [TopologicalSpace S] (T : FiniteSurfaceTriangulation S) :
     ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
@@ -443,7 +450,9 @@ variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 
-/-- Topological bridge from Eval surfaces to finite surface cell complexes. -/
+/-- An Eval surface is homeomorphic to the stored realization of raw finite cell-presentation
+data.  This is only the current compatibility handoff: `K.IsSurfaceValid`, `K.IsConnected`, and
+agreement with the polygonal quotient realization remain separate obligations. -/
 theorem compact_surface_homeomorphic_to_cell_complex :
     ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
   obtain ⟨T, _hT⟩ := compact_eval_surface_finitely_triangulable S

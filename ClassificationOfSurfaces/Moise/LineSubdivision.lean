@@ -190,6 +190,42 @@ theorem convexHull_inter_affine_zero_of_nonneg (s : Finset Plane) (f : Plane →
     · exact (convex_convexHull ℝ (s : Set Plane)).inter
         ((convex_singleton (0 : ℝ)).affine_preimage f)
 
+/-- Set-valued version of the supporting-hyperplane face formula.  Convex-hull membership uses
+only finitely many points, so the finite formula above applies to each witness. -/
+theorem convexHull_inter_affine_zero_of_nonneg_set (s : Set Plane)
+    (f : Plane →ᵃ[ℝ] ℝ) (hf : ∀ x ∈ s, 0 ≤ f x) :
+    convexHull ℝ s ∩ {x | f x = 0} =
+      convexHull ℝ (s ∩ {x | f x = 0}) := by
+  classical
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxHull, hxZero⟩
+    obtain ⟨ι, _, w, z, hw0, hw1, hz, hwz⟩ :=
+      (mem_convexHull_iff_exists_fintype.mp hxHull)
+    let t : Finset Plane := Finset.univ.image z
+    have hxt : x ∈ convexHull ℝ (t : Set Plane) := by
+      exact mem_convexHull_of_exists_fintype w z hw0 hw1
+        (fun i => Finset.mem_coe.mpr
+          (Finset.mem_image.mpr ⟨i, Finset.mem_univ i, rfl⟩))
+        (by simpa only [hwz])
+    have htNonneg : ∀ y ∈ t, 0 ≤ f y := by
+      intro y hy
+      obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp hy
+      exact hf (z i) (hz i)
+    have hxFace :
+        x ∈ convexHull ℝ ((t.filter fun y => f y = 0 : Finset Plane) : Set Plane) := by
+      rw [← convexHull_inter_affine_zero_of_nonneg t f htNonneg]
+      exact ⟨hxt, hxZero⟩
+    apply convexHull_mono ?_ hxFace
+    intro y hy
+    have hyt := Finset.mem_filter.mp hy
+    obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp hyt.1
+    exact ⟨hz i, hyt.2⟩
+  · apply convexHull_min
+    · intro x hx
+      exact ⟨subset_convexHull ℝ s hx.1, hx.2⟩
+    · exact (convex_convexHull ℝ s).inter
+        ((convex_singleton (0 : ℝ)).affine_preimage f)
+
 /-- Two finite convex hulls lying on opposite sides of an affine hyperplane intersect in their
 common zero face. -/
 theorem convexHull_inter_of_affine_separation (s t u : Finset Plane)

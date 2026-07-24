@@ -402,8 +402,7 @@ noncomputable def adaptiveFanSimplexLineMap (hU : IsOpen U)
     (convex_stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU f}).lineMap_mem
       x.2 y.2 r.2⟩
 
--- The affine source calculation expands three dependent finite sums, so it needs a local budget.
-set_option maxHeartbeats 800000 in
+-- The affine source calculation expands three dependent finite sums.
 theorem adaptiveFanSourcePoint_simplexLineMap (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU)
     (x y : stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU f})
@@ -433,25 +432,23 @@ theorem adaptiveFanSourcePoint_simplexLineMap (hU : IsOpen U)
     _ = _ := by rw [Finset.sum_add_distrib, Finset.mul_sum, Finset.mul_sum]
 
 -- An affine fan combination sends a simplex vertex to the corresponding source vertex.
-set_option maxHeartbeats 800000 in
 theorem adaptiveFanSourcePoint_vertex (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU)
     (p : {p // p ∈ K.adaptiveFanFaceVertices U hU f}) :
     K.adaptiveFanSourcePoint U hU f (stdSimplex.vertex p) =
       K.adaptiveFanVertexSource U hU f p := by
-  set_option maxHeartbeats 800000 in
-    classical
-    apply Subtype.ext
-    funext v
-    change (∑ q, (stdSimplex.vertex p :
+  classical
+  apply Subtype.ext
+  funext v
+  change (∑ q, (stdSimplex.vertex p :
         stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU f}) q *
       (K.adaptiveFanVertexSource U hU f q).1 v) =
         (K.adaptiveFanVertexSource U hU f p).1 v
-    rw [Finset.sum_eq_single p]
-    · simp
-    · intro q _ hqp
-      simp [Pi.single_apply, hqp]
-    · simp
+  rw [Finset.sum_eq_single p]
+  · simp
+  · intro q _ hqp
+    simp [Pi.single_apply, hqp]
+  · simp
 
 /-- Pulling an edge point back through the faithful subdivision gives zero in every coordinate
 outside that edge. -/
@@ -830,6 +827,7 @@ theorem affineIndependent_adaptiveFanVertexSource_val (hU : IsOpen U)
 
 -- Barycentric coordinates are unique on each fan face.
 set_option maxHeartbeats 800000 in
+-- Affine-combination uniqueness unfolds the dependent three-vertex source family.
 theorem adaptiveFanSourcePoint_injective (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU) :
     Function.Injective (K.adaptiveFanSourcePoint U hU f) := by
@@ -2631,6 +2629,7 @@ theorem adaptiveFanFaceMap_mem_boundaryVertices_of_center_zero_of_not_base_weigh
         f.1 f.2.1 f.2.2)).1
 
 set_option maxHeartbeats 800000 in
+-- Comparing boundary membership reduces both dependent fan-face endpoint presentations.
 theorem adaptiveFanBaseWeights_pos_of_faceMap_eq_of_same_tile
     (hU : IsOpen U) (t : K.AdaptiveFace U)
     (i j : ZMod 3) (a : K.AdaptiveEdgeInterval U hU t i)
@@ -2657,7 +2656,6 @@ theorem adaptiveFanBaseWeights_pos_of_faceMap_eq_of_same_tile
 
 /- Resolved fan bases in one adaptive tile use compatible global barycentric coordinates at
 every common point. -/
-set_option maxHeartbeats 1200000 in
 theorem adaptiveFanExtendedCoordinates_eq_of_faceMap_eq_of_same_tile_of_center_eq_zero
     (hU : IsOpen U) (t : K.AdaptiveFace U)
     (i j : ZMod 3) (a : K.AdaptiveEdgeInterval U hU t i)
@@ -2736,7 +2734,6 @@ theorem adaptiveFanExtendedCoordinates_eq_of_faceMap_eq_of_same_tile_of_center_e
 
 /- Fan triangles in one adaptive tile assign the same global barycentric coordinates to every
 common point, including the cone center. -/
-set_option maxHeartbeats 800000 in
 theorem adaptiveFanExtendedCoordinates_eq_of_faceMap_eq_of_same_tile
     (hU : IsOpen U) (t : K.AdaptiveFace U)
     (i j : ZMod 3) (a : K.AdaptiveEdgeInterval U hU t i)

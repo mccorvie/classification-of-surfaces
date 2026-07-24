@@ -202,7 +202,6 @@ def IsTwoEdgeFreeTriangle (T : M.Triangle) (k : Fin 3) : Prop :=
 def IsGeometricallyFreeTriangle (T : M.Triangle) : Prop :=
   ∃ k : Fin 3, M.IsOneEdgeFreeTriangle T k ∨ M.IsTwoEdgeFreeTriangle T k
 
-set_option maxHeartbeats 800000 in
 /-- The relative interior of the base in the Figure 3.3 ordering misses both apex edges. -/
 theorem freeTriangleBase_diff_endpoints_disjoint_apexEdges (T : M.Triangle) (k : Fin 3) :
     Disjoint
@@ -384,6 +383,7 @@ theorem triangleVertex_mem_freeTriangleApexEdges (T : M.Triangle) (k : Fin 3)
       right_mem_segment]
 
 set_option maxHeartbeats 800000 in
+-- Normalizing all six finite-order cases for the three geometric edges exceeds the default.
 /-- The frontier of a maximal triangle is covered by the base and the two apex edges in every
 Figure 3.3 ordering. -/
 theorem frontier_triangleCarrier_subset_freeTriangleEdges (T : M.Triangle) (k : Fin 3) :

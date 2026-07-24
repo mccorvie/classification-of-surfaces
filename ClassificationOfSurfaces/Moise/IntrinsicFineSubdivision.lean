@@ -402,6 +402,18 @@ theorem iteratedMidpointSubdivision_succ (K : IntrinsicTwoComplex) (n : ℕ) :
       (K.iteratedMidpointSubdivision n).trans
         (K.iteratedMidpointSubdivision n).refined.midpointSubdivision := rfl
 
+/-- Every iterated midpoint refinement preserves the surface edge-valence bound. -/
+theorem hasSurfaceEdgeValence_iteratedMidpointSubdivision
+    (K : IntrinsicTwoComplex) (hK : K.HasSurfaceEdgeValence) :
+    ∀ n, (K.iteratedMidpointSubdivision n).refined.HasSurfaceEdgeValence := by
+  intro n
+  induction n with
+  | zero =>
+      simpa [iteratedMidpointSubdivision] using hK
+  | succ n ih =>
+      exact
+        (K.iteratedMidpointSubdivision n).refined.hasSurfaceEdgeValence_midpointComplex ih
+
 /-- Quantitative mesh estimate for iterated midpoint subdivision. -/
 theorem iteratedMidpointSubdivision_meshLE (K : IntrinsicTwoComplex) (n : ℕ) :
     (K.iteratedMidpointSubdivision n).MeshLE ((1 / 2 : ℝ) ^ n) := by

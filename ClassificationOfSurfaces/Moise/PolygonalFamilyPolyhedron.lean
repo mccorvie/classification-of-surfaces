@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.Moise.PolygonalPolyhedron
+import ClassificationOfSurfaces.Moise.CommonSubdivision
 
 /-!
 # Finite unions of polygonal disks
@@ -19,6 +20,65 @@ namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
 namespace Moise
+
+namespace TriangleMesh
+
+/-- The canonical barycentric embedding of a finite plane triangle mesh realization. -/
+noncomputable def coordinateEmbed (M : TriangleMesh) :
+    GeometricRealization M.Vertex M.triangles → Plane :=
+  fun x ↦ M.toPlaneComplex.baryEval x.1
+
+theorem isEmbedding_coordinateEmbed (M : TriangleMesh) :
+    _root_.Topology.IsEmbedding M.coordinateEmbed := by
+  have hfaces : GeometricRealization M.Vertex M.triangles =
+      GeometricRealization M.Vertex M.toPlaneComplex.cells := by
+    rw [M.toPlaneComplex_cells]
+  let hhomeo := (Homeomorph.setCongr hfaces).trans
+    (M.toPlaneComplex.realizationHomeomorph M.toPlaneComplex_isPure2)
+  have hhomeo_apply (x : GeometricRealization M.Vertex M.triangles) :
+      (hhomeo x).1 = M.coordinateEmbed x := by
+    rfl
+  have h := _root_.Topology.IsEmbedding.subtypeVal.comp hhomeo.isEmbedding
+  have heq : (Subtype.val ∘ hhomeo) = M.coordinateEmbed := by
+    funext x
+    exact hhomeo_apply x
+  rw [heq] at h
+  exact h
+
+theorem range_coordinateEmbed (M : TriangleMesh) :
+    Set.range M.coordinateEmbed = M.toPlaneComplex.support := by
+  have hfaces : GeometricRealization M.Vertex M.triangles =
+      GeometricRealization M.Vertex M.toPlaneComplex.cells := by
+    rw [M.toPlaneComplex_cells]
+  let hhomeo := (Homeomorph.setCongr hfaces).trans
+    (M.toPlaneComplex.realizationHomeomorph M.toPlaneComplex_isPure2)
+  have hhomeo_apply (x : GeometricRealization M.Vertex M.triangles) :
+      (hhomeo x).1 = M.coordinateEmbed x := by
+    rfl
+  apply Set.Subset.antisymm
+  · rintro x ⟨y, rfl⟩
+    rw [← hhomeo_apply y]
+    exact (hhomeo y).2
+  · intro x hx
+    obtain ⟨y, hy⟩ := hhomeo.surjective ⟨x, hx⟩
+    refine ⟨y, ?_⟩
+    rw [← hhomeo_apply y]
+    exact congrArg Subtype.val hy
+
+/-- Restrict the coordinate embedding to any plane region containing the mesh support. -/
+noncomputable def coordinateEmbedInto (M : TriangleMesh) (W : Set Plane)
+    (hW : M.toPlaneComplex.support ⊆ W) :
+    GeometricRealization M.Vertex M.triangles → W :=
+  fun x ↦ ⟨M.coordinateEmbed x, hW (by
+    rw [← M.range_coordinateEmbed]
+    exact Set.mem_range_self x)⟩
+
+theorem isEmbedding_coordinateEmbedInto (M : TriangleMesh) (W : Set Plane)
+    (hW : M.toPlaneComplex.support ⊆ W) :
+    _root_.Topology.IsEmbedding (M.coordinateEmbedInto W hW) :=
+  M.isEmbedding_coordinateEmbed.codRestrict W _
+
+end TriangleMesh
 
 namespace PolygonalFamily
 
@@ -258,6 +318,313 @@ theorem closedRegionMesh_support :
     (closedRegionMesh J).toPlaneComplex.support = closedRegion J :=
   Set.Subset.antisymm (closedRegionMesh_support_subset J)
     (closedRegion_subset_closedRegionMesh_support J)
+
+/-! ## Synchronized submeshes of one family arrangement -/
+
+/-- The union of a selected subfamily of polygonal closed disks. -/
+def selectedClosedRegion (p : ι → Prop) : Set Plane :=
+  ⋃ i, ⋃ (_ : p i), (J i).closedRegion
+
+/-- An arrangement chamber belongs to the selected submesh when its interior lies on the
+bounded side of one selected polygon. -/
+def IsSelectedInteriorArrangementTriangle (p : ι → Prop)
+    (t : Finset (arrangementMesh J).Vertex) : Prop :=
+  ∃ i, p i ∧ interior (arrangementTriangleCarrier J t) ⊆ (J i).interiorRegion
+
+/-- Restrict the common arrangement to the chambers belonging to a selected subfamily.
+Different predicates therefore produce meshes with definitionally the same ambient vertex
+type and position map. -/
+noncomputable def selectedClosedRegionMesh (p : ι → Prop) : TriangleMesh := by
+  classical
+  exact (arrangementMesh J).restrictTriangles
+    (IsSelectedInteriorArrangementTriangle J p)
+
+theorem selectedClosedRegionMesh_triangle_mem (p : ι → Prop)
+    {t : Finset (selectedClosedRegionMesh J p).Vertex} :
+    t ∈ (selectedClosedRegionMesh J p).triangles ↔
+      t ∈ (arrangementMesh J).triangles ∧
+        IsSelectedInteriorArrangementTriangle J p t := by
+  classical
+  exact (arrangementMesh J).mem_restrictTriangles_triangles
+    (IsSelectedInteriorArrangementTriangle J p)
+
+theorem arrangementTriangleCarrier_subset_selectedClosedRegion
+    (p : ι → Prop) {t : Finset (arrangementMesh J).Vertex}
+    (ht : t ∈ (arrangementMesh J).triangles)
+    (hinside : IsSelectedInteriorArrangementTriangle J p t) :
+    arrangementTriangleCarrier J t ⊆ selectedClosedRegion J p := by
+  obtain ⟨i, hpi, hi⟩ := hinside
+  rw [← closure_interior_arrangementTriangleCarrier J ht]
+  exact (closure_mono hi).trans fun x hx ↦ Set.mem_iUnion.mpr
+    ⟨i, Set.mem_iUnion.mpr
+      ⟨hpi, by simpa only [PolygonalCircle.closedRegion] using hx⟩⟩
+
+theorem selectedClosedRegionMesh_support_subset (p : ι → Prop) :
+    (selectedClosedRegionMesh J p).toPlaneComplex.support ⊆
+      selectedClosedRegion J p := by
+  rw [TriangleMesh.toPlaneComplex_support]
+  intro x hx
+  simp only [Set.mem_iUnion] at hx
+  obtain ⟨t, ht, hxt⟩ := hx
+  obtain ⟨htarr, htinside⟩ :=
+    (selectedClosedRegionMesh_triangle_mem J p).mp ht
+  exact arrangementTriangleCarrier_subset_selectedClosedRegion
+    J p htarr htinside hxt
+
+theorem interiorRegion_subset_selectedClosedRegionMesh_support
+    (p : ι → Prop) (i : ι) (hpi : p i) :
+    (J i).interiorRegion ⊆
+      (selectedClosedRegionMesh J p).toPlaneComplex.support := by
+  intro x hxinside
+  have hxselected : x ∈ selectedClosedRegion J p := Set.mem_iUnion.mpr
+    ⟨i, Set.mem_iUnion.mpr
+      ⟨hpi, by
+        rw [(J i).closedRegion_eq_union]
+        exact Or.inl hxinside⟩⟩
+  have hxclosed : x ∈ closedRegion J := by
+    obtain ⟨i, hxi⟩ := Set.mem_iUnion.mp hxselected
+    obtain ⟨_, hxi⟩ := Set.mem_iUnion.mp hxi
+    exact Set.mem_iUnion.mpr ⟨i, hxi⟩
+  have hxsupport := closedRegion_subset_arrangementMesh_support J hxclosed
+  rw [TriangleMesh.toPlaneComplex_support] at hxsupport
+  simp only [Set.mem_iUnion] at hxsupport
+  obtain ⟨t, ht, hxt⟩ := hxsupport
+  have hxclosure : x ∈ closure
+      (interior (arrangementTriangleCarrier J t)) := by
+    rw [closure_interior_arrangementTriangleCarrier J ht]
+    exact hxt
+  have hxclosureInter : x ∈ closure
+      ((J i).interiorRegion ∩ interior (arrangementTriangleCarrier J t)) :=
+    (J i).isOpen_interiorRegion.inter_closure ⟨hxinside, hxclosure⟩
+  obtain ⟨y, hyinside, hyt⟩ := Set.Nonempty.of_closure ⟨x, hxclosureInter⟩
+  have htinside : interior (arrangementTriangleCarrier J t) ⊆
+      (J i).interiorRegion := by
+    rcases arrangementTriangle_interior_side J i ht with hin | hout
+    · exact hin
+    · exact False.elim <| Set.disjoint_left.mp
+        (J i).disjoint_interior_exterior hyinside (hout hyt)
+  rw [TriangleMesh.toPlaneComplex_support]
+  simp only [Set.mem_iUnion]
+  exact ⟨t, (selectedClosedRegionMesh_triangle_mem J p).mpr
+    ⟨ht, ⟨i, hpi, htinside⟩⟩, hxt⟩
+
+theorem selectedClosedRegion_subset_selectedClosedRegionMesh_support
+    (p : ι → Prop) :
+    selectedClosedRegion J p ⊆
+      (selectedClosedRegionMesh J p).toPlaneComplex.support := by
+  intro x hx
+  obtain ⟨i, hpi, hxi⟩ := Set.mem_iUnion₂.mp hx
+  rw [PolygonalCircle.closedRegion] at hxi
+  exact closure_minimal
+    (interiorRegion_subset_selectedClosedRegionMesh_support J p i hpi)
+    (selectedClosedRegionMesh J p).toPlaneComplex.isCompact_support.isClosed hxi
+
+/-- Every selected subfamily is recovered exactly as a face restriction of the one common
+arrangement.  This is the conforming old/new submesh interface used by the Radó weld. -/
+theorem selectedClosedRegionMesh_support (p : ι → Prop) :
+    (selectedClosedRegionMesh J p).toPlaneComplex.support =
+      selectedClosedRegion J p :=
+  Set.Subset.antisymm (selectedClosedRegionMesh_support_subset J p)
+    (selectedClosedRegion_subset_selectedClosedRegionMesh_support J p)
+
+/-- Taking the union of two selected submeshes is literally the selection by the disjunction
+of the two predicates.  All three meshes use the same ambient arrangement vertex type. -/
+theorem selectedClosedRegionMesh_triangles_union (p q : ι → Prop) :
+    (selectedClosedRegionMesh J p).triangles ∪
+        (selectedClosedRegionMesh J q).triangles =
+      (selectedClosedRegionMesh J fun i ↦ p i ∨ q i).triangles := by
+  classical
+  change
+    ((arrangementMesh J).triangles.filter
+        (IsSelectedInteriorArrangementTriangle J p)) ∪
+      ((arrangementMesh J).triangles.filter
+        (IsSelectedInteriorArrangementTriangle J q)) =
+      (arrangementMesh J).triangles.filter
+        (IsSelectedInteriorArrangementTriangle J (fun i ↦ p i ∨ q i))
+  ext t
+  simp only [Finset.mem_union, Finset.mem_filter]
+  constructor
+  · rintro (⟨ht, i, hpi, hi⟩ | ⟨ht, i, hqi, hi⟩)
+    · exact ⟨ht, i, Or.inl hpi, hi⟩
+    · exact ⟨ht, i, Or.inr hqi, hi⟩
+  · rintro ⟨ht, i, hpi | hqi, hi⟩
+    · exact Or.inl ⟨ht, i, hpi, hi⟩
+    · exact Or.inr ⟨ht, i, hqi, hi⟩
+
+/-- The two synchronized selected submeshes jointly retain the planar surface incidence bound:
+every two-vertex edge belongs to at most two triangles.  This is inherited from the single
+ambient arrangement, not proved separately for the two selections. -/
+theorem selectedClosedRegionMeshes_joint_edge_valence (p q : ι → Prop)
+    (e : Finset (arrangementMesh J).Vertex) (he : e.card = 2) :
+    (((selectedClosedRegionMesh J p).triangles ∪
+        (selectedClosedRegionMesh J q).triangles).filter fun t ↦ e ⊆ t).card ≤ 2 := by
+  rw [selectedClosedRegionMesh_triangles_union J p q]
+  exact (selectedClosedRegionMesh J fun i ↦ p i ∨ q i).card_incidentTriangles_le_two he
+
+/-! ## Synchronization with an independent finite patch mesh -/
+
+/-- Cut the polygon-family arrangement by all barycentric face lines of a second mesh. -/
+noncomputable def synchronizedArrangement (N : TriangleMesh) : TriangleMesh :=
+  (arrangementMesh J).refineTo N
+
+/-- A chamber of the synchronized arrangement lies in the selected polygonal region. -/
+def IsSelectedSynchronizedTriangle (N : TriangleMesh) (p : ι → Prop)
+    (t : Finset (synchronizedArrangement J N).Vertex) : Prop :=
+  ∃ i, p i ∧
+    interior ((synchronizedArrangement J N).triangleCarrier t) ⊆
+      (J i).interiorRegion
+
+/-- The polygonal side of the common old/patch arrangement. -/
+noncomputable def selectedSynchronizedMesh (N : TriangleMesh)
+    (p : ι → Prop) : TriangleMesh := by
+  classical
+  exact (synchronizedArrangement J N).restrictTriangles
+    (IsSelectedSynchronizedTriangle J N p)
+
+/-- The patch side consists of the synchronized chambers whose interiors meet the patch. -/
+def IsTargetSynchronizedTriangle (N : TriangleMesh)
+    (t : Finset (synchronizedArrangement J N).Vertex) : Prop :=
+  (interior ((synchronizedArrangement J N).triangleCarrier t) ∩
+    N.toPlaneComplex.support).Nonempty
+
+/-- The target-mesh side of the common old/patch arrangement. -/
+noncomputable def targetSynchronizedMesh (N : TriangleMesh) : TriangleMesh := by
+  classical
+  exact (synchronizedArrangement J N).restrictTriangles
+    (IsTargetSynchronizedTriangle J N)
+
+theorem selectedSynchronizedMesh_triangle_mem (N : TriangleMesh) (p : ι → Prop)
+    {t : Finset (selectedSynchronizedMesh J N p).Vertex} :
+    t ∈ (selectedSynchronizedMesh J N p).triangles ↔
+      t ∈ (synchronizedArrangement J N).triangles ∧
+        IsSelectedSynchronizedTriangle J N p t := by
+  classical
+  exact (synchronizedArrangement J N).mem_restrictTriangles_triangles _
+
+theorem targetSynchronizedMesh_triangle_mem (N : TriangleMesh)
+    {t : Finset (targetSynchronizedMesh J N).Vertex} :
+    t ∈ (targetSynchronizedMesh J N).triangles ↔
+      t ∈ (synchronizedArrangement J N).triangles ∧
+        IsTargetSynchronizedTriangle J N t := by
+  classical
+  exact (synchronizedArrangement J N).mem_restrictTriangles_triangles _
+
+/-- Every synchronized chamber is contained in one chamber of the original polygon-family
+arrangement. -/
+theorem exists_arrangementTriangle_of_synchronized {N : TriangleMesh}
+    {t : Finset (synchronizedArrangement J N).Vertex}
+    (ht : t ∈ (synchronizedArrangement J N).triangles) :
+    ∃ u ∈ (arrangementMesh J).triangles,
+      (synchronizedArrangement J N).triangleCarrier t ⊆
+        (arrangementMesh J).triangleCarrier u := by
+  let R := synchronizedArrangement J N
+  have htFace : t ∈ R.toPlaneComplex.simplexes :=
+    R.mem_faces_iff.mpr ⟨by
+      have htcard : t.card = 3 := R.card_triangle t ht
+      exact Finset.card_pos.mp (by omega), t, ht, subset_rfl⟩
+  obtain ⟨s, hs, hts⟩ :=
+    ((arrangementMesh J).refineTo_subdivides_left N).2 t htFace
+  obtain ⟨-, u, hu, hsu⟩ := (arrangementMesh J).mem_faces_iff.mp hs
+  refine ⟨u, hu, ?_⟩
+  exact hts.trans (convexHull_mono (Set.image_mono hsu))
+
+/-- Synchronized chambers still lie wholly on one side of every family polygon. -/
+theorem synchronizedTriangle_interior_side (N : TriangleMesh) (i : ι)
+    {t : Finset (synchronizedArrangement J N).Vertex}
+    (ht : t ∈ (synchronizedArrangement J N).triangles) :
+    interior ((synchronizedArrangement J N).triangleCarrier t) ⊆
+        (J i).interiorRegion ∨
+      interior ((synchronizedArrangement J N).triangleCarrier t) ⊆
+        (J i).exteriorRegion := by
+  obtain ⟨u, hu, htu⟩ := exists_arrangementTriangle_of_synchronized J ht
+  have hint := interior_mono htu
+  rcases arrangementTriangle_interior_side J i hu with hin | hout
+  · exact Or.inl (hint.trans hin)
+  · exact Or.inr (hint.trans hout)
+
+/-- Further cutting by the target mesh does not change the selected polygonal support. -/
+theorem selectedSynchronizedMesh_support (N : TriangleMesh) (p : ι → Prop) :
+    (selectedSynchronizedMesh J N p).toPlaneComplex.support =
+      selectedClosedRegion J p := by
+  classical
+  let R := synchronizedArrangement J N
+  let L := selectedSynchronizedMesh J N p
+  apply Set.Subset.antisymm
+  · rw [TriangleMesh.toPlaneComplex_support]
+    intro x hx
+    simp only [Set.mem_iUnion] at hx
+    obtain ⟨t, ht, hxt⟩ := hx
+    obtain ⟨htR, i, hpi, hi⟩ :=
+      (selectedSynchronizedMesh_triangle_mem J N p).mp ht
+    let T : R.Triangle := ⟨t, htR⟩
+    have hxClosure : x ∈ closure (interior (R.triangleCarrier t)) := by
+      rw [R.closure_interior_triangleCarrier T]
+      exact hxt
+    have hxRegion : x ∈ closure (J i).interiorRegion :=
+      closure_mono hi hxClosure
+    exact Set.mem_iUnion.mpr ⟨i, Set.mem_iUnion.mpr
+      ⟨hpi, by simpa only [PolygonalCircle.closedRegion] using hxRegion⟩⟩
+  · intro x hx
+    obtain ⟨i, hpi, hxi⟩ := Set.mem_iUnion₂.mp hx
+    rw [PolygonalCircle.closedRegion] at hxi
+    apply closure_minimal _ L.toPlaneComplex.isCompact_support.isClosed hxi
+    intro y hy
+    have hyFamily : y ∈ closedRegion J := Set.mem_iUnion.mpr
+      ⟨i, by rw [(J i).closedRegion_eq_union]; exact Or.inl hy⟩
+    have hyArrangement : y ∈ (arrangementMesh J).toPlaneComplex.support :=
+      closedRegion_subset_arrangementMesh_support J hyFamily
+    have hyR : y ∈ R.toPlaneComplex.support := by
+      rw [show R.toPlaneComplex.support =
+          (arrangementMesh J).toPlaneComplex.support by
+        exact (arrangementMesh J).refineTo_support N]
+      exact hyArrangement
+    rw [TriangleMesh.toPlaneComplex_support] at hyR
+    simp only [Set.mem_iUnion] at hyR
+    obtain ⟨t, ht, hyt⟩ := hyR
+    let T : R.Triangle := ⟨t, ht⟩
+    have hyClosure : y ∈ closure (interior (R.triangleCarrier t)) := by
+      rw [R.closure_interior_triangleCarrier T]
+      exact hyt
+    have hyInterClosure : y ∈ closure
+        ((J i).interiorRegion ∩ interior (R.triangleCarrier t)) :=
+      (J i).isOpen_interiorRegion.inter_closure ⟨hy, hyClosure⟩
+    obtain ⟨z, hzInside, hzT⟩ := Set.Nonempty.of_closure ⟨y, hyInterClosure⟩
+    have htInside : interior (R.triangleCarrier t) ⊆
+        (J i).interiorRegion := by
+      rcases synchronizedTriangle_interior_side J N i ht with hin | hout
+      · exact hin
+      · exact False.elim <| Set.disjoint_left.mp
+          (J i).disjoint_interior_exterior hzInside (hout hzT)
+    rw [TriangleMesh.toPlaneComplex_support]
+    exact Set.mem_iUnion.mpr ⟨t, Set.mem_iUnion.mpr
+      ⟨(selectedSynchronizedMesh_triangle_mem J N p).mpr
+        ⟨ht, i, hpi, htInside⟩, hyt⟩⟩
+
+/-- When the target support lies in the family arrangement's enclosing triangle, the target
+side of the synchronized arrangement recovers it exactly. -/
+theorem targetSynchronizedMesh_support (N : TriangleMesh)
+    (hsub : N.toPlaneComplex.support ⊆
+      (arrangementMesh J).toPlaneComplex.support) :
+    (targetSynchronizedMesh J N).toPlaneComplex.support =
+      N.toPlaneComplex.support := by
+  change ((arrangementMesh J).refineToSupport N).toPlaneComplex.support =
+    N.toPlaneComplex.support
+  exact (arrangementMesh J).refineToSupport_support N hsub
+
+/-- The synchronized old and target submeshes jointly satisfy the planar edge-incidence bound. -/
+theorem synchronizedMeshes_joint_edge_valence (N : TriangleMesh) (p : ι → Prop)
+    (e : Finset (synchronizedArrangement J N).Vertex) (he : e.card = 2) :
+    (((selectedSynchronizedMesh J N p).triangles ∪
+        (targetSynchronizedMesh J N).triangles).filter fun t ↦ e ⊆ t).card ≤ 2 := by
+  apply le_trans (Finset.card_le_card ?_)
+    ((synchronizedArrangement J N).card_incidentTriangles_le_two he)
+  intro t ht
+  rw [Finset.mem_filter] at ht
+  apply (synchronizedArrangement J N).mem_incidentTriangles_iff.mpr
+  refine ⟨?_, ht.2⟩
+  rcases Finset.mem_union.mp ht.1 with htOld | htTarget
+  · exact (selectedSynchronizedMesh_triangle_mem J N p).mp htOld |>.1
+  · exact (targetSynchronizedMesh_triangle_mem J N).mp htTarget |>.1
 
 /-- A finite union of polygonal closed disks is a finite pure plane polyhedron. -/
 theorem closedRegion_is_polyhedron :

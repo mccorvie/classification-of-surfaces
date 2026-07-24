@@ -6,6 +6,7 @@ Authors: ClassificationOfSurfaces contributors
 import ClassificationOfSurfaces.Moise.AdaptiveOpenCover
 import ClassificationOfSurfaces.Moise.HalfPlanePolygon
 import ClassificationOfSurfaces.Moise.LocallyFiniteControlledApproximation
+import ClassificationOfSurfaces.Moise.FacewiseComparison
 
 /-!
 # Adaptive meshes for strongly-positive metric controls
@@ -528,6 +529,42 @@ theorem exists_polygonalReplacement
       (locallyFinite_closedRegions K U hU V hV f hf hmem phi hphi G hmap hregion)
   refine ⟨H, fun p ↦ (hH p).trans ?_⟩
   exact regionSafeControl_le_left V f phi p.1
+
+/-- **Complete locally finite cellwise replacement with no residual side hypothesis.**  The
+separation entry of `exists_polygonalReplacement` is discharged by the facewise comparison
+map after shrinking the arc approximation controls; the shrunken realization keeps the map,
+the region, and the frontier-reduced tolerance, so all adaptive control theorems reapply. -/
+theorem exists_polygonalReplacement_of_comparison
+    (G : (R K U hU V hV f hf hmem phi hphi).PlaneGraphRealization)
+    (hmap : ∀ p, G.map p = f p.1) (hregion : G.region = V) :
+    ∃ (vc : (R K U hU V hV f hf hmem phi hphi).Vertex → ℝ)
+      (hvc : ∀ v, 0 < vc v)
+      (ec : (R K U hU V hV f hf hmem phi hphi).Edge → ℝ)
+      (hec : ∀ e, 0 < ec e)
+      (H : (R K U hU V hV f hf hmem phi hphi).CellwiseCompatibility
+        (G.withApproximationControls vc hvc ec hec)),
+      ∀ p : (R K U hU V hV f hf hmem phi hphi).support,
+        dist
+          ((R K U hU V hV f hf hmem phi hphi).polygonalReplacementHomeomorph H p).1.1
+          (G.map p) ≤ phi p.1 := by
+  obtain ⟨vc, hvc, ec, hec, hpack⟩ :=
+    LocallyFiniteTriangleComplex.exists_controls_cellwiseCompatibility G
+      (faceVertices_injective K U hU V hV f hf hmem phi hphi)
+  set G' := G.withApproximationControls vc hvc ec hec with hG'
+  have hmap' : ∀ p, G'.map p = f p.1 := hmap
+  have hregion' : G'.region = V := hregion
+  obtain ⟨H⟩ := hpack
+    (closedRegions_mem_region K U hU V hV f hf hmem phi hphi G' hmap' hregion')
+    (locallyFinite_closedRegions K U hU V hV f hf hmem phi hphi G' hmap' hregion')
+  refine ⟨vc, hvc, ec, hec, H, ?_⟩
+  intro p
+  have hcontrol :=
+    faceBoundariesControlled K U hU V hV f hf hmem phi hphi G' hmap'
+  have hdist :=
+    LocallyFiniteTriangleComplex.polygonalReplacementMap_dist_le H hcontrol p
+  have hmapeq : G'.map p = G.map p := rfl
+  rw [hmapeq] at hdist
+  exact hdist.trans (regionSafeControl_le_left V f phi p.1)
 
 end RegionControlledAdaptiveComplex
 

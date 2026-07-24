@@ -18,9 +18,246 @@ namespace Topology
 namespace ClassificationOfSurfaces
 namespace Moise
 
+/-- An affine map which is injective on a nondegenerate closed triangle sends its three
+vertices to an affinely independent triple.
+
+The hypothesis is deliberately local.  This is the form needed when a facewise-affine
+embedding is known to be injective only on the simplex on which its affine formula is valid. -/
+theorem affineIndependent_comp_of_injOn_convexHull
+    {V : Type*} [AddCommGroup V] [Module ℝ V]
+    (p : Fin 3 → Plane) (hp : AffineIndependent ℝ p)
+    (f : Plane →ᵃ[ℝ] V)
+    (hf : Set.InjOn f (convexHull ℝ (Set.range p))) :
+    AffineIndependent ℝ (f ∘ p) := by
+  classical
+  rw [affineIndependent_iff_eq_of_fintype_affineCombination_eq]
+  intro w₁ w₂ hw₁ hw₂ hw
+  let B : ℝ := ∑ i : Fin 3, (|w₁ i| + |w₂ i|)
+  have hB : 0 ≤ B := by
+    exact Finset.sum_nonneg fun i _ => add_nonneg (abs_nonneg _) (abs_nonneg _)
+  let r : ℝ := (6 * (B + 1))⁻¹
+  have hden : 0 < 6 * (B + 1) := mul_pos (by norm_num) (by linarith)
+  have hr : 0 < r := inv_pos.mpr hden
+  have hrmul : r * (B + 1) = 1 / 6 := by
+    dsimp only [r]
+    rw [inv_mul_eq_div]
+    field_simp [ne_of_gt hden]
+  let u : Fin 3 → ℝ := fun _ => 1 / 3
+  let x : Fin 3 → ℝ := AffineMap.lineMap u w₁ r
+  let y : Fin 3 → ℝ := AffineMap.lineMap u w₂ r
+  have hw₁lower (i : Fin 3) : -B ≤ w₁ i := by
+    have hi :
+        |w₁ i| ≤ ∑ j : Fin 3, (|w₁ j| + |w₂ j|) := by
+      apply le_trans (le_add_of_nonneg_right (abs_nonneg (w₂ i)))
+      exact Finset.single_le_sum
+        (fun j _ => add_nonneg (abs_nonneg (w₁ j)) (abs_nonneg (w₂ j)))
+        (Finset.mem_univ i)
+    exact (neg_le_of_abs_le hi)
+  have hw₂lower (i : Fin 3) : -B ≤ w₂ i := by
+    have hi :
+        |w₂ i| ≤ ∑ j : Fin 3, (|w₁ j| + |w₂ j|) := by
+      apply le_trans (le_add_of_nonneg_left (abs_nonneg (w₁ i)))
+      exact Finset.single_le_sum
+        (fun j _ => add_nonneg (abs_nonneg (w₁ j)) (abs_nonneg (w₂ j)))
+        (Finset.mem_univ i)
+    exact (neg_le_of_abs_le hi)
+  have hx0 (i : Fin 3) : 0 ≤ x i := by
+    have hmul := mul_le_mul_of_nonneg_left (hw₁lower i) hr.le
+    dsimp only [x, u]
+    rw [AffineMap.lineMap_apply_module]
+    change 0 ≤ (1 - r) * (1 / 3) + r * w₁ i
+    nlinarith
+  have hy0 (i : Fin 3) : 0 ≤ y i := by
+    have hmul := mul_le_mul_of_nonneg_left (hw₂lower i) hr.le
+    dsimp only [y, u]
+    rw [AffineMap.lineMap_apply_module]
+    change 0 ≤ (1 - r) * (1 / 3) + r * w₂ i
+    nlinarith
+  have hu : ∑ i : Fin 3, u i = 1 := by
+    simp [u, Fin.sum_univ_succ]
+  have hxsum : ∑ i : Fin 3, x i = 1 := by
+    simp only [x, AffineMap.lineMap_apply_module, Pi.add_apply, Pi.smul_apply,
+      smul_eq_mul, Finset.sum_add_distrib, ← Finset.mul_sum]
+    rw [hu, hw₁]
+    ring
+  have hysum : ∑ i : Fin 3, y i = 1 := by
+    simp only [y, AffineMap.lineMap_apply_module, Pi.add_apply, Pi.smul_apply,
+      smul_eq_mul, Finset.sum_add_distrib, ← Finset.mul_sum]
+    rw [hu, hw₂]
+    ring
+  let px := Finset.univ.affineCombination ℝ p x
+  let py := Finset.univ.affineCombination ℝ p y
+  have hpx : px ∈ convexHull ℝ (Set.range p) := by
+    exact affineCombination_mem_convexHull (fun i _ => hx0 i) hxsum
+  have hpy : py ∈ convexHull ℝ (Set.range p) := by
+    exact affineCombination_mem_convexHull (fun i _ => hy0 i) hysum
+  have hfw :
+      f (Finset.univ.affineCombination ℝ p w₁) =
+        f (Finset.univ.affineCombination ℝ p w₂) := by
+    rw [Finset.univ.map_affineCombination p w₁ hw₁ f,
+      Finset.univ.map_affineCombination p w₂ hw₂ f]
+    exact hw
+  have hfxy : f px = f py := by
+    change
+      f (Finset.univ.affineCombination ℝ p x) =
+        f (Finset.univ.affineCombination ℝ p y)
+    rw [← Finset.univ.lineMap_affineCombination u w₁ r p,
+      ← Finset.univ.lineMap_affineCombination u w₂ r p,
+      f.apply_lineMap, f.apply_lineMap, hfw]
+  have hpxy : px = py := hf hpx hpy hfxy
+  have hxy : x = y :=
+    (affineIndependent_iff_eq_of_fintype_affineCombination_eq ℝ p).mp hp
+      x y hxsum hysum hpxy
+  funext i
+  have hi := congrFun hxy i
+  dsimp only [x, y, u] at hi
+  rw [AffineMap.lineMap_apply_module, AffineMap.lineMap_apply_module] at hi
+  change (1 - r) * (1 / 3) + r * w₁ i =
+    (1 - r) * (1 / 3) + r * w₂ i at hi
+  exact (mul_left_cancel₀ hr.ne' (by linarith : r * w₁ i = r * w₂ i))
+
+/-- In the plane, local injectivity of an affine map on one nondegenerate triangle already
+forces global injectivity. -/
+theorem affineMap_injective_of_injOn_convexHull
+    (p : Fin 3 → Plane) (hp : AffineIndependent ℝ p)
+    (f : Plane →ᵃ[ℝ] Plane)
+    (hf : Set.InjOn f (convexHull ℝ (Set.range p))) :
+    Function.Injective f := by
+  let q : Fin 3 → Plane := f ∘ p
+  have hq : AffineIndependent ℝ q :=
+    affineIndependent_comp_of_injOn_convexHull p hp f hf
+  let e : Plane ≃ᵃ[ℝ] Plane := triangleAffineEquiv p q hp hq
+  have hfe : f = e.toAffineMap := by
+    apply AffineMap.ext_on
+      ((hp.affineSpan_eq_top_iff_card_eq_finrank_add_one).2 (by simp [Plane]))
+    rintro x ⟨i, rfl⟩
+    exact (triangleAffineEquiv_apply p q hp hq i).symm
+  rw [hfe]
+  exact e.injective
+
+/-- The same local hypothesis makes a planar affine map surjective. -/
+theorem affineMap_surjective_of_injOn_convexHull
+    (p : Fin 3 → Plane) (hp : AffineIndependent ℝ p)
+    (f : Plane →ᵃ[ℝ] Plane)
+    (hf : Set.InjOn f (convexHull ℝ (Set.range p))) :
+    Function.Surjective f := by
+  let q : Fin 3 → Plane := f ∘ p
+  have hq : AffineIndependent ℝ q :=
+    affineIndependent_comp_of_injOn_convexHull p hp f hf
+  let e : Plane ≃ᵃ[ℝ] Plane := triangleAffineEquiv p q hp hq
+  have hfe : f = e.toAffineMap := by
+    apply AffineMap.ext_on
+      ((hp.affineSpan_eq_top_iff_card_eq_finrank_add_one).2 (by simp [Plane]))
+    rintro x ⟨i, rfl⟩
+    exact (triangleAffineEquiv_apply p q hp hq i).symm
+  rw [hfe]
+  exact e.surjective
+
 namespace TriangleMesh
 
 variable (M : TriangleMesh)
+
+/-- Barycentric coordinates in one maximal mesh triangle, extended by zero to all mesh
+vertices.  This is the triangle-mesh-native counterpart of `PlaneComplex.faceCoords`; keeping
+the codomain definitionally equal to `M.Vertex → ℝ` avoids transports through
+`M.toPlaneComplex.Vertex`. -/
+noncomputable def triangleCoords (T : M.Triangle) :
+    Plane →ᵃ[ℝ] (M.Vertex → ℝ) := by
+  classical
+  let b := affineBasisOfTriangle
+    (M.position ∘ M.orderedVertex T)
+    (M.orderedVertex_affineIndependent T)
+  exact AffineMap.pi fun v =>
+    if hv : v ∈ T.1 then
+      b.coord (M.triangleEquiv T ⟨v, hv⟩)
+    else
+      AffineMap.const ℝ Plane 0
+
+@[simp] theorem triangleCoords_apply_of_mem (T : M.Triangle)
+    {v : M.Vertex} (hv : v ∈ T.1) (p : Plane) :
+    M.triangleCoords T p v =
+      (affineBasisOfTriangle
+        (M.position ∘ M.orderedVertex T)
+        (M.orderedVertex_affineIndependent T)).coord
+          (M.triangleEquiv T ⟨v, hv⟩) p := by
+  classical
+  simp [triangleCoords, hv]
+
+@[simp] theorem triangleCoords_apply_of_notMem (T : M.Triangle)
+    {v : M.Vertex} (hv : v ∉ T.1) (p : Plane) :
+    M.triangleCoords T p v = 0 := by
+  classical
+  simp [triangleCoords, hv]
+
+theorem triangleCoords_support (T : M.Triangle) (p : Plane) :
+    ∀ v ∉ T.1, M.triangleCoords T p v = 0 :=
+  fun v hv => M.triangleCoords_apply_of_notMem T hv p
+
+theorem sum_triangleCoords (T : M.Triangle) (p : Plane) :
+    ∑ v, M.triangleCoords T p v = 1 := by
+  classical
+  let b := affineBasisOfTriangle
+    (M.position ∘ M.orderedVertex T)
+    (M.orderedVertex_affineIndependent T)
+  calc
+    ∑ v, M.triangleCoords T p v =
+        ∑ v ∈ T.1, M.triangleCoords T p v := by
+      symm
+      exact Finset.sum_subset (Finset.subset_univ T.1)
+        (fun v _ hv => M.triangleCoords_apply_of_notMem T hv p)
+    _ = ∑ v : T.1, M.triangleCoords T p v.1 := by
+      rw [Finset.sum_coe_sort]
+    _ =
+        ∑ v : T.1, b.coord (M.triangleEquiv T v) p := by
+      apply Finset.sum_congr rfl
+      intro v hv
+      exact M.triangleCoords_apply_of_mem T v.2 p
+    _ = ∑ i : Fin 3, b.coord i p :=
+      (M.triangleEquiv T).sum_comp (fun i => b.coord i p)
+    _ = 1 := b.sum_coord_apply_eq_one p
+
+theorem baryEval_triangleCoords (T : M.Triangle) (p : Plane) :
+    M.toPlaneComplex.baryEval (M.triangleCoords T p) = p := by
+  classical
+  let b := affineBasisOfTriangle
+    (M.position ∘ M.orderedVertex T)
+    (M.orderedVertex_affineIndependent T)
+  rw [M.toPlaneComplex.baryEval_eq_sum_of_support
+    (M.triangleCoords_support T p)]
+  rw [← Finset.sum_coe_sort]
+  calc
+    ∑ v : T.1, M.triangleCoords T p v.1 • M.position v.1 =
+        ∑ v : T.1, b.coord (M.triangleEquiv T v) p •
+          M.position v.1 := by
+      apply Finset.sum_congr rfl
+      intro v hv
+      rw [M.triangleCoords_apply_of_mem T v.2 p]
+    _ = ∑ i : Fin 3, b.coord i p •
+          M.position (M.orderedVertex T i) := by
+      calc
+        _ = ∑ v : T.1, b.coord (M.triangleEquiv T v) p •
+            M.position (M.orderedVertex T (M.triangleEquiv T v)) := by
+          apply Finset.sum_congr rfl
+          intro v hv
+          congr 2
+          exact congrArg Subtype.val
+            ((M.triangleEquiv T).symm_apply_apply v).symm
+        _ = _ :=
+          (M.triangleEquiv T).sum_comp
+            (fun i => b.coord i p • M.position (M.orderedVertex T i))
+    _ = p := by
+      change ∑ i : Fin 3, b.coord i p • b i = p
+      exact b.linear_combination_coord_eq_self p
+
+theorem triangleCoords_nonneg_of_mem (T : M.Triangle) {p : Plane}
+    (hp : p ∈ M.triangleCarrier T.1) (v : M.Vertex) :
+    0 ≤ M.triangleCoords T p v := by
+  by_cases hv : v ∈ T.1
+  · let k : Fin 3 := M.triangleEquiv T ⟨v, hv⟩
+    rw [M.triangleCoords_apply_of_mem T hv p]
+    change 0 ≤ M.oppositeCoord T k p
+    exact M.oppositeCoord_nonneg_of_mem_parent T k hp
+  · rw [M.triangleCoords_apply_of_notMem T hv p]
 
 /-- The barycentric-coordinate hyperplanes of all maximal triangles. -/
 noncomputable def coordinateLines : List (Plane →ᵃ[ℝ] ℝ) :=
@@ -229,6 +466,102 @@ theorem exists_target_triangle_of_refineTo_of_interior_inter_support
       (M.refineTo N).triangleCarrier T.1 ⊆ N.triangleCarrier U.1 := by
   exact M.exists_target_triangle_of_refineByLines_of_interior_inter_support N
     N.coordinateLines (fun _ ha => ha) T hhit
+
+/-- Cut `M` by every face line of `N`, then retain exactly the chambers whose interiors meet
+the support of `N`.  This is the unequal-support version of common refinement used in the local
+Radó weld. -/
+noncomputable def refineToSupport (N : TriangleMesh) : TriangleMesh :=
+  by
+    classical
+    exact (M.refineTo N).restrictTriangles fun t ↦
+      (interior ((M.refineTo N).triangleCarrier t) ∩
+        N.toPlaneComplex.support).Nonempty
+
+theorem refineToSupport_triangle_mem (N : TriangleMesh)
+    {t : Finset (M.refineToSupport N).Vertex} :
+    t ∈ (M.refineToSupport N).triangles ↔
+      t ∈ (M.refineTo N).triangles ∧
+        (interior ((M.refineTo N).triangleCarrier t) ∩
+          N.toPlaneComplex.support).Nonempty := by
+  classical
+  exact (M.refineTo N).mem_restrictTriangles_triangles _
+
+/-- If the source mesh contains the target support, restricting their line refinement recovers
+the target support exactly. -/
+theorem refineToSupport_support (N : TriangleMesh)
+    (hsub : N.toPlaneComplex.support ⊆ M.toPlaneComplex.support) :
+    (M.refineToSupport N).toPlaneComplex.support =
+      N.toPlaneComplex.support := by
+  classical
+  let R := M.refineTo N
+  let L := M.refineToSupport N
+  apply Set.Subset.antisymm
+  · rw [TriangleMesh.toPlaneComplex_support]
+    intro x hx
+    simp only [Set.mem_iUnion] at hx
+    obtain ⟨t, ht, hxt⟩ := hx
+    have htData := (M.refineToSupport_triangle_mem N).mp ht
+    let T : R.Triangle := ⟨t, htData.1⟩
+    obtain ⟨U, hTU⟩ :=
+      M.exists_target_triangle_of_refineTo_of_interior_inter_support N T htData.2
+    rw [TriangleMesh.toPlaneComplex_support]
+    exact Set.mem_iUnion.mpr ⟨U.1, Set.mem_iUnion.mpr ⟨U.2, hTU hxt⟩⟩
+  · rw [TriangleMesh.toPlaneComplex_support]
+    intro x hx
+    simp only [Set.mem_iUnion] at hx
+    obtain ⟨u, hu, hxu⟩ := hx
+    let U : N.Triangle := ⟨u, hu⟩
+    have hinterior : interior (N.triangleCarrier u) ⊆
+        L.toPlaneComplex.support := by
+      intro y hy
+      have hyN : y ∈ N.toPlaneComplex.support := by
+        rw [TriangleMesh.toPlaneComplex_support]
+        exact Set.mem_iUnion.mpr
+          ⟨u, Set.mem_iUnion.mpr ⟨hu, interior_subset hy⟩⟩
+      have hyR₀ : y ∈ (M.refineTo N).toPlaneComplex.support := by
+        rw [M.refineTo_support N]
+        exact hsub hyN
+      have hyR : y ∈ R.toPlaneComplex.support := by
+        simpa only [R] using hyR₀
+      rw [TriangleMesh.toPlaneComplex_support] at hyR
+      simp only [Set.mem_iUnion] at hyR
+      obtain ⟨t, ht, hyt⟩ := hyR
+      let T : R.Triangle := ⟨t, ht⟩
+      have hyClosure : y ∈ closure (interior (R.triangleCarrier t)) := by
+        rw [R.closure_interior_triangleCarrier T]
+        exact hyt
+      have hyInterClosure : y ∈ closure
+          (interior (N.triangleCarrier u) ∩
+            interior (R.triangleCarrier t)) :=
+        isOpen_interior.inter_closure ⟨hy, hyClosure⟩
+      obtain ⟨z, hzN, hzR⟩ := Set.Nonempty.of_closure ⟨y, hyInterClosure⟩
+      have htKeep : t ∈ L.triangles :=
+        (M.refineToSupport_triangle_mem N).mpr
+          ⟨ht, ⟨z, hzR, by
+            rw [TriangleMesh.toPlaneComplex_support]
+            exact Set.mem_iUnion.mpr
+              ⟨u, Set.mem_iUnion.mpr ⟨hu, interior_subset hzN⟩⟩⟩⟩
+      rw [TriangleMesh.toPlaneComplex_support]
+      exact Set.mem_iUnion.mpr ⟨t, Set.mem_iUnion.mpr ⟨htKeep, hyt⟩⟩
+    change x ∈ N.triangleCarrier u at hxu
+    rw [← N.closure_interior_triangleCarrier U] at hxu
+    exact closure_minimal hinterior L.toPlaneComplex.isCompact_support.isClosed hxu
+
+/-- The support-restricted refinement is a genuine subdivision of the smaller target mesh. -/
+theorem refineToSupport_subdivides (N : TriangleMesh)
+    (hsub : N.toPlaneComplex.support ⊆ M.toPlaneComplex.support) :
+    (M.refineToSupport N).toPlaneComplex.Subdivides N.toPlaneComplex := by
+  constructor
+  · exact M.refineToSupport_support N hsub
+  · intro s hs
+    obtain ⟨-, t, ht, hst⟩ := (M.refineToSupport N).mem_faces_iff.mp hs
+    have htData := (M.refineToSupport_triangle_mem N).mp ht
+    let T : (M.refineTo N).Triangle := ⟨t, htData.1⟩
+    obtain ⟨U, hTU⟩ :=
+      M.exists_target_triangle_of_refineTo_of_interior_inter_support N T htData.2
+    refine ⟨U.1, N.mem_faces_iff.mpr ⟨?_, U.1, U.2, subset_rfl⟩, ?_⟩
+    · exact Finset.card_pos.mp (by rw [N.card_triangle U.1 U.2]; omega)
+    · exact (convexHull_mono (Set.image_mono hst)).trans hTU
 
 /-- `M.refineTo N` is a subdivision of `N` when the two meshes have the same support. -/
 theorem refineTo_subdivides_right (N : TriangleMesh)

@@ -268,10 +268,237 @@ theorem chartHalfDiamond_support_eq_inter_halfPlane :
       nlinarith
     exact ⟨q, ⟨hqPatch, hq0⟩, rfl⟩
 
+/-- In barycentric coordinates on the fixed half-diamond, the normal coordinate is exactly the
+weight of its unique positive-normal vertex, up to the fixed positive scale. -/
+def chartHalfDiamondRightVertex : chartHalfDiamondComplex.Vertex := by
+  change Fin 5
+  exact 1
+
+theorem chartHalfDiamond_baryEval_coordZero
+    (x : GeometricRealization chartHalfDiamondComplex.Vertex
+      chartHalfDiamondComplex.cells) :
+    chartHalfDiamondComplex.baryEval x.1 0 =
+      (3 / 4 : ℝ) * x.1 chartHalfDiamondRightVertex := by
+  obtain ⟨t, ht, hsupport⟩ := x.2.2
+  change Finset (Fin 5) at t
+  have hzero : x.1 (0 : Fin 5) = 0 := by
+    apply hsupport
+    intro h0
+    have ht' : t = {1, 2, 4} ∨ t = {1, 4, 3} := by
+      rw [show chartHalfDiamondComplex.cells = chartHalfDiamondMesh.triangles by
+        exact TriangleMesh.toPlaneComplex_cells chartHalfDiamondMesh] at ht
+      change t ∈ diamondFanTriangles.filter (fun t : Finset (Fin 5) => 1 ∈ t) at ht
+      obtain ⟨htFan, h1⟩ := Finset.mem_filter.mp ht
+      simp only [diamondFanTriangles, Finset.mem_insert, Finset.mem_singleton] at htFan
+      rcases htFan with rfl | rfl | rfl | rfl
+      · simp at h1
+      · exact Or.inl rfl
+      · simp at h1
+      · exact Or.inr rfl
+    rcases ht' with rfl | rfl
+    · exact (by decide : (0 : Fin 5) ∉ ({1, 2, 4} : Finset (Fin 5))) h0
+    · exact (by decide : (0 : Fin 5) ∉ ({1, 4, 3} : Finset (Fin 5))) h0
+  change
+    (∑ v : Fin 5, x.1 v • chartDiamondAffineEquiv (diamondFanPosition 0 v)) 0 =
+      (3 / 4 : ℝ) * x.1 (1 : Fin 5)
+  simp [chartDiamondAffineEquiv, chartDiamondLinearEquiv, diamondFanPosition, planePoint,
+    Fin.sum_univ_succ, hzero]
+  ring
+
+theorem chartHalfDiamond_baryEval_coordZero_eq_zero_iff
+    (x : GeometricRealization chartHalfDiamondComplex.Vertex
+      chartHalfDiamondComplex.cells) :
+    chartHalfDiamondComplex.baryEval x.1 0 = 0 ↔
+      x.1 chartHalfDiamondRightVertex = 0 := by
+  rw [chartHalfDiamond_baryEval_coordZero]
+  constructor
+  · intro h
+    nlinarith
+  · intro h
+    rw [h, mul_zero]
+
+def chartHalfDiamondUpperBoundaryEdge :
+    Finset chartHalfDiamondComplex.Vertex := by
+  change Finset (Fin 5)
+  exact {2, 4}
+
+def chartHalfDiamondLowerBoundaryEdge :
+    Finset chartHalfDiamondComplex.Vertex := by
+  change Finset (Fin 5)
+  exact {4, 3}
+
+theorem chartHalfDiamond_coordZero_iff_boundaryEdgeCarrier
+    (x : GeometricRealization chartHalfDiamondComplex.Vertex
+      chartHalfDiamondComplex.cells) :
+    chartHalfDiamondComplex.baryEval x.1 0 = 0 ↔
+      (∀ v ∉ chartHalfDiamondUpperBoundaryEdge, x.1 v = 0) ∨
+      (∀ v ∉ chartHalfDiamondLowerBoundaryEdge, x.1 v = 0) := by
+  rw [chartHalfDiamond_baryEval_coordZero_eq_zero_iff]
+  obtain ⟨t, ht, hsupport⟩ := x.2.2
+  change Finset (Fin 5) at t
+  have ht' : t = {1, 2, 4} ∨ t = {1, 4, 3} := by
+    rw [show chartHalfDiamondComplex.cells = chartHalfDiamondMesh.triangles by
+      exact TriangleMesh.toPlaneComplex_cells chartHalfDiamondMesh] at ht
+    change t ∈ diamondFanTriangles.filter (fun t : Finset (Fin 5) => 1 ∈ t) at ht
+    obtain ⟨htFan, h1⟩ := Finset.mem_filter.mp ht
+    simp only [diamondFanTriangles, Finset.mem_insert, Finset.mem_singleton] at htFan
+    rcases htFan with rfl | rfl | rfl | rfl
+    · simp at h1
+    · exact Or.inl rfl
+    · simp at h1
+    · exact Or.inr rfl
+  constructor
+  · intro hright
+    rcases ht' with rfl | rfl
+    · left
+      intro v hv
+      change Fin 5 at v
+      fin_cases v
+      · exact hsupport (0 : Fin 5) (by decide)
+      · exact hright
+      · exact (hv (by decide)).elim
+      · exact hsupport (3 : Fin 5) (by decide)
+      · exact (hv (by decide)).elim
+    · right
+      intro v hv
+      change Fin 5 at v
+      fin_cases v
+      · exact hsupport (0 : Fin 5) (by decide)
+      · exact hright
+      · exact hsupport (2 : Fin 5) (by decide)
+      · exact (hv (by decide)).elim
+      · exact (hv (by decide)).elim
+  · rintro (hupper | hlower)
+    · apply hupper chartHalfDiamondRightVertex
+      decide
+    · apply hlower chartHalfDiamondRightVertex
+      decide
+
 /-- The finite polygonal patch assigned to a disk or half-disk chart model. -/
 noncomputable def ChartKind.patchComplex : ChartKind → PlaneComplex
   | .disk => chartDiamondComplex
   | .halfDisk => chartHalfDiamondComplex
+
+/-- The model-boundary condition appropriate to a chart kind.  A disk chart has no boundary
+stratum; in a half-disk chart it is the zero normal-coordinate line. -/
+def ChartKind.IsModelBoundary : (k : ChartKind) → Plane → Prop
+  | .disk, _ => False
+  | .halfDisk, p => p 0 = 0
+
+/-- The explicit edge family carrying the model boundary in the fixed chart patch. -/
+noncomputable def ChartKind.patchBoundaryEdges :
+    (k : ChartKind) → Finset (Finset k.patchComplex.Vertex)
+  | .disk => ∅
+  | .halfDisk => {chartHalfDiamondUpperBoundaryEdge, chartHalfDiamondLowerBoundaryEdge}
+
+/-- The fixed patch meets its model boundary exactly in the carrier of
+`patchBoundaryEdges`. -/
+theorem ChartKind.patchComplex_isModelBoundary_iff (k : ChartKind)
+    (x : GeometricRealization k.patchComplex.Vertex k.patchComplex.cells) :
+    k.IsModelBoundary (k.patchComplex.baryEval x.1) ↔
+      ∃ e ∈ k.patchBoundaryEdges, ∀ v ∉ e, x.1 v = 0 := by
+  cases k with
+  | disk => simp [ChartKind.IsModelBoundary, ChartKind.patchBoundaryEdges]
+  | halfDisk =>
+      change chartHalfDiamondComplex.baryEval x.1 0 = 0 ↔
+        ∃ e ∈
+          ({chartHalfDiamondUpperBoundaryEdge, chartHalfDiamondLowerBoundaryEdge} :
+            Finset (Finset chartHalfDiamondComplex.Vertex)),
+          ∀ v ∉ e, x.1 v = 0
+      rw [chartHalfDiamond_coordZero_iff_boundaryEdgeCarrier]
+      simp only [Finset.mem_insert, Finset.mem_singleton]
+      constructor
+      · rintro (h | h)
+        · exact ⟨chartHalfDiamondUpperBoundaryEdge, Or.inl rfl, h⟩
+        · exact ⟨chartHalfDiamondLowerBoundaryEdge, Or.inr rfl, h⟩
+      · rintro ⟨e, he | he, h⟩
+        · subst e
+          exact Or.inl h
+        · subst e
+          exact Or.inr h
+
+/-- Facewise exposed form of the fixed patch boundary.  Every patch triangle meets the model
+boundary in an intrinsic face of cardinality at most two. -/
+theorem ChartKind.patchComplex_isModelBoundary_facewise (k : ChartKind) :
+    ∀ t ∈ k.patchComplex.cells, ∃ b : Finset k.patchComplex.Vertex,
+      b ⊆ t ∧ b.card ≤ 2 ∧
+        ∀ x : GeometricRealization k.patchComplex.Vertex k.patchComplex.cells,
+          (∀ v ∉ t, x.1 v = 0) →
+            (k.IsModelBoundary (k.patchComplex.baryEval x.1) ↔
+              ∀ v ∉ b, x.1 v = 0) := by
+  classical
+  cases k with
+  | disk =>
+      intro t ht
+      refine ⟨∅, Finset.empty_subset _, by simp, ?_⟩
+      intro x hxt
+      constructor
+      · simp [ChartKind.IsModelBoundary]
+      · intro hxEmpty
+        have hxzero : ∀ v, x.1 v = 0 := by
+          intro v
+          exact hxEmpty v (by simp)
+        have hsum : ∑ v, x.1 v = 0 := by simp [hxzero]
+        linarith [x.2.1.2, hsum]
+  | halfDisk =>
+      intro t ht
+      let r : ChartKind.halfDisk.patchComplex.Vertex := by
+        change Fin 5
+        exact 1
+      let b : Finset ChartKind.halfDisk.patchComplex.Vertex := t.erase r
+      refine ⟨b, Finset.erase_subset _ _, ?_, ?_⟩
+      · have hr : r ∈ t := by
+          change t ∈
+            (diamondFanTriangles.filter fun u : Finset (Fin 5) => 1 ∈ u) at ht
+          exact (Finset.mem_filter.mp ht).2
+        change (t.erase r).card ≤ 2
+        rw [Finset.card_erase_of_mem hr]
+        have htcard : t.card = 3 :=
+          ChartKind.halfDisk.patchComplex.card_of_mem_cells ht
+        omega
+      · intro x hxt
+        change chartHalfDiamondComplex.baryEval x.1 0 = 0 ↔
+          ∀ v ∉ t.erase r, x.1 v = 0
+        rw [chartHalfDiamond_baryEval_coordZero_eq_zero_iff,
+          show chartHalfDiamondRightVertex = r by rfl]
+        constructor
+        · intro hrZero v hvb
+          by_cases hvt : v ∈ t
+          · have hvr : v = r := by
+              by_contra hne
+              exact hvb (Finset.mem_erase.mpr ⟨hne, hvt⟩)
+            simpa [r, hvr] using hrZero
+          · exact hxt v hvt
+        · intro hx
+          apply hx r
+          simp [b]
+
+/-- Every explicitly designated patch-boundary edge is an edge of the patch complex. -/
+theorem ChartKind.mem_patchComplex_edges_of_mem_patchBoundaryEdges (k : ChartKind)
+    {e : Finset k.patchComplex.Vertex} (he : e ∈ k.patchBoundaryEdges) :
+    e ∈ k.patchComplex.cells.biUnion fun t => t.powersetCard 2 := by
+  cases k with
+  | disk => simp [ChartKind.patchBoundaryEdges] at he
+  | halfDisk =>
+      change e ∈
+        ({chartHalfDiamondUpperBoundaryEdge, chartHalfDiamondLowerBoundaryEdge} :
+          Finset (Finset chartHalfDiamondComplex.Vertex)) at he
+      rcases Finset.mem_insert.mp he with he | he
+      · rw [he]
+        apply Finset.mem_biUnion.mpr
+        refine ⟨({1, 2, 4} : Finset (Fin 5)), ?_, ?_⟩
+        · change ({1, 2, 4} : Finset (Fin 5)) ∈
+            diamondFanTriangles.filter fun t => 1 ∈ t
+          decide
+        · exact Finset.mem_powersetCard.mpr ⟨by decide, by decide⟩
+      · have he' := Finset.mem_singleton.mp he
+        rw [he']
+        apply Finset.mem_biUnion.mpr
+        refine ⟨({1, 4, 3} : Finset (Fin 5)), ?_, ?_⟩
+        · change ({1, 4, 3} : Finset (Fin 5)) ∈
+            diamondFanTriangles.filter fun t => 1 ∈ t
+          decide
+        · exact Finset.mem_powersetCard.mpr ⟨by decide, by decide⟩
 
 theorem ChartKind.patchComplex_pure (k : ChartKind) : k.patchComplex.IsPure2 := by
   cases k with
