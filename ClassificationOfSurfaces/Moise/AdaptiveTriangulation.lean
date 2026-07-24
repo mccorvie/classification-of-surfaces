@@ -199,7 +199,6 @@ theorem range_adaptiveGlobalFanFaceMap (hU : IsOpen U)
 
 /- Combining relabeling with the geometric overlap theorem is expensive because all four local
 simplex index types are dependent.  Isolating it keeps construction of the complex inexpensive. -/
-set_option maxHeartbeats 1600000 in
 theorem adaptiveFanRelabeledFaceMap_eq_iff (hU : IsOpen U)
     {f g : K.AdaptiveFanFace U hU}
     {x : stdSimplex ℝ {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f}}
@@ -371,7 +370,6 @@ theorem adaptiveGlobalFanFaceVertices_injective (hU : IsOpen U) :
 
 /- The conforming adaptive fan family as a locally finite triangle complex in the open
 subspace. -/
-set_option maxHeartbeats 4000000 in
 noncomputable def adaptiveLocallyFiniteTriangleComplex (hU : IsOpen U) :
     LocallyFiniteTriangleComplex U where
   Vertex := K.AdaptiveFanVertex U hU

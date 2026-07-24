@@ -221,6 +221,126 @@ theorem PlaneComplex.exists_subdivision_image_dist_lt (K : PlaneComplex)
     linarith
   exact hcontrol x hxK y hyK hxy
 
+/-- A sufficiently fine subdivision of a pure finite plane complex is subordinate to any open
+cover of its support. -/
+theorem PlaneComplex.exists_subdivision_subordinate_openCover
+    (K : PlaneComplex) (hpure : K.IsPure2)
+    {I : Type*} (U : I → Set Plane) (hU : ∀ i, IsOpen (U i))
+    (hcover : K.support ⊆ ⋃ i, U i) :
+    ∃ L : PlaneComplex, L.IsPure2 ∧ L.Subdivides K ∧
+      ∀ t ∈ L.cells, ∃ i, L.cellCarrier t ⊆ U i := by
+  obtain ⟨delta, hdelta, hLebesgue⟩ :=
+    lebesgue_number_lemma_of_metric K.isCompact_support hU hcover
+  obtain ⟨L, hLpure, hLK, hsmall⟩ :=
+    K.exists_subdivision_image_dist_lt hpure continuousOn_id hdelta
+  refine ⟨L, hLpure, hLK, ?_⟩
+  intro t ht
+  have htpos : 0 < t.card := by
+    rw [L.card_of_mem_cells ht]
+    decide
+  obtain ⟨v, hv⟩ := Finset.card_pos.mp htpos
+  have hpCarrier : L.position v ∈ L.cellCarrier t := by
+    exact subset_convexHull ℝ _ ⟨v, hv, rfl⟩
+  have hpSupport : L.position v ∈ K.support := by
+    rw [← hLK.1]
+    exact L.cellCarrier_subset_support (L.mem_simplexes_of_mem_cells ht) hpCarrier
+  obtain ⟨i, hi⟩ := hLebesgue (L.position v) hpSupport
+  refine ⟨i, fun x hx => hi ?_⟩
+  rw [Metric.mem_ball]
+  exact hsmall t ht x hx (L.position v) hpCarrier
+
+/-- A finite triangle submesh selected between a compact set and an ambient open set.  Unlike a
+full subdivision, its support is only the retained compact polyhedron; every retained triangle
+is nevertheless subordinate to the original plane complex. -/
+structure PlaneComplex.OpenSubmesh
+    (K : PlaneComplex) (C U : Set Plane) where
+  mesh : TriangleMesh
+  face_subordinate : ∀ t ∈ mesh.triangles,
+    ∃ s ∈ K.simplexes, mesh.toPlaneComplex.cellCarrier t ⊆ K.cellCarrier s
+  covers : C ⊆ mesh.toPlaneComplex.support
+  contained : mesh.toPlaneComplex.support ⊆ U
+
+namespace PlaneComplex.OpenSubmesh
+
+variable {K : PlaneComplex} {C U : Set Plane}
+
+/-- Every retained triangle of an open submesh still lies in the original complex support. -/
+theorem support_subset_original (L : K.OpenSubmesh C U) :
+    L.mesh.toPlaneComplex.support ⊆ K.support := by
+  intro x hx
+  rw [L.mesh.toPlaneComplex_support] at hx
+  obtain ⟨t, ht, hxt⟩ := Set.mem_iUnion₂.mp hx
+  obtain ⟨s, hs, hts⟩ := L.face_subordinate t ht
+  exact K.cellCarrier_subset_support hs (hts hxt)
+
+end PlaneComplex.OpenSubmesh
+
+/-- Every compact subset of an open subset of a pure finite plane complex is covered by a finite
+triangle submesh lying in that open set. -/
+theorem PlaneComplex.exists_openSubmesh
+    (K : PlaneComplex) (hpure : K.IsPure2) {C U : Set Plane}
+    (hC : IsCompact C) (hCK : C ⊆ K.support)
+    (hU : IsOpen U) (hCU : C ⊆ U) :
+    Nonempty (K.OpenSubmesh C U) := by
+  classical
+  let W : Bool → Set Plane := fun b => if b then Cᶜ else U
+  have hWopen : ∀ b, IsOpen (W b) := by
+    intro b
+    cases b <;> simp [W, hU, hC.isClosed]
+  have hWcover : K.support ⊆ ⋃ b, W b := by
+    intro x hx
+    by_cases hxC : x ∈ C
+    · exact Set.mem_iUnion.mpr ⟨false, by simpa [W] using hCU hxC⟩
+    · exact Set.mem_iUnion.mpr ⟨true, by simpa [W] using hxC⟩
+  obtain ⟨L, hLpure, hLK, hsubordinate⟩ :=
+    K.exists_subdivision_subordinate_openCover hpure W hWopen hWcover
+  let M := L.toTriangleMesh
+  let N : TriangleMesh := M.restrictTriangles fun t =>
+    L.cellCarrier t ⊆ U
+  refine ⟨{
+    mesh := N
+    face_subordinate := ?_
+    covers := ?_
+    contained := ?_ }⟩
+  · intro t ht
+    have htM : t ∈ M.triangles :=
+      (M.mem_restrictTriangles_triangles (fun s => L.cellCarrier s ⊆ U)).mp ht |>.1
+    have htL : t ∈ L.simplexes := by
+      exact L.mem_simplexes_of_mem_cells htM
+    obtain ⟨s, hs, hts⟩ := hLK.2 t htL
+    exact ⟨s, hs, hts⟩
+  · intro z hzC
+    have hzK : z ∈ K.support := hCK hzC
+    have hzL : z ∈ L.support := by
+      rw [hLK.1]
+      exact hzK
+    rw [PlaneComplex.support] at hzL
+    obtain ⟨s, hs, hzs⟩ := Set.mem_iUnion₂.mp hzL
+    obtain ⟨t, ht, hst, htcard⟩ := hLpure s hs
+    have hzt : z ∈ L.cellCarrier t := by
+      exact convexHull_mono (Set.image_mono hst) hzs
+    have htCell : t ∈ L.cells := Finset.mem_filter.mpr ⟨ht, htcard⟩
+    obtain ⟨b, hb⟩ := hsubordinate t htCell
+    have htU : L.cellCarrier t ⊆ U := by
+      cases b with
+      | false => simpa [W] using hb
+      | true =>
+          exfalso
+          have hzNotC : z ∈ Cᶜ := by simpa [W] using hb hzt
+          exact hzNotC hzC
+    have htN : t ∈ N.triangles := by
+      exact (M.mem_restrictTriangles_triangles
+        (fun s => L.cellCarrier s ⊆ U)).mpr ⟨htCell, htU⟩
+    rw [N.toPlaneComplex_support]
+    exact Set.mem_iUnion₂.mpr ⟨t, htN, hzt⟩
+  · intro z hz
+    rw [N.toPlaneComplex_support] at hz
+    obtain ⟨t, htN, hzt⟩ := Set.mem_iUnion₂.mp hz
+    have htU :=
+      (M.mem_restrictTriangles_triangles
+        (fun s => L.cellCarrier s ⊆ U)).mp htN |>.2
+    exact htU hzt
+
 end Moise
 end ClassificationOfSurfaces
 end Topology

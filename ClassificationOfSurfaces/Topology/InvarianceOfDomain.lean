@@ -638,4 +638,176 @@ theorem isBoundaryPoint_iff_any_chart {x : M} [HasInvarianceOfDomain E]
   · exact notMem_of_mem_sdiff <| hInt.mp hx
   · exact hInt.mpr <| mem_sdiff_of_mem (mem_range_self (f x)) hx
 
+/-- An embedded open part of the model vector space has open image in a manifold modeled on
+`I`.  This is the manifold-with-boundary form of invariance of domain needed at an interior
+edge of an embedded finite triangle complex.
+
+The use of the *extended* target chart is important: if the image point were on the manifold
+boundary, invariance of domain would produce an ambient vector-space neighborhood contained in
+`range I`, which is impossible there. -/
+theorem isOpen_range_of_isOpen_of_continuous_injective
+    (I : ModelWithCorners 𝕜 E H) [HasInvarianceOfDomain E]
+    {U : Set E} (hU : IsOpen U) (f : U → M)
+    (hfcont : Continuous f) (hfinj : Function.Injective f) :
+    IsOpen (Set.range f) := by
+  rw [isOpen_iff_mem_nhds]
+  rintro z ⟨u, rfl⟩
+  let c : PartialEquiv M E := extChartAt I (f u)
+  let f₀ : E → M :=
+    Function.extend ((↑) : U → E) f (fun _ ↦ f u)
+  have hf₀_eq (x : U) : f₀ x.1 = f x := by
+    exact Function.Injective.extend_apply Subtype.val_injective f
+      (fun _ ↦ f u) x
+  have hf₀_cont : ContinuousOn f₀ U := by
+    rw [continuousOn_iff_continuous_restrict]
+    convert hfcont using 1
+    funext x
+    exact hf₀_eq x
+  let W : Set E := U ∩ f₀ ⁻¹' c.source
+  have hWopen : IsOpen W :=
+    hf₀_cont.isOpen_inter_preimage hU (isOpen_extChartAt_source (I := I) (f u))
+  have huW : u.1 ∈ W := by
+    refine ⟨u.2, ?_⟩
+    change f₀ u.1 ∈ c.source
+    rw [hf₀_eq u]
+    exact mem_extChartAt_source (I := I) (f u)
+  let g : E → E := fun x ↦ c (f₀ x)
+  have hg_cont : ContinuousOn g W := by
+    apply (continuousOn_extChartAt (I := I) (f u)).comp
+      (hf₀_cont.mono inter_subset_left)
+    exact fun x hx ↦ hx.2
+  have hg_inj : Set.InjOn g W := by
+    intro x hx y hy hxy
+    have hf₀xy : f₀ x = f₀ y :=
+      c.injOn hx.2 hy.2 hxy
+    have hfx :
+        f (⟨x, hx.1⟩ : U) = f (⟨y, hy.1⟩ : U) := by
+      rw [← hf₀_eq ⟨x, hx.1⟩, ← hf₀_eq ⟨y, hy.1⟩]
+      exact hf₀xy
+    exact congrArg Subtype.val (hfinj hfx)
+  let φ : PartialEquiv E E :=
+    hg_inj.toPartialEquiv g W
+  have hφ_cont : ContinuousOn φ φ.source := by
+    change ContinuousOn g W
+    exact hg_cont
+  have hWnhds : W ∈ nhds u.1 :=
+    hWopen.mem_nhds huW
+  have himage :
+      g '' W ∈ nhds (g u.1) := by
+    have h :=
+      maps_nhds_to_nhds E hφ_cont hWnhds
+        (show W ⊆ φ.source by
+          change W ⊆ W
+          exact subset_rfl)
+    change g '' W ∈ nhds (g u.1) at h
+    exact h
+  obtain ⟨O, hOsub, hOopen, hguO⟩ :=
+    _root_.mem_nhds_iff.mp himage
+  let Z : Set M := c.source ∩ c ⁻¹' O
+  have hZopen : IsOpen Z :=
+    (continuousOn_extChartAt (I := I) (f u)).isOpen_inter_preimage
+      (isOpen_extChartAt_source (I := I) (f u)) hOopen
+  have hfuZ : f u ∈ Z := by
+    refine ⟨mem_extChartAt_source (I := I) (f u), ?_⟩
+    change c (f u) ∈ O
+    rw [← hf₀_eq u]
+    exact hguO
+  have hZrange : Z ⊆ Set.range f := by
+    intro y hy
+    have hcyO : c y ∈ O := hy.2
+    obtain ⟨x, hxW, hxcoord⟩ := hOsub hcyO
+    have hcy :
+        c y = c (f₀ x) := by
+      exact hxcoord.symm
+    have hyf₀ : y = f₀ x :=
+      c.injOn hy.1 hxW.2 hcy
+    refine ⟨⟨x, hxW.1⟩, ?_⟩
+    rw [← hf₀_eq ⟨x, hxW.1⟩]
+    exact hyf₀.symm
+  exact Filter.mem_of_superset (hZopen.mem_nhds hfuZ) hZrange
+
+/-- Embedding-form wrapper for
+`isOpen_range_of_isOpen_of_continuous_injective`. -/
+theorem isOpen_range_of_isOpen_of_isEmbedding
+    (I : ModelWithCorners 𝕜 E H) [HasInvarianceOfDomain E]
+    {U : Set E} (hU : IsOpen U) (f : U → M)
+    (hf : _root_.Topology.IsEmbedding f) :
+    IsOpen (Set.range f) :=
+  isOpen_range_of_isOpen_of_continuous_injective I hU f
+    hf.continuous hf.injective
+
+/-- At an interior point of the ambient manifold, re-embedding a fixed source cannot turn the
+corresponding local sheet into a boundary point of the new image.
+
+This is deliberately an interior-point statement.  It is false at a manifold-boundary point:
+an embedding of a half-plane may bend its boundary into the ambient interior. -/
+theorem mem_interior_range_of_eq_of_mem_interior_range_of_isInteriorPoint
+    (I : ModelWithCorners 𝕜 E H) [HasInvarianceOfDomain E]
+    {X : Type*} [TopologicalSpace X]
+    {f g : X → M} (hf : _root_.Topology.IsEmbedding f)
+    (hg : _root_.Topology.IsEmbedding g) {x : X}
+    (hx : f x ∈ interior (Set.range f))
+    (hxi : I.IsInteriorPoint (f x)) :
+    g x ∈ interior (Set.range g) := by
+  let z : M := f x
+  let c : PartialEquiv M E := extChartAt I z
+  let W : Set E :=
+    interior c.target ∩ c.symm ⁻¹' interior (Set.range f)
+  have hWopen : IsOpen W := by
+    apply
+      ((continuousOn_extChartAt_symm (I := I) z).mono interior_subset
+        ).isOpen_inter_preimage isOpen_interior isOpen_interior
+  have hzTarget : c z ∈ interior c.target := by
+    exact I.isInteriorPoint_iff.mp hxi
+  have hcz : c.symm (c z) = z :=
+    c.left_inv (mem_extChartAt_source (I := I) z)
+  have hczW : c z ∈ W := by
+    refine ⟨hzTarget, ?_⟩
+    change c.symm (c z) ∈ interior (Set.range f)
+    rw [hcz]
+    exact hx
+  have hcSymm : Continuous (fun w : W ↦ c.symm w.1) := by
+    apply ContinuousOn.restrict
+    exact (continuousOn_extChartAt_symm (I := I) z).mono fun w hw ↦
+      interior_subset hw.1
+  let toOldRange : W → Set.range f :=
+    fun w ↦ ⟨c.symm w.1, interior_subset w.2.2⟩
+  have htoOldRange : Continuous toOldRange :=
+    Continuous.subtype_mk hcSymm _
+  let source : W → X :=
+    fun w ↦ hf.toHomeomorph.symm (toOldRange w)
+  have hsourceCont : Continuous source :=
+    hf.toHomeomorph.symm.continuous.comp htoOldRange
+  have hsourceInj : Function.Injective source := by
+    intro u v huv
+    have huvRange : toOldRange u = toOldRange v :=
+      hf.toHomeomorph.symm.injective huv
+    have huvSurface : c.symm u.1 = c.symm v.1 :=
+      congrArg Subtype.val huvRange
+    apply Subtype.ext
+    exact c.symm.injOn (interior_subset u.2.1) (interior_subset v.2.1)
+      huvSurface
+  let localMap : W → M := fun w ↦ g (source w)
+  have hlocalCont : Continuous localMap :=
+    hg.continuous.comp hsourceCont
+  have hlocalInj : Function.Injective localMap :=
+    hg.injective.comp hsourceInj
+  have hlocalOpen : IsOpen (Set.range localMap) :=
+    isOpen_range_of_isOpen_of_continuous_injective I hWopen localMap
+      hlocalCont hlocalInj
+  let w₀ : W := ⟨c z, hczW⟩
+  have hsourceW₀ : source w₀ = x := by
+    apply hf.injective
+    change (hf.toHomeomorph (source w₀)).1 = f x
+    rw [hf.toHomeomorph.apply_symm_apply]
+    change c.symm (c z) = f x
+    exact hcz
+  have hlocalAt : localMap w₀ = g x := by
+    rw [show localMap w₀ = g (source w₀) by rfl, hsourceW₀]
+  apply mem_interior_iff_mem_nhds.mpr
+  apply Filter.mem_of_superset
+    (hlocalOpen.mem_nhds ⟨w₀, hlocalAt⟩)
+  rintro y ⟨w, rfl⟩
+  exact Set.mem_range_self (source w)
+
 end LeanEval.Topology.ClassificationOfSurfaces.InvarianceOfDomain

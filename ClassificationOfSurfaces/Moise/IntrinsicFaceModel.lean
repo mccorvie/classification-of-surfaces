@@ -318,6 +318,37 @@ noncomputable def facePlaneHomeomorph (t : K.Face) :
     (standardTrianglePlaneComplex.realizationHomeomorph
       standardTrianglePlaneComplex_pure)
 
+/-- Restrict ambient intrinsic barycentric coordinates to the ordered vertices of one face. -/
+noncomputable def faceCoordRestrictionAffine (t : K.Face) :
+    (K.Vertex → ℝ) →ᵃ[ℝ] (Fin 3 → ℝ) :=
+  AffineMap.pi fun j =>
+    (LinearMap.proj (K.faceVertexEmbedding t j)).toAffineMap
+
+@[simp] theorem faceCoordRestrictionAffine_apply (t : K.Face)
+    (x : K.Vertex → ℝ) (j : Fin 3) :
+    K.faceCoordRestrictionAffine t x j =
+      x (K.faceVertexEmbedding t j) := by
+  rfl
+
+/-- The forward standard-plane chart is affine in the ambient intrinsic barycentric
+coordinates. -/
+noncomputable def facePlaneForwardAffine (t : K.Face) :
+    (K.Vertex → ℝ) →ᵃ[ℝ] Plane :=
+  standardTrianglePlaneComplex.baryEvalAffine.comp
+    (K.faceCoordRestrictionAffine t)
+
+theorem facePlaneHomeomorph_val_eq_forwardAffine (t : K.Face)
+    (x : K.ClosedFace t) :
+    (K.facePlaneHomeomorph t x).1 =
+      K.facePlaneForwardAffine t x.1.1 := by
+  change standardTrianglePlaneComplex.baryEval
+      (K.faceReindexToStandard t x).1 =
+    standardTrianglePlaneComplex.baryEval
+      (K.faceCoordRestrictionAffine t x.1.1)
+  apply congrArg standardTrianglePlaneComplex.baryEval
+  funext j
+  rfl
+
 /-- Affinely extend standard face coordinates by zero away from the selected intrinsic face. -/
 noncomputable def faceCoordExtensionAffine (t : K.Face) :
     (Fin 3 → ℝ) →ᵃ[ℝ] (K.Vertex → ℝ) :=

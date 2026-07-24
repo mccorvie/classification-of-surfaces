@@ -415,6 +415,379 @@ theorem midpointEvalAffine_pos_on_parent
     exact mul_nonneg (hx0 q) (K.midpointPosition_nonneg q v)
   · exact ⟨w, hws, mul_pos (hxpos w hws) hwpos⟩
 
+/-- A midpoint child has a unique old parent triangle. -/
+theorem midpointFacesOver_parent_unique
+    {t u : K.Face} {s : Finset K.MidpointVertex}
+    (hst : s ∈ K.midpointFacesOver t)
+    (hsu : s ∈ K.midpointFacesOver u) :
+    t = u := by
+  let x : K.MidpointVertex → ℝ :=
+    fun w ↦ if w ∈ s then 1 else 0
+  have hxs : ∀ w ∉ s, x w = 0 := by
+    intro w hw
+    simp [x, hw]
+  have hx0 : ∀ w, 0 ≤ x w := by
+    intro w
+    simp only [x]
+    split_ifs <;> norm_num
+  have hxpos : ∀ w ∈ s, 0 < x w := by
+    intro w hw
+    simp [x, hw]
+  apply Subtype.ext
+  apply Finset.Subset.antisymm
+  · intro v hvt
+    by_contra hvu
+    have hpos :=
+      K.midpointEvalAffine_pos_on_parent t hst hxs hx0 hxpos hvt
+    have hzero :=
+      K.midpointEvalAffine_support u hsu hxs hvu
+    rw [hzero] at hpos
+    exact (lt_irrefl 0 hpos)
+  · intro v hvu
+    by_contra hvt
+    have hpos :=
+      K.midpointEvalAffine_pos_on_parent u hsu hxs hx0 hxpos hvu
+    have hzero :=
+      K.midpointEvalAffine_support t hst hxs hvt
+    rw [hzero] at hpos
+    exact (lt_irrefl 0 hpos)
+
+/-- Inside one old parent, a refined edge joining an old vertex to an old-edge midpoint belongs
+to at most one midpoint child. -/
+theorem midpointFacesOver_mixed_edge_card_le_one
+    (t : K.Face) (v : K.Vertex) (e : K.Edge) :
+    ((K.midpointFacesOver t).filter fun s ↦
+      ({Sum.inl v, Sum.inr e} : Finset K.MidpointVertex) ⊆ s).card ≤ 1 := by
+  rw [Finset.card_le_one_iff]
+  intro a b ha hb
+  obtain ⟨haOver, haEdge⟩ := Finset.mem_filter.mp ha
+  obtain ⟨hbOver, hbEdge⟩ := Finset.mem_filter.mp hb
+  rw [midpointFacesOver, Finset.mem_union] at haOver hbOver
+  rcases haOver with haCorner | haCentral
+  · obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp haCorner
+    rcases hbOver with hbCorner | hbCentral
+    · obtain ⟨j, -, rfl⟩ := Finset.mem_image.mp hbCorner
+      have hvi :
+          v = K.faceVertex t i := by
+        have hv := haEdge
+          (Finset.mem_insert_self (Sum.inl v) {Sum.inr e})
+        simpa [midpointCornerFace] using hv
+      have hvj :
+          v = K.faceVertex t j := by
+        have hv := hbEdge
+          (Finset.mem_insert_self (Sum.inl v) {Sum.inr e})
+        simpa [midpointCornerFace] using hv
+      have hij : i = j :=
+        K.faceVertex_injective t (hvi.symm.trans hvj)
+      rw [hij]
+    · rw [Finset.mem_singleton.mp hbCentral] at hbEdge
+      have hv := hbEdge
+        (Finset.mem_insert_self (Sum.inl v) {Sum.inr e})
+      simp [midpointCentralFace] at hv
+  · rw [Finset.mem_singleton.mp haCentral] at haEdge
+    have hv := haEdge
+      (Finset.mem_insert_self (Sum.inl v) {Sum.inr e})
+    simp [midpointCentralFace] at hv
+
+/-- An old edge whose midpoint occurs in a midpoint child belongs to that child's parent. -/
+theorem edge_subset_parent_of_midpoint_mem
+    (t : K.Face) {s : Finset K.MidpointVertex} (hs : s ∈ K.midpointFacesOver t)
+    (e : K.Edge) (he : Sum.inr e ∈ s) :
+    e.1 ⊆ t.1 := by
+  rw [midpointFacesOver, Finset.mem_union] at hs
+  rcases hs with hcorner | hcentral
+  · obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp hcorner
+    simp only [midpointCornerFace, Finset.mem_insert, Finset.mem_singleton] at he
+    rcases he with he | he | he
+    · exact (Sum.inr_ne_inl he).elim
+    · rw [Sum.inr.inj he]
+      exact K.faceEdge_subset_face t i
+    · rw [Sum.inr.inj he]
+      exact K.faceEdge_subset_face t (i + 2)
+  · rw [Finset.mem_singleton.mp hcentral, midpointCentralFace] at he
+    obtain ⟨i, -, he⟩ := Finset.mem_image.mp he
+    rw [← Sum.inr.inj he]
+    exact K.faceEdge_subset_face t i
+
+/-- A midpoint child contains at most one old vertex. -/
+theorem oldVertex_eq_of_mem_midpointFace
+    (t : K.Face) {s : Finset K.MidpointVertex} (hs : s ∈ K.midpointFacesOver t)
+    {v w : K.Vertex} (hv : Sum.inl v ∈ s) (hw : Sum.inl w ∈ s) :
+    v = w := by
+  rw [midpointFacesOver, Finset.mem_union] at hs
+  rcases hs with hcorner | hcentral
+  · obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp hcorner
+    have hv' : v = K.faceVertex t i := by
+      simpa [midpointCornerFace] using hv
+    have hw' : w = K.faceVertex t i := by
+      simpa [midpointCornerFace] using hw
+    exact hv'.trans hw'.symm
+  · rw [Finset.mem_singleton.mp hcentral, midpointCentralFace] at hv
+    simp at hv
+
+/-- Two distinct edges of a triangular face cover the whole face. -/
+theorem faceEdge_union_eq_face_of_ne
+    (t : K.Face) {i j : ZMod 3} (hij : i ≠ j) :
+    (K.faceEdge t i).1 ∪ (K.faceEdge t j).1 = t.1 := by
+  rcases (by decide : ∀ i j : ZMod 3, j = i ∨ j = i + 1 ∨ j = i + 2) i j with
+    h | h | h
+  · exact (hij h.symm).elim
+  · subst j
+    apply Finset.Subset.antisymm
+    · exact Finset.union_subset (K.faceEdge_subset_face t i)
+        (K.faceEdge_subset_face t (i + 1))
+    · intro v hv
+      obtain ⟨k, rfl⟩ := K.exists_faceVertex_eq_of_mem t hv
+      rcases (by decide :
+          ∀ i k : ZMod 3, k = i ∨ k = i + 1 ∨ k = i + 2) i k with
+        rfl | rfl | rfl <;> simp [K.faceEdge_val]
+  · subst j
+    apply Finset.Subset.antisymm
+    · exact Finset.union_subset (K.faceEdge_subset_face t i)
+        (K.faceEdge_subset_face t (i + 2))
+    · intro v hv
+      obtain ⟨k, rfl⟩ := K.exists_faceVertex_eq_of_mem t hv
+      rcases (by decide :
+          ∀ i k : ZMod 3, k = i ∨ k = i + 1 ∨ k = i + 2) i k with
+        rfl | rfl | rfl <;> simp [K.faceEdge_val]
+
+/-- Two distinct old edges determine their triangular parent. -/
+theorem face_eq_of_two_edges_subset
+    {t u : K.Face} {e d : K.Edge} (hed : e ≠ d)
+    (het : e.1 ⊆ t.1) (hdt : d.1 ⊆ t.1)
+    (heu : e.1 ⊆ u.1) (hdu : d.1 ⊆ u.1) :
+    t = u := by
+  obtain ⟨i, hi⟩ := K.exists_faceEdge_eq_of_subset t e het
+  obtain ⟨j, hj⟩ := K.exists_faceEdge_eq_of_subset t d hdt
+  obtain ⟨k, hk⟩ := K.exists_faceEdge_eq_of_subset u e heu
+  obtain ⟨l, hl⟩ := K.exists_faceEdge_eq_of_subset u d hdu
+  have hij : i ≠ j := by
+    intro h
+    apply hed
+    rw [← hi, ← hj, h]
+  have hkl : k ≠ l := by
+    intro h
+    apply hed
+    rw [← hk, ← hl, h]
+  apply Subtype.ext
+  calc
+    t.1 = (K.faceEdge t i).1 ∪ (K.faceEdge t j).1 :=
+      (K.faceEdge_union_eq_face_of_ne t hij).symm
+    _ = e.1 ∪ d.1 := by rw [hi, hj]
+    _ = (K.faceEdge u k).1 ∪ (K.faceEdge u l).1 := by rw [hk, hl]
+    _ = u.1 := K.faceEdge_union_eq_face_of_ne u hkl
+
+/-- In a fixed parent, two distinct midpoint vertices determine at most one corner child. -/
+theorem midpointCornerFace_eq_of_two_midpoints_mem
+    (t : K.Face) {i j : ZMod 3} {e d : K.Edge} (hed : e ≠ d)
+    (hei : Sum.inr e ∈ K.midpointCornerFace t i)
+    (hdi : Sum.inr d ∈ K.midpointCornerFace t i)
+    (hej : Sum.inr e ∈ K.midpointCornerFace t j)
+    (hdj : Sum.inr d ∈ K.midpointCornerFace t j) :
+    K.midpointCornerFace t i = K.midpointCornerFace t j := by
+  have hei' :
+      e = K.faceEdge t i ∨ e = K.faceEdge t (i + 2) := by
+    simpa [midpointCornerFace] using hei
+  have hdi' :
+      d = K.faceEdge t i ∨ d = K.faceEdge t (i + 2) := by
+    simpa [midpointCornerFace] using hdi
+  have hej' :
+      e = K.faceEdge t j ∨ e = K.faceEdge t (j + 2) := by
+    simpa [midpointCornerFace] using hej
+  have hdj' :
+      d = K.faceEdge t j ∨ d = K.faceEdge t (j + 2) := by
+    simpa [midpointCornerFace] using hdj
+  have hi :
+      (e = K.faceEdge t i ∧ d = K.faceEdge t (i + 2)) ∨
+        (e = K.faceEdge t (i + 2) ∧ d = K.faceEdge t i) := by
+    rcases hei' with hei' | hei' <;> rcases hdi' with hdi' | hdi'
+    · exact (hed (hei'.trans hdi'.symm)).elim
+    · exact Or.inl ⟨hei', hdi'⟩
+    · exact Or.inr ⟨hei', hdi'⟩
+    · exact (hed (hei'.trans hdi'.symm)).elim
+  have hj :
+      (e = K.faceEdge t j ∧ d = K.faceEdge t (j + 2)) ∨
+        (e = K.faceEdge t (j + 2) ∧ d = K.faceEdge t j) := by
+    rcases hej' with hej' | hej' <;> rcases hdj' with hdj' | hdj'
+    · exact (hed (hej'.trans hdj'.symm)).elim
+    · exact Or.inl ⟨hej', hdj'⟩
+    · exact Or.inr ⟨hej', hdj'⟩
+    · exact (hed (hej'.trans hdj'.symm)).elim
+  have hswap :
+      ∀ a b : ZMod 3, a = b + 2 → a + 2 = b → False := by decide
+  rcases hi with hi | hi <;> rcases hj with hj | hj
+  · have hij : i = j :=
+      K.faceEdge_injective t (hi.1.symm.trans hj.1)
+    rw [hij]
+  · have h₁ : i = j + 2 :=
+      K.faceEdge_injective t (hi.1.symm.trans hj.1)
+    have h₂ : i + 2 = j :=
+      K.faceEdge_injective t (hi.2.symm.trans hj.2)
+    exact (hswap i j h₁ h₂).elim
+  · have h₁ : j = i + 2 :=
+      K.faceEdge_injective t (hj.1.symm.trans hi.1)
+    have h₂ : j + 2 = i :=
+      K.faceEdge_injective t (hj.2.symm.trans hi.2)
+    exact (hswap j i h₁ h₂).elim
+  · have hij : i + 2 = j + 2 :=
+      K.faceEdge_injective t (hi.1.symm.trans hj.1)
+    have : i = j := add_right_cancel hij
+    rw [this]
+
+/-- Within one old parent, the corner children incident to two distinct midpoint vertices form
+a set of cardinality at most one. -/
+theorem midpointCornerFaces_pair_card_le_one
+    (t : K.Face) (e d : K.Edge) (hed : e ≠ d) :
+    ((Finset.univ.image (K.midpointCornerFace t)).filter fun s ↦
+      ({Sum.inr e, Sum.inr d} : Finset K.MidpointVertex) ⊆ s).card ≤ 1 := by
+  rw [Finset.card_le_one_iff]
+  intro a b ha hb
+  obtain ⟨haCorner, haEdge⟩ := Finset.mem_filter.mp ha
+  obtain ⟨hbCorner, hbEdge⟩ := Finset.mem_filter.mp hb
+  obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp haCorner
+  obtain ⟨j, -, rfl⟩ := Finset.mem_image.mp hbCorner
+  apply K.midpointCornerFace_eq_of_two_midpoints_mem t hed
+  · exact haEdge (by simp)
+  · exact haEdge (by simp)
+  · exact hbEdge (by simp)
+  · exact hbEdge (by simp)
+
+/-- Inside one old parent, a refined edge joining two old-edge midpoints belongs to at most two
+midpoint children (one corner and the central child). -/
+theorem midpointFacesOver_midpoint_edge_card_le_two
+    (t : K.Face) (e d : K.Edge) (hed : e ≠ d) :
+    ((K.midpointFacesOver t).filter fun s ↦
+      ({Sum.inr e, Sum.inr d} : Finset K.MidpointVertex) ⊆ s).card ≤ 2 := by
+  rw [midpointFacesOver, Finset.filter_union]
+  refine (Finset.card_union_le _ _).trans ?_
+  have hcorner := K.midpointCornerFaces_pair_card_le_one t e d hed
+  have hcentral :
+      (({K.midpointCentralFace t} : Finset (Finset K.MidpointVertex)).filter fun s ↦
+        ({Sum.inr e, Sum.inr d} : Finset K.MidpointVertex) ⊆ s).card ≤ 1 := by
+    exact (Finset.card_filter_le _ _).trans (by simp)
+  omega
+
+/-- Globally, a mixed old-vertex/midpoint edge inherits the valence bound of its old edge. -/
+theorem midpoint_mixed_edge_valence
+    (hK : K.HasSurfaceEdgeValence) (v : K.Vertex) (e : K.Edge) :
+    (K.midpointComplex.faces.filter fun s ↦
+      ({Sum.inl v, Sum.inr e} : Finset K.MidpointVertex) ⊆ s).card ≤ 2 := by
+  let I := K.midpointComplex.faces.filter fun s ↦
+    ({Sum.inl v, Sum.inr e} : Finset K.MidpointVertex) ⊆ s
+  let P := K.faces.filter fun t ↦ e.1 ⊆ t
+  let parentMap : I → P := fun s ↦ by
+    let sf : K.midpointComplex.Face :=
+      ⟨s.1, (Finset.mem_filter.mp s.2).1⟩
+    refine ⟨K.midpointParentFace sf, Finset.mem_filter.mpr ⟨
+      (K.midpointParentFace sf).2, ?_⟩⟩
+    exact K.edge_subset_parent_of_midpoint_mem
+      (K.midpointParentFace sf) (K.midpointFace_mem_parent sf) e
+      ((Finset.mem_filter.mp s.2).2 (by simp))
+  have hinj : Function.Injective parentMap := by
+    intro a b hab
+    have hparent :
+        K.midpointParentFace
+            (⟨a.1, (Finset.mem_filter.mp a.2).1⟩ : K.midpointComplex.Face) =
+          K.midpointParentFace
+            (⟨b.1, (Finset.mem_filter.mp b.2).1⟩ : K.midpointComplex.Face) :=
+      by
+        have hparent := congrArg Subtype.val hab
+        apply Subtype.ext
+        simpa only [parentMap] using hparent
+    apply Subtype.ext
+    apply Finset.card_le_one_iff.mp
+      (K.midpointFacesOver_mixed_edge_card_le_one
+        (K.midpointParentFace
+          (⟨a.1, (Finset.mem_filter.mp a.2).1⟩ : K.midpointComplex.Face)) v e)
+    · exact Finset.mem_filter.mpr ⟨
+        K.midpointFace_mem_parent
+          (⟨a.1, (Finset.mem_filter.mp a.2).1⟩ : K.midpointComplex.Face),
+        (Finset.mem_filter.mp a.2).2⟩
+    · exact Finset.mem_filter.mpr ⟨by
+        rw [hparent]
+        exact K.midpointFace_mem_parent
+          (⟨b.1, (Finset.mem_filter.mp b.2).1⟩ : K.midpointComplex.Face),
+        (Finset.mem_filter.mp b.2).2⟩
+  change I.card ≤ 2
+  exact (Finset.card_le_card_of_injective hinj).trans (hK e.1 e.2)
+
+/-- Equality-normalized form of `midpoint_mixed_edge_valence`, convenient when the two
+endpoints of the unordered edge are presented in the opposite order. -/
+theorem midpoint_mixed_edge_valence_of_eq
+    (hK : K.HasSurfaceEdgeValence) (v : K.Vertex) (e : K.Edge)
+    (q : Finset K.MidpointVertex)
+    (hq : q = {Sum.inl v, Sum.inr e}) :
+    (K.midpointComplex.faces.filter fun s ↦ q ⊆ s).card ≤ 2 := by
+  subst q
+  exact K.midpoint_mixed_edge_valence hK v e
+
+/-- Globally, an edge joining two distinct old-edge midpoints is contained in at most two
+midpoint children.  The two old edges determine a single parent triangle. -/
+theorem midpoint_midpoint_edge_valence
+    (e d : K.Edge) (hed : e ≠ d) :
+    (K.midpointComplex.faces.filter fun s ↦
+      ({Sum.inr e, Sum.inr d} : Finset K.MidpointVertex) ⊆ s).card ≤ 2 := by
+  let I := K.midpointComplex.faces.filter fun s ↦
+    ({Sum.inr e, Sum.inr d} : Finset K.MidpointVertex) ⊆ s
+  by_cases hI : I.Nonempty
+  · obtain ⟨s, hs⟩ := hI
+    let sf : K.midpointComplex.Face :=
+      ⟨s, (Finset.mem_filter.mp hs).1⟩
+    let t := K.midpointParentFace sf
+    let J := (K.midpointFacesOver t).filter fun q ↦
+      ({Sum.inr e, Sum.inr d} : Finset K.MidpointVertex) ⊆ q
+    have heT : e.1 ⊆ t.1 :=
+      K.edge_subset_parent_of_midpoint_mem t (K.midpointFace_mem_parent sf) e
+        ((Finset.mem_filter.mp hs).2 (by simp))
+    have hdT : d.1 ⊆ t.1 :=
+      K.edge_subset_parent_of_midpoint_mem t (K.midpointFace_mem_parent sf) d
+        ((Finset.mem_filter.mp hs).2 (by simp))
+    have hsub : I ⊆ J := by
+      intro q hq
+      let qf : K.midpointComplex.Face :=
+        ⟨q, (Finset.mem_filter.mp hq).1⟩
+      let u := K.midpointParentFace qf
+      have heU : e.1 ⊆ u.1 :=
+        K.edge_subset_parent_of_midpoint_mem u (K.midpointFace_mem_parent qf) e
+          ((Finset.mem_filter.mp hq).2 (by simp))
+      have hdU : d.1 ⊆ u.1 :=
+        K.edge_subset_parent_of_midpoint_mem u (K.midpointFace_mem_parent qf) d
+          ((Finset.mem_filter.mp hq).2 (by simp))
+      have htu : t = u :=
+        K.face_eq_of_two_edges_subset hed heT hdT heU hdU
+      exact Finset.mem_filter.mpr ⟨by
+        rw [htu]
+        exact K.midpointFace_mem_parent qf,
+        (Finset.mem_filter.mp hq).2⟩
+    change I.card ≤ 2
+    exact (Finset.card_le_card hsub).trans
+      (K.midpointFacesOver_midpoint_edge_card_le_two t e d hed)
+  · have hEmpty : I = ∅ := Finset.not_nonempty_iff_eq_empty.mp hI
+    change I.card ≤ 2
+    simp [hEmpty]
+
+/-- Midpoint subdivision preserves the surface edge-valence bound. -/
+theorem hasSurfaceEdgeValence_midpointComplex
+    (hK : K.HasSurfaceEdgeValence) :
+    K.midpointComplex.HasSurfaceEdgeValence := by
+  intro q hq
+  obtain ⟨a, b, hab, rfl⟩ :=
+    Finset.card_eq_two.mp (K.midpointComplex.card_of_mem_edges hq)
+  rcases a with v | e <;> rcases b with w | d
+  · obtain ⟨s, hs, hsub⟩ :=
+      K.midpointComplex.exists_face_of_mem_edges hq
+    let sf : K.midpointComplex.Face := ⟨s, hs⟩
+    have hvw : v = w :=
+      K.oldVertex_eq_of_mem_midpointFace
+        (K.midpointParentFace sf) (K.midpointFace_mem_parent sf)
+        (hsub (by simp)) (hsub (by simp))
+    exact (hab (congrArg Sum.inl hvw)).elim
+  · exact K.midpoint_mixed_edge_valence hK v d
+  · exact K.midpoint_mixed_edge_valence_of_eq hK w e _
+      (Finset.pair_comm _ _)
+  · exact K.midpoint_midpoint_edge_valence e d fun hed ↦
+      hab (congrArg Sum.inr hed)
+
 theorem midpointRecoverOld_corner
     (t : K.Face) (i : ZMod 3) {x : K.MidpointVertex → ℝ}
     (hx : ∀ w ∉ K.midpointCornerFace t i, x w = 0)

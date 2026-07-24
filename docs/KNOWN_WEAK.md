@@ -19,7 +19,7 @@ together with the layer.
 
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
-| `FiniteSurfaceTriangulation` | Triangulation.lean | vacuous, retiring | `realization : Type` arbitrary; combinatorial data unlinked to topology; every space satisfies `SurfaceTriangulable` via the empty triangulation | superseded by `GeometricTriangulation` (embeddings of the standard 2-simplex, intersections are common faces) |
+| `FiniteSurfaceTriangulation` | Triangulation.lean | vacuous, retiring | `realization : Type` is arbitrary and the combinatorial data are unlinked to it; `Countermodels.arbitrarySpaceLegacyTriangulation` inhabits the record for every universe-0 space and converts to data that are neither `IsSurfaceValid` nor `IsConnected` | superseded by `GeometricTriangulation`, whose concrete barycentric faces intersect in common faces |
 | `EuclideanComplex` | PL.lean | vacuous, retiring | `support` has no linkage to simplicial data; `realizesSimplexes` duplicates `simplex_nonempty` | geometric simplicial complex with real carriers |
 | `PLMap` / `PLSubdivisionSupportWitness` | PL.lean | vacuous, retiring | any continuous map qualifies (`onIdentitySubdivisions`) | map affine on each simplex of some subdivision |
 | `IsPLOnSimplexes` / `IsPLOnSkeleton` | PL.lean | vacuous, retiring | true for every function (`isPLOnSimplexes_identity`); witness never mentions the function | PL condition on the restriction to those simplexes |
@@ -40,8 +40,10 @@ The former `SurfaceCellComplex.surfaceValid` and `.connected` entries were remov
 incidence-derived predicates `SurfaceCellComplex.IsSurfaceValid` and `.IsConnected`, with positive
 anchors and countermodels. The legacy triangulation bridge does not yet prove these predicates; its
 missing multiplicity/connectivity assumptions remain part of the `FiniteSurfaceTriangulation` entry
-above. Consequently the normal-form and Eval call chain cannot yet take the explicit validity and
-connectedness hypotheses that issue #9 ultimately requires.
+above. `finite_triangulation_to_cell_complex` and
+`compact_surface_homeomorphic_to_cell_complex` therefore assert only a homeomorphism to the raw
+presentation's stored realization. Consequently the normal-form and Eval call chain cannot yet
+take the explicit validity and connectedness hypotheses that issue #9 ultimately requires.
 
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|

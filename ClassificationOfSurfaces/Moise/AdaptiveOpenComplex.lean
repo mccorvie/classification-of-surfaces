@@ -200,6 +200,23 @@ theorem exists_levelFace_add_containing (n k : ℕ) (t : K.LevelFace n)
       have hcarrier : K.levelFaceCarrier u ⊆ K.levelFaceCarrier t := hus.trans hst
       simpa only [Nat.add_assoc] using ⟨u, hpu, hcarrier⟩
 
+/-- A level face is exactly the union of its faces at any prescribed later midpoint level.
+The descendant condition is stated geometrically, which avoids choosing a combinatorial parent
+for faces meeting an old edge. -/
+theorem levelFaceCarrier_eq_iUnion_descendants (n k : ℕ) (t : K.LevelFace n) :
+    K.levelFaceCarrier t =
+      ⋃ u : K.LevelFace (n + k),
+        ⋃ (_ : K.levelFaceCarrier u ⊆ K.levelFaceCarrier t),
+          K.levelFaceCarrier u := by
+  apply Set.Subset.antisymm
+  · intro p hp
+    obtain ⟨u, hpu, hut⟩ := K.exists_levelFace_add_containing n k t hp
+    exact Set.mem_iUnion.mpr ⟨u, Set.mem_iUnion.mpr ⟨hut, hpu⟩⟩
+  · intro p hp
+    obtain ⟨u, hp⟩ := Set.mem_iUnion.mp hp
+    obtain ⟨hut, hpu⟩ := Set.mem_iUnion.mp hp
+    exact hut hpu
+
 /-- Exact intersection formula for two transported faces at the same midpoint level. -/
 theorem levelFaceCarrier_inter {n : ℕ} (s t : K.LevelFace n) :
     K.levelFaceCarrier s ∩ K.levelFaceCarrier t =
@@ -451,9 +468,33 @@ abbrev AdaptiveFace (K : IntrinsicTwoComplex) (U : Set K.realization)
     [AdaptiveSafety K U] :=
   Σ n : ℕ, {t : K.LevelFace n // LevelFace.IsFirstSafe K U t}
 
+/-- One common midpoint level dominating a finite family of adaptive tiles. -/
+noncomputable def adaptiveFaceCommonLevel
+    (F : Finset (K.AdaptiveFace U)) : ℕ :=
+  F.sup fun t ↦ t.1
+
+theorem adaptiveFace_level_le_commonLevel
+    (F : Finset (K.AdaptiveFace U)) {t : K.AdaptiveFace U} (ht : t ∈ F) :
+    t.1 ≤ K.adaptiveFaceCommonLevel U F := by
+  exact Finset.le_sup (f := fun u : K.AdaptiveFace U ↦ u.1) ht
+
 /-- Carrier of one adaptive triangle in the original realization. -/
 def adaptiveFaceCarrier (t : K.AdaptiveFace U) : Set K.realization :=
   K.levelFaceCarrier t.2.1
+
+/-- Every tile in a finite adaptive family is a union of faces of the family's common midpoint
+level.  This is the finite source-subcomplex reduction used in the Radó crossing weld. -/
+theorem adaptiveFaceCarrier_eq_iUnion_commonLevel_descendants
+    (F : Finset (K.AdaptiveFace U)) {t : K.AdaptiveFace U} (ht : t ∈ F) :
+    K.adaptiveFaceCarrier U t =
+      ⋃ u : K.LevelFace (K.adaptiveFaceCommonLevel U F),
+        ⋃ (_ : K.levelFaceCarrier u ⊆ K.adaptiveFaceCarrier U t),
+          K.levelFaceCarrier u := by
+  have hle := K.adaptiveFace_level_le_commonLevel U F ht
+  have h := K.levelFaceCarrier_eq_iUnion_descendants t.1
+    (K.adaptiveFaceCommonLevel U F - t.1) t.2.1
+  rw [Nat.add_sub_of_le hle] at h
+  exact h
 
 theorem adaptiveFaceCarrier_subset (t : K.AdaptiveFace U) :
     K.adaptiveFaceCarrier U t ⊆ U := by
@@ -1652,6 +1693,28 @@ theorem not_parameter_mem_Ioo_adaptiveEdgeInterval (hU : IsOpen U)
 /-- The countable family of fan triangles before identifying their shared geometric edges. -/
 abbrev AdaptiveFanFace (hU : IsOpen U) :=
   Σ t : K.AdaptiveFace U, Σ i : ZMod 3, K.AdaptiveEdgeInterval U hU t i
+
+/-- The finite family of all resolved fan triangles over one adaptive tile. -/
+noncomputable def adaptiveFanFacesOver (hU : IsOpen U)
+    (t : K.AdaptiveFace U) : Finset (K.AdaptiveFanFace U hU) :=
+  ((Finset.univ : Finset (ZMod 3)).sigma fun i ↦
+      (Finset.univ : Finset (K.AdaptiveEdgeInterval U hU t i))).map
+    ⟨fun p ↦ ⟨t, p⟩, by
+      intro p q hpq
+      exact eq_of_heq (Sigma.mk.inj_iff.mp hpq).2⟩
+
+theorem mem_adaptiveFanFacesOver_iff (hU : IsOpen U)
+    (t : K.AdaptiveFace U) (f : K.AdaptiveFanFace U hU) :
+    f ∈ K.adaptiveFanFacesOver U hU t ↔ f.1 = t := by
+  classical
+  constructor
+  · intro hf
+    obtain ⟨p, -, hp⟩ := Finset.mem_map.mp hf
+    exact (congrArg Sigma.fst hp).symm
+  · intro hft
+    subst t
+    apply Finset.mem_map.mpr
+    exact ⟨f.2, by simp, rfl⟩
 
 noncomputable def adaptiveFanFaceVertices (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU) : Finset K.realization :=

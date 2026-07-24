@@ -53,9 +53,11 @@ project skeleton and documents the intended handoff points between teams.
 * `JoinedByBrokenLine` (`Moise/BrokenLine.lean`)
 * `MoiseChart`, `MoiseChart.BoundaryFaithful`, `exists_moiseChart_core_mem_nhds`
   (`Moise/ChartExtraction.lean`)
-* `PartialTriangulation`, `RadoInvariant`, `moise_finite_chart_cover`, `moise_induction_step`,
-  `moise_triangulation_of_boundaries` (`Moise/ChartInduction.lean`)
-* `moise_triangulation` (`Triangulation.lean`)
+* `PartialTriangulation`, `RadoInvariant`, `moise_finite_chart_cover`,
+  `moise_induction_step`, `moise_triangulation_of_boundaries`
+  (`Moise/ChartInduction.lean`)
+* `nonempty_geometricTriangulation_iff_explicit`, `moise_triangulation`, and
+  `moise_triangulation_explicit` (`Moise/GeometricTriangulation.lean`, `Triangulation.lean`)
 * anchors and countermodels: `Moise/Anchors.lean`, `Moise/Countermodels.lean`
 
 The legacy `PL.lean` layer (`EuclideanComplex`, `PLMap`, `PLComplexInSpace`, `MoiseTwoManifold`,
@@ -72,6 +74,10 @@ for the quarry, in particular the concrete closed-triangle geometry.
 * `FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic`
 * `finite_triangulation_to_cell_complex`
 * `compact_surface_homeomorphic_to_cell_complex`
+
+The last two declarations assert only a homeomorphism to the raw presentation's stored
+realization.  They do not yet produce `SurfaceCellComplex.IsSurfaceValid` or `.IsConnected`;
+`Moise/Countermodels.lean` contains an executable legacy witness showing the gap.
 
 ## Shared finite surface cell complexes
 

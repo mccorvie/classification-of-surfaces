@@ -84,6 +84,50 @@ theorem PolygonalCircle.closedRegion_subset_halfPlane (J : PolygonalCircle)
   rw [J.closedRegion_eq_union]
   exact Set.union_subset hinterior hcarrier
 
+/-- A plane-open subset of the closed half-plane cannot contain a point of its supporting
+boundary line. -/
+theorem coordZero_pos_of_mem_open_subset_halfPlane {O : Set Plane}
+    (hO : IsOpen O) (hOH : O ⊆ HalfPlaneSet) {x : Plane} (hx : x ∈ O) :
+    0 < x 0 := by
+  have hxNonneg : 0 ≤ x 0 := hOH hx
+  refine lt_of_le_of_ne hxNonneg ?_
+  intro hxZero
+  obtain ⟨ε, hε, hball⟩ := Metric.isOpen_iff.mp hO x hx
+  let y : Plane := x - (ε / 2) • planePoint 1 0
+  have hxy : dist y x < ε := by
+    have hvertexNorm : ‖planePoint 1 0‖ = 1 := by
+      simp [planePoint, EuclideanSpace.norm_eq, Fin.sum_univ_two]
+    rw [dist_eq_norm]
+    rw [show y - x = -(ε / 2) •
+        planePoint 1 0 by
+      simp [y, sub_eq_add_neg, add_assoc]]
+    rw [norm_smul, norm_neg, hvertexNorm, mul_one, Real.norm_eq_abs,
+      abs_of_pos (half_pos hε)]
+    linarith
+  have hyO : y ∈ O := hball (Metric.mem_ball.mpr hxy)
+  have hyNonneg : 0 ≤ y 0 := hOH hyO
+  have hyCoord : y 0 = x 0 - ε / 2 := by
+    simp [y]
+  rw [hyCoord, hxZero] at hyNonneg
+  linarith
+
+/-- The supporting line meets the filled polygonal disk only on its polygonal boundary. -/
+theorem PolygonalCircle.mem_carrier_of_mem_closedRegion_coordZero
+    (J : PolygonalCircle) (hcarrier : J.carrier ⊆ HalfPlaneSet)
+    {x : Plane} (hx : x ∈ J.closedRegion) (hxZero : x 0 = 0) :
+    x ∈ J.carrier := by
+  rw [J.closedRegion_eq_union] at hx
+  rcases hx with hxInterior | hxCarrier
+  · have hxPos :=
+      coordZero_pos_of_mem_open_subset_halfPlane J.isOpen_interiorRegion
+        (by
+          intro y hy
+          exact J.closedRegion_subset_halfPlane hcarrier
+            (by rw [J.closedRegion_eq_union]; exact Or.inl hy))
+        hxInterior
+    linarith
+  · exact hxCarrier
+
 end Moise
 end ClassificationOfSurfaces
 end Topology

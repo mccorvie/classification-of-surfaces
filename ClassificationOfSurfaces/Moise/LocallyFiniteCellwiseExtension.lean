@@ -656,6 +656,37 @@ noncomputable def polygonalReplacementHomeomorph (H : K.CellwiseCompatibility G)
   continuous_toFun := K.continuous_polygonalReplacementMap H
   continuous_invFun := K.continuous_polygonalReplacementInverse H
 
+/-- The canonical replacement homeomorphism preserves every named closed face exactly.  This
+is stronger than preservation of the total support and is the bridge used when a finite family
+of replacement faces is pulled back to a finite source subcomplex. -/
+theorem polygonalReplacementHomeomorph_mem_faceCarrier_iff
+    (H : K.CellwiseCompatibility G) (f : K.Face) (p : K.support) :
+    (K.polygonalReplacementHomeomorph H p).1 ∈
+        (K.polygonalReplacementComplex H).faceCarrier f ↔
+      p.1 ∈ K.faceCarrier f := by
+  constructor
+  · rintro ⟨x, hx⟩
+    have htarget :
+        faceToSupport (K := K.polygonalReplacementComplex H) f x =
+          K.polygonalReplacementHomeomorph H p :=
+      Subtype.ext hx
+    have hsource :
+        (K.polygonalReplacementHomeomorph H).symm
+            (faceToSupport (K := K.polygonalReplacementComplex H) f x) = p := by
+      rw [htarget, (K.polygonalReplacementHomeomorph H).symm_apply_apply]
+    change K.polygonalReplacementInverse H
+        (faceToSupport (K := K.polygonalReplacementComplex H) f x) = p at hsource
+    rw [K.polygonalReplacementInverse_faceToSupport H f x] at hsource
+    exact ⟨x, congrArg Subtype.val hsource⟩
+  · rintro ⟨x, hx⟩
+    have hsource : faceToSupport (K := K) f x = p := Subtype.ext hx
+    have hmap := K.polygonalReplacementMap_faceToSupport H f x
+    change K.polygonalReplacementHomeomorph H
+        (faceToSupport (K := K) f x) =
+          faceToSupport (K := K.polygonalReplacementComplex H) f x at hmap
+    rw [hsource] at hmap
+    exact ⟨x, (congrArg Subtype.val hmap).symm⟩
+
 end LocallyFiniteTriangleComplex
 
 end Moise

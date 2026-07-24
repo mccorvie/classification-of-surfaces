@@ -22,8 +22,13 @@ Contents:
 
 * positive anchor: the standard 2-simplex carries a geometric triangulation with one face;
 * must-imply anchors are proved at the definition site
-  (`GeometricTriangulation.compactSpace`, `GeometricTriangulation.t2Space`);
+  (`GeometricTriangulation.compactSpace`, `GeometricTriangulation.t2Space`,
+  `GeometricTriangulation.faces_nonempty`);
 * non-examples: `ℝ` and `ℚ` admit no geometric triangulation;
+* vacuity probes: empty face families and one-point vertex types cannot triangulate a nonempty
+  space;
+* an executable witness showing why the legacy triangulation/cell-presentation bridge remains in
+  the weakness ledger;
 * cell-complex non-examples: an unused dart orbit and disconnected face systems;
 * a record of the vacuity failure of the retiring `SurfaceTriangulable` predicate, kept as
   documentation of why `GeometricTriangulation` replaces it (see `docs/KNOWN_WEAK.md`).
@@ -54,6 +59,26 @@ noncomputable def stdSimplexTriangulation :
     simp
   homeo := Homeomorph.setCongr geometricRealization_single_face
 
+/-! ## Vacuity probes for geometric triangulations -/
+
+/-- The empty-face strategy cannot triangulate a nonempty target. -/
+example {S : Type*} [TopologicalSpace S] [Nonempty S] (T : GeometricTriangulation S) :
+    T.faces ≠ ∅ :=
+  Finset.nonempty_iff_ne_empty.mp T.faces_nonempty
+
+/-- The `PUnit`/one-vertex junk strategy cannot supply a three-vertex geometric face for a
+nonempty target. -/
+example {S : Type*} [TopologicalSpace S] [Nonempty S] :
+    ¬ ∃ (F : Finset (Finset (Fin 1))),
+      (∀ t ∈ F, t.card = 3) ∧ Nonempty (GeometricRealization (Fin 1) F ≃ₜ S) := by
+  rintro ⟨F, hF, ⟨h⟩⟩
+  let s : S := Classical.choice inferInstance
+  rcases (h.symm s).2.2 with ⟨t, ht, _⟩
+  have hle : t.card ≤ Finset.univ.card :=
+    Finset.card_le_card (Finset.subset_univ t)
+  rw [hF t ht] at hle
+  norm_num at hle
+
 /-! ## Non-examples
 
 A faithful notion of finite triangulation must fail for non-compact spaces.  The previous
@@ -68,6 +93,89 @@ example : ¬ Nonempty (GeometricTriangulation ℚ) := by
   rintro ⟨T⟩
   have hcompact := T.compactSpace
   exact not_compactSpace_iff.mpr inferInstance hcompact
+
+/-! ## Legacy bridge countermodel
+
+`FiniteSurfaceTriangulation` still has an arbitrary stored realization.  This fixture satisfies
+its current validity record for every universe-0 topological space using `Homeomorph.refl`, while
+its two face words are empty.  Consequently its cell presentation is neither incidence-valid nor
+face-edge connected.  The faithful Radó theorem does not use this object as its conclusion; it
+enters only through the explicitly ledgered compatibility bridge. -/
+
+/-- Every universe-0 topological space inhabits the legacy triangulation structure. -/
+noncomputable def arbitrarySpaceLegacyTriangulation
+    (S : Type) [TopologicalSpace S] : FiniteSurfaceTriangulation S where
+  Vertex := Fin 3
+  Edge := PUnit
+  Triangle := Bool
+  vertexFintype := inferInstance
+  vertexDecidableEq := inferInstance
+  edgeFintype := inferInstance
+  triangleFintype := inferInstance
+  realization := S
+  realizationTop := inferInstance
+  edgeVertices := fun _ => {0, 1}
+  triangleVertices := fun _ => Finset.univ
+  edgeSource := fun _ => 0
+  edgeTarget := fun _ => 1
+  triangleBoundary := fun _ => []
+  edgeIsBoundary := fun _ => True
+  isSurfaceTriangulation := by
+    constructor
+    · intro e
+      simp
+    · intro t
+      simp
+    · intro e
+      simp
+    · intro e
+      simp
+    · intro e
+      norm_num
+    · intro t oe hoe
+      simp at hoe
+  homeomorphSurface := ⟨Homeomorph.refl S⟩
+
+/-- The arbitrary stored realization makes the legacy topological field hold by reflexivity. -/
+theorem arbitrarySpaceLegacyTriangulation_homeomorphSurface
+    (S : Type) [TopologicalSpace S] :
+    Nonempty ((arbitrarySpaceLegacyTriangulation S).realization ≃ₜ S) :=
+  (arbitrarySpaceLegacyTriangulation S).homeomorphSurface
+
+/-- Empty boundary words leave the stored edge orbit unused, so the converted presentation is
+not incidence-valid. -/
+theorem arbitrarySpaceLegacyTriangulation_not_isSurfaceValid
+    (S : Type) [TopologicalSpace S] :
+    ¬ (arbitrarySpaceLegacyTriangulation S).toCellComplex.IsSurfaceValid := by
+  rintro ⟨_, _, _, hedges⟩
+  rcases hedges (SurfaceCellComplex.SignedDart.pos PUnit.unit) with hone | htwo
+  · rcases hone with ⟨⟨f, i⟩, _⟩
+    change Fin 0 at i
+    exact Fin.elim0 i
+  · rcases htwo with ⟨⟨f, i⟩, _⟩
+    change Fin 0 at i
+    exact Fin.elim0 i
+
+/-- The two empty face words have no adjacency path, so the converted presentation is not
+face-edge connected. -/
+theorem arbitrarySpaceLegacyTriangulation_not_isConnected
+    (S : Type) [TopologicalSpace S] :
+    ¬ (arbitrarySpaceLegacyTriangulation S).toCellComplex.IsConnected := by
+  rintro ⟨_, hconnected⟩
+  have adjacent_false : ∀ f g,
+      (arbitrarySpaceLegacyTriangulation S).toCellComplex.FaceAdjacent f g → False := by
+    intro f g h
+    rcases h with ⟨d, hd, e, he, _⟩
+    change d ∈ [] at hd
+    simp at hd
+  have reach_eq : ∀ {f g},
+      Relation.ReflTransGen
+        (arbitrarySpaceLegacyTriangulation S).toCellComplex.FaceAdjacent f g → f = g := by
+    intro f g h
+    induction h with
+    | refl => rfl
+    | tail _ hstep _ => exact (adjacent_false _ _ hstep).elim
+  exact Bool.false_ne_true (reach_eq (hconnected false true))
 
 /-! ## Cell-complex incidence countermodels -/
 

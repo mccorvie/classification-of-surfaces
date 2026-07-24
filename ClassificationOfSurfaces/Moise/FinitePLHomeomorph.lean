@@ -182,6 +182,115 @@ theorem inverseOn_affineOn_of_subdivides_targetComplex
   rw [F.inverseOn_apply hxA, hfa hxt]
   exact (e.symm_apply_apply x).symm
 
+/-- A common target refinement together with all data needed to pull it back through a finite
+PL homeomorphism.  This is the relative-subdivision package used when a prescribed target mesh
+introduces new vertices on the boundary of a polygonal face. -/
+structure PullbackSubdivision (F : FinitePLHomeomorphBetween f A B)
+    (R : PlaneComplex) where
+  target : PlaneComplex
+  target_support : target.support = B
+  target_pure : target.IsPure2
+  target_subdivides_certificate : target.Subdivides F.targetComplex
+  target_subdivides_given : target.Subdivides R
+  target_vertex_mem_support : ∀ v : target.Vertex,
+    target.position v ∈ target.support
+  inverseAffine : ∀ s ∈ target.simplexes,
+    IsAffineOn F.inverseOn (target.cellCarrier s)
+
+/-- Pull a prescribed pure finite target mesh back through a certified finite PL
+homeomorphism.  A common refinement is taken first, so no compatibility between the supplied
+mesh and the certificate's original target complex is required. -/
+noncomputable def pullbackSubdivision
+    (F : FinitePLHomeomorphBetween f A B) (R : PlaneComplex)
+    (hRpure : R.IsPure2) (hRsupport : R.support = B) :
+    PullbackSubdivision F R := by
+  let common := PlaneComplex.exists_common_subdivision F.targetComplex_pure hRpure
+    (F.targetComplex_support.trans hRsupport.symm)
+  let T₀ : PlaneComplex := common.choose.toPlaneComplex
+  let T : PlaneComplex := PlaneComplex.active T₀
+  have hTcert : T.Subdivides F.targetComplex :=
+    PlaneComplex.active_subdivides_left common.choose_spec.1
+  have hTgiven : T.Subdivides R :=
+    PlaneComplex.active_subdivides_left common.choose_spec.2
+  have hTpure : T.IsPure2 :=
+    PlaneComplex.IsPure2.active T₀ common.choose.toPlaneComplex_isPure2
+  have hTsupport : T.support = B := hTcert.1.trans F.targetComplex_support
+  have hTvertex : ∀ v : T.Vertex, T.position v ∈ T.support := by
+    intro v
+    change T₀.position v.1 ∈ T.support
+    rw [T₀.active_support]
+    exact v.2
+  exact
+    { target := T
+      target_support := hTsupport
+      target_pure := hTpure
+      target_subdivides_certificate := hTcert
+      target_subdivides_given := hTgiven
+      target_vertex_mem_support := hTvertex
+      inverseAffine := F.inverseOn_affineOn_of_subdivides_targetComplex hTcert }
+
+namespace PullbackSubdivision
+
+variable {f : Plane → Plane} {A B : Set Plane}
+  {F : FinitePLHomeomorphBetween f A B} {R : PlaneComplex}
+  (P : PullbackSubdivision F R)
+
+theorem inverseOn_injOn_target : Set.InjOn F.inverseOn P.target.support := by
+  rw [P.target_support]
+  exact F.inverseOn_injOn
+
+/-- The actual source complex obtained by mapping the common target refinement through the
+certified inverse.  It has the same vertex and simplex labels as the target refinement. -/
+noncomputable def source : PlaneComplex :=
+  P.target.mapComplexOn F.inverseOn P.target_vertex_mem_support
+    P.inverseOn_injOn_target P.inverseAffine
+
+@[simp] theorem source_simplexes : P.source.simplexes = P.target.simplexes := rfl
+
+theorem inverseOn_image_target : F.inverseOn '' B = A := by
+  apply Set.Subset.antisymm
+  · rintro x ⟨y, hy, rfl⟩
+    exact F.inverseOn_mem hy
+  · intro x hx
+    refine ⟨f x, ?_, F.inverseOn_apply hx⟩
+    rw [← F.image_eq]
+    exact ⟨x, hx, rfl⟩
+
+theorem source_support : P.source.support = A := by
+  rw [source, P.target.mapComplexOn_support F.inverseOn
+    P.target_vertex_mem_support P.inverseOn_injOn_target P.inverseAffine,
+    P.target_support, inverseOn_image_target (F := F)]
+
+theorem source_pure : P.source.IsPure2 :=
+  PlaneComplex.IsPure2.mapComplexOn P.target P.target_pure F.inverseOn
+    P.target_vertex_mem_support P.inverseOn_injOn_target P.inverseAffine
+
+theorem source_cellCarrier (s : Finset P.target.Vertex)
+    (hs : s ∈ P.target.simplexes) :
+    P.source.cellCarrier s = F.inverseOn '' P.target.cellCarrier s := by
+  exact P.target.mapComplexOn_cellCarrier F.inverseOn P.target_vertex_mem_support
+    P.inverseOn_injOn_target P.inverseAffine hs
+
+/-- Corresponding source and target faces are carried exactly onto one another by the
+original map. -/
+theorem image_source_cellCarrier (s : Finset P.target.Vertex)
+    (hs : s ∈ P.target.simplexes) :
+    f '' P.source.cellCarrier s = P.target.cellCarrier s := by
+  rw [P.source_cellCarrier s hs]
+  apply Set.Subset.antisymm
+  · rintro y ⟨x, ⟨z, hz, rfl⟩, rfl⟩
+    have hzB : z ∈ B := by
+      rw [← P.target_support]
+      exact P.target.cellCarrier_subset_support hs hz
+    simpa only [F.apply_inverseOn hzB] using hz
+  · intro y hy
+    have hyB : y ∈ B := by
+      rw [← P.target_support]
+      exact P.target.cellCarrier_subset_support hs hy
+    exact ⟨F.inverseOn y, ⟨y, hy, rfl⟩, F.apply_inverseOn hyB⟩
+
+end PullbackSubdivision
+
 /-- Postcomposition by an ambient finite PL homeomorphism preserves finite PL cell
 homeomorphisms.  A common target subdivision is pulled back through the first map. -/
 noncomputable def transAmbient (F : FinitePLHomeomorphBetween f A B)
