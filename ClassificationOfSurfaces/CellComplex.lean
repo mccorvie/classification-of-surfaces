@@ -597,7 +597,8 @@ theorem toCellComplex_isConnected_of_incidenceCertificate
     T.toCellComplex.IsConnected := by
   refine ⟨h.triangle_nonempty, ?_⟩
   intro f g
-  exact (h.dual_connected f g).mono fun _ _ ↦ T.triangleAdjacent_to_faceAdjacent
+  apply Relation.ReflTransGen.mono (fun _ _ ↦ T.triangleAdjacent_to_faceAdjacent)
+  exact h.dual_connected f g
 
 end FiniteSurfaceTriangulation
 
