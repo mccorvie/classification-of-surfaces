@@ -484,7 +484,7 @@ theorem eq_of_interior_triangleCarrier_inter_nonempty (T U : M.Triangle)
       rw [show f = T.1 ∩ U.1 by rfl, ← M.triangle_inter T.1 T.2 U.1 U.2]
       exact ⟨interior_subset hpT, interior_subset hpU⟩
     rw [hfempty] at hpInter
-    simpa using hpInter
+    simp at hpInter
   have hfSimplex : f ∈ M.toPlaneComplex.simplexes :=
     M.mem_faces_iff.mpr ⟨hfne, T.1, T.2, Finset.inter_subset_left⟩
   have hOpenSubset :
@@ -577,7 +577,7 @@ theorem eraseTriangle_support_eq_closure_diff_triangleCarrier (T : M.Triangle) :
     · intro p hp
       rw [M.toPlaneComplex_support] at hp
       rw [TriangleMesh.toPlaneComplex_support]
-      simp only [Set.mem_diff, Set.mem_iUnion,
+      simp only [Set.mem_sdiff, Set.mem_iUnion,
         TriangleMesh.eraseTriangle_triangles] at hp ⊢
       obtain ⟨u, hu, hpU⟩ := hp.1
       by_cases huT : u = T.1
@@ -867,7 +867,7 @@ theorem edge_eq_of_nonvertex_mem_edgeCarriers {e f : Finset M.Vertex}
     have hsmall : (e ∩ f).card ≤ 1 := by omega
     obtain hempty | hnonempty := (e ∩ f).eq_empty_or_nonempty
     · rw [hempty] at hpInter
-      simpa using hpInter
+      simp at hpInter
     · obtain ⟨v, hv⟩ := hnonempty
       have hsingleton : e ∩ f = {v} := by
         apply Finset.eq_singleton_iff_unique_mem.mpr
@@ -936,7 +936,7 @@ theorem vertex_mem_edge_of_position_mem_edgeCarrier {v : M.Vertex} {e t : Finset
     rw [← hface]
     exact ⟨by simp, hv⟩
   rw [hinter] at hp
-  simpa using hp
+  simp at hp
 
 /-- In a face-to-face planar mesh, once one incident triangle is fixed there is at most one
 other triangle incident to the same edge. -/
@@ -1003,7 +1003,7 @@ theorem edge_subset_of_nonvertex_mem_triangleCarrier {e t u : Finset M.Vertex} {
     by_contra hf
     have hfempty : f = ∅ := Finset.not_nonempty_iff_eq_empty.mp hf
     rw [show (t ∩ u : Finset M.Vertex) = f by rfl, hfempty] at hpInter
-    simpa using hpInter
+    simp at hpInter
   have heSimplex : e ∈ M.toPlaneComplex.simplexes :=
     M.mem_faces_iff.mpr ⟨Finset.card_pos.mp (by omega), t, ht, het⟩
   have hfSimplex : f ∈ M.toPlaneComplex.simplexes :=
@@ -1030,7 +1030,7 @@ theorem edge_subset_of_nonvertex_mem_triangleCarrier {e t u : Finset M.Vertex} {
     exact (Finset.mem_inter.mp (Finset.mem_inter.mp hvinter).2).2
   obtain hempty | hnonempty := (e ∩ f).eq_empty_or_nonempty
   · rw [hempty] at hpCommon
-    simpa using hpCommon
+    simp at hpCommon
   · obtain ⟨v, hv⟩ := hnonempty
     have hsingleton : e ∩ f = {v} := by
       apply Finset.eq_singleton_iff_unique_mem.mpr

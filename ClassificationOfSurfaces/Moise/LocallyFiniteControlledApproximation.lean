@@ -786,8 +786,8 @@ theorem polygonalReplacementHomeomorph_coordZero_iff_of_facewiseCoordZeroExposed
 /-- A controlled compatible cellwise replacement lands in the permitted perturbation region. -/
 theorem polygonalReplacementMap_mem_region (G : K.PlaneGraphRealization)
     (H : K.CellwiseCompatibility G) {phi : K.support → ℝ}
-    (hcontrol : FaceBoundariesControlled G phi)
-    (hregion : G.ControlsStayInRegion phi) (p : K.support) :
+    (_ : FaceBoundariesControlled G phi)
+    (_ : G.ControlsStayInRegion phi) (p : K.support) :
     (K.polygonalReplacementMap H p).1.1 ∈ G.region :=
   (K.polygonalReplacementMap H p).1.2
 

@@ -168,7 +168,7 @@ theorem adaptiveBoundaryGraph_vertex_mem_edge (hU : IsOpen U)
     rw [PlaneComplex.cellCarrier]
     exact subset_convexHull ℝ _ ⟨v, Finset.mem_singleton_self v, rfl⟩
   by_contra hno
-  push_neg at hno
+  push Not at hno
   let other : Set Plane := ⋃ s : {s : Finset G.Vertex // s ∈ G.simplexes ∧ s ≠ {v}},
     G.cellCarrier s.1
   have hpNot : G.position v ∉ other := by
@@ -188,7 +188,7 @@ theorem adaptiveBoundaryGraph_vertex_mem_edge (hU : IsOpen U)
         rintro ⟨rfl, hw⟩
         exact hvs hw
       rw [hempty, PlaneComplex.cellCarrier] at hinter
-      simpa using hinter
+      simp at hinter
     have hsle := K.adaptiveBoundaryGraph_isGraph U hU t s.1 s.2.1
     have hstwo : s.1.card = 2 := by
       have hsone : 1 ≤ s.1.card := Finset.one_le_card.mpr ⟨v, hvs⟩
@@ -339,8 +339,7 @@ theorem adaptiveTilePlaneComplex_isPure2 (hU : IsOpen U)
     K.adaptiveBoundaryGraph_isPureOne U hU t b hb
   let τ : Finset (Option G.Vertex) := insert none (G.liftFace e)
   refine ⟨τ, ?_, ?_, ?_⟩
-  · change τ ∈ G.coneSimplexes
-    apply G.mem_coneSimplexes_iff.mpr
+  · apply G.mem_coneSimplexes_iff.mpr
     exact ⟨⟨none, Finset.mem_insert_self none (G.liftFace e)⟩,
       e, he, subset_rfl⟩
   · intro z hz

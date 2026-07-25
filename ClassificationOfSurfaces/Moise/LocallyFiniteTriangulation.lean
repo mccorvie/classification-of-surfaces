@@ -302,7 +302,7 @@ noncomputable def univMapSubtypeEquiv
   (finsetMapSubtypeEquiv e Finset.univ).symm.trans
     { toFun := fun a ↦ a.1
       invFun := fun a ↦ ⟨a, Finset.mem_univ a⟩
-      left_inv := fun a ↦ Subtype.ext rfl
+      left_inv := fun _ ↦ Subtype.ext rfl
       right_inv := fun _ ↦ rfl }
 
 /-- Pull simplex coordinates on the image of a finite type back to that finite type. -/
@@ -1203,7 +1203,7 @@ theorem edgeCarrier_inter_subset_sharedVertices {e d : K.Edge} (hed : e ≠ d) :
         K.extendFaceCoordinates_map_edgeVertexToFace d y
   have hex : ∃ v : {v // v ∈ e.1}, 0 < x v := by
     by_contra h
-    push_neg at h
+    push Not at h
     have hxzero : ∀ v : {v // v ∈ e.1}, x v = 0 := by
       intro v
       exact le_antisymm (h v) (x.2.1 v)
@@ -1266,7 +1266,7 @@ theorem edgeCarrier_inter_subset_sharedVertices {e d : K.Edge} (hed : e ≠ d) :
     · subst w
       simp [hxv]
     · rw [hxzero w hwv]
-      simp [Pi.single_apply, hwv]
+      simp [hwv]
   refine ⟨v.1, v.2, hvd, ?_⟩
   rw [← hxp, hxvertex]
   exact K.edgeMap_vertex_eq_vertexPoint e v

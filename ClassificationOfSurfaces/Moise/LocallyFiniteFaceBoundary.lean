@@ -131,9 +131,9 @@ theorem faceReplacementCarrier_inter_next (t : K.Face) (i : ZMod 3) :
     subst x
     constructor
     · apply A.vertex_mem_completeCarrier
-      simp [A]
+      simp []
     · apply B.vertex_mem_completeCarrier
-      simp [B, add_assoc]
+      simp [add_assoc]
 
 /-- Every listed family segment lies in the replacement boundary carrier. -/
 theorem faceBoundaryPiece_segment_subset (t : K.Face)

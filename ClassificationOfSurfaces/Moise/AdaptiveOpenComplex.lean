@@ -6,8 +6,6 @@ Authors: ClassificationOfSurfaces contributors
 import ClassificationOfSurfaces.Moise.OpenMidpointComplex
 import ClassificationOfSurfaces.Moise.LocallyFiniteTriangulation
 
-open scoped BigOperators
-
 /-!
 # Adaptive midpoint tiles in an open polyhedron
 
@@ -16,6 +14,8 @@ open set.  These triangles cover the open set and form a locally finite hierarch
 Their edges need not yet form a conforming simplicial complex: a coarse edge may contain several
 edges of finer adjacent tiles.  The next layer resolves precisely those hanging vertices.
 -/
+
+open scoped BigOperators
 
 namespace LeanEval
 namespace Topology
@@ -255,7 +255,7 @@ theorem eq_facePoint_of_mem_faceCarrier_singleton (t : K.Face)
     rw [Finset.sum_eq_single v.1] at hsum
     · exact hsum
     · intro w _ hwv
-      exact hx w (by simpa [hwv])
+      exact hx w (by simp [hwv])
     · intro hv
       exact False.elim (hv (Finset.mem_univ v.1))
   apply Subtype.ext
@@ -265,11 +265,11 @@ theorem eq_facePoint_of_mem_faceCarrier_singleton (t : K.Face)
     rw [K.facePoint_val]
     simp [hxv]
   · rw [K.facePoint_val]
-    simp [Pi.single_apply, hwv, hx w (by simp [hwv])]
+    simp [hwv, hx w (by simp [hwv])]
 
 /-- Two two-vertex subfaces of a triangle which share a nonvertex point are equal. -/
 theorem eq_of_card_two_of_mem_faceCarriers_not_vertex (t : K.Face)
-    {e d : Finset K.Vertex} (het : e ⊆ t.1) (hdt : d ⊆ t.1)
+    {e d : Finset K.Vertex} (het : e ⊆ t.1) (_ : d ⊆ t.1)
     (hecard : e.card = 2) (hdcard : d.card = 2)
     {x : K.realization} (hxe : x ∈ K.faceCarrier e)
     (hxd : x ∈ K.faceCarrier d)
@@ -600,7 +600,7 @@ theorem dist_le_pow_of_mem_levelFaceCarrier {n : ℕ} (t : K.LevelFace n)
 /-- If a child face meets a half-radius ball and its parent mesh is below that half-radius,
 then the parent is already safe. -/
 theorem parent_isSafe_of_inter_ball {n : ℕ} (t : K.LevelFace (n + 1))
-    {p : K.realization} {ε : ℝ} (hε : 0 < ε)
+    {p : K.realization} {ε : ℝ} (_ : 0 < ε)
     (hball : Metric.ball p ε ⊆ U)
     (hmesh : (1 / 2 : ℝ) ^ n < ε / 2)
     (hinter : (K.levelFaceCarrier t ∩ Metric.ball p (ε / 2)).Nonempty) :
@@ -834,7 +834,7 @@ theorem levelFaceVertexPoint_not_mem_relInterior {n : ℕ} (t : K.LevelFace n)
   obtain ⟨w, hwt, hwv⟩ := Finset.exists_mem_ne hone v.1
   have hzero : ((K.safeSubdivision n).refined.facePoint t v).1 w = 0 := by
     rw [(K.safeSubdivision n).refined.facePoint_val t v]
-    simp [Pi.single_apply, hwv]
+    simp [hwv]
   have hcoord := congrFun (congrArg Subtype.val hsource) w
   linarith [hx.2 w hwt]
 
@@ -1041,7 +1041,7 @@ instance boundaryEdgeVertexLE_total (hU : IsOpen U)
 instance boundaryEdgeVertexLE_antisymm (hU : IsOpen U)
     (t : K.AdaptiveFace U) (i : ZMod 3) :
     Std.Antisymm (K.boundaryEdgeVertexLE U hU t i) :=
-  ⟨fun p q hpq hqp ↦ K.boundaryEdgeParameter_injective U hU t i
+  ⟨fun _ _ hpq hqp ↦ K.boundaryEdgeParameter_injective U hU t i
     (le_antisymm hpq hqp)⟩
 
 instance boundaryEdgeVertexLE_isTrans (hU : IsOpen U)
@@ -1204,9 +1204,8 @@ theorem adaptiveEdgeFirstCorner_ne_second (t : K.AdaptiveFace U) (i : ZMod 3) :
   have hsource := (K.safeSubdivision t.1).homeo.injective h
   have hcoord := congrArg (fun x : (K.safeSubdivision t.1).refined.realization ↦
     x.1 ((K.safeSubdivision t.1).refined.faceVertex t.2.1 i)) hsource
-  simp only [adaptiveEdgeFirstCorner, adaptiveEdgeSecondCorner,
-    levelFaceVertexPoint, (K.safeSubdivision t.1).refined.facePoint_val,
-    Pi.single_apply, if_pos rfl, if_neg hvne] at hcoord
+  simp only [(K.safeSubdivision t.1).refined.facePoint_val,
+    Pi.single_apply, if_neg hvne] at hcoord
   norm_num at hcoord
 
 theorem two_le_boundaryEdgeVertices_card (hU : IsOpen U)
@@ -1236,15 +1235,13 @@ theorem two_le_boundaryEdgeVertexList_length (hU : IsOpen U)
     K.levelFaceEdgeParameter t.2.1 i
       (K.adaptiveEdgeFirstCorner U t i) = 0 := by
   simp [levelFaceEdgeParameter, adaptiveEdgeFirstCorner, levelFaceVertexPoint,
-    (K.safeSubdivision t.1).refined.facePoint_val,
     (K.safeSubdivision t.1).refined.faceVertex_ne_next t.2.1 i]
 
 @[simp] theorem levelFaceEdgeParameter_adaptiveEdgeSecondCorner
     (t : K.AdaptiveFace U) (i : ZMod 3) :
     K.levelFaceEdgeParameter t.2.1 i
       (K.adaptiveEdgeSecondCorner U t i) = 1 := by
-  simp [levelFaceEdgeParameter, adaptiveEdgeSecondCorner, levelFaceVertexPoint,
-    (K.safeSubdivision t.1).refined.facePoint_val]
+  simp [levelFaceEdgeParameter, adaptiveEdgeSecondCorner, levelFaceVertexPoint]
 
 theorem levelFaceEdgeParameter_mem_Icc {n : ℕ} (t : K.LevelFace n)
     (i : ZMod 3) {p : K.realization}

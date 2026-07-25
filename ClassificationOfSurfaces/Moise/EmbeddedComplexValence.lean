@@ -89,32 +89,32 @@ theorem edge_valence_le_two_of_isEmbedding
     intro h
     apply hce
     rw [← h]
-    simpa [he]
+    simp [he]
   have hbc : b ≠ c := by
     intro h
     apply hce
     rw [← h]
-    simpa [he]
+    simp [he]
   have had : a ≠ d := by
     intro h
     apply hde
     rw [← h]
-    simpa [he]
+    simp [he]
   have hbd : b ≠ d := by
     intro h
     apply hde
     rw [← h]
-    simpa [he]
+    simp [he]
   have hak : a ≠ k := by
     intro h
     apply hke
     rw [← h]
-    simpa [he]
+    simp [he]
   have hbk : b ≠ k := by
     intro h
     apply hke
     rw [← h]
-    simpa [he]
+    simp [he]
   have hcd : c ≠ d := by
     intro h
     apply htu
@@ -194,8 +194,8 @@ theorem edge_valence_le_two_of_isEmbedding
     by_cases hx : 0 ≤ x.1 1
     · refine ⟨t, htF, ?_⟩
       intro z hzt
-      have hza : z ≠ a := fun h ↦ hzt (h ▸ het (by simpa [he]))
-      have hzb : z ≠ b := fun h ↦ hzt (h ▸ het (by simpa [he]))
+      have hza : z ≠ a := fun h ↦ hzt (h ▸ het (by simp [he]))
+      have hzb : z ≠ b := fun h ↦ hzt (h ▸ het (by simp [he]))
       have hzc : z ≠ c := fun h ↦ hzt (h ▸ by
         rw [htc]
         exact Finset.mem_insert_self _ _)
@@ -206,8 +206,8 @@ theorem edge_valence_le_two_of_isEmbedding
     · have hx' : x.1 1 ≤ 0 := le_of_not_ge hx
       refine ⟨u, huF, ?_⟩
       intro z hzu
-      have hza : z ≠ a := fun h ↦ hzu (h ▸ heu (by simpa [he]))
-      have hzb : z ≠ b := fun h ↦ hzu (h ▸ heu (by simpa [he]))
+      have hza : z ≠ a := fun h ↦ hzu (h ▸ heu (by simp [he]))
+      have hzb : z ≠ b := fun h ↦ hzu (h ▸ heu (by simp [he]))
       have hzd : z ≠ d := fun h ↦ hzu (h ▸ by
         rw [hud]
         exact Finset.mem_insert_self _ _)
@@ -263,10 +263,10 @@ theorem edge_valence_le_two_of_isEmbedding
     funext z
     by_cases hza : z = a
     · subst z
-      simp [weight, zeroO, hab, hac, had]
+      simp [weight, zeroO, hab, had]
     by_cases hzb : z = b
     · subst z
-      simp [weight, zeroO, hab, hbc, hbd]
+      simp [weight, zeroO, hab, hbd]
     simp [weight, zeroO, hza, hzb]
   let edgeMid : GeometricRealization V F := fan zeroO
   have hedgeOpen : Set.range pairMap ∈ nhds (ι edgeMid) := by
@@ -301,8 +301,8 @@ theorem edge_valence_le_two_of_isEmbedding
       ∃ s ∈ F, ∀ z ∉ s, thirdWeight r z = 0 := by
     refine ⟨v, hvF, ?_⟩
     intro z hzv
-    have hza : z ≠ a := fun h ↦ hzv (h ▸ hev (by simpa [he]))
-    have hzb : z ≠ b := fun h ↦ hzv (h ▸ hev (by simpa [he]))
+    have hza : z ≠ a := fun h ↦ hzv (h ▸ hev (by simp [he]))
+    have hzb : z ≠ b := fun h ↦ hzv (h ▸ hev (by simp [he]))
     have hzk : z ≠ k := fun h ↦ hzv (h ▸ by
       rw [hvk]
       exact Finset.mem_insert_self _ _)

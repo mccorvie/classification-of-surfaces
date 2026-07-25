@@ -206,7 +206,7 @@ theorem convexHull_inter_affine_zero_of_nonneg_set (s : Set Plane)
       exact mem_convexHull_of_exists_fintype w z hw0 hw1
         (fun i => Finset.mem_coe.mpr
           (Finset.mem_image.mpr ⟨i, Finset.mem_univ i, rfl⟩))
-        (by simpa only [hwz])
+        (by simp only [hwz])
     have htNonneg : ∀ y ∈ t, 0 ≤ f y := by
       intro y hy
       obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp hy
@@ -243,7 +243,6 @@ theorem convexHull_inter_of_affine_separation (s t u : Finset Plane)
     rw [← htzero]
     apply Finset.filter_congr
     intro x hx
-    change g x = 0 ↔ f x = 0
     simp [g]
   have hsface := convexHull_inter_affine_zero_of_nonneg s f hs
   rw [hszero] at hsface
@@ -272,7 +271,7 @@ theorem convexHull_inter_of_affine_separation (s t u : Finset Plane)
 /-- Vertex-indexed form of `convexHull_inter_of_affine_separation`.  This is the form used when
 checking the maximal triangles of a mesh. -/
 theorem convexHull_image_inter_of_affine_separation {V : Type*} [DecidableEq V]
-    (position : V → Plane) (hposition : Function.Injective position) (s t : Finset V)
+    (position : V → Plane) (_ : Function.Injective position) (s t : Finset V)
     (f : Plane →ᵃ[ℝ] ℝ) (hs : ∀ v ∈ s, 0 ≤ f (position v))
     (ht : ∀ v ∈ t, f (position v) ≤ 0)
     (hszero : ∀ v ∈ s, f (position v) = 0 ↔ v ∈ (s ∩ t))
@@ -472,72 +471,77 @@ noncomputable def referenceSplitMesh (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint, hb0.ne'] <;>
+          simp [referenceSplitPosition, referenceVertexAffine_planePoint] <;>
           (try field_simp) <;> nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint, hb0.ne'] <;>
+          simp [referenceSplitPosition, referenceVertexAffine_planePoint] <;>
           (try field_simp) <;> nlinarith
       · intro x hx
-        fin_cases x <;> simp [referenceSplitPosition, referenceVertexAffine_planePoint,
-          hb0.ne'] at hx ⊢ <;> (try field_simp) <;> nlinarith
+        fin_cases x <;>
+          simp [referenceSplitPosition, referenceVertexAffine_planePoint] at hx ⊢ <;>
+          (try field_simp) <;> nlinarith
       · intro x hx
-        fin_cases x <;> simp [referenceSplitPosition, referenceVertexAffine_planePoint,
-          hb0.ne'] at hx ⊢ <;> (try field_simp) <;> nlinarith
+        fin_cases x <;>
+          simp [referenceSplitPosition, referenceVertexAffine_planePoint] at hx ⊢ <;>
+          (try field_simp) <;> nlinarith
     · apply convexHull_image_inter_of_affine_separation _
         (referenceSplitPosition_injective ha0 ha1 hb0 hb1) _ _ (-referenceOuterAffine a b)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'] <;>
-          (try field_simp) <;> nlinarith
+          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne']
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'] <;>
-          (try field_simp) <;> nlinarith
+          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'] ;
+          (try field_simp) ; nlinarith
       · intro x hx
         fin_cases x <;> simp [referenceSplitPosition, referenceOuterAffine_planePoint,
-          ha0.ne', hb0.ne'] at hx ⊢ <;> (try field_simp) <;> nlinarith
+          ha0.ne', hb0.ne'] at hx ⊢
       · intro x hx
         fin_cases x <;> simp [referenceSplitPosition, referenceOuterAffine_planePoint,
-          ha0.ne', hb0.ne'] at hx ⊢ <;> field_simp <;> nlinarith
+          ha0.ne', hb0.ne'] at hx ⊢ ; field_simp ; nlinarith
     · rw [Set.inter_comm]
       apply convexHull_image_inter_of_affine_separation _
         (referenceSplitPosition_injective ha0 ha1 hb0 hb1) _ _ (-referenceVertexAffine a b)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint, hb0.ne'] <;>
+          simp [referenceSplitPosition, referenceVertexAffine_planePoint] <;>
           (try field_simp) <;> nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint, hb0.ne'] <;>
+          simp [referenceSplitPosition, referenceVertexAffine_planePoint] <;>
           (try field_simp) <;> nlinarith
       · intro x hx
-        fin_cases x <;> simp [referenceSplitPosition, referenceVertexAffine_planePoint,
-          hb0.ne'] at hx ⊢ <;> (try field_simp) <;> nlinarith
+        fin_cases x <;>
+          simp [referenceSplitPosition, referenceVertexAffine_planePoint] at hx ⊢ <;>
+          (try field_simp) <;> nlinarith
       · intro x hx
-        fin_cases x <;> simp [referenceSplitPosition, referenceVertexAffine_planePoint,
-          hb0.ne'] at hx ⊢ <;> (try field_simp) <;> nlinarith
+        fin_cases x <;>
+          simp [referenceSplitPosition, referenceVertexAffine_planePoint] at hx ⊢ <;>
+          (try field_simp) <;> nlinarith
     · simp
     · apply convexHull_image_inter_of_affine_separation _
         (referenceSplitPosition_injective ha0 ha1 hb0 hb1) _ _ (referenceDiagonalAffine a)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] <;> nlinarith
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] <;> nlinarith
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
       · intro x hx
-        fin_cases x <;> simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ <;>
+        fin_cases x <;>
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
           nlinarith
       · intro x hx
-        fin_cases x <;> simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ <;>
+        fin_cases x <;>
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
           nlinarith
     · rw [Set.inter_comm]
       apply convexHull_image_inter_of_affine_separation _
@@ -545,35 +549,36 @@ noncomputable def referenceSplitMesh (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'] <;>
-          field_simp <;> nlinarith
+          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne']
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'] <;>
-          field_simp <;> nlinarith
+          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'] ;
+          field_simp ; nlinarith
       · intro x hx
         fin_cases x <;> simp [referenceSplitPosition, referenceOuterAffine_planePoint,
-          ha0.ne', hb0.ne'] at hx ⊢ <;> field_simp <;> nlinarith
+          ha0.ne', hb0.ne'] at hx ⊢
       · intro x hx
         fin_cases x <;> simp [referenceSplitPosition, referenceOuterAffine_planePoint,
-          ha0.ne', hb0.ne'] at hx ⊢ <;> field_simp <;> nlinarith
+          ha0.ne', hb0.ne'] at hx ⊢ ; field_simp ; nlinarith
     · rw [Set.inter_comm]
       apply convexHull_image_inter_of_affine_separation _
         (referenceSplitPosition_injective ha0 ha1 hb0 hb1) _ _ (referenceDiagonalAffine a)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] <;> nlinarith
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] <;> nlinarith
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
       · intro x hx
-        fin_cases x <;> simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ <;>
+        fin_cases x <;>
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
           nlinarith
       · intro x hx
-        fin_cases x <;> simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ <;>
+        fin_cases x <;>
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
           nlinarith
     · simp
 
@@ -659,7 +664,7 @@ theorem referenceSplit_union (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       apply convexHull_min _ (convex_convexHull ℝ _) hxt
       rintro p ⟨i, rfl⟩
       fin_cases i <;> apply (mem_standardTriangle_iff _).mpr <;>
-        simp [ha0.le, ha1.le, hb0.le, hb1.le]
+        simp [ha0.le, ha1.le]
     · rw [referenceTriangle2_carrier] at hxt
       apply convexHull_min _ (convex_convexHull ℝ _) hxt
       rintro p ⟨i, rfl⟩
@@ -683,7 +688,7 @@ theorem referenceSplit_union (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       · simp
         ring
       · ext i
-        fin_cases i <;> simp [planePoint] <;> field_simp <;> ring
+        fin_cases i <;> simp [planePoint] <;> field_simp
     · have houter' : 1 ≤ x 0 / a + x 1 / b := le_of_not_ge houter
       by_cases hdiag : 0 ≤ x 0 + a * x 1 - a
       · have h1a : 1 - a ≠ 0 := by linarith
@@ -703,7 +708,7 @@ theorem referenceSplit_union (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
           field_simp [h1a]
           ring
         · ext i
-          fin_cases i <;> simp [planePoint] <;> field_simp [h1a] <;> ring
+          fin_cases i <;> simp [planePoint] ; field_simp [h1a] ; ring
       · have hdiag' : x 0 + a * x 1 - a ≤ 0 := le_of_not_ge hdiag
         have h1b : 1 - b ≠ 0 := by linarith
         have hnum0 : 0 ≤ x 1 - b + b * (x 0 / a) := by
@@ -733,7 +738,7 @@ theorem referenceSplit_union (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
           ring
         · ext i
           fin_cases i <;> simp [planePoint] <;>
-            field_simp [h1b, ha0.ne'] <;> ring
+            field_simp [h1b, ha0.ne'] ; ring
 
 /-- The reference line split preserves the support of the standard triangle. -/
 theorem referenceSplitMesh_support (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
@@ -828,18 +833,18 @@ noncomputable def referenceEdgeSplitMesh (c : ℝ) (hc0 : 0 < c) (hc1 : c < 1) :
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] <;> nlinarith
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] <;> nlinarith
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ <;>
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
           nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ <;>
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
           nlinarith
     · rw [Set.inter_comm]
       apply convexHull_image_inter_of_affine_separation _
@@ -847,18 +852,18 @@ noncomputable def referenceEdgeSplitMesh (c : ℝ) (hc0 : 0 < c) (hc1 : c < 1) :
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] <;> nlinarith
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] <;> nlinarith
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ <;>
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
           nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ <;>
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
           nlinarith
     · simp
 
@@ -916,7 +921,7 @@ theorem referenceEdgeSplit_union (c : ℝ) (hc0 : 0 < c) (hc1 : c < 1) :
       · simp
         ring
       · ext i
-        fin_cases i <;> simp [planePoint] <;> field_simp [hc0.ne'] <;> ring
+        fin_cases i <;> simp [planePoint] ; field_simp [hc0.ne']
     · have hd' : 0 ≤ x 0 + c * x 1 - c := le_of_not_ge hd
       have h1c : 1 - c ≠ 0 := by linarith
       refine ⟨{1, 2, 3}, Finset.mem_insert_of_mem (Finset.mem_singleton_self _), ?_⟩
@@ -935,7 +940,7 @@ theorem referenceEdgeSplit_union (c : ℝ) (hc0 : 0 < c) (hc1 : c < 1) :
         field_simp [h1c]
         ring
       · ext i
-        fin_cases i <;> simp [planePoint] <;> field_simp [h1c] <;> ring
+        fin_cases i <;> simp [planePoint] ; field_simp [h1c] ; ring
 
 theorem referenceEdgeSplitMesh_support (c : ℝ) (hc0 : 0 < c) (hc1 : c < 1) :
     (referenceEdgeSplitMesh c hc0 hc1).toPlaneComplex.support =
@@ -1248,8 +1253,8 @@ theorem strictModelVertex_val (t : M.Triangle)
 /-- Geometric identification of the strict five-point list with the affine image of the reference
 split. -/
 theorem strictModelPosition_eq_affineReference (p : Fin 3 → Plane)
-    (hp : AffineIndependent ℝ p) (h0 : 0 < f (p 0)) (h1 : f (p 1) < 0)
-    (h2 : f (p 2) < 0) (i : Fin 5) :
+    (hp : AffineIndependent ℝ p) (_ : 0 < f (p 0)) (_ : f (p 1) < 0)
+    (_ : f (p 2) < 0) (i : Fin 5) :
     strictModelPosition p f i =
       triangleAffineEquiv standardTrianglePosition p standardTrianglePosition_affineIndependent hp
         (referenceSplitPosition (triangleCutParameter f (p 0) (p 1))
@@ -1521,7 +1526,7 @@ noncomputable def edgeModelPosition (p : Fin 3 → Plane) (f : Plane →ᵃ[ℝ]
   ![p 0, p 1, p 2, affineCutPoint f (p 0) (p 1)]
 
 theorem edgeModelPosition_eq_affineReference (p : Fin 3 → Plane)
-    (hp : AffineIndependent ℝ p) (h0 : 0 < f (p 0)) (h1 : f (p 1) < 0)
+    (hp : AffineIndependent ℝ p) (_ : 0 < f (p 0)) (_ : f (p 1) < 0)
     (i : Fin 4) :
     edgeModelPosition p f i =
       triangleAffineEquiv standardTrianglePosition p standardTrianglePosition_affineIndependent hp
@@ -3024,7 +3029,7 @@ theorem orderedVertex_eq_endpoint_of_ne_opposite (t : M.Triangle) (k j : Fin 3)
   · exact Or.inr hvj.symm
 
 theorem trace_vertex_eq_endpoint_of_edge_in_line (t : M.Triangle) (k : Fin 3)
-    {a b : M.Vertex} (hab : a ≠ b)
+    {a b : M.Vertex} (_ : a ≠ b)
     (hedge : M.oppositeEdgePoints t k = ({a, b} : Finset M.Vertex).image M.position)
     {s : Finset (M.RefinedVertex f)} (hs : s ∈ M.localMeshTriangles f t)
     (ha : f (M.position a) = 0) (hb : f (M.position b) = 0)
@@ -3260,7 +3265,7 @@ theorem convexHull_inter_of_signed_three_point_subsets
           have hxpair := hDsub hx
           simp only [Finset.mem_insert, Finset.mem_singleton] at hxpair
           rcases hxpair with hxb | hxz
-          · simpa [hxb]
+          · simp [hxb]
           · exact False.elim (hzD (hxz ▸ hx))
         have hDgeom : convexHull ℝ ((D.image val : Finset Plane) : Set Plane) ⊆ {(b : Plane)} :=
           convexHull_min (by
@@ -3302,7 +3307,7 @@ theorem convexHull_inter_of_signed_three_point_subsets
         have hxpair := hCsub hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hxpair
         rcases hxpair with hxa | hxz
-        · simpa [hxa]
+        · simp [hxa]
         · exact False.elim (hzC (hxz ▸ hx))
       have hCgeom : convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ⊆ {(a : Plane)} :=
         convexHull_min (by
@@ -3616,7 +3621,7 @@ theorem old_vertex_mem_child_of_position_mem (t : M.Triangle) (i : Fin 3)
   have hne : (points.filter fun x => g x = 0).Nonempty := by
     by_contra h
     rw [Finset.not_nonempty_iff_eq_empty.mp h] at hcorner
-    simpa using hcorner
+    simp at hcorner
   obtain ⟨p, hp⟩ := hne
   have hp' := Finset.mem_filter.mp hp
   obtain ⟨v, hv, hvp⟩ := Finset.mem_image.mp hp'.1
@@ -3657,7 +3662,7 @@ theorem lineRefinementTriangles_inter_of_parent_inter_card_zero
         ⟨M.convexHull_child_subset_parent f T hs hx.1,
           M.convexHull_child_subset_parent f U hq hx.2⟩
       rw [hparents] at hxparent
-      simpa using hxparent
+      simp at hxparent
     · exact Set.empty_subset _
   have hsq : s ∩ q = ∅ := by
     ext v
@@ -3670,7 +3675,7 @@ theorem lineRefinementTriangles_inter_of_parent_inter_card_zero
         ⟨M.child_vertex_mem_parent f T hs hv'.1,
           M.child_vertex_mem_parent f U hq hv'.2⟩
       rw [hparents] at hvparent
-      simpa using hvparent
+      simp at hvparent
     · intro hv
       simp at hv
   rw [hinter, hsq]
@@ -3805,10 +3810,10 @@ noncomputable def lineRefinementMesh : TriangleMesh where
   position := (↑)
   position_injective := Subtype.val_injective
   triangles := M.lineRefinementTriangles f
-  card_triangle := fun s hs => M.card_of_mem_lineRefinementTriangles f hs
-  affineIndependent_triangle := fun s hs =>
+  card_triangle := fun _ hs => M.card_of_mem_lineRefinementTriangles f hs
+  affineIndependent_triangle := fun _ hs =>
     M.affineIndependent_of_mem_lineRefinementTriangles f hs
-  triangle_inter := fun s hs q hq => M.lineRefinementTriangles_inter f hs hq
+  triangle_inter := fun _ hs _ hq => M.lineRefinementTriangles_inter f hs hq
 
 theorem lineRefinementMesh_support :
     (M.lineRefinementMesh f).toPlaneComplex.support = M.toPlaneComplex.support := by

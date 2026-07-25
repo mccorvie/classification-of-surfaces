@@ -23,7 +23,7 @@ namespace PlaneComplex
 variable (K : PlaneComplex) {v : K.Vertex}
 
 /-- The geometric segment carried by an edge of the vertex graph. -/
-theorem cellCarrier_pair_of_adj {u w : K.Vertex} (h : K.vertexGraph.Adj u w) :
+theorem cellCarrier_pair_of_adj {u w : K.Vertex} (_ : K.vertexGraph.Adj u w) :
     K.cellCarrier {u, w} = segment ℝ (K.position u) (K.position w) := by
   rw [PlaneComplex.cellCarrier]
   have himage : K.position ''
@@ -330,7 +330,7 @@ private theorem cycle_edge_face (p : K.vertexGraph.Walk v v) (hp : p.IsCycle)
     ({p.getVert i.val, p.getVert (i + 1).val} : Finset K.Vertex) ∈ K.simplexes :=
   (cycle_adj K p hp i).2
 
-private theorem cycle_edge_carrier (p : K.vertexGraph.Walk v v) (hp : p.IsCycle)
+private theorem cycle_edge_carrier (p : K.vertexGraph.Walk v v) (_ : p.IsCycle)
     (i : ZMod p.length) :
     K.cellCarrier {p.getVert i.val, p.getVert (i + 1).val} =
       segment ℝ (K.position (p.getVert i.val))

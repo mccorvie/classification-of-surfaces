@@ -272,7 +272,7 @@ theorem segment_subset_of_midpoint_mem_openSegment
 /-- If a nondegenerate segment contains two distinct points on the horizontal axis, then both
 endpoints lie on that axis. -/
 theorem endpoint_secondCoords_eq_zero_of_two_axis_points {a b x y : Plane}
-    (hab : a ≠ b) (hxy : x ≠ y) (hx : x ∈ segment ℝ a b)
+    (_ : a ≠ b) (hxy : x ≠ y) (hx : x ∈ segment ℝ a b)
     (hy : y ∈ segment ℝ a b) (hx0 : x 1 = 0) (hy0 : y 1 = 0) :
     a 1 = 0 ∧ b 1 = 0 := by
   rw [segment_eq_image_lineMap] at hx hy

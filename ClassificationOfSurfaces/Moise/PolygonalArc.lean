@@ -428,7 +428,7 @@ theorem exists_vertex_position_eq_of_monochromatic_coordinates (p : Plane)
     by_contra h
     have hempty : s ∩ t = ∅ := Finset.not_nonempty_iff_eq_empty.mp h
     rw [hempty, PlaneComplex.cellCarrier] at hpInter
-    simpa using hpInter
+    simp at hpInter
   obtain ⟨v, hv⟩ := hne
   refine ⟨v, plane_ext ?_ ?_, ?_⟩
   · have hv0 := hs0 v (Finset.mem_of_mem_inter_left hv)
@@ -693,7 +693,7 @@ theorem restrictedTo_support_eq (C : Set Plane)
 theorem vertexGraph_reachable_of_mem_simplex {s : Finset K.Vertex} (hs : s ∈ K.simplexes)
     {v w : K.Vertex} (hv : v ∈ s) (hw : w ∈ s) : K.vertexGraph.Reachable v w := by
   by_cases hvw : v = w
-  · simpa [hvw]
+  · simp [hvw]
   · apply SimpleGraph.Adj.reachable
     rw [K.vertexGraph_adj_iff]
     refine ⟨hvw, K.down_closed s hs {v, w} ?_ (by simp)⟩
@@ -764,7 +764,7 @@ theorem vertexGraph_reachable_of_isPreconnected
     have hst : (s ∩ t).Nonempty := by
       by_contra h
       rw [Finset.not_nonempty_iff_eq_empty.mp h, PlaneComplex.cellCarrier] at hxinter
-      simpa using hxinter
+      simp at hxinter
     obtain ⟨q, hq⟩ := hst
     have hRq : R q := hRw.trans
       (K.vertexGraph_reachable_of_mem_simplex hs hws (Finset.mem_of_mem_inter_left hq))
@@ -927,7 +927,6 @@ theorem exists_face_on_segment (i : Fin B.n) {x : Plane}
               change 0 ≤ M.toPlaneComplex.position v 0 - a 0 at hlo
               change M.toPlaneComplex.position v 0 - b 0 ≤ 0 at hhi
               constructor <;> linarith
-
             · rw [Set.uIcc_of_ge hgt.le, Set.mem_Icc]
               have hxhi : verticalLine a x < 0 := by
                 change x 0 - a 0 < 0
@@ -1317,7 +1316,7 @@ theorem resolvedSegment_inter (i j : Fin B.resolvedWalk.length) :
 
 /-- The geometric carrier of the selected graph path. -/
 def resolvedCarrier : Set Plane :=
-  if h : B.resolvedWalk.length = 0 then {B.resolvedVertex 0}
+  if _ : B.resolvedWalk.length = 0 then {B.resolvedVertex 0}
   else ⋃ i : Fin B.resolvedWalk.length,
     segment ℝ (B.resolvedVertex i.castSucc) (B.resolvedVertex i.succ)
 
@@ -1503,13 +1502,13 @@ theorem resolvedComplex_support : B.resolvedComplex.support = B.resolvedCarrier 
       refine Set.mem_iUnion₂.mpr ⟨s, ?_, hxi⟩
       apply B.mem_resolvedComplex_simplexes_iff.mpr
       exact ⟨B.resolvedEdge_mem_simplexes i, by
-        refine ⟨by simp [s, B.resolvedWalk.adj_getVert_succ i.isLt |>.ne], Or.inr ⟨i, ?_⟩⟩
+        refine ⟨by simp [s], Or.inr ⟨i, ?_⟩⟩
         exact subset_rfl⟩
 
 /-- Affine coordinate from `0` to `1` along one resolved path edge. -/
 noncomputable def resolvedEdgeParameter (i : Fin B.resolvedWalk.length) :
     Plane →ᵃ[ℝ] ℝ :=
-  if h : B.resolvedVertex i.castSucc 0 ≠ B.resolvedVertex i.succ 0 then
+  if _ : B.resolvedVertex i.castSucc 0 ≠ B.resolvedVertex i.succ 0 then
     (B.resolvedVertex i.succ 0 - B.resolvedVertex i.castSucc 0)⁻¹ •
       (cartesianX - AffineMap.const ℝ Plane (B.resolvedVertex i.castSucc 0))
   else
@@ -1611,7 +1610,7 @@ theorem resolvedSegment_indices_close (i j : Fin B.resolvedWalk.length) {x : Pla
         {B.resolvedWalk.getVert j.val, B.resolvedWalk.getVert (j.val + 1)}).Nonempty := by
     by_contra h
     rw [Finset.not_nonempty_iff_eq_empty.mp h, PlaneComplex.cellCarrier] at hx
-    simpa using hx
+    simp at hx
   exact B.resolvedEdge_indices_close i j hne
 
 theorem resolvedSegment_inter_of_succ_eq (i j : Fin B.resolvedWalk.length)
@@ -1658,7 +1657,7 @@ theorem resolvedSegment_inter_of_succ_eq (i j : Fin B.resolvedWalk.length)
       {B.arrangementMesh.toPlaneComplex.position
         (B.resolvedWalk.getVert (i.val + 1))} := by
     ext x
-    simp [eq_comm]
+    simp []
   rw [himage, convexHull_singleton]
   change {B.arrangementMesh.toPlaneComplex.position
       (B.resolvedWalk.getVert (i.val + 1))} = {B.resolvedVertex i.succ}
@@ -1683,7 +1682,6 @@ theorem resolvedEdgeGlobalParameter_agree (i j : Fin B.resolvedWalk.length) {x :
       exact hij
     rw [hxShared, B.resolvedEdgeGlobalParameter_apply_right, hvertex,
       B.resolvedEdgeGlobalParameter_apply_left]
-    norm_num
     exact_mod_cast hij
   · have hxShared : x = B.resolvedVertex j.succ := by
       have hxInter : x ∈ segment ℝ (B.resolvedVertex j.castSucc)
@@ -1698,7 +1696,6 @@ theorem resolvedEdgeGlobalParameter_agree (i j : Fin B.resolvedWalk.length) {x :
     symm
     rw [hxShared, B.resolvedEdgeGlobalParameter_apply_right, hvertex,
       B.resolvedEdgeGlobalParameter_apply_left]
-    norm_num
     exact_mod_cast hji
 
 /-- Piecewise-affine coordinate along the whole resolved arc. -/
@@ -1751,17 +1748,14 @@ theorem resolvedGlobalParameter_injectiveOn :
       · have hsucc : i.val + 1 = j.val := by
           have hle : i.val + 1 ≤ j.val := by omega
           have hle' : (j.val : ℝ) ≤ i.val + 1 := by
-            norm_num at hxy ⊢
             linarith [ht.2, hu.1]
           have hleNat' : j.val ≤ i.val + 1 := by exact_mod_cast hle'
           exact Nat.le_antisymm hle hleNat'
         have ht1 : t = 1 := by
-          norm_num at hxy
           have hsR : (i.val : ℝ) + 1 = j.val := by exact_mod_cast hsucc
           rw [← hsR] at hxy
           linarith [hu.1, ht.2]
         have hu0 : u = 0 := by
-          norm_num at hxy
           have hsR : (i.val : ℝ) + 1 = j.val := by exact_mod_cast hsucc
           rw [← hsR, ht1] at hxy
           linarith
@@ -1772,17 +1766,14 @@ theorem resolvedGlobalParameter_injectiveOn :
       · have hsucc : j.val + 1 = i.val := by
           have hle : j.val + 1 ≤ i.val := by omega
           have hle' : (i.val : ℝ) ≤ j.val + 1 := by
-            norm_num at hxy ⊢
             linarith [hu.2, ht.1]
           have hleNat' : i.val ≤ j.val + 1 := by exact_mod_cast hle'
           exact Nat.le_antisymm hle hleNat'
         have hu1 : u = 1 := by
-          norm_num at hxy
           have hsR : (j.val : ℝ) + 1 = i.val := by exact_mod_cast hsucc
           rw [← hsR] at hxy
           linarith [ht.1, hu.2]
         have ht0 : t = 0 := by
-          norm_num at hxy
           have hsR : (j.val : ℝ) + 1 = i.val := by exact_mod_cast hsucc
           rw [← hsR, hu1] at hxy
           linarith
@@ -1919,8 +1910,8 @@ theorem resolvedGlobalParameter_finish :
 /-- Affine inclusion of the real axis into the plane. -/
 def realAxisLinear : ℝ →ₗ[ℝ] Plane where
   toFun t := planePoint t 0
-  map_add' := by intro x y; ext i <;> fin_cases i <;> simp [planePoint]
-  map_smul' := by intro c x; ext i <;> fin_cases i <;> simp [planePoint]
+  map_add' := by intro x y; ext i ; fin_cases i <;> simp [planePoint]
+  map_smul' := by intro c x; ext i ; fin_cases i <;> simp [planePoint]
 
 def realAxisAffine : ℝ →ᵃ[ℝ] Plane := realAxisLinear.toAffineMap
 

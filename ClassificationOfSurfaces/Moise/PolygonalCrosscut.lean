@@ -67,7 +67,7 @@ def insertZeroVertex (J : PolygonalCircle) (p : Plane) : ZMod (J.n + 1) → Plan
 
 @[simp] theorem insertZeroVertex_zero (J : PolygonalCircle) (p : Plane) :
     J.insertZeroVertex p 0 = p := by
-  simp [insertZeroVertex, ZMod.val_natCast]
+  simp [insertZeroVertex]
 
 theorem insertZeroVertex_natCast (J : PolygonalCircle) (p : Plane) {m : ℕ}
     (hm0 : 0 < m) (hm : m < J.n + 1) :
@@ -358,8 +358,7 @@ theorem disjoint_insertZero_last_next (J : PolygonalCircle) {p : Plane}
   have hp' : p ∈ segment ℝ (J.vertex 0) (J.vertex 1) := by
     simpa only [edgeSegment, zero_add] using hp
   have hbase := J.consecutive_inter 0
-  unfold edgeSegment at hbase
-  simp only [zero_add, one_add_one_eq_two] at hbase
+  simp only [zero_add] at hbase
   rw [Set.disjoint_left]
   intro x hxLast hxNext
   have hxEdge0 : x ∈ J.edgeSegment 0 := by
@@ -474,7 +473,7 @@ theorem insertZero_nonadjacent_disjoint (J : PolygonalCircle) {p : Plane}
     · intro x hx
       have hxOld : x ∈ J.edgeSegment 0 ∩ J.edgeSegment (l : ZMod J.n) :=
         ⟨J.insertZero_first_subset_edge_zero hp hx.1, hx.2⟩
-      simpa [hOld] using hxOld
+      simp [hOld] at hxOld
     · exact Set.empty_subset _
   by_cases hmn : m = J.n
   · rw [hmn] at hij hprev hnext ⊢
@@ -527,7 +526,7 @@ theorem insertZero_nonadjacent_disjoint (J : PolygonalCircle) {p : Plane}
     · intro x hx
       have hxOld : x ∈ J.edgeSegment 0 ∩ J.edgeSegment (l : ZMod J.n) :=
         ⟨J.insertZero_last_subset_edge_zero hp hx.1, hx.2⟩
-      simpa [hOld] using hxOld
+      simp [hOld] at hxOld
     · exact Set.empty_subset _
   have hmpos : 0 < m := Nat.pos_of_ne_zero hm0
   have hmlt : m < J.n := lt_of_le_of_ne hmle hmn
@@ -566,7 +565,7 @@ theorem insertZero_nonadjacent_disjoint (J : PolygonalCircle) {p : Plane}
     · intro x hx
       have hxOld : x ∈ J.edgeSegment (m : ZMod J.n) ∩ J.edgeSegment 0 :=
         ⟨hx.1, J.insertZero_first_subset_edge_zero hp hx.2⟩
-      simpa [hOld] using hxOld
+      simp [hOld] at hxOld
     · exact Set.empty_subset _
   by_cases hln : l = J.n
   · rw [hln] at hij hprev hnext ⊢
@@ -608,7 +607,7 @@ theorem insertZero_nonadjacent_disjoint (J : PolygonalCircle) {p : Plane}
     · intro x hx
       have hxOld : x ∈ J.edgeSegment (m : ZMod J.n) ∩ J.edgeSegment 0 :=
         ⟨hx.1, J.insertZero_last_subset_edge_zero hp hx.2⟩
-      simpa [hOld] using hxOld
+      simp [hOld] at hxOld
     · exact Set.empty_subset _
   have hlpos : 0 < l := Nat.pos_of_ne_zero hl0
   have hllt : l < J.n := lt_of_le_of_ne hlle hln
@@ -730,7 +729,7 @@ def rotate (J : PolygonalCircle) (a : ZMod J.n) : PolygonalCircle where
   three_le := J.three_le
   vertex i := J.vertex (i + a)
   adjacent_ne i := by
-    convert J.adjacent_ne (i + a) using 1 <;> ring
+    convert J.adjacent_ne (i + a) using 1 ; ring
   consecutive_inter i := by
     convert J.consecutive_inter (i + a) using 1 <;> ring
   nonadjacent_disjoint i j hij hprev hnext := by
@@ -742,7 +741,7 @@ def rotate (J : PolygonalCircle) (a : ZMod J.n) : PolygonalCircle where
       (fun h => hnext (add_right_cancel (by calc
         j + a = i + a + 1 := h
         _ = (i + 1) + a := by ring)))
-    convert h using 1 <;> ring
+    convert h using 1 ; ring
 
 @[simp] theorem rotate_n (J : PolygonalCircle) (a : ZMod J.n) :
     (J.rotate a).n = J.n := rfl
@@ -763,11 +762,11 @@ theorem rotate_carrier (J : PolygonalCircle) (a : ZMod J.n) :
     ⋃ i : ZMod J.n, J.edgeSegment i
   apply Set.Subset.antisymm
   · intro p hp
-    simp only [carrier, Set.mem_iUnion] at hp ⊢
+    simp only [Set.mem_iUnion] at hp ⊢
     obtain ⟨i, hi⟩ := hp
     exact ⟨i + a, by rwa [J.rotate_edgeSegment a i] at hi⟩
   · intro p hp
-    simp only [carrier, Set.mem_iUnion] at hp ⊢
+    simp only [Set.mem_iUnion] at hp ⊢
     obtain ⟨i, hi⟩ := hp
     refine ⟨i - a, ?_⟩
     rw [J.rotate_edgeSegment]
@@ -1313,7 +1312,7 @@ theorem forwardCutEdgeSegment_of_lt {k m : ℕ} (hm : m < k) :
   congr 2
   rw [Nat.cast_add, Nat.cast_one]
 
-theorem forwardCutEdgeSegment_last {k : ℕ} (hk : k < J.n)
+theorem forwardCutEdgeSegment_last {k : ℕ} (_ : k < J.n)
     (hP : J.vertex 0 = C.P) (hQ : J.vertex (k : ZMod J.n) = C.Q) :
     forwardCutEdgeSegment (J := J) k (k : ZMod (k + 1)) = segment ℝ C.Q C.P := by
   unfold forwardCutEdgeSegment
@@ -1329,7 +1328,7 @@ theorem forwardCutEdgeSegment_last {k : ℕ} (hk : k < J.n)
   simp only [Nat.cast_zero]
   rw [hP]
 
-theorem forwardCutVertex_adjacent_ne {k : ℕ} (hk2 : 2 ≤ k) (hk : k < J.n)
+theorem forwardCutVertex_adjacent_ne {k : ℕ} (_ : 2 ≤ k) (_ : k < J.n)
     (hP : J.vertex 0 = C.P) (hQ : J.vertex (k : ZMod J.n) = C.Q)
     (i : ZMod (k + 1)) :
     forwardCutVertex (J := J) k i ≠ forwardCutVertex (J := J) k (i + 1) := by
@@ -1546,7 +1545,7 @@ theorem forwardCutCircle_carrier {k : ℕ} (hk2 : 2 ≤ k) (hk : k + 1 < J.n)
       change x ∈ forwardCutEdgeSegment (J := J) k (k : ZMod (k + 1))
       rwa [C.forwardCutEdgeSegment_last (by omega) hP hQ]
 
-theorem endpoints_mem_forwardArc {k : ℕ} (hk2 : 2 ≤ k) (hk : k < J.n)
+theorem endpoints_mem_forwardArc {k : ℕ} (hk2 : 2 ≤ k) (_ : k < J.n)
     (hP : J.vertex 0 = C.P) (hQ : J.vertex (k : ZMod J.n) = C.Q) :
     C.P ∈ forwardArc (J := J) k ∧ C.Q ∈ forwardArc (J := J) k := by
   constructor
@@ -1568,8 +1567,8 @@ theorem endpoints_mem_forwardArc {k : ℕ} (hk2 : 2 ≤ k) (hk : k < J.n)
         congrArg (fun q : ℕ => (q : ZMod J.n)) (by omega)
       _ = ((k - 1 : ℕ) : ZMod J.n) + 1 := by rw [Nat.cast_add, Nat.cast_one]
 
-theorem forwardArc_interior_nonempty {k : ℕ} (hk2 : 2 ≤ k) (hk : k < J.n)
-    (hP : J.vertex 0 = C.P) (hQ : J.vertex (k : ZMod J.n) = C.Q) :
+theorem forwardArc_interior_nonempty {k : ℕ} (hk2 : 2 ≤ k) (_ : k < J.n)
+    (hP : J.vertex 0 = C.P) (_ : J.vertex (k : ZMod J.n) = C.Q) :
     (forwardArc (J := J) k \ {C.P, C.Q}).Nonempty := by
   refine ⟨J.vertex 1, ?_, ?_⟩
   · simp only [forwardArc, Set.mem_iUnion]
@@ -1609,7 +1608,7 @@ theorem backwardArc_subset_carrier {k : ℕ} :
   have hx' := forwardArc_subset_carrier (J := J.rotate (k : ZMod J.n)) hx
   rwa [J.rotate_carrier] at hx'
 
-theorem rotate_edgeSegment_nat {k m : ℕ} (hk : k < J.n) (hm : m + k < J.n) :
+theorem rotate_edgeSegment_nat {k m : ℕ} (_ : k < J.n) (_ : m + k < J.n) :
     (J.rotate (k : ZMod J.n)).edgeSegment (m : ZMod J.n) =
       J.edgeSegment (m + k : ZMod J.n) := by
   rw [J.rotate_edgeSegment]
@@ -1824,7 +1823,7 @@ theorem backwardCutCircle_carrier {k : ℕ} (hk2 : 2 ≤ k) (hk : k + 1 < J.n)
   unfold backwardCutCircle
   dsimp only
   rw [PolygonalCircle.ProperChord.forwardCutCircle_carrier]
-  simp only [backwardArc, ProperChord.symm, ProperChord.rotate, segment_symm]
+  simp only [backwardArc, ProperChord.symm, ProperChord.rotate]
 
 theorem backwardArc_interior_nonempty {k : ℕ} (hk2 : 2 ≤ k) (hk : k + 1 < J.n)
     (hP : J.vertex 0 = C.P) (hQ : J.vertex (k : ZMod J.n) = C.Q) :
@@ -1913,7 +1912,6 @@ theorem rotate_edgeCrossed_iff (J : PolygonalCircle) (a i : ZMod J.n) (P : Plane
     (J.rotate a).EdgeCrossed i P ↔ J.EdgeCrossed (i + a) P := by
   change SegmentCrossed (J.vertex (i + a)) (J.vertex ((i + 1) + a)) P ↔
     SegmentCrossed (J.vertex (i + a)) (J.vertex (i + a + 1)) P
-  congr 3
   abel
 
 namespace ProperChord
@@ -1933,7 +1931,6 @@ theorem forwardCutCircle_edgeCrossed_of_lt {k m : ℕ} (hk2 : 2 ≤ k)
   have hsucc : (m : ZMod (k + 1)) + 1 = (m + 1 : ℕ) := by
     rw [Nat.cast_add, Nat.cast_one]
   rw [hsucc, forwardCutVertex_natCast (J := J) (by omega)]
-  congr 3
   rw [Nat.cast_add, Nat.cast_one]
 
 theorem forwardCutCircle_edgeCrossed_last {k : ℕ} (hk2 : 2 ≤ k)
@@ -2074,7 +2071,7 @@ theorem index_parity_cutCircles {k : ℕ} (hk2 : 2 ≤ k)
     hcountJ, hcountF, hcountB]
   change (A + B) % 2 = ((A + e) % 2 + (B + e) % 2) % 2
   dsimp [e]
-  by_cases hcross : SegmentCrossed C.P C.Q P <;> simp [hcross] <;> omega
+  by_cases hcross : SegmentCrossed C.P C.Q P <;> simp [hcross] ; omega
 
 end ProperChord
 
@@ -2616,13 +2613,13 @@ theorem triangle_interior_side (C : G.MeshCrosscut M) (T : M.Triangle) :
         G.disjoint_interior13_interior23 hsplit ⟨p, hp, hp23⟩
 
 /-- Select the maximal triangles lying on the `J13` side of the crosscut. -/
-noncomputable def side13Mesh (C : G.MeshCrosscut M) : TriangleMesh := by
+noncomputable def side13Mesh (_ : G.MeshCrosscut M) : TriangleMesh := by
   classical
   exact M.restrictTriangles fun t =>
     (interior (M.triangleCarrier t) ∩ G.J13.interiorRegion).Nonempty
 
 /-- Select the maximal triangles lying on the `J23` side of the crosscut. -/
-noncomputable def side23Mesh (C : G.MeshCrosscut M) : TriangleMesh := by
+noncomputable def side23Mesh (_ : G.MeshCrosscut M) : TriangleMesh := by
   classical
   exact M.restrictTriangles fun t =>
     (interior (M.triangleCarrier t) ∩ G.J23.interiorRegion).Nonempty

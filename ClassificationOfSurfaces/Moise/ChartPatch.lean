@@ -143,8 +143,8 @@ theorem closedBall_half_subset_interior_chartDiamond :
   have hqint : q ∈ interior diamondPatch := strictlyInDiamond_subset_interior hq
   rw [chartDiamondComplex_support]
   change x ∈ interior
-    (chartDiamondAffineEquiv.toHomeomorphOfFiniteDimensional '' diamondPatch)
-  rw [← chartDiamondAffineEquiv.toHomeomorphOfFiniteDimensional.image_interior]
+    (chartDiamondAffineEquiv.toContinuousAffineEquiv.toHomeomorph '' diamondPatch)
+  rw [← chartDiamondAffineEquiv.toContinuousAffineEquiv.toHomeomorph.image_interior]
   exact ⟨q, hqint, chartDiamondAffineEquiv.apply_symm_apply x⟩
 
 /-- The two-triangle right half of the fixed chart diamond. -/
@@ -471,7 +471,7 @@ theorem ChartKind.patchComplex_isModelBoundary_facewise (k : ChartKind) :
           · exact hxt v hvt
         · intro hx
           apply hx r
-          simp [b]
+          simp []
 
 /-- Every explicitly designated patch-boundary edge is an edge of the patch complex. -/
 theorem ChartKind.mem_patchComplex_edges_of_mem_patchBoundaryEdges (k : ChartKind)

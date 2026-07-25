@@ -409,7 +409,6 @@ theorem markedFace_parameter_side (point : P → Plane) (p : P)
         change 0 ≤ M.position v 0 - point p 0 at hline
         rw [hpoint] at hline
         simpa [M, AffineMap.lineMap_apply_module] using hline
-
       · have hΔ' : K.position (K.edgeSecond i) 0 - K.position (K.edgeFirst i) 0 < 0 := by
           exact lt_of_le_of_ne (le_of_not_gt hΔ) (sub_ne_zero.mpr hx.symm)
         left

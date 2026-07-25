@@ -153,7 +153,7 @@ theorem midpointPosition_nonneg (w : K.MidpointVertex) (u : K.Vertex) :
   · by_cases h : u = v
     · subst u
       simp [midpointPosition]
-    · simp [midpointPosition, Pi.single_apply, h]
+    · simp [midpointPosition, h]
   · simp only [midpointPosition]
     split_ifs <;> norm_num
 
@@ -161,7 +161,7 @@ theorem sum_midpointPosition (w : K.MidpointVertex) :
     ∑ v, K.midpointPosition w v = 1 := by
   rcases w with v | e
   · simp [midpointPosition]
-  · simp [midpointPosition, Finset.sum_ite_irrel, K.card_of_mem_edges e.2]
+  · simp [midpointPosition, K.card_of_mem_edges e.2]
 
 /-- Affine barycentric evaluation from midpoint coordinates to old coordinates. -/
 noncomputable def midpointEvalAffine :
@@ -211,8 +211,7 @@ theorem midpointEval_corner_self
         (x (Sum.inr (K.faceEdge t i)) + x (Sum.inr (K.faceEdge t (i + 2)))) / 2 := by
   rw [K.midpointEvalAffine_eq_sum_of_support hx]
   simp [midpointCornerFace, midpointPosition, K.faceVertex_ne_next t i,
-    K.faceVertex_ne_add_two t i, K.faceEdge_ne_add_two t i,
-    K.faceVertex_ne_next t (i + 2), K.faceVertex_ne_add_two t (i + 1)]
+    K.faceVertex_ne_add_two t i, K.faceEdge_ne_add_two t i]
   ring
 
 theorem midpointEval_corner_next
@@ -225,9 +224,7 @@ theorem midpointEval_corner_next
   have h10 : K.faceVertex t (i + 1) ≠ K.faceVertex t i :=
     (K.faceVertex_ne_next t i).symm
   rw [K.midpointEvalAffine_eq_sum_of_support hx]
-  simp [midpointCornerFace, midpointPosition, K.faceVertex_ne_next t i,
-    K.faceVertex_ne_add_two t i, K.faceEdge_ne_add_two t i,
-    K.faceVertex_ne_next t (i + 1), K.faceVertex_ne_add_two t (i + 1),
+  simp [midpointCornerFace, midpointPosition, K.faceEdge_ne_add_two t i,
     h12, h10]
   ring
 
@@ -241,9 +238,7 @@ theorem midpointEval_corner_prev
   have h21 : K.faceVertex t (i + 2) ≠ K.faceVertex t (i + 1) := by
     simpa only [add_assoc, one_add_one_eq_two] using (K.faceVertex_ne_next t (i + 1)).symm
   rw [K.midpointEvalAffine_eq_sum_of_support hx]
-  simp [midpointCornerFace, midpointPosition, K.faceVertex_ne_next t i,
-    K.faceVertex_ne_add_two t i, K.faceEdge_ne_add_two t i,
-    K.faceVertex_ne_next t (i + 1), K.faceVertex_ne_add_two t (i + 1), h20, h21]
+  simp [midpointCornerFace, midpointPosition, K.faceEdge_ne_add_two t i, h20, h21]
   ring
 
 theorem midpointEval_central_coord
@@ -259,9 +254,8 @@ theorem midpointEval_central_coord
   have he12 : K.faceEdge t (i + 1) ≠ K.faceEdge t (i + 2) := by
     simpa only [add_assoc, one_add_one_eq_two] using K.faceEdge_ne_next t (i + 1)
   rw [K.midpointEvalAffine_eq_sum_of_support hx, K.midpointCentralFace_eq t i]
-  simp [midpointPosition, he01, he02, he12, K.faceEdge_ne_next t i, K.faceEdge_ne_add_two t i,
-    K.faceEdge_ne_next t (i + 1), K.faceVertex_ne_next t i,
-    K.faceVertex_ne_add_two t i, K.faceVertex_ne_next t (i + 1), h12]
+  simp [midpointPosition, he01, he02, he12, K.faceVertex_ne_next t i,
+    K.faceVertex_ne_add_two t i]
   ring
 
 /-- Coefficient of an old vertex recovered from a point of the subdivided simplex. -/
@@ -346,7 +340,7 @@ theorem midpointPosition_support_of_mem_face
         fun h => hv (by rw [h]; exact K.faceVertex_mem t (i + 2 + 1))
       have hv0 : v ≠ K.faceVertex t i :=
         fun h => hv (by rw [h]; exact K.faceVertex_mem t i)
-      simp [midpointPosition, hvi, hvj, hv0]
+      simp [midpointPosition, hvi, hv0]
   · rw [Finset.mem_singleton.mp hs] at hw
     rw [midpointCentralFace] at hw
     obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp hw
@@ -390,15 +384,15 @@ theorem exists_midpointPosition_pos_of_mem_parent
     · subst j
       refine ⟨Sum.inr (K.faceEdge t i), ?_, ?_⟩
       · simp [midpointCornerFace]
-      · simp [midpointPosition, K.faceEdge_val]
+      · simp [midpointPosition]
     · subst j
       refine ⟨Sum.inr (K.faceEdge t (i + 2)), ?_, ?_⟩
       · simp [midpointCornerFace]
-      · simp [midpointPosition, K.faceEdge_val]
+      · simp [midpointPosition]
   · rw [Finset.mem_singleton.mp hcentral]
     refine ⟨Sum.inr (K.faceEdge t j), ?_, ?_⟩
     · simp [midpointCentralFace]
-    · simp [midpointPosition, K.faceEdge_val]
+    · simp [midpointPosition]
 
 /-- A point with strictly positive coordinates on a midpoint child maps to a point with strictly
 positive coordinates on its parent. -/
@@ -540,7 +534,7 @@ theorem faceEdge_union_eq_face_of_ne
       obtain ⟨k, rfl⟩ := K.exists_faceVertex_eq_of_mem t hv
       rcases (by decide :
           ∀ i k : ZMod 3, k = i ∨ k = i + 1 ∨ k = i + 2) i k with
-        rfl | rfl | rfl <;> simp [K.faceEdge_val]
+        rfl | rfl | rfl <;> simp []
   · subst j
     apply Finset.Subset.antisymm
     · exact Finset.union_subset (K.faceEdge_subset_face t i)
@@ -549,7 +543,7 @@ theorem faceEdge_union_eq_face_of_ne
       obtain ⟨k, rfl⟩ := K.exists_faceVertex_eq_of_mem t hv
       rcases (by decide :
           ∀ i k : ZMod 3, k = i ∨ k = i + 1 ∨ k = i + 2) i k with
-        rfl | rfl | rfl <;> simp [K.faceEdge_val]
+        rfl | rfl | rfl <;> simp []
 
 /-- Two distinct old edges determine their triangular parent. -/
 theorem face_eq_of_two_edges_subset
@@ -1121,7 +1115,7 @@ noncomputable def midpointCornerWeights (t : K.Face) (i : ZMod 3)
     (p : K.Vertex → ℝ) :
     K.midpointCornerWeights t i p (Sum.inr (K.faceEdge t (i + 2))) =
       2 * p (K.faceVertex t (i + 2)) := by
-  simp [midpointCornerWeights, K.faceEdge_ne_add_two t i,
+  simp [midpointCornerWeights,
     (K.faceEdge_ne_add_two t i).symm]
 
 theorem midpointCornerWeights_support (t : K.Face) (i : ZMod 3)
@@ -1347,7 +1341,7 @@ theorem midpointEval_mem_parentFace
   exact K.midpointEvalAffine_support t hs hx hv
 
 theorem midpointEval_affineOnFace
-    {s : Finset K.MidpointVertex} (hs : s ∈ K.midpointFaces) :
+    {s : Finset K.MidpointVertex} (_ : s ∈ K.midpointFaces) :
     ∃ a : (K.MidpointVertex → ℝ) →ᵃ[ℝ] (K.Vertex → ℝ),
       ∀ x : K.midpointComplex.realization,
         x ∈ K.midpointComplex.faceCarrier s → (K.midpointEval x).1 = a x.1 :=

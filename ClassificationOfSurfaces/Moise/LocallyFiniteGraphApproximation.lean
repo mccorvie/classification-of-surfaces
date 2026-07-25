@@ -812,7 +812,7 @@ theorem edgeCentralCarrier_nonempty (e : K.Edge) :
     have hpCentral : p ∈ G.edgeCentralCarrier e := by
       exact ⟨hp, by simpa [edgeEndpointNeighborhood, U, V] using hpUV⟩
     rw [hcentral] at hpCentral
-    simpa using hpCentral
+    simp at hpCentral
   have hfirst : (G.edgeImage e ∩ U).Nonempty := by
     refine ⟨G.vertexImage (K.edgeFirst e),
       (G.vertexImage_mem_edgeImage_iff (K.edgeFirst e) e).mpr (K.edgeFirst_mem e), ?_⟩
@@ -1787,7 +1787,7 @@ theorem exists_centralPolygonalArc (e : K.Edge) : Nonempty (G.CentralPolygonalAr
     ext i
     fin_cases i
     · exact hxy0
-    · simpa [hx1, hy1]
+    · simp [hx1, hy1]
   obtain ⟨f, hpl, hfinj, hvertex, hclose, hconvex, -⟩ :=
     unitSegmentComplex.exists_graph_PL_approximation_facewise
       unitSegmentComplex_graph hcont hinj (G.centralTubeRadius_pos e)

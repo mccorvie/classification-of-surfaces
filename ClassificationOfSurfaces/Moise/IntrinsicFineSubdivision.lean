@@ -56,14 +56,14 @@ theorem face_affineCombination_eq (t : K.Face) (x : K.realization)
     · simp [v]
     · intro u _ huv
       have huw : u.1 ≠ w := fun h => huv (Subtype.ext h)
-      simp [Pi.single_apply, huw]
+      simp [huw]
     · simp
   · have hxw : x.1 w = 0 := hx w hw
     rw [hxw]
     apply Finset.sum_eq_zero
     intro v _
     have hvw : v.1 ≠ w := fun h => hw (h ▸ v.2)
-    simp [Pi.single_apply, hvw]
+    simp [hvw]
 
 /-- An affine image of a face lies in the convex hull of the images of its three vertices. -/
 theorem affine_mem_convexHull_facePoints
@@ -146,8 +146,7 @@ theorem midpointPosition_faceEdge (t : K.Face) (i : ZMod 3) :
       simp [midpoint, AffineMap.lineMap_apply_module, hvi]
     · have hvEdge : v ∉ (K.faceEdge t i).1 := by
         simp [hvi, hvj]
-      simp [midpointPosition, midpoint, AffineMap.lineMap_apply_module,
-        hvEdge, hvi, hvj]
+      simp [midpointPosition, midpoint, AffineMap.lineMap_apply_module, hvi, hvj]
 
 theorem midpointEval_facePoint
     (s : K.midpointComplex.Face) (w : s.1) :
@@ -160,9 +159,9 @@ theorem midpointEval_facePoint
     (Pi.single q 1 : K.MidpointVertex → ℝ) u • K.midpointPosition u) =
       K.midpointPosition q
   rw [Finset.sum_eq_single q]
-  · simp [Pi.single_apply]
+  · simp []
   · intro u _ huw
-    simp [Pi.single_apply, huw]
+    simp [huw]
   · simp
 
 theorem midpointEvalAffine_facePoint
@@ -622,7 +621,7 @@ end OpenExhaustion
 /-- Every proper open subset of a finite intrinsic complex has a compactly nested exhaustion by
 finite subcomplexes of faithful subdivisions. -/
 theorem exists_openExhaustion (K : IntrinsicTwoComplex) {U : Set K.realization}
-    (hU : IsOpen U) (hUc : Uᶜ.Nonempty) : Nonempty (K.OpenExhaustion U) := by
+    (_ : IsOpen U) (_ : Uᶜ.Nonempty) : Nonempty (K.OpenExhaustion U) := by
   refine ⟨⟨fun n => Classical.choice (K.exists_openSubcomplex
     (isCompact_frontierCore U n) isOpen_interior
     (frontierCore_subset_interior_succ U n))⟩⟩

@@ -168,8 +168,7 @@ theorem PlaneComplex.frontier_cellCarrier_coveredBy_oneSkeleton (K : PlaneComple
       PlaneComplex.cellCarrier, S.range_faceOpposite_points]
     congr 1
     ext z
-    simp only [Set.mem_image, Finset.mem_coe, Set.mem_compl_iff, Set.mem_singleton_iff,
-      Set.mem_range]
+    simp only [Set.mem_image, Finset.mem_coe, Set.mem_compl_iff, Set.mem_singleton_iff]
     constructor
     · rintro ⟨j, hji, rfl⟩
       refine ⟨q j, ?_, rfl⟩
@@ -258,7 +257,7 @@ theorem PlaneComplex.position_not_mem_cellCarrier_of_not_mem (K : PlaneComplex)
     convexHull ℝ (K.position '' (({v} : Finset K.Vertex) : Set K.Vertex)) ∩
       convexHull ℝ (K.position '' (t : Set K.Vertex)) at hp
   rw [hinter, hempty] at hp
-  simpa using hp
+  simp at hp
 
 /-- A graph face meets a maximal-cell frontier only over vertices shared with that cell. -/
 theorem PlaneComplex.cellCarrier_inter_frontier_subset_sharedCarrier (K : PlaneComplex)
@@ -298,7 +297,7 @@ theorem PlaneComplex.cellCarrier_inter_frontier_subset_sharedCarrier (K : PlaneC
 /-- Removing from a graph face the carrier of its vertices shared with a maximal triangle leaves
 a preconnected set.  In dimension one this is a point, a segment, or a half-open segment. -/
 theorem PlaneComplex.isPreconnected_cellCarrier_sdiff_sharedCarrier (K : PlaneComplex)
-    {s t : Finset K.Vertex} (hs : s ∈ K.oneSkeleton.simplexes) (ht : t ∈ K.cells)
+    {s t : Finset K.Vertex} (hs : s ∈ K.oneSkeleton.simplexes) (_ : t ∈ K.cells)
     (hnot : ¬s ⊆ t) :
     IsPreconnected (K.oneSkeleton.cellCarrier s \ K.cellCarrier (s ∩ t)) := by
   have hspos : 0 < s.card := Finset.card_pos.mpr (K.nonempty_of_mem s
@@ -309,7 +308,7 @@ theorem PlaneComplex.isPreconnected_cellCarrier_sdiff_sharedCarrier (K : PlaneCo
     have hv : v ∉ t := by simpa using hnot
     have hinter : ({v} : Finset K.Vertex) ∩ t = ∅ := by simp [hv]
     rw [hinter]
-    simp only [K.oneSkeleton_cellCarrier, PlaneComplex.cellCarrier, Finset.coe_empty,
+    simp only [PlaneComplex.cellCarrier, Finset.coe_empty,
       Set.image_empty, convexHull_empty, Set.sdiff_empty]
     exact (convex_convexHull ℝ _).isPreconnected
   · obtain ⟨v, w, hvw, rfl⟩ := Finset.card_eq_two.mp hstwo
@@ -394,7 +393,7 @@ theorem PlaneComplex.isPreconnected_cellCarrier_sdiff_sharedCarrier (K : PlaneCo
           line.continuous_of_finiteDimensional.continuousOn
       · have hinter : ({v, w} : Finset K.Vertex) ∩ t = ∅ := by ext z; simp [hv, hw]
         rw [hinter]
-        simp only [K.oneSkeleton_cellCarrier, PlaneComplex.cellCarrier, Finset.coe_empty,
+        simp only [PlaneComplex.cellCarrier, Finset.coe_empty,
           Set.image_empty, convexHull_empty, Set.sdiff_empty]
         exact (convex_convexHull ℝ _).isPreconnected
 
@@ -908,7 +907,6 @@ theorem IsPLOnSet.comp_polygonal_embedding (J J' : PolygonalCircle)
     intro s hs
     simpa [B, L'.active_cellCarrier] using
       hL'affine (s.map L'.activeEmbedding) (L'.mem_activeSimplexes.mp hs)
-
   have hBpreimage (v : B.Vertex) : ∃ x ∈ J.carrier, f x = B.position v := by
     have hv : B.position v ∈ J'.carrier := hBsupport ▸ hBvertex v
     rw [← himage] at hv
@@ -1291,7 +1289,7 @@ theorem pl_extension_of_triangle_boundary {C C' : Set Plane}
           convexHull ℝ (A.position '' (({v} : Finset A.Vertex) : Set A.Vertex)) ∩
             convexHull ℝ (A.position '' (t : Set A.Vertex)) at hpBoth
         rw [hinter] at hpBoth
-        simpa [PlaneComplex.cellCarrier] using hpBoth
+        simp at hpBoth
       have htcard : t.card = 2 := by
         have htpos : 0 < t.card := Finset.card_pos.mpr (A.nonempty_of_mem t ht)
         have htle := hAgraph t ht
@@ -1598,7 +1596,8 @@ theorem PlaneComplex.exists_graphReplacement_cell_extension (K : PlaneComplex)
     intro x hx
     exact K.frontier_cellCarrier_coveredBy_oneSkeleton ht x hx
   have hSsupport : S.support = A := by
-    change ((G.markedEdgeSubdivision (G.graphBreakpointPoint hcont D C)).restrictToSet A).support = A
+    change
+      ((G.markedEdgeSubdivision (G.graphBreakpointPoint hcont D C)).restrictToSet A).support = A
     exact G.markedEdgeSubdivision_restrictToSet_support_eq
       (G.graphBreakpointPoint hcont D C) K.oneSkeleton_isGraph A hAcovered
   have haffineR : ∀ u ∈ R.simplexes,

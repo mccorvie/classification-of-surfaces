@@ -963,7 +963,7 @@ when a Radó chart replaces an abstract old patch by a polygonal patch in chart 
 theorem exists_cellwisePLFilling_retriangulation
     (hvertices : K.FaceFillingsVerticesAvoidClosedRegions
       (hcont := hcont) (hinj := hinj) (D := D) (C := C)) :
-    ∃ (L : PlaneComplex) (hLpure : L.IsPure2)
+    ∃ (L : PlaneComplex) (_ : L.IsPure2)
       (e : L.support ≃ₜ K.realization),
       ∀ p : L.support,
         K.cellwisePLFillingMap

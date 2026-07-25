@@ -302,7 +302,7 @@ theorem adaptiveGlobalFanFaceMap_mem_faceCarrier_iff_supported
       simpa only [adaptiveGlobalFanFaceVerticesInCarrier,
         Finset.mem_filter, v.2, true_and] using hv
     rw [K.mem_faceCarrier_iff] at hvNot
-    push_neg at hvNot
+    push Not at hvNot
     obtain ⟨k, hkb, hvk⟩ := hvNot
     have hvkPos : 0 < v.1.1.1 k :=
       lt_of_le_of_ne (v.1.1.2.1.1 k)

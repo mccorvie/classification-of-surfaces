@@ -85,7 +85,7 @@ variable (K : IntrinsicTwoComplex)
 /-- The chosen ordering of one intrinsic face, viewed as an embedding into all vertices. -/
 noncomputable def faceVertexEmbedding (t : K.Face) : Fin 3 ↪ K.Vertex where
   toFun i := (K.faceVertexEquiv t i).1
-  inj' := fun i j hij => (K.faceVertexEquiv t).injective (Subtype.ext hij)
+  inj' := fun _ _ hij => (K.faceVertexEquiv t).injective (Subtype.ext hij)
 
 /-- The two standard indices belonging to cyclic side `i`. -/
 noncomputable def faceStandardEdge (i : ZMod 3) : Finset (Fin 3) :=
@@ -258,8 +258,7 @@ noncomputable def faceReindexFromStandard (t : K.Face)
     K.faceReindexToStandard t (K.faceReindexFromStandard t z) = z := by
   apply Subtype.ext
   funext i
-  simp [faceReindexToStandard, faceReindexFromStandard,
-    (K.faceVertexEquiv t i).2]
+  simp [faceReindexToStandard, faceReindexFromStandard]
 
 theorem continuous_faceReindexToStandard (t : K.Face) :
     Continuous (K.faceReindexToStandard t) := by
@@ -403,7 +402,7 @@ theorem facePlaneInverseAffine_standardVertex (t : K.Face) (j : Fin 3) :
         apply hvj
         change v = (K.faceVertexEquiv t j).1
         exact congrArg Subtype.val ((K.faceVertexEquiv t).symm_apply_eq.mp h)
-      simp [Pi.single_apply, hkj, hvj]
+      simp [hkj, hvj]
   · rw [facePlaneInverseAffine, AffineMap.comp_apply,
       K.faceCoordExtensionAffine_apply_of_notMem _ _ hv]
     have hvj : v ≠ K.faceVertexEmbedding t j := by

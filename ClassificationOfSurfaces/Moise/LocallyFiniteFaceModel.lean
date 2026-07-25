@@ -153,7 +153,7 @@ noncomputable def facePlaneHomeomorph (f : K.Face) :
 /-- The chosen ordering of a locally finite face, viewed in the global vertex type. -/
 noncomputable def faceVertexEmbedding (f : K.Face) : Fin 3 ↪ K.Vertex where
   toFun j := (K.faceVertexEquiv f j).1
-  inj' := fun j k h ↦ (K.faceVertexEquiv f).injective (Subtype.ext h)
+  inj' := fun _ _ h ↦ (K.faceVertexEquiv f).injective (Subtype.ext h)
 
 /-- The standard corner corresponding to the globally chosen first endpoint of a face edge. -/
 noncomputable def faceEdgeFirstIndex (f : K.Face) (i : ZMod 3) : Fin 3 :=
@@ -239,7 +239,7 @@ noncomputable def faceEdgeParameterAffine (f : K.Face) (i : ZMod 3) :
   rw [standardTrianglePlaneComplex_position] at hfirst hsecond
   rw [faceEdgeParameterAffine, faceEdgeSourcePoint, AffineMap.comp_apply,
     AffineMap.apply_lineMap, hfirst, hsecond]
-  simp [AffineMap.lineMap_apply_module, Pi.single_apply, hne]
+  simp [AffineMap.lineMap_apply_module, hne]
 
 theorem faceEdgeSourcePoint_mem_standardEdge (f : K.Face) (i : ZMod 3)
     {r : ℝ} (hr : r ∈ Set.Icc (0 : ℝ) 1) :
@@ -458,7 +458,7 @@ theorem faceReindexToStandard_edgeSimplexPath (f : K.Face) (i : ZMod 3)
         apply K.edgeFirst_ne_edgeSecond e
         rw [← K.faceVertexEmbedding_faceEdgeFirstIndex f i,
           ← K.faceVertexEmbedding_faceEdgeSecondIndex f i, h]
-      simp [AffineMap.lineMap_apply_module, Pi.single_apply, hne]
+      simp [AffineMap.lineMap_apply_module, hne]
     · have hj : j = K.faceEdgeSecondIndex f i := by
         apply (K.faceVertexEmbedding f).injective
         rw [K.faceVertexEmbedding_faceEdgeSecondIndex f i]
@@ -476,7 +476,7 @@ theorem faceReindexToStandard_edgeSimplexPath (f : K.Face) (i : ZMod 3)
         apply K.edgeFirst_ne_edgeSecond e
         rw [← K.faceVertexEmbedding_faceEdgeFirstIndex f i,
           ← K.faceVertexEmbedding_faceEdgeSecondIndex f i, ← h]
-      simp [AffineMap.lineMap_apply_module, Pi.single_apply, hne]
+      simp [AffineMap.lineMap_apply_module, hne]
   · have hjFirst : j ≠ K.faceEdgeFirstIndex f i := by
       intro h
       subst j
@@ -490,7 +490,7 @@ theorem faceReindexToStandard_edgeSimplexPath (f : K.Face) (i : ZMod 3)
         rw [K.faceVertexEmbedding_faceEdgeSecondIndex f i]
         exact K.edgeSecond_mem e)
     rw [hcoords, extendFaceCoordinates_of_notMem e.1 x hve]
-    simp [AffineMap.lineMap_apply_module, Pi.single_apply, hjFirst, hjSecond]
+    simp [AffineMap.lineMap_apply_module, hjFirst, hjSecond]
 
 /-- The standard plane chart sends the canonical edge-simplex path to the globally oriented
 affine parameter on the corresponding standard side. -/
@@ -519,13 +519,13 @@ theorem facePlaneHomeomorph_edgeSimplexPath (f : K.Face) (i : ZMod 3)
           ((1 - r.1) * if j = K.faceEdgeFirstIndex f i then 1 else 0) •
             standardTrianglePlaneComplex.position j =
         (1 - r.1) • standardTriangleVertex (K.faceEdgeFirstIndex f i) := by
-    simp [standardTrianglePlaneComplex_position]
+    simp []
   have hsecond :
       ∑ j : Fin 3,
           (r.1 * if j = K.faceEdgeSecondIndex f i then 1 else 0) •
             standardTrianglePlaneComplex.position j =
         r.1 • standardTriangleVertex (K.faceEdgeSecondIndex f i) := by
-    simp [standardTrianglePlaneComplex_position]
+    simp []
   rw [hfirst, hsecond, AffineMap.lineMap_apply_module]
 
 theorem edgeCarrier_subset_faceCarrier_of_subset (f : K.Face) (e : K.Edge)

@@ -447,21 +447,21 @@ theorem freeTriangleBaseSegment_eq_oppositeEdgeCarrier (T : M.Triangle) (k : Fin
       convexHull ℝ (((Finset.univ.erase (0 : Fin 3)).image
         (M.position ∘ M.orderedVertex T) : Finset Plane) : Set Plane)
     rw [show (Finset.univ.erase (0 : Fin 3)) = {1, 2} by decide]
-    simp [convexHull_pair, segment_symm, Equiv.swap_apply_def]
+    simp [convexHull_pair, segment_symm]
   · unfold freeTriangleOrder oppositeEdgePoints
     change segment ℝ (M.position (M.orderedVertex T 0))
         (M.position (M.orderedVertex T 2)) =
       convexHull ℝ (((Finset.univ.erase (1 : Fin 3)).image
         (M.position ∘ M.orderedVertex T) : Finset Plane) : Set Plane)
     rw [show (Finset.univ.erase (1 : Fin 3)) = {0, 2} by decide]
-    simp [convexHull_pair, segment_symm, Equiv.swap_apply_def]
+    simp [convexHull_pair]
   · unfold freeTriangleOrder oppositeEdgePoints
     change segment ℝ (M.position (M.orderedVertex T 0))
         (M.position (M.orderedVertex T 1)) =
       convexHull ℝ (((Finset.univ.erase (2 : Fin 3)).image
         (M.position ∘ M.orderedVertex T) : Finset Plane) : Set Plane)
     rw [show (Finset.univ.erase (2 : Fin 3)) = {0, 1} by decide]
-    simp [convexHull_pair, segment_symm, Equiv.swap_apply_def]
+    simp [convexHull_pair]
 
 theorem isGeometricallyFreeTriangle_of_boundaryEdges_card_one (T : M.Triangle)
     (hvertices : M.HasNoIsolatedFrontierVertex T.1)
@@ -648,7 +648,7 @@ theorem isGeometricallyFreeTriangle_of_boundaryEdges_card_two (T : M.Triangle)
     rw [herase]
     rw [hUnion]
     rw [hcarrier, hcarrier]
-    simp [freeTriangleOrder, segment_symm, Equiv.swap_apply_def]
+    simp [freeTriangleOrder]
 
 /-- The finite conclusion used by Moise's cutting induction.  Once a weakly free triangle has
 an edge-neighbor and no isolated frontier vertex, its frontier trace is one of the two
@@ -738,7 +738,7 @@ theorem exists_cutting_diagonal_configuration
       · exact hvT
     · rw [M.card_triangle T.1 T.2]
       have hcardTriple : ({a, b, v} : Finset M.Vertex).card = 3 := by
-        simp [hab, hva, hvb, Ne.symm hva, Ne.symm hvb]
+        simp [hab, Ne.symm hva, Ne.symm hvb]
       omega
   exact ⟨a, b, v, hab, hva, hvb, htriangle, hboundary, hvFrontier⟩
 
@@ -835,7 +835,7 @@ theorem exists_transportedThinKitePatch_inter_boundaryEdge_subset_baseEndpoints
     obtain hempty | hnonempty :=
         (({v, w} : Finset M.Vertex) ∩ M.freeTriangleBaseEdge T k).eq_empty_or_nonempty
     · rw [hempty] at hpCommon
-      simpa using hpCommon
+      simp at hpCommon
     · obtain ⟨x, hx⟩ := hnonempty
       have hsingle : ({v, w} : Finset M.Vertex) ∩ M.freeTriangleBaseEdge T k = {x} := by
         apply Finset.eq_singleton_iff_unique_mem.mpr

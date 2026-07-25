@@ -76,7 +76,7 @@ private theorem abs_sub_le_inv_nat_of_same_grid_side {D : ℕ} (hD : 0 < D)
   by_cases hx1 : x = 1
   · have hy1 : y = 1 := le_antisymm hy.2 (hx1 ▸ hxy)
     rw [hx1, hy1]
-    simp [one_div_nonneg.mpr hDreal.le]
+    simp []
   · have hxlt : x < 1 := lt_of_le_of_ne hx.2 hx1
     let z : ℝ := (D : ℝ) * x
     let k : ℕ := ⌊z⌋₊
@@ -150,7 +150,7 @@ theorem edgeAt_mem_simplexes (i : Fin (Fintype.card K.EdgeFace)) :
 /-- Affine coordinate from `0` to `1` on an enumerated source edge. -/
 noncomputable def edgeParameter (i : Fin (Fintype.card K.EdgeFace)) :
     Plane →ᵃ[ℝ] ℝ :=
-  if hx : K.position (K.edgeFirst i) 0 ≠ K.position (K.edgeSecond i) 0 then
+  if _ : K.position (K.edgeFirst i) 0 ≠ K.position (K.edgeSecond i) 0 then
     (K.position (K.edgeSecond i) 0 - K.position (K.edgeFirst i) 0)⁻¹ •
       (cartesianX - AffineMap.const ℝ Plane (K.position (K.edgeFirst i) 0))
   else
@@ -551,7 +551,6 @@ theorem sampledFace_parameter_side (cuts : ℕ)
         have hline := hnonneg v (huT hv)
         change 0 ≤ M.position v 0 - K.edgeSamplePoint cuts sample 0 at hline
         simpa [edgeSamplePoint, sample, M, AffineMap.lineMap_apply_module] using hline
-
       · have hΔ' : K.position (K.edgeSecond i) 0 - K.position (K.edgeFirst i) 0 < 0 := by
           have hne : K.position (K.edgeSecond i) 0 - K.position (K.edgeFirst i) 0 ≠ 0 :=
             sub_ne_zero.mpr hx.symm
@@ -609,7 +608,6 @@ theorem sampledFace_parameter_side (cuts : ℕ)
         have hline := hnonpos v (huT hv)
         change M.position v 1 - K.edgeSamplePoint cuts sample 1 ≤ 0 at hline
         simpa [edgeSamplePoint, sample, M, AffineMap.lineMap_apply_module] using hline
-
       · have hΔ' : K.position (K.edgeSecond i) 1 - K.position (K.edgeFirst i) 1 < 0 := by
           have hne : K.position (K.edgeSecond i) 1 - K.position (K.edgeFirst i) 1 ≠ 0 :=
             sub_ne_zero.mpr hxy.symm
