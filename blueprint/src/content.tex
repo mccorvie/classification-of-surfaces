@@ -770,6 +770,27 @@ The remaining obligation is to identify canonical polygonal normal forms with
 these fixed benchmark quotients.
 \end{definition}
 
+\begin{lemma}[Canonical carrier and quotient bridge]
+\label{moise:lem:representative_carrier_bridge}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph,
+  LeanEval.Topology.ClassificationOfSurfaces.quotEqvGenHomeomorph,
+  LeanEval.Topology.ClassificationOfSurfaces.eqvGenQuotientCongrRawOfGeneratorMaps}
+\leanok
+\uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives}
+Every one-face polygonal pre-realization is homeomorphic to the exact closed
+unit disc used by the benchmark.  A side occurrence at index $i$ and parameter
+$t$ maps to the boundary coordinate $(i+t)/m$.  Quotienting a raw relation is
+homeomorphic to quotienting by its equivalence closure, so the remaining
+comparison need only identify the two generated equivalence relations.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Forget the side-count index on the polygon cell, collapse the unique
+\texttt{PUnit} face in the sigma type, and descend the identity carrier map
+through the two quotient constructions.
+\end{proof}
+
 \begin{definition}[Canonical normal-form cell complexes]
 \label{moise:def:canonical_normal_form_complexes}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableBoundaryWord,
@@ -790,6 +811,26 @@ pairings for the polygonal quotient adapter.  The sphere uses the separate
 two-monogon presentation.
 \end{definition}
 
+\begin{lemma}[Canonical generator-closure comparison]
+\label{moise:lem:canonical_generator_comparison}
+\uses{moise:def:canonical_normal_form_complexes,
+  moise:lem:representative_carrier_bridge}
+The polygonal generators of the canonical orientable and nonorientable words
+generate exactly the equivalence closures of \texttt{OrientableRel} and
+\texttt{NonOrientableRel} under the carrier homeomorphism.  Consequently their
+polygonal realizations are homeomorphic to the corresponding Eval quotients.
+\end{lemma}
+
+\begin{proof}
+\notready
+Characterize one-face pairings by word positions.  Handle and crosscap blocks
+match the positive boundary coordinates directly.  For a boundary block,
+reverse its finite index and use integral-period invariance of
+\texttt{bdyPtOfReal} to reconcile the benchmark's negative angles.  Map each
+generator into the opposite equivalence closure and apply
+\texttt{eqvGenQuotientCongrRawOfGeneratorMaps}.
+\end{proof}
+
 \begin{definition}[Named normal-form witnesses]
 \label{moise:def:normal_form_witness}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.IsEvalAdmissible, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.RealizesNormalForm, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.HasNormalForm}
@@ -805,7 +846,9 @@ realization to the named Eval quotient.
 \label{moise:thm:gx_normal_form}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.surface_cell_complex_reduces_to_normal_form}
 \leanok
-\uses{moise:def:normal_form_witness,moise:def:gx_elementary_moves,moise:lem:elementary_moves_preserve_realization}
+\uses{moise:def:normal_form_witness,moise:def:gx_elementary_moves,
+  moise:lem:elementary_moves_preserve_realization,
+  moise:lem:canonical_generator_comparison}
 Every finite connected surface cell complex has an admissible named normal-form
 witness.  \emph{Warning (ledger): the current Lean statement is false because
 a cell complex may store an arbitrary realization, including an empty one.

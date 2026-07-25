@@ -49,10 +49,10 @@ take the explicit validity and connectedness hypotheses that issue #9 ultimately
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
 | `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
-| `OrientableRel`, `NonOrientableRel` | Representatives.lean | bridge pending | the public quotients use the exact closed-disk relations from the trusted Lean-Eval statement; `CanonicalWords.lean` now supplies matching parametric words, certified edge multiplicities, and valid connected cell complexes, but no theorem yet identifies their polygonal realizations with the public quotients | prove the canonical orientable and non-orientable polygonal realizations homeomorphic to these benchmark quotients |
+| `OrientableRel`, `NonOrientableRel` | Representatives.lean | bridge pending | the public quotients use the exact closed-disk relations from the trusted Lean-Eval statement; `CanonicalWords.lean` supplies matching valid connected one-face complexes, and `RepresentativeCarrier.lean` identifies their pre-realization carrier and quotient type with the benchmark setup, but the equivalence closures of the two families of generators are not yet identified | prove the orientable and nonorientable generator-closure comparison theorems, then descend the carrier homeomorphisms |
 | `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | **false as stated** | `SurfaceCellComplex.realization` is still arbitrary (for example, it can be `Empty`), and the signature lacks explicit `IsSurfaceValid` and `IsConnected` hypotheses because the triangulation bridge cannot yet supply them | cut over realization, certify triangulation incidence, then re-state with both hypotheses |
 
-Dependents of the cell-complex entries: `CanonicalWords.lean`, `NormalForm.lean`,
-`EvalStatement.lean`, and `Examples.lean`. `CanonicalWords.lean` is the intended combinatorial
-input to the remaining quotient-comparison and Gallier--Xu work; avoid adding unrelated
-dependents.
+Dependents of the cell-complex entries: `CanonicalWords.lean`, `RepresentativeCarrier.lean`,
+`NormalForm.lean`, `EvalStatement.lean`, and `Examples.lean`. `CanonicalWords.lean` is the intended
+combinatorial input to the remaining quotient-comparison and Gallier--Xu work; avoid adding
+unrelated dependents.

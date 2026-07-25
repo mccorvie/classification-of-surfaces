@@ -17,6 +17,7 @@ import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
 import ClassificationOfSurfaces.Moise.FrontierGlue
 import ClassificationOfSurfaces.Moise.PlaneCycle
 import ClassificationOfSurfaces.PolygonalQuotient
+import ClassificationOfSurfaces.RepresentativeCarrier
 
 /-!
 # Public API map
@@ -117,6 +118,13 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `SurfaceCellComplex.oneFacePresentation_isSurfaceValid`
 * `SurfaceCellComplex.oneFacePresentation_occurrencePairingValid`
 * `SurfaceCellComplex.PolygonalRealization`
+* `quotEqvGenHomeomorph`
+* `eqvGenQuotientCongrRaw`
+* `eqvGenQuotientCongrRawOfGeneratorMaps`
+* `Complex.ClosedUnitDisc.bdyPtOfReal_add_int`
+* `PolygonCell.closedUnitDiscHomeomorph`
+* `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph`
+* `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph_sidePoint`
 
 This generic layer supports disk cells with any number of marked sides and generated side
 identifications. The additive cell-complex adapter now maps boundary occurrences to polygon sides
@@ -125,9 +133,11 @@ pairings. Edge-orbit counts and inverse-invariance of boundary status are derive
 `IsSurfaceValid`, not repeated as adapter assumptions. `SurfaceCellComplex.Realization` does not
 use the quotient yet; the atomic cutover still depends on a certified
 triangulation-to-quotient bridge. The standard one-face examples now have incidence- and
-occurrence-validity witnesses, including the corrected length-six annulus word. The marked sides
-are circular arcs; issue #6's straight-edged convex representatives still require a separate PL
-bridge or a different concrete carrier.
+occurrence-validity witnesses, including the corrected length-six annulus word. The carrier bridge
+identifies each indexed disk, and hence every one-face pre-realization, with the exact closed unit
+disk used by the Eval representatives. It records the side-coordinate formula and reconciles the
+raw `Quot` presentation with the equivalence-closure `Quotient` used by polygonal gluings. The
+remaining comparison obligation is now purely relational.
 
 ## Gallier-Xu tail
 

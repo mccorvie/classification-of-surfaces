@@ -102,6 +102,8 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
 - `ClassificationOfSurfaces/CanonicalWords.lean`: certified canonical normal-form words and
   one-face presentations.
+- `ClassificationOfSurfaces/RepresentativeCarrier.lean`: carrier and quotient bridges between
+  one-face polygonal presentations and the exact Eval closed-disk quotients.
 - `ClassificationOfSurfaces/Representatives.lean`: exact Eval closed-disk quotient relations and
   definition-faithfulness anchors.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
@@ -112,8 +114,8 @@ compatibility. New code should use the preferred names above.
 
 1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
    realization homeomorphism, then replace the placeholder realization atomically.
-2. Extend the canonical boundary words with cyclic-word infrastructure for Gallier-Xu rewrites.
-3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
-4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
-5. Prove that the canonical polygonal normal forms are homeomorphic to the exact benchmark
-   quotients `Quot (OrientableRel p n)` and `Quot (NonOrientableRel p n)`.
+2. Identify the equivalence closures of the canonical polygonal generators with those of
+   `OrientableRel` and `NonOrientableRel`; the carrier and quotient-type bridges are complete.
+3. Extend the canonical boundary words with cyclic-word infrastructure for Gallier-Xu rewrites.
+4. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
+5. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.

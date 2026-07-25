@@ -123,7 +123,11 @@ certified triangulation-to-quotient bridge. This topological carrier does not by
 straight-edged convex polygons requested for the explicit normal-form representatives. The public
 `OrientableRel` and `NonOrientableRel` names are fixed to the exact closed-unit-disk relations in
 the trusted Lean-Eval statement; the polygonal subsystem must prove comparison homeomorphisms to
-those quotients rather than introduce parallel representative names.
+those quotients rather than introduce parallel representative names. `RepresentativeCarrier.lean`
+now supplies the common closed-disk carrier, exact side coordinates, and the bridge from raw
+`Quot` relations to generated-setoid `Quotient`s. Since the polygonal adapter contains both
+ordered directions of each pairing while the benchmark inductive relations list one, the final
+comparison must identify their equivalence closures rather than their raw generators.
 
 Status: open.
 
