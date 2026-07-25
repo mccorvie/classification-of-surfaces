@@ -413,6 +413,78 @@ def relabelFaceFamily
     (e : A ↪ B) (F : Finset (Finset A)) : Finset (Finset B) :=
   F.image fun t ↦ t.map e
 
+namespace TriangleFamily
+
+variable {A B : Type*} [DecidableEq A] [DecidableEq B]
+
+/-- Regard a listed face as a face of the family obtained by injectively relabeling its
+vertices. -/
+def faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)} :
+    Face faces → Face (relabelFaceFamily e faces) :=
+  fun f => ⟨f.1.map e, Finset.mem_image.mpr ⟨f.1, f.2, rfl⟩⟩
+
+@[simp]
+theorem faceOfRelabel_val (e : A ↪ B) {faces : Finset (Finset A)}
+    (f : Face faces) : (faceOfRelabel e f).1 = f.1.map e :=
+  rfl
+
+/-- Injective vertex relabeling preserves dual adjacency of listed faces. -/
+theorem faceAdjacent_faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)}
+    {f g : Face faces} (hfg : FaceAdjacent faces f g) :
+    FaceAdjacent (relabelFaceFamily e faces)
+      (faceOfRelabel e f) (faceOfRelabel e g) := by
+  rcases hfg with ⟨edge, hedgeCard, hedgeLeft, hedgeRight⟩
+  refine ⟨edge.map e, ?_, ?_, ?_⟩
+  · simpa only [Finset.card_map] using hedgeCard
+  · exact Finset.map_subset_map.mpr hedgeLeft
+  · exact Finset.map_subset_map.mpr hedgeRight
+
+/-- Injective vertex relabeling carries a finite dual path to the relabeled family. -/
+theorem reflTransGen_faceAdjacent_faceOfRelabel (e : A ↪ B)
+    {faces : Finset (Finset A)} {f g : Face faces}
+    (hfg : Relation.ReflTransGen (FaceAdjacent faces) f g) :
+    Relation.ReflTransGen (FaceAdjacent (relabelFaceFamily e faces))
+      (faceOfRelabel e f) (faceOfRelabel e g) := by
+  induction hfg with
+  | refl => exact Relation.ReflTransGen.refl
+  | tail _hab hbc ih =>
+      exact ih.tail (faceAdjacent_faceOfRelabel e hbc)
+
+/-- Dual connectivity is preserved by an injective relabeling of the vertex type. -/
+theorem isDualConnected_relabel (e : A ↪ B) {faces : Finset (Finset A)}
+    (hfaces : IsDualConnected faces) :
+    IsDualConnected (relabelFaceFamily e faces) := by
+  intro f g
+  obtain ⟨f', hf', hfeq⟩ := Finset.mem_image.mp f.2
+  obtain ⟨g', hg', hgeq⟩ := Finset.mem_image.mp g.2
+  let fs : Face faces := ⟨f', hf'⟩
+  let gs : Face faces := ⟨g', hg'⟩
+  have hpath :=
+    reflTransGen_faceAdjacent_faceOfRelabel e (hfaces fs gs)
+  have hfval : (faceOfRelabel e fs).1 = f.1 := by
+    simpa [fs] using hfeq
+  have hgval : (faceOfRelabel e gs).1 = g.1 := by
+    simpa [gs] using hgeq
+  have hfs : faceOfRelabel e fs = f := Subtype.ext hfval
+  have hgs : faceOfRelabel e gs = g := Subtype.ext hgval
+  rw [hfs, hgs] at hpath
+  exact hpath
+
+/-- A shared edge remains a shared edge when both families are injectively relabeled. -/
+theorem hasCrossEdge_relabel (e : A ↪ B)
+    {left right : Finset (Finset A)} (hcross : HasCrossEdge left right) :
+    HasCrossEdge (relabelFaceFamily e left) (relabelFaceFamily e right) := by
+  rcases hcross with
+    ⟨fleft, fright, edge, hedgeCard, hedgeLeft, hedgeRight⟩
+  refine
+    ⟨faceOfRelabel e fleft, faceOfRelabel e fright,
+      edge.map e, ?_, ?_, ?_⟩
+  · simpa only [Finset.card_map] using hedgeCard
+  · exact Finset.map_subset_map.mpr hedgeLeft
+  · exact Finset.map_subset_map.mpr hedgeRight
+
+end TriangleFamily
+
 /-- Push a geometric realization forward along an injective relabeling of all vertices. -/
 noncomputable def pushGeometricRealization
     {A B : Type*} [Fintype A] [Fintype B]
