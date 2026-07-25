@@ -638,8 +638,8 @@ theorem eq_vertexPoint_of_mem_faceCarrier_singleton
   funext w
   by_cases hwv : w = v.1
   · subst w
-    simp [K.vertexPoint, hxv]
-  · simp [K.vertexPoint, hwv, hx w (by simp [hwv])]
+    simp [vertexPoint, hxv]
+  · simp [vertexPoint, hwv, hx w (by simp [hwv])]
 
 /-- A nonempty barycentric carrier with at most one vertex, contained in a listed face,
 consists of one canonical vertex point. -/
