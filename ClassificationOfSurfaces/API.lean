@@ -118,6 +118,9 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `SurfaceCellComplex.oneFacePresentation_isSurfaceValid`
 * `SurfaceCellComplex.oneFacePresentation_occurrencePairingValid`
 * `SurfaceCellComplex.PolygonalRealization`
+* `SurfaceCellComplex.mem_polygonalIdentifications_iff_exists_occurrences`
+* `SurfaceCellComplex.oneFaceOccurrence`
+* `SurfaceCellComplex.oneFace_mem_polygonalIdentifications_iff`
 * `quotEqvGenHomeomorph`
 * `eqvGenQuotientCongrRaw`
 * `eqvGenQuotientCongrRawOfGeneratorMaps`
@@ -137,7 +140,9 @@ occurrence-validity witnesses, including the corrected length-six annulus word. 
 identifies each indexed disk, and hence every one-face pre-realization, with the exact closed unit
 disk used by the Eval representatives. It records the side-coordinate formula and reconciles the
 raw `Quot` presentation with the equivalence-closure `Quotient` used by polygonal gluings. The
-remaining comparison obligation is now purely relational.
+one-face membership theorem further reduces the polygonal generators to compatible pairs of
+positions in the boundary word. The remaining comparison obligation is explicit canonical-word
+indexing and boundary-coordinate arithmetic.
 
 ## Gallier-Xu tail
 

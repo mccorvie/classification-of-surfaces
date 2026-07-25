@@ -260,6 +260,118 @@ theorem pairing_identification_mem {K : SurfaceCellComplex} (valid : K.Occurrenc
     pairing.identification ∈ K.polygonalIdentifications valid :=
   ⟨pairing, rfl⟩
 
+/-- Membership in the polygonal identification set, unpacked into its two boundary occurrences. -/
+theorem mem_polygonalIdentifications_iff_exists_occurrences
+    {K : SurfaceCellComplex} (valid : K.OccurrencePairingValid)
+    (identification : PolygonGluing.Identification K.Face K.faceBoundaryLength) :
+    identification ∈ K.polygonalIdentifications valid ↔
+      ∃ source target : K.BoundaryOccurrence,
+        identification.source = K.occurrenceSide source ∧
+        identification.target = K.occurrenceSide target ∧
+        source ≠ target ∧
+        ¬K.IsBoundaryDart (K.occurrenceDart source) ∧
+        ¬K.IsBoundaryDart (K.occurrenceDart target) ∧
+        match identification.direction with
+        | .same => K.occurrenceDart target = K.occurrenceDart source
+        | .opposite => K.occurrenceDart target = K.inv (K.occurrenceDart source) := by
+  constructor
+  · rintro ⟨pairing, rfl⟩
+    exact ⟨pairing.source, pairing.target, rfl, rfl, pairing.source_ne_target,
+      pairing.source_not_boundary, pairing.target_not_boundary, pairing.compatible⟩
+  · rintro ⟨source, target, hsource, htarget, hne, hsourceBoundary, htargetBoundary,
+      hcompatible⟩
+    let pairing : K.BoundaryPairing := {
+      source := source
+      target := target
+      source_ne_target := hne
+      source_not_boundary := hsourceBoundary
+      target_not_boundary := htargetBoundary
+      direction := identification.direction
+      compatible := hcompatible
+    }
+    refine ⟨pairing, ?_⟩
+    rcases identification with ⟨identificationSource, identificationTarget,
+      identificationDirection⟩
+    change identificationSource = K.occurrenceSide source at hsource
+    change identificationTarget = K.occurrenceSide target at htarget
+    subst identificationSource
+    subst identificationTarget
+    rfl
+
+/-- The boundary occurrence at position `i` in a one-face word. -/
+def oneFaceOccurrence {Edge : Type} [Fintype Edge]
+    (word : List (SignedDart Edge)) (i : Fin word.length) :
+    (oneFacePresentation Edge word).BoundaryOccurrence :=
+  ⟨PUnit.unit, i⟩
+
+@[simp]
+theorem oneFaceOccurrence_dart {Edge : Type} [Fintype Edge]
+    (word : List (SignedDart Edge)) (i : Fin word.length) :
+    (oneFacePresentation Edge word).occurrenceDart (oneFaceOccurrence word i) =
+      word.get i :=
+  rfl
+
+/-- For a one-face word, polygonal identifications are exactly compatible pairs of positions. -/
+theorem oneFace_mem_polygonalIdentifications_iff
+    {Edge : Type} [Fintype Edge]
+    (word : List (SignedDart Edge))
+    (valid : (oneFacePresentation Edge word).OccurrencePairingValid)
+    (identification :
+      PolygonGluing.Identification (oneFacePresentation Edge word).Face
+        (oneFacePresentation Edge word).faceBoundaryLength) :
+    identification ∈ (oneFacePresentation Edge word).polygonalIdentifications valid ↔
+      ∃ i j : Fin word.length,
+        identification.source =
+            (oneFacePresentation Edge word).occurrenceSide (oneFaceOccurrence word i) ∧
+        identification.target =
+            (oneFacePresentation Edge word).occurrenceSide (oneFaceOccurrence word j) ∧
+        i ≠ j ∧
+        ¬(oneFacePresentation Edge word).IsBoundaryDart (word.get i) ∧
+        ¬(oneFacePresentation Edge word).IsBoundaryDart (word.get j) ∧
+        match identification.direction with
+        | .same => word.get j = word.get i
+        | .opposite => word.get j = SignedDart.flipEquiv Edge (word.get i) := by
+  rw [mem_polygonalIdentifications_iff_exists_occurrences]
+  constructor
+  · rintro ⟨⟨sourceFace, i⟩, ⟨targetFace, j⟩, hsource, htarget, hne,
+      hsourceBoundary, htargetBoundary, hcompatible⟩
+    cases sourceFace
+    cases targetFace
+    have hij : i ≠ j := by
+      intro hij
+      subst j
+      exact hne rfl
+    refine ⟨i, j, hsource, htarget, hij, hsourceBoundary, htargetBoundary, ?_⟩
+    cases hdirection : identification.direction with
+    | same =>
+        simp only [hdirection] at hcompatible ⊢
+        change word.get j = word.get i at hcompatible
+        exact hcompatible
+    | opposite =>
+        simp only [hdirection] at hcompatible ⊢
+        change word.get j = SignedDart.flipEquiv Edge (word.get i) at hcompatible
+        exact hcompatible
+  · rintro ⟨i, j, hsource, htarget, hne, hsourceBoundary, htargetBoundary,
+      hcompatible⟩
+    refine ⟨oneFaceOccurrence word i, oneFaceOccurrence word j, ?_⟩
+    have hoccurrence :
+        oneFaceOccurrence word i ≠ oneFaceOccurrence word j := by
+      intro h
+      apply hne
+      have hval := congrArg
+        (fun o : (oneFacePresentation Edge word).BoundaryOccurrence ↦ o.2.val) h
+      exact Fin.ext hval
+    refine ⟨hsource, htarget, hoccurrence, hsourceBoundary, htargetBoundary, ?_⟩
+    cases hdirection : identification.direction with
+    | same =>
+        simp only [hdirection] at hcompatible ⊢
+        change word.get j = word.get i
+        exact hcompatible
+    | opposite =>
+        simp only [hdirection] at hcompatible ⊢
+        change word.get j = SignedDart.flipEquiv Edge (word.get i)
+        exact hcompatible
+
 /-- Under the occurrence-count conditions, every internal side starts an identification. -/
 theorem OccurrencePairingValid.exists_identification_source {K : SurfaceCellComplex}
     (h : K.OccurrencePairingValid) (source : K.BoundaryOccurrence)

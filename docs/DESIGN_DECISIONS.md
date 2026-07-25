@@ -128,6 +128,9 @@ now supplies the common closed-disk carrier, exact side coordinates, and the bri
 `Quot` relations to generated-setoid `Quotient`s. Since the polygonal adapter contains both
 ordered directions of each pairing while the benchmark inductive relations list one, the final
 comparison must identify their equivalence closures rather than their raw generators.
+`oneFace_mem_polygonalIdentifications_iff` is the combinatorial interface for that comparison: it
+replaces an arbitrary one-face `BoundaryPairing` by two finite word positions, boundary-status
+conditions, and an equality or inverse-dart equality.
 
 Status: open.
 
