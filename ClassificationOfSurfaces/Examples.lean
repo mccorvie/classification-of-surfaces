@@ -308,54 +308,13 @@ example :
       [pos (0 : Fin 3), pos (1 : Fin 3), neg (2 : Fin 3)] := by
   rfl
 
-/-- Example target: the disk cell complex realizes the disk normal form. -/
-theorem disk_has_normal_form :
-    diskCellComplex.HasNormalForm diskNormalForm := by
-  exact SurfaceCellComplex.hasNormalFormOfRealizes diskCellComplex diskNormalForm
-    ⟨orientableRelPUnitHomeomorph 0 1⟩
-
-/-- Example target: the annulus cell complex realizes the annulus normal form. -/
-theorem annulus_has_normal_form :
-    annulusCellComplex.HasNormalForm annulusNormalForm := by
-  exact SurfaceCellComplex.hasNormalFormOfRealizes annulusCellComplex annulusNormalForm
-    ⟨orientableRelPUnitHomeomorph 0 2⟩
-
-/-- Example target: the torus cell complex realizes the torus normal form. -/
-theorem torus_has_normal_form :
-    torusCellComplex.HasNormalForm torusNormalForm := by
-  exact SurfaceCellComplex.hasNormalFormOfRealizes torusCellComplex torusNormalForm
-    ⟨orientableRelPUnitHomeomorph 1 0⟩
-
-/-- Example target: the projective-plane cell complex realizes the projective-plane normal form. -/
-theorem projective_plane_has_normal_form :
-    projectivePlaneCellComplex.HasNormalForm projectivePlaneNormalForm := by
-  exact SurfaceCellComplex.hasNormalFormOfRealizes projectivePlaneCellComplex
-    projectivePlaneNormalForm
-    ⟨nonOrientableRelPUnitHomeomorph 1 0⟩
-
-/-- Example target: the Mobius-strip cell complex realizes the Mobius-strip normal form. -/
-theorem mobius_strip_has_normal_form :
-    mobiusStripCellComplex.HasNormalForm mobiusStripNormalForm := by
-  exact SurfaceCellComplex.hasNormalFormOfRealizes mobiusStripCellComplex mobiusStripNormalForm
-    ⟨nonOrientableRelPUnitHomeomorph 1 1⟩
-
-/-- Future target: the torus example should be homeomorphic to the orientable representative with
-one handle and no boundary. -/
-theorem torus_example_matches_representative :
-    Nonempty (torusCellComplex.Realization ≃ₜ Quot (OrientableRel 1 0)) := by
-  exact ⟨orientableRelPUnitHomeomorph 1 0⟩
-
-/-- Future target: the projective-plane example should be homeomorphic to the non-orientable
-representative with one crosscap and no boundary. -/
-theorem projective_plane_example_matches_representative :
-    Nonempty (projectivePlaneCellComplex.Realization ≃ₜ Quot (NonOrientableRel 1 0)) := by
-  exact ⟨nonOrientableRelPUnitHomeomorph 1 0⟩
-
-/-- Future target: the Mobius-strip example should be homeomorphic to the non-orientable
-representative with one crosscap and one boundary component. -/
-theorem mobius_strip_example_matches_representative :
-    Nonempty (mobiusStripCellComplex.Realization ≃ₜ Quot (NonOrientableRel 1 1)) := by
-  exact ⟨nonOrientableRelPUnitHomeomorph 1 1⟩
+/-!
+The former `*_has_normal_form` and `*_matches_representative` declarations used a one-point
+homeomorphism supplied by the placeholder representative relations.  Those targets are
+incompatible with the stored one-point cell-complex realizations after installing the faithful
+benchmark quotients, and are intentionally removed. They should return only after
+`SurfaceCellComplex.Realization` is cut over to the polygonal quotient.
+-/
 
 end ClassificationOfSurfaces
 end Topology

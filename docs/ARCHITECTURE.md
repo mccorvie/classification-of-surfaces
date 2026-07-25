@@ -54,8 +54,10 @@ gluing.  The former C0 chart-boundary hypothesis itself is discharged by planar 
 Brouwer's fixed-point theorem, and invariance of domain.  See `docs/MOISE_ROUTE.md` for the live
 status and `docs/RADO_AUDIT.md` for the definition-faithfulness audit.
 
-The quotient realization and Gallier-Xu normal-form layers are still placeholder scaffolding
-(see `docs/KNOWN_WEAK.md`). The bottom API is in place:
+The `SurfaceCellComplex` quotient realization and Gallier-Xu normal-form layers are still
+scaffolding (see `docs/KNOWN_WEAK.md`). The public orientable and non-orientable representatives,
+however, now use the exact closed-unit-disk relations from the trusted Lean-Eval statement. The
+bottom API is in place:
 
 - `EvalSurface` packages the Lean Eval hypotheses.
 - `ChartBoundaryInvariant` is the low-level chart-extraction interface; its unconditional C0
@@ -94,7 +96,8 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/Triangulation.lean`: legacy triangulation interface, fed by the
   `GeometricTriangulation` bridge.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
-- `ClassificationOfSurfaces/Representatives.lean`: Eval quotient representative names.
+- `ClassificationOfSurfaces/Representatives.lean`: exact Eval closed-disk quotient relations and
+  definition-faithfulness anchors.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
 - `ClassificationOfSurfaces/EvalStatement.lean`: final Lean Eval theorem.
 - `ClassificationOfSurfaces/Examples.lean`: small regression examples.
@@ -106,4 +109,5 @@ compatibility. New code should use the preferred names above.
 2. Define cyclic-word infrastructure for face boundary words and Gallier-Xu rewrites.
 3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
-5. Make `OrientableRel` and `NonOrientableRel` genuine quotient relations over polygon models.
+5. Prove that the canonical polygonal normal forms are homeomorphic to the exact benchmark
+   quotients `Quot (OrientableRel p n)` and `Quot (NonOrientableRel p n)`.

@@ -120,7 +120,10 @@ boundaries remain adapter-specific. `SurfaceCellComplex.sphere` uses the require
 presentation rather than a side-free disk. The standard examples satisfy both incidence and
 occurrence-level criteria, including the length-six annulus word. The next dependency is the
 certified triangulation-to-quotient bridge. This topological carrier does not by itself supply the
-straight-edged convex polygons requested for the explicit normal-form representatives.
+straight-edged convex polygons requested for the explicit normal-form representatives. The public
+`OrientableRel` and `NonOrientableRel` names are fixed to the exact closed-unit-disk relations in
+the trusted Lean-Eval statement; the polygonal subsystem must prove comparison homeomorphisms to
+those quotients rather than introduce parallel representative names.
 
 Status: open.
 
