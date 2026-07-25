@@ -639,10 +639,12 @@ triangulation is a geometric triangulation.
 This chapter is the downstream half: convert triangulations to finite surface
 cell complexes and reduce cell complexes to Gallier--Xu normal forms.  Much of
 it is currently placeholder scaffolding: see \texttt{docs/KNOWN\_WEAK.md} for
-the ledger.  In particular the Eval quotient representatives are still
-one-point placeholders, so \ref{moise:thm:gx_normal_form} is \emph{not
-provable as currently stated in Lean} — the representatives must be
-implemented first and the statement re-audited.
+the ledger.  The Eval quotient relations now faithfully match the trusted
+closed-disc benchmark and have non-subsingleton anchors.  Nevertheless
+\ref{moise:thm:gx_normal_form} is \emph{not provable as currently stated in
+Lean}: the cell-complex realization is arbitrary, the validity and
+connectivity hypotheses are absent, and the canonical polygonal comparison
+and Gallier--Xu move semantics remain to be proved.
 
 \section{Cell complexes and the topological bridge}
 
@@ -760,10 +762,12 @@ diagonal; descend by quotient congruence.
 \label{moise:def:eval_quotient_representatives}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.SphereRepresentative, LeanEval.Topology.ClassificationOfSurfaces.OrientableRel, LeanEval.Topology.ClassificationOfSurfaces.NonOrientableRel}
 \leanok
-\emph{Ledger note: placeholders.}  The orientable and nonorientable relations
-are currently the bottom relation on a one-point carrier, so the named
-quotients are single points.  They must become genuine polygon-boundary
-quotients before the normal-form theorem can be honestly attempted.
+The orientable and nonorientable relations are the exact raw boundary-arc
+relations on the closed unit disc from the trusted Lean Eval statement.
+Machine-checked radius functions show that the torus and projective-plane
+quotients, and in fact every quotient in either family, are not single points.
+The remaining obligation is to identify canonical polygonal normal forms with
+these fixed benchmark quotients.
 \end{definition}
 
 \begin{definition}[Named normal-form witnesses]
@@ -782,13 +786,15 @@ realization to the named Eval quotient.
 \leanok
 \uses{moise:def:normal_form_witness,moise:def:gx_elementary_moves,moise:lem:elementary_moves_preserve_realization}
 Every finite connected surface cell complex has an admissible named normal-form
-witness.  \emph{Warning (ledger): with the placeholder representatives of
-\ref{moise:def:eval_quotient_representatives}, the current Lean statement is
-false for complexes whose realization is not a point or a sphere.  Its Lean
-signature also still lacks explicit incidence-validity and face-connectivity
+witness.  \emph{Warning (ledger): the current Lean statement is false because
+a cell complex may store an arbitrary realization, including an empty one.
+Its signature also lacks explicit incidence-validity and face-connectivity
 hypotheses because the legacy triangulation bridge does not yet provide their
-certificates.  The sorry cannot be discharged until the representatives and
-that certified bridge are implemented and the statement is re-audited.}
+certificates.  The sorry cannot be discharged until realization is cut over,
+the certified bridge and Gallier--Xu moves are implemented, the canonical
+polygon quotients are compared with
+\ref{moise:def:eval_quotient_representatives}, and the statement is
+re-audited.}
 \end{theorem}
 
 \begin{proof}

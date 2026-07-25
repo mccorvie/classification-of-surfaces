@@ -30,9 +30,9 @@ def NormalForm.IsEvalAdmissible : NormalForm → Prop
 
 /-- A surface cell complex realizes the quotient space attached to a named normal form.
 
-This is the local target for the Gallier--Xu canonical-complex construction.  The current
-representative quotient spaces are still placeholders, but the predicate already has the final
-homeomorphism shape needed by the Eval theorem. -/
+This is the local target for the Gallier--Xu canonical-complex construction.  The benchmark
+quotient relations are faithful to the trusted Eval statement; comparison with the canonical
+polygonal realizations remains pending. -/
 def SurfaceCellComplex.RealizesNormalForm (K : SurfaceCellComplex) : NormalForm → Prop
   | NormalForm.sphere => Nonempty (K.Realization ≃ₜ SphereRepresentative)
   | NormalForm.orientable handles boundaryComponents =>
@@ -62,9 +62,9 @@ theorem SurfaceCellComplex.hasNormalFormOfRealizes (K : SurfaceCellComplex) (N :
 
 /-- Combinatorial bridge: every finite connected surface cell complex reduces to normal form.
 
-This theorem is already blocked by the placeholder quotient representatives. Its corrected
-statement must also take explicit `K.IsSurfaceValid` and `K.IsConnected` hypotheses once the
-triangulation bridge can produce them; see `docs/KNOWN_WEAK.md`. -/
+This theorem is blocked by the arbitrary stored realization and missing Gallier--Xu move
+semantics. Its corrected statement must also take explicit `K.IsSurfaceValid` and `K.IsConnected`
+hypotheses once the triangulation bridge can produce them; see `docs/KNOWN_WEAK.md`. -/
 theorem surface_cell_complex_reduces_to_normal_form (K : SurfaceCellComplex) :
     ∃ N : NormalForm, N.IsEvalAdmissible ∧ K.HasNormalForm N := by
   sorry
