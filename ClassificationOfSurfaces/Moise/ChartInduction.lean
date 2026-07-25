@@ -6084,7 +6084,51 @@ variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 
-omit [T2Space S] [ConnectedSpace S] [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
+omit [T2Space S] [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
+/-- A compact Eval surface has a finite cover by interiors of boundary-faithful Moise chart
+cores.  Because the ambient surface is connected, the graph joining two cores when their
+interiors overlap is connected as well. -/
+theorem moise_finite_chart_open_cover :
+    ∃ (m : ℕ) (charts : Fin m → MoiseChart S),
+      (⋃ i, interior (charts i).core) = Set.univ ∧
+      (∀ i, (charts i).BoundaryFaithful) ∧
+      ∀ i j, Relation.TransGen
+        (fun a b : Fin m =>
+          (interior (charts a).core ∩ interior (charts b).core).Nonempty)
+        i j := by
+  classical
+  choose c hfaithful hcore using exists_moiseChart_core_mem_nhds S
+  have hcover : (Set.univ : Set S) ⊆ ⋃ x : S, interior (c x).core := by
+    intro x _
+    exact Set.mem_iUnion.mpr
+      ⟨x, mem_interior_iff_mem_nhds.mpr (hcore x)⟩
+  obtain ⟨t, ht⟩ := isCompact_univ.elim_finite_subcover
+    (fun x : S => interior (c x).core) (fun _ => isOpen_interior) hcover
+  obtain ⟨m, e⟩ := Finite.exists_equiv_fin t
+  let e' := Classical.choice e
+  let charts : Fin m → MoiseChart S := fun i => c (e'.symm i).1
+  have hopen : (⋃ i, interior (charts i).core) = (Set.univ : Set S) := by
+    apply Set.eq_univ_of_univ_subset
+    intro x _
+    rcases Set.mem_iUnion₂.mp (ht (Set.mem_univ x)) with
+      ⟨y, hyt, hxy⟩
+    exact Set.mem_iUnion.mpr ⟨e' ⟨y, hyt⟩, by
+      simpa [charts] using hxy⟩
+  have hnonempty (i : Fin m) :
+      (interior (charts i).core).Nonempty := by
+    refine ⟨(e'.symm i).1, ?_⟩
+    exact mem_interior_iff_mem_nhds.mpr (hcore (e'.symm i).1)
+  refine ⟨m, charts, hopen, ?_, ?_⟩
+  · intro i
+    exact hfaithful (e'.symm i).1
+  · have hpreconnected :
+        IsPreconnected (⋃ i, interior (charts i).core) := by
+      rw [hopen]
+      exact isPreconnected_univ
+    intro i j
+    exact hpreconnected.transGen_of_iUnion
+      (fun _ => isOpen_interior) i j (hnonempty i) (hnonempty j)
+
 /-- A compact Eval surface has a finite cover by boundary-faithful Moise chart cores (Moise
 Ch. 8, Thm. 1, plus compactness).  Proved by a finite subcover of the core interiors from the
 local chart extraction (`exists_moiseChart_core_mem_nhds`, `Moise/ChartExtraction.lean`). -/
