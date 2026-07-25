@@ -146,10 +146,11 @@ equivalence closure; equality of raw generator relations is neither required nor
 `oneFace_mem_polygonalIdentifications_iff` replaces a compatible one-face pairing by two finite
 word positions with boundary-status and dart-equality conditions. `CanonicalWords.lean` supplies
 forward position maps and exact getters for every named handle, crosscap, and boundary block.
-`CanonicalPairings.lean` proves every directed nonorientable generator is exactly a crosscap or
-boundary-seam pairing in one of its two orders, while once-occurring free-boundary darts generate
-nothing. Arbitrary-position exhaustion, the orientable analogue, coordinates, and both
-generator-closure inclusions remain separate obligations.
+`CanonicalPairings.lean` applies that interface to both canonical words and proves that every
+directed generator is exactly a handle, crosscap, or boundary-seam pairing, in one of its two
+orders; the once-occurring free-boundary darts cannot generate an identification. These theorems
+classify the finite raw generator sets. Arbitrary-position exhaustion, carrier-coordinate
+transport, and both generator-closure comparisons remain.
 
 Status: open.
 
