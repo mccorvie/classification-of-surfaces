@@ -16,6 +16,7 @@ import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
 import ClassificationOfSurfaces.Moise.FrontierGlue
 import ClassificationOfSurfaces.Moise.PlaneCycle
 import ClassificationOfSurfaces.PolygonalQuotient
+import ClassificationOfSurfaces.SignedPresentation
 
 /-!
 # Public API map
@@ -94,6 +95,11 @@ realization.  They do not yet produce `SurfaceCellComplex.IsSurfaceValid` or `.I
 * `SurfaceCellComplex.Realization`
 * `SurfaceCellComplex.realizationCongr`
 * `SurfaceCellComplex.realizationCongrRight`
+* `SurfaceCellComplex.EdgeOrbit`
+* `SurfaceCellComplex.edgeOrbit`
+* `SurfaceCellComplex.signedDartEquiv`
+* `SurfaceCellComplex.finSignedDartEquiv`
+* `SurfaceCellComplex.normalizedBoundary`
 
 The legacy names `CellComplex` and `FiniteTriangulation` remain as compatibility aliases.  New
 code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTriangulation`.

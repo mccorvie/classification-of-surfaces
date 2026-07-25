@@ -74,5 +74,6 @@ import ClassificationOfSurfaces.Moise.ThinKiteMove
 import ClassificationOfSurfaces.NormalForm
 import ClassificationOfSurfaces.PolygonalQuotient
 import ClassificationOfSurfaces.Representatives
+import ClassificationOfSurfaces.SignedPresentation
 import ClassificationOfSurfaces.Surface
 import ClassificationOfSurfaces.Triangulation
