@@ -1,5 +1,6 @@
 import ClassificationOfSurfaces.API
 import ClassificationOfSurfaces.Basic
+import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.CellComplex
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement

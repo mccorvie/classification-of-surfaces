@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
+import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -130,6 +131,15 @@ bridge or a different concrete carrier.
 
 ## Gallier-Xu tail
 
+* `NormalForm.OrientableEdge`
+* `NormalForm.NonOrientableEdge`
+* `NormalForm.orientableBoundaryWord`
+* `NormalForm.nonOrientableBoundaryWord`
+* `NormalForm.orientableCellComplex`
+* `NormalForm.nonOrientableCellComplex`
+* `NormalForm.canonicalCellComplex`
+* `NormalForm.canonicalCellComplex_isSurfaceValid`
+* `NormalForm.canonicalCellComplex_isConnected`
 * `NormalForm.IsEvalAdmissible`
 * `SurfaceCellComplex.RealizesNormalForm`
 * `SurfaceCellComplex.HasNormalForm`
@@ -137,8 +147,14 @@ bridge or a different concrete carrier.
 * `SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm`
 * `SurfaceCellComplex.hasEvalRepresentative`
 
-The Gallier-Xu tail should consume only `SurfaceCellComplex` and quotient-realization APIs. It
-should not mention PL maps, Moise triangulation, or manifold chart machinery.
+The canonical orientable and nonorientable words have lengths `4 * p + 3 * n` and
+`2 * p + 3 * n`. Their edge-occurrence counts give incidence-valid, connected one-face complexes;
+under the Eval admissibility bounds they also have occurrence-pairing witnesses for polygonal
+realization. The remaining comparison is topological: identify those polygonal realizations with
+the exact closed-disk quotients below.
+
+The Gallier-Xu tail should otherwise consume only `SurfaceCellComplex` and quotient-realization
+APIs. It should not mention PL maps, Moise triangulation, or manifold chart machinery.
 
 ## Eval representatives and final theorem
 

@@ -84,6 +84,10 @@ bottom API is in place:
   incidence- and occurrence-validity witnesses. The annulus now uses the length-six, two-contour
   word.
   Homeomorphisms identifying these polygonal quotients with the named surfaces remain future work.
+- `NormalForm.orientableBoundaryWord` and `.nonOrientableBoundaryWord` give the two canonical
+  parametric families matching the exact Eval relations. Their lengths, edge multiplicities,
+  incidence validity, connectivity, and admissible occurrence pairings are certified;
+  `NormalForm.canonicalCellComplex` also includes the separate two-face sphere presentation.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
 compatibility. New code should use the preferred names above.
@@ -96,6 +100,8 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/Triangulation.lean`: legacy triangulation interface, fed by the
   `GeometricTriangulation` bridge.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
+- `ClassificationOfSurfaces/CanonicalWords.lean`: certified canonical normal-form words and
+  one-face presentations.
 - `ClassificationOfSurfaces/Representatives.lean`: exact Eval closed-disk quotient relations and
   definition-faithfulness anchors.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
@@ -106,7 +112,7 @@ compatibility. New code should use the preferred names above.
 
 1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
    realization homeomorphism, then replace the placeholder realization atomically.
-2. Define cyclic-word infrastructure for face boundary words and Gallier-Xu rewrites.
+2. Extend the canonical boundary words with cyclic-word infrastructure for Gallier-Xu rewrites.
 3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
 5. Prove that the canonical polygonal normal forms are homeomorphic to the exact benchmark

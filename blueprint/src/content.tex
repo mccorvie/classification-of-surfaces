@@ -770,11 +770,32 @@ The remaining obligation is to identify canonical polygonal normal forms with
 these fixed benchmark quotients.
 \end{definition}
 
+\begin{definition}[Canonical normal-form cell complexes]
+\label{moise:def:canonical_normal_form_complexes}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableBoundaryWord,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientableBoundaryWord,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalCellComplex,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalCellComplex_isSurfaceValid,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalCellComplex_isConnected}
+\leanok
+\uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives}
+The orientable word is the concatenation of the commutator blocks
+$a_i b_i a_i^{-1}b_i^{-1}$ and boundary blocks $c_jh_jc_j^{-1}$; the
+nonorientable word uses square blocks $a_i a_i$ and the same boundary blocks.
+Their lengths are $4p+3n$ and $2p+3n$.  Every seam, handle, or crosscap edge
+occurs twice, while each boundary-contour edge occurs once, so the resulting
+one-face complexes are incidence-valid and connected.  Under the Eval
+admissibility bounds the words are nonempty and have certified occurrence
+pairings for the polygonal quotient adapter.  The sphere uses the separate
+two-monogon presentation.
+\end{definition}
+
 \begin{definition}[Named normal-form witnesses]
 \label{moise:def:normal_form_witness}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.IsEvalAdmissible, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.RealizesNormalForm, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.HasNormalForm}
 \leanok
-\uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives}
+\uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives,
+  moise:def:canonical_normal_form_complexes}
 A normal-form witness for $K$: an admissible normal-form name, a representative
 complex, an equivalence from $K$ to it, and a homeomorphism from its
 realization to the named Eval quotient.
