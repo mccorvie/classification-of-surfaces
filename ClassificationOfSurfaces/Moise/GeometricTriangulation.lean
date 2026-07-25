@@ -140,7 +140,8 @@ omit [DecidableEq Vertex] in
 theorem reflTransGen_faceAdjacent_symm {faces : Finset (Finset Vertex)}
     {f g : Face faces} (h : Relation.ReflTransGen (FaceAdjacent faces) f g) :
     Relation.ReflTransGen (FaceAdjacent faces) g f := by
-  exact h.swap.mono fun _ _ hab => faceAdjacent_symm hab
+  apply Relation.ReflTransGen.mono (fun _ _ hab => faceAdjacent_symm hab)
+  exact h.swap
 
 /-- Every two listed triangles are connected by a finite chain of shared edges. -/
 def IsDualConnected (faces : Finset (Finset Vertex)) : Prop :=
