@@ -195,6 +195,8 @@ theorem isDualConnected_of_support_eq_univ
 
 end PartialTriangulation
 
+end Moise
+
 namespace GeometricTriangulation
 
 variable {S : Type*} [TopologicalSpace S] (T : GeometricTriangulation S)
@@ -204,7 +206,7 @@ theorem faces_isDualConnected
     [ConnectedSpace S] [ChartedSpace (EuclideanHalfSpace 2) S] :
     TriangleFamily.IsDualConnected T.faces := by
   letI : T2Space S := T.t2Space
-  let P : PartialTriangulation S where
+  let P : Moise.PartialTriangulation S where
     Vertex := T.Vertex
     faces := T.faces
     faces_card := T.faces_card
@@ -216,7 +218,6 @@ theorem faces_isDualConnected
 
 end GeometricTriangulation
 
-end Moise
 end ClassificationOfSurfaces
 end Topology
 end LeanEval
