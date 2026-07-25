@@ -133,10 +133,11 @@ replaces an arbitrary one-face `BoundaryPairing` by two finite word positions, b
 conditions, and an equality or inverse-dart equality. `CanonicalWords.lean` exposes uniform
 handle, crosscap, and boundary-block position maps together with exact `List.get` theorems, so
 coordinate proofs do not unfold nested `List.ofFn`/`flatten` expressions.
-`CanonicalPairings.lean` applies that interface to the nonorientable word and proves that every
-directed generator is exactly a crosscap or boundary-seam pairing, in one of its two orders; the
-once-occurring free boundary darts cannot generate an identification. The orientable analogue
-and the subsequent carrier-coordinate comparison remain.
+`CanonicalPairings.lean` applies that interface to both canonical words and proves that every
+directed generator is exactly a handle, crosscap, or boundary-seam pairing, in one of its two
+orders; the once-occurring free boundary darts cannot generate an identification. These theorems
+classify the finite raw generator sets. Carrier-coordinate transport and the generated-closure
+comparisons remain.
 
 Status: open.
 

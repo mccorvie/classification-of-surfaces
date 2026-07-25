@@ -125,6 +125,7 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `SurfaceCellComplex.not_isBoundaryDart_of_occurs_at_ne`
 * `SurfaceCellComplex.swapIdentification`
 * `SurfaceCellComplex.swapIdentification_mem_polygonalIdentifications`
+* `SurfaceCellComplex.oppositeDirectionIdentification_mem_of_get_pos_neg`
 * `quotEqvGenHomeomorph`
 * `eqvGenQuotientCongrRaw`
 * `eqvGenQuotientCongrRawOfGeneratorMaps`
@@ -145,9 +146,10 @@ identifies each indexed disk, and hence every one-face pre-realization, with the
 disk used by the Eval representatives. It records the side-coordinate formula and reconciles the
 raw `Quot` presentation with the equivalence-closure `Quotient` used by polygonal gluings. The
 one-face membership theorem further reduces the polygonal generators to compatible pairs of
-positions in the boundary word. Exact canonical-word indexing and the nonorientable pairing
-classification are complete; the remaining obligations are the orientable pairing classification
-and boundary-coordinate arithmetic.
+positions in the boundary word. Exact canonical-word indexing and exhaustive pairing
+classifications for both canonical families are complete; the remaining obligations are
+carrier-coordinate transport and both directions of the generated-equivalence-closure comparison
+for each family.
 
 ## Gallier-Xu tail
 
@@ -164,6 +166,13 @@ and boundary-coordinate arithmetic.
 * `NormalForm.nonOrientableBoundaryIdentification`
 * `NormalForm.nonOrientableBoundaryIdentificationReverse`
 * `NormalForm.mem_nonOrientable_polygonalIdentifications_iff`
+* `NormalForm.orientableHandleAIdentification`
+* `NormalForm.orientableHandleAIdentificationReverse`
+* `NormalForm.orientableHandleBIdentification`
+* `NormalForm.orientableHandleBIdentificationReverse`
+* `NormalForm.orientableBoundaryIdentification`
+* `NormalForm.orientableBoundaryIdentificationReverse`
+* `NormalForm.mem_orientable_polygonalIdentifications_iff`
 * `NormalForm.orientableCellComplex`
 * `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
@@ -180,13 +189,13 @@ The canonical orientable and nonorientable words have lengths `4 * p + 3 * n` an
 `2 * p + 3 * n`. Their edge-occurrence counts give incidence-valid, connected one-face complexes;
 under the Eval admissibility bounds they also have occurrence-pairing witnesses for polygonal
 realization. Certified block-position and `List.get` theorems expose every handle, crosscap,
-seam, and free boundary dart at its exact index. For `1 ≤ p`, the nonorientable polygonal
-identifications are now classified exhaustively as the two directed forms of a crosscap or
-boundary-seam pairing, with the singleton free boundary darts excluded. This classifies the raw
-generator set; it does not yet identify its generated equivalence closure with
-`NonOrientableRel`. The remaining comparison is to prove the analogous orientable classification,
-transport both families through the carrier bridge, and prove the two generator-closure
-inclusions.
+seam, and free boundary dart at its exact index. The polygonal identifications in both families
+are classified exhaustively as the two directed forms of the expected handle, crosscap, or
+boundary-seam pairings, with the singleton free boundary darts excluded. This classifies the raw
+generator sets; it does not yet identify their generated equivalence closures with
+`OrientableRel` and `NonOrientableRel`. The remaining comparison is to transport both finite
+families through the carrier bridge and prove both directions of each generator-closure
+comparison.
 
 The Gallier-Xu tail should otherwise consume only `SurfaceCellComplex` and quotient-realization
 APIs. It should not mention PL maps, Moise triangulation, or manifold chart machinery.

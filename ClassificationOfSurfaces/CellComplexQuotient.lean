@@ -434,6 +434,50 @@ theorem swapIdentification_mem_polygonalIdentifications
       have hinv := congrArg K.inv hcompatible
       simpa only [K.inv_involutive] using hinv.symm
 
+/-- A positive/negative pair of distinct word positions gives an opposite-direction
+identification. -/
+theorem oppositeDirectionIdentification_mem_of_get_pos_neg
+    {Edge : Type} [Fintype Edge]
+    (word : List (SignedDart Edge))
+    (valid : (oneFacePresentation Edge word).OccurrencePairingValid)
+    (edge : Edge) (first second : Fin word.length) (hne : first ≠ second)
+    (hfirst : word.get first = .pos edge)
+    (hsecond : word.get second = .neg edge) :
+    PolygonGluing.Identification.oppositeDirection
+        ((oneFacePresentation Edge word).occurrenceSide
+          (oneFaceOccurrence word first))
+        ((oneFacePresentation Edge word).occurrenceSide
+          (oneFaceOccurrence word second)) ∈
+      (oneFacePresentation Edge word).polygonalIdentifications valid := by
+  rw [oneFace_mem_polygonalIdentifications_iff]
+  let source := oneFaceOccurrence word first
+  let target := oneFaceOccurrence word second
+  have hoccurrence_ne : source ≠ target := by
+    intro h
+    apply hne
+    have hval := congrArg
+      (fun o : (oneFacePresentation Edge word).BoundaryOccurrence ↦ o.2.val) h
+    exact Fin.ext hval
+  have hsource :
+      (oneFacePresentation Edge word).Occurs (.pos edge) source :=
+    Or.inl hfirst
+  have htarget :
+      (oneFacePresentation Edge word).Occurs (.pos edge) target :=
+    Or.inr hsecond
+  have hnotBoundary :
+      ¬(oneFacePresentation Edge word).IsBoundaryDart (.pos edge) :=
+    not_isBoundaryDart_of_occurs_at_ne hoccurrence_ne hsource htarget
+  refine ⟨first, second, rfl, rfl, hne, ?_, ?_, ?_⟩
+  · simpa only [hfirst] using hnotBoundary
+  · rw [hsecond]
+    intro hboundary
+    apply hnotBoundary
+    exact
+      ((oneFacePresentation Edge word).isBoundaryDart_inv_iff (.pos edge)).mp hboundary
+  · change word.get second = SignedDart.flipEquiv Edge (word.get first)
+    rw [hfirst, hsecond]
+    rfl
+
 /-- Under the occurrence-count conditions, every internal side starts an identification. -/
 theorem OccurrencePairingValid.exists_identification_source {K : SurfaceCellComplex}
     (h : K.OccurrencePairingValid) (source : K.BoundaryOccurrence)

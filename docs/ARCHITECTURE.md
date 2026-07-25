@@ -87,11 +87,10 @@ bottom API is in place:
 - `NormalForm.orientableBoundaryWord` and `.nonOrientableBoundaryWord` give the two canonical
   parametric families matching the exact Eval relations. Their lengths, edge multiplicities,
   incidence validity, connectivity, and admissible occurrence pairings are certified;
-  every directed identification in the nonorientable word is classified as a crosscap or
-  boundary-seam pairing (in either order), while the singleton free boundary sides are excluded;
-  this is the raw-generator theorem
-  `NormalForm.mem_nonOrientable_polygonalIdentifications_iff`, not yet the generated-closure
-  comparison with `NonOrientableRel`;
+  every directed identification in either word is classified as the expected handle, crosscap,
+  or boundary-seam pairing (in either order), while singleton free boundary sides are excluded;
+  these are raw-generator theorems, not yet the generated-closure comparisons with
+  `OrientableRel` and `NonOrientableRel`;
   `NormalForm.canonicalCellComplex` also includes the separate two-face sphere presentation.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
@@ -107,8 +106,8 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
 - `ClassificationOfSurfaces/CanonicalWords.lean`: certified canonical normal-form words and
   one-face presentations.
-- `ClassificationOfSurfaces/CanonicalPairings.lean`: exhaustive pairing classifications for
-  canonical boundary words, beginning with the nonorientable family.
+- `ClassificationOfSurfaces/CanonicalPairings.lean`: exhaustive finite-position pairing
+  classifications for both canonical boundary-word families.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: carrier and quotient bridges between
   one-face polygonal presentations and the exact Eval closed-disk quotients.
 - `ClassificationOfSurfaces/Representatives.lean`: exact Eval closed-disk quotient relations and
@@ -121,10 +120,10 @@ compatibility. New code should use the preferred names above.
 
 1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
    realization homeomorphism, then replace the placeholder realization atomically.
-2. Complete the orientable pairing classification, then use both canonical classifications to
-   identify the resulting generator closures with `OrientableRel` and `NonOrientableRel`; the
-   carrier, quotient-type, generic one-face pairing, block-indexing, and nonorientable pairing
-   bridges are complete.
+2. Transport both finite canonical generator families through the closed-disk carrier, including
+   reversed boundary indexing, and prove both directions of each closure comparison against
+   `OrientableRel` and `NonOrientableRel`; the carrier, quotient-type, one-face pairing,
+   block-indexing, and exhaustive pairing-classification bridges are complete.
 3. Extend the canonical boundary words with cyclic-word infrastructure for Gallier-Xu rewrites.
 4. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 5. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
