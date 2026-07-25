@@ -6129,6 +6129,8 @@ theorem moise_finite_chart_open_cover :
     exact hpreconnected.transGen_of_iUnion
       (fun _ => isOpen_interior) i j (hnonempty i) (hnonempty j)
 
+omit [T2Space S] [ConnectedSpace S]
+  [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
 /-- A compact Eval surface has a finite cover by boundary-faithful Moise chart cores (Moise
 Ch. 8, Thm. 1, plus compactness).  Proved by a finite subcover of the core interiors from the
 local chart extraction (`exists_moiseChart_core_mem_nhds`, `Moise/ChartExtraction.lean`). -/
