@@ -413,6 +413,8 @@ def relabelFaceFamily
     (e : A ↪ B) (F : Finset (Finset A)) : Finset (Finset B) :=
   F.image fun t ↦ t.map e
 
+end Moise
+
 namespace TriangleFamily
 
 variable {A B : Type*} [DecidableEq A] [DecidableEq B]
@@ -420,7 +422,7 @@ variable {A B : Type*} [DecidableEq A] [DecidableEq B]
 /-- Regard a listed face as a face of the family obtained by injectively relabeling its
 vertices. -/
 def faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)} :
-    Face faces → Face (relabelFaceFamily e faces) :=
+    Face faces → Face (Moise.relabelFaceFamily e faces) :=
   fun f => ⟨f.1.map e, Finset.mem_image.mpr ⟨f.1, f.2, rfl⟩⟩
 
 @[simp]
@@ -431,7 +433,7 @@ theorem faceOfRelabel_val (e : A ↪ B) {faces : Finset (Finset A)}
 /-- Injective vertex relabeling preserves dual adjacency of listed faces. -/
 theorem faceAdjacent_faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)}
     {f g : Face faces} (hfg : FaceAdjacent faces f g) :
-    FaceAdjacent (relabelFaceFamily e faces)
+    FaceAdjacent (Moise.relabelFaceFamily e faces)
       (faceOfRelabel e f) (faceOfRelabel e g) := by
   rcases hfg with ⟨edge, hedgeCard, hedgeLeft, hedgeRight⟩
   refine ⟨edge.map e, ?_, ?_, ?_⟩
@@ -443,7 +445,7 @@ theorem faceAdjacent_faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)}
 theorem reflTransGen_faceAdjacent_faceOfRelabel (e : A ↪ B)
     {faces : Finset (Finset A)} {f g : Face faces}
     (hfg : Relation.ReflTransGen (FaceAdjacent faces) f g) :
-    Relation.ReflTransGen (FaceAdjacent (relabelFaceFamily e faces))
+    Relation.ReflTransGen (FaceAdjacent (Moise.relabelFaceFamily e faces))
       (faceOfRelabel e f) (faceOfRelabel e g) := by
   induction hfg with
   | refl => exact Relation.ReflTransGen.refl
@@ -453,7 +455,7 @@ theorem reflTransGen_faceAdjacent_faceOfRelabel (e : A ↪ B)
 /-- Dual connectivity is preserved by an injective relabeling of the vertex type. -/
 theorem isDualConnected_relabel (e : A ↪ B) {faces : Finset (Finset A)}
     (hfaces : IsDualConnected faces) :
-    IsDualConnected (relabelFaceFamily e faces) := by
+    IsDualConnected (Moise.relabelFaceFamily e faces) := by
   intro f g
   obtain ⟨f', hf', hfeq⟩ := Finset.mem_image.mp f.2
   obtain ⟨g', hg', hgeq⟩ := Finset.mem_image.mp g.2
@@ -462,9 +464,11 @@ theorem isDualConnected_relabel (e : A ↪ B) {faces : Finset (Finset A)}
   have hpath :=
     reflTransGen_faceAdjacent_faceOfRelabel e (hfaces fs gs)
   have hfval : (faceOfRelabel e fs).1 = f.1 := by
-    simpa [fs] using hfeq
+    change f'.map e = f.1
+    exact hfeq
   have hgval : (faceOfRelabel e gs).1 = g.1 := by
-    simpa [gs] using hgeq
+    change g'.map e = g.1
+    exact hgeq
   have hfs : faceOfRelabel e fs = f := Subtype.ext hfval
   have hgs : faceOfRelabel e gs = g := Subtype.ext hgval
   rw [hfs, hgs] at hpath
@@ -482,8 +486,8 @@ theorem hasCrossEdge_relabel_of_mapped_edge_eq
     (hedgeLeft : edgeLeft ⊆ fleft.1)
     (hedgeRight : edgeRight ⊆ fright.1)
     (hmap : edgeLeft.map eleft = edgeRight.map eright) :
-    HasCrossEdge (relabelFaceFamily eleft left)
-      (relabelFaceFamily eright right) := by
+    HasCrossEdge (Moise.relabelFaceFamily eleft left)
+      (Moise.relabelFaceFamily eright right) := by
   refine
     ⟨faceOfRelabel eleft fleft, faceOfRelabel eright fright,
       edgeLeft.map eleft, ?_, ?_, ?_⟩
@@ -495,13 +499,16 @@ theorem hasCrossEdge_relabel_of_mapped_edge_eq
 /-- A shared edge remains a shared edge when both families are injectively relabeled. -/
 theorem hasCrossEdge_relabel (e : A ↪ B)
     {left right : Finset (Finset A)} (hcross : HasCrossEdge left right) :
-    HasCrossEdge (relabelFaceFamily e left) (relabelFaceFamily e right) := by
+    HasCrossEdge (Moise.relabelFaceFamily e left)
+      (Moise.relabelFaceFamily e right) := by
   rcases hcross with
     ⟨fleft, fright, edge, hedgeCard, hedgeLeft, hedgeRight⟩
   exact hasCrossEdge_relabel_of_mapped_edge_eq e e
     fleft fright edge edge hedgeCard hedgeLeft hedgeRight rfl
 
 end TriangleFamily
+
+namespace Moise
 
 /-- Push a geometric realization forward along an injective relabeling of all vertices. -/
 noncomputable def pushGeometricRealization
