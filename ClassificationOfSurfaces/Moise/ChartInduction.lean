@@ -3280,6 +3280,70 @@ theorem meshes_surface_edge_valence
   exact PolygonalFamily.relativeSynchronizedMeshes_joint_edge_valence
     J N lines (fun _ ↦ True) e (Finset.mem_powersetCard.mp het).2
 
+/-- Regard a retained old-side chamber as a chamber of the common ambient arrangement. -/
+def oldFaceToAmbient (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ)) :
+    TriangleFamily.Face (oldMesh J N lines).triangles →
+      TriangleFamily.Face
+        (PolygonalFamily.relativeSynchronizedArrangement J N lines).triangles :=
+  fun f => ⟨f.1,
+    (PolygonalFamily.selectedRelativeSynchronizedMesh_triangle_mem
+      J N lines (fun _ ↦ True)).mp f.2 |>.1⟩
+
+/-- Regard a retained target-side chamber as a chamber of the common ambient arrangement. -/
+def newFaceToAmbient (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ)) :
+    TriangleFamily.Face (newMesh J N lines).triangles →
+      TriangleFamily.Face
+        (PolygonalFamily.relativeSynchronizedArrangement J N lines).triangles :=
+  fun f => ⟨f.1,
+    (PolygonalFamily.targetRelativeSynchronizedMesh_triangle_mem
+      J N lines).mp f.2 |>.1⟩
+
+@[simp]
+theorem oldFaceToAmbient_val (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ))
+    (f : TriangleFamily.Face (oldMesh J N lines).triangles) :
+    (oldFaceToAmbient J N lines f).1 = f.1 :=
+  rfl
+
+@[simp]
+theorem newFaceToAmbient_val (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ))
+    (f : TriangleFamily.Face (newMesh J N lines).triangles) :
+    (newFaceToAmbient J N lines f).1 = f.1 :=
+  rfl
+
+/-- Ambient-adjacent chambers retained on opposite sides give a genuine cross-edge certificate
+for the two synchronized submeshes. -/
+theorem hasCrossEdge_of_ambientAdjacent
+    (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ))
+    (fOld : TriangleFamily.Face (oldMesh J N lines).triangles)
+    (fNew : TriangleFamily.Face (newMesh J N lines).triangles)
+    (hadj : TriangleFamily.FaceAdjacent
+      (PolygonalFamily.relativeSynchronizedArrangement J N lines).triangles
+      (oldFaceToAmbient J N lines fOld)
+      (newFaceToAmbient J N lines fNew)) :
+    TriangleFamily.HasCrossEdge
+      (oldMesh J N lines).triangles (newMesh J N lines).triangles := by
+  rcases hadj with ⟨edge, hedgeCard, hedgeOld, hedgeNew⟩
+  exact ⟨fOld, fNew, edge, hedgeCard, hedgeOld, hedgeNew⟩
+
+/-- A chamber retained by both synchronized submeshes supplies a cross-edge certificate. -/
+theorem hasCrossEdge_of_common_triangle
+    (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ))
+    {t : Finset (oldMesh J N lines).Vertex}
+    (hOld : t ∈ (oldMesh J N lines).triangles)
+    (hNew : t ∈ (newMesh J N lines).triangles) :
+    TriangleFamily.HasCrossEdge
+      (oldMesh J N lines).triangles (newMesh J N lines).triangles := by
+  have htCard : t.card = 3 := (oldMesh J N lines).card_triangle t hOld
+  obtain ⟨edge, hedge, hedgeCard⟩ :=
+    Finset.exists_subset_card_eq (show 2 ≤ t.card by omega)
+  exact ⟨⟨t, hOld⟩, ⟨t, hNew⟩, edge, hedgeCard, hedge, hedge⟩
+
 /-- Both relative members retain the vertex type of their one ambient arrangement, so planar
 equality is precisely equality of zero-extended barycentric coordinates. -/
 theorem meshes_coordinateEmbed_eq_iff
