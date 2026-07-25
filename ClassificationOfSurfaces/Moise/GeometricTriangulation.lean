@@ -7,6 +7,55 @@ import Mathlib.Analysis.Convex.StdSimplex
 import Mathlib.Topology.Homeomorph.Lemmas
 import Mathlib.Topology.Separation.Hausdorff
 
+/-- A finite closed cover of a preconnected set has a connected intersection graph.
+
+This is the closed-cover counterpart of `IsPreconnected.transGen_of_iUnion`, whose open-cover
+hypothesis is not available for the closed simplexes of a geometric realization. -/
+theorem IsPreconnected.transGen_of_finite_iUnion
+    {α ι : Type*} [TopologicalSpace α] [Finite ι] {s : ι → Set α}
+    (hs : IsPreconnected (⋃ n, s n)) (hs' : ∀ i, IsClosed (s i))
+    (i j : ι) (hi : (s i).Nonempty) (hj : (s j).Nonempty) :
+    Relation.TransGen (fun a b ↦ (s a ∩ s b).Nonempty) i j := by
+  by_contra hij
+  let R := fun a b : ι ↦ (s a ∩ s b).Nonempty
+  let S : Set ι := {k | Relation.TransGen R i k}
+  let U : Set α := ⋃ k ∈ S, s k
+  let V : Set α := ⋃ k ∈ Sᶜ, s k
+  have hUclosed : IsClosed U := by
+    exact Set.toFinite S |>.isClosed_biUnion fun k _ ↦ hs' k
+  have hVclosed : IsClosed V := by
+    exact Set.toFinite Sᶜ |>.isClosed_biUnion fun k _ ↦ hs' k
+  have hsplit : (⋃ n, s n) = U ∪ V := iSup_split s (· ∈ S)
+  have hUV : Disjoint U V := by
+    rw [Set.disjoint_left]
+    intro x hxU hxV
+    simp only [Set.mem_iUnion, exists_prop, Set.mem_compl_iff, U, V] at hxU hxV
+    obtain ⟨k, hk, hxk⟩ := hxU
+    obtain ⟨l, hl, hxl⟩ := hxV
+    exact hl (hk.tail ⟨x, hxk, hxl⟩)
+  obtain ⟨a, ha⟩ := hi
+  obtain ⟨b, hb⟩ := hj
+  have hiS : i ∈ S := Relation.TransGen.single ⟨a, ha, ha⟩
+  have haU : a ∈ U := Set.mem_iUnion₂_of_mem hiS ha
+  have hjS : j ∉ S := hij
+  have hbV : b ∈ V := Set.mem_iUnion₂_of_mem hjS hb
+  have hcover : (⋃ n, s n) ⊆ Vᶜ ∪ Uᶜ := by
+    intro x hx
+    rcases hsplit.le hx with hxU | hxV
+    · exact Or.inl (fun hxV ↦ Set.disjoint_left.mp hUV hxU hxV)
+    · exact Or.inr (fun hxU ↦ Set.disjoint_left.mp hUV hxU hxV)
+  have hUne : ((⋃ n, s n) ∩ Vᶜ).Nonempty :=
+    ⟨a, Set.mem_iUnion_of_mem i ha,
+      fun haV ↦ Set.disjoint_left.mp hUV haU haV⟩
+  have hVne : ((⋃ n, s n) ∩ Uᶜ).Nonempty :=
+    ⟨b, Set.mem_iUnion_of_mem j hb,
+      fun hbU ↦ Set.disjoint_left.mp hUV hbU hbV⟩
+  obtain ⟨x, hxall, hxV, hxU⟩ := hs Vᶜ Uᶜ
+    hVclosed.isOpen_compl hUclosed.isOpen_compl hcover hUne hVne
+  rcases hsplit.le hxall with hxU' | hxV'
+  · exact hxU hxU'
+  · exact hxV hxV'
+
 /-!
 # Geometric triangulations
 
@@ -66,6 +115,39 @@ theorem inter (t u : Finset V) :
       exact htu v (fun hmem => hv (Finset.mem_inter.mp hmem).1)
     · intro v hv
       exact htu v (fun hmem => hv (Finset.mem_inter.mp hmem).2)
+
+/-- A barycentric face is nonempty exactly when it has a vertex. -/
+theorem nonempty_iff (t : Finset V) :
+    (GeometricFace V t).Nonempty ↔ t.Nonempty := by
+  constructor
+  · rintro ⟨x, hxstd, hxsupp⟩
+    by_contra ht
+    have ht' : t = ∅ := Finset.not_nonempty_iff_eq_empty.mp ht
+    have hxzero : x = 0 := by
+      funext v
+      exact hxsupp v (by simp [ht'])
+    rw [hxzero] at hxstd
+    norm_num [stdSimplex] at hxstd
+  · rintro ⟨v, hv⟩
+    refine ⟨Pi.single v 1, single_mem_stdSimplex ℝ v, ?_⟩
+    intro w hw
+    by_cases hwv : w = v
+    · subst w
+      exact (hw hv).elim
+    · simp [hwv]
+
+omit [DecidableEq V] in
+/-- Each barycentric face is closed in the ambient coordinate space. -/
+theorem isClosed (t : Finset V) :
+    IsClosed (GeometricFace V t) := by
+  classical
+  have hrepr : GeometricFace V t =
+      stdSimplex ℝ V ∩ ⋂ v ∈ {v : V | v ∉ t}, {x : V → ℝ | x v = 0} := by
+    ext x
+    simp [GeometricFace]
+  rw [hrepr]
+  exact (isClosed_stdSimplex ℝ V).inter
+    (isClosed_biInter fun v _ ↦ isClosed_eq (continuous_apply v) continuous_const)
 
 end GeometricFace
 
@@ -130,6 +212,10 @@ def edges (faces : Finset (Finset Vertex)) : Finset (Finset Vertex) :=
 def FaceAdjacent (faces : Finset (Finset Vertex)) (f g : Face faces) : Prop :=
   ∃ e : Finset Vertex, e.card = 2 ∧ e ⊆ f.1 ∧ e ⊆ g.1
 
+/-- Two listed triangles meet when their vertex sets have a common vertex. -/
+def FaceIntersects (faces : Finset (Finset Vertex)) (f g : Face faces) : Prop :=
+  (f.1 ∩ g.1).Nonempty
+
 omit [DecidableEq Vertex] in
 theorem faceAdjacent_symm {faces : Finset (Finset Vertex)} {f g : Face faces}
     (h : FaceAdjacent faces f g) : FaceAdjacent faces g f := by
@@ -146,6 +232,74 @@ theorem reflTransGen_faceAdjacent_symm {faces : Finset (Finset Vertex)}
 /-- Every two listed triangles are connected by a finite chain of shared edges. -/
 def IsDualConnected (faces : Finset (Finset Vertex)) : Prop :=
   ∀ f g : Face faces, Relation.ReflTransGen (FaceAdjacent faces) f g
+
+/-- Every pair of triangles incident to one vertex can be joined through shared edges.
+
+For a triangulated surface this is the local connectedness assertion carried by the link of the
+vertex.  Separating it from global dual connectivity isolates the one genuinely local-topological
+ingredient in the proof. -/
+def IsVertexStarConnected (faces : Finset (Finset Vertex)) : Prop :=
+  ∀ (v : Vertex) (f g : Face faces), v ∈ f.1 → v ∈ g.1 →
+    Relation.ReflTransGen (FaceAdjacent faces) f g
+
+section Geometric
+
+variable [Fintype Vertex]
+
+/-- Geometric simplexes intersect exactly when their combinatorial faces share a vertex. -/
+theorem geometricFace_inter_nonempty_iff
+    {faces : Finset (Finset Vertex)} (f g : Face faces) :
+    (GeometricFace Vertex f.1 ∩ GeometricFace Vertex g.1).Nonempty ↔
+      FaceIntersects faces f g := by
+  rw [GeometricFace.inter]
+  simpa [FaceIntersects] using GeometricFace.nonempty_iff (f.1 ∩ g.1)
+
+/-- Connectedness of a finite geometric realization connects all maximal faces through
+nonempty intersections. -/
+theorem isFaceIntersectionConnected_of_isPreconnected
+    {faces : Finset (Finset Vertex)}
+    (hface : ∀ f : Face faces, f.1.Nonempty)
+    (hpre : IsPreconnected (GeometricRealization Vertex faces)) :
+    ∀ f g : Face faces,
+      Relation.ReflTransGen (FaceIntersects faces) f g := by
+  have hunion :
+      GeometricRealization Vertex faces =
+        ⋃ f : Face faces, GeometricFace Vertex f.1 := by
+    ext x
+    simp [GeometricRealization, GeometricFace]
+  have hpre' :
+      IsPreconnected (⋃ f : Face faces, GeometricFace Vertex f.1) := by
+    rw [← hunion]
+    exact hpre
+  intro f g
+  have hchain := hpre'.transGen_of_finite_iUnion
+    (fun f : Face faces ↦ GeometricFace.isClosed f.1) f g
+    ((GeometricFace.nonempty_iff f.1).2 (hface f))
+    ((GeometricFace.nonempty_iff g.1).2 (hface g))
+  exact (Relation.ReflTransGen.mono
+    (r := fun a b : Face faces ↦
+      (GeometricFace Vertex a.1 ∩ GeometricFace Vertex b.1).Nonempty)
+    (p := FaceIntersects faces)
+    (fun a b h ↦ (geometricFace_inter_nonempty_iff a b).mp h))
+    f g hchain.to_reflTransGen
+
+end Geometric
+
+/-- Connected vertex stars upgrade connectivity through arbitrary face intersections to
+connectivity through shared edges. -/
+theorem IsVertexStarConnected.isDualConnected
+    {faces : Finset (Finset Vertex)}
+    (hstar : IsVertexStarConnected faces)
+    (hinter : ∀ f g : Face faces,
+      Relation.ReflTransGen (FaceIntersects faces) f g) :
+    IsDualConnected faces := by
+  intro f g
+  exact (Relation.reflTransGen_closed
+    (r := FaceIntersects faces) (p := FaceAdjacent faces)
+    (fun a b hab ↦ by
+      rcases hab with ⟨v, hv⟩
+      exact hstar v a b (Finset.mem_inter.mp hv).1
+        (Finset.mem_inter.mp hv).2)) f g (hinter f g)
 
 /-- Incidence conditions making a finite family of triangles a connected pseudomanifold with
 boundary: it is nonempty, no edge has valence above two, and its dual graph is connected. -/
@@ -229,6 +383,24 @@ theorem faces_nonempty [Nonempty S] : T.faces.Nonempty := by
   let s : S := Classical.choice inferInstance
   rcases (T.homeo.symm s).2.2 with ⟨t, ht, _⟩
   exact ⟨t, ht⟩
+
+/-- On a connected realization, local edge-connectedness of every vertex star is enough to
+deduce global dual connectivity. -/
+theorem faces_isDualConnected_of_isVertexStarConnected [ConnectedSpace S]
+    (hstar : TriangleFamily.IsVertexStarConnected T.faces) :
+    TriangleFamily.IsDualConnected T.faces := by
+  letI : ConnectedSpace T.realization :=
+    T.homeo.connectedSpace_iff.mpr inferInstance
+  have hpre : IsPreconnected (GeometricRealization T.Vertex T.faces) := by
+    simpa only [Subtype.range_val] using
+      (isPreconnected_range
+        (continuous_subtype_val :
+          Continuous (fun x : T.realization ↦ (x : T.Vertex → ℝ))))
+  apply hstar.isDualConnected
+  apply TriangleFamily.isFaceIntersectionConnected_of_isPreconnected _ hpre
+  intro f
+  rw [← Finset.card_pos, T.faces_card f.1 f.2]
+  decide
 
 /-- A triangulation of a nonempty space has at least three available vertices. -/
 theorem three_le_card_vertex [Nonempty S] : 3 ≤ Fintype.card T.Vertex := by
