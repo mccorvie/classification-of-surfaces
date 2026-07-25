@@ -414,8 +414,8 @@ theorem incidenceCertificate_of_surfaceIncidence
       exact e.2
     exact (Nat.not_lt_of_ge (h.edge_valence_le_two e.1 heEdges)) hthree
   · intro f g
-    exact (h.dual_connected f g).mono fun _ _ ↦
-      T.faceAdjacent_to_triangleAdjacent
+    apply Relation.ReflTransGen.mono (fun _ _ ↦ T.faceAdjacent_to_triangleAdjacent)
+    exact h.dual_connected f g
 
 end GeometricTriangulation
 
