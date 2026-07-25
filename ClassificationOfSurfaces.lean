@@ -70,6 +70,7 @@ import ClassificationOfSurfaces.Moise.PolygonalFamilyPolyhedron
 import ClassificationOfSurfaces.Moise.PolygonalJordan
 import ClassificationOfSurfaces.Moise.PolygonalPolyhedron
 import ClassificationOfSurfaces.Moise.PolygonalSchoenflies
+import ClassificationOfSurfaces.Moise.PuncturedSurface
 import ClassificationOfSurfaces.Moise.ThinKiteMove
 import ClassificationOfSurfaces.NormalForm
 import ClassificationOfSurfaces.PolygonalQuotient
