@@ -213,14 +213,18 @@ theorem isDualConnected_union {left right : Finset (Finset Vertex)}
       Finset.subset_union_right (hright f' g')
     simpa [f', g', faceOfSubset] using hpath
 
-/-- Existential form of dual connectivity for a union, convenient for gluing constructions. -/
-theorem isDualConnected_union_of_exists_faceAdjacent
-    {left right : Finset (Finset Vertex)}
-    (hleft : IsDualConnected left) (hright : IsDualConnected right)
-    (hcross : ∃ (fleft : Face left) (fright : Face right),
+/-- A face from each family shares a genuine two-vertex edge in the union family. -/
+def HasCrossEdge (left right : Finset (Finset Vertex)) : Prop :=
+  ∃ (fleft : Face left) (fright : Face right),
       FaceAdjacent (left ∪ right)
         (faceOfSubset Finset.subset_union_left fleft)
-        (faceOfSubset Finset.subset_union_right fright)) :
+        (faceOfSubset Finset.subset_union_right fright)
+
+/-- Two dual-connected face families with a shared cross-edge have dual-connected union. -/
+theorem isDualConnected_union_of_hasCrossEdge
+    {left right : Finset (Finset Vertex)}
+    (hleft : IsDualConnected left) (hright : IsDualConnected right)
+    (hcross : HasCrossEdge left right) :
     IsDualConnected (left ∪ right) := by
   rcases hcross with ⟨fleft, fright, hcross⟩
   exact isDualConnected_union hleft hright fleft fright hcross
@@ -243,7 +247,7 @@ theorem isDualConnected_insert {faces : Finset (Finset Vertex)}
       ⟨face, Finset.mem_insert_self face faces⟩
       (faceOfSubset (Finset.subset_insert face faces) anchor)) :
     IsDualConnected (insert face faces) := by
-  apply isDualConnected_union_of_exists_faceAdjacent
+  apply isDualConnected_union_of_hasCrossEdge
     (isDualConnected_singleton face) hfaces
   refine ⟨⟨face, Finset.mem_singleton_self face⟩, anchor, ?_⟩
   simpa [faceOfSubset] using hcross

@@ -904,6 +904,13 @@ def empty (S : Type*) [TopologicalSpace S] : PartialTriangulation S where
   embed := fun x => isEmptyElim x
   isEmbedding := Topology.IsEmbedding.of_subsingleton _
 
+/-- The empty partial triangulation is vacuously dual-connected. -/
+theorem empty_isDualConnected (S : Type*) [TopologicalSpace S] :
+    (empty S).IsDualConnected := by
+  rintro ⟨f, hf⟩
+  change f ∈ (∅ : Finset (Finset Empty)) at hf
+  exact (Finset.notMem_empty f hf).elim
+
 /-- A partial triangulation with no faces covers nothing: its realization is empty. -/
 theorem support_eq_empty_of_faces_eq_empty {S : Type*} [TopologicalSpace S]
     (T : PartialTriangulation S) (h : T.faces = ∅) : T.support = ∅ := by
@@ -5989,14 +5996,11 @@ theorem PartialTriangulation.isDualConnected_of_faces_eq_union
     {F₁ F₂ : Finset (Finset T.Vertex)} (hfaces : T.faces = F₁ ∪ F₂)
     (hdual₁ : TriangleFamily.IsDualConnected F₁)
     (hdual₂ : TriangleFamily.IsDualConnected F₂)
-    (hcross : ∃ (f₁ : TriangleFamily.Face F₁) (f₂ : TriangleFamily.Face F₂),
-      TriangleFamily.FaceAdjacent (F₁ ∪ F₂)
-        (TriangleFamily.faceOfSubset Finset.subset_union_left f₁)
-        (TriangleFamily.faceOfSubset Finset.subset_union_right f₂)) :
+    (hcross : TriangleFamily.HasCrossEdge F₁ F₂) :
     T.IsDualConnected := by
   change TriangleFamily.IsDualConnected T.faces
   rw [hfaces]
-  exact TriangleFamily.isDualConnected_union_of_exists_faceAdjacent hdual₁ hdual₂ hcross
+  exact TriangleFamily.isDualConnected_union_of_hasCrossEdge hdual₁ hdual₂ hcross
 
 /-- The invariant carried through the bordered Radó induction: every edge of the built complex
 lies in at most two faces, every triangle has a regular exposed intersection with the ambient
