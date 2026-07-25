@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
+import ClassificationOfSurfaces.CanonicalPairings
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
@@ -121,6 +122,9 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `SurfaceCellComplex.mem_polygonalIdentifications_iff_exists_occurrences`
 * `SurfaceCellComplex.oneFaceOccurrence`
 * `SurfaceCellComplex.oneFace_mem_polygonalIdentifications_iff`
+* `SurfaceCellComplex.not_isBoundaryDart_of_occurs_at_ne`
+* `SurfaceCellComplex.swapIdentification`
+* `SurfaceCellComplex.swapIdentification_mem_polygonalIdentifications`
 * `quotEqvGenHomeomorph`
 * `eqvGenQuotientCongrRaw`
 * `eqvGenQuotientCongrRawOfGeneratorMaps`
@@ -141,8 +145,9 @@ identifies each indexed disk, and hence every one-face pre-realization, with the
 disk used by the Eval representatives. It records the side-coordinate formula and reconciles the
 raw `Quot` presentation with the equivalence-closure `Quotient` used by polygonal gluings. The
 one-face membership theorem further reduces the polygonal generators to compatible pairs of
-positions in the boundary word. The remaining comparison obligation is explicit canonical-word
-indexing and boundary-coordinate arithmetic.
+positions in the boundary word. Exact canonical-word indexing and the nonorientable pairing
+classification are complete; the remaining obligations are the orientable pairing classification
+and boundary-coordinate arithmetic.
 
 ## Gallier-Xu tail
 
@@ -154,6 +159,11 @@ indexing and boundary-coordinate arithmetic.
 * `NormalForm.orientableBoundaryPosition`
 * `NormalForm.nonOrientableCrosscapPosition`
 * `NormalForm.nonOrientableBoundaryPosition`
+* `NormalForm.nonOrientableCrosscapIdentification`
+* `NormalForm.nonOrientableCrosscapIdentificationReverse`
+* `NormalForm.nonOrientableBoundaryIdentification`
+* `NormalForm.nonOrientableBoundaryIdentificationReverse`
+* `NormalForm.mem_nonOrientable_polygonalIdentifications_iff`
 * `NormalForm.orientableCellComplex`
 * `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
@@ -169,10 +179,14 @@ indexing and boundary-coordinate arithmetic.
 The canonical orientable and nonorientable words have lengths `4 * p + 3 * n` and
 `2 * p + 3 * n`. Their edge-occurrence counts give incidence-valid, connected one-face complexes;
 under the Eval admissibility bounds they also have occurrence-pairing witnesses for polygonal
-realization. Certified block-position and `List.get` theorems expose every handle, crosscap, seam,
-and free boundary dart at its exact index. The remaining comparison is topological: transport the
-resulting generators through the carrier bridge and identify the two generated equivalence
-relations.
+realization. Certified block-position and `List.get` theorems expose every handle, crosscap,
+seam, and free boundary dart at its exact index. For `1 ≤ p`, the nonorientable polygonal
+identifications are now classified exhaustively as the two directed forms of a crosscap or
+boundary-seam pairing, with the singleton free boundary darts excluded. This classifies the raw
+generator set; it does not yet identify its generated equivalence closure with
+`NonOrientableRel`. The remaining comparison is to prove the analogous orientable classification,
+transport both families through the carrier bridge, and prove the two generator-closure
+inclusions.
 
 The Gallier-Xu tail should otherwise consume only `SurfaceCellComplex` and quotient-realization
 APIs. It should not mention PL maps, Moise triangulation, or manifold chart machinery.

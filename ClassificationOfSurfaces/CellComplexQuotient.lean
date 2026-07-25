@@ -372,6 +372,68 @@ theorem oneFace_mem_polygonalIdentifications_iff
         change word.get j = SignedDart.flipEquiv Edge (word.get i)
         exact hcompatible
 
+/-- Two distinct occurrences of the same unoriented dart certify that it is internal. -/
+theorem not_isBoundaryDart_of_occurs_at_ne
+    {K : SurfaceCellComplex} {d : K.Dart} {source target : K.BoundaryOccurrence}
+    (hne : source ≠ target) (hsource : K.Occurs d source) (htarget : K.Occurs d target) :
+    ¬K.IsBoundaryDart d := by
+  rintro ⟨uniqueOccurrence, _hoccurs, hunique⟩
+  apply hne
+  exact (hunique source hsource).trans (hunique target htarget).symm
+
+/-- Reverse the directed presentation of a side identification. -/
+def swapIdentification {K : SurfaceCellComplex}
+    (identification : PolygonGluing.Identification K.Face K.faceBoundaryLength) :
+    PolygonGluing.Identification K.Face K.faceBoundaryLength where
+  source := identification.target
+  target := identification.source
+  direction := identification.direction
+
+@[simp]
+theorem swapIdentification_source {K : SurfaceCellComplex}
+    (identification : PolygonGluing.Identification K.Face K.faceBoundaryLength) :
+    (swapIdentification identification).source = identification.target :=
+  rfl
+
+@[simp]
+theorem swapIdentification_target {K : SurfaceCellComplex}
+    (identification : PolygonGluing.Identification K.Face K.faceBoundaryLength) :
+    (swapIdentification identification).target = identification.source :=
+  rfl
+
+@[simp]
+theorem swapIdentification_direction {K : SurfaceCellComplex}
+    (identification : PolygonGluing.Identification K.Face K.faceBoundaryLength) :
+    (swapIdentification identification).direction = identification.direction :=
+  rfl
+
+@[simp]
+theorem swapIdentification_swap {K : SurfaceCellComplex}
+    (identification : PolygonGluing.Identification K.Face K.faceBoundaryLength) :
+    swapIdentification (swapIdentification identification) = identification := by
+  cases identification
+  rfl
+
+theorem swapIdentification_mem_polygonalIdentifications
+    {K : SurfaceCellComplex} (valid : K.OccurrencePairingValid)
+    {identification : PolygonGluing.Identification K.Face K.faceBoundaryLength}
+    (hidentification : identification ∈ K.polygonalIdentifications valid) :
+    swapIdentification identification ∈ K.polygonalIdentifications valid := by
+  rw [mem_polygonalIdentifications_iff_exists_occurrences] at hidentification ⊢
+  rcases hidentification with
+    ⟨source, target, hsource, htarget, hne, hsourceBoundary, htargetBoundary,
+      hcompatible⟩
+  refine ⟨target, source, htarget, hsource, hne.symm, htargetBoundary,
+    hsourceBoundary, ?_⟩
+  cases hdirection : identification.direction with
+  | same =>
+      simp only [swapIdentification, hdirection] at hcompatible ⊢
+      exact hcompatible.symm
+  | opposite =>
+      simp only [swapIdentification, hdirection] at hcompatible ⊢
+      have hinv := congrArg K.inv hcompatible
+      simpa only [K.inv_involutive] using hinv.symm
+
 /-- Under the occurrence-count conditions, every internal side starts an identification. -/
 theorem OccurrencePairingValid.exists_identification_source {K : SurfaceCellComplex}
     (h : K.OccurrencePairingValid) (source : K.BoundaryOccurrence)
