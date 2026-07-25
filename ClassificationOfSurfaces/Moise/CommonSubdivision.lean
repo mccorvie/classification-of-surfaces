@@ -74,7 +74,7 @@ theorem affineIndependent_comp_of_injOn_convexHull
     change 0 ≤ (1 - r) * (1 / 3) + r * w₂ i
     nlinarith
   have hu : ∑ i : Fin 3, u i = 1 := by
-    simp [u, Fin.sum_univ_succ]
+    simp [u]
   have hxsum : ∑ i : Fin 3, x i = 1 := by
     simp only [x, AffineMap.lineMap_apply_module, Pi.add_apply, Pi.smul_apply,
       smul_eq_mul, Finset.sum_add_distrib, ← Finset.mul_sum]
@@ -191,7 +191,7 @@ noncomputable def triangleCoords (T : M.Triangle) :
 
 theorem triangleCoords_support (T : M.Triangle) (p : Plane) :
     ∀ v ∉ T.1, M.triangleCoords T p v = 0 :=
-  fun v hv => M.triangleCoords_apply_of_notMem T hv p
+  fun _ hv => M.triangleCoords_apply_of_notMem T hv p
 
 theorem sum_triangleCoords (T : M.Triangle) (p : Plane) :
     ∑ v, M.triangleCoords T p v = 1 := by
@@ -598,7 +598,7 @@ noncomputable def toTriangleMesh : TriangleMesh where
   position := K.position
   position_injective := K.position_injective
   triangles := K.cells
-  card_triangle := fun t ht => K.card_of_mem_cells ht
+  card_triangle := fun _ ht => K.card_of_mem_cells ht
   affineIndependent_triangle := fun t ht => K.affineIndependent t (K.mem_simplexes_of_mem_cells ht)
   triangle_inter := fun s hs t ht =>
     K.face_inter s (K.mem_simplexes_of_mem_cells hs) t (K.mem_simplexes_of_mem_cells ht)

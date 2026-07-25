@@ -447,7 +447,7 @@ theorem adaptiveFanSourcePoint_vertex (hU : IsOpen U)
   rw [Finset.sum_eq_single p]
   · simp
   · intro q _ hqp
-    simp [Pi.single_apply, hqp]
+    simp [hqp]
   · simp
 
 /-- Pulling an edge point back through the faithful subdivision gives zero in every coordinate
@@ -1016,7 +1016,7 @@ theorem continuous_adaptiveFanSourcePoint (hU : IsOpen U)
   apply Continuous.subtype_mk
   apply continuous_pi
   intro v
-  apply continuous_finset_sum
+  apply continuous_finsetSum
   intro p _
   exact ((continuous_apply p).comp continuous_subtype_val).mul continuous_const
 
@@ -1244,7 +1244,6 @@ theorem adaptiveFacePlaneHomeomorph_mem_edge_iff
       apply Subtype.ext
       exact hxchart.symm
     refine ⟨x.1, hxEdge, ?_⟩
-    change (K.safeSubdivision t.1).homeo x.1 = p
     rw [← hyx]
     exact (K.safeSubdivision t.1).homeo.apply_symm_apply p
   · intro hpEdge
@@ -1691,8 +1690,8 @@ theorem adaptiveFanSide_eq_of_faceMap_eq_of_same_tile_of_base_weights_pos
     (hyCenter : y (K.adaptiveFanCenterVertex U hU ⟨t, j, b⟩) = 0)
     (hxFirst : 0 < x (K.adaptiveFanFirstVertex U hU ⟨t, i, a⟩))
     (hxSecond : 0 < x (K.adaptiveFanSecondVertex U hU ⟨t, i, a⟩))
-    (hyFirst : 0 < y (K.adaptiveFanFirstVertex U hU ⟨t, j, b⟩))
-    (hySecond : 0 < y (K.adaptiveFanSecondVertex U hU ⟨t, j, b⟩)) :
+    (_ : 0 < y (K.adaptiveFanFirstVertex U hU ⟨t, j, b⟩))
+    (_ : 0 < y (K.adaptiveFanSecondVertex U hU ⟨t, j, b⟩)) :
     i = j := by
   let R := K.safeSubdivision t.1
   have hsource : K.adaptiveFanSourcePoint U hU ⟨t, i, a⟩ x =
@@ -1897,8 +1896,8 @@ theorem adaptiveFanLaterBasePath_subset_earlierBaseEdge_of_faceMap_eq
     {y : stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU g}}
     (hxy : K.adaptiveFanFaceMap U hU f x =
       K.adaptiveFanFaceMap U hU g y)
-    (hxFirst : 0 < x (K.adaptiveFanFirstVertex U hU f))
-    (hxSecond : 0 < x (K.adaptiveFanSecondVertex U hU f))
+    (_ : 0 < x (K.adaptiveFanFirstVertex U hU f))
+    (_ : 0 < x (K.adaptiveFanSecondVertex U hU f))
     (hyFirst : 0 < y (K.adaptiveFanFirstVertex U hU g))
     (hySecond : 0 < y (K.adaptiveFanSecondVertex U hU g)) :
     ∀ r : Set.Icc (0 : ℝ) 1,
@@ -2362,7 +2361,7 @@ theorem extendFaceCoordinates_adaptiveFanFace (hU : IsOpen U)
     have hcEq : (⟨c.1, hcMem⟩ :
         {z // z ∈ K.adaptiveFanFaceVertices U hU f}) = c := Subtype.ext rfl
     rw [hcEq]
-    simp [c, p, q, Pi.single_apply, hcp, hcq]
+    simp [c, p, q, hcp, hcq]
   by_cases hvp : v = p.1
   · subst v
     have hpMem : p.1 ∈ K.adaptiveFanFaceVertices U hU f := p.2
@@ -2370,7 +2369,7 @@ theorem extendFaceCoordinates_adaptiveFanFace (hU : IsOpen U)
     have hpEq : (⟨p.1, hpMem⟩ :
         {z // z ∈ K.adaptiveFanFaceVertices U hU f}) = p := Subtype.ext rfl
     rw [hpEq]
-    simp [c, p, q, Pi.single_apply, hcp, hpq]
+    simp [c, p, q, hcp, hpq]
   by_cases hvq : v = q.1
   · subst v
     have hqMem : q.1 ∈ K.adaptiveFanFaceVertices U hU f := q.2
@@ -2378,14 +2377,14 @@ theorem extendFaceCoordinates_adaptiveFanFace (hU : IsOpen U)
     have hqEq : (⟨q.1, hqMem⟩ :
         {z // z ∈ K.adaptiveFanFaceVertices U hU f}) = q := Subtype.ext rfl
     rw [hqEq]
-    simp [c, p, q, Pi.single_apply, hcq, hpq]
+    simp [c, p, q, hcq, hpq]
   · have hvNot : v ∉ K.adaptiveFanFaceVertices U hU f := by
       intro hv
       simp only [adaptiveFanFaceVertices, Finset.mem_insert,
         Finset.mem_singleton] at hv
       exact hv.elim hvc (fun h ↦ h.elim hvp hvq)
     rw [extendFaceCoordinates_of_notMem _ _ hvNot]
-    simp [c, p, q, Pi.single_apply, hvc, hvp, hvq]
+    simp [c, p, q, hvc, hvp, hvq]
 
 /-- Radial projection to the fan base recovers the original global coordinates after restoring
 the cone-center weight. -/
@@ -2408,18 +2407,18 @@ theorem extendFaceCoordinates_eq_center_add_smul_normalizedBase (hU : IsOpen U)
         (x (K.adaptiveFanFirstVertex U hU f)) := by
     funext v
     by_cases hv : (K.adaptiveFanFirstVertex U hU f).1 = v
-    · simp [Pi.single_apply, hv]
+    · simp [hv]
       exact mul_div_cancel₀ _ hd
-    · simp [Pi.single_apply, hv]
+    · simp [hv]
   have hsecond : d • Pi.single (K.adaptiveFanSecondVertex U hU f).1
         (x (K.adaptiveFanSecondVertex U hU f) / d) =
       Pi.single (K.adaptiveFanSecondVertex U hU f).1
         (x (K.adaptiveFanSecondVertex U hU f)) := by
     funext v
     by_cases hv : (K.adaptiveFanSecondVertex U hU f).1 = v
-    · simp [Pi.single_apply, hv]
+    · simp [hv]
       exact mul_div_cancel₀ _ hd
-    · simp [Pi.single_apply, hv]
+    · simp [hv]
   rw [K.extendFaceCoordinates_adaptiveFanFace U hU f x,
     K.extendFaceCoordinates_adaptiveFanFace U hU f
       (K.adaptiveFanNormalizedBasePoint U hU f x hxCenter),

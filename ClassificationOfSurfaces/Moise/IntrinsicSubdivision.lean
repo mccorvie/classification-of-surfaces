@@ -30,7 +30,7 @@ two-complex. -/
 @[reducible] def toIntrinsic : IntrinsicTwoComplex where
   Vertex := K.Vertex
   faces := K.cells
-  faces_card := fun t ht => K.card_of_mem_cells ht
+  faces_card := fun _ ht => K.card_of_mem_cells ht
 
 @[simp] theorem toIntrinsic_faces : K.toIntrinsic.faces = K.cells := rfl
 
@@ -74,7 +74,7 @@ noncomputable def faceCoords (T : K.toTriangleMesh.Triangle) :
 
 theorem faceCoords_support (T : K.toTriangleMesh.Triangle) (p : Plane) :
     ∀ v ∉ T.1, K.faceCoords T p v = 0 :=
-  fun v hv => K.faceCoords_apply_of_notMem T hv p
+  fun _ hv => K.faceCoords_apply_of_notMem T hv p
 
 theorem sum_faceCoords (T : K.toTriangleMesh.Triangle) (p : Plane) :
     ∑ v, K.faceCoords T p v = 1 := by
@@ -141,7 +141,7 @@ theorem faceCoords_position (T : K.toTriangleMesh.Triangle) {v : K.Vertex}
       intro h
       subst w
       exact hw hv
-    simp [Pi.single_apply, hwv]
+    simp [hwv]
   · exact K.sum_faceCoords T (K.position v)
   · simp
   · rw [K.baryEval_faceCoords]

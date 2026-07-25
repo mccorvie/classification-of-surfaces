@@ -325,7 +325,7 @@ theorem faceBoundarySubdivision_support (f : K.Face) :
       standardTrianglePlaneComplex.oneSkeleton.oneSkeleton_isGraph,
     IntrinsicTwoComplex.standardTriangle_oneSkeleton_support,
     standardTriangleCircle_carrier]
-  simpa only [standardFaceRegion, standardTrianglePlaneComplex_support]
+  simp only [standardFaceRegion, standardTrianglePlaneComplex_support]
 
 /-- The first globally oriented standard corner, typed as a vertex of the standard boundary
 graph. -/
@@ -627,7 +627,7 @@ noncomputable def faceMiddleSourceAffine (f : K.Face) (i : ZMod 3) :
         (K.faceEdgeParameterAffine f i p) = _
   ext j
   fin_cases j <;>
-    simp [AffineMap.lineMap_apply_module, planePoint] <;> ring
+    simp [AffineMap.lineMap_apply_module, planePoint] ; ring
 
 /-- The boundary map is affine on every subset of a standard side contained in the first
 spoke range. -/
@@ -986,7 +986,7 @@ theorem faceBoundaryMap_isPLOnSet (f : K.Face) :
       IntrinsicTwoComplex.standardTriangle_oneSkeleton_support
     _ = frontier standardFaceRegion := by
       rw [standardTriangleCircle_carrier]
-      simpa only [standardFaceRegion, standardTrianglePlaneComplex_support]
+      simp only [standardFaceRegion, standardTrianglePlaneComplex_support]
 
 end LocallyFiniteTriangleComplex
 

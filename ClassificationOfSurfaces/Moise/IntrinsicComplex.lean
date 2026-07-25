@@ -178,7 +178,7 @@ theorem mem_oneSkeleton_iff (x : K.realization) :
 
 theorem faceCarrier_edge_subset_oneSkeleton (e : K.Edge) :
     K.faceCarrier e.1 ⊆ K.oneSkeleton :=
-  fun x hx => ⟨e, hx⟩
+  fun _ hx => ⟨e, hx⟩
 
 theorem oneSkeleton_eq_iUnion_faceCarrier :
     K.oneSkeleton = ⋃ e : K.Edge, K.faceCarrier e.1 := by
@@ -318,7 +318,7 @@ theorem injective_vertexPoint : Function.Injective K.vertexPoint := by
   apply Subtype.ext
   by_contra hvw'
   have hcoord := congrArg (fun x : K.realization => x.1 v.1) hvw
-  simpa [vertexPoint, hvw'] using hcoord
+  simp [vertexPoint, hvw'] at hcoord
 
 theorem vertexPoint_mem_faceCarrier_iff (v : K.UsedVertex) (s : Finset K.Vertex) :
     K.vertexPoint v ∈ K.faceCarrier s ↔ v.1 ∈ s := by
@@ -326,7 +326,7 @@ theorem vertexPoint_mem_faceCarrier_iff (v : K.UsedVertex) (s : Finset K.Vertex)
   · intro hv
     by_contra hvs
     have := hv v.1 hvs
-    simpa [vertexPoint] using this
+    simp [vertexPoint] at this
   · intro hvs w hw
     have hwv : w ≠ v.1 := by
       intro h
@@ -376,7 +376,7 @@ noncomputable def edgeVertexPoint (e : K.Edge) (v : K.Vertex) (hv : v ∈ e.1) :
       intro h
       subst w
       exact hw (K.edge_subset_parent e hv)
-    simp [Pi.single_apply, hwv]⟩
+    simp [hwv]⟩
 
 theorem edgeVertexPoint_eq_vertexPoint (e : K.Edge) (v : K.Vertex) (hv : v ∈ e.1) :
     K.edgeVertexPoint e v hv = K.vertexPoint
@@ -466,7 +466,7 @@ noncomputable def edgePath (e : K.Edge) (r : Set.Icc (0 : ℝ) 1) : K.realizatio
       subst w
       exact hw (K.edge_subset_parent e (K.edgeSecond_mem e))
     simp [x, edgeFirstPoint, edgeSecondPoint, edgeVertexPoint,
-      AffineMap.lineMap_apply_module, Pi.single_apply, hwFirst, hwSecond]
+      AffineMap.lineMap_apply_module, hwFirst, hwSecond]
 
 theorem continuous_edgePath (e : K.Edge) : Continuous (K.edgePath e) := by
   apply Continuous.subtype_mk

@@ -1305,9 +1305,9 @@ theorem faceReplacementCarrier_inter_next {h : K.realization → Plane}
     subst x
     constructor
     · apply A.vertex_mem_completeCarrier
-      simp [A, IntrinsicTwoComplex.faceUsedVertex]
+      simp [IntrinsicTwoComplex.faceUsedVertex]
     · apply A'.vertex_mem_completeCarrier
-      simp [A', IntrinsicTwoComplex.faceUsedVertex, add_assoc]
+      simp [IntrinsicTwoComplex.faceUsedVertex, add_assoc]
 
 /-- A point is an active graph vertex when it is a canonical used-vertex point. -/
 def IsGraphVertexPoint (x : K.realization) : Prop :=

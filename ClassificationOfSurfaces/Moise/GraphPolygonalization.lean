@@ -155,7 +155,7 @@ structure WeakLastExitData (γ : ℝ → Plane) (center : Plane) (radius : ℝ) 
     γ t ∉ Metric.closedBall center radius
 
 theorem exists_weakLastExitData {γ : ℝ → Plane} {center : Plane} {radius : ℝ}
-    (hradius : 0 < radius) (hcont : ContinuousOn γ (Set.Icc (0 : ℝ) 1))
+    (_ : 0 < radius) (hcont : ContinuousOn γ (Set.Icc (0 : ℝ) 1))
     (hstart : dist (γ 0) center = radius)
     (hfinish : γ 1 ∉ Metric.closedBall center radius) :
     Nonempty (WeakLastExitData γ center radius) := by
@@ -469,7 +469,7 @@ theorem Path.trans_injective_of_range_inter {X : Type*} [TopologicalSpace X]
   intro s t hst
   rw [Path.trans_apply, Path.trans_apply] at hst
   by_cases hs : (s : ℝ) ≤ 1 / 2 <;> by_cases ht : (t : ℝ) ≤ 1 / 2 <;>
-    simp only [dif_pos, dif_neg, hs, ht] at hst
+    simp only [dif_pos, hs, ht] at hst
   · have heq := hγ hst
     apply Subtype.ext
     have hval := congrArg Subtype.val heq
@@ -872,7 +872,7 @@ theorem openSegments_disjoint_of_ne
     by_contra hempty
     have hinterEmpty := Finset.not_nonempty_iff_eq_empty.mp hempty
     rw [hinterEmpty, PlaneComplex.cellCarrier] at hxInter
-    simpa using hxInter
+    simp at hxInter
   have hinterOne : ((K.edgeAt i).1 ∩ (K.edgeAt j).1).card = 1 := by
     exact le_antisymm hinterCard (Finset.one_le_card.mpr hinterNonempty)
   obtain ⟨v, hv⟩ := Finset.card_eq_one.mp hinterOne
@@ -1685,7 +1685,7 @@ theorem completeCarrier_sdiff_endpoints (A : K.CentralPolygonalArc hcont D C i) 
       A.interiorCarrier := by
   ext x
   simp only [completeCarrier, interiorCarrier, leftOpenSpoke, rightOpenSpoke,
-    Set.mem_diff, Set.mem_insert_iff, Set.mem_singleton_iff, Set.mem_union]
+    Set.mem_sdiff, Set.mem_insert_iff, Set.mem_singleton_iff, Set.mem_union]
   constructor
   · rintro ⟨(hL | hT) | hR, hne⟩
     · exact Or.inl (Or.inl ⟨hL, fun hx => hne (Or.inl hx)⟩)
@@ -1793,8 +1793,8 @@ theorem disjoint_leftOpenSpoke_leftOpenSpoke {j : Fin (Fintype.card K.EdgeFace)}
         (by simpa [hv] using A'.leftEndpoint_on_sphere)
         (CentralPolygonalArc.leftEndpoint_ne_leftEndpoint (A' := A') A hij)
   · exact (D.vertices_disjoint _ _ hv).mono
-      (Set.diff_subset.trans A.leftSpoke_subset_disk)
-      (Set.diff_subset.trans A'.leftSpoke_subset_disk)
+      (Set.sdiff_subset.trans A.leftSpoke_subset_disk)
+      (Set.sdiff_subset.trans A'.leftSpoke_subset_disk)
 
 theorem disjoint_leftOpenSpoke_rightOpenSpoke {j : Fin (Fintype.card K.EdgeFace)}
     {A' : K.CentralPolygonalArc hcont D C j}
@@ -1806,8 +1806,8 @@ theorem disjoint_leftOpenSpoke_rightOpenSpoke {j : Fin (Fintype.card K.EdgeFace)
         (by simpa [hv] using A'.rightEndpoint_on_sphere)
         (CentralPolygonalArc.leftEndpoint_ne_rightEndpoint (A' := A') A hij)
   · exact (D.vertices_disjoint _ _ hv).mono
-      (Set.diff_subset.trans A.leftSpoke_subset_disk)
-      (Set.diff_subset.trans A'.rightSpoke_subset_disk)
+      (Set.sdiff_subset.trans A.leftSpoke_subset_disk)
+      (Set.sdiff_subset.trans A'.rightSpoke_subset_disk)
 
 theorem disjoint_rightOpenSpoke_leftOpenSpoke {j : Fin (Fintype.card K.EdgeFace)}
     {A' : K.CentralPolygonalArc hcont D C j}
@@ -1819,8 +1819,8 @@ theorem disjoint_rightOpenSpoke_leftOpenSpoke {j : Fin (Fintype.card K.EdgeFace)
         (by simpa [hv] using A'.leftEndpoint_on_sphere)
         (CentralPolygonalArc.rightEndpoint_ne_leftEndpoint (A' := A') A hij)
   · exact (D.vertices_disjoint _ _ hv).mono
-      (Set.diff_subset.trans A.rightSpoke_subset_disk)
-      (Set.diff_subset.trans A'.leftSpoke_subset_disk)
+      (Set.sdiff_subset.trans A.rightSpoke_subset_disk)
+      (Set.sdiff_subset.trans A'.leftSpoke_subset_disk)
 
 theorem disjoint_rightOpenSpoke_rightOpenSpoke {j : Fin (Fintype.card K.EdgeFace)}
     {A' : K.CentralPolygonalArc hcont D C j}
@@ -1832,8 +1832,8 @@ theorem disjoint_rightOpenSpoke_rightOpenSpoke {j : Fin (Fintype.card K.EdgeFace
         (by simpa [hv] using A'.rightEndpoint_on_sphere)
         (CentralPolygonalArc.rightEndpoint_ne_rightEndpoint (A' := A') A hij)
   · exact (D.vertices_disjoint _ _ hv).mono
-      (Set.diff_subset.trans A.rightSpoke_subset_disk)
-      (Set.diff_subset.trans A'.rightSpoke_subset_disk)
+      (Set.sdiff_subset.trans A.rightSpoke_subset_disk)
+      (Set.sdiff_subset.trans A'.rightSpoke_subset_disk)
 
 /-- Distinct replacement edges have disjoint relative interiors. -/
 theorem disjoint_interiorCarrier {j : Fin (Fintype.card K.EdgeFace)}
@@ -2261,7 +2261,7 @@ theorem graphReplacementMap_eq_edge_on_cellCarrier {h : Plane → Plane}
   intro x hx
   by_cases hnv : ¬K.IsGraphVertexPoint x
   · exact K.graphReplacementMap_eq_edge hcont D C hnv i hx
-  · push_neg at hnv
+  · push Not at hnv
     obtain ⟨v, hvface, rfl⟩ := hnv
     have hvCarrier : K.position v ∈ K.cellCarrier ({v} : Finset K.Vertex) := by
       exact subset_convexHull ℝ _ ⟨v, Finset.mem_singleton_self _, rfl⟩
@@ -2281,7 +2281,7 @@ theorem graphReplacementMap_eq_edge_on_cellCarrier {h : Plane → Plane}
         rw [hface] at this
         exact this
       rw [hinter, PlaneComplex.cellCarrier] at hp
-      simpa using hp
+      simp at hp
     rw [K.edgeAt_eq] at hvEdge
     simp only [Finset.mem_insert, Finset.mem_singleton] at hvEdge
     rcases hvEdge with rfl | rfl

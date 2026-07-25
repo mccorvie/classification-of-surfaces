@@ -84,7 +84,7 @@ theorem diamondFan_affineIndependent {a : ℝ} (ha0 : -2 < a) (ha2 : a < 2)
           diamondFanPosition_apply_two, planePoint_apply_zero, planePoint_apply_one,
           PiLp.sub_apply]
         linarith
-      convert h using 1 <;> funext i <;> fin_cases i <;> rfl
+      convert h using 1 ; funext i ; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
   · apply affineIndependent_finset_of_range (diamondFanPosition a) ![1, 2, 4]
@@ -95,7 +95,7 @@ theorem diamondFan_affineIndependent {a : ℝ} (ha0 : -2 < a) (ha2 : a < 2)
           diamondFanPosition_apply_four, planePoint_apply_zero, planePoint_apply_one,
           PiLp.sub_apply]
         linarith
-      convert h using 1 <;> funext i <;> fin_cases i <;> rfl
+      convert h using 1 ; funext i ; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
   · apply affineIndependent_finset_of_range (diamondFanPosition a) ![0, 3, 4]
@@ -106,7 +106,7 @@ theorem diamondFan_affineIndependent {a : ℝ} (ha0 : -2 < a) (ha2 : a < 2)
           diamondFanPosition_apply_four, planePoint_apply_zero, planePoint_apply_one,
           PiLp.sub_apply]
         linarith
-      convert h using 1 <;> funext i <;> fin_cases i <;> rfl
+      convert h using 1 ; funext i ; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
   · apply affineIndependent_finset_of_range (diamondFanPosition a) ![1, 4, 3]
@@ -117,7 +117,7 @@ theorem diamondFan_affineIndependent {a : ℝ} (ha0 : -2 < a) (ha2 : a < 2)
           diamondFanPosition_apply_three, planePoint_apply_zero, planePoint_apply_one,
           PiLp.sub_apply]
         linarith
-      convert h using 1 <;> funext i <;> fin_cases i <;> rfl
+      convert h using 1 ; funext i ; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
 
@@ -176,7 +176,7 @@ theorem triangle_edge_split_union (p : Fin 3 → Plane) (hp : AffineIndependent 
       x ∈ Set.range ![planePoint 0 0, planePoint 0 1,
         AffineMap.lineMap (planePoint 0 0) (planePoint 1 0) c]
     rw [hline]
-    simp [s, standardTrianglePosition, referenceEdgeSplitPosition, planePoint]
+    simp [referenceEdgeSplitPosition, planePoint]
     tauto
   have hcarrier1 :
       referenceEdgeSplitPosition c '' (({1, 2, 3} : Finset (Fin 4)) : Set _) =
@@ -186,7 +186,7 @@ theorem triangle_edge_split_union (p : Fin 3 → Plane) (hp : AffineIndependent 
       x ∈ Set.range ![planePoint 1 0, planePoint 0 1,
         AffineMap.lineMap (planePoint 0 0) (planePoint 1 0) c]
     rw [hline]
-    simp [s, standardTrianglePosition, referenceEdgeSplitPosition, planePoint]
+    simp [referenceEdgeSplitPosition, planePoint]
     tauto
   have href' :
       convexHull ℝ (Set.range ![s 0, s 2, AffineMap.lineMap (s 0) (s 1) c]) ∪
@@ -272,7 +272,7 @@ private theorem diamondCenter_lineMap (a : ℝ) :
     AffineMap.lineMap (planePoint 0 2) (planePoint 0 (-2)) ((2 - a) / 4) =
       planePoint 0 a := by
   ext i
-  fin_cases i <;> simp [AffineMap.lineMap_apply, planePoint] <;> ring
+  fin_cases i <;> simp [AffineMap.lineMap_apply, planePoint] ; ring
 
 private theorem diamondLeft_affineIndependent :
     AffineIndependent ℝ ![planePoint 0 2, planePoint 0 (-2), planePoint (-1) 0] := by
@@ -371,7 +371,7 @@ private theorem diamondFan_inter_02_03 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
     (diamondFanPosition_injective ha0 ha1) {0, 4, 2} {0, 3, 4} (-diamondLeftAffine a)
   all_goals
     intro v hv
-    fin_cases v <;> simp [diamondLeftAffine_apply] at hv ⊢ <;> linarith
+    fin_cases v <;> simp [diamondLeftAffine_apply] at hv ⊢ ; linarith
 
 private theorem diamondFan_inter_12_13 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
     convexHull ℝ (diamondFanPosition a '' (({1, 2, 4} : Finset (Fin 5)) : Set _)) ∩
@@ -382,7 +382,7 @@ private theorem diamondFan_inter_12_13 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
     (diamondFanPosition_injective ha0 ha1) {1, 2, 4} {1, 4, 3} (diamondRightAffine a)
   all_goals
     intro v hv
-    fin_cases v <;> simp [diamondRightAffine_apply] at hv ⊢ <;> linarith
+    fin_cases v <;> simp [diamondRightAffine_apply] at hv ⊢ ; linarith
 
 private theorem diamondFan_inter_02_13 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
     convexHull ℝ (diamondFanPosition a '' (({0, 4, 2} : Finset (Fin 5)) : Set _)) ∩
@@ -453,17 +453,17 @@ private theorem diamondFan_inter_02_13 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
       (by
         intro p hp
         obtain ⟨v, hv, rfl⟩ := Finset.mem_image.mp hp
-        fin_cases v <;> simp [upperEdge, horizontal] at hv ⊢ <;> linarith)
+        fin_cases v <;> simp [upperEdge, horizontal] at hv ⊢ ; linarith)
       (by
         intro p hp
         obtain ⟨v, hv, rfl⟩ := Finset.mem_image.mp hp
-        fin_cases v <;> simp [lowerEdge, horizontal] at hv ⊢ <;> linarith)
+        fin_cases v <;> simp [lowerEdge, horizontal] at hv ⊢ ; linarith)
       (by
         ext p
         simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_singleton]
         constructor
         · rintro ⟨⟨v, hv, rfl⟩, hz⟩
-          fin_cases v <;> simp [upperEdge, horizontal] at hv hz ⊢ <;> linarith
+          fin_cases v <;> simp [upperEdge, horizontal] at hv hz ⊢ ; linarith
         · rintro rfl
           exact ⟨⟨4, by simp [upperEdge]⟩, by simp [horizontal]⟩)
       (by
@@ -471,7 +471,7 @@ private theorem diamondFan_inter_02_13 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
         simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_singleton]
         constructor
         · rintro ⟨⟨v, hv, rfl⟩, hz⟩
-          fin_cases v <;> simp [lowerEdge, horizontal] at hv hz ⊢ <;> linarith
+          fin_cases v <;> simp [lowerEdge, horizontal] at hv hz ⊢ ; linarith
         · rintro rfl
           exact ⟨⟨4, by simp [lowerEdge]⟩, by simp [horizontal]⟩)
     simpa only [Finset.coe_image, Finset.coe_singleton, convexHull_singleton] using h
@@ -505,7 +505,7 @@ private theorem diamondFan_inter_02_13 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
     rw [hEdges] at hpBoth
     have hp4 : p = diamondFanPosition a 4 := Set.mem_singleton_iff.mp hpBoth
     subst p
-    exact subset_convexHull ℝ _ ⟨4, by simp [s, t], rfl⟩
+    exact subset_convexHull ℝ _ ⟨4, by simp [], rfl⟩
   · intro p hp
     exact ⟨convexHull_mono (Set.image_mono Finset.inter_subset_left) hp,
       convexHull_mono (Set.image_mono Finset.inter_subset_right) hp⟩
@@ -579,17 +579,17 @@ private theorem diamondFan_inter_12_03 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
       (by
         intro p hp
         obtain ⟨v, hv, rfl⟩ := Finset.mem_image.mp hp
-        fin_cases v <;> simp [upperEdge, horizontal] at hv ⊢ <;> linarith)
+        fin_cases v <;> simp [upperEdge, horizontal] at hv ⊢ ; linarith)
       (by
         intro p hp
         obtain ⟨v, hv, rfl⟩ := Finset.mem_image.mp hp
-        fin_cases v <;> simp [lowerEdge, horizontal] at hv ⊢ <;> linarith)
+        fin_cases v <;> simp [lowerEdge, horizontal] at hv ⊢ ; linarith)
       (by
         ext p
         simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_singleton]
         constructor
         · rintro ⟨⟨v, hv, rfl⟩, hz⟩
-          fin_cases v <;> simp [upperEdge, horizontal] at hv hz ⊢ <;> linarith
+          fin_cases v <;> simp [upperEdge, horizontal] at hv hz ⊢ ; linarith
         · rintro rfl
           exact ⟨⟨4, by simp [upperEdge]⟩, by simp [horizontal]⟩)
       (by
@@ -597,7 +597,7 @@ private theorem diamondFan_inter_12_03 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
         simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_singleton]
         constructor
         · rintro ⟨⟨v, hv, rfl⟩, hz⟩
-          fin_cases v <;> simp [lowerEdge, horizontal] at hv hz ⊢ <;> linarith
+          fin_cases v <;> simp [lowerEdge, horizontal] at hv hz ⊢ ; linarith
         · rintro rfl
           exact ⟨⟨4, by simp [lowerEdge]⟩, by simp [horizontal]⟩)
     simpa only [Finset.coe_image, Finset.coe_singleton, convexHull_singleton] using h
@@ -631,7 +631,7 @@ private theorem diamondFan_inter_12_03 {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
     rw [hEdges] at hpBoth
     have hp4 : p = diamondFanPosition a 4 := Set.mem_singleton_iff.mp hpBoth
     subst p
-    exact subset_convexHull ℝ _ ⟨4, by simp [s, t], rfl⟩
+    exact subset_convexHull ℝ _ ⟨4, by simp [], rfl⟩
   · intro p hp
     exact ⟨convexHull_mono (Set.image_mono Finset.inter_subset_left) hp,
       convexHull_mono (Set.image_mono Finset.inter_subset_right) hp⟩
@@ -788,7 +788,7 @@ theorem diamondPatch_eq_inDiamond : diamondPatch = {p | InDiamond p} := by
       all_goals
         apply convexHull_min _ ((convex_Ici (0 : ℝ)).affine_preimage _ ) hp
         rintro q ⟨i, rfl⟩
-        fin_cases i <;> simp [diamondLeftRegion, diamondRightRegion]
+        fin_cases i <;> simp []
   · intro p hp
     rcases hp with ⟨hUR, hUL, hLR, hLL⟩
     rw [diamondSlackUR_eq] at hUR
@@ -982,7 +982,8 @@ theorem diamondFanPatchHomeomorph_fixed_frontier (a b : ℝ)
     (ha0 : -2 < a) (ha1 : a < 2) (hb0 : -2 < b) (hb1 : b < 2)
     (p : Plane) (hp : p ∈ frontier (diamondFanMesh a ha0 ha1).toPlaneComplex.support) :
     (diamondFanPatchHomeomorph a b ha0 ha1 hb0 hb1
-      ⟨p, (diamondFanMesh a ha0 ha1).toPlaneComplex.isCompact_support.isClosed.frontier_subset hp⟩
+      ⟨p,
+        (diamondFanMesh a ha0 ha1).toPlaneComplex.isCompact_support.isClosed.frontier_subset hp⟩
       : Plane) = p := by
   let e := (diamondFanMesh a ha0 ha1).toPlaneComplex.realizationHomeomorph
     (diamondFanMesh a ha0 ha1).toPlaneComplex_isPure2
@@ -1024,7 +1025,8 @@ theorem diamondFanPatchHomeomorph_fixed_frontier (a b : ℝ)
       (diamondFanReposition_support_eq_source a b ha0 ha1 hb0 hb1) z
   calc
     (diamondFanPatchHomeomorph a b ha0 ha1 hb0 hb1
-        ⟨p, (diamondFanMesh a ha0 ha1).toPlaneComplex.isCompact_support.isClosed.frontier_subset hp⟩ :
+        ⟨p,
+          (diamondFanMesh a ha0 ha1).toPlaneComplex.isCompact_support.isClosed.frontier_subset hp⟩ :
       Plane) = (diamondFanPatchHomeomorph a b ha0 ha1 hb0 hb1 z : Plane) := rfl
     _ = _ := hmove
     _ = p := by simpa only [weights, x, e] using hbary

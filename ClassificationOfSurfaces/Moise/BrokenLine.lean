@@ -147,7 +147,7 @@ theorem IsPreconnected.joinedByBrokenLine {U : Set Plane} (hU : IsOpen U)
 
 /-- A positive metric thickening of a preconnected plane set is preconnected. -/
 theorem IsPreconnected.thickening {A : Set Plane} (hA : IsPreconnected A)
-    {ε : ℝ} (hε : 0 < ε) : IsPreconnected (Metric.thickening ε A) := by
+    {ε : ℝ} (_ : 0 < ε) : IsPreconnected (Metric.thickening ε A) := by
   let add : Plane × Plane → Plane := fun p => p.1 + p.2
   have hball : IsPreconnected (Metric.ball (0 : Plane) ε) :=
     (convex_ball (0 : Plane) ε).isPreconnected

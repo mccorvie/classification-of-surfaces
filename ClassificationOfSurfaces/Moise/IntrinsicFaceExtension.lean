@@ -309,7 +309,7 @@ theorem faceBoundarySubdivision_support (t : K.Face) :
       (K.faceBreakpointPoint (hcont := hcont) (hinj := hinj) (D := D) (C := C) t)
       standardTrianglePlaneComplex.oneSkeleton.oneSkeleton_isGraph,
     standardTriangle_oneSkeleton_support, standardTriangleCircle_carrier]
-  simpa only [standardFaceRegion, standardTrianglePlaneComplex_support]
+  simp only [standardFaceRegion, standardTrianglePlaneComplex_support]
 
 /-- A standard `Fin 3` corner, typed as a vertex of the opaque one-skeleton object. -/
 noncomputable def standardBoundaryVertex (j : Fin 3) :
@@ -333,7 +333,6 @@ theorem exists_faceStandardEdge_of_standardBoundaryEdge
   subst w
   fin_cases a <;> fin_cases b
   · exact (hvw rfl).elim
-
   · refine ⟨0, ?_⟩
     change ({0, 1} : Finset (Fin 3)) = faceStandardEdge 0
     decide
@@ -544,7 +543,8 @@ theorem faceBoundarySubdivision_parameter_side
     (hu : u ∈
       (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D) (C := C) t).simplexes)
     (hui :
-      (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D) (C := C) t).cellCarrier u ⊆
+      (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D)
+        (C := C) t).cellCarrier u ⊆
         standardTrianglePlaneComplex.cellCarrier (faceStandardEdge i)) :
     (∀ p ∈
         (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D) (C := C) t)
@@ -608,7 +608,8 @@ theorem faceBoundarySubdivision_piece
     (hu : u ∈
       (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D) (C := C) t).simplexes)
     (hui :
-      (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D) (C := C) t).cellCarrier u ⊆
+      (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D)
+        (C := C) t).cellCarrier u ⊆
         standardTrianglePlaneComplex.cellCarrier (faceStandardEdge i)) :
     (∀ p ∈
         (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D) (C := C) t)
@@ -783,7 +784,8 @@ theorem faceBoundarySubdivision_middleSource
     (hu : u ∈
       (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D) (C := C) t).simplexes)
     (hui :
-      (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D) (C := C) t).cellCarrier u ⊆
+      (K.faceBoundarySubdivision (hcont := hcont) (hinj := hinj) (D := D)
+        (C := C) t).cellCarrier u ⊆
         standardTrianglePlaneComplex.cellCarrier (faceStandardEdge i))
     (hcard : u.card = 2)
     (hmid0 : ∀ p ∈
@@ -970,8 +972,7 @@ theorem faceBoundarySubdivision_middleSource
   let sourceAffine : Plane →ᵃ[ℝ] Plane :=
     (edgeMiddleSourceMap A).comp (K.facePlaneInverseAffine t)
   have hsourceApply (x : Plane) : sourceAffine x = planePoint (z x) 0 := by
-    simp only [sourceAffine, AffineMap.comp_apply, edgeMiddleSourceMap_apply,
-      faceEdgeParameterAffine_apply]
+    simp only [sourceAffine, AffineMap.comp_apply, edgeMiddleSourceMap_apply]
     rfl
   have hsourceImage : sourceAffine '' R.cellCarrier ({p, q} : Finset R.Vertex) =
       segment ℝ (planePoint a 0) (planePoint b 0) := by
@@ -1071,7 +1072,7 @@ theorem faceBoundaryMap_isPLOnSet (t : K.Face) :
     S.support = standardTriangleCircle.carrier := standardTriangle_oneSkeleton_support
     _ = frontier standardFaceRegion := by
       rw [standardTriangleCircle_carrier]
-      simpa only [standardFaceRegion, standardTrianglePlaneComplex_support]
+      simp only [standardFaceRegion, standardTrianglePlaneComplex_support]
 
 end IntrinsicTwoComplex
 

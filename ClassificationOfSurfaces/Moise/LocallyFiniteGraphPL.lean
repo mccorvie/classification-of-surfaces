@@ -208,7 +208,7 @@ theorem leftSourcePoint_mem_source : A.leftSourcePoint ∈ A.parameterization.so
     A.exitData.left_lt_right.le.trans A.exitData.right_le_one⟩, ?_⟩
   ext i
   fin_cases i <;>
-    simp [leftSourcePoint, planePoint, AffineMap.lineMap_apply_module] <;> ring
+    simp [leftSourcePoint, planePoint, AffineMap.lineMap_apply_module] ; ring
 
 theorem rightSourcePoint_mem_source : A.rightSourcePoint ∈ A.parameterization.source.support := by
   rw [A.parameterization.source_support, segment_eq_image_lineMap]
@@ -216,7 +216,7 @@ theorem rightSourcePoint_mem_source : A.rightSourcePoint ∈ A.parameterization.
     A.exitData.left_lt_right.le, A.exitData.right_le_one⟩, ?_⟩
   ext i
   fin_cases i <;>
-    simp [rightSourcePoint, planePoint, AffineMap.lineMap_apply_module] <;> ring
+    simp [rightSourcePoint, planePoint, AffineMap.lineMap_apply_module] ; ring
 
 theorem leftSourcePoint_ne_rightSourcePoint : A.leftSourcePoint ≠ A.rightSourcePoint := by
   intro hp
@@ -280,7 +280,7 @@ private theorem mem_sourceSubsegment_of_axis_bounds {p : Plane}
   refine ⟨q, hq, ?_⟩
   ext i
   fin_cases i
-  · simp only [AffineMap.lineMap_apply_module, Fin.isValue]
+  · simp only [AffineMap.lineMap_apply_module]
     dsimp [q]
     field_simp [hden.ne']
     ring
@@ -496,7 +496,7 @@ theorem map_image_sourceSegment :
     ext i
     fin_cases i <;>
       simp [t, leftSourcePoint, rightSourcePoint, planePoint,
-        AffineMap.lineMap_apply_module] <;> ring
+        AffineMap.lineMap_apply_module] ; ring
   · rintro ⟨t, ht, rfl⟩
     have htSeg : t ∈ segment ℝ A.exitData.left A.exitData.right := by
       rwa [segment_eq_Icc A.exitData.left_lt_right.le]
@@ -511,7 +511,7 @@ theorem map_image_sourceSegment :
     ext i
     fin_cases i <;>
       simp [leftSourcePoint, rightSourcePoint, planePoint,
-        AffineMap.lineMap_apply_module] <;> ring
+        AffineMap.lineMap_apply_module] ; ring
 
 theorem trimTarget_support : A.trimTarget.support = A.trimmedCarrier := by
   rw [trimTarget, A.trimActive.mapGraph_support A.parameterization.map

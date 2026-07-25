@@ -83,7 +83,7 @@ theorem axisKite_affineIndependent {lo hi : ℝ} (hlo : lo < 0) (hhi : 0 < hi)
         simp only [axisKitePosition_zero, axisKitePosition_two, axisKitePosition_three,
           planePoint_apply_zero, planePoint_apply_one, PiLp.sub_apply]
         linarith
-      convert h using 1 <;> funext i <;> fin_cases i <;> rfl
+      convert h using 1 ; funext i ; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
   · apply affineIndependent_finset_of_range_kite (axisKitePosition lo hi) ![1, 2, 3]
@@ -93,7 +93,7 @@ theorem axisKite_affineIndependent {lo hi : ℝ} (hlo : lo < 0) (hhi : 0 < hi)
         simp only [axisKitePosition_one, axisKitePosition_two, axisKitePosition_three,
           planePoint_apply_zero, planePoint_apply_one, PiLp.sub_apply]
         linarith
-      convert h using 1 <;> funext i <;> fin_cases i <;> rfl
+      convert h using 1 ; funext i ; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
 
@@ -239,7 +239,6 @@ theorem thinKitePatch_subset_rightCone {δ : ℝ} (hδ : 0 ≤ δ) {p : Plane}
       by_cases hx : q 0 ≤ 0
       · rw [abs_of_nonpos hx]
         nlinarith
-
       · have hx' : 0 ≤ q 0 := le_of_not_ge hx
         rw [abs_of_nonneg hx']
         nlinarith
@@ -412,7 +411,7 @@ theorem exists_thinKitePatch_inter_leftSegment_eq_singleton {q : Plane}
     apply Set.Subset.antisymm
     · rintro p ⟨hpPatch, hpSegment⟩
       by_cases hpLeft : p = planePoint (-1) 0
-      · simpa [hpLeft]
+      · simp [hpLeft]
       rw [segment_eq_image_lineMap] at hpSegment
       obtain ⟨t, ht, rfl⟩ := hpSegment
       have htne : t ≠ 0 := by
@@ -446,8 +445,7 @@ theorem exists_thinKitePatch_inter_leftSegment_eq_singleton {q : Plane}
       refine ⟨?_, left_mem_segment ℝ _ _⟩
       exact ⟨planePoint (-1) 0, Or.inl <|
         subset_convexHull ℝ _ ⟨2, rfl⟩, by
-          simp [thinKiteMap, planePoint, thinKitePatch, diamondPatch,
-            diamondLeftRegion]⟩
+          simp [thinKiteMap, planePoint]⟩
   · let ε := -q 1 / (q 0 + 1)
     have hε : 0 < ε := by
       dsimp [ε]
@@ -456,7 +454,7 @@ theorem exists_thinKitePatch_inter_leftSegment_eq_singleton {q : Plane}
     apply Set.Subset.antisymm
     · rintro p ⟨hpPatch, hpSegment⟩
       by_cases hpLeft : p = planePoint (-1) 0
-      · simpa [hpLeft]
+      · simp [hpLeft]
       rw [segment_eq_image_lineMap] at hpSegment
       obtain ⟨t, ht, rfl⟩ := hpSegment
       have htne : t ≠ 0 := by
@@ -484,8 +482,7 @@ theorem exists_thinKitePatch_inter_leftSegment_eq_singleton {q : Plane}
       refine ⟨?_, left_mem_segment ℝ _ _⟩
       exact ⟨planePoint (-1) 0, Or.inl <|
         subset_convexHull ℝ _ ⟨2, rfl⟩, by
-          simp [thinKiteMap, planePoint, thinKitePatch, diamondPatch,
-            diamondLeftRegion]⟩
+          simp [thinKiteMap, planePoint]⟩
   · let ε := q 1 / (q 0 + 1) - 1
     have hε : 0 < ε := by
       dsimp [ε]
@@ -495,7 +492,7 @@ theorem exists_thinKitePatch_inter_leftSegment_eq_singleton {q : Plane}
     apply Set.Subset.antisymm
     · rintro p ⟨hpPatch, hpSegment⟩
       by_cases hpLeft : p = planePoint (-1) 0
-      · simpa [hpLeft]
+      · simp [hpLeft]
       rw [segment_eq_image_lineMap] at hpSegment
       obtain ⟨t, ht, rfl⟩ := hpSegment
       have htne : t ≠ 0 := by
@@ -525,8 +522,7 @@ theorem exists_thinKitePatch_inter_leftSegment_eq_singleton {q : Plane}
       refine ⟨?_, left_mem_segment ℝ _ _⟩
       exact ⟨planePoint (-1) 0, Or.inl <|
         subset_convexHull ℝ _ ⟨2, rfl⟩, by
-          simp [thinKiteMap, planePoint, thinKitePatch, diamondPatch,
-            diamondLeftRegion]⟩
+          simp [thinKiteMap, planePoint]⟩
 
 /-- A segment leaving the right base vertex outside the triangle misses every sufficiently thin
 kite except at that vertex. -/
@@ -541,7 +537,7 @@ theorem exists_thinKitePatch_inter_rightSegment_eq_singleton {q : Plane}
     apply Set.Subset.antisymm
     · rintro p ⟨hpPatch, hpSegment⟩
       by_cases hpRight : p = planePoint 1 0
-      · simpa [hpRight]
+      · simp [hpRight]
       rw [segment_eq_image_lineMap] at hpSegment
       obtain ⟨t, ht, rfl⟩ := hpSegment
       have htne : t ≠ 0 := by
@@ -575,8 +571,7 @@ theorem exists_thinKitePatch_inter_rightSegment_eq_singleton {q : Plane}
       refine ⟨?_, left_mem_segment ℝ _ _⟩
       exact ⟨planePoint 1 0, Or.inr <|
         subset_convexHull ℝ _ ⟨2, rfl⟩, by
-          simp [thinKiteMap, planePoint, thinKitePatch, diamondPatch,
-            diamondRightRegion]⟩
+          simp [thinKiteMap, planePoint]⟩
   · let ε := -q 1 / (1 - q 0)
     have hε : 0 < ε := by
       dsimp [ε]
@@ -585,7 +580,7 @@ theorem exists_thinKitePatch_inter_rightSegment_eq_singleton {q : Plane}
     apply Set.Subset.antisymm
     · rintro p ⟨hpPatch, hpSegment⟩
       by_cases hpRight : p = planePoint 1 0
-      · simpa [hpRight]
+      · simp [hpRight]
       rw [segment_eq_image_lineMap] at hpSegment
       obtain ⟨t, ht, rfl⟩ := hpSegment
       have htne : t ≠ 0 := by
@@ -613,8 +608,7 @@ theorem exists_thinKitePatch_inter_rightSegment_eq_singleton {q : Plane}
       refine ⟨?_, left_mem_segment ℝ _ _⟩
       exact ⟨planePoint 1 0, Or.inr <|
         subset_convexHull ℝ _ ⟨2, rfl⟩, by
-          simp [thinKiteMap, planePoint, thinKitePatch, diamondPatch,
-            diamondRightRegion]⟩
+          simp [thinKiteMap, planePoint]⟩
   · let ε := q 1 / (1 - q 0) - 1
     have hε : 0 < ε := by
       dsimp [ε]
@@ -624,7 +618,7 @@ theorem exists_thinKitePatch_inter_rightSegment_eq_singleton {q : Plane}
     apply Set.Subset.antisymm
     · rintro p ⟨hpPatch, hpSegment⟩
       by_cases hpRight : p = planePoint 1 0
-      · simpa [hpRight]
+      · simp [hpRight]
       rw [segment_eq_image_lineMap] at hpSegment
       obtain ⟨t, ht, rfl⟩ := hpSegment
       have htne : t ≠ 0 := by
@@ -654,8 +648,7 @@ theorem exists_thinKitePatch_inter_rightSegment_eq_singleton {q : Plane}
       refine ⟨?_, left_mem_segment ℝ _ _⟩
       exact ⟨planePoint 1 0, Or.inr <|
         subset_convexHull ℝ _ ⟨2, rfl⟩, by
-          simp [thinKiteMap, planePoint, thinKitePatch, diamondPatch,
-            diamondRightRegion]⟩
+          simp [thinKiteMap, planePoint]⟩
 
 theorem thinKiteMap_zero_mem_triangle {q : Plane} (hq : q ∈ diamondPatch) :
     thinKiteMap 0 q ∈ convexHull ℝ (Set.range kiteTrianglePosition) := by
@@ -855,7 +848,7 @@ private theorem diamondFanLeftSpokeRealization_baryEval (a : ℝ)
   ext i
   fin_cases i <;>
     simp [diamondFanSpokeWeights, diamondFanPosition, AffineMap.lineMap_apply_module,
-      Fin.sum_univ_succ, planePoint] <;> ring
+      Fin.sum_univ_succ, planePoint]
 
 private noncomputable def diamondFanLeftSpokePoint (a : ℝ)
     (ha0 : -2 < a) (ha1 : a < 2) (c : ℝ) (hc : c ∈ Set.Icc (0 : ℝ) 1) :
@@ -923,7 +916,7 @@ private theorem diamondFanRightSpokeRealization_baryEval (a : ℝ)
   ext i
   fin_cases i <;>
     simp [diamondFanSpokeWeights, diamondFanPosition, AffineMap.lineMap_apply_module,
-      Fin.sum_univ_succ, planePoint] <;> ring
+      Fin.sum_univ_succ, planePoint]
 
 private noncomputable def diamondFanRightSpokePoint (a : ℝ)
     (ha0 : -2 < a) (ha1 : a < 2) (c : ℝ) (hc : c ∈ Set.Icc (0 : ℝ) 1) :
@@ -1160,7 +1153,7 @@ theorem thinKiteAmbientHomeomorph_image_segment_of_endpoints_mem_leftSpoke
       thinKiteAmbientHomeomorph_leftSpoke δ hδ s hs,
       thinKiteAmbientHomeomorph_leftSpoke δ hδ r hr]
     ext i
-    fin_cases i <;> simp [L, A, AffineMap.lineMap_apply_module] <;> ring
+    fin_cases i <;> simp [AffineMap.lineMap_apply_module] ; ring
   rw [segment_eq_image_lineMap, segment_eq_image_lineMap]
   ext p
   constructor
@@ -1206,7 +1199,7 @@ theorem thinKiteAmbientHomeomorph_image_segment_of_endpoints_mem_rightSpoke
       thinKiteAmbientHomeomorph_rightSpoke δ hδ s hs,
       thinKiteAmbientHomeomorph_rightSpoke δ hδ r hr]
     ext i
-    fin_cases i <;> simp [R, A, AffineMap.lineMap_apply_module] <;> ring
+    fin_cases i <;> simp [AffineMap.lineMap_apply_module] ; ring
   rw [segment_eq_image_lineMap, segment_eq_image_lineMap]
   ext p
   constructor
@@ -1231,20 +1224,20 @@ theorem baseSegment_eq_spokes :
       refine ⟨2 * c, ⟨by linarith [hc.1], by linarith⟩, ?_⟩
       ext i
       fin_cases i <;>
-        simp [AffineMap.lineMap_apply_module, planePoint] <;> ring
+        simp [AffineMap.lineMap_apply_module, planePoint] ; ring
     · right
       rw [segment_eq_image_lineMap]
       refine ⟨2 - 2 * c, ⟨by linarith [hc.2], by linarith⟩, ?_⟩
       ext i
       fin_cases i <;>
-        simp [AffineMap.lineMap_apply_module, planePoint] <;> ring
+        simp [AffineMap.lineMap_apply_module, planePoint] ; ring
   · have hcenter : planePoint 0 0 ∈
         segment ℝ (planePoint (-1) 0) (planePoint 1 0) := by
       rw [show planePoint 0 0 = AffineMap.lineMap
           (planePoint (-1) 0) (planePoint 1 0) ((1 : ℝ) / 2) by
         ext i
         fin_cases i <;>
-          simp [AffineMap.lineMap_apply_module, planePoint] <;> ring]
+          simp [AffineMap.lineMap_apply_module, planePoint] ; ring]
       exact lineMap_mem_segment ℝ _ _ (by constructor <;> norm_num)
     apply Set.union_subset
     · exact (convex_segment (𝕜 := ℝ) (planePoint (-1) 0) (planePoint 1 0)).segment_subset
@@ -1285,7 +1278,6 @@ theorem thinKiteAmbientHomeomorph_eqOn_compl (δ : ℝ) (hδ : 0 < δ) :
     apply hp
     rw [thinKitePatch]
     refine ⟨(thinKiteGlobalHomeomorph δ hδ).symm p, hmem, ?_⟩
-    change thinKiteMap δ ((thinKiteGlobalHomeomorph δ hδ).symm p) = p
     simpa [thinKiteGlobalHomeomorph] using
       (thinKiteGlobalHomeomorph δ hδ).apply_symm_apply p
   rw [thinKiteAmbientHomeomorph, Homeomorph.trans_apply, Homeomorph.trans_apply]

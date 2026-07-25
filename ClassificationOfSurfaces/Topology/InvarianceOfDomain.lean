@@ -319,7 +319,12 @@ theorem invariance_of_domain_interior (f : E → E)
     rw [continuousOn_iff_continuous_restrict]
     exact Continuous.max ((Continuous.div continuous_const (Continuous.norm
     (Continuous.sub continuous_subtype_val continuous_const)))
-    (by grind [norm_eq_zero, sub_ne_zero])) continuous_const
+    (fun y ↦ by
+      change ‖(y : E) - c‖ ≠ 0
+      rw [norm_ne_zero_iff, sub_ne_zero]
+      intro hyc
+      exact hc2 (hyc ▸ y.property)))
+      continuous_const
   -- By construction, `G` is non-zero on `Σ₁`
   have hGavoids : ∀ y ∈ sigma1, G y ≠ (0 : (E)) := by
     intro y hy
@@ -378,9 +383,10 @@ theorem invariance_of_domain_interior (f : E → E)
       have hnot_subset2 : ¬ (ball 0 δ ⊆ P '' sigma2) := by
         intro hsub
         have : volume (ball (0 : E) δ) ≤ volume (P '' sigma2) := measure_mono hsub
-        grind
+        rw [show volume (P '' sigma2) = 0 by simpa [sigma2] using hP_image_null] at this
+        exact (not_lt_of_ge this) (measure_ball_pos volume (0 : E) hδ1)
       rcases Set.not_subset.1 hnot_subset2 with ⟨v, hv_in_ball, hv_notin_sigma2⟩
-      exact ⟨v, ⟨mem_ball_zero_iff.mp hv_in_ball, ⟨by grind, by grind⟩⟩⟩
+      exact ⟨v, mem_ball_zero_iff.mp hv_in_ball, by simp [hsigma1empty], hv_notin_sigma2⟩
     have hP_cont : ContinuousOn (fun v => ‖P v‖) sigma1 := by fun_prop
     -- Let `d` be a point of `Σ₁` such that `‖P(d)‖` takes its minimum value.
     let ⟨d, _, hd⟩ := IsCompact.exists_isMinOn hsigma1compact hsigma1nonempty hP_cont

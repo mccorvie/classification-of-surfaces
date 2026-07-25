@@ -193,7 +193,7 @@ theorem PolygonalCircle.edgeSegment_inter_eq_shared_vertices
   · subst j
     have hfin :
         ({i, i + 1} : Finset (ZMod J.n)) ∩ {i + 1, i + 1 + 1} = {i + 1} := by
-      convert hadjacent i using 1 <;> ring
+      convert hadjacent i using 1 ; ring
     change J.edgeSegment i ∩ J.edgeSegment (i + 1) = _
     rw [hfin, show convexHull ℝ (J.vertex '' (({i + 1} :
       Finset (ZMod J.n)) : Set (ZMod J.n))) = {J.vertex (i + 1)} by simp]
@@ -205,7 +205,7 @@ theorem PolygonalCircle.edgeSegment_inter_eq_shared_vertices
     have hfin :
         ({j + 1, j + 1 + 1} : Finset (ZMod J.n)) ∩ {j, j + 1} = {j + 1} := by
       rw [Finset.inter_comm]
-      convert hadjacent j using 1 <;> ring
+      convert hadjacent j using 1 ; ring
     rw [hprev]
     change J.edgeSegment (j + 1) ∩ J.edgeSegment j = _
     rw [hfin, show convexHull ℝ (J.vertex '' (({j + 1} :
@@ -244,7 +244,7 @@ theorem PolygonalCircle.mem_edgeFaces_iff (J : PolygonalCircle)
     {s : Finset (ZMod J.n)} :
     s ∈ J.edgeFaces ↔ s.Nonempty ∧ ∃ i, s ⊆ {i, i + 1} := by
   classical
-  simp [PolygonalCircle.edgeFaces, and_assoc, and_comm, and_left_comm]
+  simp [PolygonalCircle.edgeFaces, and_comm]
 
 /-- A polygon, regarded as its finite one-dimensional geometric complex. -/
 noncomputable def PolygonalCircle.edgeComplex (J : PolygonalCircle) : PlaneComplex where
@@ -870,7 +870,7 @@ theorem PolygonalCircle.exists_thinKite_fixing_outside_triangle
         rw [openSegment_eq_image_lineMap]
         refine ⟨(1 : ℝ) / 2, by norm_num, ?_⟩
         ext j
-        fin_cases j <;> simp [AffineMap.lineMap_apply_module, planePoint] <;> norm_num
+        fin_cases j <;> simp [AffineMap.lineMap_apply_module, planePoint] ; norm_num
       have hcenterEdge : planePoint 0 0 ∈ K.edgeSegment i :=
         (convex_segment (𝕜 := ℝ) (K.vertex i) (K.vertex (i + 1))).segment_subset
           hL hR (openSegment_subset_segment ℝ _ _ hcenterBase)
@@ -1067,7 +1067,7 @@ theorem TriangleMesh.exists_carrier_not_mem_triangleCarrier_of_polygonalDisk
     intro hfzero
     have hleft := hfT (M.position v) hvT
     rw [hfzero] at hleft hufp
-    simp only [ContinuousLinearMap.zero_apply] at hleft hufp
+    simp only [zero_apply] at hleft hufp
     linarith
   have hqFrontier : q ∈ frontier M.toPlaneComplex.support := by
     apply (mem_frontier_iff_notMem_interior hqSupport).mpr
@@ -1631,7 +1631,7 @@ theorem TriangleMesh.eraseTriangle_support_inter_triangleCarrier_of_oneEdgeFree
       by_contra h
       have heEmpty := Finset.not_nonempty_iff_eq_empty.mp h
       rw [heEmpty] at hpInter
-      simpa using hpInter
+      simp at hpInter
     have heCardCases : e.card = 1 ∨ e.card = 2 := by
       have hpos := Finset.card_pos.mpr heNonempty
       omega
@@ -1974,7 +1974,7 @@ theorem frontier_inter_triangleCarrier_side13 {t : Finset M.Vertex}
       exact hx
     obtain hempty | hne := (t ∩ C.chordEdge).eq_empty_or_nonempty
     · rw [hempty] at hxCommon
-      simpa using hxCommon
+      simp at hxCommon
     · obtain ⟨v, hv⟩ := hne
       have hsingleton : t ∩ C.chordEdge = {v} := by
         apply Finset.eq_singleton_iff_unique_mem.mpr

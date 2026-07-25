@@ -88,7 +88,7 @@ theorem edgeSecondPoint_mem_edgeMarks (e : K.Edge) :
 
 /-- A total real edge parameter.  Only its value on the edge carrier is used; totality avoids
 dependent proof terms in the finite sorting relation. -/
-noncomputable def edgeParameterValue (M : K.EdgeMarking)
+noncomputable def edgeParameterValue (_ : K.EdgeMarking)
     (e : K.Edge) (p : K.realization) : ℝ := by
   classical
   exact if hp : p ∈ K.faceCarrier e.1 then (K.edgeParameter e p hp : ℝ) else 0
@@ -152,7 +152,7 @@ instance edgeMarkLE_total (e : K.Edge) :
 
 instance edgeMarkLE_antisymm (e : K.Edge) :
     Std.Antisymm (M.edgeMarkLE e) :=
-  ⟨fun p q hpq hqp ↦ M.edgeMarkParameter_injective e (le_antisymm hpq hqp)⟩
+  ⟨fun _ _ hpq hqp ↦ M.edgeMarkParameter_injective e (le_antisymm hpq hqp)⟩
 
 instance edgeMarkLE_isTrans (e : K.Edge) :
     IsTrans (M.EdgeMark e) (M.edgeMarkLE e) :=
@@ -1113,7 +1113,7 @@ theorem fanFaceMap_vertex (f : M.FanFace)
   rw [Finset.sum_eq_single p]
   · simp
   · intro q _ hqp
-    simp [Pi.single_apply, hqp]
+    simp [hqp]
   · simp
 
 theorem fanVertex_val_injective (f : M.FanFace) :
@@ -2072,7 +2072,7 @@ theorem extendFaceCoordinates_fanFace (f : M.FanFace)
     have hcEq : (⟨c.1, hcMem⟩ :
         {z // z ∈ M.fanFaceVertices f}) = c := Subtype.ext rfl
     rw [hcEq]
-    simp [c, p, q, Pi.single_apply, hcp, hcq]
+    simp [c, p, q, hcp, hcq]
   by_cases hvp : v = p.1
   · subst v
     have hpMem : p.1 ∈ M.fanFaceVertices f := p.2
@@ -2080,7 +2080,7 @@ theorem extendFaceCoordinates_fanFace (f : M.FanFace)
     have hpEq : (⟨p.1, hpMem⟩ :
         {z // z ∈ M.fanFaceVertices f}) = p := Subtype.ext rfl
     rw [hpEq]
-    simp [c, p, q, Pi.single_apply, hcp, hpq]
+    simp [c, p, q, hcp, hpq]
   by_cases hvq : v = q.1
   · subst v
     have hqMem : q.1 ∈ M.fanFaceVertices f := q.2
@@ -2088,14 +2088,14 @@ theorem extendFaceCoordinates_fanFace (f : M.FanFace)
     have hqEq : (⟨q.1, hqMem⟩ :
         {z // z ∈ M.fanFaceVertices f}) = q := Subtype.ext rfl
     rw [hqEq]
-    simp [c, p, q, Pi.single_apply, hcq, hpq]
+    simp [c, p, q, hcq, hpq]
   · have hvNot : v ∉ M.fanFaceVertices f := by
       intro hv
       simp only [fanFaceVertices, Finset.mem_insert,
         Finset.mem_singleton] at hv
       exact hv.elim hvc (fun h ↦ h.elim hvp hvq)
     rw [extendFaceCoordinates_of_notMem _ _ hvNot]
-    simp [c, p, q, Pi.single_apply, hvc, hvp, hvq]
+    simp [c, p, q, hvc, hvp, hvq]
 
 /-- A zero-center fan point outside the relative interior of its base is one of the declared
 base vertices, both geometrically and in zero-extended barycentric coordinates. -/
@@ -2490,18 +2490,18 @@ theorem extendFaceCoordinates_eq_center_add_smul_normalizedBase
         (x (M.fanFirstVertex f)) := by
     funext v
     by_cases hv : (M.fanFirstVertex f).1 = v
-    · simp [Pi.single_apply, hv]
+    · simp [hv]
       exact mul_div_cancel₀ _ hd
-    · simp [Pi.single_apply, hv]
+    · simp [hv]
   have hsecond : d • Pi.single (M.fanSecondVertex f).1
         (x (M.fanSecondVertex f) / d) =
       Pi.single (M.fanSecondVertex f).1
         (x (M.fanSecondVertex f)) := by
     funext v
     by_cases hv : (M.fanSecondVertex f).1 = v
-    · simp [Pi.single_apply, hv]
+    · simp [hv]
       exact mul_div_cancel₀ _ hd
-    · simp [Pi.single_apply, hv]
+    · simp [hv]
   rw [M.extendFaceCoordinates_fanFace f x,
     M.extendFaceCoordinates_fanFace f
       (M.fanNormalizedBasePoint f x hxCenter),

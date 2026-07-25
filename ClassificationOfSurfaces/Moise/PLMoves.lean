@@ -58,7 +58,7 @@ noncomputable def boundaryFaces : Finset (Finset M.Vertex) := by
 theorem mem_boundaryFaces_iff {s : Finset M.Vertex} :
     s ∈ M.boundaryFaces ↔ s.Nonempty ∧ ∃ e ∈ M.allBoundaryEdges, s ⊆ e := by
   classical
-  simp [boundaryFaces, and_assoc, and_left_comm, and_comm]
+  simp [boundaryFaces, and_assoc, and_comm]
 
 /-- The incidence-one edges and their faces form a finite one-dimensional plane complex. -/
 noncomputable def boundaryComplex : PlaneComplex where

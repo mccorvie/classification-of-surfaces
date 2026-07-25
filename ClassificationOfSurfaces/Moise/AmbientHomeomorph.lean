@@ -94,7 +94,8 @@ theorem coe_repositionHomeomorph_apply (position' : M.Vertex → Plane)
           ((M.toPlaneComplex.realizationHomeomorph M.toPlaneComplex_isPure2).symm z).1 := by
   let x := (M.toPlaneComplex.realizationHomeomorph M.toPlaneComplex_isPure2).symm z
   have hz : z = M.toPlaneComplex.realizationHomeomorph M.toPlaneComplex_isPure2 x := by
-    exact (M.toPlaneComplex.realizationHomeomorph M.toPlaneComplex_isPure2).apply_symm_apply z |>.symm
+    exact
+      (M.toPlaneComplex.realizationHomeomorph M.toPlaneComplex_isPure2).apply_symm_apply z |>.symm
   change (M.repositionHomeomorph position' hposition_injective haffineIndependent
       htriangle_inter z : Plane) =
     (M.reposition position' hposition_injective haffineIndependent

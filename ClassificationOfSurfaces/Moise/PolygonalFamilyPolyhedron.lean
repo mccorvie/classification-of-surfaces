@@ -168,7 +168,9 @@ theorem arrangementTriangleCarrier_interior_nonempty
     ext x
     simp
   rw [← hrange]
-  apply ((arrangementMesh J).affineIndependent_triangle t ht).affineSpan_eq_top_iff_card_eq_finrank_add_one.mpr
+  apply
+    ((arrangementMesh J).affineIndependent_triangle t ht)
+      |>.affineSpan_eq_top_iff_card_eq_finrank_add_one.mpr
   rw [Fintype.card_coe, (arrangementMesh J).card_triangle t ht]
   simp [Plane]
 

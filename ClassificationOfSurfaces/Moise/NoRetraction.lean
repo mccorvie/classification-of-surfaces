@@ -52,8 +52,8 @@ theorem no_retraction_closedUnitDisk :
   rintro ⟨r, hr, hretract⟩
   letI : ContractibleSpace ClosedUnitDisk :=
     (convex_closedBall (0 : ℂ) 1).contractibleSpace ⟨0, by simp⟩
-  letI : LocPathConnectedSpace ClosedUnitDisk :=
-    (convex_closedBall (0 : ℂ) 1).locPathConnectedSpace
+  letI : LocallyPathConnectedSpace ClosedUnitDisk :=
+    (convex_closedBall (0 : ℂ) 1).locallyPathConnectedSpace
   let f : C(ClosedUnitDisk, Circle) := ⟨r, hr⟩
   let center : ClosedUnitDisk := ⟨0, by simp⟩
   obtain ⟨e₀, he₀⟩ := Circle.exp_surjective (f center)
@@ -96,9 +96,9 @@ theorem no_retraction_closedUnitDisk :
     change F (circleToClosedUnitDisk (γ 1)) = F (circleToClosedUnitDisk (γ 0))
     congr 2
     apply Subtype.ext
-    simp [γ, Circle.coe_exp]
+    simp [γ]
   rw [hloop] at hend
-  have hend' : Γ 0 = Γ 0 + 2 * Real.pi := by simpa [Λ] using hend
+  have hend' : Γ 0 = Γ 0 + 2 * Real.pi := by simp [Λ] at hend
   have hpi : (2 : ℝ) * Real.pi ≠ 0 := mul_ne_zero (by norm_num) Real.pi_ne_zero
   apply hpi
   linarith
@@ -273,12 +273,12 @@ theorem exists_radial_retraction_to_frontier {C : Set Plane}
       change q + w ∈ closure C
       have hqy : q + w = y := by
         rw [← heq]
-        simp [vadd_eq_add, add_assoc]
+        simp [vadd_eq_add]
       exact hqy ▸ hy
     · intro hqwin
       change q + w ∈ interior C at hqwin
       apply hwFrontier.2
-      exact ⟨q + w, hqwin, by simp [vadd_eq_add, add_assoc]⟩
+      exact ⟨q + w, hqwin, by simp [vadd_eq_add]⟩
   let R : {x : Plane // x ≠ q} → frontier C :=
     fun x => ⟨radial x, hradialFrontier x⟩
   refine ⟨R, ?_, ?_⟩

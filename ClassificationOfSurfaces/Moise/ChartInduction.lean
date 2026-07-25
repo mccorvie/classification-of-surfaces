@@ -191,7 +191,6 @@ theorem subset_interior_range_frontierGlue_of_fixedOn_of_isInteriorPoint
     mem_interior_range_of_eq_of_mem_interior_range_of_isInteriorPoint
       (modelWithCornersEuclideanHalfSpace 2)
       T.isEmbedding he (x := x) (by
-        change T.embed x ∈ interior (Set.range T.embed)
         rw [hx]
         exact hA hzA) (by
         simpa only [hx] using hAi z hzA)
@@ -360,7 +359,8 @@ theorem planeComplex_baryEval_coordZero_exposed
         (PiLp.projₗ 2 (fun _ : Fin 2 ↦ ℝ) 0)).toAffineSubspace
     have hspanTop :
         affineSpan ℝ (Set.range fun v : t ↦ K.position v) = ⊤ :=
-      ((K.affineIndependent t (K.mem_simplexes_of_mem_cells ht)).affineSpan_eq_top_iff_card_eq_finrank_add_one).mpr (by
+      ((K.affineIndependent t (K.mem_simplexes_of_mem_cells ht))
+        |>.affineSpan_eq_top_iff_card_eq_finrank_add_one).mpr (by
           simpa [Plane] using htcard)
     have hspanH :
         affineSpan ℝ (Set.range fun v : t ↦ K.position v) ≤ H := by
@@ -660,13 +660,13 @@ theorem IntrinsicTwoComplex.mem_convexHull_unitVectors_of_mem_faceCarrier
     · rw [Finset.sum_eq_single w]
       · simp
       · intro v hv hvw
-        simp [Pi.single_apply, hvw]
+        simp [hvw]
       · simp [hw]
     · rw [hx w hw]
       apply Finset.sum_eq_zero
       intro v hv
       have hvw : v ≠ w := fun h ↦ hw (h ▸ hv)
-      simp [Pi.single_apply, hvw]
+      simp [hvw]
   rw [← hcenter]
   apply Finset.centerMass_mem_convexHull b
   · exact fun v _ ↦ x.2.1.1 v
@@ -876,7 +876,7 @@ noncomputable def ofPlaneComplex {S : Type*} [TopologicalSpace S]
     PartialTriangulation S where
   Vertex := K.Vertex
   faces := K.cells
-  faces_card := fun t ht => K.card_of_mem_cells ht
+  faces_card := fun _ ht => K.card_of_mem_cells ht
   embed := e ∘ K.realizationHomeomorph hpure
   isEmbedding := he.comp (K.realizationHomeomorph hpure).isEmbedding
 
@@ -1150,7 +1150,7 @@ that half-disk rather than use the extra side. -/
 def perturbationRegion (_k : ChartKind) : Set Plane := Metric.ball 0 1
 
 /-- A disk or half-disk model is locally compact in its subtype topology. -/
-@[reducible] noncomputable def modelRegionLocallyCompactSpace (k : ChartKind) :
+theorem modelRegionLocallyCompactSpace (k : ChartKind) :
     LocallyCompactSpace k.modelRegion := by
   cases k with
   | disk =>
@@ -2071,7 +2071,7 @@ theorem finite_facesMeeting
 /-- The finite subtype of replacement faces meeting a specified compact chart set. -/
 noncomputable def FacesMeeting
     (Q : PolygonalReplacementPresentation X V) (C : Set V)
-    (hC : IsCompact C) : Type :=
+    (_ : IsCompact C) : Type :=
   {f : Q.complex.Face | (Q.complex.faceCarrier f ∩ C).Nonempty}
 
 noncomputable instance facesMeetingFintype
@@ -3466,6 +3466,8 @@ theorem surfaceEmbed_eq_iff
 
 end RelativeSynchronizedTarget
 
+open LocallyFiniteTriangleComplex PolygonalReplacementSourceAtlas RelativeSynchronizedTarget
+
 namespace PolygonalReplacementSourceAtlas
 
 /-- The polygonal family obtained by closing the faces meeting an arbitrary compact coordinate
@@ -3668,7 +3670,6 @@ theorem exists_pullbackTargetTriangle_of_relativeOldTriangle
         M.toPlaneComplex.support).Nonempty := by
     obtain ⟨x, hx⟩ := R.interior_triangleCarrier_nonempty T
     refine ⟨x, hx, ?_⟩
-    change x ∈ M.toPlaneComplex.support
     rw [show M.toPlaneComplex.support = P.target.support by
       exact P.target.toTriangleMesh_support P.target_pure, P.target_support]
     rw [(A.tileFacePolygonMeeting C hC f).closedRegion_eq_union]
@@ -4285,7 +4286,7 @@ theorem relativeSourceFaceMap_eq_vertex_sum
           intro h
           apply hb
           exact Subtype.ext h
-        simp [hbval, Ne.symm hbval]
+        simp [Ne.symm hbval]
       · simp
     · have hxz : x.1 z = 0 := hx z hzt
       rw [hxz]
@@ -5224,7 +5225,7 @@ theorem exists_straightenedChartOpen
       (fun x : U ↦
         (⟨T.chartOverlapMap c ⟨x.1, hsub x.2⟩, hmem x⟩ : V))) :
     ∃ (Q : PolygonalReplacementPresentation U V)
-      (A : PolygonalReplacementSourceAtlas T.toIntrinsic U V Q)
+      (_ : PolygonalReplacementSourceAtlas T.toIntrinsic U V Q)
       (g' : U → c.kind.modelRegion)
       (g : T.toIntrinsic.realization → S'),
       (∀ y : U, (g' y : Plane) = (Q.sourceHomeomorph y).1.1) ∧
@@ -5393,7 +5394,7 @@ theorem exists_straightenedChartOpen
         exact hchart.symm.trans hsurface
       exact hsource.trans (hd x)
     have hzero :=
-      LocallyFiniteTriangleComplex.polygonalReplacementHomeomorph_coordZero_iff_of_facewiseCoordZeroExposed
+      polygonalReplacementHomeomorph_coordZero_iff_of_facewiseCoordZeroExposed
         G' H hfHalf hGface (eU y)
     change (q y).1.1 0 = 0 ↔ f y 0 = 0 at hzero
     have hchart :=
@@ -5563,7 +5564,8 @@ theorem exists_straightenedChartOpen
           rw [hk] at hx
           simpa [ChartKind.modelRegion, HalfPlaneSet] using hx.2
         have hgraph : Set.range G'.graphReplacementMap ⊆ HalfPlaneSet := by
-          apply IntrinsicTwoComplex.ControlledAdaptiveComplex.range_graphReplacementMap_subset_halfPlane
+          apply
+            IntrinsicTwoComplex.ControlledAdaptiveComplex.range_graphReplacementMap_subset_halfPlane
             T.toIntrinsic U hU f hf (regionSafeControl V f mu)
               (stronglyPositiveOn_regionSafeControl hV hf hmem hmu) G'
           · intro p
@@ -5637,10 +5639,10 @@ theorem exists_straightenedChartAway
     (hc : c.BoundaryFaithful)
     (hboundary : T.BoundaryFacewiseRegular)
     (A : Set S') (hA : IsClosed A) :
-    ∃ (U : Set T.toIntrinsic.realization) (hU : IsOpen U)
-      (V : Set Plane) (hV : IsOpen V)
+    ∃ (U : Set T.toIntrinsic.realization) (_ : IsOpen U)
+      (V : Set Plane) (_ : IsOpen V)
       (Q : PolygonalReplacementPresentation U V)
-      (Qatlas : PolygonalReplacementSourceAtlas T.toIntrinsic U V Q)
+      (_ : PolygonalReplacementSourceAtlas T.toIntrinsic U V Q)
       (g' : U → c.kind.modelRegion)
       (g : T.toIntrinsic.realization → S'),
       V ⊆ c.kind.perturbationRegion ∧
@@ -5804,6 +5806,8 @@ theorem exists_straightenedChartAway
     hcross, hembed⟩
 
 end PartialTriangulation
+
+open PartialTriangulation.RelativeSynchronizedTarget
 
 /-- **Theorem boundary** (Moise Thm. 7.6 for partial triangulations).
 
@@ -6137,10 +6141,10 @@ proposition to retain the boundary-line subcomplex during the bordered induction
 def PartialTriangulation.BoundaryPreservingStraightening
     (T : PartialTriangulation S) (c : MoiseChart S) : Prop :=
   ∀ (A : Set S), IsClosed A →
-    ∃ (U : Set T.toIntrinsic.realization) (hU : IsOpen U)
-      (V : Set Plane) (hV : IsOpen V)
+    ∃ (U : Set T.toIntrinsic.realization) (_ : IsOpen U)
+      (V : Set Plane) (_ : IsOpen V)
       (Q : PolygonalReplacementPresentation U V)
-      (Qatlas : PolygonalReplacementSourceAtlas T.toIntrinsic U V Q)
+      (_ : PolygonalReplacementSourceAtlas T.toIntrinsic U V Q)
       (g' : U → c.kind.modelRegion)
       (g : T.toIntrinsic.realization → S),
       V ⊆ c.kind.perturbationRegion ∧
@@ -6228,7 +6232,7 @@ theorem PartialTriangulation.exists_straightenedChartOverlap
     (T : PartialTriangulation S) (c : MoiseChart S) :
     ∃ (Q : PolygonalReplacementPresentation (T.chartOverlap c)
         c.kind.perturbationRegion)
-      (A : PolygonalReplacementSourceAtlas T.toIntrinsic (T.chartOverlap c)
+      (_ : PolygonalReplacementSourceAtlas T.toIntrinsic (T.chartOverlap c)
         c.kind.perturbationRegion Q)
       (g' : T.chartOverlap c → c.kind.modelRegion)
       (g : T.toIntrinsic.realization → S),
@@ -6466,7 +6470,8 @@ theorem PartialTriangulation.exists_straightenedChartOverlap
           rw [hk] at hx
           simpa [ChartKind.modelRegion, HalfPlaneSet] using hx.2
         have hgraph : Set.range G'.graphReplacementMap ⊆ HalfPlaneSet := by
-          apply IntrinsicTwoComplex.ControlledAdaptiveComplex.range_graphReplacementMap_subset_halfPlane
+          apply
+            IntrinsicTwoComplex.ControlledAdaptiveComplex.range_graphReplacementMap_subset_halfPlane
             T.toIntrinsic U hU f hf (regionSafeControl V f mu)
               (stronglyPositiveOn_regionSafeControl hV hf hmem hmu) G'
           · intro p
@@ -6712,7 +6717,6 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
             chartHalf hchartHalfBoundary
             T.isEmbedding hembed hBoundaryPreservation
             (x := y) (by
-              change T.embed y ∈ interior (Set.range T.embed)
               rw [hy]
               exact hCT hxC)
             (by
@@ -7486,8 +7490,7 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       apply List.mem_append_left
       apply List.mem_append_left
       exact
-        PartialTriangulation.PolygonalReplacementSourceAtlas.horizontalLine_mem_coordinateAnchorLines
-          anchorCoordinate a
+        horizontalLine_mem_coordinateAnchorLines anchorCoordinate a
     have hLines :
         BrokenLineData.horizontalLine (anchorCoordinate a) ∈ lines := by
       exact List.mem_append_right _ hExtra
@@ -7783,7 +7786,7 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     rw [Finset.sum_eq_single v]
     · simp
     · intro w _ hw
-      simp [stdSimplex.vertex, Pi.single_apply, hw]
+      simp [stdSimplex.vertex, hw]
     · simp
   let localVertexLevelPoints : Finset Rlevel.refined.realization :=
     (Finset.univ : Finset localSourceComplex.UsedVertex).image
@@ -8211,7 +8214,7 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     rw [Finset.sum_eq_single v.1]
     · simp
     · intro w _ hw
-      simp [Pi.single_apply, hw]
+      simp [hw]
     · simp
   have mixedLocalExtended_eq_single_of_map_eq_localVertex
       (t : localSourceComplex.Face)
@@ -9657,7 +9660,6 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
           exact Finset.mem_map.mpr
             ⟨⟨v.1, hvf⟩, Finset.mem_univ _, rfl⟩
         refine ⟨f, ?_⟩
-        change v ∈ mixedUsedFaceVertices f
         convert hvMem using 1
         apply Subtype.ext
         rfl
@@ -9926,8 +9928,8 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
           (p : Plane) ∈ N.toPlaneComplex.support} :=
       hDmodelInteriorN ⟨xD, rfl⟩
     apply
-      (PartialTriangulation.RelativeSynchronizedTarget.modelInterior_subset_interior_range_newSurfaceEmbed
-        c J N lines hN_arrangement hN_model)
+      (modelInterior_subset_interior_range_newSurfaceEmbed c J N lines
+        hN_arrangement hN_model)
     refine ⟨c.chart.symm (dModel xD), ⟨dModel xD, hpInterior, rfl⟩, ?_⟩
     change (c.chart.symm (c.chart (dToDomain xD))).1 = x
     rw [c.chart.symm_apply_apply]
@@ -9988,13 +9990,13 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
             congrArg localUsedOldEmbedding hused
           _ = w := Classical.choose_spec hw
       · exfalso
-        simpa only [oldToCommonFun, dif_pos hv,
-          dif_neg hw, reduceCtorEq] using hvw
+        simp only [oldToCommonFun, dif_pos hv,
+          dif_neg hw, reduceCtorEq] at hvw
     · by_cases hw : ∃ u : localSourceComplex.UsedVertex,
           localUsedOldEmbedding u = w
       · exfalso
-        simpa only [oldToCommonFun, dif_neg hv,
-          dif_pos hw, reduceCtorEq] using hvw
+        simp only [oldToCommonFun, dif_neg hv,
+          dif_pos hw, reduceCtorEq] at hvw
       · have hextra :
             (⟨v, hv⟩ : OldExtra) = ⟨w, hw⟩ := by
           have hs :
@@ -10308,7 +10310,6 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
               exact hN_model) y := by
       apply c.chart.symm.injective
       apply Subtype.ext
-      change (c.chart.symm (g' qU)).1 = _
       rw [← hgval qU]
       exact hqTarget
     have hqCN :
@@ -10316,7 +10317,6 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       change (Q.sourceHomeomorph qU).1.1 ∈
         N.toPlaneComplex.support
       rw [← hgcoord qU]
-      change (g' qU : Plane) ∈ N.toPlaneComplex.support
       rw [hmodel]
       exact hpN
     have hqSelected :
@@ -10578,7 +10578,6 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
         (PartialTriangulation.RelativeSynchronizedTarget.newMesh
           J N lines).triangles).symm y
     have hbase : eOld xb = e₂ yb := by
-      change eOld xb = e₂ yb
       exact hxy
     obtain ⟨z, hz, hzy⟩ :=
       oldTarget_eq_implies_local xb yb hbase

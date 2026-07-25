@@ -85,7 +85,7 @@ theorem isCompact_frontierCore {X : Type*} [PseudoMetricSpace X] [CompactSpace X
   exact isClosed_Ici.preimage (Metric.continuous_infDist_pt Uᶜ)
 
 theorem frontierCore_subset {X : Type*} [PseudoMetricSpace X]
-    {U : Set X} (hUc : Uᶜ.Nonempty) (n : ℕ) : frontierCore U n ⊆ U := by
+    {U : Set X} (_ : Uᶜ.Nonempty) (n : ℕ) : frontierCore U n ⊆ U := by
   intro x hx
   by_contra hxU
   have hzero : frontierDistance U x = 0 :=
