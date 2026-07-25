@@ -621,6 +621,48 @@ theorem faceCarrier_empty : K.faceCarrier ∅ = ∅ := by
   simp_rw [hzero] at hsum
   norm_num at hsum
 
+/-- A realization point supported on one used vertex is its canonical vertex point. -/
+theorem eq_vertexPoint_of_mem_faceCarrier_singleton
+    (v : K.UsedVertex) (x : K.realization)
+    (hx : x ∈ K.faceCarrier ({v.1} : Finset K.Vertex)) :
+    x = K.vertexPoint v := by
+  have hxv : x.1 v.1 = 1 := by
+    have hsum := x.2.1.2
+    rw [Finset.sum_eq_single v.1] at hsum
+    · exact hsum
+    · intro w _ hwv
+      exact hx w (by simp [hwv])
+    · intro hv
+      exact False.elim (hv (Finset.mem_univ v.1))
+  apply Subtype.ext
+  funext w
+  by_cases hwv : w = v.1
+  · subst w
+    simp [K.vertexPoint, hxv]
+  · simp [K.vertexPoint, hwv, hx w (by simp [hwv])]
+
+/-- A nonempty barycentric carrier with at most one vertex, contained in a listed face,
+consists of one canonical vertex point. -/
+theorem exists_eq_vertexPoint_of_mem_faceCarrier_of_card_le_one
+    (t : K.Face) {s : Finset K.Vertex} (hst : s ⊆ t.1)
+    (hcard : s.card ≤ 1) {x : K.realization}
+    (hx : x ∈ K.faceCarrier s) :
+    ∃ v : K.UsedVertex, x = K.vertexPoint v := by
+  have hsNonempty : s.Nonempty := by
+    rw [Finset.nonempty_iff_ne_empty]
+    intro hs
+    subst s
+    rw [K.faceCarrier_empty] at hx
+    exact hx
+  have hsCard : s.card = 1 := by
+    have := Finset.card_pos.mpr hsNonempty
+    omega
+  obtain ⟨v, rfl⟩ := Finset.card_eq_one.mp hsCard
+  have hvt : v ∈ t.1 := hst (by simp)
+  let vUsed : K.UsedVertex := ⟨v, t.1, t.2, hvt⟩
+  exact ⟨vUsed, K.eq_vertexPoint_of_mem_faceCarrier_singleton vUsed x (by
+    simpa [vUsed] using hx)⟩
+
 /-- Exact range of an intrinsic edge after applying an ambient map. -/
 theorem range_mappedEdgePath (h : K.realization → Plane) (e : K.Edge) :
     Set.range (K.mappedEdgePath h e) = h '' K.faceCarrier e.1 := by

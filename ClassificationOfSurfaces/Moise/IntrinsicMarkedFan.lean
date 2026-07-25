@@ -622,6 +622,19 @@ theorem faceCenter_coordinate (t : K.Face) {v : K.Vertex} (hv : v ∈ t.1) :
     extendFaceCoordinates_of_mem t.1 _ hv]
   rfl
 
+/-- A barycentric face center is not a vertex point. -/
+theorem faceCenter_ne_vertexPoint (t : K.Face) (v : K.UsedVertex) :
+    K.faceCenter t ≠ K.vertexPoint v := by
+  intro h
+  have hcoord := congrArg (fun x : K.realization ↦ x.1 v.1) h
+  by_cases hvt : v.1 ∈ t.1
+  · rw [K.faceCenter_coordinate t hvt] at hcoord
+    norm_num [K.vertexPoint] at hcoord
+  · have hzero : (K.faceCenter t).1 v.1 = 0 :=
+      K.faceCenter_mem_faceCarrier t v.1 hvt
+    rw [hzero] at hcoord
+    norm_num [K.vertexPoint] at hcoord
+
 /-- Distinct maximal intrinsic faces have distinct barycentric centers. -/
 theorem faceCenter_injective : Function.Injective K.faceCenter := by
   intro t u htu
