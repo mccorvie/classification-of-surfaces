@@ -300,6 +300,10 @@ noncomputable def toGeometricTriangulation (hcovers : T.support = Set.univ) :
 def edges : Finset (Finset T.Vertex) :=
   T.faces.biUnion fun t => t.powersetCard 2
 
+/-- The dual graph of the maximal faces of a partial triangulation is connected. -/
+abbrev IsDualConnected : Prop :=
+  TriangleFamily.IsDualConnected T.faces
+
 theorem card_of_mem_edges {e : Finset T.Vertex} (he : e ∈ T.edges) : e.card = 2 := by
   rcases Finset.mem_biUnion.mp he with ⟨t, ht, het⟩
   exact (Finset.mem_powersetCard.mp het).2
@@ -5819,7 +5823,9 @@ family, supported on the union of the two images.
 The realization of the union family is the set-union of the two realizations, so the glued
 embedding is the pasting of the two embeddings along a closed common part; it is a continuous
 injection from a compact space into a Hausdorff space, hence an embedding.  The edge-face count
-hypothesis is passed through to the glued complex. -/
+hypothesis is passed through to the glued complex.  The conclusion retains the equality between
+the glued face family and `F₁ ∪ F₂`, so later incidence certificates can use the two source-family
+proofs without reconstructing provenance from the embedding. -/
 theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Space S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
     (V : Type) [Fintype V] [DecidableEq V]
@@ -5834,6 +5840,7 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
     (hboundary₁ : BoundaryFacewiseRegularEmbedding F₁ e₁)
     (hboundary₂ : BoundaryFacewiseRegularEmbedding F₂ e₂) :
     ∃ T' : PartialTriangulation S,
+      T'.faces = F₁ ∪ F₂ ∧
       T'.support = Set.range e₁ ∪ Set.range e₂ ∧
       (∀ e ∈ T'.edges, (T'.faces.filter fun t => e ⊆ t).card ≤ 2) ∧
       T'.BoundaryFacewiseRegular := by
@@ -5927,7 +5934,7 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
         (Continuous.subtype_mk continuous_subtype_val _)).isClosed
   -- assemble the glued partial triangulation
   refine ⟨{ Vertex := V, faces := F₁ ∪ F₂, faces_card := hcard, embed := glue,
-            isEmbedding := ?_ }, ?_, ?_, ?_⟩
+            isEmbedding := ?_ }, rfl, ?_, ?_, ?_⟩
   · exact (hcont.isClosedEmbedding hinj).isEmbedding
   · -- the support is the union of the two images
     apply Set.Subset.antisymm
@@ -5968,6 +5975,22 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
         ∀ v ∉ b, x.1 v = 0
       rw [hglue_right x x₂.2]
       exact hb x₂ hxt'
+
+/-- A glued partial triangulation is dual-connected once both source families are dual-connected
+and one source face on each side shares an edge in the union family. -/
+theorem PartialTriangulation.isDualConnected_of_faces_eq_union
+    {S : Type*} [TopologicalSpace S] (T : PartialTriangulation S)
+    {F₁ F₂ : Finset (Finset T.Vertex)} (hfaces : T.faces = F₁ ∪ F₂)
+    (hdual₁ : TriangleFamily.IsDualConnected F₁)
+    (hdual₂ : TriangleFamily.IsDualConnected F₂)
+    (hcross : ∃ (f₁ : TriangleFamily.Face F₁) (f₂ : TriangleFamily.Face F₂),
+      TriangleFamily.FaceAdjacent (F₁ ∪ F₂)
+        (TriangleFamily.faceOfSubset Finset.subset_union_left f₁)
+        (TriangleFamily.faceOfSubset Finset.subset_union_right f₂)) :
+    T.IsDualConnected := by
+  change TriangleFamily.IsDualConnected T.faces
+  rw [hfaces]
+  exact TriangleFamily.isDualConnected_union_of_exists_faceAdjacent hdual₁ hdual₂ hcross
 
 /-- The invariant carried through the bordered Radó induction: every edge of the built complex
 lies in at most two faces, every triangle has a regular exposed intersection with the ambient
@@ -11397,7 +11420,7 @@ theorem moise_induction_step (c : MoiseChart S) (hc : c.BoundaryFaithful)
     obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep,
         hboundary₁, hboundary₂, hcover⟩ :=
       MoiseChart.exists_crossing_weld S c hc hT
-    obtain ⟨T', hsupport, hsurf', hboundary'⟩ :=
+    obtain ⟨T', _hfaces, hsupport, hsurf', hboundary'⟩ :=
       PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂
         hagree hsep hboundary₁ hboundary₂
     refine ⟨T', ?_, hsurf', hboundary', ?_⟩
