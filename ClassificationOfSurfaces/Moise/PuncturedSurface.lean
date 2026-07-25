@@ -177,6 +177,151 @@ theorem isPathConnected_domain_diff_finite
 
 end MoiseChart
 
+/-- A connected T1 space stays connected after deleting a finite set if every deleted point has
+an open neighborhood whose complement of the whole finite set is path-connected.
+
+For a putative separation of the complement, each deleted point is assigned to the unique side
+containing its punctured neighborhood.  Restoring the assigned points then produces two disjoint
+open sets covering the original connected space. -/
+theorem isConnected_compl_finite_of_locally_pathConnected
+    {S : Type*} [TopologicalSpace S] [T1Space S] [ConnectedSpace S]
+    {F : Set S} (hF : F.Finite)
+    (hlocal : ∀ p ∈ F, ∃ U : Set S,
+      IsOpen U ∧ p ∈ U ∧ IsPathConnected (U \ F)) :
+    IsConnected Fᶜ := by
+  classical
+  by_cases hFempty : F = ∅
+  · simpa [hFempty] using
+      (isConnected_univ : IsConnected (Set.univ : Set S))
+  have hcomplNonempty : Fᶜ.Nonempty := by
+    obtain ⟨p, hpF⟩ := Set.nonempty_iff_ne_empty.mpr hFempty
+    obtain ⟨U, _hUopen, _hpU, hpath⟩ := hlocal p hpF
+    obtain ⟨x, _hxU, hxF⟩ := hpath.nonempty
+    exact ⟨x, hxF⟩
+  refine ⟨hcomplNonempty, ?_⟩
+  intro u v hu hv hcover hUne hVne
+  by_contra hinter
+  let A : Set S := Fᶜ ∩ u
+  let B : Set S := Fᶜ ∩ v
+  have hAopen : IsOpen A := hF.isClosed.isOpen_compl.inter hu
+  have hBopen : IsOpen B := hF.isClosed.isOpen_compl.inter hv
+  have hABcover : Fᶜ ⊆ A ∪ B := by
+    intro x hx
+    rcases hcover hx with hxu | hxv
+    · exact Or.inl ⟨hx, hxu⟩
+    · exact Or.inr ⟨hx, hxv⟩
+  have hABdisjoint : Disjoint A B := by
+    rw [Set.disjoint_left]
+    intro x hxA hxB
+    exact hinter ⟨x, hxA.1, hxA.2, hxB.2⟩
+  choose U hUopen hpU hUpath using
+    fun p : F ↦ hlocal p.1 p.2
+  have hside (p : F) :
+      U p \ F ⊆ A ∨ U p \ F ⊆ B := by
+    obtain ⟨x, hx⟩ := (hUpath p).nonempty
+    rcases hABcover hx.2 with hxA | hxB
+    · left
+      exact (hUpath p).isConnected.isPreconnected.subset_left_of_subset_union
+        hAopen hBopen hABdisjoint
+        (fun _ hy ↦ hABcover hy.2) ⟨x, hx, hxA⟩
+    · right
+      exact (hUpath p).isConnected.isPreconnected.subset_right_of_subset_union
+        hAopen hBopen hABdisjoint
+        (fun _ hy ↦ hABcover hy.2) ⟨x, hx, hxB⟩
+  let Left (p : F) : Prop := U p \ F ⊆ A
+  have hright (p : F) (hp : ¬Left p) :
+      U p \ F ⊆ B :=
+    (hside p).resolve_left hp
+  let W (p : F) : Set S := U p \ (F \ {p.1})
+  have hWopen (p : F) : IsOpen (W p) := by
+    exact (hUopen p).inter (hF.sdiff |>.isClosed.isOpen_compl)
+  have hpW (p : F) : p.1 ∈ W p := by
+    refine ⟨hpU p, ?_⟩
+    rintro ⟨_, hpne⟩
+    exact hpne rfl
+  have eq_center_of_mem_W_of_mem_F (p : F) {x : S}
+      (hxW : x ∈ W p) (hxF : x ∈ F) :
+      x = p.1 := by
+    by_contra hxp
+    apply hxW.2
+    exact ⟨hxF, by simpa using hxp⟩
+  let L : Set S := {x | ∃ p : F, Left p ∧ x = p.1}
+  let R : Set S := {x | ∃ p : F, ¬Left p ∧ x = p.1}
+  let A' : Set S := A ∪ L
+  let B' : Set S := B ∪ R
+  have hA'open : IsOpen A' := by
+    rw [isOpen_iff_forall_mem_open]
+    intro x hx
+    rcases hx with hxA | ⟨p, hpLeft, rfl⟩
+    · exact ⟨A, Set.subset_union_left, hAopen, hxA⟩
+    · refine ⟨W p, ?_, hWopen p, hpW p⟩
+      intro y hyW
+      by_cases hyF : y ∈ F
+      · right
+        exact ⟨p, hpLeft, eq_center_of_mem_W_of_mem_F p hyW hyF⟩
+      · left
+        exact hpLeft ⟨hyW.1, hyF⟩
+  have hB'open : IsOpen B' := by
+    rw [isOpen_iff_forall_mem_open]
+    intro x hx
+    rcases hx with hxB | ⟨p, hpLeft, rfl⟩
+    · exact ⟨B, Set.subset_union_left, hBopen, hxB⟩
+    · refine ⟨W p, ?_, hWopen p, hpW p⟩
+      intro y hyW
+      by_cases hyF : y ∈ F
+      · right
+        exact ⟨p, hpLeft, eq_center_of_mem_W_of_mem_F p hyW hyF⟩
+      · left
+        exact hright p hpLeft ⟨hyW.1, hyF⟩
+  have hA'B'disjoint : Disjoint A' B' := by
+    rw [Set.disjoint_left]
+    intro x hxA' hxB'
+    rcases hxA' with hxA | ⟨p, hpLeft, hp⟩
+    · rcases hxB' with hxB | ⟨q, _hqLeft, hq⟩
+      · exact Set.disjoint_left.mp hABdisjoint hxA hxB
+      · exact hxA.1 (hq ▸ q.2)
+    · rcases hxB' with hxB | ⟨q, hqLeft, hq⟩
+      · exact hxB.1 (hp ▸ p.2)
+      · apply hqLeft
+        have hpq : p = q := by
+          apply Subtype.ext
+          exact hp.symm.trans hq
+        simpa [hpq] using hpLeft
+  have hA'B'cover : (Set.univ : Set S) ⊆ A' ∪ B' := by
+    intro x _
+    by_cases hxF : x ∈ F
+    · let p : F := ⟨x, hxF⟩
+      by_cases hpLeft : Left p
+      · exact Or.inl (Or.inr ⟨p, hpLeft, rfl⟩)
+      · exact Or.inr (Or.inr ⟨p, hpLeft, rfl⟩)
+    · rcases hABcover hxF with hxA | hxB
+      · exact Or.inl (Or.inl hxA)
+      · exact Or.inr (Or.inl hxB)
+  have hA'ne : ((Set.univ : Set S) ∩ A').Nonempty := by
+    obtain ⟨x, hxF, hxu⟩ := hUne
+    exact ⟨x, Set.mem_univ x, Or.inl ⟨hxF, hxu⟩⟩
+  have hB'ne : ((Set.univ : Set S) ∩ B').Nonempty := by
+    obtain ⟨x, hxF, hxv⟩ := hVne
+    exact ⟨x, Set.mem_univ x, Or.inl ⟨hxF, hxv⟩⟩
+  obtain ⟨x, _, hxA', hxB'⟩ := isPreconnected_univ
+    A' B' hA'open hB'open hA'B'cover hA'ne hB'ne
+  exact Set.disjoint_left.mp hA'B'disjoint hxA' hxB'
+
+/-- A connected surface charted on the Euclidean half-plane remains connected after deleting
+finitely many points. -/
+theorem isConnected_compl_finite_surface
+    {S : Type*} [TopologicalSpace S] [T1Space S] [ConnectedSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    {F : Set S} (hF : F.Finite) :
+    IsConnected Fᶜ := by
+  apply isConnected_compl_finite_of_locally_pathConnected hF
+  intro p hpF
+  obtain ⟨c, _hfaithful, hcore⟩ :=
+    exists_moiseChart_core_mem_nhds S p
+  refine ⟨c.domain, c.isOpen_domain, ?_,
+    c.isPathConnected_domain_diff_finite F hF⟩
+  exact c.core_subset_domain (mem_of_mem_nhds hcore)
+
 end Moise
 end ClassificationOfSurfaces
 end Topology
