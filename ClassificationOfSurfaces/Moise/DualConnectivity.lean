@@ -136,8 +136,7 @@ theorem isDualConnected_of_support_eq_univ
         (⟨f, hf⟩ : T.toIntrinsic.Face)
         Finset.inter_subset_left hcard haInter
     refine ⟨v, ?_⟩
-    rw [← hav]
-    exact hax
+    exact (congrArg T.embed hav.symm).trans hax
   have hotherNotReach : ¬Reach other.1 := by
     intro hReach
     apply hother
