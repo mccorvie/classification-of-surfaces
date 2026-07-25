@@ -60,19 +60,21 @@ theorem SurfaceCellComplex.hasNormalFormOfRealizes (K : SurfaceCellComplex) (N :
     K.HasNormalForm N :=
   ⟨K, ⟨Homeomorph.refl K.Realization⟩, h⟩
 
-/-- Combinatorial bridge: every finite connected surface cell complex reduces to normal form.
+/-- Combinatorial bridge: every valid connected finite surface cell complex reduces to normal
+form.
 
-This theorem is already blocked by the placeholder quotient representatives. Its corrected
-statement must also take explicit `K.IsSurfaceValid` and `K.IsConnected` hypotheses once the
-triangulation bridge can produce them; see `docs/KNOWN_WEAK.md`. -/
-theorem surface_cell_complex_reduces_to_normal_form (K : SurfaceCellComplex) :
+The explicit incidence hypotheses are supplied by the geometric-triangulation bridge.  The proof
+remains blocked by the placeholder quotient representatives; see `docs/KNOWN_WEAK.md`. -/
+theorem surface_cell_complex_reduces_to_normal_form (K : SurfaceCellComplex)
+    (_hvalid : K.IsSurfaceValid) (_hconnected : K.IsConnected) :
     ∃ N : NormalForm, N.IsEvalAdmissible ∧ K.HasNormalForm N := by
   sorry
 
 /-- Compatibility spelling for the initial scaffold theorem name. -/
-theorem cell_complex_reduces_to_normal_form (K : CellComplex) :
+theorem cell_complex_reduces_to_normal_form (K : CellComplex)
+    (hvalid : K.IsSurfaceValid) (hconnected : K.IsConnected) :
     ∃ N : NormalForm, N.IsEvalAdmissible ∧ K.HasNormalForm N :=
-  surface_cell_complex_reduces_to_normal_form K
+  surface_cell_complex_reduces_to_normal_form K hvalid hconnected
 
 /-- Convert a named normal-form witness to the disjunction shape used by the Eval statement. -/
 theorem SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm
@@ -99,21 +101,24 @@ theorem SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm
 
 /-- Final combinatorial output in the shape needed by the eval theorem, before transporting across
 homeomorphisms from the triangulation step. -/
-theorem SurfaceCellComplex.hasEvalRepresentative (K : SurfaceCellComplex) :
+theorem SurfaceCellComplex.hasEvalRepresentative (K : SurfaceCellComplex)
+    (hvalid : K.IsSurfaceValid) (hconnected : K.IsConnected) :
     Nonempty (K.Realization ≃ₜ SphereRepresentative) ∨
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (K.Realization ≃ₜ Quot (OrientableRel p n))) ∨
           (1 ≤ p ∧ Nonempty (K.Realization ≃ₜ Quot (NonOrientableRel p n))) := by
-  rcases surface_cell_complex_reduces_to_normal_form K with ⟨N, hN, hK⟩
+  rcases surface_cell_complex_reduces_to_normal_form K hvalid hconnected with
+    ⟨N, hN, hK⟩
   exact SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm hN hK
 
 /-- Compatibility spelling for the initial scaffold theorem name. -/
-theorem cell_complex_has_eval_representative (K : CellComplex) :
+theorem cell_complex_has_eval_representative (K : CellComplex)
+    (hvalid : K.IsSurfaceValid) (hconnected : K.IsConnected) :
     Nonempty (K.Realization ≃ₜ SphereRepresentative) ∨
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (K.Realization ≃ₜ Quot (OrientableRel p n))) ∨
           (1 ≤ p ∧ Nonempty (K.Realization ≃ₜ Quot (NonOrientableRel p n))) :=
-  SurfaceCellComplex.hasEvalRepresentative K
+  SurfaceCellComplex.hasEvalRepresentative K hvalid hconnected
 
 end ClassificationOfSurfaces
 end Topology

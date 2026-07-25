@@ -27,9 +27,10 @@ theorem classification_of_surfaces (S : Type*) [TopologicalSpace S]
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (S ≃ₜ Quot (OrientableRel p n))) ∨
           (1 ≤ p ∧ Nonempty (S ≃ₜ Quot (NonOrientableRel p n))) := by
-  obtain ⟨K, hSK⟩ := compact_surface_homeomorphic_to_cell_complex S
+  obtain ⟨K, hSK, hvalid, hconnected⟩ :=
+    compact_surface_homeomorphic_to_valid_connected_cell_complex S
   rcases hSK with ⟨hSK⟩
-  rcases SurfaceCellComplex.hasEvalRepresentative K with hK | hK
+  rcases SurfaceCellComplex.hasEvalRepresentative K hvalid hconnected with hK | hK
   · rcases hK with ⟨hKR⟩
     exact Or.inl ⟨hSK.trans hKR⟩
   · rcases hK with ⟨p, n, hK⟩

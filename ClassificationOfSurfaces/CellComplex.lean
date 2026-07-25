@@ -640,13 +640,21 @@ variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 
-/-- An Eval surface is homeomorphic to the stored realization of raw finite cell-presentation
-data.  This is only the current compatibility handoff: `K.IsSurfaceValid`, `K.IsConnected`, and
-agreement with the polygonal quotient realization remain separate obligations. -/
+/-- An Eval surface has a finite cell presentation whose incidence data are valid and whose face
+adjacency graph is connected. -/
+theorem compact_surface_homeomorphic_to_valid_connected_cell_complex :
+    ∃ K : SurfaceCellComplex,
+      Nonempty (S ≃ₜ K.Realization) ∧ K.IsSurfaceValid ∧ K.IsConnected :=
+  finite_triangulation_to_valid_connected_cell_complex
+    (compact_eval_surface_finiteSurfaceTriangulation S)
+    (compact_eval_surface_finiteSurfaceTriangulation_incidenceCertificate S)
+
+/-- Compatibility projection of the certified cell-complex handoff. -/
 theorem compact_surface_homeomorphic_to_cell_complex :
     ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
-  obtain ⟨T, _hT⟩ := compact_eval_surface_finitely_triangulable S
-  exact finite_triangulation_to_cell_complex T
+  obtain ⟨K, hK, _hvalid, _hconnected⟩ :=
+    compact_surface_homeomorphic_to_valid_connected_cell_complex S
+  exact ⟨K, hK⟩
 
 end EvalHypotheses
 
