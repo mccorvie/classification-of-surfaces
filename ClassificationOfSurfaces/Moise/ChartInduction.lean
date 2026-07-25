@@ -987,6 +987,12 @@ noncomputable def patchPartialTriangulation : PartialTriangulation S :=
   PartialTriangulation.ofPlaneComplex c.kind.patchComplex c.kind.patchComplex_pure
     c.patchEmbed c.isEmbedding_patchEmbed
 
+/-- The concrete partial triangulation supplied by one chart has a connected dual graph. -/
+theorem patchPartialTriangulation_isDualConnected :
+    c.patchPartialTriangulation.IsDualConnected := by
+  change TriangleFamily.IsDualConnected c.kind.patchComplex.cells
+  exact c.kind.patchComplex_isDualConnected
+
 theorem patchPartialTriangulation_support :
     c.patchPartialTriangulation.support = Set.range c.patchEmbed :=
   PartialTriangulation.ofPlaneComplex_support c.kind.patchComplex
