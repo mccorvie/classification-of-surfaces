@@ -225,6 +225,29 @@ theorem isDualConnected_union_of_exists_faceAdjacent
   rcases hcross with ⟨fleft, fright, hcross⟩
   exact isDualConnected_union hleft hright fleft fright hcross
 
+omit [DecidableEq Vertex] in
+/-- A face family consisting of one triangle is dual-connected. -/
+theorem isDualConnected_singleton (face : Finset Vertex) :
+    IsDualConnected {face} := by
+  intro f g
+  have hfg : f = g := by
+    apply Subtype.ext
+    exact (Finset.mem_singleton.mp f.2).trans (Finset.mem_singleton.mp g.2).symm
+  subst g
+  exact Relation.ReflTransGen.refl
+
+/-- Adding a triangle along an edge of a dual-connected family preserves dual connectivity. -/
+theorem isDualConnected_insert {faces : Finset (Finset Vertex)}
+    (hfaces : IsDualConnected faces) (face : Finset Vertex) (anchor : Face faces)
+    (hcross : FaceAdjacent (insert face faces)
+      ⟨face, Finset.mem_insert_self face faces⟩
+      (faceOfSubset (Finset.subset_insert face faces) anchor)) :
+    IsDualConnected (insert face faces) := by
+  apply isDualConnected_union_of_exists_faceAdjacent
+    (isDualConnected_singleton face) hfaces
+  refine ⟨⟨face, Finset.mem_singleton_self face⟩, anchor, ?_⟩
+  simpa [faceOfSubset] using hcross
+
 /-- Incidence conditions making a finite family of triangles a connected pseudomanifold with
 boundary: it is nonempty, no edge has valence above two, and its dual graph is connected. -/
 structure SurfaceIncidence (faces : Finset (Finset Vertex)) : Prop where
