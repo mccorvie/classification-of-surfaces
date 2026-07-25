@@ -55,6 +55,75 @@ coordinate. -/
 def foldPlaneToHalfSpace (p : Moise.Plane) : EuclideanHalfSpace 2 :=
   ⟨WithLp.toLp 2 (fun i => if i = 0 then |p i| else p i), by simp⟩
 
+/-- Reflection across the boundary line is continuous. -/
+theorem continuous_reflectAcrossHalfPlaneBoundary :
+    Continuous reflectAcrossHalfPlaneBoundary := by
+  unfold reflectAcrossHalfPlaneBoundary
+  apply (PiLp.continuous_toLp 2 _).comp
+  apply continuous_pi
+  intro i
+  fin_cases i <;> simp <;> fun_prop
+
+/-- Folding the plane onto the Euclidean half-plane is continuous. -/
+theorem continuous_foldPlaneToHalfSpace :
+    Continuous foldPlaneToHalfSpace := by
+  unfold foldPlaneToHalfSpace
+  apply Continuous.subtype_mk
+  apply (PiLp.continuous_toLp 2 _).comp
+  apply continuous_pi
+  intro i
+  fin_cases i <;> simp <;> fun_prop
+
+/-- Reflection across the boundary line is injective. -/
+theorem injective_reflectAcrossHalfPlaneBoundary :
+    Function.Injective reflectAcrossHalfPlaneBoundary := by
+  intro p q hpq
+  have h := congrArg reflectAcrossHalfPlaneBoundary hpq
+  apply PiLp.ext
+  intro i
+  have hi := congrArg (fun z : Moise.Plane => z i) h
+  fin_cases i <;> simpa [reflectAcrossHalfPlaneBoundary] using hi
+
+/-- Reflection across the boundary line is an involution. -/
+@[simp] theorem reflectAcrossHalfPlaneBoundary_involutive (p : Moise.Plane) :
+    reflectAcrossHalfPlaneBoundary (reflectAcrossHalfPlaneBoundary p) = p := by
+  apply PiLp.ext
+  intro i
+  fin_cases i <;> simp [reflectAcrossHalfPlaneBoundary]
+
+/-- Folding fixes points on the nonnegative side of the boundary line. -/
+theorem foldPlaneToHalfSpace_val_of_nonneg (p : Moise.Plane) (hp : 0 ≤ p 0) :
+    (foldPlaneToHalfSpace p).1 = p := by
+  apply PiLp.ext
+  intro i
+  fin_cases i <;> simp [foldPlaneToHalfSpace, abs_of_nonneg hp]
+
+/-- Folding a point on the negative side agrees with reflection. -/
+theorem foldPlaneToHalfSpace_val_of_neg (p : Moise.Plane) (hp : p 0 < 0) :
+    (foldPlaneToHalfSpace p).1 = reflectAcrossHalfPlaneBoundary p := by
+  apply PiLp.ext
+  intro i
+  fin_cases i <;>
+    simp [foldPlaneToHalfSpace, reflectAcrossHalfPlaneBoundary, abs_of_neg hp]
+
+/-- Reflection across the boundary line preserves the Euclidean norm. -/
+theorem norm_reflectAcrossHalfPlaneBoundary (p : Moise.Plane) :
+    ‖reflectAcrossHalfPlaneBoundary p‖ = ‖p‖ := by
+  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
+  congr 1
+  apply Finset.sum_congr rfl
+  intro i _
+  fin_cases i <;> simp [reflectAcrossHalfPlaneBoundary]
+
+/-- Folding onto the half-plane preserves the Euclidean norm. -/
+theorem norm_foldPlaneToHalfSpace (p : Moise.Plane) :
+    ‖(foldPlaneToHalfSpace p).1‖ = ‖p‖ := by
+  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
+  congr 1
+  apply Finset.sum_congr rfl
+  intro i _
+  fin_cases i <;> simp [foldPlaneToHalfSpace]
+
 /-- Relative invariance of domain for the Euclidean half-plane.
 
 An embedding of an open subset of the half-plane has open image provided it carries the
@@ -69,37 +138,11 @@ theorem isOpen_range_halfSpace_of_isOpen_of_isEmbedding_of_boundary
     (hboundary : ∀ x : U, (f x).1 0 = 0 ↔ x.1.1 0 = 0) :
     IsOpen (Set.range f) := by
   let D : Set Moise.Plane := foldPlaneToHalfSpace ⁻¹' U
-  have hfoldContinuous : Continuous foldPlaneToHalfSpace := by
-    unfold foldPlaneToHalfSpace
-    apply Continuous.subtype_mk
-    apply (PiLp.continuous_toLp 2 _).comp
-    apply continuous_pi
-    intro i
-    fin_cases i <;> simp <;> fun_prop
-  have hreflectContinuous : Continuous reflectAcrossHalfPlaneBoundary := by
-    unfold reflectAcrossHalfPlaneBoundary
-    apply (PiLp.continuous_toLp 2 _).comp
-    apply continuous_pi
-    intro i
-    fin_cases i <;> simp <;> fun_prop
-  have hreflectInj : Function.Injective reflectAcrossHalfPlaneBoundary := by
-    intro p q hpq
-    have h := congrArg reflectAcrossHalfPlaneBoundary hpq
-    apply PiLp.ext
-    intro i
-    have hi := congrArg (fun z : Moise.Plane => z i) h
-    fin_cases i <;> simpa [reflectAcrossHalfPlaneBoundary] using hi
-  have hfold_nonneg (p : Moise.Plane) (hp : 0 ≤ p 0) :
-      (foldPlaneToHalfSpace p).1 = p := by
-    apply PiLp.ext
-    intro i
-    fin_cases i <;> simp [foldPlaneToHalfSpace, abs_of_nonneg hp]
-  have hfold_neg (p : Moise.Plane) (hp : p 0 < 0) :
-      (foldPlaneToHalfSpace p).1 = reflectAcrossHalfPlaneBoundary p := by
-    apply PiLp.ext
-    intro i
-    fin_cases i <;>
-      simp [foldPlaneToHalfSpace, reflectAcrossHalfPlaneBoundary, abs_of_neg hp]
+  have hfoldContinuous := continuous_foldPlaneToHalfSpace
+  have hreflectContinuous := continuous_reflectAcrossHalfPlaneBoundary
+  have hreflectInj := injective_reflectAcrossHalfPlaneBoundary
+  have hfold_nonneg := foldPlaneToHalfSpace_val_of_nonneg
+  have hfold_neg := foldPlaneToHalfSpace_val_of_neg
   have hDopen : IsOpen D := hU.preimage hfoldContinuous
   let toU : D → U := fun p => ⟨foldPlaneToHalfSpace p.1, p.2⟩
   have htoU : Continuous toU :=
