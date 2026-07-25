@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
+import ClassificationOfSurfaces.CanonicalPairings
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
@@ -216,6 +217,9 @@ standard polygonal disks modulo occurrence-level side pairings. It does not use 
 * `SurfaceCellComplex.oneFaceOccurrence`
 * `SurfaceCellComplex.oneFace_mem_polygonalIdentifications_iff`
 * `Complex.ClosedUnitDisc.bdyPtOfReal_add_int`
+* `SurfaceCellComplex.not_isBoundaryDart_of_occurs_at_ne`
+* `SurfaceCellComplex.swapIdentification`
+* `SurfaceCellComplex.swapIdentification_mem_polygonalIdentifications`
 * `quotEqvGenHomeomorph`
 * `eqvGenQuotientCongrRaw`
 * `eqvGen_map_of_generator_to_eqvGen`
@@ -240,13 +244,13 @@ are circular arcs; issue #6's straight-edged convex representatives still requir
 bridge or a different concrete carrier. The representative-carrier bridge identifies each
 indexed disk, and hence every one-face pre-realization, with the exact vendored closed unit disk.
 It records the side-coordinate formula, integral-period boundary invariance, and closure-aware
-quotient congruence from the polygonal generated setoid to a raw relation quotient. This completes
-the common carrier and quotient-construction subproblem only: the canonical polygon generators
-still have to be compared with the vendored relations, and the legacy stored realization is still
-unrelated to the polygonal quotient. The one-face membership theorem characterizes every
-compatible ordered pairing by two distinct boundary-word positions, their non-boundary
-conditions, and the required equality or inverse-dart equality. It does not choose a unique
-partner or perform the remaining canonical-word index arithmetic.
+quotient congruence from the polygonal generated setoid to a raw relation quotient. The one-face
+membership theorem characterizes every compatible ordered pairing by two distinct boundary-word
+positions, their non-boundary conditions, and the required equality or inverse-dart equality.
+Forward canonical block positions and the exhaustive nonorientable raw-pairing classification are
+complete. The remaining obligations are the orientable pairing classification,
+carrier-coordinate transport, and both generator-closure inclusions; the legacy stored realization
+is still unrelated to the polygonal quotient.
 
 ## Gallier-Xu tail
 
@@ -268,6 +272,13 @@ partner or perform the remaining canonical-word index arithmetic.
 * `NormalForm.nonOrientableCellComplex_isConnected`
 * `NormalForm.orientableCellComplex_occurrencePairingValid`
 * `NormalForm.nonOrientableCellComplex_occurrencePairingValid`
+* `NormalForm.nonOrientableCrosscapIdentification`
+* `NormalForm.nonOrientableCrosscapIdentificationReverse`
+* `NormalForm.nonOrientableBoundaryIdentification`
+* `NormalForm.nonOrientableBoundaryIdentificationReverse`
+* `NormalForm.mem_nonOrientable_polygonalIdentifications_iff`
+* `NormalForm.orientableCellComplex`
+* `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
 * `NormalForm.IsEvalAdmissible`
 * `SurfaceCellComplex.RealizesNormalForm`
@@ -280,10 +291,11 @@ The canonical word families match the exact commutator, crosscap, and boundary-b
 the vendored relations. Their lengths, edge multiplicities, incidence validity, connectivity, and
 Eval-admissible occurrence pairings are certified without using the stored realization. Forward
 block-position maps and exact `List.get` lemmas locate every signed entry of each named handle,
-crosscap, and boundary block. They do not classify an arbitrary `Fin` position in either word.
-The generator-closure comparison still needs a total sum-index exhaustion theorem, the resulting
-side-coordinate calculations, and both directions of the generator-to-`Relation.EqvGen`
-comparison.
+crosscap, and boundary block. For `1 ≤ p`, every nonorientable polygonal identification is
+classified exhaustively as one of the two directed forms of a crosscap or boundary-seam pairing,
+with singleton free-boundary darts excluded. The getters are forward maps rather than a total
+classification of arbitrary `Fin` positions. The remaining comparison is the analogous
+orientable classification, carrier-coordinate transport, and both generator-closure inclusions.
 
 The legacy reduction theorem cannot be the final proof route while
 `SurfaceCellComplex.Realization` is an arbitrary stored type. The faithful replacement route

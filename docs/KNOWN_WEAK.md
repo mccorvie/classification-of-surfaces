@@ -47,12 +47,13 @@ as explicit hypotheses.
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
 | `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
-| canonical normal-form generator comparison | CellComplexQuotient.lean + CanonicalWords.lean + RepresentativeCarrier.lean | bridge pending | the exact canonical words and their validity facts, the generic one-face pairing-position characterization, the common carrier, exact side coordinates, integral-period boundary fact, raw/generated quotient bridge, and forward named-block positions/getters are complete; arbitrary-position sum-index exhaustion, canonical coordinates, and both generator-family inclusions are not | exhaust arbitrary positions by their canonical blocks, derive the required coordinates, map each generator family into the opposite `Relation.EqvGen` closure, then apply the closure-aware quotient congruence |
+| canonical normal-form generator comparison | CellComplexQuotient.lean + CanonicalWords.lean + CanonicalPairings.lean + RepresentativeCarrier.lean | bridge pending | the exact canonical words and validity facts, generic one-face pairing-position characterization, common carrier, exact side coordinates, integral-period boundary fact, raw/generated quotient bridge, forward named-block positions/getters, and exhaustive nonorientable raw-pairing classification are complete; the orientable raw classification, arbitrary-position exhaustion, canonical coordinates, and both generator-family inclusions are not | prove the orientable pairing classification, exhaust arbitrary positions by canonical blocks, derive the required coordinates, map each generator family into the opposite `Relation.EqvGen` closure, then apply the closure-aware quotient congruence |
 | `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | false at the current abstraction boundary | the signature requires explicit `IsSurfaceValid` and `IsConnected`, but `SurfaceCellComplex.realization` is still an arbitrary stored type unrelated to the incidence data; it therefore need not be homeomorphic to any Eval representative | first perform the faithful polygonal-realization cutover, then prove the Gallier--Xu reduction against the vendored relations |
 
 Dependents of the cell-complex entries: `NormalForm.lean`, `EvalStatement.lean`,
-`Examples.lean`, `CanonicalWords.lean`, and `RepresentativeCarrier.lean`. `CanonicalWords.lean`
-consumes only the incidence and occurrence-pairing interfaces.
+`Examples.lean`, `CanonicalWords.lean`, `CanonicalPairings.lean`, and
+`RepresentativeCarrier.lean`. `CanonicalWords.lean` consumes only the incidence and
+occurrence-pairing interfaces.
 `RepresentativeCarrier.lean` consumes the faithful `PolygonalPreRealization`, not the placeholder
 stored `SurfaceCellComplex.Realization` or `gluingRel`. The former project-owned
 `SurfaceCellModel`, `OrientableRel`, and `NonOrientableRel` placeholders have been deleted:

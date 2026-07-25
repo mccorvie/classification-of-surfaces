@@ -136,21 +136,20 @@ boundaries remain adapter-specific. `SurfaceCellComplex.sphere` uses the require
 presentation rather than a side-free disk. The standard examples satisfy both incidence and
 occurrence-level criteria, including the length-six annulus word. The next dependency is the
 certified triangulation-to-quotient bridge. This topological carrier does not by itself supply the
-straight-edged convex polygons requested for the explicit normal-form representatives.
-The exact benchmark carrier is not duplicated: `RepresentativeCarrier.lean` forgets the
-`PolygonCell` wrapper to give a homeomorphism to the vendored `Complex.ClosedUnitDisc`, computes
-the coordinate of every marked side, and bridges a raw `Quot` with the `Quotient` by its
-`Relation.EqvGen` setoid. Consequently the canonical comparison should map generators in both
-directions into the opposite equivalence closure; equality of the raw generator relations is
-neither required nor generally the right statement.
-`oneFace_mem_polygonalIdentifications_iff` is the combinatorial interface for the next
-comparison: it replaces membership in the set of all compatible one-face identifications by two
-finite word positions, boundary-status conditions, and an equality or inverse-dart equality. It
-does not provide a unique partner or prove any canonical-word coordinate formula.
-`CanonicalWords.lean` now supplies forward position maps and exact getters for the entries of every
-named handle, crosscap, and boundary block. These maps are not an exhaustive classification of an
-arbitrary word position; sum-index exhaustion, coordinates, and both generator-closure inclusions
-remain separate obligations.
+straight-edged convex polygons requested for the explicit normal-form representatives. The public
+`OrientableRel` and `NonOrientableRel` names are fixed to the exact closed-unit-disk relations in
+the trusted Lean-Eval statement. The exact benchmark carrier is not duplicated:
+`RepresentativeCarrier.lean` forgets the `PolygonCell` wrapper, computes every marked-side
+coordinate, and bridges a raw `Quot` with the `Quotient` by its `Relation.EqvGen` setoid.
+Consequently the canonical comparison maps generators in both directions into the opposite
+equivalence closure; equality of raw generator relations is neither required nor generally right.
+`oneFace_mem_polygonalIdentifications_iff` replaces a compatible one-face pairing by two finite
+word positions with boundary-status and dart-equality conditions. `CanonicalWords.lean` supplies
+forward position maps and exact getters for every named handle, crosscap, and boundary block.
+`CanonicalPairings.lean` proves every directed nonorientable generator is exactly a crosscap or
+boundary-seam pairing in one of its two orders, while once-occurring free-boundary darts generate
+nothing. Arbitrary-position exhaustion, the orientable analogue, coordinates, and both
+generator-closure inclusions remain separate obligations.
 
 Status: open.
 
