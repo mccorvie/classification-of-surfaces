@@ -5900,9 +5900,10 @@ family, supported on the union of the two images.
 The realization of the union family is the set-union of the two realizations, so the glued
 embedding is the pasting of the two embeddings along a closed common part; it is a continuous
 injection from a compact space into a Hausdorff space, hence an embedding.  The edge-face count
-hypothesis is passed through to the glued complex.  The conclusion retains the equality between
-the glued face family and `F₁ ∪ F₂`, so later incidence certificates can use the two source-family
-proofs without reconstructing provenance from the embedding. -/
+hypothesis is passed through to the glued complex.  The conclusion retains an equivalence from
+the glued vertex type to `V` under which its face family relabels to `F₁ ∪ F₂`, so later incidence
+certificates can use the two source-family proofs without reconstructing provenance from the
+embedding. -/
 theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Space S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
     (V : Type) [Fintype V] [DecidableEq V]
@@ -5917,7 +5918,8 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
     (hboundary₁ : BoundaryFacewiseRegularEmbedding F₁ e₁)
     (hboundary₂ : BoundaryFacewiseRegularEmbedding F₂ e₂) :
     ∃ T' : PartialTriangulation S,
-      T'.faces = F₁ ∪ F₂ ∧
+      ∃ vertexEquiv : T'.Vertex ≃ V,
+      Moise.relabelFaceFamily vertexEquiv.toEmbedding T'.faces = F₁ ∪ F₂ ∧
       T'.support = Set.range e₁ ∪ Set.range e₂ ∧
       (∀ e ∈ T'.edges, (T'.faces.filter fun t => e ⊆ t).card ≤ 2) ∧
       T'.BoundaryFacewiseRegular := by
@@ -6011,8 +6013,9 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
         (Continuous.subtype_mk continuous_subtype_val _)).isClosed
   -- assemble the glued partial triangulation
   refine ⟨{ Vertex := V, faces := F₁ ∪ F₂, faces_card := hcard, embed := glue,
-            isEmbedding := ?_ }, rfl, ?_, ?_, ?_⟩
+            isEmbedding := ?_ }, Equiv.refl V, ?_, ?_, ?_, ?_⟩
   · exact (hcont.isClosedEmbedding hinj).isEmbedding
+  · simp [Moise.relabelFaceFamily]
   · -- the support is the union of the two images
     apply Set.Subset.antisymm
     · rintro y ⟨x, rfl⟩
@@ -11494,7 +11497,7 @@ theorem moise_induction_step (c : MoiseChart S) (hc : c.BoundaryFaithful)
     obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep,
         hboundary₁, hboundary₂, hcover⟩ :=
       MoiseChart.exists_crossing_weld S c hc hT
-    obtain ⟨T', _hfaces, hsupport, hsurf', hboundary'⟩ :=
+    obtain ⟨T', _vertexEquiv, _hfaces, hsupport, hsurf', hboundary'⟩ :=
       PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂
         hagree hsep hboundary₁ hboundary₂
     refine ⟨T', ?_, hsurf', hboundary', ?_⟩
