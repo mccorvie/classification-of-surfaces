@@ -130,7 +130,9 @@ ordered directions of each pairing while the benchmark inductive relations list 
 comparison must identify their equivalence closures rather than their raw generators.
 `oneFace_mem_polygonalIdentifications_iff` is the combinatorial interface for that comparison: it
 replaces an arbitrary one-face `BoundaryPairing` by two finite word positions, boundary-status
-conditions, and an equality or inverse-dart equality.
+conditions, and an equality or inverse-dart equality. `CanonicalWords.lean` exposes uniform
+handle, crosscap, and boundary-block position maps together with exact `List.get` theorems, so
+coordinate proofs do not unfold nested `List.ofFn`/`flatten` expressions.
 
 Status: open.
 

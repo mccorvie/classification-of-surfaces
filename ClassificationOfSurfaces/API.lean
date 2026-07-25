@@ -150,6 +150,10 @@ indexing and boundary-coordinate arithmetic.
 * `NormalForm.NonOrientableEdge`
 * `NormalForm.orientableBoundaryWord`
 * `NormalForm.nonOrientableBoundaryWord`
+* `NormalForm.orientableHandlePosition`
+* `NormalForm.orientableBoundaryPosition`
+* `NormalForm.nonOrientableCrosscapPosition`
+* `NormalForm.nonOrientableBoundaryPosition`
 * `NormalForm.orientableCellComplex`
 * `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
@@ -165,8 +169,10 @@ indexing and boundary-coordinate arithmetic.
 The canonical orientable and nonorientable words have lengths `4 * p + 3 * n` and
 `2 * p + 3 * n`. Their edge-occurrence counts give incidence-valid, connected one-face complexes;
 under the Eval admissibility bounds they also have occurrence-pairing witnesses for polygonal
-realization. The remaining comparison is topological: identify those polygonal realizations with
-the exact closed-disk quotients below.
+realization. Certified block-position and `List.get` theorems expose every handle, crosscap, seam,
+and free boundary dart at its exact index. The remaining comparison is topological: transport the
+resulting generators through the carrier bridge and identify the two generated equivalence
+relations.
 
 The Gallier-Xu tail should otherwise consume only `SurfaceCellComplex` and quotient-realization
 APIs. It should not mention PL maps, Moise triangulation, or manifold chart machinery.

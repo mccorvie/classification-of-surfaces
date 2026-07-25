@@ -114,9 +114,9 @@ compatibility. New code should use the preferred names above.
 
 1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
    realization homeomorphism, then replace the placeholder realization atomically.
-2. Prove the canonical word-position formulas and identify the resulting generator closures with
-   `OrientableRel` and `NonOrientableRel`; the carrier, quotient-type, and generic one-face pairing
-   bridges are complete.
+2. Use the certified canonical word positions to identify the resulting generator closures with
+   `OrientableRel` and `NonOrientableRel`; the carrier, quotient-type, generic one-face pairing,
+   and block-indexing bridges are complete.
 3. Extend the canonical boundary words with cyclic-word infrastructure for Gallier-Xu rewrites.
 4. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 5. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
