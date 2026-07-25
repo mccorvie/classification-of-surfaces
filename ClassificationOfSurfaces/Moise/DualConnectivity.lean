@@ -20,7 +20,6 @@ open scoped Manifold
 namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
-namespace Moise
 
 namespace TriangleFamily
 
@@ -59,6 +58,8 @@ theorem not_faceAdjacent_of_faceReachable_of_not
     ((faceReachable_iff root f).1 hf).tail hfg
 
 end TriangleFamily
+
+namespace Moise
 
 namespace PartialTriangulation
 
