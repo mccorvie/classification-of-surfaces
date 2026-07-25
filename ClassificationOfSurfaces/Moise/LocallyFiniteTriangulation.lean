@@ -470,18 +470,36 @@ theorem isDualConnected_relabel (e : A ↪ B) {faces : Finset (Finset A)}
   rw [hfs, hgs] at hpath
   exact hpath
 
+/-- Faces relabeled from different vertex types share an edge when the two source edges have the
+same relabeled image. -/
+theorem hasCrossEdge_relabel_of_mapped_edge_eq
+    {C : Type*} [DecidableEq C]
+    (eleft : A ↪ C) (eright : B ↪ C)
+    {left : Finset (Finset A)} {right : Finset (Finset B)}
+    (fleft : Face left) (fright : Face right)
+    (edgeLeft : Finset A) (edgeRight : Finset B)
+    (hedgeCard : edgeLeft.card = 2)
+    (hedgeLeft : edgeLeft ⊆ fleft.1)
+    (hedgeRight : edgeRight ⊆ fright.1)
+    (hmap : edgeLeft.map eleft = edgeRight.map eright) :
+    HasCrossEdge (relabelFaceFamily eleft left)
+      (relabelFaceFamily eright right) := by
+  refine
+    ⟨faceOfRelabel eleft fleft, faceOfRelabel eright fright,
+      edgeLeft.map eleft, ?_, ?_, ?_⟩
+  · simpa only [Finset.card_map] using hedgeCard
+  · exact Finset.map_subset_map.mpr hedgeLeft
+  · rw [hmap]
+    exact Finset.map_subset_map.mpr hedgeRight
+
 /-- A shared edge remains a shared edge when both families are injectively relabeled. -/
 theorem hasCrossEdge_relabel (e : A ↪ B)
     {left right : Finset (Finset A)} (hcross : HasCrossEdge left right) :
     HasCrossEdge (relabelFaceFamily e left) (relabelFaceFamily e right) := by
   rcases hcross with
     ⟨fleft, fright, edge, hedgeCard, hedgeLeft, hedgeRight⟩
-  refine
-    ⟨faceOfRelabel e fleft, faceOfRelabel e fright,
-      edge.map e, ?_, ?_, ?_⟩
-  · simpa only [Finset.card_map] using hedgeCard
-  · exact Finset.map_subset_map.mpr hedgeLeft
-  · exact Finset.map_subset_map.mpr hedgeRight
+  exact hasCrossEdge_relabel_of_mapped_edge_eq e e
+    fleft fright edge edge hedgeCard hedgeLeft hedgeRight rfl
 
 end TriangleFamily
 
