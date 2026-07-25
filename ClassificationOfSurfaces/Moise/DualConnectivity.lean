@@ -54,8 +54,11 @@ theorem not_faceAdjacent_of_faceReachable_of_not
     ¬FaceAdjacent faces f g := by
   intro hfg
   apply hg
-  exact (faceReachable_iff root g).2
-    ((faceReachable_iff root f).1 hf).tail hfg
+  have hpath : Relation.ReflTransGen (FaceAdjacent faces) root f :=
+    (faceReachable_iff root f).1 hf
+  have hpath' : Relation.ReflTransGen (FaceAdjacent faces) root g :=
+    Relation.ReflTransGen.tail hpath hfg
+  exact (faceReachable_iff root g).2 hpath'
 
 end TriangleFamily
 
@@ -97,15 +100,19 @@ theorem isDualConnected_of_support_eq_univ
     rcases z.2.2 with ⟨t, ht, hzt⟩
     by_cases hReach : Reach t
     · left
-      rw [A, T.restrictFaces_support]
+      change T.embed z ∈ (T.restrictFaces Reach).support
+      rw [T.restrictFaces_support]
       exact ⟨z, ⟨t, ht, hReach, hzt⟩, rfl⟩
     · right
-      rw [B, T.restrictFaces_support]
+      change T.embed z ∈ (T.restrictFaces fun t ↦ ¬Reach t).support
+      rw [T.restrictFaces_support]
       exact ⟨z, ⟨t, ht, hReach, hzt⟩, rfl⟩
   have hABinter : A ∩ B ⊆ vertices := by
     rintro x ⟨hxA, hxB⟩
-    rw [A, T.restrictFaces_support] at hxA
-    rw [B, T.restrictFaces_support] at hxB
+    change x ∈ (T.restrictFaces Reach).support at hxA
+    rw [T.restrictFaces_support] at hxA
+    change x ∈ (T.restrictFaces fun t ↦ ¬Reach t).support at hxB
+    rw [T.restrictFaces_support] at hxB
     rcases hxA with ⟨a, ⟨f, hf, hfReach, haf⟩, hax⟩
     rcases hxB with ⟨b, ⟨g, hg, hgNotReach, hbg⟩, hbx⟩
     have hab : a = b :=
@@ -142,7 +149,8 @@ theorem isDualConnected_of_support_eq_univ
     T.embed (T.toIntrinsic.faceCenter
       (⟨other.1, other.2⟩ : T.toIntrinsic.Face))
   have hrootCenterA : rootCenter ∈ A := by
-    rw [A, T.restrictFaces_support]
+    change rootCenter ∈ (T.restrictFaces Reach).support
+    rw [T.restrictFaces_support]
     refine ⟨T.toIntrinsic.faceCenter
       (⟨root.1, root.2⟩ : T.toIntrinsic.Face), ?_, rfl⟩
     refine ⟨root.1, root.2, ?_,
@@ -150,7 +158,8 @@ theorem isDualConnected_of_support_eq_univ
         (⟨root.1, root.2⟩ : T.toIntrinsic.Face)⟩
     exact TriangleFamily.faceReachable_root root
   have hotherCenterB : otherCenter ∈ B := by
-    rw [B, T.restrictFaces_support]
+    change otherCenter ∈ (T.restrictFaces fun t ↦ ¬Reach t).support
+    rw [T.restrictFaces_support]
     refine ⟨T.toIntrinsic.faceCenter
       (⟨other.1, other.2⟩ : T.toIntrinsic.Face), ?_, rfl⟩
     exact ⟨other.1, other.2, hotherNotReach,
@@ -206,12 +215,12 @@ theorem faces_isDualConnected
     [ConnectedSpace S] [ChartedSpace (EuclideanHalfSpace 2) S] :
     TriangleFamily.IsDualConnected T.faces := by
   letI : T2Space S := T.t2Space
-  let P : Moise.PartialTriangulation S where
+  let P : Moise.PartialTriangulation S := {
     Vertex := T.Vertex
     faces := T.faces
     faces_card := T.faces_card
     embed := T.homeo
-    isEmbedding := T.homeo.isEmbedding
+    isEmbedding := T.homeo.isEmbedding }
   have hsupport : P.support = Set.univ :=
     Set.range_eq_univ.mpr T.homeo.surjective
   exact P.isDualConnected_of_support_eq_univ hsupport
