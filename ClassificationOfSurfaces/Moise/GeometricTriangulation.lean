@@ -222,6 +222,18 @@ theorem faceAdjacent_symm {faces : Finset (Finset Vertex)} {f g : Face faces}
   rcases h with ⟨e, hecard, hef, heg⟩
   exact ⟨e, hecard, heg, hef⟩
 
+/-- Faces in different dual components share at most one vertex. -/
+theorem card_inter_le_one_of_not_faceAdjacent
+    {faces : Finset (Finset Vertex)} {f g : Face faces}
+    (h : ¬ FaceAdjacent faces f g) :
+    (f.1 ∩ g.1).card ≤ 1 := by
+  by_contra hcard
+  have htwo : 2 ≤ (f.1 ∩ g.1).card := by omega
+  obtain ⟨e, heSub, heCard⟩ := Finset.exists_subset_card_eq htwo
+  apply h
+  exact ⟨e, heCard, heSub.trans Finset.inter_subset_left,
+    heSub.trans Finset.inter_subset_right⟩
+
 omit [DecidableEq Vertex] in
 theorem reflTransGen_faceAdjacent_symm {faces : Finset (Finset Vertex)}
     {f g : Face faces} (h : Relation.ReflTransGen (FaceAdjacent faces) f g) :

@@ -22,6 +22,7 @@ import ClassificationOfSurfaces.Moise.ChartPatch
 import ClassificationOfSurfaces.Moise.CommonSubdivision
 import ClassificationOfSurfaces.Moise.ConeExtension
 import ClassificationOfSurfaces.Moise.Countermodels
+import ClassificationOfSurfaces.Moise.DualConnectivity
 import ClassificationOfSurfaces.Moise.ElementaryMove
 import ClassificationOfSurfaces.Moise.EmbeddedComplexValence
 import ClassificationOfSurfaces.Moise.FacewiseComparison
