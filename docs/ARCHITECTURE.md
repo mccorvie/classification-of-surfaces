@@ -102,6 +102,8 @@ compatibility. New code should use the preferred names above.
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/LeanEval/ChallengeDeps.lean`: the verbatim Lean-Eval disc carrier and
   quotient relations.
+- `ClassificationOfSurfaces/LeanEval/RepresentativeSanity.lean`: project-owned radius and
+  non-collapse checks for the vendored quotient representatives.
 - `ClassificationOfSurfaces/Representatives.lean`: project-owned sphere abbreviation and
   normal-form indices; it does not redeclare the challenge relations.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
