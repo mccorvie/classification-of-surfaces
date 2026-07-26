@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
+import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.LeanEval.SpecAudit
@@ -137,6 +138,21 @@ bridge or a different concrete carrier.
 
 ## Gallier-Xu tail
 
+* `NormalForm.OrientableEdge`
+* `NormalForm.NonOrientableEdge`
+* `NormalForm.orientableBoundaryWord`
+* `NormalForm.nonOrientableBoundaryWord`
+* `NormalForm.orientableBoundaryWord_length`
+* `NormalForm.nonOrientableBoundaryWord_length`
+* `NormalForm.orientableBoundaryWord_edge_occurrences`
+* `NormalForm.nonOrientableBoundaryWord_edge_occurrences`
+* `NormalForm.orientableCellComplex_isSurfaceValid`
+* `NormalForm.nonOrientableCellComplex_isSurfaceValid`
+* `NormalForm.orientableCellComplex_isConnected`
+* `NormalForm.nonOrientableCellComplex_isConnected`
+* `NormalForm.orientableCellComplex_occurrencePairingValid`
+* `NormalForm.nonOrientableCellComplex_occurrencePairingValid`
+* `NormalForm.canonicalCellComplex`
 * `NormalForm.IsEvalAdmissible`
 * `SurfaceCellComplex.RealizesNormalForm`
 * `SurfaceCellComplex.HasNormalForm`
@@ -144,12 +160,15 @@ bridge or a different concrete carrier.
 * `SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm`
 * `SurfaceCellComplex.hasEvalRepresentative`
 
-These exact public names are retained for compatibility, but the legacy reduction theorem cannot
-be the final proof route while `SurfaceCellComplex.Realization` is an arbitrary stored type. The
-faithful replacement route normalizes finite cyclic presentations, proves their polygonal
-realizations match the vendored quotient relations, and transports that result across the
-geometric-triangulation realization bridge. The combinatorial normalization layer should not
-mention manifold chart machinery.
+The canonical word families match the exact commutator, crosscap, and boundary-block patterns in
+the vendored relations. Their lengths, edge multiplicities, incidence validity, connectivity, and
+Eval-admissible occurrence pairings are certified without using the stored realization.
+
+The legacy reduction theorem cannot be the final proof route while
+`SurfaceCellComplex.Realization` is an arbitrary stored type. The faithful replacement route
+normalizes finite cyclic presentations, proves their polygonal realizations match the vendored
+quotient relations, and transports that result across the geometric-triangulation realization
+bridge. The combinatorial normalization layer should not mention manifold chart machinery.
 
 ## Eval representatives and final theorem
 
