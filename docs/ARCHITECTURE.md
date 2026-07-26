@@ -14,29 +14,21 @@ normal-form quotient.
 
 ## Main Split
 
-The proof is organized around one shared handoff object:
+The completed topological route produces a faithful geometric triangulation. The classification
+tail should pass through exact finite cyclic boundary words, not through the arbitrary stored
+realization of the legacy cell-complex scaffold:
 
-```lean
-SurfaceCellComplex
-SurfaceCellComplex.Realization
+```text
+GeometricTriangulation
+  → finite cyclic presentation
+  → Gallier-Xu word normalization
+  → polygonal realization
+  → vendored Lean-Eval quotient
 ```
 
-The topological route proves that an Eval surface has a finite triangulation, then shared
-infrastructure converts that triangulation to a `SurfaceCellComplex`:
-
-```lean
-compact_eval_surface_finitely_triangulable
-FiniteSurfaceTriangulation.toCellComplex
-compact_surface_homeomorphic_to_cell_complex
-```
-
-The Gallier-Xu route consumes only `SurfaceCellComplex` and proves:
-
-```lean
-SurfaceCellComplex.hasEvalRepresentative
-```
-
-The final theorem should be a short assembly proof using those two bridge theorems.
+The combinatorial normalization and polygonal realization are separate proof layers. The final
+theorem should only assemble their homeomorphisms with the geometric-triangulation realization
+bridge.
 
 ## Current Baseline
 
@@ -96,17 +88,24 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
   `Fin`-labelled signed boundary words.
-- `ClassificationOfSurfaces/Representatives.lean`: Eval quotient representative names.
+- `ClassificationOfSurfaces/LeanEval/ChallengeDeps.lean`: the verbatim Lean-Eval disc carrier and
+  quotient relations.
+- `ClassificationOfSurfaces/Representatives.lean`: project-owned sphere abbreviation and
+  normal-form indices; it does not redeclare the challenge relations.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
 - `ClassificationOfSurfaces/EvalStatement.lean`: final Lean Eval theorem.
+- `ClassificationOfSurfaces/LeanEval/SpecAudit.lean`: compile-time check that the public theorem
+  has the exact Lean-Eval conclusion over the vendored constants.
 - `ClassificationOfSurfaces/Examples.lean`: small regression examples.
 
 ## Next Tasks
 
-1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
-   realization homeomorphism, then replace the placeholder realization atomically.
-2. Build cyclic-word infrastructure and Gallier-Xu rewrites on the normalized finite signed
-   boundary words from `SignedPresentation.lean`.
-3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
-4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
-5. Make `OrientableRel` and `NonOrientableRel` genuine quotient relations over polygon models.
+1. Pack geometric triangulations as valid connected finite cyclic presentations, preserving the
+   exact cyclic boundary words.
+2. Build Gallier-Xu rewrites and normalization on those finite cyclic presentations.
+3. Give each finite cyclic presentation its faithful polygonal realization and prove elementary
+   rewrites preserve that realization.
+4. Identify the normalized polygonal realizations with the vendored `OrientableRel` and
+   `NonOrientableRel` quotients, without introducing parallel representative constants.
+5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
+   the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.

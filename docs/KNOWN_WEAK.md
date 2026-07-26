@@ -47,8 +47,11 @@ as explicit hypotheses.
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
 | `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
-| `SurfaceCellModel`, `OrientableRel`, `NonOrientableRel` | Representatives.lean | placeholder | `PUnit` with `⊥` relations: `Quot (OrientableRel p n)` is a point, so the eval conclusion's non-sphere branches assert `S ≃ₜ point` | actual polygon quotient representatives |
-| `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | placeholder-dependent | the signature now requires explicit `IsSurfaceValid` and `IsConnected`, but `SurfaceCellComplex.realization` is still arbitrary and the representative relations are point-valued placeholders, so the conclusion is not yet derivable | implement faithful representatives and the polygonal realization cutover, then prove the Gallier--Xu reduction |
+| `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | false at the current abstraction boundary | the signature requires explicit `IsSurfaceValid` and `IsConnected`, but `SurfaceCellComplex.realization` is still an arbitrary stored type unrelated to the incidence data; it therefore need not be homeomorphic to any Eval representative | first perform the faithful polygonal-realization cutover, then prove the Gallier--Xu reduction against the vendored relations |
 
 Dependents of the cell-complex entries: `NormalForm.lean`, `EvalStatement.lean`,
-`Examples.lean` (all pre-existing; no new dependents allowed).
+`Examples.lean` (all pre-existing; no new dependents allowed). The former project-owned
+`SurfaceCellModel`, `OrientableRel`, and `NonOrientableRel` placeholders have been deleted:
+`Representatives.lean` now imports the verbatim Lean-Eval constants from
+`LeanEval/ChallengeDeps.lean`. The invalid `PUnit` quotient homeomorphisms and the example theorems
+derived from them were deleted with that specification repair.
