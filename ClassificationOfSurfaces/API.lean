@@ -6,6 +6,7 @@ Authors: ClassificationOfSurfaces contributors
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
+import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
 import ClassificationOfSurfaces.Moise.IntrinsicGraphPL
 import ClassificationOfSurfaces.Moise.IntrinsicFaceBoundary
@@ -103,6 +104,23 @@ realization.  They do not yet produce `SurfaceCellComplex.IsSurfaceValid` or `.I
 
 The legacy names `CellComplex` and `FiniteTriangulation` remain as compatibility aliases.  New
 code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTriangulation`.
+
+## Finite cyclic presentation layer
+
+* `FiniteCyclicPresentation`
+* `FiniteCyclicPresentation.edgeMultiplicity`
+* `FiniteCyclicPresentation.IsSurfaceValid`
+* `FiniteCyclicPresentation.FaceAdjacent`
+* `FiniteCyclicPresentation.IsConnected`
+* `FiniteCyclicPresentation.PresentationIso`
+* `FiniteCyclicPresentation.PresentationIso.isSurfaceValid_iff`
+* `FiniteCyclicPresentation.PresentationIso.isConnected_iff`
+
+This packed layer retains only finite signed face words. Its current presentation isomorphisms
+relabel edges without changing their chosen signs, relabel faces, and rotate individual face
+boundaries; validity, edge multiplicities, and connectivity are invariant under those operations.
+An independent orientation reversal for each edge is the next extension required before the
+general Gallier--Xu word moves.
 
 ## Polygonal quotient foundation
 

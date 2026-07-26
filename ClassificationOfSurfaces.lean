@@ -4,6 +4,7 @@ import ClassificationOfSurfaces.CellComplex
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
+import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.Moise.AdaptiveControlledApproximation
 import ClassificationOfSurfaces.Moise.AdaptiveFanAffine
 import ClassificationOfSurfaces.Moise.AdaptiveFanComplex

@@ -96,6 +96,8 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
   `Fin`-labelled signed boundary words.
+- `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
+  predicates, and orientation-preserving presentation isomorphisms.
 - `ClassificationOfSurfaces/Representatives.lean`: Eval quotient representative names.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
 - `ClassificationOfSurfaces/EvalStatement.lean`: final Lean Eval theorem.
@@ -103,10 +105,15 @@ compatibility. New code should use the preferred names above.
 
 ## Next Tasks
 
-1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
-   realization homeomorphism, then replace the placeholder realization atomically.
-2. Build cyclic-word infrastructure and Gallier-Xu rewrites on the normalized finite signed
-   boundary words from `SignedPresentation.lean`.
-3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
-4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
-5. Make `OrientableRel` and `NonOrientableRel` genuine quotient relations over polygon models.
+1. Replace the compatibility triangulation's arbitrary all-positive boundary lists with the cyclic
+   `IntrinsicTwoComplex.faceEdge` order and certify connected incident-face chains at every
+   vertex.
+2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
+   faithful polygonal quotient; route the Eval handoff through that quotient without relying on
+   the legacy arbitrary stored realization.
+3. Identify the two-monogon sphere polygonal quotient with `SphereRepresentative`.
+4. Extend presentation isomorphisms by an independent orientation flip for each edge, then define
+   Gallier--Xu equivalence using only the two primitive subdivisions P1 (edge split) and P2 (face
+   split), and prove both preserve the faithful quotient.
+5. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
+   transformation, and boundary grouping as derived finite subdivision chains.
