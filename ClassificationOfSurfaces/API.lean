@@ -7,6 +7,7 @@ import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicPresentation
+import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
 import ClassificationOfSurfaces.Moise.IntrinsicGraphPL
 import ClassificationOfSurfaces.Moise.IntrinsicFaceBoundary
@@ -74,12 +75,17 @@ for the quarry, in particular the concrete closed-triangle geometry.
 * `compact_eval_surface_finitely_triangulable`
 * `FiniteSurfaceTriangulation.toCellComplex`
 * `FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic`
+* `FiniteSurfaceTriangulation.toFiniteCyclicPresentation`
+* `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isSurfaceValid`
+* `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isConnected`
+* `compact_eval_surface_finiteCyclicPresentation`
+* `compact_eval_surface_has_valid_connected_finiteCyclicPresentation`
 * `finite_triangulation_to_cell_complex`
 * `compact_surface_homeomorphic_to_cell_complex`
 
-The last two declarations assert only a homeomorphism to the raw presentation's stored
-realization.  They do not yet produce `SurfaceCellComplex.IsSurfaceValid` or `.IsConnected`;
-`Moise/Countermodels.lean` contains an executable legacy witness showing the gap.
+The cell-complex handoff now has a certified variant carrying `SurfaceCellComplex.IsSurfaceValid`
+and `.IsConnected`. The finite-cyclic handoff enumerates the same certified triangle-boundary
+incidence directly, without depending on the cell complex's legacy stored realization.
 
 ## Shared finite surface cell complexes
 
@@ -115,12 +121,19 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.PresentationIso`
 * `FiniteCyclicPresentation.PresentationIso.isSurfaceValid_iff`
 * `FiniteCyclicPresentation.PresentationIso.isConnected_iff`
+* `GeometricTriangulation.toFiniteCyclicPresentation`
+* `GeometricTriangulation.toFiniteCyclicPresentation_valid_and_connected`
 
 This packed layer retains only finite signed face words. Its current presentation isomorphisms
 relabel edges without changing their chosen signs, relabel faces, and rotate individual face
 boundaries; validity, edge multiplicities, and connectivity are invariant under those operations.
 An independent orientation reversal for each edge is the next extension required before the
 general Gallier--Xu word moves.
+
+The triangulation adapter additionally turns a geometric surface-incidence certificate into a
+valid, connected presentation with exact face, edge, boundary, and indexed-boundary transport.
+In particular, the Eval surface hypotheses now reach a named valid, connected finite cyclic
+presentation without any additional combinatorial assumptions.
 
 ## Polygonal quotient foundation
 

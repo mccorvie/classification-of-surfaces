@@ -78,6 +78,11 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
 - `FiniteSurfaceTriangulation.toCellComplex` preserves triangle faces, vertices, oriented edge
   darts, and oriented triangle boundary words; boundary status is then derived from occurrence
   multiplicity rather than copied from the triangulation's boundary flags.
+- `FiniteSurfaceTriangulation.toFiniteCyclicPresentation` enumerates the finite faces and edges
+  by `Fin`, preserves every cyclic signed boundary word, and transports certified validity and
+  dual connectivity to the packed Gallier--Xu input. Consequently,
+  `compact_eval_surface_has_valid_connected_finiteCyclicPresentation` connects the Eval surface
+  hypotheses directly to the normal-form lane's finite combinatorial input.
 - Boundary-word examples for the disk, annulus, torus, projective plane, and Mobius strip have
   incidence- and occurrence-validity witnesses. The annulus now uses the length-six, two-contour
   word.
@@ -98,6 +103,8 @@ compatibility. New code should use the preferred names above.
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
   predicates, and orientation-preserving presentation isomorphisms.
+- `ClassificationOfSurfaces/FiniteCyclicTriangulation.lean`: exact finite relabeling of cyclic
+  triangle boundaries and transport of incidence validity and connectivity.
 - `ClassificationOfSurfaces/Representatives.lean`: Eval quotient representative names.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
 - `ClassificationOfSurfaces/EvalStatement.lean`: final Lean Eval theorem.
@@ -105,9 +112,8 @@ compatibility. New code should use the preferred names above.
 
 ## Next Tasks
 
-1. Replace the compatibility triangulation's arbitrary all-positive boundary lists with the cyclic
-   `IntrinsicTwoComplex.faceEdge` order and certify connected incident-face chains at every
-   vertex.
+1. Derive strong fixed-vertex star connectivity for the Moise triangulation from the manifold
+   hypotheses.
 2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
    faithful polygonal quotient; route the Eval handoff through that quotient without relying on
    the legacy arbitrary stored realization.
