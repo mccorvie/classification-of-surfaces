@@ -6,6 +6,7 @@ Authors: ClassificationOfSurfaces contributors
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
+import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
 import ClassificationOfSurfaces.Moise.IntrinsicGraphPL
@@ -155,6 +156,10 @@ mention manifold chart machinery.
 
 * `Complex.ClosedUnitDisc`, `OrientableRel`, and `NonOrientableRel`
   (`LeanEval/ChallengeDeps.lean`, vendored verbatim from Lean-Eval)
+* `Complex.ClosedUnitDisc.norm_bdyPtOfReal`
+* `orientableQuotRadius` and `nonOrientableQuotRadius`
+* `not_subsingleton_orientableQuot` and `not_subsingleton_nonOrientableQuot`
+  (`LeanEval/RepresentativeSanity.lean`, project-owned consequences)
 * `SphereRepresentative` and `NormalForm` (project-owned abbreviations and indices)
 * `classification_of_surfaces`
 * `topological_classification_of_surfaces`
