@@ -7,6 +7,7 @@ import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicPresentation
+import ClassificationOfSurfaces.FiniteCyclicRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
 import ClassificationOfSurfaces.Moise.IntrinsicGraphPL
@@ -121,6 +122,11 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.PresentationIso`
 * `FiniteCyclicPresentation.PresentationIso.isSurfaceValid_iff`
 * `FiniteCyclicPresentation.PresentationIso.isConnected_iff`
+* `FiniteCyclicPresentation.BoundaryOccurrence`
+* `FiniteCyclicPresentation.BoundaryPairing`
+* `FiniteCyclicPresentation.PolygonalRealization`
+* `FiniteCyclicPresentation.RealizationEquivData`
+* `FiniteCyclicPresentation.PolygonallyEquivalent`
 * `GeometricTriangulation.toFiniteCyclicPresentation`
 * `GeometricTriangulation.toFiniteCyclicPresentation_valid_and_connected`
 
@@ -135,6 +141,10 @@ valid, connected presentation with exact face, edge, boundary, and indexed-bound
 In particular, the Eval surface hypotheses now reach a named valid, connected finite cyclic
 presentation without any additional combinatorial assumptions.
 
+The finite cyclic quotient adapter realizes those face words directly as a disjoint union of
+standard polygonal disks modulo occurrence-level side pairings. It does not use the legacy
+`SurfaceCellComplex.realization` field.
+
 ## Polygonal quotient foundation
 
 * `PolygonCell`
@@ -146,6 +156,10 @@ presentation without any additional combinatorial assumptions.
 * `PolygonGluing.setoid`
 * `PolygonGluing.Realization`
 * `PolygonGluing.realizationCongr`
+* `FiniteCyclicPresentation.edgeMultiplicity_eq_card_edgeOccurrences`
+* `FiniteCyclicPresentation.IsSurfaceValid.exists_unique_partner`
+* `FiniteCyclicPresentation.IsSurfaceValid.exists_identification_source`
+* `FiniteCyclicPresentation.polygonalMk_pairing_eq`
 * `SurfaceCellComplex.BoundaryOccurrence`
 * `SurfaceCellComplex.BoundaryPairing`
 * `SurfaceCellComplex.OccurrencePairingValid`

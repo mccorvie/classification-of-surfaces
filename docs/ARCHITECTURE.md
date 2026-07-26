@@ -103,6 +103,9 @@ compatibility. New code should use the preferred names above.
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
   predicates, and orientation-preserving presentation isomorphisms.
+- `ClassificationOfSurfaces/FiniteCyclicRealization.lean`: occurrence-level polygon side
+  pairings, the faithful finite-cyclic polygonal quotient, and reusable cut-and-paste
+  homeomorphism certificates.
 - `ClassificationOfSurfaces/FiniteCyclicTriangulation.lean`: exact finite relabeling of cyclic
   triangle boundaries and transport of incidence validity and connectivity.
 - `ClassificationOfSurfaces/Representatives.lean`: Eval quotient representative names.
