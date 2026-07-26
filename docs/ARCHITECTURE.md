@@ -128,6 +128,8 @@ compatibility. New code should use the preferred names above.
   canonical polygonal-realization homeomorphisms to the Eval quotients.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: the exact one-face disk carrier,
   side-coordinate formulas, and raw/generated quotient bridges.
+- `ClassificationOfSurfaces/SphereCarrierGeometry.lean`: compact disk carriers and the
+  conjugation boundary identity used by the two-monogon sphere realization.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence

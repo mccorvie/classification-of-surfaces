@@ -28,6 +28,7 @@ import ClassificationOfSurfaces.Moise.PlaneCycle
 import ClassificationOfSurfaces.PolygonalQuotient
 import ClassificationOfSurfaces.RepresentativeCarrier
 import ClassificationOfSurfaces.SignedPresentation
+import ClassificationOfSurfaces.SphereCarrierGeometry
 
 /-!
 # Public API map
@@ -232,6 +233,8 @@ standard polygonal disks modulo occurrence-level side pairings. It does not use 
 * `PolygonCell.closedUnitDiscHomeomorph_side`
 * `PolygonGluing.oneFacePreRealizationHomeomorph`
 * `PolygonGluing.oneFacePreRealizationHomeomorph_sidePoint`
+* `PolygonCell.conjHomeomorph`
+* `PolygonCell.conj_side_symm_monogon`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph_sidePoint`
 
