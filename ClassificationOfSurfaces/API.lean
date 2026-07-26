@@ -112,6 +112,9 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 ## Finite cyclic presentation layer
 
 * `FiniteCyclicPresentation`
+* `FiniteCyclicPresentation.inverseWord`
+* `FiniteCyclicPresentation.OrientedFace`
+* `FiniteCyclicPresentation.orientedBoundary`
 * `FiniteCyclicPresentation.edgeMultiplicity`
 * `FiniteCyclicPresentation.IsSurfaceValid`
 * `FiniteCyclicPresentation.FaceAdjacent`
@@ -123,13 +126,17 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.PresentationIso.isConnected_iff`
 * `FiniteCyclicPresentation.SignedPresentationIso`
 * `FiniteCyclicPresentation.SignedPresentationIso.ofPresentationIso`
+* `FiniteCyclicPresentation.SignedPresentationIso.orientedFaceEquiv`
+* `FiniteCyclicPresentation.SignedPresentationIso.orientedBoundary_rotated`
 * `FiniteCyclicPresentation.SignedPresentationIso.isSurfaceValid_iff`
 * `FiniteCyclicPresentation.SignedPresentationIso.isConnected_iff`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
 orientation of every renamed edge. Reversal bits compose by exclusive-or. Validity, edge
-multiplicities, and connectivity are invariant under these operations. The original
+multiplicities, and connectivity are invariant under these operations. Each stored face also has
+two non-mutating oriented views: the negative view reverses the word and flips every dart, and
+signed presentation isomorphisms transport either view up to cyclic rotation. The original
 orientation-preserving `PresentationIso` embeds into this general layer.
 
 ## Polygonal quotient foundation
