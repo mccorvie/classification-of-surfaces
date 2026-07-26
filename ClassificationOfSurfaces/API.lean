@@ -29,6 +29,7 @@ import ClassificationOfSurfaces.PolygonalQuotient
 import ClassificationOfSurfaces.RepresentativeCarrier
 import ClassificationOfSurfaces.SignedPresentation
 import ClassificationOfSurfaces.SphereCarrierGeometry
+import ClassificationOfSurfaces.SphereHemisphere
 
 /-!
 # Public API map
@@ -235,8 +236,16 @@ standard polygonal disks modulo occurrence-level side pairings. It does not use 
 * `PolygonGluing.oneFacePreRealizationHomeomorph_sidePoint`
 * `PolygonCell.conjHomeomorph`
 * `PolygonCell.conj_side_symm_monogon`
+* `PolygonCell.hemisphereHeight`
+* `PolygonCell.upperHemisphere`
+* `PolygonCell.lowerHemisphere`
+* `PolygonCell.upperHemisphere_side_eq_lowerHemisphere_side_symm`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph_sidePoint`
+* `SurfaceCellComplex.sphereBoundaryOccurrence_eq`
+* `SurfaceCellComplex.mem_sphere_polygonalIdentifications_iff`
+* `SurfaceCellComplex.spherePreMap`
+* `SurfaceCellComplex.spherePreMap_eq_of_generator`
 
 This generic layer supports disk cells with any number of marked sides and generated side
 identifications. The additive cell-complex adapter now maps boundary occurrences to polygon sides
