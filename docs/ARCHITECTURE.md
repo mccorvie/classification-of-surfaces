@@ -97,12 +97,14 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
   of each named handle, crosscap, and boundary block. Every directed identification in either word
   is classified as the expected handle, crosscap, or boundary-seam pairing in either order, while
   singleton free-boundary sides are excluded. These classify raw generators, not yet the
-  generated-closure comparisons with `OrientableRel` and `NonOrientableRel`; an exhaustive
-  decomposition of arbitrary word positions is also not part of the public API.
+  generated-closure comparisons with `OrientableRel` and `NonOrientableRel`.
 - `RepresentativeCarrier.lean` identifies every one-face polygonal pre-realization with the exact
   vendored closed unit disk, computes its side coordinates, proves integral-period boundary
-  invariance, and supplies closure-aware quotient congruence. The canonical generator comparison
-  and the legacy realization cutover remain separate obligations.
+  invariance, and supplies closure-aware quotient congruence. `CanonicalCoordinates.lean` maps all
+  five explicit pairing families into the trusted closures, including the reversed boundary
+  indexing. The arbitrary and reverse generator maps, quotient descent, and legacy realization
+  cutover remain separate obligations. `NormalForm.canonicalCellComplex` also includes the
+  separate two-face sphere presentation.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
 compatibility. New code should use the preferred names above.
@@ -119,6 +121,8 @@ compatibility. New code should use the preferred names above.
   one-face incidence presentations.
 - `ClassificationOfSurfaces/CanonicalPairings.lean`: exhaustive pairing classifications for
   both canonical boundary-word families.
+- `ClassificationOfSurfaces/CanonicalCoordinates.lean`: exact closed-disk coordinates and
+  canonical-pairing-to-trusted-closure inclusions.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: the exact one-face disk carrier,
   side-coordinate formulas, and raw/generated quotient bridges.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
@@ -151,9 +155,9 @@ compatibility. New code should use the preferred names above.
    elementary rewrites preserve that realization.
 4. Identify the normalized polygon generators with the vendored `OrientableRel` and
    `NonOrientableRel` generators up to equivalence closure. The generic one-face pairing-position,
-   common-carrier, quotient-type, forward named-block position, and both raw-pairing bridges are
-   complete. The remaining work is arbitrary-position sum-index exhaustion,
-   boundary-coordinate arithmetic, and both generator-family inclusions into the opposite
-   `Relation.EqvGen` closure.
+   common-carrier, quotient-type, forward named-block position, both raw-pairing bridges, and all
+   five familywise coordinate inclusions are complete. The remaining work is packaging arbitrary
+   polygon generators, proving the reverse trusted-generator maps, and descending the two
+   bidirectional closure comparisons.
 5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
    the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.

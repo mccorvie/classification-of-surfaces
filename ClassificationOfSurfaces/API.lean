@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
+import ClassificationOfSurfaces.CanonicalCoordinates
 import ClassificationOfSurfaces.CanonicalPairings
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
@@ -248,9 +249,12 @@ records the side-coordinate formula, integral-period boundary invariance, and cl
 quotient congruence from the polygonal generated setoid to a raw relation quotient. The one-face
 membership theorem characterizes compatible ordered pairings by two distinct boundary-word
 positions with the required status and dart equalities. Forward canonical block positions and
-exhaustive raw-pairing classifications for both canonical families are complete. The remaining
-obligations are carrier-coordinate transport and both directions of each generated-closure
-comparison; the legacy stored realization is still unrelated to the polygonal quotient.
+exhaustive raw-pairing classifications for both canonical families are complete. Exact carrier
+coordinates, including
+the reversed boundary index, send all five canonical pairing families into the corresponding
+trusted equivalence closures. The remaining obligations are to lift those familywise facts to
+arbitrary polygon generators and prove the reverse trusted-generator maps; the legacy stored
+realization is still unrelated to the polygonal quotient.
 
 ## Gallier-Xu tail
 
@@ -284,6 +288,19 @@ comparison; the legacy stored realization is still unrelated to the polygonal qu
 * `NormalForm.orientableBoundaryIdentification`
 * `NormalForm.orientableBoundaryIdentificationReverse`
 * `NormalForm.mem_orientable_polygonalIdentifications_iff`
+* `NormalForm.orientableOccurrencePoint`
+* `NormalForm.nonOrientableOccurrencePoint`
+* `NormalForm.orientableCarrier_occurrencePoint`
+* `NormalForm.nonOrientableCarrier_occurrencePoint`
+* `NormalForm.orientableBoundary_trustedSource_eq_carrier_c_neg`
+* `NormalForm.orientableBoundary_trustedTarget_eq_carrier_c_pos`
+* `NormalForm.nonOrientableBoundary_trustedSource_eq_carrier_c_neg`
+* `NormalForm.nonOrientableBoundary_trustedTarget_eq_carrier_c_pos`
+* `NormalForm.orientableCarrier_handle_a_eqvGen`
+* `NormalForm.orientableCarrier_handle_b_eqvGen`
+* `NormalForm.orientableCarrier_boundary_c_eqvGen`
+* `NormalForm.nonOrientableCarrier_crosscap_a_eqvGen`
+* `NormalForm.nonOrientableCarrier_boundary_c_eqvGen`
 * `NormalForm.orientableCellComplex`
 * `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
@@ -301,9 +318,12 @@ block-position maps and exact `List.get` lemmas locate every signed entry of eac
 crosscap, and boundary block. Polygonal identifications in both families are classified
 exhaustively as the two directed forms of the expected handle, crosscap, or boundary-seam
 pairings, with singleton free-boundary darts excluded. These classify the raw generator sets, not
-yet their generated equivalence closures. The getters remain forward maps rather than a total
-classification of arbitrary `Fin` positions. The remaining comparison is carrier-coordinate
-transport and both directions of each generator-closure comparison.
+yet their generated equivalence closures with
+`OrientableRel` and `NonOrientableRel`. Exact coordinate theorems now transport every explicit
+pairing family into the trusted closures; boundary blocks use `Fin.rev` and integral periodicity
+to reconcile the benchmark's negative angles. The remaining comparison is to case-split arbitrary
+polygon generators, prove the reverse trusted-generator maps, and descend the resulting
+bidirectional closure comparisons.
 
 The legacy reduction theorem cannot be the final proof route while
 `SurfaceCellComplex.Realization` is an arbitrary stored type. The faithful replacement route
