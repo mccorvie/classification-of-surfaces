@@ -47,13 +47,14 @@ as explicit hypotheses.
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
 | `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
-| canonical normal-form quotient comparison | CanonicalWords.lean | bridge pending | the exact canonical words, multiplicities, incidence validity, connectivity, and occurrence pairings are certified, but no theorem identifies their polygonal realizations with the vendored closed-disc quotients | construct side-compatible polygon-to-disc maps and prove the generated relation agrees with `OrientableRel` or `NonOrientableRel` |
+| canonical normal-form generator comparison | CanonicalWords.lean + RepresentativeCarrier.lean | bridge pending | the exact canonical words, multiplicities, incidence validity, connectivity, and occurrence pairings are certified; the common carrier, exact side coordinates, integral-period boundary fact, and raw/generated quotient bridge are complete, but the two generator families have not been compared up to equivalence closure | prove generator maps in both directions for the orientable and nonorientable canonical words, then apply the closure-aware quotient congruence |
 | `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | false at the current abstraction boundary | the signature requires explicit `IsSurfaceValid` and `IsConnected`, but `SurfaceCellComplex.realization` is still an arbitrary stored type unrelated to the incidence data; it therefore need not be homeomorphic to any Eval representative | first perform the faithful polygonal-realization cutover, then prove the Gallier--Xu reduction against the vendored relations |
 
 Dependents of the cell-complex entries: `NormalForm.lean`, `EvalStatement.lean`,
-`Examples.lean`, and `CanonicalWords.lean`. `CanonicalWords.lean` consumes only the incidence and
-occurrence-pairing interfaces; it does not consume the placeholder realization or gluing
-relation. The former project-owned
+`Examples.lean`, `CanonicalWords.lean`, and `RepresentativeCarrier.lean`. `CanonicalWords.lean`
+consumes only the incidence and occurrence-pairing interfaces.
+`RepresentativeCarrier.lean` consumes the faithful `PolygonalPreRealization`, not the placeholder
+stored `SurfaceCellComplex.Realization` or `gluingRel`. The former project-owned
 `SurfaceCellModel`, `OrientableRel`, and `NonOrientableRel` placeholders have been deleted:
 `Representatives.lean` now imports the verbatim Lean-Eval constants from
 `LeanEval/ChallengeDeps.lean`. The invalid `PUnit` quotient homeomorphisms and the example theorems
