@@ -84,6 +84,7 @@ import ClassificationOfSurfaces.Moise.RelativeSynchronizedArrangement
 import ClassificationOfSurfaces.Moise.ThinKiteMove
 import ClassificationOfSurfaces.NormalForm
 import ClassificationOfSurfaces.PolygonalQuotient
+import ClassificationOfSurfaces.RepresentativeCarrier
 import ClassificationOfSurfaces.Representatives
 import ClassificationOfSurfaces.SignedPresentation
 import ClassificationOfSurfaces.Surface

@@ -137,6 +137,12 @@ presentation rather than a side-free disk. The standard examples satisfy both in
 occurrence-level criteria, including the length-six annulus word. The next dependency is the
 certified triangulation-to-quotient bridge. This topological carrier does not by itself supply the
 straight-edged convex polygons requested for the explicit normal-form representatives.
+The exact benchmark carrier is not duplicated: `RepresentativeCarrier.lean` forgets the
+`PolygonCell` wrapper to give a homeomorphism to the vendored `Complex.ClosedUnitDisc`, computes
+the coordinate of every marked side, and bridges a raw `Quot` with the `Quotient` by its
+`Relation.EqvGen` setoid. Consequently the canonical comparison should map generators in both
+directions into the opposite equivalence closure; equality of the raw generator relations is
+neither required nor generally the right statement.
 
 Status: open.
 

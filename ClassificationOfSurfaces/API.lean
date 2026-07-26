@@ -18,6 +18,7 @@ import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
 import ClassificationOfSurfaces.Moise.FrontierGlue
 import ClassificationOfSurfaces.Moise.PlaneCycle
 import ClassificationOfSurfaces.PolygonalQuotient
+import ClassificationOfSurfaces.RepresentativeCarrier
 import ClassificationOfSurfaces.SignedPresentation
 
 /-!
@@ -124,6 +125,18 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `SurfaceCellComplex.oneFacePresentation_isSurfaceValid`
 * `SurfaceCellComplex.oneFacePresentation_occurrencePairingValid`
 * `SurfaceCellComplex.PolygonalRealization`
+* `Complex.ClosedUnitDisc.bdyPtOfReal_add_int`
+* `quotEqvGenHomeomorph`
+* `eqvGenQuotientCongrRaw`
+* `eqvGen_map_of_generator_to_eqvGen`
+* `eqvGen_iff_of_generator_maps`
+* `eqvGenQuotientCongrRawOfGeneratorMaps`
+* `PolygonCell.closedUnitDiscHomeomorph`
+* `PolygonCell.closedUnitDiscHomeomorph_side`
+* `PolygonGluing.oneFacePreRealizationHomeomorph`
+* `PolygonGluing.oneFacePreRealizationHomeomorph_sidePoint`
+* `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph`
+* `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph_sidePoint`
 
 This generic layer supports disk cells with any number of marked sides and generated side
 identifications. The additive cell-complex adapter now maps boundary occurrences to polygon sides
@@ -134,7 +147,13 @@ use the quotient yet; the atomic cutover still depends on a certified
 triangulation-to-quotient bridge. The standard one-face examples now have incidence- and
 occurrence-validity witnesses, including the corrected length-six annulus word. The marked sides
 are circular arcs; issue #6's straight-edged convex representatives still require a separate PL
-bridge or a different concrete carrier.
+bridge or a different concrete carrier. The representative-carrier bridge identifies each
+indexed disk, and hence every one-face pre-realization, with the exact vendored closed unit disk.
+It records the side-coordinate formula, integral-period boundary invariance, and closure-aware
+quotient congruence from the polygonal generated setoid to a raw relation quotient. This completes
+the common carrier and quotient-construction subproblem only: the canonical polygon generators
+still have to be compared with the vendored relations, and the legacy stored realization is still
+unrelated to the polygonal quotient.
 
 ## Gallier-Xu tail
 
