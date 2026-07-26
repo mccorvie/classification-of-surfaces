@@ -116,15 +116,21 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.IsSurfaceValid`
 * `FiniteCyclicPresentation.FaceAdjacent`
 * `FiniteCyclicPresentation.IsConnected`
+* `FiniteCyclicPresentation.EdgeRelabeling`
+* `FiniteCyclicPresentation.EdgeRelabeling.dartEquiv`
 * `FiniteCyclicPresentation.PresentationIso`
 * `FiniteCyclicPresentation.PresentationIso.isSurfaceValid_iff`
 * `FiniteCyclicPresentation.PresentationIso.isConnected_iff`
+* `FiniteCyclicPresentation.SignedPresentationIso`
+* `FiniteCyclicPresentation.SignedPresentationIso.ofPresentationIso`
+* `FiniteCyclicPresentation.SignedPresentationIso.isSurfaceValid_iff`
+* `FiniteCyclicPresentation.SignedPresentationIso.isConnected_iff`
 
-This packed layer retains only finite signed face words. Its current presentation isomorphisms
-relabel edges without changing their chosen signs, relabel faces, and rotate individual face
-boundaries; validity, edge multiplicities, and connectivity are invariant under those operations.
-An independent orientation reversal for each edge is the next extension required before the
-general Gallier--Xu word moves.
+This packed layer retains only finite signed face words. A signed presentation isomorphism may
+relabel faces, rotate individual face boundaries, and independently reverse the chosen
+orientation of every renamed edge. Reversal bits compose by exclusive-or. Validity, edge
+multiplicities, and connectivity are invariant under these operations. The original
+orientation-preserving `PresentationIso` embeds into this general layer.
 
 ## Polygonal quotient foundation
 

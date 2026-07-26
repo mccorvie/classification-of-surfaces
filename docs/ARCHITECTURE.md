@@ -104,7 +104,7 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
-  predicates, and presentation isomorphisms.
+  predicates, and signed presentation isomorphisms with independent edge-orientation reversals.
 - `ClassificationOfSurfaces/LeanEval/ChallengeDeps.lean`: the verbatim Lean-Eval disc carrier and
   quotient relations.
 - `ClassificationOfSurfaces/LeanEval/RepresentativeSanity.lean`: project-owned radius and
