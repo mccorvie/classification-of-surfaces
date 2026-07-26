@@ -44,6 +44,9 @@ project skeleton and documents the intended handoff points between teams.
 ## Moise route (current; see `docs/MOISE_ROUTE.md` for status and handoff map)
 
 * `GeometricTriangulation` and `GeometricRealization` (`Moise/GeometricTriangulation.lean`)
+* `TriangleFamily.FaceAdjacentAtVertex`, `TriangleFamily.IsStrongVertexStarConnected`, and
+  the strong-to-legacy and strong-to-dual connectivity bridges
+  (`Moise/GeometricTriangulation.lean`)
 * `PlaneComplex`, `IsPLOn`, `IsPLOnSet` (`Moise/PlaneComplex.lean`)
 * `IntrinsicTwoComplex`, its faithful `Subdivision`, `IsPLMap`, and `PLHomeomorph`
   (`Moise/IntrinsicComplex.lean`)
