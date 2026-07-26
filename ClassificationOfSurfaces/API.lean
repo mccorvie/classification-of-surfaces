@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
+import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
+import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
 import ClassificationOfSurfaces.Moise.IntrinsicGraphPL
 import ClassificationOfSurfaces.Moise.IntrinsicFaceBoundary
@@ -136,6 +138,21 @@ bridge or a different concrete carrier.
 
 ## Gallier-Xu tail
 
+* `NormalForm.OrientableEdge`
+* `NormalForm.NonOrientableEdge`
+* `NormalForm.orientableBoundaryWord`
+* `NormalForm.nonOrientableBoundaryWord`
+* `NormalForm.orientableBoundaryWord_length`
+* `NormalForm.nonOrientableBoundaryWord_length`
+* `NormalForm.orientableBoundaryWord_edge_occurrences`
+* `NormalForm.nonOrientableBoundaryWord_edge_occurrences`
+* `NormalForm.orientableCellComplex_isSurfaceValid`
+* `NormalForm.nonOrientableCellComplex_isSurfaceValid`
+* `NormalForm.orientableCellComplex_isConnected`
+* `NormalForm.nonOrientableCellComplex_isConnected`
+* `NormalForm.orientableCellComplex_occurrencePairingValid`
+* `NormalForm.nonOrientableCellComplex_occurrencePairingValid`
+* `NormalForm.canonicalCellComplex`
 * `NormalForm.IsEvalAdmissible`
 * `SurfaceCellComplex.RealizesNormalForm`
 * `SurfaceCellComplex.HasNormalForm`
@@ -143,23 +160,30 @@ bridge or a different concrete carrier.
 * `SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm`
 * `SurfaceCellComplex.hasEvalRepresentative`
 
-The Gallier-Xu tail should consume only `SurfaceCellComplex` and quotient-realization APIs. It
-should not mention PL maps, Moise triangulation, or manifold chart machinery. Its public entry
-now requires the incidence-derived `IsSurfaceValid` and `IsConnected` hypotheses explicitly.
+The canonical word families match the exact commutator, crosscap, and boundary-block patterns in
+the vendored relations. Their lengths, edge multiplicities, incidence validity, connectivity, and
+Eval-admissible occurrence pairings are certified without using the stored realization.
+
+The legacy reduction theorem cannot be the final proof route while
+`SurfaceCellComplex.Realization` is an arbitrary stored type. The faithful replacement route
+normalizes finite cyclic presentations, proves their polygonal realizations match the vendored
+quotient relations, and transports that result across the geometric-triangulation realization
+bridge. The combinatorial normalization layer should not mention manifold chart machinery.
 
 ## Eval representatives and final theorem
 
-* `SphereRepresentative`
-* `OrientableRel`
-* `NonOrientableRel`
+* `Complex.ClosedUnitDisc`, `OrientableRel`, and `NonOrientableRel`
+  (`LeanEval/ChallengeDeps.lean`, vendored verbatim from Lean-Eval)
+* `SphereRepresentative` and `NormalForm` (project-owned abbreviations and indices)
 * `classification_of_surfaces`
 * `topological_classification_of_surfaces`
 
-The final theorem should remain a short assembly proof using
-`compact_surface_homeomorphic_to_valid_connected_cell_complex` and the validity-aware
-`SurfaceCellComplex.hasEvalRepresentative`. The C0 `ChartBoundaryInvariant` interface is
-discharged unconditionally by planar no-retraction, Brouwer's fixed-point theorem, and invariance
-of domain.
+The final theorem should become a short assembly proof from a geometric triangulation, through a
+finite cyclic presentation and Gallier-Xu normalization, to separately certified polygonal
+realization homeomorphisms for the vendored quotients. The C0 `ChartBoundaryInvariant` interface
+is discharged unconditionally by planar no-retraction, Brouwer's fixed-point theorem, and
+invariance of domain. `LeanEval/SpecAudit.lean` checks that the current public theorem's conclusion
+is the exact published Lean-Eval type over the vendored disc relations.
 -/
 
 namespace LeanEval

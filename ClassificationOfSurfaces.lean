@@ -1,9 +1,12 @@
 import ClassificationOfSurfaces.API
 import ClassificationOfSurfaces.Basic
+import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.CellComplex
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
+import ClassificationOfSurfaces.LeanEval.ChallengeDeps
+import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.AdaptiveControlledApproximation
 import ClassificationOfSurfaces.Moise.AdaptiveFanAffine
 import ClassificationOfSurfaces.Moise.AdaptiveFanComplex

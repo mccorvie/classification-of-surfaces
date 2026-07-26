@@ -637,12 +637,13 @@ triangulation is a geometric triangulation.
 \chapter{From triangulations to the classification}
 
 This chapter is the downstream half: convert triangulations to finite surface
-cell complexes and reduce cell complexes to Gallier--Xu normal forms.  Much of
-it is currently placeholder scaffolding: see \texttt{docs/KNOWN\_WEAK.md} for
-the ledger.  In particular the Eval quotient representatives are still
-one-point placeholders, so \ref{moise:thm:gx_normal_form} is \emph{not
-provable as currently stated in Lean} — the representatives must be
-implemented first and the statement re-audited.
+cyclic presentations and reduce their exact boundary words to Gallier--Xu
+normal forms. The Eval quotient relations now faithfully match the vendored
+closed-disc benchmark. Nevertheless \ref{moise:thm:gx_normal_form} is
+\emph{not provable as currently stated in Lean}: the legacy cell-complex
+realization is arbitrary, and the faithful cyclic-presentation normalization
+and polygonal comparison remain to be proved. See
+\texttt{docs/KNOWN\_WEAK.md} for the ledger.
 
 \section{Cell complexes and the topological bridge}
 
@@ -760,17 +761,39 @@ diagonal; descend by quotient congruence.
 \label{moise:def:eval_quotient_representatives}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.SphereRepresentative, LeanEval.Topology.ClassificationOfSurfaces.OrientableRel, LeanEval.Topology.ClassificationOfSurfaces.NonOrientableRel}
 \leanok
-\emph{Ledger note: placeholders.}  The orientable and nonorientable relations
-are currently the bottom relation on a one-point carrier, so the named
-quotients are single points.  They must become genuine polygon-boundary
-quotients before the normal-form theorem can be honestly attempted.
+The orientable and nonorientable relations are the exact raw boundary-arc
+relations on the closed unit disc vendored from the Lean Eval statement. The
+remaining obligation is to identify faithful canonical polygonal
+realizations with these fixed benchmark quotients.
+\end{definition}
+
+\begin{definition}[Canonical normal-form incidence presentations]
+\label{moise:def:canonical_normal_form_complexes}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableBoundaryWord,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientableBoundaryWord,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalCellComplex,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalCellComplex_isSurfaceValid,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalCellComplex_isConnected}
+\leanok
+\uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives}
+The orientable word concatenates commutator blocks
+$a_i b_i a_i^{-1}b_i^{-1}$ and boundary blocks $c_jh_jc_j^{-1}$; the
+nonorientable word uses square blocks $a_i a_i$ and the same boundary blocks.
+Their lengths are $4p+3n$ and $2p+3n$. Every seam, handle, or crosscap edge
+occurs twice, while each boundary-contour edge occurs once, so the resulting
+one-face incidence presentations are valid and connected. Under the Eval
+admissibility bounds the words are nonempty and have certified occurrence
+pairings for the polygonal quotient adapter. No claim is made here about the
+legacy stored realization; the sphere uses its separate two-monogon incidence
+presentation.
 \end{definition}
 
 \begin{definition}[Named normal-form witnesses]
 \label{moise:def:normal_form_witness}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.IsEvalAdmissible, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.RealizesNormalForm, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.HasNormalForm}
 \leanok
-\uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives}
+\uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives,
+  moise:def:canonical_normal_form_complexes}
 A normal-form witness for $K$: an admissible normal-form name, a representative
 complex, an equivalence from $K$ to it, and a homeomorphism from its
 realization to the named Eval quotient.
@@ -782,13 +805,12 @@ realization to the named Eval quotient.
 \leanok
 \uses{moise:def:normal_form_witness,moise:def:gx_elementary_moves,moise:lem:elementary_moves_preserve_realization}
 Every finite connected surface cell complex has an admissible named normal-form
-witness.  \emph{Warning (ledger): with the placeholder representatives of
-\ref{moise:def:eval_quotient_representatives}, the current Lean statement is
-false for complexes whose realization is not a point or a sphere.  Its Lean
-signature also still lacks explicit incidence-validity and face-connectivity
-hypotheses because the legacy triangulation bridge does not yet provide their
-certificates.  The sorry cannot be discharged until the representatives and
-that certified bridge are implemented and the statement is re-audited.}
+witness. \emph{Warning (ledger): the current Lean statement is false because
+a cell complex may store an arbitrary realization unrelated to its certified
+incidence data. The sorry cannot be discharged until the faithful
+polygonal-realization cutover, finite cyclic normalization, elementary-move
+soundness, and comparison with
+\ref{moise:def:eval_quotient_representatives} are implemented.}
 \end{theorem}
 
 \begin{proof}
