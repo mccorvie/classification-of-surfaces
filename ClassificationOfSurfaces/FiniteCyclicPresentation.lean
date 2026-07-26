@@ -19,6 +19,10 @@ are finite by construction, and a face boundary is a cyclic list of signed edge 
 reversal for each source edge. `SignedPresentationIso` combines such a relabeling with an
 equivalence of faces and a rotation witness for every renamed face boundary. The original
 orientation-preserving `PresentationIso` remains available as a compatible special case.
+
+`OrientedFace` gives each stored face a positive and negative traversal view without mutating the
+presentation. The negative boundary word is the reversed list with every dart orientation
+flipped, as required by the oriented polygon conventions used in Gallier--Xu moves.
 -/
 
 namespace LeanEval
@@ -56,6 +60,64 @@ def boundary (P : FiniteCyclicPresentation) (f : P.Face) : List P.Dart :=
 def edgeOfDart {α : Type*} : SignedDart α → α
   | .pos e => e
   | .neg e => e
+
+@[simp]
+theorem edgeOfDart_flip {α : Type*} (d : SignedDart α) :
+    edgeOfDart d.flip = edgeOfDart d := by
+  cases d <;> rfl
+
+/-- Reverse the traversal direction of a signed boundary word. -/
+def inverseWord {α : Type*} (word : List (SignedDart α)) :
+    List (SignedDart α) :=
+  word.reverse.map SignedDart.flip
+
+@[simp]
+theorem inverseWord_nil {α : Type*} :
+    inverseWord ([] : List (SignedDart α)) = [] :=
+  rfl
+
+@[simp]
+theorem inverseWord_length {α : Type*} (word : List (SignedDart α)) :
+    (inverseWord word).length = word.length := by
+  simp [inverseWord]
+
+@[simp]
+theorem inverseWord_inverseWord {α : Type*} (word : List (SignedDart α)) :
+    inverseWord (inverseWord word) = word := by
+  simp [inverseWord, List.map_map, Function.comp_def]
+
+/-- Reversing signed words is an involution. -/
+theorem inverseWord_involutive {α : Type*} :
+    Function.Involutive (@inverseWord α) :=
+  inverseWord_inverseWord
+
+@[simp]
+theorem inverseWord_append {α : Type*}
+    (left right : List (SignedDart α)) :
+    inverseWord (left ++ right) = inverseWord right ++ inverseWord left := by
+  simp [inverseWord]
+
+/-- Reversing traversal direction preserves cyclic equivalence. -/
+theorem inverseWord_isRotated {α : Type*}
+    {left right : List (SignedDart α)} (h : left.IsRotated right) :
+    (inverseWord left).IsRotated (inverseWord right) := by
+  exact h.reverse.map SignedDart.flip
+
+@[simp]
+theorem inverseWord_isRotated_iff {α : Type*}
+    (left right : List (SignedDart α)) :
+    (inverseWord left).IsRotated (inverseWord right) ↔
+      left.IsRotated right := by
+  constructor
+  · intro h
+    simpa only [inverseWord_inverseWord] using inverseWord_isRotated h
+  · exact inverseWord_isRotated
+
+@[simp]
+theorem map_edgeOfDart_inverseWord {α : Type*}
+    (word : List (SignedDart α)) :
+    (inverseWord word).map edgeOfDart = (word.map edgeOfDart).reverse := by
+  simp [inverseWord, List.map_map, Function.comp_def]
 
 /-- A relabeling of unoriented edges with an independent orientation reversal for each source
 edge. -/
@@ -231,6 +293,13 @@ theorem map_mapDart_trans {α β γ : Type*}
   | cons d l ih =>
       simp only [List.map_cons, mapDart_trans, ih]
 
+@[simp]
+theorem inverseWord_map_mapDart {α β : Type*}
+    (e : EdgeRelabeling α β) (word : List (SignedDart α)) :
+    inverseWord (word.map e.mapDart) =
+      (inverseWord word).map e.mapDart := by
+  simp [inverseWord, List.map_map, Function.comp_def]
+
 end EdgeRelabeling
 
 @[simp]
@@ -280,9 +349,116 @@ theorem map_mapEquiv_trans {α β γ : Type*} (e : α ≃ β) (f : β ≃ γ)
   | cons d l ih =>
       simp only [List.map_cons, mapEquiv_trans, ih]
 
+@[simp]
+theorem inverseWord_map_mapEquiv {α β : Type*}
+    (e : α ≃ β) (word : List (SignedDart α)) :
+    inverseWord (word.map (SignedDart.mapEquiv e)) =
+      (inverseWord word).map (SignedDart.mapEquiv e) := by
+  simp [inverseWord, List.map_map, Function.comp_def]
+
+/-- A face together with one of its two traversal orientations. `false` selects the stored
+orientation and `true` selects its reverse. -/
+structure OrientedFace (P : FiniteCyclicPresentation) where
+  face : P.Face
+  orientation : Bool
+deriving DecidableEq, Fintype
+
+namespace OrientedFace
+
+/-- A face with its stored traversal orientation. -/
+def pos {P : FiniteCyclicPresentation} (f : P.Face) : P.OrientedFace :=
+  ⟨f, false⟩
+
+/-- A face with the traversal orientation opposite to the stored one. -/
+def neg {P : FiniteCyclicPresentation} (f : P.Face) : P.OrientedFace :=
+  ⟨f, true⟩
+
+/-- Reverse the traversal orientation of a face. -/
+def flip {P : FiniteCyclicPresentation} (f : P.OrientedFace) :
+    P.OrientedFace :=
+  ⟨f.face, !f.orientation⟩
+
+@[simp]
+theorem pos_face {P : FiniteCyclicPresentation} (f : P.Face) :
+    (pos f).face = f :=
+  rfl
+
+@[simp]
+theorem neg_face {P : FiniteCyclicPresentation} (f : P.Face) :
+    (neg f).face = f :=
+  rfl
+
+@[simp]
+theorem flip_face {P : FiniteCyclicPresentation} (f : P.OrientedFace) :
+    f.flip.face = f.face :=
+  rfl
+
+@[simp]
+theorem flip_pos {P : FiniteCyclicPresentation} (f : P.Face) :
+    (pos f).flip = neg f :=
+  rfl
+
+@[simp]
+theorem flip_neg {P : FiniteCyclicPresentation} (f : P.Face) :
+    (neg f).flip = pos f :=
+  rfl
+
+@[simp]
+theorem flip_flip {P : FiniteCyclicPresentation} (f : P.OrientedFace) :
+    f.flip.flip = f := by
+  cases f with
+  | mk face orientation =>
+      cases orientation <;> rfl
+
+end OrientedFace
+
+/-- The boundary of an oriented face, read in its chosen traversal direction. -/
+def orientedBoundary (P : FiniteCyclicPresentation)
+    (f : P.OrientedFace) : List P.Dart :=
+  if f.orientation then inverseWord (P.boundary f.face) else P.boundary f.face
+
+@[simp]
+theorem orientedBoundary_pos (P : FiniteCyclicPresentation) (f : P.Face) :
+    P.orientedBoundary (.pos f) = P.boundary f :=
+  rfl
+
+@[simp]
+theorem orientedBoundary_neg (P : FiniteCyclicPresentation) (f : P.Face) :
+    P.orientedBoundary (.neg f) = inverseWord (P.boundary f) :=
+  rfl
+
+@[simp]
+theorem orientedBoundary_flip (P : FiniteCyclicPresentation)
+    (f : P.OrientedFace) :
+    P.orientedBoundary f.flip = inverseWord (P.orientedBoundary f) := by
+  cases f with
+  | mk face orientation =>
+      cases orientation <;> simp [OrientedFace.flip, orientedBoundary]
+
+@[simp]
+theorem orientedBoundary_length (P : FiniteCyclicPresentation)
+    (f : P.OrientedFace) :
+    (P.orientedBoundary f).length = (P.boundary f.face).length := by
+  cases f with
+  | mk face orientation =>
+      cases orientation <;> simp [orientedBoundary]
+
 /-- Multiplicity of an edge in one face boundary. -/
 def faceEdgeMultiplicity (P : FiniteCyclicPresentation) (f : P.Face) (e : P.Edge) : ℕ :=
   ((P.boundary f).map edgeOfDart).count e
+
+/-- Reading a face boundary in the opposite direction does not change edge multiplicities. -/
+theorem orientedBoundary_edgeMultiplicity (P : FiniteCyclicPresentation)
+    (f : P.OrientedFace) (e : P.Edge) :
+    ((P.orientedBoundary f).map edgeOfDart).count e =
+      P.faceEdgeMultiplicity f.face e := by
+  cases f with
+  | mk face orientation =>
+      cases orientation
+      · rfl
+      · unfold faceEdgeMultiplicity
+        rw [orientedBoundary, if_pos rfl, map_edgeOfDart_inverseWord]
+        exact (List.reverse_perm _).count_eq e
 
 /-- Total number of boundary occurrences of an unoriented edge. -/
 def edgeMultiplicity (P : FiniteCyclicPresentation) (e : P.Edge) : ℕ :=
@@ -553,6 +729,67 @@ def trans {P Q R : FiniteCyclicPresentation}
     have h₂ := f.boundary_rotated (e.faceEquiv p)
     rw [EdgeRelabeling.map_mapDart_trans]
     exact h₁.trans h₂
+
+/-- A signed presentation isomorphism transports the two orientations of every face. -/
+def orientedFaceEquiv {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) :
+    P.OrientedFace ≃ Q.OrientedFace where
+  toFun f := ⟨e.faceEquiv f.face, f.orientation⟩
+  invFun f := ⟨e.faceEquiv.symm f.face, f.orientation⟩
+  left_inv := by
+    intro f
+    cases f
+    simp
+  right_inv := by
+    intro f
+    cases f
+    simp
+
+@[simp]
+theorem orientedFaceEquiv_face {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) (f : P.OrientedFace) :
+    (e.orientedFaceEquiv f).face = e.faceEquiv f.face :=
+  rfl
+
+@[simp]
+theorem orientedFaceEquiv_orientation {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) (f : P.OrientedFace) :
+    (e.orientedFaceEquiv f).orientation = f.orientation :=
+  rfl
+
+@[simp]
+theorem orientedFaceEquiv_pos {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) (f : P.Face) :
+    e.orientedFaceEquiv (.pos f) = .pos (e.faceEquiv f) :=
+  rfl
+
+@[simp]
+theorem orientedFaceEquiv_neg {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) (f : P.Face) :
+    e.orientedFaceEquiv (.neg f) = .neg (e.faceEquiv f) :=
+  rfl
+
+@[simp]
+theorem orientedFaceEquiv_flip {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) (f : P.OrientedFace) :
+    e.orientedFaceEquiv f.flip = (e.orientedFaceEquiv f).flip :=
+  rfl
+
+/-- A signed presentation isomorphism transports either traversal orientation of every face
+boundary up to cyclic rotation. -/
+theorem orientedBoundary_rotated {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) (f : P.OrientedFace) :
+    ((P.orientedBoundary f).map e.edgeRelabeling.mapDart).IsRotated
+      (Q.orientedBoundary (e.orientedFaceEquiv f)) := by
+  cases f with
+  | mk face orientation =>
+      cases orientation
+      · exact e.boundary_rotated face
+      · change
+          ((inverseWord (P.boundary face)).map e.edgeRelabeling.mapDart).IsRotated
+            (inverseWord (Q.boundary (e.faceEquiv face)))
+        rw [← EdgeRelabeling.inverseWord_map_mapDart]
+        exact inverseWord_isRotated (e.boundary_rotated face)
 
 /-- A signed presentation isomorphism preserves edge multiplicity in each corresponding
 face. -/
