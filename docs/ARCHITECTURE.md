@@ -96,15 +96,16 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
   consuming the arbitrary stored realization. Forward maps and exact getters locate the entries
   of each named handle, crosscap, and boundary block. Every directed identification in either word
   is classified as the expected handle, crosscap, or boundary-seam pairing in either order, while
-  singleton free-boundary sides are excluded. These classify raw generators, not yet the
-  generated-closure comparisons with `OrientableRel` and `NonOrientableRel`.
+  singleton free-boundary sides are excluded.
 - `RepresentativeCarrier.lean` identifies every one-face polygonal pre-realization with the exact
   vendored closed unit disk, computes its side coordinates, proves integral-period boundary
   invariance, and supplies closure-aware quotient congruence. `CanonicalCoordinates.lean` maps all
   five explicit pairing families into the trusted closures, including the reversed boundary
-  indexing. The arbitrary and reverse generator maps, quotient descent, and legacy realization
-  cutover remain separate obligations. `NormalForm.canonicalCellComplex` also includes the
-  separate two-face sphere presentation.
+  indexing. `CanonicalGeneratorMaps.lean` maps arbitrary polygon generators and every trusted
+  relation constructor into the opposite equivalence closure, yielding homeomorphisms between both
+  canonical polygonal realizations and the exact Eval quotients. The legacy realization cutover
+  remains separate. `NormalForm.canonicalCellComplex` also includes the separate two-face sphere
+  presentation.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
 compatibility. New code should use the preferred names above.
@@ -123,6 +124,8 @@ compatibility. New code should use the preferred names above.
   both canonical boundary-word families.
 - `ClassificationOfSurfaces/CanonicalCoordinates.lean`: exact closed-disk coordinates and
   canonical-pairing-to-trusted-closure inclusions.
+- `ClassificationOfSurfaces/CanonicalGeneratorMaps.lean`: bidirectional generator maps and
+  canonical polygonal-realization homeomorphisms to the Eval quotients.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: the exact one-face disk carrier,
   side-coordinate formulas, and raw/generated quotient bridges.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
@@ -148,16 +151,14 @@ compatibility. New code should use the preferred names above.
 
 ## Next Tasks
 
-1. Pack geometric triangulations as valid connected finite cyclic presentations, preserving the
-   exact cyclic boundary words.
-2. Prove Gallier-Xu rewrites and normalization on those finite cyclic presentations.
-3. Give each finite cyclic presentation its faithful polygonal realization and prove the
-   elementary rewrites preserve that realization.
-4. Identify the normalized polygon generators with the vendored `OrientableRel` and
-   `NonOrientableRel` generators up to equivalence closure. The generic one-face pairing-position,
-   common-carrier, quotient-type, forward named-block position, both raw-pairing bridges, and all
-   five familywise coordinate inclusions are complete. The remaining work is packaging arbitrary
-   polygon generators, proving the reverse trusted-generator maps, and descending the two
-   bidirectional closure comparisons.
-5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
-   the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.
+1. Replace the compatibility triangulation's arbitrary all-positive boundary lists with the cyclic
+   `IntrinsicTwoComplex.faceEdge` order and certify connected incident-face chains at every
+   vertex.
+2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
+   faithful polygonal quotient; route the Eval handoff through that quotient without relying on
+   the legacy arbitrary stored realization.
+3. Identify the two-monogon sphere polygonal quotient with `SphereRepresentative`.
+4. Complete the P2 face-split development alongside the existing P1 edge split, and prove both
+   primitive subdivisions preserve the faithful quotient.
+5. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
+   transformation, and boundary grouping as derived finite subdivision chains.

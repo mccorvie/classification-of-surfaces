@@ -5,6 +5,7 @@ Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.CanonicalCoordinates
+import ClassificationOfSurfaces.CanonicalGeneratorMaps
 import ClassificationOfSurfaces.CanonicalPairings
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
@@ -252,9 +253,10 @@ positions with the required status and dart equalities. Forward canonical block 
 exhaustive raw-pairing classifications for both canonical families are complete. Exact carrier
 coordinates, including
 the reversed boundary index, send all five canonical pairing families into the corresponding
-trusted equivalence closures. The remaining obligations are to lift those familywise facts to
-arbitrary polygon generators and prove the reverse trusted-generator maps; the legacy stored
-realization is still unrelated to the polygonal quotient.
+trusted equivalence closures. Exhaustive forward maps and constructor-by-constructor reverse maps
+therefore identify both generated relations, and the carrier descends to homeomorphisms from the
+canonical polygonal realizations to the exact trusted Eval quotients. The legacy stored realization
+is still unrelated to the polygonal quotient.
 
 ## Gallier-Xu tail
 
@@ -301,6 +303,12 @@ realization is still unrelated to the polygonal quotient.
 * `NormalForm.orientableCarrier_boundary_c_eqvGen`
 * `NormalForm.nonOrientableCarrier_crosscap_a_eqvGen`
 * `NormalForm.nonOrientableCarrier_boundary_c_eqvGen`
+* `NormalForm.orientableGenerator_to_eqvGen`
+* `NormalForm.nonOrientableGenerator_to_eqvGen`
+* `NormalForm.orientableRel_to_polygonEqvGen`
+* `NormalForm.nonOrientableRel_to_polygonEqvGen`
+* `NormalForm.orientablePolygonalRealizationHomeomorph`
+* `NormalForm.nonOrientablePolygonalRealizationHomeomorph`
 * `NormalForm.orientableCellComplex`
 * `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
@@ -317,13 +325,13 @@ Eval-admissible occurrence pairings are certified without using the stored reali
 block-position maps and exact `List.get` lemmas locate every signed entry of each named handle,
 crosscap, and boundary block. Polygonal identifications in both families are classified
 exhaustively as the two directed forms of the expected handle, crosscap, or boundary-seam
-pairings, with singleton free-boundary darts excluded. These classify the raw generator sets, not
-yet their generated equivalence closures with
-`OrientableRel` and `NonOrientableRel`. Exact coordinate theorems now transport every explicit
-pairing family into the trusted closures; boundary blocks use `Fin.rev` and integral periodicity
-to reconcile the benchmark's negative angles. The remaining comparison is to case-split arbitrary
-polygon generators, prove the reverse trusted-generator maps, and descend the resulting
-bidirectional closure comparisons.
+pairings, with singleton free-boundary darts excluded. Exact coordinate theorems transport every
+explicit pairing family into the trusted closures; boundary blocks use `Fin.rev` and integral
+periodicity to reconcile the benchmark's negative angles. The exhaustive classifications package
+those facts for arbitrary polygon generators, while the trusted relation constructors map back to
+named polygon pairings.
+The resulting bidirectional closure comparisons descend to homeomorphisms with `Quot
+(OrientableRel p n)` and `Quot (NonOrientableRel p n)`.
 
 The legacy reduction theorem cannot be the final proof route while
 `SurfaceCellComplex.Realization` is an arbitrary stored type. The faithful replacement route

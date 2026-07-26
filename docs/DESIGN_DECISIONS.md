@@ -151,10 +151,11 @@ directed generator is exactly a handle, crosscap, or boundary-seam pairing, in o
 orders; the once-occurring free boundary darts cannot generate an identification. These theorems
 classify the finite raw generator sets. `CanonicalCoordinates.lean` computes every carrier image,
 uses `Fin.rev` plus one-turn periodicity for boundary seams, and maps all five explicit pairing
-families into the corresponding trusted `EqvGen` closures. The arbitrary-generator packaging,
-reverse trusted-generator maps, and quotient descent remain.
+families into the corresponding trusted `EqvGen` closures. `CanonicalGeneratorMaps.lean` packages
+the exhaustive forward maps, maps every trusted constructor back to its named polygon pairing,
+and descends both comparisons to the exact Eval quotients.
 
-Status: open.
+Status: implemented for every Eval-admissible orientable and nonorientable parameter pair.
 
 ### O4. Topological Bridge Target
 

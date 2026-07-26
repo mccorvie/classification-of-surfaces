@@ -1,6 +1,7 @@
 import ClassificationOfSurfaces.API
 import ClassificationOfSurfaces.Basic
 import ClassificationOfSurfaces.CanonicalCoordinates
+import ClassificationOfSurfaces.CanonicalGeneratorMaps
 import ClassificationOfSurfaces.CanonicalPairings
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.CellComplex
