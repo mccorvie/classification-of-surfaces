@@ -5,6 +5,7 @@ import ClassificationOfSurfaces.CellComplex
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
+import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.LeanEval.ChallengeDeps
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit

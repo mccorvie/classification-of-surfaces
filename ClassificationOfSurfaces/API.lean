@@ -7,6 +7,7 @@ import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
+import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -107,6 +108,29 @@ realization.  They do not yet produce `SurfaceCellComplex.IsSurfaceValid` or `.I
 
 The legacy names `CellComplex` and `FiniteTriangulation` remain as compatibility aliases.  New
 code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTriangulation`.
+
+## Finite cyclic presentation layer
+
+* `FiniteCyclicPresentation`
+* `FiniteCyclicPresentation.edgeMultiplicity`
+* `FiniteCyclicPresentation.IsSurfaceValid`
+* `FiniteCyclicPresentation.FaceAdjacent`
+* `FiniteCyclicPresentation.IsConnected`
+* `FiniteCyclicPresentation.EdgeRelabeling`
+* `FiniteCyclicPresentation.EdgeRelabeling.dartEquiv`
+* `FiniteCyclicPresentation.PresentationIso`
+* `FiniteCyclicPresentation.PresentationIso.isSurfaceValid_iff`
+* `FiniteCyclicPresentation.PresentationIso.isConnected_iff`
+* `FiniteCyclicPresentation.SignedPresentationIso`
+* `FiniteCyclicPresentation.SignedPresentationIso.ofPresentationIso`
+* `FiniteCyclicPresentation.SignedPresentationIso.isSurfaceValid_iff`
+* `FiniteCyclicPresentation.SignedPresentationIso.isConnected_iff`
+
+This packed layer retains only finite signed face words. A signed presentation isomorphism may
+relabel faces, rotate individual face boundaries, and independently reverse the chosen
+orientation of every renamed edge. Reversal bits compose by exclusive-or. Validity, edge
+multiplicities, and connectivity are invariant under these operations. The original
+orientation-preserving `PresentationIso` embeds into this general layer.
 
 ## Polygonal quotient foundation
 
