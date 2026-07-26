@@ -87,6 +87,7 @@ import ClassificationOfSurfaces.RepresentativeCarrier
 import ClassificationOfSurfaces.Representatives
 import ClassificationOfSurfaces.SphereCarrierGeometry
 import ClassificationOfSurfaces.SphereHemisphere
+import ClassificationOfSurfaces.SphereQuotientHomeomorph
 import ClassificationOfSurfaces.Surface
 import ClassificationOfSurfaces.Topology.InvarianceOfDomain
 import ClassificationOfSurfaces.Triangulation
