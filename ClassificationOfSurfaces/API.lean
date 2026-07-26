@@ -21,6 +21,7 @@ import ClassificationOfSurfaces.Moise.FrontierGlue
 import ClassificationOfSurfaces.Moise.PlaneCycle
 import ClassificationOfSurfaces.PolygonalQuotient
 import ClassificationOfSurfaces.RepresentativeCarrier
+import ClassificationOfSurfaces.SphereCarrierGeometry
 
 /-!
 # Public API map
@@ -133,6 +134,8 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `eqvGenQuotientCongrRawOfGeneratorMaps`
 * `Complex.ClosedUnitDisc.bdyPtOfReal_add_int`
 * `PolygonCell.closedUnitDiscHomeomorph`
+* `PolygonCell.conjHomeomorph`
+* `PolygonCell.conj_side_symm_monogon`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph_sidePoint`
 

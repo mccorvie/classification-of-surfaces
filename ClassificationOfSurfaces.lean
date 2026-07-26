@@ -85,6 +85,7 @@ import ClassificationOfSurfaces.NormalForm
 import ClassificationOfSurfaces.PolygonalQuotient
 import ClassificationOfSurfaces.RepresentativeCarrier
 import ClassificationOfSurfaces.Representatives
+import ClassificationOfSurfaces.SphereCarrierGeometry
 import ClassificationOfSurfaces.Surface
 import ClassificationOfSurfaces.Topology.InvarianceOfDomain
 import ClassificationOfSurfaces.Triangulation

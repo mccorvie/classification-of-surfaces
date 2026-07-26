@@ -119,6 +119,8 @@ compatibility. New code should use the preferred names above.
   canonical polygonal-realization homeomorphisms to the Eval quotients.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: carrier and quotient bridges between
   one-face polygonal presentations and the exact Eval closed-disk quotients.
+- `ClassificationOfSurfaces/SphereCarrierGeometry.lean`: compact disk carriers and the
+  conjugation boundary identity used by the two-monogon sphere realization.
 - `ClassificationOfSurfaces/Representatives.lean`: exact Eval closed-disk quotient relations and
   definition-faithfulness anchors.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
