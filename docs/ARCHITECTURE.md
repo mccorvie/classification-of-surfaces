@@ -94,6 +94,8 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/Triangulation.lean`: legacy triangulation interface, fed by the
   `GeometricTriangulation` bridge.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
+- `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
+  `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/Representatives.lean`: Eval quotient representative names.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
 - `ClassificationOfSurfaces/EvalStatement.lean`: final Lean Eval theorem.
@@ -103,7 +105,8 @@ compatibility. New code should use the preferred names above.
 
 1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
    realization homeomorphism, then replace the placeholder realization atomically.
-2. Define cyclic-word infrastructure for face boundary words and Gallier-Xu rewrites.
+2. Build cyclic-word infrastructure and Gallier-Xu rewrites on the normalized finite signed
+   boundary words from `SignedPresentation.lean`.
 3. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 4. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
 5. Make `OrientableRel` and `NonOrientableRel` genuine quotient relations over polygon models.
