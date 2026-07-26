@@ -103,6 +103,8 @@ compatibility. New code should use the preferred names above.
   side-coordinate formulas, and raw/generated quotient bridges.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
   `Fin`-labelled signed boundary words.
+- `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
+  predicates, and presentation isomorphisms.
 - `ClassificationOfSurfaces/LeanEval/ChallengeDeps.lean`: the verbatim Lean-Eval disc carrier and
   quotient relations.
 - `ClassificationOfSurfaces/LeanEval/RepresentativeSanity.lean`: project-owned radius and
