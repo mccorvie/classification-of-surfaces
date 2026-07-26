@@ -132,6 +132,9 @@ compatibility. New code should use the preferred names above.
   conjugation boundary identity used by the two-monogon sphere realization.
 - `ClassificationOfSurfaces/SphereHemisphere.lean`: continuous upper/lower hemisphere maps,
   exhaustive sphere pairing classification, and the generator-compatible facewise pre-map.
+- `ClassificationOfSurfaces/SphereQuotientHomeomorph.lean`: exact kernel relation, descended
+  quotient map, and the homeomorphism from the two-monogon polygonal realization to the Eval
+  sphere representative.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
@@ -161,9 +164,7 @@ compatibility. New code should use the preferred names above.
 2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
    faithful polygonal quotient; route the Eval handoff through that quotient without relying on
    the legacy arbitrary stored realization.
-3. Descend the generator-compatible two-monogon hemisphere pre-map and identify its polygonal
-   quotient with `SphereRepresentative`.
-4. Complete the P2 face-split development alongside the existing P1 edge split, and prove both
+3. Complete the P2 face-split development alongside the existing P1 edge split, and prove both
    primitive subdivisions preserve the faithful quotient.
-5. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
+4. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
    transformation, and boundary grouping as derived finite subdivision chains.

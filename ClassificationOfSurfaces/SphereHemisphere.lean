@@ -14,8 +14,7 @@ pairing has identical images.
 
 The two possible directed sphere identifications are classified explicitly. The resulting
 continuous facewise map on the polygonal pre-realization respects every raw gluing generator.
-Descending it to the quotient and proving that the descended map is a homeomorphism are left to
-the next checkpoint.
+`SphereQuotientHomeomorph` descends this map and proves that it is a homeomorphism.
 -/
 
 namespace LeanEval

@@ -30,6 +30,7 @@ import ClassificationOfSurfaces.RepresentativeCarrier
 import ClassificationOfSurfaces.SignedPresentation
 import ClassificationOfSurfaces.SphereCarrierGeometry
 import ClassificationOfSurfaces.SphereHemisphere
+import ClassificationOfSurfaces.SphereQuotientHomeomorph
 
 /-!
 # Public API map
@@ -240,12 +241,16 @@ standard polygonal disks modulo occurrence-level side pairings. It does not use 
 * `PolygonCell.upperHemisphere`
 * `PolygonCell.lowerHemisphere`
 * `PolygonCell.upperHemisphere_side_eq_lowerHemisphere_side_symm`
+* `PolygonCell.sphereDiskPoint`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph_sidePoint`
 * `SurfaceCellComplex.sphereBoundaryOccurrence_eq`
 * `SurfaceCellComplex.mem_sphere_polygonalIdentifications_iff`
 * `SurfaceCellComplex.spherePreMap`
 * `SurfaceCellComplex.spherePreMap_eq_of_generator`
+* `SurfaceCellComplex.spherePreMap_eq_iff_gluingRel`
+* `SurfaceCellComplex.sphereQuotientMap`
+* `SurfaceCellComplex.spherePolygonalRealizationHomeomorph`
 
 This generic layer supports disk cells with any number of marked sides and generated side
 identifications. The additive cell-complex adapter now maps boundary occurrences to polygon sides
@@ -267,8 +272,11 @@ coordinates, including
 the reversed boundary index, send all five canonical pairing families into the corresponding
 trusted equivalence closures. Exhaustive forward maps and constructor-by-constructor reverse maps
 therefore identify both generated relations, and the carrier descends to homeomorphisms from the
-canonical polygonal realizations to the exact trusted Eval quotients. The legacy stored realization
-is still unrelated to the polygonal quotient.
+canonical polygonal realizations to the exact trusted Eval quotients.
+For the sphere branch, the compatible upper/lower hemisphere map descends from the two monogons;
+its kernel is exactly the generated side-gluing relation, and compact-to-Hausdorff upgrades the
+resulting bijection to a homeomorphism with `SphereRepresentative`. The legacy stored realization
+is still unrelated to these polygonal quotients.
 
 ## Gallier-Xu tail
 
