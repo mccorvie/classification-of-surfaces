@@ -119,6 +119,10 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.IsSurfaceValid`
 * `FiniteCyclicPresentation.FaceAdjacent`
 * `FiniteCyclicPresentation.IsConnected`
+* `FiniteCyclicPresentation.emptyWordSphere`
+* `FiniteCyclicPresentation.twoMonogonSphere`
+* `FiniteCyclicPresentation.IsEmptyWordSphere`
+* `FiniteCyclicPresentation.IsGallierValid`
 * `FiniteCyclicPresentation.EdgeRelabeling`
 * `FiniteCyclicPresentation.EdgeRelabeling.dartEquiv`
 * `FiniteCyclicPresentation.PresentationIso`
@@ -130,6 +134,7 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.SignedPresentationIso.orientedBoundary_rotated`
 * `FiniteCyclicPresentation.SignedPresentationIso.isSurfaceValid_iff`
 * `FiniteCyclicPresentation.SignedPresentationIso.isConnected_iff`
+* `FiniteCyclicPresentation.SignedPresentationIso.isGallierValid_iff`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -138,6 +143,11 @@ multiplicities, and connectivity are invariant under these operations. Each stor
 two non-mutating oriented views: the negative view reverses the word and flips every dart, and
 signed presentation isomorphisms transport either view up to cyclic rotation. The original
 orientation-preserving `PresentationIso` embeds into this general layer.
+
+Gallier--Xu's exceptional one-face, zero-edge, empty-boundary sphere is represented explicitly by
+`emptyWordSphere`, without weakening ordinary `IsSurfaceValid`. `IsGallierValid` adds exactly its
+signed-isomorphism class as a disjunct. The P2-expanded `twoMonogonSphere`, with boundaries `d`
+and `d⁻¹`, satisfies ordinary validity and connectivity.
 
 ## Polygonal quotient foundation
 

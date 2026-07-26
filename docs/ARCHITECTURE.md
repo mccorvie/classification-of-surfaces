@@ -59,6 +59,10 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
   face boundary words.
 - `SurfaceCellComplex.SignedDart` and `SurfaceCellComplex.oneFacePresentation` support concrete
   polygonal examples.
+- `FiniteCyclicPresentation` packages finite cyclic signed face words. Its ordinary validity
+  predicate retains nonempty face boundaries, while `IsGallierValid` adds exactly Gallier--Xu's
+  exceptional one-face empty-word sphere. The book's P2-expanded two-monogon sphere is also
+  available as an ordinary valid connected presentation.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.
@@ -104,8 +108,9 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
-  predicates, non-mutating positive/negative face-orientation views, and signed presentation
-  isomorphisms with independent edge-orientation reversals.
+  predicates, non-mutating positive/negative face-orientation views, the exceptional empty-word
+  sphere policy, and signed presentation isomorphisms
+  with independent edge-orientation reversals.
 - `ClassificationOfSurfaces/LeanEval/ChallengeDeps.lean`: the verbatim Lean-Eval disc carrier and
   quotient relations.
 - `ClassificationOfSurfaces/LeanEval/RepresentativeSanity.lean`: project-owned radius and
