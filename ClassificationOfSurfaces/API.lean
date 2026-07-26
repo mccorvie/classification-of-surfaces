@@ -7,6 +7,7 @@ import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
+import ClassificationOfSurfaces.FiniteCyclicP1
 import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
@@ -119,6 +120,10 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.IsSurfaceValid`
 * `FiniteCyclicPresentation.FaceAdjacent`
 * `FiniteCyclicPresentation.IsConnected`
+* `FiniteCyclicPresentation.emptyWordSphere`
+* `FiniteCyclicPresentation.twoMonogonSphere`
+* `FiniteCyclicPresentation.IsEmptyWordSphere`
+* `FiniteCyclicPresentation.IsGallierValid`
 * `FiniteCyclicPresentation.EdgeRelabeling`
 * `FiniteCyclicPresentation.EdgeRelabeling.dartEquiv`
 * `FiniteCyclicPresentation.PresentationIso`
@@ -130,6 +135,19 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.SignedPresentationIso.orientedBoundary_rotated`
 * `FiniteCyclicPresentation.SignedPresentationIso.isSurfaceValid_iff`
 * `FiniteCyclicPresentation.SignedPresentationIso.isConnected_iff`
+* `FiniteCyclicPresentation.SignedPresentationIso.isGallierValid_iff`
+* `FiniteCyclicPresentation.P1.expandDart`
+* `FiniteCyclicPresentation.P1.expandWord`
+* `FiniteCyclicPresentation.P1.contractWord`
+* `FiniteCyclicPresentation.P1.expandDart_flip`
+* `FiniteCyclicPresentation.P1.expandWord_inverseWord`
+* `FiniteCyclicPresentation.P1.expandWord_isRotated_iff`
+* `FiniteCyclicPresentation.P1.expand`
+* `FiniteCyclicPresentation.P1.expand_isSurfaceValid`
+* `FiniteCyclicPresentation.P1.expand_isConnected`
+* `FiniteCyclicPresentation.P1.expand_isGallierValid`
+* `FiniteCyclicPresentation.P1Subdivision`
+* `FiniteCyclicPresentation.P1Subdivision.isGallierValid`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -138,6 +156,19 @@ multiplicities, and connectivity are invariant under these operations. Each stor
 two non-mutating oriented views: the negative view reverses the word and flips every dart, and
 signed presentation isomorphisms transport either view up to cyclic rotation. The original
 orientation-preserving `PresentationIso` embeds into this general layer.
+
+Gallier--Xu's exceptional one-face, zero-edge, empty-boundary sphere is represented explicitly by
+`emptyWordSphere`, without weakening ordinary `IsSurfaceValid`. `IsGallierValid` adds exactly its
+signed-isomorphism class as a disjunct. The P2-expanded `twoMonogonSphere`, with boundaries `d`
+and `d⁻¹`, satisfies ordinary validity and connectivity.
+
+`P1.expand` implements Gallier--Xu's global edge subdivision exactly: the canonical positive
+occurrence becomes `b c`, while its negative occurrence becomes `c⁻¹ b⁻¹`. Contraction is a
+left inverse and expansion preserves and reflects cyclic rotation. Face positions are unchanged,
+and both subdivided edges inherit the old edge multiplicity. The construction conditionally
+preserves ordinary validity, connectivity, and `IsGallierValid`; these hypotheses are not
+bundled into the syntactic `P1Subdivision` relation. The positive orientation is canonical, while
+the relation's signed target isomorphism supports renamed and reoriented target edges.
 
 ## Polygonal quotient foundation
 

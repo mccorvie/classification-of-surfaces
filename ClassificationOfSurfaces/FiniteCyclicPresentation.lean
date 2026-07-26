@@ -23,6 +23,12 @@ orientation-preserving `PresentationIso` remains available as a compatible speci
 `OrientedFace` gives each stored face a positive and negative traversal view without mutating the
 presentation. The negative boundary word is the reversed list with every dart orientation
 flipped, as required by the oriented polygon conventions used in Gallier--Xu moves.
+
+Gallier--Xu Definition 6.1 has one exceptional cell complex: one face, no edges, and the empty
+boundary word. The ordinary `IsSurfaceValid` predicate continues to require nonempty face
+boundaries. At the end of the file, `IsEmptyWordSphere` recognizes the exceptional signed
+isomorphism class and `IsGallierValid` adds it as an explicit disjunct. The presentation
+`twoMonogonSphere` is the nonexceptional two-face model obtained by the book's P2 refinement.
 -/
 
 namespace LeanEval
@@ -487,6 +493,99 @@ def FaceAdjacent (P : FiniteCyclicPresentation) (f g : P.Face) : Prop :=
 def IsConnected (P : FiniteCyclicPresentation) : Prop :=
   Nonempty P.Face ∧ ∀ f g, Relation.ReflTransGen P.FaceAdjacent f g
 
+/-- The exceptional Gallier--Xu presentation with one face, no edges, and an empty boundary.
+
+Definition 6.1 explicitly allows this case. Its geometric realization is assigned to the sphere
+on page 86. -/
+@[reducible]
+def emptyWordSphere : FiniteCyclicPresentation where
+  edgeCount := 0
+  faces := [[]]
+
+/-- The two-monogon presentation with boundaries `d` and `d⁻¹`.
+
+Gallier--Xu page 86 obtains this presentation from `emptyWordSphere` by the P2 face split. Unlike
+the exceptional presentation, it satisfies the ordinary nonempty-boundary validity predicate. -/
+@[reducible]
+def twoMonogonSphere : FiniteCyclicPresentation where
+  edgeCount := 1
+  faces := [[.pos 0], [.neg 0]]
+
+@[simp]
+theorem emptyWordSphere_boundary (f : emptyWordSphere.Face) :
+    emptyWordSphere.boundary f = [] := by
+  simp [boundary, emptyWordSphere]
+
+/-- The exceptional empty-word presentation is connected because it has exactly one face. -/
+theorem emptyWordSphere_isConnected :
+    emptyWordSphere.IsConnected := by
+  refine ⟨⟨0, by simp [emptyWordSphere]⟩, ?_⟩
+  intro f g
+  fin_cases f
+  fin_cases g
+  exact Relation.ReflTransGen.refl
+
+/-- The exceptional presentation is deliberately excluded from ordinary validity. -/
+theorem emptyWordSphere_not_isSurfaceValid :
+    ¬ emptyWordSphere.IsSurfaceValid := by
+  intro h
+  let f : emptyWordSphere.Face := ⟨0, by simp [emptyWordSphere]⟩
+  exact h.2.1 f (emptyWordSphere_boundary f)
+
+@[simp]
+theorem twoMonogonSphere_boundary_zero :
+    twoMonogonSphere.boundary 0 = [.pos 0] := by
+  rfl
+
+@[simp]
+theorem twoMonogonSphere_boundary_one :
+    twoMonogonSphere.boundary 1 = [.neg 0] := by
+  rfl
+
+theorem twoMonogonSphere_boundary_nonempty (f : twoMonogonSphere.Face) :
+    twoMonogonSphere.boundary f ≠ [] := by
+  fin_cases f <;> simp
+
+theorem twoMonogonSphere_boundary_injective
+    (f g : twoMonogonSphere.Face)
+    (h : (twoMonogonSphere.boundary f).IsRotated
+      (twoMonogonSphere.boundary g)) :
+    f = g := by
+  fin_cases f <;> fin_cases g
+  · rfl
+  · simp at h
+  · simp at h
+  · rfl
+
+@[simp]
+theorem twoMonogonSphere_edgeMultiplicity (e : twoMonogonSphere.Edge) :
+    twoMonogonSphere.edgeMultiplicity e = 2 := by
+  fin_cases e
+  decide
+
+/-- The P2-expanded two-monogon sphere satisfies ordinary incidence validity. -/
+theorem twoMonogonSphere_isSurfaceValid :
+    twoMonogonSphere.IsSurfaceValid := by
+  refine ⟨⟨0, by simp [twoMonogonSphere]⟩, twoMonogonSphere_boundary_nonempty,
+    twoMonogonSphere_boundary_injective, ?_⟩
+  intro e
+  exact Or.inr (twoMonogonSphere_edgeMultiplicity e)
+
+theorem twoMonogonSphere_faceAdjacent (f g : twoMonogonSphere.Face) :
+    twoMonogonSphere.FaceAdjacent f g := by
+  refine ⟨0, ?_, ?_⟩
+  · fin_cases f <;>
+      simp [boundary, twoMonogonSphere, edgeOfDart]
+  · fin_cases g <;>
+      simp [boundary, twoMonogonSphere, edgeOfDart]
+
+/-- The two monogons are adjacent through their common unoriented edge. -/
+theorem twoMonogonSphere_isConnected :
+    twoMonogonSphere.IsConnected := by
+  refine ⟨⟨0, by simp [twoMonogonSphere]⟩, ?_⟩
+  intro f g
+  exact Relation.ReflTransGen.single (twoMonogonSphere_faceAdjacent f g)
+
 /-- An orientation-preserving isomorphism of finite cyclic presentations, allowing a cyclic
 rotation of each face. The sign of every dart is retained under `edgeEquiv`. -/
 structure PresentationIso (P Q : FiniteCyclicPresentation) where
@@ -920,6 +1019,134 @@ theorem isConnected {P Q : FiniteCyclicPresentation}
 theorem isConnected_iff {P Q : FiniteCyclicPresentation}
     (e : SignedPresentationIso P Q) : P.IsConnected ↔ Q.IsConnected :=
   ⟨e.isConnected, e.symm.isConnected⟩
+
+end SignedPresentationIso
+
+/-- The signed-isomorphism class of Gallier--Xu's exceptional one-face empty-word sphere. -/
+def IsEmptyWordSphere (P : FiniteCyclicPresentation) : Prop :=
+  Nonempty (SignedPresentationIso emptyWordSphere P)
+
+/-- Gallier--Xu validity for the packed presentation layer.
+
+The first disjunct is the ordinary nonempty-boundary case. The second is precisely the exceptional
+one-face, zero-edge, empty-boundary presentation allowed by Definition 6.1. -/
+def IsGallierValid (P : FiniteCyclicPresentation) : Prop :=
+  (P.IsSurfaceValid ∧ P.IsConnected) ∨ P.IsEmptyWordSphere
+
+theorem IsEmptyWordSphere.edgeCount_eq_zero
+    {P : FiniteCyclicPresentation} (h : P.IsEmptyWordSphere) :
+    P.edgeCount = 0 := by
+  rcases h with ⟨e⟩
+  simpa [emptyWordSphere] using (Fintype.card_congr e.edgeEquiv).symm
+
+theorem IsEmptyWordSphere.faces_length_eq_one
+    {P : FiniteCyclicPresentation} (h : P.IsEmptyWordSphere) :
+    P.faces.length = 1 := by
+  rcases h with ⟨e⟩
+  simpa [emptyWordSphere] using (Fintype.card_congr e.faceEquiv).symm
+
+theorem IsEmptyWordSphere.boundary_eq_nil
+    {P : FiniteCyclicPresentation} (h : P.IsEmptyWordSphere) (f : P.Face) :
+    P.boundary f = [] := by
+  rcases h with ⟨e⟩
+  let p := e.faceEquiv.symm f
+  have hlength := e.boundary_length_eq p
+  rw [e.faceEquiv.apply_symm_apply] at hlength
+  have hzero : (P.boundary f).length = 0 := by
+    simpa only [emptyWordSphere_boundary, List.length_nil] using hlength.symm
+  exact List.length_eq_zero_iff.mp hzero
+
+/-- Intrinsic characterization of the exceptional signed-isomorphism class. -/
+theorem isEmptyWordSphere_iff (P : FiniteCyclicPresentation) :
+    P.IsEmptyWordSphere ↔ P.edgeCount = 0 ∧ P.faces = [[]] := by
+  constructor
+  · intro h
+    refine ⟨h.edgeCount_eq_zero, ?_⟩
+    have hlength : P.faces.length = 1 := h.faces_length_eq_one
+    let f : P.Face := ⟨0, by omega⟩
+    calc
+      P.faces = [P.faces.get f] :=
+        List.eq_cons_of_length_one hlength
+      _ = [[]] := by rw [show P.faces.get f = [] from h.boundary_eq_nil f]
+  · rintro ⟨hedges, hfaces⟩
+    cases P with
+    | mk edgeCount faces =>
+        dsimp at hedges hfaces
+        subst edgeCount
+        subst faces
+        exact ⟨SignedPresentationIso.refl emptyWordSphere⟩
+
+theorem emptyWordSphere_isEmptyWordSphere :
+    emptyWordSphere.IsEmptyWordSphere :=
+  ⟨SignedPresentationIso.refl emptyWordSphere⟩
+
+theorem IsEmptyWordSphere.isConnected
+    {P : FiniteCyclicPresentation} (h : P.IsEmptyWordSphere) :
+    P.IsConnected := by
+  rcases h with ⟨e⟩
+  exact e.isConnected emptyWordSphere_isConnected
+
+/-- Empty-word spheres are exactly the exceptional, non-ordinary branch of Gallier validity. -/
+theorem IsEmptyWordSphere.not_isSurfaceValid
+    {P : FiniteCyclicPresentation} (h : P.IsEmptyWordSphere) :
+    ¬ P.IsSurfaceValid := by
+  intro hvalid
+  rcases h with ⟨e⟩
+  exact emptyWordSphere_not_isSurfaceValid (e.symm.isSurfaceValid hvalid)
+
+theorem IsEmptyWordSphere.isGallierValid
+    {P : FiniteCyclicPresentation} (h : P.IsEmptyWordSphere) :
+    P.IsGallierValid :=
+  Or.inr h
+
+theorem isGallierValid_of_isSurfaceValid_of_isConnected
+    {P : FiniteCyclicPresentation} (hvalid : P.IsSurfaceValid)
+    (hconnected : P.IsConnected) :
+    P.IsGallierValid :=
+  Or.inl ⟨hvalid, hconnected⟩
+
+theorem emptyWordSphere_isGallierValid :
+    emptyWordSphere.IsGallierValid :=
+  emptyWordSphere_isEmptyWordSphere.isGallierValid
+
+theorem twoMonogonSphere_isGallierValid :
+    twoMonogonSphere.IsGallierValid :=
+  isGallierValid_of_isSurfaceValid_of_isConnected
+    twoMonogonSphere_isSurfaceValid twoMonogonSphere_isConnected
+
+theorem IsGallierValid.isConnected
+    {P : FiniteCyclicPresentation} (h : P.IsGallierValid) :
+    P.IsConnected := by
+  rcases h with hregular | hempty
+  · exact hregular.2
+  · exact hempty.isConnected
+
+namespace SignedPresentationIso
+
+/-- A signed presentation isomorphism preserves the exceptional empty-word sphere class. -/
+theorem isEmptyWordSphere {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) (h : P.IsEmptyWordSphere) :
+    Q.IsEmptyWordSphere := by
+  rcases h with ⟨i⟩
+  exact ⟨i.trans e⟩
+
+theorem isEmptyWordSphere_iff {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) :
+    P.IsEmptyWordSphere ↔ Q.IsEmptyWordSphere :=
+  ⟨e.isEmptyWordSphere, e.symm.isEmptyWordSphere⟩
+
+/-- Gallier--Xu validity is preserved by signed edge and face relabeling. -/
+theorem isGallierValid {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) (h : P.IsGallierValid) :
+    Q.IsGallierValid := by
+  rcases h with hregular | hempty
+  · exact Or.inl ⟨e.isSurfaceValid hregular.1, e.isConnected hregular.2⟩
+  · exact Or.inr (e.isEmptyWordSphere hempty)
+
+theorem isGallierValid_iff {P Q : FiniteCyclicPresentation}
+    (e : SignedPresentationIso P Q) :
+    P.IsGallierValid ↔ Q.IsGallierValid :=
+  ⟨e.isGallierValid, e.symm.isGallierValid⟩
 
 end SignedPresentationIso
 
