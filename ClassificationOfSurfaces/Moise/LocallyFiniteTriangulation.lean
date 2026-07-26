@@ -413,6 +413,103 @@ def relabelFaceFamily
     (e : A ↪ B) (F : Finset (Finset A)) : Finset (Finset B) :=
   F.image fun t ↦ t.map e
 
+end Moise
+
+namespace TriangleFamily
+
+variable {A B : Type*} [DecidableEq A] [DecidableEq B]
+
+/-- Regard a listed face as a face of the family obtained by injectively relabeling its
+vertices. -/
+def faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)} :
+    Face faces → Face (Moise.relabelFaceFamily e faces) :=
+  fun f => ⟨f.1.map e, Finset.mem_image.mpr ⟨f.1, f.2, rfl⟩⟩
+
+@[simp]
+theorem faceOfRelabel_val (e : A ↪ B) {faces : Finset (Finset A)}
+    (f : Face faces) : (faceOfRelabel e f).1 = f.1.map e :=
+  rfl
+
+/-- Injective vertex relabeling preserves dual adjacency of listed faces. -/
+theorem faceAdjacent_faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)}
+    {f g : Face faces} (hfg : FaceAdjacent faces f g) :
+    FaceAdjacent (Moise.relabelFaceFamily e faces)
+      (faceOfRelabel e f) (faceOfRelabel e g) := by
+  rcases hfg with ⟨edge, hedgeCard, hedgeLeft, hedgeRight⟩
+  refine ⟨edge.map e, ?_, ?_, ?_⟩
+  · simpa only [Finset.card_map] using hedgeCard
+  · exact Finset.map_subset_map.mpr hedgeLeft
+  · exact Finset.map_subset_map.mpr hedgeRight
+
+/-- Injective vertex relabeling carries a finite dual path to the relabeled family. -/
+theorem reflTransGen_faceAdjacent_faceOfRelabel (e : A ↪ B)
+    {faces : Finset (Finset A)} {f g : Face faces}
+    (hfg : Relation.ReflTransGen (FaceAdjacent faces) f g) :
+    Relation.ReflTransGen (FaceAdjacent (Moise.relabelFaceFamily e faces))
+      (faceOfRelabel e f) (faceOfRelabel e g) := by
+  induction hfg with
+  | refl => exact Relation.ReflTransGen.refl
+  | tail _hab hbc ih =>
+      exact ih.tail (faceAdjacent_faceOfRelabel e hbc)
+
+/-- Dual connectivity is preserved by an injective relabeling of the vertex type. -/
+theorem isDualConnected_relabel (e : A ↪ B) {faces : Finset (Finset A)}
+    (hfaces : IsDualConnected faces) :
+    IsDualConnected (Moise.relabelFaceFamily e faces) := by
+  intro f g
+  obtain ⟨f', hf', hfeq⟩ := Finset.mem_image.mp f.2
+  obtain ⟨g', hg', hgeq⟩ := Finset.mem_image.mp g.2
+  let fs : Face faces := ⟨f', hf'⟩
+  let gs : Face faces := ⟨g', hg'⟩
+  have hpath :=
+    reflTransGen_faceAdjacent_faceOfRelabel e (hfaces fs gs)
+  have hfval : (faceOfRelabel e fs).1 = f.1 := by
+    change f'.map e = f.1
+    exact hfeq
+  have hgval : (faceOfRelabel e gs).1 = g.1 := by
+    change g'.map e = g.1
+    exact hgeq
+  have hfs : faceOfRelabel e fs = f := Subtype.ext hfval
+  have hgs : faceOfRelabel e gs = g := Subtype.ext hgval
+  rw [hfs, hgs] at hpath
+  exact hpath
+
+/-- Faces relabeled from different vertex types share an edge when the two source edges have the
+same relabeled image. -/
+theorem hasCrossEdge_relabel_of_mapped_edge_eq
+    {C : Type*} [DecidableEq C]
+    (eleft : A ↪ C) (eright : B ↪ C)
+    {left : Finset (Finset A)} {right : Finset (Finset B)}
+    (fleft : Face left) (fright : Face right)
+    (edgeLeft : Finset A) (edgeRight : Finset B)
+    (hedgeCard : edgeLeft.card = 2)
+    (hedgeLeft : edgeLeft ⊆ fleft.1)
+    (hedgeRight : edgeRight ⊆ fright.1)
+    (hmap : edgeLeft.map eleft = edgeRight.map eright) :
+    HasCrossEdge (Moise.relabelFaceFamily eleft left)
+      (Moise.relabelFaceFamily eright right) := by
+  refine
+    ⟨faceOfRelabel eleft fleft, faceOfRelabel eright fright,
+      edgeLeft.map eleft, ?_, ?_, ?_⟩
+  · simpa only [Finset.card_map] using hedgeCard
+  · exact Finset.map_subset_map.mpr hedgeLeft
+  · rw [hmap]
+    exact Finset.map_subset_map.mpr hedgeRight
+
+/-- A shared edge remains a shared edge when both families are injectively relabeled. -/
+theorem hasCrossEdge_relabel (e : A ↪ B)
+    {left right : Finset (Finset A)} (hcross : HasCrossEdge left right) :
+    HasCrossEdge (Moise.relabelFaceFamily e left)
+      (Moise.relabelFaceFamily e right) := by
+  rcases hcross with
+    ⟨fleft, fright, edge, hedgeCard, hedgeLeft, hedgeRight⟩
+  exact hasCrossEdge_relabel_of_mapped_edge_eq e e
+    fleft fright edge edge hedgeCard hedgeLeft hedgeRight rfl
+
+end TriangleFamily
+
+namespace Moise
+
 /-- Push a geometric realization forward along an injective relabeling of all vertices. -/
 noncomputable def pushGeometricRealization
     {A B : Type*} [Fintype A] [Fintype B]

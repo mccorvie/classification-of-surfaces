@@ -5,6 +5,7 @@ import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.Moise.AdaptiveControlledApproximation
+import ClassificationOfSurfaces.Moise.AdaptiveFanAffine
 import ClassificationOfSurfaces.Moise.AdaptiveFanComplex
 import ClassificationOfSurfaces.Moise.AdaptiveOpenComplex
 import ClassificationOfSurfaces.Moise.AdaptiveOpenCover
@@ -12,7 +13,9 @@ import ClassificationOfSurfaces.Moise.AdaptiveTileComplex
 import ClassificationOfSurfaces.Moise.AdaptiveTriangulation
 import ClassificationOfSurfaces.Moise.AmbientHomeomorph
 import ClassificationOfSurfaces.Moise.Anchors
+import ClassificationOfSurfaces.Moise.BoundaryInvariant
 import ClassificationOfSurfaces.Moise.BrokenLine
+import ClassificationOfSurfaces.Moise.Brouwer
 import ClassificationOfSurfaces.Moise.ChartExtraction
 import ClassificationOfSurfaces.Moise.ChartInduction
 import ClassificationOfSurfaces.Moise.ChartPatch
@@ -20,6 +23,8 @@ import ClassificationOfSurfaces.Moise.CommonSubdivision
 import ClassificationOfSurfaces.Moise.ConeExtension
 import ClassificationOfSurfaces.Moise.Countermodels
 import ClassificationOfSurfaces.Moise.ElementaryMove
+import ClassificationOfSurfaces.Moise.EmbeddedComplexValence
+import ClassificationOfSurfaces.Moise.FacewiseComparison
 import ClassificationOfSurfaces.Moise.FineSubdivision
 import ClassificationOfSurfaces.Moise.FinitePLHomeomorph
 import ClassificationOfSurfaces.Moise.FreeTriangle
@@ -42,11 +47,11 @@ import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
 import ClassificationOfSurfaces.Moise.IntrinsicGraphModel
 import ClassificationOfSurfaces.Moise.IntrinsicGraphPL
+import ClassificationOfSurfaces.Moise.IntrinsicMarkedFan
 import ClassificationOfSurfaces.Moise.IntrinsicMidpointSubdivision
 import ClassificationOfSurfaces.Moise.IntrinsicSubdivision
 import ClassificationOfSurfaces.Moise.LineSubdivision
 import ClassificationOfSurfaces.Moise.LocallyFiniteCellwiseExtension
-import ClassificationOfSurfaces.Moise.FacewiseComparison
 import ClassificationOfSurfaces.Moise.LocallyFiniteControlledApproximation
 import ClassificationOfSurfaces.Moise.LocallyFiniteFaceBoundary
 import ClassificationOfSurfaces.Moise.LocallyFiniteFaceExtension
@@ -70,9 +75,11 @@ import ClassificationOfSurfaces.Moise.PolygonalFamilyPolyhedron
 import ClassificationOfSurfaces.Moise.PolygonalJordan
 import ClassificationOfSurfaces.Moise.PolygonalPolyhedron
 import ClassificationOfSurfaces.Moise.PolygonalSchoenflies
+import ClassificationOfSurfaces.Moise.RelativeSynchronizedArrangement
 import ClassificationOfSurfaces.Moise.ThinKiteMove
 import ClassificationOfSurfaces.NormalForm
 import ClassificationOfSurfaces.PolygonalQuotient
 import ClassificationOfSurfaces.Representatives
 import ClassificationOfSurfaces.Surface
+import ClassificationOfSurfaces.Topology.InvarianceOfDomain
 import ClassificationOfSurfaces.Triangulation
