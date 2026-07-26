@@ -121,6 +121,8 @@ compatibility. New code should use the preferred names above.
   one-face polygonal presentations and the exact Eval closed-disk quotients.
 - `ClassificationOfSurfaces/SphereCarrierGeometry.lean`: compact disk carriers and the
   conjugation boundary identity used by the two-monogon sphere realization.
+- `ClassificationOfSurfaces/SphereHemisphere.lean`: continuous upper/lower hemisphere maps,
+  exhaustive sphere pairing classification, and the generator-compatible facewise pre-map.
 - `ClassificationOfSurfaces/Representatives.lean`: exact Eval closed-disk quotient relations and
   definition-faithfulness anchors.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
@@ -135,7 +137,8 @@ compatibility. New code should use the preferred names above.
 2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
    faithful polygonal quotient; route the Eval handoff through that quotient without relying on
    the legacy arbitrary stored realization.
-3. Identify the two-monogon sphere polygonal quotient with `SphereRepresentative`.
+3. Descend the generator-compatible two-monogon hemisphere pre-map and identify its polygonal
+   quotient with `SphereRepresentative`.
 4. Define Gallier--Xu equivalence using only the two primitive subdivisions P1 (edge split) and P2
    (face split), and prove both preserve the faithful quotient.
 5. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
