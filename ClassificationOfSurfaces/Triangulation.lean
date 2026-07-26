@@ -6,6 +6,7 @@ Authors: ClassificationOfSurfaces contributors
 import ClassificationOfSurfaces.Moise.ChartInduction
 import ClassificationOfSurfaces.Moise.DualConnectivity
 import ClassificationOfSurfaces.Moise.GeometricTriangulation
+import Mathlib.Data.List.OfFn
 import Mathlib.Data.List.Rotate
 
 /-!
@@ -181,54 +182,160 @@ namespace GeometricTriangulation
 
 variable {S : Type*} [TopologicalSpace S] (T : GeometricTriangulation S)
 
-/-- The boundary word of a face of a geometric triangulation: its two-element subsets, listed
-with the positive orientation. -/
+/-- Forget the target-space homeomorphism and retain the intrinsic two-complex. -/
+@[reducible] def toIntrinsic : Moise.IntrinsicTwoComplex where
+  Vertex := T.Vertex
+  faces := T.faces
+  faces_card := T.faces_card
+
+@[simp] theorem toIntrinsic_faces : T.toIntrinsic.faces = T.faces := rfl
+
+/-- Source vertex of an oriented geometric edge. -/
+noncomputable def orientedEdgeSource : OrientedEdge T.Edge → T.Vertex
+  | OrientedEdge.pos e => T.edgeSource e
+  | OrientedEdge.neg e => T.edgeTarget e
+
+/-- Target vertex of an oriented geometric edge. -/
+noncomputable def orientedEdgeTarget : OrientedEdge T.Edge → T.Vertex
+  | OrientedEdge.pos e => T.edgeTarget e
+  | OrientedEdge.neg e => T.edgeSource e
+
+/-- The globally named edge between two consecutive cyclic vertices of a face, signed so that
+its orientation follows the cyclic order of that face. -/
+noncomputable def orientedFaceEdge (t : T.Triangle) (i : ZMod 3) :
+    OrientedEdge T.Edge :=
+  let e := T.toIntrinsic.faceEdge t i
+  if T.edgeSource e = T.toIntrinsic.faceVertex t i then
+    OrientedEdge.pos e
+  else
+    OrientedEdge.neg e
+
+@[simp] theorem orientedFaceEdge_edge (t : T.Triangle) (i : ZMod 3) :
+    (T.orientedFaceEdge t i).edge = T.toIntrinsic.faceEdge t i := by
+  rw [orientedFaceEdge]
+  split_ifs <;> rfl
+
+@[simp] theorem orientedFaceEdge_source (t : T.Triangle) (i : ZMod 3) :
+    T.orientedEdgeSource (T.orientedFaceEdge t i) =
+      T.toIntrinsic.faceVertex t i := by
+  rw [orientedFaceEdge]
+  split_ifs with h
+  · exact h
+  · rcases T.toIntrinsic.faceEdge_endpoint_order t i with hforward | hreverse
+    · exact (h hforward.1).elim
+    · exact hreverse.2
+
+@[simp] theorem orientedFaceEdge_target (t : T.Triangle) (i : ZMod 3) :
+    T.orientedEdgeTarget (T.orientedFaceEdge t i) =
+      T.toIntrinsic.faceVertex t (i + 1) := by
+  rw [orientedFaceEdge]
+  split_ifs with h
+  · rcases T.toIntrinsic.faceEdge_endpoint_order t i with hforward | hreverse
+    · exact hforward.2
+    · exact (T.toIntrinsic.faceVertex_ne_next t i
+        (h.symm.trans hreverse.1)).elim
+  · rcases T.toIntrinsic.faceEdge_endpoint_order t i with hforward | hreverse
+    · exact (h hforward.1).elim
+    · exact hreverse.1
+
+/-- The cyclic signed boundary of a geometric triangle.  Slot `i` traverses from the `i`-th
+cyclic face vertex to the next one. -/
 noncomputable def triangleBoundary (t : T.Triangle) : List (OrientedEdge T.Edge) :=
-  (t.1.powersetCard 2).toList.attach.map fun e =>
-    OrientedEdge.pos
-      ⟨e.1,
-        T.mem_edges_of_subset_face t.2
-          (Finset.mem_powersetCard.mp (Finset.mem_toList.mp e.2)).1
-          (Finset.mem_powersetCard.mp (Finset.mem_toList.mp e.2)).2⟩
+  List.ofFn fun i : Fin 3 => T.orientedFaceEdge t (ZMod.finEquiv 3 i)
+
+/-- Every cyclic triangle boundary has exactly three occurrences. -/
+@[simp] theorem triangleBoundary_length (t : T.Triangle) :
+    (T.triangleBoundary t).length = 3 := by
+  simp [triangleBoundary]
+
+/-- Reading a cyclic triangle boundary recovers the correspondingly indexed oriented face
+edge. -/
+@[simp] theorem triangleBoundary_get (t : T.Triangle)
+    (i : Fin (T.triangleBoundary t).length) :
+    (T.triangleBoundary t).get i =
+      T.orientedFaceEdge t
+        (ZMod.finEquiv 3 (Fin.cast (T.triangleBoundary_length t) i)) := by
+  unfold triangleBoundary
+  rw [List.get_ofFn]
+
+/-- The underlying edge at a cyclic boundary position is the intrinsic edge with the same
+index. -/
+@[simp] theorem triangleBoundary_get_edge (t : T.Triangle)
+    (i : Fin (T.triangleBoundary t).length) :
+    ((T.triangleBoundary t).get i).edge =
+      T.toIntrinsic.faceEdge t
+        (ZMod.finEquiv 3 (Fin.cast (T.triangleBoundary_length t) i)) := by
+  rw [T.triangleBoundary_get]
+  exact T.orientedFaceEdge_edge _ _
+
+/-- The source of a boundary occurrence is its cyclic face vertex. -/
+@[simp] theorem triangleBoundary_get_source (t : T.Triangle)
+    (i : Fin (T.triangleBoundary t).length) :
+    T.orientedEdgeSource ((T.triangleBoundary t).get i) =
+      T.toIntrinsic.faceVertex t
+        (ZMod.finEquiv 3 (Fin.cast (T.triangleBoundary_length t) i)) := by
+  rw [T.triangleBoundary_get]
+  exact T.orientedFaceEdge_source _ _
+
+/-- The target of a boundary occurrence is the next cyclic face vertex. -/
+@[simp] theorem triangleBoundary_get_target (t : T.Triangle)
+    (i : Fin (T.triangleBoundary t).length) :
+    T.orientedEdgeTarget ((T.triangleBoundary t).get i) =
+      T.toIntrinsic.faceVertex t
+        (ZMod.finEquiv 3 (Fin.cast (T.triangleBoundary_length t) i) + 1) := by
+  rw [T.triangleBoundary_get]
+  exact T.orientedFaceEdge_target _ _
 
 theorem edge_subset_of_mem_triangleBoundary {t : T.Triangle} {oe : OrientedEdge T.Edge}
     (hoe : oe ∈ T.triangleBoundary t) : oe.edge.1 ⊆ t.1 := by
-  unfold triangleBoundary at hoe
-  rw [List.mem_map] at hoe
-  rcases hoe with ⟨e, _he, rfl⟩
-  exact (Finset.mem_powersetCard.mp (Finset.mem_toList.mp e.2)).1
+  rw [triangleBoundary, List.mem_ofFn'] at hoe
+  rcases hoe with ⟨i, rfl⟩
+  rw [T.orientedFaceEdge_edge]
+  exact T.toIntrinsic.faceEdge_subset_face t (ZMod.finEquiv 3 i)
+
+/-- A named geometric edge lies in the underlying triangle-boundary list exactly when it is a
+face of that triangle. -/
+theorem mem_map_edge_triangleBoundary_iff (t : T.Triangle) (e : T.Edge) :
+    e ∈ (T.triangleBoundary t).map OrientedEdge.edge ↔ e.1 ⊆ t.1 := by
+  constructor
+  · rw [List.mem_map]
+    rintro ⟨oe, hoe, rfl⟩
+    exact T.edge_subset_of_mem_triangleBoundary hoe
+  · intro he
+    obtain ⟨i, hi⟩ := T.toIntrinsic.exists_faceEdge_eq_of_subset t e he
+    have hmem : T.orientedFaceEdge t i ∈ T.triangleBoundary t := by
+      rw [triangleBoundary, List.mem_ofFn']
+      refine ⟨(ZMod.finEquiv 3).symm i, ?_⟩
+      exact congrArg (T.orientedFaceEdge t)
+        ((ZMod.finEquiv 3).apply_symm_apply i)
+    rw [List.mem_map]
+    refine ⟨T.orientedFaceEdge t i, hmem, ?_⟩
+    rw [T.orientedFaceEdge_edge, hi]
+
+/-- Distinct cyclic positions in one face name distinct underlying edges. -/
+theorem triangleBoundary_edge_get_injective (t : T.Triangle) :
+    Function.Injective fun i : Fin (T.triangleBoundary t).length =>
+      ((T.triangleBoundary t).get i).edge := by
+  intro i j hij
+  change ((T.triangleBoundary t).get i).edge =
+    ((T.triangleBoundary t).get j).edge at hij
+  rw [T.triangleBoundary_get_edge, T.triangleBoundary_get_edge] at hij
+  have hz : ZMod.finEquiv 3 (Fin.cast (T.triangleBoundary_length t) i) =
+      ZMod.finEquiv 3 (Fin.cast (T.triangleBoundary_length t) j) :=
+    T.toIntrinsic.faceEdge_injective t hij
+  have hf : Fin.cast (T.triangleBoundary_length t) i =
+      Fin.cast (T.triangleBoundary_length t) j :=
+    (ZMod.finEquiv 3).injective hz
+  exact Fin.cast_injective _ hf
 
 /-- Each geometric edge occurs at most once in a triangle's canonical boundary list. -/
 theorem triangleBoundary_nodup (t : T.Triangle) : (T.triangleBoundary t).Nodup := by
-  unfold triangleBoundary
-  apply ((t.1.powersetCard 2).nodup_toList.attach).map
-  intro a b hab
-  apply Subtype.ext
-  exact congrArg (fun oe : OrientedEdge T.Edge => oe.edge.1) hab
-
-/-- A geometric edge occurs in a canonical triangle boundary exactly when it is a face of that
-triangle. -/
-theorem pos_mem_triangleBoundary_iff (t : T.Triangle) (e : T.Edge) :
-    OrientedEdge.pos e ∈ T.triangleBoundary t ↔ e.1 ⊆ t.1 := by
-  constructor
-  · exact fun h => T.edge_subset_of_mem_triangleBoundary h
-  · intro he
-    unfold triangleBoundary
-    rw [List.mem_map]
-    have hepow : e.1 ∈ t.1.powersetCard 2 :=
-      Finset.mem_powersetCard.mpr ⟨he, T.edge_card e⟩
-    have helist : e.1 ∈ (t.1.powersetCard 2).toList :=
-      Finset.mem_toList.mpr hepow
-    let a : {x // x ∈ (t.1.powersetCard 2).toList} := ⟨e.1, helist⟩
-    refine ⟨a, by simp [a], ?_⟩
-    apply congrArg OrientedEdge.pos
-    apply Subtype.ext
-    rfl
-
-/-- Every canonical triangle boundary has its three geometric edges. -/
-theorem triangleBoundary_length (t : T.Triangle) :
-    (T.triangleBoundary t).length = 3 := by
-  simp [triangleBoundary, T.triangle_card t]
+  apply List.nodup_ofFn_ofInjective
+  intro i j hij
+  have hedge := congrArg OrientedEdge.edge hij
+  simp only [orientedFaceEdge_edge] at hedge
+  exact (ZMod.finEquiv 3).injective
+    (T.toIntrinsic.faceEdge_injective t hedge)
 
 /-- Package a geometric triangulation as the project's `FiniteSurfaceTriangulation` object.
 
@@ -266,14 +373,6 @@ theorem toFiniteSurfaceTriangulation_homeomorphSurface :
     Nonempty (T.toFiniteSurfaceTriangulation.realization ≃ₜ S) :=
   T.toFiniteSurfaceTriangulation.homeomorphSurface
 
-private theorem eq_pos_of_mem_triangleBoundary
-    {t : T.Triangle} {oe : OrientedEdge T.Edge}
-    (hoe : oe ∈ T.triangleBoundary t) : ∃ e, oe = OrientedEdge.pos e := by
-  unfold triangleBoundary at hoe
-  rw [List.mem_map] at hoe
-  rcases hoe with ⟨e, _he, rfl⟩
-  exact ⟨_, rfl⟩
-
 private theorem boundaryPosition_eq_of_fst_eq_of_edge_eq
     {o p : T.toFiniteSurfaceTriangulation.BoundaryPosition}
     (hface : o.1 = p.1) (hedge : o.edge = p.edge) : o = p := by
@@ -281,19 +380,9 @@ private theorem boundaryPosition_eq_of_fst_eq_of_edge_eq
   rcases p with ⟨g, j⟩
   simp only at hface
   subst g
-  have hi := List.get_mem (T.triangleBoundary f) i
-  have hj := List.get_mem (T.triangleBoundary f) j
-  obtain ⟨ei, hei⟩ := T.eq_pos_of_mem_triangleBoundary hi
-  obtain ⟨ej, hej⟩ := T.eq_pos_of_mem_triangleBoundary hj
   change ((T.triangleBoundary f).get i).edge =
     ((T.triangleBoundary f).get j).edge at hedge
-  have hget : (T.triangleBoundary f).get i =
-      (T.triangleBoundary f).get j := by
-    rw [hei, hej]
-    rw [hei, hej] at hedge
-    simp only [OrientedEdge.edge] at hedge
-    simpa using hedge
-  have hij : i = j := (T.triangleBoundary_nodup f).injective_get hget
+  have hij : i = j := T.triangleBoundary_edge_get_injective f hedge
   subst j
   rfl
 
@@ -307,25 +396,25 @@ private theorem powersetCard_eq_of_boundary_rotated
     let E : T.Edge := ⟨e, T.mem_edges_of_subset_face f.2
       (Finset.mem_powersetCard.mp he).1
       (Finset.mem_powersetCard.mp he).2⟩
-    have hmemf : OrientedEdge.pos E ∈ T.triangleBoundary f :=
-      (T.pos_mem_triangleBoundary_iff f E).mpr
+    have hmemf : E ∈ (T.triangleBoundary f).map OrientedEdge.edge :=
+      (T.mem_map_edge_triangleBoundary_iff f E).mpr
         (Finset.mem_powersetCard.mp he).1
-    have hmemg : OrientedEdge.pos E ∈ T.triangleBoundary g :=
-      hrot.mem_iff.mp hmemf
+    have hmemg : E ∈ (T.triangleBoundary g).map OrientedEdge.edge :=
+      (hrot.map OrientedEdge.edge).mem_iff.mp hmemf
     exact Finset.mem_powersetCard.mpr ⟨
-      T.edge_subset_of_mem_triangleBoundary hmemg,
+      (T.mem_map_edge_triangleBoundary_iff g E).mp hmemg,
       (Finset.mem_powersetCard.mp he).2⟩
   · intro he
     let E : T.Edge := ⟨e, T.mem_edges_of_subset_face g.2
       (Finset.mem_powersetCard.mp he).1
       (Finset.mem_powersetCard.mp he).2⟩
-    have hmemg : OrientedEdge.pos E ∈ T.triangleBoundary g :=
-      (T.pos_mem_triangleBoundary_iff g E).mpr
+    have hmemg : E ∈ (T.triangleBoundary g).map OrientedEdge.edge :=
+      (T.mem_map_edge_triangleBoundary_iff g E).mpr
         (Finset.mem_powersetCard.mp he).1
-    have hmemf : OrientedEdge.pos E ∈ T.triangleBoundary f :=
-      hrot.mem_iff.mpr hmemg
+    have hmemf : E ∈ (T.triangleBoundary f).map OrientedEdge.edge :=
+      (hrot.map OrientedEdge.edge).mem_iff.mpr hmemg
     exact Finset.mem_powersetCard.mpr ⟨
-      T.edge_subset_of_mem_triangleBoundary hmemf,
+      (T.mem_map_edge_triangleBoundary_iff f E).mp hmemf,
       (Finset.mem_powersetCard.mp he).2⟩
 
 private theorem faceAdjacent_to_triangleAdjacent
@@ -334,10 +423,14 @@ private theorem faceAdjacent_to_triangleAdjacent
     T.toFiniteSurfaceTriangulation.TriangleAdjacent f g := by
   rcases hfg with ⟨e, hecard, hef, heg⟩
   let E : T.Edge := ⟨e, T.mem_edges_of_subset_face f.2 hef hecard⟩
-  refine ⟨OrientedEdge.pos E,
-    (T.pos_mem_triangleBoundary_iff f E).mpr hef,
-    OrientedEdge.pos E, ?_, rfl⟩
-  exact (T.pos_mem_triangleBoundary_iff g E).mpr heg
+  have hmemf : E ∈ (T.triangleBoundary f).map OrientedEdge.edge :=
+    (T.mem_map_edge_triangleBoundary_iff f E).mpr hef
+  have hmemg : E ∈ (T.triangleBoundary g).map OrientedEdge.edge :=
+    (T.mem_map_edge_triangleBoundary_iff g E).mpr heg
+  rw [List.mem_map] at hmemf hmemg
+  rcases hmemf with ⟨df, hdf, hdfE⟩
+  rcases hmemg with ⟨dg, hdg, hdgE⟩
+  exact ⟨df, hdf, dg, hdg, hdfE.trans hdgE.symm⟩
 
 /-- A geometric surface-incidence certificate supplies every incidence obligation required by
 the legacy finite triangulation bridge. -/
@@ -362,17 +455,21 @@ theorem incidenceCertificate_of_surfaceIncidence
   · intro e
     rcases Finset.mem_biUnion.mp e.2 with ⟨t, ht, hep⟩
     let f : T.toFiniteSurfaceTriangulation.Triangle := ⟨t, ht⟩
-    have hmem : OrientedEdge.pos e ∈
-        T.toFiniteSurfaceTriangulation.triangleBoundary f := by
-      change OrientedEdge.pos e ∈
-        T.triangleBoundary (⟨t, ht⟩ : T.Triangle)
-      exact (T.pos_mem_triangleBoundary_iff _ _).mpr
+    have hmem : e ∈
+        (T.toFiniteSurfaceTriangulation.triangleBoundary f).map
+          OrientedEdge.edge := by
+      change e ∈
+        (T.triangleBoundary (⟨t, ht⟩ : T.Triangle)).map
+          OrientedEdge.edge
+      exact (T.mem_map_edge_triangleBoundary_iff _ _).mpr
         (Finset.mem_powersetCard.mp hep).1
-    obtain ⟨i, hi⟩ := List.mem_iff_get.mp hmem
+    rw [List.mem_map] at hmem
+    rcases hmem with ⟨oe, hoe, hoeEdge⟩
+    obtain ⟨i, hi⟩ := List.mem_iff_get.mp hoe
     refine ⟨⟨f, i⟩, ?_⟩
     simp only [FiniteSurfaceTriangulation.BoundaryPosition.edge,
-      FiniteSurfaceTriangulation.BoundaryPosition.orientedEdge, hi,
-      OrientedEdge.edge]
+      FiniteSurfaceTriangulation.BoundaryPosition.orientedEdge, hi]
+    exact hoeEdge
   · intro e o₀ o₁ o₂ ho₀ ho₁ ho₂
     by_contra hdistinct
     simp only [not_or] at hdistinct
