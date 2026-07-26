@@ -65,6 +65,9 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
 - `SurfaceCellComplex.BoundaryOccurrence`, `BoundaryPairing`, and `PolygonalRealization` provide
   an additive occurrence-indexed adapter to that quotient. Its pairing facts are derived from
   `IsSurfaceValid`, with nonempty face boundaries as the only polygon-specific extra condition.
+  `mem_polygonalIdentifications_iff_exists_occurrences` exposes every compatible ordered pairing,
+  and `oneFace_mem_polygonalIdentifications_iff` specializes it to two distinct finite positions
+  in a one-face boundary word. Neither theorem chooses a unique matching.
   The atomic realization cutover remains blocked on the certified triangulation-to-quotient
   bridge. Straight-edged convex models remain separate work.
 - `FiniteSurfaceTriangulation.toCellComplex` preserves triangle faces, vertices, oriented edge
@@ -118,7 +121,7 @@ compatibility. New code should use the preferred names above.
 3. Give each finite cyclic presentation its faithful polygonal realization and prove the
    elementary rewrites preserve that realization.
 4. Identify the normalized polygon generators with the vendored `OrientableRel` and
-   `NonOrientableRel` generators up to equivalence closure. The common carrier and quotient-type
-   bridges are already complete.
+   `NonOrientableRel` generators up to equivalence closure. The generic one-face pairing-position,
+   common-carrier, and quotient-type bridges are complete; the canonical position formulas remain.
 5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
    the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.

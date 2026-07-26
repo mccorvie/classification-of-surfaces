@@ -143,6 +143,10 @@ the coordinate of every marked side, and bridges a raw `Quot` with the `Quotient
 `Relation.EqvGen` setoid. Consequently the canonical comparison should map generators in both
 directions into the opposite equivalence closure; equality of the raw generator relations is
 neither required nor generally the right statement.
+`oneFace_mem_polygonalIdentifications_iff` is the combinatorial interface for the next
+comparison: it replaces membership in the set of all compatible one-face identifications by two
+finite word positions, boundary-status conditions, and an equality or inverse-dart equality. It
+does not provide a unique partner or prove any canonical-word coordinate formula.
 
 Status: open.
 

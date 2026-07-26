@@ -125,6 +125,9 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `SurfaceCellComplex.oneFacePresentation_isSurfaceValid`
 * `SurfaceCellComplex.oneFacePresentation_occurrencePairingValid`
 * `SurfaceCellComplex.PolygonalRealization`
+* `SurfaceCellComplex.mem_polygonalIdentifications_iff_exists_occurrences`
+* `SurfaceCellComplex.oneFaceOccurrence`
+* `SurfaceCellComplex.oneFace_mem_polygonalIdentifications_iff`
 * `Complex.ClosedUnitDisc.bdyPtOfReal_add_int`
 * `quotEqvGenHomeomorph`
 * `eqvGenQuotientCongrRaw`
@@ -153,7 +156,10 @@ It records the side-coordinate formula, integral-period boundary invariance, and
 quotient congruence from the polygonal generated setoid to a raw relation quotient. This completes
 the common carrier and quotient-construction subproblem only: the canonical polygon generators
 still have to be compared with the vendored relations, and the legacy stored realization is still
-unrelated to the polygonal quotient.
+unrelated to the polygonal quotient. The one-face membership theorem characterizes every
+compatible ordered pairing by two distinct boundary-word positions, their non-boundary
+conditions, and the required equality or inverse-dart equality. It does not choose a unique
+partner or perform the remaining canonical-word index arithmetic.
 
 ## Gallier-Xu tail
 
