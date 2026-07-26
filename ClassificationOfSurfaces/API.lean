@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
+import ClassificationOfSurfaces.CanonicalCoordinates
 import ClassificationOfSurfaces.CanonicalPairings
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
@@ -147,9 +148,10 @@ disk used by the Eval representatives. It records the side-coordinate formula an
 raw `Quot` presentation with the equivalence-closure `Quotient` used by polygonal gluings. The
 one-face membership theorem further reduces the polygonal generators to compatible pairs of
 positions in the boundary word. Exact canonical-word indexing and exhaustive pairing
-classifications for both canonical families are complete; the remaining obligations are
-carrier-coordinate transport and both directions of the generated-equivalence-closure comparison
-for each family.
+classifications for both canonical families are complete. Exact carrier coordinates, including
+the reversed boundary index, send all five canonical pairing families into the corresponding
+trusted equivalence closures. The remaining obligations are to lift those familywise facts to
+arbitrary polygon generators and prove the reverse trusted-generator maps.
 
 ## Gallier-Xu tail
 
@@ -173,6 +175,19 @@ for each family.
 * `NormalForm.orientableBoundaryIdentification`
 * `NormalForm.orientableBoundaryIdentificationReverse`
 * `NormalForm.mem_orientable_polygonalIdentifications_iff`
+* `NormalForm.orientableOccurrencePoint`
+* `NormalForm.nonOrientableOccurrencePoint`
+* `NormalForm.orientableCarrier_occurrencePoint`
+* `NormalForm.nonOrientableCarrier_occurrencePoint`
+* `NormalForm.orientableBoundary_trustedSource_eq_carrier_c_neg`
+* `NormalForm.orientableBoundary_trustedTarget_eq_carrier_c_pos`
+* `NormalForm.nonOrientableBoundary_trustedSource_eq_carrier_c_neg`
+* `NormalForm.nonOrientableBoundary_trustedTarget_eq_carrier_c_pos`
+* `NormalForm.orientableCarrier_handle_a_eqvGen`
+* `NormalForm.orientableCarrier_handle_b_eqvGen`
+* `NormalForm.orientableCarrier_boundary_c_eqvGen`
+* `NormalForm.nonOrientableCarrier_crosscap_a_eqvGen`
+* `NormalForm.nonOrientableCarrier_boundary_c_eqvGen`
 * `NormalForm.orientableCellComplex`
 * `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
@@ -193,9 +208,11 @@ seam, and free boundary dart at its exact index. The polygonal identifications i
 are classified exhaustively as the two directed forms of the expected handle, crosscap, or
 boundary-seam pairings, with the singleton free boundary darts excluded. This classifies the raw
 generator sets; it does not yet identify their generated equivalence closures with
-`OrientableRel` and `NonOrientableRel`. The remaining comparison is to transport both finite
-families through the carrier bridge and prove both directions of each generator-closure
-comparison.
+`OrientableRel` and `NonOrientableRel`. Exact coordinate theorems now transport every explicit
+pairing family into the trusted closures; boundary blocks use `Fin.rev` and integral periodicity
+to reconcile the benchmark's negative angles. The remaining comparison is to case-split arbitrary
+polygon generators, prove the reverse trusted-generator maps, and descend the resulting
+bidirectional closure comparisons.
 
 The Gallier-Xu tail should otherwise consume only `SurfaceCellComplex` and quotient-realization
 APIs. It should not mention PL maps, Moise triangulation, or manifold chart machinery.

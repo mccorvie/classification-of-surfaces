@@ -136,8 +136,10 @@ coordinate proofs do not unfold nested `List.ofFn`/`flatten` expressions.
 `CanonicalPairings.lean` applies that interface to both canonical words and proves that every
 directed generator is exactly a handle, crosscap, or boundary-seam pairing, in one of its two
 orders; the once-occurring free boundary darts cannot generate an identification. These theorems
-classify the finite raw generator sets. Carrier-coordinate transport and the generated-closure
-comparisons remain.
+classify the finite raw generator sets. `CanonicalCoordinates.lean` computes every carrier image,
+uses `Fin.rev` plus one-turn periodicity for boundary seams, and maps all five explicit pairing
+families into the corresponding trusted `EqvGen` closures. The arbitrary-generator packaging,
+reverse trusted-generator maps, and quotient descent remain.
 
 Status: open.
 

@@ -91,6 +91,8 @@ bottom API is in place:
   or boundary-seam pairing (in either order), while singleton free boundary sides are excluded;
   these are raw-generator theorems, not yet the generated-closure comparisons with
   `OrientableRel` and `NonOrientableRel`;
+  exact carrier-coordinate formulas map all five explicit pairing families into the trusted
+  closures, including the reversed boundary indexing;
   `NormalForm.canonicalCellComplex` also includes the separate two-face sphere presentation.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
@@ -108,6 +110,8 @@ compatibility. New code should use the preferred names above.
   one-face presentations.
 - `ClassificationOfSurfaces/CanonicalPairings.lean`: exhaustive finite-position pairing
   classifications for both canonical boundary-word families.
+- `ClassificationOfSurfaces/CanonicalCoordinates.lean`: exact closed-disk coordinates and
+  canonical-pairing-to-trusted-closure inclusions.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: carrier and quotient bridges between
   one-face polygonal presentations and the exact Eval closed-disk quotients.
 - `ClassificationOfSurfaces/Representatives.lean`: exact Eval closed-disk quotient relations and
@@ -120,10 +124,10 @@ compatibility. New code should use the preferred names above.
 
 1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
    realization homeomorphism, then replace the placeholder realization atomically.
-2. Transport both finite canonical generator families through the closed-disk carrier, including
-   reversed boundary indexing, and prove both directions of each closure comparison against
-   `OrientableRel` and `NonOrientableRel`; the carrier, quotient-type, one-face pairing,
-   block-indexing, and exhaustive pairing-classification bridges are complete.
+2. Use the pairing classifications and coordinate inclusions to map every arbitrary polygon
+   generator into the trusted closure, prove the reverse trusted-generator maps, and descend the
+   two bidirectional closure comparisons; the carrier, quotient-type, indexing, pairing, and
+   forward familywise coordinate bridges are complete.
 3. Extend the canonical boundary words with cyclic-word infrastructure for Gallier-Xu rewrites.
 4. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
 5. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.

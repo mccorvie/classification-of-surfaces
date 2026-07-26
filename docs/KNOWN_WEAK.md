@@ -49,11 +49,11 @@ take the explicit validity and connectedness hypotheses that issue #9 ultimately
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
 | `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
-| `OrientableRel`, `NonOrientableRel` | Representatives.lean | bridge pending | the public quotients use the exact closed-disk relations from the trusted Lean-Eval statement; the canonical complexes, carrier/quotient bridge, generic one-face characterization, exact block positions, and exhaustive pairing classifications for both families are complete, but reversed boundary-coordinate transport and equivalence-closure comparisons are not | translate both finite generator families through the carrier, prove both directions of both closure comparisons, then descend the carrier homeomorphisms |
+| `OrientableRel`, `NonOrientableRel` | Representatives.lean | bridge pending | the public quotients use the exact closed-disk relations from the trusted Lean-Eval statement; the canonical complexes, carrier/quotient bridge, generic one-face characterization, exact block positions, exhaustive pairing classifications, exact carrier coordinates, reversed boundary-index transport, and all five canonical-pairing-to-trusted-closure inclusions are complete, but arbitrary/reverse generator maps and equivalence-closure comparisons are not | package the forward maps, prove the reverse trusted-generator maps, then descend both carrier homeomorphisms |
 | `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | **false as stated** | `SurfaceCellComplex.realization` is still arbitrary (for example, it can be `Empty`), and the signature lacks explicit `IsSurfaceValid` and `IsConnected` hypotheses because the triangulation bridge cannot yet supply them | cut over realization, certify triangulation incidence, then re-state with both hypotheses |
 
 Dependents of the cell-complex entries: `CanonicalWords.lean`, `CanonicalPairings.lean`,
-`RepresentativeCarrier.lean`,
+`CanonicalCoordinates.lean`, `RepresentativeCarrier.lean`,
 `NormalForm.lean`, `EvalStatement.lean`, and `Examples.lean`. `CanonicalWords.lean` is the intended
 combinatorial input to the remaining quotient-comparison and Gallier--Xu work; avoid adding
 unrelated dependents.

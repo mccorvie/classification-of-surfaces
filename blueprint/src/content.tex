@@ -888,13 +888,40 @@ families and the singleton free-boundary family.  The one-face position
 characterization leaves the six stated ordered cases.
 \end{proof}
 
+\begin{lemma}[Canonical carrier coordinates and forward generator inclusions]
+\label{moise:lem:canonical_forward_generator_coordinates}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableCarrier_handle_a_eqvGen,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableCarrier_handle_b_eqvGen,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableCarrier_boundary_c_eqvGen,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientableCarrier_crosscap_a_eqvGen,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientableCarrier_boundary_c_eqvGen}
+\leanok
+\uses{moise:def:canonical_normal_form_complexes,
+  moise:lem:representative_carrier_bridge}
+The closed-disc carrier sends each explicit handle, crosscap, and boundary-seam
+pairing into the equivalence closure of its trusted Eval relation.  For a
+boundary block, canonical index $j$ corresponds to trusted index
+$\operatorname{rev}(j)$; integral-period invariance reconciles the canonical
+positive coordinate with the benchmark's negative angle.
+\end{lemma}
+
+\begin{proof}
+\leanok
+Substitute the certified block positions into the generic side-coordinate
+formula.  Handle and crosscap formulas reduce by ring normalization.  For
+boundary seams, use $\operatorname{rev}(j)=n-j-1$, add one full turn, and use
+symmetry because the trusted generator runs from the negative to the positive
+occurrence.
+\end{proof}
+
 \begin{lemma}[Canonical generator-closure comparison]
 \label{moise:lem:canonical_generator_comparison}
 \uses{moise:def:canonical_normal_form_complexes,
   moise:lem:representative_carrier_bridge,
   moise:lem:one_face_pairing_positions,
   moise:lem:canonical_nonorientable_pairings,
-  moise:lem:canonical_orientable_pairings}
+  moise:lem:canonical_orientable_pairings,
+  moise:lem:canonical_forward_generator_coordinates}
 The polygonal generators of the canonical orientable and nonorientable words
 generate exactly the equivalence closures of \texttt{OrientableRel} and
 \texttt{NonOrientableRel} under the carrier homeomorphism.  Consequently their
@@ -903,12 +930,11 @@ polygonal realizations are homeomorphic to the corresponding Eval quotients.
 
 \begin{proof}
 \notready
-Use the certified block positions.  Handle and crosscap blocks match the
-positive boundary coordinates directly.  For a boundary block, reverse its
-finite index and use integral-period invariance of
-\texttt{bdyPtOfReal} to reconcile the benchmark's negative angles.  Map each
-generator into the opposite equivalence closure and apply
-\texttt{eqvGenQuotientCongrRawOfGeneratorMaps}.
+Use the exhaustive pairing classifications to package the forward coordinate
+lemmas for an arbitrary polygon generator.  For the reverse direction,
+case-split each trusted relation constructor and construct the corresponding
+polygonal pairing.  Apply
+\texttt{eqvGenQuotientCongrRawOfGeneratorMaps} to the two generator maps.
 \end{proof}
 
 \begin{definition}[Named normal-form witnesses]
