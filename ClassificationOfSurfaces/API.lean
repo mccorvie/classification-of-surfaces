@@ -5,6 +5,7 @@ Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.CanonicalCoordinates
+import ClassificationOfSurfaces.CanonicalGeneratorMaps
 import ClassificationOfSurfaces.CanonicalPairings
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
@@ -150,8 +151,9 @@ one-face membership theorem further reduces the polygonal generators to compatib
 positions in the boundary word. Exact canonical-word indexing and exhaustive pairing
 classifications for both canonical families are complete. Exact carrier coordinates, including
 the reversed boundary index, send all five canonical pairing families into the corresponding
-trusted equivalence closures. The remaining obligations are to lift those familywise facts to
-arbitrary polygon generators and prove the reverse trusted-generator maps.
+trusted equivalence closures. Exhaustive forward maps and constructor-by-constructor reverse maps
+therefore identify both generated relations, and the carrier descends to homeomorphisms from the
+canonical polygonal realizations to the exact trusted Eval quotients.
 
 ## Gallier-Xu tail
 
@@ -188,6 +190,12 @@ arbitrary polygon generators and prove the reverse trusted-generator maps.
 * `NormalForm.orientableCarrier_boundary_c_eqvGen`
 * `NormalForm.nonOrientableCarrier_crosscap_a_eqvGen`
 * `NormalForm.nonOrientableCarrier_boundary_c_eqvGen`
+* `NormalForm.orientableGenerator_to_eqvGen`
+* `NormalForm.nonOrientableGenerator_to_eqvGen`
+* `NormalForm.orientableRel_to_polygonEqvGen`
+* `NormalForm.nonOrientableRel_to_polygonEqvGen`
+* `NormalForm.orientablePolygonalRealizationHomeomorph`
+* `NormalForm.nonOrientablePolygonalRealizationHomeomorph`
 * `NormalForm.orientableCellComplex`
 * `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
@@ -207,12 +215,12 @@ realization. Certified block-position and `List.get` theorems expose every handl
 seam, and free boundary dart at its exact index. The polygonal identifications in both families
 are classified exhaustively as the two directed forms of the expected handle, crosscap, or
 boundary-seam pairings, with the singleton free boundary darts excluded. This classifies the raw
-generator sets; it does not yet identify their generated equivalence closures with
-`OrientableRel` and `NonOrientableRel`. Exact coordinate theorems now transport every explicit
-pairing family into the trusted closures; boundary blocks use `Fin.rev` and integral periodicity
-to reconcile the benchmark's negative angles. The remaining comparison is to case-split arbitrary
-polygon generators, prove the reverse trusted-generator maps, and descend the resulting
-bidirectional closure comparisons.
+generator sets. Exact coordinate theorems transport every explicit pairing family into the
+trusted closures; boundary blocks use `Fin.rev` and integral periodicity to reconcile the
+benchmark's negative angles. The exhaustive classifications package those facts for arbitrary
+polygon generators, while the trusted relation constructors map back to named polygon pairings.
+The resulting bidirectional closure comparisons descend to homeomorphisms with `Quot
+(OrientableRel p n)` and `Quot (NonOrientableRel p n)`.
 
 The Gallier-Xu tail should otherwise consume only `SurfaceCellComplex` and quotient-realization
 APIs. It should not mention PL maps, Moise triangulation, or manifold chart machinery.

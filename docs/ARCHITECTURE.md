@@ -89,10 +89,13 @@ bottom API is in place:
   incidence validity, connectivity, and admissible occurrence pairings are certified;
   every directed identification in either word is classified as the expected handle, crosscap,
   or boundary-seam pairing (in either order), while singleton free boundary sides are excluded;
-  these are raw-generator theorems, not yet the generated-closure comparisons with
-  `OrientableRel` and `NonOrientableRel`;
+  these classification theorems describe raw generators, while the generated-closure comparisons
+  with `OrientableRel` and `NonOrientableRel` are supplied by the separate carrier maps below;
   exact carrier-coordinate formulas map all five explicit pairing families into the trusted
   closures, including the reversed boundary indexing;
+  arbitrary polygon generators and every trusted relation constructor map into the opposite
+  equivalence closure, yielding homeomorphisms between both canonical polygonal realizations and
+  the exact Eval quotients;
   `NormalForm.canonicalCellComplex` also includes the separate two-face sphere presentation.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
@@ -112,6 +115,8 @@ compatibility. New code should use the preferred names above.
   classifications for both canonical boundary-word families.
 - `ClassificationOfSurfaces/CanonicalCoordinates.lean`: exact closed-disk coordinates and
   canonical-pairing-to-trusted-closure inclusions.
+- `ClassificationOfSurfaces/CanonicalGeneratorMaps.lean`: bidirectional generator maps and
+  canonical polygonal-realization homeomorphisms to the Eval quotients.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: carrier and quotient bridges between
   one-face polygonal presentations and the exact Eval closed-disk quotients.
 - `ClassificationOfSurfaces/Representatives.lean`: exact Eval closed-disk quotient relations and
@@ -122,12 +127,14 @@ compatibility. New code should use the preferred names above.
 
 ## Next Tasks
 
-1. Certify the finite-triangulation incidence and connectivity hypotheses, prove the polygonal
-   realization homeomorphism, then replace the placeholder realization atomically.
-2. Use the pairing classifications and coordinate inclusions to map every arbitrary polygon
-   generator into the trusted closure, prove the reverse trusted-generator maps, and descend the
-   two bidirectional closure comparisons; the carrier, quotient-type, indexing, pairing, and
-   forward familywise coordinate bridges are complete.
-3. Extend the canonical boundary words with cyclic-word infrastructure for Gallier-Xu rewrites.
-4. Define elementary Gallier-Xu moves on `SurfaceCellComplex`.
-5. Prove elementary moves preserve realization using `SurfaceCellComplex.realizationCongr`.
+1. Replace the compatibility triangulation's arbitrary all-positive boundary lists with the cyclic
+   `IntrinsicTwoComplex.faceEdge` order and certify connected incident-face chains at every
+   vertex.
+2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
+   faithful polygonal quotient; route the Eval handoff through that quotient without relying on
+   the legacy arbitrary stored realization.
+3. Identify the two-monogon sphere polygonal quotient with `SphereRepresentative`.
+4. Define Gallier--Xu equivalence using only the two primitive subdivisions P1 (edge split) and P2
+   (face split), and prove both preserve the faithful quotient.
+5. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
+   transformation, and boundary grouping as derived finite subdivision chains.

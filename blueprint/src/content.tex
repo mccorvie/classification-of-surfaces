@@ -916,6 +916,13 @@ occurrence.
 
 \begin{lemma}[Canonical generator-closure comparison]
 \label{moise:lem:canonical_generator_comparison}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableGenerator_to_eqvGen,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientableGenerator_to_eqvGen,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableRel_to_polygonEqvGen,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientableRel_to_polygonEqvGen,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientablePolygonalRealizationHomeomorph,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientablePolygonalRealizationHomeomorph}
+\leanok
 \uses{moise:def:canonical_normal_form_complexes,
   moise:lem:representative_carrier_bridge,
   moise:lem:one_face_pairing_positions,
@@ -929,7 +936,7 @@ polygonal realizations are homeomorphic to the corresponding Eval quotients.
 \end{lemma}
 
 \begin{proof}
-\notready
+\leanok
 Use the exhaustive pairing classifications to package the forward coordinate
 lemmas for an arbitrary polygon generator.  For the reverse direction,
 case-split each trusted relation constructor and construct the corresponding
