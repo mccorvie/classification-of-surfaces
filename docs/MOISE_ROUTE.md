@@ -57,6 +57,11 @@ used.
   `GeometricFace.inter` proves that two faces meet exactly in their common barycentric face.
 - `GeometricTriangulation` has no arbitrary realization field.  Its homeomorphism targets the
   realization computed from its vertices and faces.
+- `TriangleFamily.FaceAdjacentAtVertex` records a shared edge inside one fixed vertex star, and
+  `IsStrongVertexStarConnected` requires every step of the connecting chain to use that relation.
+  It implies the older endpoint-only `IsVertexStarConnected` predicate and the existing
+  dual-connectivity conclusion.  No theorem yet claims that every manifold triangulation satisfies
+  this stronger local predicate.
 - `PartialTriangulation` is the corresponding finite realization embedded into the surface.
 - `RadoInvariant` records compact absorbed cores, edge valence at most two, exposed
   boundary-face regularity, and containment of the cores in the ambient topological interior of

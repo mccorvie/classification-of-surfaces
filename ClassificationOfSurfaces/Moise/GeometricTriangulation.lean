@@ -212,6 +212,14 @@ def edges (faces : Finset (Finset Vertex)) : Finset (Finset Vertex) :=
 def FaceAdjacent (faces : Finset (Finset Vertex)) (f g : Face faces) : Prop :=
   ∃ e : Finset Vertex, e.card = 2 ∧ e ⊆ f.1 ∧ e ⊆ g.1
 
+/-- Two listed triangles are adjacent at `v` when they share a two-vertex face containing `v`.
+
+Unlike `FaceAdjacent`, this relation remembers the vertex star in which the adjacency step
+occurs. -/
+def FaceAdjacentAtVertex (faces : Finset (Finset Vertex)) (v : Vertex)
+    (f g : Face faces) : Prop :=
+  ∃ e : Finset Vertex, e.card = 2 ∧ v ∈ e ∧ e ⊆ f.1 ∧ e ⊆ g.1
+
 /-- Two listed triangles meet when their vertex sets have a common vertex. -/
 def FaceIntersects (faces : Finset (Finset Vertex)) (f g : Face faces) : Prop :=
   (f.1 ∩ g.1).Nonempty
@@ -221,6 +229,40 @@ theorem faceAdjacent_symm {faces : Finset (Finset Vertex)} {f g : Face faces}
     (h : FaceAdjacent faces f g) : FaceAdjacent faces g f := by
   rcases h with ⟨e, hecard, hef, heg⟩
   exact ⟨e, hecard, heg, hef⟩
+
+omit [DecidableEq Vertex] in
+/-- Fixed-vertex face adjacency is symmetric. -/
+theorem faceAdjacentAtVertex_symm
+    {faces : Finset (Finset Vertex)} {v : Vertex} {f g : Face faces}
+    (h : FaceAdjacentAtVertex faces v f g) :
+    FaceAdjacentAtVertex faces v g f := by
+  rcases h with ⟨e, hecard, hve, hef, heg⟩
+  exact ⟨e, hecard, hve, heg, hef⟩
+
+omit [DecidableEq Vertex] in
+/-- A fixed-vertex adjacency step is an ordinary dual-adjacency step. -/
+theorem faceAdjacent_of_faceAdjacentAtVertex
+    {faces : Finset (Finset Vertex)} {v : Vertex} {f g : Face faces}
+    (h : FaceAdjacentAtVertex faces v f g) :
+    FaceAdjacent faces f g := by
+  rcases h with ⟨e, hecard, _hve, hef, heg⟩
+  exact ⟨e, hecard, hef, heg⟩
+
+omit [DecidableEq Vertex] in
+/-- The left endpoint of a fixed-vertex adjacency step contains the fixed vertex. -/
+theorem mem_left_of_faceAdjacentAtVertex
+    {faces : Finset (Finset Vertex)} {v : Vertex} {f g : Face faces}
+    (h : FaceAdjacentAtVertex faces v f g) : v ∈ f.1 := by
+  rcases h with ⟨e, _hecard, hve, hef, _heg⟩
+  exact hef hve
+
+omit [DecidableEq Vertex] in
+/-- The right endpoint of a fixed-vertex adjacency step contains the fixed vertex. -/
+theorem mem_right_of_faceAdjacentAtVertex
+    {faces : Finset (Finset Vertex)} {v : Vertex} {f g : Face faces}
+    (h : FaceAdjacentAtVertex faces v f g) : v ∈ g.1 := by
+  rcases h with ⟨e, _hecard, hve, _hef, heg⟩
+  exact heg hve
 
 /-- Faces in different dual components share at most one vertex. -/
 theorem card_inter_le_one_of_not_faceAdjacent
@@ -241,6 +283,38 @@ theorem reflTransGen_faceAdjacent_symm {faces : Finset (Finset Vertex)}
   apply Relation.ReflTransGen.mono (fun _ _ hab => faceAdjacent_symm hab)
   exact h.swap
 
+omit [DecidableEq Vertex] in
+/-- A chain of fixed-vertex adjacency steps is an ordinary dual-adjacency chain. -/
+theorem reflTransGen_faceAdjacent_of_faceAdjacentAtVertex
+    {faces : Finset (Finset Vertex)} {v : Vertex} {f g : Face faces}
+    (h : Relation.ReflTransGen (FaceAdjacentAtVertex faces v) f g) :
+    Relation.ReflTransGen (FaceAdjacent faces) f g := by
+  apply Relation.ReflTransGen.mono
+    (fun _ _ hab => faceAdjacent_of_faceAdjacentAtVertex hab)
+  exact h
+
+omit [DecidableEq Vertex] in
+/-- Fixed-vertex adjacency chains can be traversed in reverse. -/
+theorem reflTransGen_faceAdjacentAtVertex_symm
+    {faces : Finset (Finset Vertex)} {v : Vertex} {f g : Face faces}
+    (h : Relation.ReflTransGen (FaceAdjacentAtVertex faces v) f g) :
+    Relation.ReflTransGen (FaceAdjacentAtVertex faces v) g f := by
+  apply Relation.ReflTransGen.mono
+    (fun _ _ hab => faceAdjacentAtVertex_symm hab)
+  exact h.swap
+
+omit [DecidableEq Vertex] in
+/-- Every endpoint reached from a face containing `v` through fixed-vertex adjacency still
+contains `v`. -/
+theorem mem_of_reflTransGen_faceAdjacentAtVertex
+    {faces : Finset (Finset Vertex)} {v : Vertex} {f g : Face faces}
+    (hvf : v ∈ f.1)
+    (h : Relation.ReflTransGen (FaceAdjacentAtVertex faces v) f g) :
+    v ∈ g.1 := by
+  induction h with
+  | refl => exact hvf
+  | tail _h hstep _ih => exact mem_right_of_faceAdjacentAtVertex hstep
+
 /-- Every two listed triangles are connected by a finite chain of shared edges. -/
 def IsDualConnected (faces : Finset (Finset Vertex)) : Prop :=
   ∀ f g : Face faces, Relation.ReflTransGen (FaceAdjacent faces) f g
@@ -248,11 +322,27 @@ def IsDualConnected (faces : Finset (Finset Vertex)) : Prop :=
 /-- Every pair of triangles incident to one vertex can be joined through shared edges.
 
 For a triangulated surface this is the local connectedness assertion carried by the link of the
-vertex.  Separating it from global dual connectivity isolates the one genuinely local-topological
-ingredient in the proof. -/
+vertex. This compatibility predicate does not require its intermediate faces to remain incident
+to that vertex; use `IsStrongVertexStarConnected` when that fixed-star invariant is needed. -/
 def IsVertexStarConnected (faces : Finset (Finset Vertex)) : Prop :=
   ∀ (v : Vertex) (f g : Face faces), v ∈ f.1 → v ∈ g.1 →
     Relation.ReflTransGen (FaceAdjacent faces) f g
+
+/-- Every pair of triangles incident to one vertex can be joined by a chain whose every adjacency
+step shares an edge containing that same vertex. -/
+def IsStrongVertexStarConnected (faces : Finset (Finset Vertex)) : Prop :=
+  ∀ (v : Vertex) (f g : Face faces), v ∈ f.1 → v ∈ g.1 →
+    Relation.ReflTransGen (FaceAdjacentAtVertex faces v) f g
+
+omit [DecidableEq Vertex] in
+/-- Strong fixed-star connectivity implies the legacy vertex-star connectivity predicate. -/
+theorem IsStrongVertexStarConnected.isVertexStarConnected
+    {faces : Finset (Finset Vertex)}
+    (hstar : IsStrongVertexStarConnected faces) :
+    IsVertexStarConnected faces := by
+  intro v f g hvf hvg
+  exact reflTransGen_faceAdjacent_of_faceAdjacentAtVertex
+    (hstar v f g hvf hvg)
 
 section Geometric
 
@@ -312,6 +402,16 @@ theorem IsVertexStarConnected.isDualConnected
       rcases hab with ⟨v, hv⟩
       exact hstar v a b (Finset.mem_inter.mp hv).1
         (Finset.mem_inter.mp hv).2)) f g (hinter f g)
+
+/-- Strong fixed-star connectivity supplies dual connectivity whenever the face-intersection
+graph is connected. -/
+theorem IsStrongVertexStarConnected.isDualConnected
+    {faces : Finset (Finset Vertex)}
+    (hstar : IsStrongVertexStarConnected faces)
+    (hinter : ∀ f g : Face faces,
+      Relation.ReflTransGen (FaceIntersects faces) f g) :
+    IsDualConnected faces :=
+  hstar.isVertexStarConnected.isDualConnected hinter
 
 /-- Incidence conditions making a finite family of triangles a connected pseudomanifold with
 boundary: it is nonempty, no edge has valence above two, and its dual graph is connected. -/
@@ -413,6 +513,13 @@ theorem faces_isDualConnected_of_isVertexStarConnected [ConnectedSpace S]
   intro f
   rw [← Finset.card_pos, T.faces_card f.1 f.2]
   decide
+
+/-- On a connected realization, strong fixed-star connectivity also implies global dual
+connectivity. -/
+theorem faces_isDualConnected_of_isStrongVertexStarConnected [ConnectedSpace S]
+    (hstar : TriangleFamily.IsStrongVertexStarConnected T.faces) :
+    TriangleFamily.IsDualConnected T.faces :=
+  T.faces_isDualConnected_of_isVertexStarConnected hstar.isVertexStarConnected
 
 /-- A triangulation of a nonempty space has at least three available vertices. -/
 theorem three_le_card_vertex [Nonempty S] : 3 ≤ Fintype.card T.Vertex := by
