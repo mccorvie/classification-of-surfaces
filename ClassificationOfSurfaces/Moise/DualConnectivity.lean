@@ -224,6 +224,22 @@ theorem faces_isDualConnected
     Set.range_eq_univ.mpr T.homeo.surjective
   exact P.isDualConnected_of_support_eq_univ hsupport
 
+/-- A finite geometric triangulation of a connected surface carries the complete incidence
+certificate needed by the cell-complex bridge. -/
+theorem surfaceIncidence
+    [ConnectedSpace S] [ChartedSpace (EuclideanHalfSpace 2) S] :
+    T.SurfaceIncidence := by
+  refine {
+    faces_nonempty := T.faces_nonempty
+    edge_valence_le_two := ?_
+    dual_connected := T.faces_isDualConnected }
+  intro e he
+  have hecard : e.card = 2 := by
+    change e ∈ T.edges at he
+    exact T.card_of_mem_edges he
+  exact Moise.edge_valence_le_two_of_isEmbedding
+    T.faces T.faces_card T.homeo T.homeo.isEmbedding e hecard
+
 end GeometricTriangulation
 
 end ClassificationOfSurfaces

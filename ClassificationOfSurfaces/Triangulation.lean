@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.Moise.ChartInduction
+import ClassificationOfSurfaces.Moise.DualConnectivity
 import ClassificationOfSurfaces.Moise.GeometricTriangulation
 import Mathlib.Data.List.Rotate
 
@@ -458,12 +459,28 @@ theorem moise_triangulation_explicit :
       (∀ t ∈ F, t.card = 3) ∧ Nonempty (GeometricRealization V F ≃ₜ S) :=
   nonempty_geometricTriangulation_iff_explicit.mp (moise_triangulation S)
 
+/-- The named geometric triangulation produced for a compact connected Eval surface. -/
+noncomputable def compact_eval_surface_geometricTriangulation :
+    GeometricTriangulation S :=
+  Classical.choice (moise_triangulation S)
+
+/-- The Radó triangulation carries nonempty-face, edge-valence, and dual-connectivity data. -/
+theorem compact_eval_surface_geometricTriangulation_surfaceIncidence :
+    (compact_eval_surface_geometricTriangulation S).SurfaceIncidence :=
+  (compact_eval_surface_geometricTriangulation S).surfaceIncidence
+
 /-- The named finite surface triangulation produced for a compact connected Eval surface, obtained
 from the geometric triangulation boundary `moise_triangulation` through the compatibility
 bridge. -/
 noncomputable def compact_eval_surface_finiteSurfaceTriangulation :
     FiniteSurfaceTriangulation S :=
-  (Classical.choice (moise_triangulation S)).toFiniteSurfaceTriangulation
+  (compact_eval_surface_geometricTriangulation S).toFiniteSurfaceTriangulation
+
+/-- The compatibility triangulation inherits the complete incidence certificate. -/
+theorem compact_eval_surface_finiteSurfaceTriangulation_incidenceCertificate :
+    (compact_eval_surface_finiteSurfaceTriangulation S).IncidenceCertificate :=
+  (compact_eval_surface_geometricTriangulation S).incidenceCertificate_of_surfaceIncidence
+    (compact_eval_surface_geometricTriangulation_surfaceIncidence S)
 
 /-- The named compact connected Eval surface triangulation realizes the ambient surface. -/
 theorem compact_eval_surface_finiteSurfaceTriangulation_homeomorphSurface :

@@ -100,10 +100,11 @@ line counts between files.
 - the legacy `FiniteSurfaceTriangulation` record can still be inhabited for arbitrary
   universe-0 spaces and need not convert to valid or connected incidence data.
 
-The last item is a boundary between projects, not a defect in Radó's conclusion.  The compatibility
-bridge preserves raw finite data and a stored realization, but it does not yet certify
-`SurfaceCellComplex.IsSurfaceValid`, `SurfaceCellComplex.IsConnected`, or the polygonal quotient
-realization.  Do not describe that bridge as a certified surface cellulation.
+The last item is a warning about arbitrary legacy records, not the Radó-produced one.  A completed
+geometric triangulation now supplies nonempty faces, edge valence at most two, and global
+dual-face connectivity.  The compatibility bridge translates that certificate to
+`SurfaceCellComplex.IsSurfaceValid` and `SurfaceCellComplex.IsConnected`.  Agreement of the stored
+realization with the polygonal quotient remains a separate obligation.
 
 ## Verification
 
@@ -122,5 +123,6 @@ layer; `Countermodels.lean` and `RADO_AUDIT.md` audit the meanings of the defini
 
 New triangulation work should consume `GeometricTriangulation`.  The legacy
 `FiniteSurfaceTriangulation` and `SurfaceCellComplex.realization` remain in `KNOWN_WEAK.md`.
-The next project-level task is to certify incidence and connectivity and replace the stored
-realization with the polygonal quotient before the Gallier–Xu normal-form chain relies on it.
+Incidence and connectivity are certified for the Radó output.  The next project-level task is to
+replace the stored realization with the polygonal quotient before the Gallier–Xu normal-form
+chain relies on it.

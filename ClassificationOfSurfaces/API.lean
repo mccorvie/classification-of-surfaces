@@ -138,7 +138,8 @@ bridge or a different concrete carrier.
 * `SurfaceCellComplex.hasEvalRepresentative`
 
 The Gallier-Xu tail should consume only `SurfaceCellComplex` and quotient-realization APIs. It
-should not mention PL maps, Moise triangulation, or manifold chart machinery.
+should not mention PL maps, Moise triangulation, or manifold chart machinery. Its public entry
+now requires the incidence-derived `IsSurfaceValid` and `IsConnected` hypotheses explicitly.
 
 ## Eval representatives and final theorem
 
@@ -149,9 +150,10 @@ should not mention PL maps, Moise triangulation, or manifold chart machinery.
 * `topological_classification_of_surfaces`
 
 The final theorem should remain a short assembly proof using
-`compact_surface_homeomorphic_to_cell_complex` and `SurfaceCellComplex.hasEvalRepresentative`.
-The C0 `ChartBoundaryInvariant` interface is discharged unconditionally by planar no-retraction,
-Brouwer's fixed-point theorem, and invariance of domain.
+`compact_surface_homeomorphic_to_valid_connected_cell_complex` and the validity-aware
+`SurfaceCellComplex.hasEvalRepresentative`. The C0 `ChartBoundaryInvariant` interface is
+discharged unconditionally by planar no-retraction, Brouwer's fixed-point theorem, and invariance
+of domain.
 -/
 
 namespace LeanEval
