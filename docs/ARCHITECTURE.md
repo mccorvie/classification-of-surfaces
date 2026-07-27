@@ -93,7 +93,9 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
 - `NormalForm.orientableBoundaryWord` and `.nonOrientableBoundaryWord` give the canonical
   parametric families matching the vendored Eval relations. Their lengths, edge multiplicities,
   incidence validity, connectivity, and admissible occurrence pairings are certified without
-  consuming the arbitrary stored realization.
+  consuming the arbitrary stored realization. Forward maps and exact getters locate the entries
+  of each named handle, crosscap, and boundary block; an exhaustive decomposition of arbitrary
+  word positions is not yet part of this API.
 - `RepresentativeCarrier.lean` identifies every one-face polygonal pre-realization with the exact
   vendored closed unit disk, computes its side coordinates, proves integral-period boundary
   invariance, and supplies closure-aware quotient congruence. The canonical generator comparison
@@ -144,6 +146,8 @@ compatibility. New code should use the preferred names above.
    elementary rewrites preserve that realization.
 4. Identify the normalized polygon generators with the vendored `OrientableRel` and
    `NonOrientableRel` generators up to equivalence closure. The generic one-face pairing-position,
-   common-carrier, and quotient-type bridges are complete; the canonical position formulas remain.
+   common-carrier, quotient-type, and forward named-block position bridges are complete. The
+   remaining work is arbitrary-position sum-index exhaustion, boundary-coordinate arithmetic, and
+   both generator-family inclusions into the opposite `Relation.EqvGen` closure.
 5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
    the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.

@@ -827,6 +827,10 @@ the unique \texttt{PUnit} face, and retain the two finite position indices.
 \label{moise:def:canonical_normal_form_complexes}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableBoundaryWord,
   LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientableBoundaryWord,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableHandlePosition,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.orientableBoundaryPosition,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientableCrosscapPosition,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.nonOrientableBoundaryPosition,
   LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalCellComplex,
   LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalCellComplex_isSurfaceValid,
   LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalCellComplex_isConnected}
@@ -840,7 +844,10 @@ Their lengths are $4p+3n$ and $2p+3n$. Every seam, handle, or crosscap edge
 occurs twice, while each boundary-contour edge occurs once, so the resulting
 one-face incidence presentations are valid and connected. Under the Eval
 admissibility bounds the words are nonempty and have certified occurrence
-pairings for the polygonal quotient adapter. No claim is made here about the
+pairings for the polygonal quotient adapter. Forward block-position maps and
+exact \texttt{List.get} theorems locate every signed entry of each named
+handle, crosscap, and boundary block. They do not exhaust or classify an
+arbitrary finite position in either word. No claim is made here about the
 legacy stored realization; the sphere uses its separate two-monogon incidence
 presentation.
 \end{definition}
@@ -859,12 +866,14 @@ the corresponding Eval quotients.
 
 \begin{proof}
 \notready
-Prove the canonical position formulas. Handle and crosscap blocks match the
-positive boundary coordinates directly. For a boundary block,
-reverse its finite index and use integral-period invariance of
-\texttt{bdyPtOfReal} to reconcile the benchmark's negative angles. Map each
-generator into the opposite equivalence closure and apply the closure-aware
-quotient congruence.
+First prove a sum-index exhaustion theorem that puts every arbitrary word
+position in one of the certified blocks. Use the exact getters and the
+carrier's side formula to calculate its boundary coordinate; for a boundary
+block, reverse its finite index and use integral-period invariance of
+\texttt{bdyPtOfReal} to reconcile the benchmark's negative angles. Prove both
+inclusions between the polygonal generators and the opposite
+\texttt{Relation.EqvGen} closure, then apply the closure-aware quotient
+congruence.
 \end{proof}
 
 \begin{definition}[Named normal-form witnesses]

@@ -254,6 +254,10 @@ partner or perform the remaining canonical-word index arithmetic.
 * `NormalForm.NonOrientableEdge`
 * `NormalForm.orientableBoundaryWord`
 * `NormalForm.nonOrientableBoundaryWord`
+* `NormalForm.orientableHandlePosition`
+* `NormalForm.orientableBoundaryPosition`
+* `NormalForm.nonOrientableCrosscapPosition`
+* `NormalForm.nonOrientableBoundaryPosition`
 * `NormalForm.orientableBoundaryWord_length`
 * `NormalForm.nonOrientableBoundaryWord_length`
 * `NormalForm.orientableBoundaryWord_edge_occurrences`
@@ -274,7 +278,12 @@ partner or perform the remaining canonical-word index arithmetic.
 
 The canonical word families match the exact commutator, crosscap, and boundary-block patterns in
 the vendored relations. Their lengths, edge multiplicities, incidence validity, connectivity, and
-Eval-admissible occurrence pairings are certified without using the stored realization.
+Eval-admissible occurrence pairings are certified without using the stored realization. Forward
+block-position maps and exact `List.get` lemmas locate every signed entry of each named handle,
+crosscap, and boundary block. They do not classify an arbitrary `Fin` position in either word.
+The generator-closure comparison still needs a total sum-index exhaustion theorem, the resulting
+side-coordinate calculations, and both directions of the generator-to-`Relation.EqvGen`
+comparison.
 
 The legacy reduction theorem cannot be the final proof route while
 `SurfaceCellComplex.Realization` is an arbitrary stored type. The faithful replacement route

@@ -147,6 +147,10 @@ neither required nor generally the right statement.
 comparison: it replaces membership in the set of all compatible one-face identifications by two
 finite word positions, boundary-status conditions, and an equality or inverse-dart equality. It
 does not provide a unique partner or prove any canonical-word coordinate formula.
+`CanonicalWords.lean` now supplies forward position maps and exact getters for the entries of every
+named handle, crosscap, and boundary block. These maps are not an exhaustive classification of an
+arbitrary word position; sum-index exhaustion, coordinates, and both generator-closure inclusions
+remain separate obligations.
 
 Status: open.
 
