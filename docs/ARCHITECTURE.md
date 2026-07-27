@@ -63,6 +63,10 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
   predicate retains nonempty face boundaries, while `IsGallierValid` adds exactly Gallier--Xu's
   exceptional one-face empty-word sphere. The book's P2-expanded two-monogon sphere is also
   available as an ordinary valid connected presentation.
+- `FiniteCyclicPresentation.P1` implements the global oriented edge substitution, its exact
+  contraction and cyclic-rotation reflection laws, and conditional preservation of ordinary
+  validity, connectivity, and Gallier validity. The syntactic `P1Subdivision` relation closes
+  canonical expansion under signed target isomorphism.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.
@@ -114,8 +118,11 @@ compatibility. New code should use the preferred names above.
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
   predicates, non-mutating positive/negative face-orientation views, the exceptional empty-word
-  sphere policy, and signed presentation isomorphisms
-  with independent edge-orientation reversals.
+  sphere policy, and signed presentation isomorphisms with independent edge-orientation
+  reversals.
+- `ClassificationOfSurfaces/FiniteCyclicP1.lean`: exact Gallier--Xu P1 word substitution and
+  contraction, canonical presentation expansion, edge/face bookkeeping, and preservation
+  theorems.
 - `ClassificationOfSurfaces/LeanEval/ChallengeDeps.lean`: the verbatim Lean-Eval disc carrier and
   quotient relations.
 - `ClassificationOfSurfaces/LeanEval/RepresentativeSanity.lean`: project-owned radius and
