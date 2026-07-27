@@ -46,8 +46,9 @@ gluing.  The former C0 chart-boundary hypothesis itself is discharged by planar 
 Brouwer's fixed-point theorem, and invariance of domain.  See `docs/MOISE_ROUTE.md` for the live
 status and `docs/RADO_AUDIT.md` for the definition-faithfulness audit.
 
-The quotient realization and Gallier-Xu normal-form layers are still placeholder scaffolding
-(see `docs/KNOWN_WEAK.md`). The bottom API is in place:
+The legacy stored `SurfaceCellComplex.Realization`, its `Equivalent` relation, and the final
+Gallier--Xu reduction theorem are still placeholder scaffolding (see `docs/KNOWN_WEAK.md`).
+The faithful polygonal quotient layer and the bottom API are in place:
 
 - `EvalSurface` packages the Lean Eval hypotheses.
 - `ChartBoundaryInvariant` is the low-level chart-extraction interface; its unconditional C0

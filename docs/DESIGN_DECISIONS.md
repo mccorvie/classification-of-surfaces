@@ -155,7 +155,9 @@ families into the corresponding trusted `EqvGen` closures. `CanonicalGeneratorMa
 the exhaustive forward maps, maps every trusted constructor back to its named polygon pairing,
 and descends both comparisons to the exact Eval quotients.
 
-Status: implemented for every Eval-admissible orientable and nonorientable parameter pair.
+Status: open for the stored-realization cutover and triangulation bridge. The canonical
+Eval-quotient comparison is implemented for every admissible orientable and nonorientable
+parameter pair.
 
 ### O4. Topological Bridge Target
 
