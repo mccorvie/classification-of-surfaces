@@ -14,29 +14,21 @@ normal-form quotient.
 
 ## Main Split
 
-The proof is organized around one shared handoff object:
+The completed topological route produces a faithful geometric triangulation. The classification
+tail should pass through exact finite cyclic boundary words, not through the arbitrary stored
+realization of the legacy cell-complex scaffold:
 
-```lean
-SurfaceCellComplex
-SurfaceCellComplex.Realization
+```text
+GeometricTriangulation
+  → finite cyclic presentation
+  → Gallier-Xu word normalization
+  → polygonal realization
+  → vendored Lean-Eval quotient
 ```
 
-The topological route proves that an Eval surface has a finite triangulation, then shared
-infrastructure converts that triangulation to a `SurfaceCellComplex`:
-
-```lean
-compact_eval_surface_finitely_triangulable
-FiniteSurfaceTriangulation.toCellComplex
-compact_surface_homeomorphic_to_cell_complex
-```
-
-The Gallier-Xu route consumes only `SurfaceCellComplex` and proves:
-
-```lean
-SurfaceCellComplex.hasEvalRepresentative
-```
-
-The final theorem should be a short assembly proof using those two bridge theorems.
+The combinatorial normalization and polygonal realization are separate proof layers. The final
+theorem should only assemble their homeomorphisms with the geometric-triangulation realization
+bridge.
 
 ## Current Baseline
 
@@ -73,6 +65,9 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
 - `SurfaceCellComplex.BoundaryOccurrence`, `BoundaryPairing`, and `PolygonalRealization` provide
   an additive occurrence-indexed adapter to that quotient. Its pairing facts are derived from
   `IsSurfaceValid`, with nonempty face boundaries as the only polygon-specific extra condition.
+  `mem_polygonalIdentifications_iff_exists_occurrences` exposes every compatible ordered pairing,
+  and `oneFace_mem_polygonalIdentifications_iff` specializes it to two distinct finite positions
+  in a one-face boundary word. Neither theorem chooses a unique matching.
   The atomic realization cutover remains blocked on the certified triangulation-to-quotient
   bridge. Straight-edged convex models remain separate work.
 - `FiniteSurfaceTriangulation.toCellComplex` preserves triangle faces, vertices, oriented edge
@@ -87,6 +82,14 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
   incidence- and occurrence-validity witnesses. The annulus now uses the length-six, two-contour
   word.
   Homeomorphisms identifying these polygonal quotients with the named surfaces remain future work.
+- `NormalForm.orientableBoundaryWord` and `.nonOrientableBoundaryWord` give the canonical
+  parametric families matching the vendored Eval relations. Their lengths, edge multiplicities,
+  incidence validity, connectivity, and admissible occurrence pairings are certified without
+  consuming the arbitrary stored realization.
+- `RepresentativeCarrier.lean` identifies every one-face polygonal pre-realization with the exact
+  vendored closed unit disk, computes its side coordinates, proves integral-period boundary
+  invariance, and supplies closure-aware quotient congruence. The canonical generator comparison
+  and the legacy realization cutover remain separate obligations.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
 compatibility. New code should use the preferred names above.
@@ -99,27 +102,36 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/Triangulation.lean`: legacy triangulation interface, fed by the
   `GeometricTriangulation` bridge.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
+- `ClassificationOfSurfaces/CanonicalWords.lean`: certified canonical normal-form words and
+  one-face incidence presentations.
+- `ClassificationOfSurfaces/RepresentativeCarrier.lean`: the exact one-face disk carrier,
+  side-coordinate formulas, and raw/generated quotient bridges.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
-  predicates, and orientation-preserving presentation isomorphisms.
-- `ClassificationOfSurfaces/FiniteCyclicTriangulation.lean`: exact finite relabeling of cyclic
-  triangle boundaries and transport of incidence validity and connectivity.
-- `ClassificationOfSurfaces/Representatives.lean`: Eval quotient representative names.
+  predicates, non-mutating positive/negative face-orientation views, and signed presentation
+  isomorphisms with independent edge-orientation reversals.
+- `ClassificationOfSurfaces/LeanEval/ChallengeDeps.lean`: the verbatim Lean-Eval disc carrier and
+  quotient relations.
+- `ClassificationOfSurfaces/LeanEval/RepresentativeSanity.lean`: project-owned radius and
+  non-collapse checks for the vendored quotient representatives.
+- `ClassificationOfSurfaces/Representatives.lean`: project-owned sphere abbreviation and
+  normal-form indices; it does not redeclare the challenge relations.
 - `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
 - `ClassificationOfSurfaces/EvalStatement.lean`: final Lean Eval theorem.
+- `ClassificationOfSurfaces/LeanEval/SpecAudit.lean`: compile-time check that the public theorem
+  has the exact Lean-Eval conclusion over the vendored constants.
 - `ClassificationOfSurfaces/Examples.lean`: small regression examples.
 
 ## Next Tasks
 
-1. Derive strong fixed-vertex star connectivity for the Moise triangulation from the manifold
-   hypotheses.
-2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
-   faithful polygonal quotient; route the Eval handoff through that quotient without relying on
-   the legacy arbitrary stored realization.
-3. Identify the two-monogon sphere polygonal quotient with `SphereRepresentative`.
-4. Extend presentation isomorphisms by an independent orientation flip for each edge, then define
-   Gallier--Xu equivalence using only the two primitive subdivisions P1 (edge split) and P2 (face
-   split), and prove both preserve the faithful quotient.
-5. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
-   transformation, and boundary grouping as derived finite subdivision chains.
+1. Pack geometric triangulations as valid connected finite cyclic presentations, preserving the
+   exact cyclic boundary words.
+2. Prove Gallier-Xu rewrites and normalization on those finite cyclic presentations.
+3. Give each finite cyclic presentation its faithful polygonal realization and prove the
+   elementary rewrites preserve that realization.
+4. Identify the normalized polygon generators with the vendored `OrientableRel` and
+   `NonOrientableRel` generators up to equivalence closure. The generic one-face pairing-position,
+   common-carrier, and quotient-type bridges are complete; the canonical position formulas remain.
+5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
+   the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.
