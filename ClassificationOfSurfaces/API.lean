@@ -8,6 +8,7 @@ import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicPresentation
+import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -78,12 +79,17 @@ for the quarry, in particular the concrete closed-triangle geometry.
 * `compact_eval_surface_finitely_triangulable`
 * `FiniteSurfaceTriangulation.toCellComplex`
 * `FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic`
+* `FiniteSurfaceTriangulation.toFiniteCyclicPresentation`
+* `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isSurfaceValid`
+* `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isConnected`
+* `compact_eval_surface_finiteCyclicPresentation`
+* `compact_eval_surface_has_valid_connected_finiteCyclicPresentation`
 * `finite_triangulation_to_cell_complex`
 * `compact_surface_homeomorphic_to_cell_complex`
 
-The last two declarations assert only a homeomorphism to the raw presentation's stored
-realization.  They do not yet produce `SurfaceCellComplex.IsSurfaceValid` or `.IsConnected`;
-`Moise/Countermodels.lean` contains an executable legacy witness showing the gap.
+The cell-complex handoff now has a certified variant carrying `SurfaceCellComplex.IsSurfaceValid`
+and `.IsConnected`. The finite-cyclic handoff enumerates the same certified triangle-boundary
+incidence directly, without depending on the cell complex's legacy stored realization.
 
 ## Shared finite surface cell complexes
 

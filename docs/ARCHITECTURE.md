@@ -73,6 +73,11 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
 - `FiniteSurfaceTriangulation.toCellComplex` preserves triangle faces, vertices, oriented edge
   darts, and oriented triangle boundary words; boundary status is then derived from occurrence
   multiplicity rather than copied from the triangulation's boundary flags.
+- `FiniteSurfaceTriangulation.toFiniteCyclicPresentation` enumerates the finite faces and edges
+  by `Fin`, preserves every cyclic signed boundary word, and transports certified validity and
+  dual connectivity to the packed Gallier--Xu input. Consequently,
+  `compact_eval_surface_has_valid_connected_finiteCyclicPresentation` connects the Eval surface
+  hypotheses directly to the normal-form lane's finite combinatorial input.
 - Boundary-word examples for the disk, annulus, torus, projective plane, and Mobius strip have
   incidence- and occurrence-validity witnesses. The annulus now uses the length-six, two-contour
   word.

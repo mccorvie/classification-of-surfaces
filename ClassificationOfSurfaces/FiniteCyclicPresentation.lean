@@ -15,6 +15,10 @@ This file packages the purely combinatorial data used by polygon-word moves. Edg
 are finite by construction, and a face boundary is a cyclic list of signed edge names. Unlike
 `SurfaceCellComplex`, this presentation has no arbitrary vertex labels or placeholder realization.
 
+`PresentationIso` records orientation-preserving changes of names: an equivalence of edge names,
+an equivalence of faces, and a rotation witness for every renamed face boundary. Allowing an
+independent orientation reversal for each edge is a separate extension needed before the most
+general polygon-word moves.
 `EdgeRelabeling` records an equivalence of edge names together with an independent orientation
 reversal for each source edge. `SignedPresentationIso` combines such a relabeling with an
 equivalence of faces and a rotation witness for every renamed face boundary. The original
