@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.SphereCarrierGeometry
+import ClassificationOfSurfaces.Representatives
 
 /-!
 # Hemisphere maps for the two-monogon sphere
