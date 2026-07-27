@@ -1,5 +1,6 @@
 import ClassificationOfSurfaces.API
 import ClassificationOfSurfaces.Basic
+import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.CellComplex
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
@@ -7,6 +8,9 @@ import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.FiniteCyclicRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
+import ClassificationOfSurfaces.LeanEval.ChallengeDeps
+import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
+import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.AdaptiveControlledApproximation
 import ClassificationOfSurfaces.Moise.AdaptiveFanAffine
 import ClassificationOfSurfaces.Moise.AdaptiveFanComplex
@@ -84,6 +88,7 @@ import ClassificationOfSurfaces.Moise.RelativeSynchronizedArrangement
 import ClassificationOfSurfaces.Moise.ThinKiteMove
 import ClassificationOfSurfaces.NormalForm
 import ClassificationOfSurfaces.PolygonalQuotient
+import ClassificationOfSurfaces.RepresentativeCarrier
 import ClassificationOfSurfaces.Representatives
 import ClassificationOfSurfaces.SignedPresentation
 import ClassificationOfSurfaces.Surface
