@@ -300,6 +300,10 @@ noncomputable def toGeometricTriangulation (hcovers : T.support = Set.univ) :
 def edges : Finset (Finset T.Vertex) :=
   T.faces.biUnion fun t => t.powersetCard 2
 
+/-- The dual graph of the maximal faces of a partial triangulation is connected. -/
+abbrev IsDualConnected : Prop :=
+  TriangleFamily.IsDualConnected T.faces
+
 theorem card_of_mem_edges {e : Finset T.Vertex} (he : e ∈ T.edges) : e.card = 2 := by
   rcases Finset.mem_biUnion.mp he with ⟨t, ht, het⟩
   exact (Finset.mem_powersetCard.mp het).2
@@ -900,6 +904,13 @@ def empty (S : Type*) [TopologicalSpace S] : PartialTriangulation S where
   embed := fun x => isEmptyElim x
   isEmbedding := Topology.IsEmbedding.of_subsingleton _
 
+/-- The empty partial triangulation is vacuously dual-connected. -/
+theorem empty_isDualConnected (S : Type*) [TopologicalSpace S] :
+    (empty S).IsDualConnected := by
+  rintro ⟨f, hf⟩
+  change f ∈ (∅ : Finset (Finset Empty)) at hf
+  exact (Finset.notMem_empty f hf).elim
+
 /-- A partial triangulation with no faces covers nothing: its realization is empty. -/
 theorem support_eq_empty_of_faces_eq_empty {S : Type*} [TopologicalSpace S]
     (T : PartialTriangulation S) (h : T.faces = ∅) : T.support = ∅ := by
@@ -982,6 +993,12 @@ theorem isEmbedding_patchEmbed : _root_.Topology.IsEmbedding c.patchEmbed :=
 noncomputable def patchPartialTriangulation : PartialTriangulation S :=
   PartialTriangulation.ofPlaneComplex c.kind.patchComplex c.kind.patchComplex_pure
     c.patchEmbed c.isEmbedding_patchEmbed
+
+/-- The concrete partial triangulation supplied by one chart has a connected dual graph. -/
+theorem patchPartialTriangulation_isDualConnected :
+    c.patchPartialTriangulation.IsDualConnected := by
+  change TriangleFamily.IsDualConnected c.kind.patchComplex.cells
+  exact c.kind.patchComplex_isDualConnected
 
 theorem patchPartialTriangulation_support :
     c.patchPartialTriangulation.support = Set.range c.patchEmbed :=
@@ -3262,6 +3279,70 @@ theorem meshes_surface_edge_valence
   obtain ⟨t, -, het⟩ := Finset.mem_biUnion.mp he
   exact PolygonalFamily.relativeSynchronizedMeshes_joint_edge_valence
     J N lines (fun _ ↦ True) e (Finset.mem_powersetCard.mp het).2
+
+/-- Regard a retained old-side chamber as a chamber of the common ambient arrangement. -/
+def oldFaceToAmbient (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ)) :
+    TriangleFamily.Face (oldMesh J N lines).triangles →
+      TriangleFamily.Face
+        (PolygonalFamily.relativeSynchronizedArrangement J N lines).triangles :=
+  fun f => ⟨f.1,
+    (PolygonalFamily.selectedRelativeSynchronizedMesh_triangle_mem
+      J N lines (fun _ ↦ True)).mp f.2 |>.1⟩
+
+/-- Regard a retained target-side chamber as a chamber of the common ambient arrangement. -/
+def newFaceToAmbient (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ)) :
+    TriangleFamily.Face (newMesh J N lines).triangles →
+      TriangleFamily.Face
+        (PolygonalFamily.relativeSynchronizedArrangement J N lines).triangles :=
+  fun f => ⟨f.1,
+    (PolygonalFamily.targetRelativeSynchronizedMesh_triangle_mem
+      J N lines).mp f.2 |>.1⟩
+
+@[simp]
+theorem oldFaceToAmbient_val (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ))
+    (f : TriangleFamily.Face (oldMesh J N lines).triangles) :
+    (oldFaceToAmbient J N lines f).1 = f.1 :=
+  rfl
+
+@[simp]
+theorem newFaceToAmbient_val (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ))
+    (f : TriangleFamily.Face (newMesh J N lines).triangles) :
+    (newFaceToAmbient J N lines f).1 = f.1 :=
+  rfl
+
+/-- Ambient-adjacent chambers retained on opposite sides give a genuine cross-edge certificate
+for the two synchronized submeshes. -/
+theorem hasCrossEdge_of_ambientAdjacent
+    (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ))
+    (fOld : TriangleFamily.Face (oldMesh J N lines).triangles)
+    (fNew : TriangleFamily.Face (newMesh J N lines).triangles)
+    (hadj : TriangleFamily.FaceAdjacent
+      (PolygonalFamily.relativeSynchronizedArrangement J N lines).triangles
+      (oldFaceToAmbient J N lines fOld)
+      (newFaceToAmbient J N lines fNew)) :
+    TriangleFamily.HasCrossEdge
+      (oldMesh J N lines).triangles (newMesh J N lines).triangles := by
+  rcases hadj with ⟨edge, hedgeCard, hedgeOld, hedgeNew⟩
+  exact ⟨fOld, fNew, edge, hedgeCard, hedgeOld, hedgeNew⟩
+
+/-- A chamber retained by both synchronized submeshes supplies a cross-edge certificate. -/
+theorem hasCrossEdge_of_common_triangle
+    (J : ι → PolygonalCircle) (N : TriangleMesh)
+    (lines : List (Plane →ᵃ[ℝ] ℝ))
+    {t : Finset (oldMesh J N lines).Vertex}
+    (hOld : t ∈ (oldMesh J N lines).triangles)
+    (hNew : t ∈ (newMesh J N lines).triangles) :
+    TriangleFamily.HasCrossEdge
+      (oldMesh J N lines).triangles (newMesh J N lines).triangles := by
+  have htCard : t.card = 3 := (oldMesh J N lines).card_triangle t hOld
+  obtain ⟨edge, hedge, hedgeCard⟩ :=
+    Finset.exists_subset_card_eq (show 2 ≤ t.card by omega)
+  exact ⟨⟨t, hOld⟩, ⟨t, hNew⟩, edge, hedgeCard, hedge, hedge⟩
 
 /-- Both relative members retain the vertex type of their one ambient arrangement, so planar
 equality is precisely equality of zero-extended barycentric coordinates. -/
@@ -5819,7 +5900,10 @@ family, supported on the union of the two images.
 The realization of the union family is the set-union of the two realizations, so the glued
 embedding is the pasting of the two embeddings along a closed common part; it is a continuous
 injection from a compact space into a Hausdorff space, hence an embedding.  The edge-face count
-hypothesis is passed through to the glued complex. -/
+hypothesis is passed through to the glued complex.  The conclusion retains an equivalence from
+the glued vertex type to `V` under which its face family relabels to `F₁ ∪ F₂`, so later incidence
+certificates can use the two source-family proofs without reconstructing provenance from the
+embedding. -/
 theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Space S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
     (V : Type) [Fintype V] [DecidableEq V]
@@ -5834,6 +5918,8 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
     (hboundary₁ : BoundaryFacewiseRegularEmbedding F₁ e₁)
     (hboundary₂ : BoundaryFacewiseRegularEmbedding F₂ e₂) :
     ∃ T' : PartialTriangulation S,
+      ∃ vertexEquiv : T'.Vertex ≃ V,
+      Moise.relabelFaceFamily vertexEquiv.toEmbedding T'.faces = F₁ ∪ F₂ ∧
       T'.support = Set.range e₁ ∪ Set.range e₂ ∧
       (∀ e ∈ T'.edges, (T'.faces.filter fun t => e ⊆ t).card ≤ 2) ∧
       T'.BoundaryFacewiseRegular := by
@@ -5927,8 +6013,9 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
         (Continuous.subtype_mk continuous_subtype_val _)).isClosed
   -- assemble the glued partial triangulation
   refine ⟨{ Vertex := V, faces := F₁ ∪ F₂, faces_card := hcard, embed := glue,
-            isEmbedding := ?_ }, ?_, ?_, ?_⟩
+            isEmbedding := ?_ }, Equiv.refl V, ?_, ?_, ?_, ?_⟩
   · exact (hcont.isClosedEmbedding hinj).isEmbedding
+  · simp [Moise.relabelFaceFamily]
   · -- the support is the union of the two images
     apply Set.Subset.antisymm
     · rintro y ⟨x, rfl⟩
@@ -5968,6 +6055,19 @@ theorem PartialTriangulation.exists_glued {S : Type*} [TopologicalSpace S] [T2Sp
         ∀ v ∉ b, x.1 v = 0
       rw [hglue_right x x₂.2]
       exact hb x₂ hxt'
+
+/-- A glued partial triangulation is dual-connected once both source families are dual-connected
+and one source face on each side shares an edge in the union family. -/
+theorem PartialTriangulation.isDualConnected_of_faces_eq_union
+    {S : Type*} [TopologicalSpace S] (T : PartialTriangulation S)
+    {F₁ F₂ : Finset (Finset T.Vertex)} (hfaces : T.faces = F₁ ∪ F₂)
+    (hdual₁ : TriangleFamily.IsDualConnected F₁)
+    (hdual₂ : TriangleFamily.IsDualConnected F₂)
+    (hcross : TriangleFamily.HasCrossEdge F₁ F₂) :
+    T.IsDualConnected := by
+  change TriangleFamily.IsDualConnected T.faces
+  rw [hfaces]
+  exact TriangleFamily.isDualConnected_union_of_hasCrossEdge hdual₁ hdual₂ hcross
 
 /-- The invariant carried through the bordered Radó induction: every edge of the built complex
 lies in at most two faces, every triangle has a regular exposed intersection with the ambient
@@ -6084,7 +6184,53 @@ variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
 variable [ChartedSpace (EuclideanHalfSpace 2) S]
 variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 
-omit [T2Space S] [ConnectedSpace S] [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
+omit [T2Space S] [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
+/-- A compact Eval surface has a finite cover by interiors of boundary-faithful Moise chart
+cores.  Because the ambient surface is connected, the graph joining two cores when their
+interiors overlap is connected as well. -/
+theorem moise_finite_chart_open_cover :
+    ∃ (m : ℕ) (charts : Fin m → MoiseChart S),
+      (⋃ i, interior (charts i).core) = Set.univ ∧
+      (∀ i, (charts i).BoundaryFaithful) ∧
+      ∀ i j, Relation.TransGen
+        (fun a b : Fin m =>
+          (interior (charts a).core ∩ interior (charts b).core).Nonempty)
+        i j := by
+  classical
+  choose c hfaithful hcore using exists_moiseChart_core_mem_nhds S
+  have hcover : (Set.univ : Set S) ⊆ ⋃ x : S, interior (c x).core := by
+    intro x _
+    exact Set.mem_iUnion.mpr
+      ⟨x, mem_interior_iff_mem_nhds.mpr (hcore x)⟩
+  obtain ⟨t, ht⟩ := isCompact_univ.elim_finite_subcover
+    (fun x : S => interior (c x).core) (fun _ => isOpen_interior) hcover
+  obtain ⟨m, e⟩ := Finite.exists_equiv_fin t
+  let e' := Classical.choice e
+  let charts : Fin m → MoiseChart S := fun i => c (e'.symm i).1
+  have hopen : (⋃ i, interior (charts i).core) = (Set.univ : Set S) := by
+    apply Set.eq_univ_of_univ_subset
+    intro x _
+    rcases Set.mem_iUnion₂.mp (ht (Set.mem_univ x)) with
+      ⟨y, hyt, hxy⟩
+    exact Set.mem_iUnion.mpr ⟨e' ⟨y, hyt⟩, by
+      simpa [charts] using hxy⟩
+  have hnonempty (i : Fin m) :
+      (interior (charts i).core).Nonempty := by
+    refine ⟨(e'.symm i).1, ?_⟩
+    exact mem_interior_iff_mem_nhds.mpr (hcore (e'.symm i).1)
+  refine ⟨m, charts, hopen, ?_, ?_⟩
+  · intro i
+    exact hfaithful (e'.symm i).1
+  · have hpreconnected :
+        IsPreconnected (⋃ i, interior (charts i).core) := by
+      rw [hopen]
+      exact isPreconnected_univ
+    intro i j
+    exact hpreconnected.transGen_of_iUnion
+      (fun _ => isOpen_interior) i j (hnonempty i) (hnonempty j)
+
+omit [T2Space S] [ConnectedSpace S]
+  [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] in
 /-- A compact Eval surface has a finite cover by boundary-faithful Moise chart cores (Moise
 Ch. 8, Thm. 1, plus compactness).  Proved by a finite subcover of the core interiors from the
 local chart extraction (`exists_moiseChart_core_mem_nhds`, `Moise/ChartExtraction.lean`). -/
@@ -11397,7 +11543,7 @@ theorem moise_induction_step (c : MoiseChart S) (hc : c.BoundaryFaithful)
     obtain ⟨V, _, _, F₁, F₂, e₁, e₂, hcard, he₁, he₂, hagree, hsep,
         hboundary₁, hboundary₂, hcover⟩ :=
       MoiseChart.exists_crossing_weld S c hc hT
-    obtain ⟨T', hsupport, hsurf', hboundary'⟩ :=
+    obtain ⟨T', _vertexEquiv, _hfaces, hsupport, hsurf', hboundary'⟩ :=
       PartialTriangulation.exists_glued V F₁ F₂ hcard e₁ e₂ he₁ he₂
         hagree hsep hboundary₁ hboundary₂
     refine ⟨T', ?_, hsurf', hboundary', ?_⟩

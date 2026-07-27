@@ -39,20 +39,24 @@ theorems (8077–8460), and the historical `ChartBoundaryInvariant` isolation (n
 
 The former `SurfaceCellComplex.surfaceValid` and `.connected` entries were removed: they are now
 incidence-derived predicates `SurfaceCellComplex.IsSurfaceValid` and `.IsConnected`, with positive
-anchors and countermodels. The legacy triangulation bridge does not yet prove these predicates; its
-missing multiplicity/connectivity assumptions remain part of the `FiniteSurfaceTriangulation` entry
-above. `finite_triangulation_to_cell_complex` and
-`compact_surface_homeomorphic_to_cell_complex` therefore assert only a homeomorphism to the raw
-presentation's stored realization. Consequently the normal-form and Eval call chain cannot yet
-take the explicit validity and connectedness hypotheses that issue #9 ultimately requires.
+anchors and countermodels. Arbitrary legacy triangulation records still need an explicit
+`IncidenceCertificate`, but the Radó-produced geometric triangulation now supplies one from
+nonempty faces, embedded edge valence, and global dual connectivity. The strengthened compact
+surface handoff therefore returns both predicates, and the normal-form/Eval call chain takes them
+as explicit hypotheses.
 
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
 | `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
-| `OrientableRel`, `NonOrientableRel` | Representatives.lean | bridge pending | the public quotients use the exact closed-disk relations from the trusted Lean-Eval statement; the canonical complexes, carrier/quotient bridge, generic one-face pairing characterization, and exact block positions are complete, but the equivalence-closure comparisons are not | prove the orientable and nonorientable generator-closure comparison theorems, then descend the carrier homeomorphisms |
-| `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | **false as stated** | `SurfaceCellComplex.realization` is still arbitrary (for example, it can be `Empty`), and the signature lacks explicit `IsSurfaceValid` and `IsConnected` hypotheses because the triangulation bridge cannot yet supply them | cut over realization, certify triangulation incidence, then re-state with both hypotheses |
+| canonical normal-form generator comparison | CellComplexQuotient.lean + CanonicalWords.lean + RepresentativeCarrier.lean | bridge pending | the exact canonical words and their validity facts, the generic one-face pairing-position characterization, the common carrier, exact side coordinates, integral-period boundary fact, and raw/generated quotient bridge are complete; the canonical position formulas and the two generator-family comparisons are not | prove the canonical index formulas and generator maps in both directions for the orientable and nonorientable words, then apply the closure-aware quotient congruence |
+| `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | false at the current abstraction boundary | the signature requires explicit `IsSurfaceValid` and `IsConnected`, but `SurfaceCellComplex.realization` is still an arbitrary stored type unrelated to the incidence data; it therefore need not be homeomorphic to any Eval representative | first perform the faithful polygonal-realization cutover, then prove the Gallier--Xu reduction against the vendored relations |
 
-Dependents of the cell-complex entries: `CanonicalWords.lean`, `RepresentativeCarrier.lean`,
-`NormalForm.lean`, `EvalStatement.lean`, and `Examples.lean`. `CanonicalWords.lean` is the intended
-combinatorial input to the remaining quotient-comparison and Gallier--Xu work; avoid adding
-unrelated dependents.
+Dependents of the cell-complex entries: `NormalForm.lean`, `EvalStatement.lean`,
+`Examples.lean`, `CanonicalWords.lean`, and `RepresentativeCarrier.lean`. `CanonicalWords.lean`
+consumes only the incidence and occurrence-pairing interfaces.
+`RepresentativeCarrier.lean` consumes the faithful `PolygonalPreRealization`, not the placeholder
+stored `SurfaceCellComplex.Realization` or `gluingRel`. The former project-owned
+`SurfaceCellModel`, `OrientableRel`, and `NonOrientableRel` placeholders have been deleted:
+`Representatives.lean` now imports the verbatim Lean-Eval constants from
+`LeanEval/ChallengeDeps.lean`. The invalid `PUnit` quotient homeomorphisms and the example theorems
+derived from them were deleted with that specification repair.

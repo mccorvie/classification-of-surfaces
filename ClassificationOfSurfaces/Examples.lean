@@ -7,12 +7,12 @@ import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.NormalForm
 
 /-!
-# Standard examples
+# Standard combinatorial examples
 
 This file names the small surfaces we should keep as regression tests while the definitions mature.
 The examples are concrete one-face boundary-word presentations in the shared `SurfaceCellComplex`
-API. Their realization theorems remain theorem boundaries until quotient realizations are
-implemented.
+API. Homeomorphisms from their currently stored realizations to the vendored Lean-Eval quotients
+are deliberately not asserted until quotient realizations are implemented.
 -/
 
 namespace LeanEval
@@ -307,14 +307,6 @@ example :
     reversedSideTriangulation.toCellComplex.boundary PUnit.unit =
       [pos (0 : Fin 3), pos (1 : Fin 3), neg (2 : Fin 3)] := by
   rfl
-
-/-!
-The former `*_has_normal_form` and `*_matches_representative` declarations used a one-point
-homeomorphism supplied by the placeholder representative relations.  Those targets are
-incompatible with the stored one-point cell-complex realizations after installing the faithful
-benchmark quotients, and are intentionally removed. They should return only after
-`SurfaceCellComplex.Realization` is cut over to the polygonal quotient.
--/
 
 end ClassificationOfSurfaces
 end Topology

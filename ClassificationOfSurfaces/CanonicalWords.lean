@@ -10,12 +10,15 @@ import ClassificationOfSurfaces.Representatives
 # Canonical normal-form boundary words
 
 This file gives finite signed-dart presentations for the orientable and nonorientable boundary
-words appearing in `OrientableRel` and `NonOrientableRel`. It records their exact lengths and edge
-multiplicities, then packages them as connected, incidence-valid one-face cell complexes.
+words encoded by the vendored `OrientableRel` and `NonOrientableRel`. It records their exact
+lengths and edge multiplicities, then packages them as connected, incidence-valid one-face cell
+complexes.
 
 For Eval-admissible parameters, the words are nonempty and therefore also satisfy
-`SurfaceCellComplex.OccurrencePairingValid`. The remaining topological step is to compare their
-polygonal realizations with the exact closed-disk quotients in `Representatives.lean`.
+`SurfaceCellComplex.OccurrencePairingValid`. These are combinatorial and polygonal-pairing
+certificates only: no claim is made about the arbitrary stored `SurfaceCellComplex.Realization`.
+The remaining topological step is to compare their faithful polygonal realizations with the
+closed-disc quotients defined in `LeanEval/ChallengeDeps.lean`.
 -/
 
 namespace LeanEval
@@ -397,11 +400,11 @@ theorem nonOrientableBoundaryWord_edge_occurrences (p n : ℕ)
       nonOrientableBoundaryBlock, SignedDart.edgeName, List.count_flatten, List.sum_ofFn,
       List.count_cons, List.count_nil, beq_iff_eq, Finset.sum_add_distrib]
 
-/-- The one-face complex carried by the canonical orientable word. -/
+/-- The one-face incidence presentation carried by the canonical orientable word. -/
 def orientableCellComplex (p n : ℕ) : SurfaceCellComplex :=
   oneFacePresentation (OrientableEdge p n) (orientableBoundaryWord p n)
 
-/-- The one-face complex carried by the canonical nonorientable word. -/
+/-- The one-face incidence presentation carried by the canonical nonorientable word. -/
 def nonOrientableCellComplex (p n : ℕ) : SurfaceCellComplex :=
   oneFacePresentation (NonOrientableEdge p n) (nonOrientableBoundaryWord p n)
 
@@ -480,7 +483,7 @@ theorem nonOrientableCellComplex_occurrencePairingValid {p n : ℕ}
     rw [nonOrientableBoundaryWord_edge_occurrences]
     cases e <;> simp
 
-/-- The canonical finite cell complex attached to a named normal form. -/
+/-- The canonical incidence presentation attached to a named normal form. -/
 def canonicalCellComplex : NormalForm → SurfaceCellComplex
   | .sphere => SurfaceCellComplex.sphere
   | .orientable p n => orientableCellComplex p n

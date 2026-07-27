@@ -5,15 +5,15 @@ Authors: ClassificationOfSurfaces contributors
 -/
 import Mathlib.Analysis.Complex.Circle
 import Mathlib.Geometry.Manifold.Instances.Real
+import ClassificationOfSurfaces.LeanEval.ChallengeDeps
 import Mathlib.Geometry.Manifold.Instances.Sphere
 
 /-!
-# Normal-form representatives
+# Eval representatives and normal-form indices
 
-The eval statement names two families of quotient spaces obtained by identifying boundary arcs of
-the closed unit disk.  The relations below intentionally match the trusted Lean-Eval statement
-literally; later polygonal normal-form work must prove its canonical quotients agree with these
-public benchmark representatives.
+The Lean-Eval challenge owns `Complex.ClosedUnitDisc`, `OrientableRel`, and
+`NonOrientableRel`; they are imported verbatim from `LeanEval/ChallengeDeps.lean`. This file adds
+only the project-owned sphere abbreviation and the index type used by the normal-form reduction.
 -/
 
 open scoped Manifold

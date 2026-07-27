@@ -73,6 +73,22 @@ being mistaken for combinatorial connectedness.
 
 Status: accepted.
 
+### D5. Normalize Dart Names Before Gallier--Xu Rewrites
+
+Decision: take the quotient of `SurfaceCellComplex.Dart` by the inverse-dart relation, choose one
+orientation in each finite orbit, and relabel the orbits by `Fin`. This gives a lossless
+equivalence between the original darts and finite signed edge names, commuting with `inv` and
+`SignedDart.flip`. Face boundary words are mapped through this equivalence before cyclic-word
+rewrites are defined.
+
+The construction uses no stored source, target, or vertex data. Its only semantic hypothesis is
+that dart inversion has no fixed points, which follows from `IsSurfaceValid`.
+
+Reason: Gallier--Xu moves depend on repeated signed edge names and cyclic order, not on the
+presentation's original name type or its stored endpoint enrichment.
+
+Status: accepted.
+
 ## Open Decisions
 
 ### O1. Cyclic Words

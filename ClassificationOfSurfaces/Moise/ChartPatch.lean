@@ -505,6 +505,51 @@ theorem ChartKind.patchComplex_pure (k : ChartKind) : k.patchComplex.IsPure2 := 
   | disk => exact chartDiamondComplex_pure
   | halfDisk => exact chartHalfDiamondComplex_pure
 
+/-- The four triangles in the fixed disk-chart patch have a connected dual graph. -/
+theorem diamondFanTriangles_isDualConnected :
+    TriangleFamily.IsDualConnected diamondFanTriangles := by
+  change TriangleFamily.IsDualConnected
+    ({{0, 4, 2}, {1, 2, 4}, {0, 3, 4}, {1, 4, 3}} :
+      Finset (Finset (Fin 5)))
+  have h₃ : TriangleFamily.IsDualConnected
+      ({{1, 4, 3}} : Finset (Finset (Fin 5))) :=
+    TriangleFamily.isDualConnected_singleton {1, 4, 3}
+  have h₂₃ : TriangleFamily.IsDualConnected
+      (insert {0, 3, 4} ({{1, 4, 3}} : Finset (Finset (Fin 5)))) := by
+    apply TriangleFamily.isDualConnected_insert h₃ {0, 3, 4} ⟨{1, 4, 3}, by simp⟩
+    exact ⟨{3, 4}, by decide, by decide, by decide⟩
+  have h₁₂₃ : TriangleFamily.IsDualConnected
+      (insert {1, 2, 4}
+        (insert {0, 3, 4} ({{1, 4, 3}} : Finset (Finset (Fin 5))))) := by
+    apply TriangleFamily.isDualConnected_insert h₂₃ {1, 2, 4} ⟨{1, 4, 3}, by simp⟩
+    exact ⟨{1, 4}, by decide, by decide, by decide⟩
+  apply TriangleFamily.isDualConnected_insert h₁₂₃ {0, 4, 2} ⟨{1, 2, 4}, by simp⟩
+  exact ⟨{2, 4}, by decide, by decide, by decide⟩
+
+/-- The two triangles in the fixed half-disk-chart patch have a connected dual graph. -/
+theorem halfDiamondTriangles_isDualConnected :
+    TriangleFamily.IsDualConnected
+      (diamondFanTriangles.filter fun t => 1 ∈ t) := by
+  change TriangleFamily.IsDualConnected
+    ({{1, 2, 4}, {1, 4, 3}} : Finset (Finset (Fin 5)))
+  have h₃ : TriangleFamily.IsDualConnected
+      ({{1, 4, 3}} : Finset (Finset (Fin 5))) :=
+    TriangleFamily.isDualConnected_singleton {1, 4, 3}
+  apply TriangleFamily.isDualConnected_insert h₃ {1, 2, 4} ⟨{1, 4, 3}, by simp⟩
+  exact ⟨{1, 4}, by decide, by decide, by decide⟩
+
+/-- Every fixed chart patch starts with a connected dual graph. -/
+theorem ChartKind.patchComplex_isDualConnected (k : ChartKind) :
+    TriangleFamily.IsDualConnected k.patchComplex.cells := by
+  cases k with
+  | disk =>
+      change TriangleFamily.IsDualConnected diamondFanTriangles
+      exact diamondFanTriangles_isDualConnected
+  | halfDisk =>
+      change TriangleFamily.IsDualConnected
+        (diamondFanTriangles.filter fun t => 1 ∈ t)
+      exact halfDiamondTriangles_isDualConnected
+
 theorem ChartKind.patchComplex_support_subset_modelRegion (k : ChartKind) :
     k.patchComplex.support ⊆ k.modelRegion := by
   cases k with

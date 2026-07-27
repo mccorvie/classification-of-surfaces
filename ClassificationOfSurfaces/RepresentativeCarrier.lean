@@ -5,6 +5,7 @@ Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.Representatives
+import ClassificationOfSurfaces.LeanEval.ChallengeDeps
 
 /-!
 # Carrier bridge to the Eval quotient representatives
