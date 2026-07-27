@@ -7,6 +7,8 @@ import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicP1
 import ClassificationOfSurfaces.FiniteCyclicPresentation
+import ClassificationOfSurfaces.FiniteCyclicRealization
+import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.LeanEval.ChallengeDeps
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit

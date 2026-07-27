@@ -9,6 +9,8 @@ import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicP1
 import ClassificationOfSurfaces.FiniteCyclicPresentation
+import ClassificationOfSurfaces.FiniteCyclicRealization
+import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -79,12 +81,17 @@ for the quarry, in particular the concrete closed-triangle geometry.
 * `compact_eval_surface_finitely_triangulable`
 * `FiniteSurfaceTriangulation.toCellComplex`
 * `FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic`
+* `FiniteSurfaceTriangulation.toFiniteCyclicPresentation`
+* `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isSurfaceValid`
+* `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isConnected`
+* `compact_eval_surface_finiteCyclicPresentation`
+* `compact_eval_surface_has_valid_connected_finiteCyclicPresentation`
 * `finite_triangulation_to_cell_complex`
 * `compact_surface_homeomorphic_to_cell_complex`
 
-The last two declarations assert only a homeomorphism to the raw presentation's stored
-realization.  They do not yet produce `SurfaceCellComplex.IsSurfaceValid` or `.IsConnected`;
-`Moise/Countermodels.lean` contains an executable legacy witness showing the gap.
+The cell-complex handoff now has a certified variant carrying `SurfaceCellComplex.IsSurfaceValid`
+and `.IsConnected`. The finite-cyclic handoff enumerates the same certified triangle-boundary
+incidence directly, without depending on the cell complex's legacy stored realization.
 
 ## Shared finite surface cell complexes
 
@@ -129,6 +136,13 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.PresentationIso`
 * `FiniteCyclicPresentation.PresentationIso.isSurfaceValid_iff`
 * `FiniteCyclicPresentation.PresentationIso.isConnected_iff`
+* `FiniteCyclicPresentation.BoundaryOccurrence`
+* `FiniteCyclicPresentation.BoundaryPairing`
+* `FiniteCyclicPresentation.PolygonalRealization`
+* `FiniteCyclicPresentation.RealizationEquivData`
+* `FiniteCyclicPresentation.PolygonallyEquivalent`
+* `GeometricTriangulation.toFiniteCyclicPresentation`
+* `GeometricTriangulation.toFiniteCyclicPresentation_valid_and_connected`
 * `FiniteCyclicPresentation.SignedPresentationIso`
 * `FiniteCyclicPresentation.SignedPresentationIso.ofPresentationIso`
 * `FiniteCyclicPresentation.SignedPresentationIso.orientedFaceEquiv`
@@ -169,6 +183,9 @@ and both subdivided edges inherit the old edge multiplicity. The construction co
 preserves ordinary validity, connectivity, and `IsGallierValid`; these hypotheses are not
 bundled into the syntactic `P1Subdivision` relation. The positive orientation is canonical, while
 the relation's signed target isomorphism supports renamed and reoriented target edges.
+The finite cyclic quotient adapter realizes those face words directly as a disjoint union of
+standard polygonal disks modulo occurrence-level side pairings. It does not use the legacy
+`SurfaceCellComplex.realization` field.
 
 ## Polygonal quotient foundation
 
@@ -181,6 +198,10 @@ the relation's signed target isomorphism supports renamed and reoriented target 
 * `PolygonGluing.setoid`
 * `PolygonGluing.Realization`
 * `PolygonGluing.realizationCongr`
+* `FiniteCyclicPresentation.edgeMultiplicity_eq_card_edgeOccurrences`
+* `FiniteCyclicPresentation.IsSurfaceValid.exists_unique_partner`
+* `FiniteCyclicPresentation.IsSurfaceValid.exists_identification_source`
+* `FiniteCyclicPresentation.polygonalMk_pairing_eq`
 * `SurfaceCellComplex.BoundaryOccurrence`
 * `SurfaceCellComplex.BoundaryPairing`
 * `SurfaceCellComplex.OccurrencePairingValid`
