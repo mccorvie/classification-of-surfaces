@@ -8,6 +8,7 @@ import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicPresentation
+import ClassificationOfSurfaces.FiniteCyclicRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
@@ -134,6 +135,13 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.PresentationIso`
 * `FiniteCyclicPresentation.PresentationIso.isSurfaceValid_iff`
 * `FiniteCyclicPresentation.PresentationIso.isConnected_iff`
+* `FiniteCyclicPresentation.BoundaryOccurrence`
+* `FiniteCyclicPresentation.BoundaryPairing`
+* `FiniteCyclicPresentation.PolygonalRealization`
+* `FiniteCyclicPresentation.RealizationEquivData`
+* `FiniteCyclicPresentation.PolygonallyEquivalent`
+* `GeometricTriangulation.toFiniteCyclicPresentation`
+* `GeometricTriangulation.toFiniteCyclicPresentation_valid_and_connected`
 * `FiniteCyclicPresentation.SignedPresentationIso`
 * `FiniteCyclicPresentation.SignedPresentationIso.ofPresentationIso`
 * `FiniteCyclicPresentation.SignedPresentationIso.orientedFaceEquiv`
@@ -155,6 +163,10 @@ Gallier--Xu's exceptional one-face, zero-edge, empty-boundary sphere is represen
 signed-isomorphism class as a disjunct. The P2-expanded `twoMonogonSphere`, with boundaries `d`
 and `d⁻¹`, satisfies ordinary validity and connectivity.
 
+The finite cyclic quotient adapter realizes those face words directly as a disjoint union of
+standard polygonal disks modulo occurrence-level side pairings. It does not use the legacy
+`SurfaceCellComplex.realization` field.
+
 ## Polygonal quotient foundation
 
 * `PolygonCell`
@@ -166,6 +178,10 @@ and `d⁻¹`, satisfies ordinary validity and connectivity.
 * `PolygonGluing.setoid`
 * `PolygonGluing.Realization`
 * `PolygonGluing.realizationCongr`
+* `FiniteCyclicPresentation.edgeMultiplicity_eq_card_edgeOccurrences`
+* `FiniteCyclicPresentation.IsSurfaceValid.exists_unique_partner`
+* `FiniteCyclicPresentation.IsSurfaceValid.exists_identification_source`
+* `FiniteCyclicPresentation.polygonalMk_pairing_eq`
 * `SurfaceCellComplex.BoundaryOccurrence`
 * `SurfaceCellComplex.BoundaryPairing`
 * `SurfaceCellComplex.OccurrencePairingValid`
