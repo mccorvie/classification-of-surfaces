@@ -67,6 +67,11 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
   contraction and cyclic-rotation reflection laws, and conditional preservation of ordinary
   validity, connectivity, and Gallier validity. The syntactic `P1Subdivision` relation closes
   canonical expansion under signed target isomorphism.
+- `FiniteCyclicPresentation.P2` implements the cyclic oriented face split with possibly empty
+  pieces, exact child-boundary and multiplicity laws, and preservation of ordinary validity,
+  connectivity, and Gallier validity. Its exceptional empty-word sphere presentation regression
+  is definitionally the two-monogon sphere presentation. `P2Subdivision` records the move up to
+  signed presentation isomorphism of the target.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.
@@ -144,6 +149,9 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/FiniteCyclicP1.lean`: exact Gallier--Xu P1 word substitution and
   contraction, canonical presentation expansion, edge/face bookkeeping, and preservation
   theorems.
+- `ClassificationOfSurfaces/FiniteCyclicP2.lean`: exact Gallier--Xu P2 cyclic face cut,
+  endpoint and orientation symmetries, dependent face/edge bookkeeping, connectivity path
+  lifting, and ordinary/exceptional validity preservation.
 - `ClassificationOfSurfaces/LeanEval/ChallengeDeps.lean`: the verbatim Lean-Eval disc carrier and
   quotient relations.
 - `ClassificationOfSurfaces/LeanEval/RepresentativeSanity.lean`: project-owned radius and
@@ -164,7 +172,9 @@ compatibility. New code should use the preferred names above.
 2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
    faithful polygonal quotient; route the Eval handoff through that quotient without relying on
    the legacy arbitrary stored realization.
-3. Complete the P2 face-split development alongside the existing P1 edge split, and prove both
-   primitive subdivisions preserve the faithful quotient.
+3. Combine the completed P1 and P2 relations into an elementary move closure and prove the
+   primitive subdivisions preserve the faithful polygonal quotient.
 4. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
    transformation, and boundary grouping as derived finite subdivision chains.
+5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
+   the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.

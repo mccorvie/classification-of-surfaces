@@ -9,6 +9,7 @@ import ClassificationOfSurfaces.CellComplexQuotient
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicP1
+import ClassificationOfSurfaces.FiniteCyclicP2
 import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.FiniteCyclicRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation

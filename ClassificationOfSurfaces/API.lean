@@ -11,6 +11,7 @@ import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicP1
+import ClassificationOfSurfaces.FiniteCyclicP2
 import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.FiniteCyclicRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
@@ -171,6 +172,21 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.P1.expand_isGallierValid`
 * `FiniteCyclicPresentation.P1Subdivision`
 * `FiniteCyclicPresentation.P1Subdivision.isGallierValid`
+* `FiniteCyclicPresentation.P2Cut`
+* `FiniteCyclicPresentation.P2Cut.canonical`
+* `FiniteCyclicPresentation.P2Cut.swap`
+* `FiniteCyclicPresentation.P2Cut.flip`
+* `FiniteCyclicPresentation.P2.split`
+* `FiniteCyclicPresentation.P2.split_orientedBoundary_selected`
+* `FiniteCyclicPresentation.P2.split_orientedBoundary_right`
+* `FiniteCyclicPresentation.P2.edgeMultiplicity_split_castSucc`
+* `FiniteCyclicPresentation.P2.edgeMultiplicity_split_freshEdge`
+* `FiniteCyclicPresentation.P2.split_isSurfaceValid`
+* `FiniteCyclicPresentation.P2.split_isConnected`
+* `FiniteCyclicPresentation.P2.split_isGallierValid`
+* `FiniteCyclicPresentation.P2.split_emptyWordSphere`
+* `FiniteCyclicPresentation.P2Subdivision`
+* `FiniteCyclicPresentation.P2Subdivision.isGallierValid`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -195,6 +211,15 @@ the relation's signed target isomorphism supports renamed and reoriented target 
 The finite cyclic quotient adapter realizes those face words directly as a disjoint union of
 standard polygonal disks modulo occurrence-level side pairings. It does not use the legacy
 `SurfaceCellComplex.realization` field.
+
+`P2.split` implements Gallier--Xu's cyclic oriented face cut. Both cut pieces may be empty.
+The selected child has displayed boundary `left d`, the appended child has displayed boundary
+`d⁻¹ right`, and both are stored in the cut's chosen traversal orientation. Flipping the cut
+reverses its selected traversal and swaps its two pieces. The fresh edge has multiplicity two,
+old edge multiplicities are preserved, and validity, connectivity, and Gallier validity survive. The
+exceptional empty-word sphere presentation splits definitionally to the
+`twoMonogonSphere` presentation. `P2Subdivision` is the corresponding syntactic relation up to
+signed presentation isomorphism of the target.
 
 ## Polygonal quotient foundation
 
