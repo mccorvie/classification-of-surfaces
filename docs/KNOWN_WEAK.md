@@ -47,12 +47,16 @@ as explicit hypotheses.
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
 | `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
-| canonical normal-form generator comparison | CellComplexQuotient.lean + CanonicalWords.lean + RepresentativeCarrier.lean | bridge pending | the exact canonical words and their validity facts, the generic one-face pairing-position characterization, the common carrier, exact side coordinates, integral-period boundary fact, and raw/generated quotient bridge are complete; the canonical position formulas and the two generator-family comparisons are not | prove the canonical index formulas and generator maps in both directions for the orientable and nonorientable words, then apply the closure-aware quotient congruence |
 | `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | false at the current abstraction boundary | the signature requires explicit `IsSurfaceValid` and `IsConnected`, but `SurfaceCellComplex.realization` is still an arbitrary stored type unrelated to the incidence data; it therefore need not be homeomorphic to any Eval representative | first perform the faithful polygonal-realization cutover, then prove the Gallier--Xu reduction against the vendored relations |
 
-Dependents of the cell-complex entries: `NormalForm.lean`, `EvalStatement.lean`,
-`Examples.lean`, `CanonicalWords.lean`, and `RepresentativeCarrier.lean`. `CanonicalWords.lean`
-consumes only the incidence and occurrence-pairing interfaces.
+The canonical normal-form generator comparison has graduated from this ledger:
+`CanonicalGeneratorMaps.lean` proves homeomorphisms from both admissible canonical polygonal
+realizations to the exact vendored Eval quotients.
+
+Dependents of the remaining weak entries: `NormalForm.lean`, `EvalStatement.lean`, and
+`Examples.lean`. `CanonicalWords.lean`, `CanonicalPairings.lean`, and
+`CanonicalCoordinates.lean` consume only the faithful incidence, occurrence-pairing, and
+polygonal-realization interfaces.
 `RepresentativeCarrier.lean` consumes the faithful `PolygonalPreRealization`, not the placeholder
 stored `SurfaceCellComplex.Realization` or `gluingRel`. The former project-owned
 `SurfaceCellModel`, `OrientableRel`, and `NonOrientableRel` placeholders have been deleted:

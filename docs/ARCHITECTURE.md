@@ -46,8 +46,9 @@ gluing.  The former C0 chart-boundary hypothesis itself is discharged by planar 
 Brouwer's fixed-point theorem, and invariance of domain.  See `docs/MOISE_ROUTE.md` for the live
 status and `docs/RADO_AUDIT.md` for the definition-faithfulness audit.
 
-The quotient realization and Gallier-Xu normal-form layers are still placeholder scaffolding
-(see `docs/KNOWN_WEAK.md`). The bottom API is in place:
+The legacy stored `SurfaceCellComplex.Realization`, its `Equivalent` relation, and the final
+Gallier--Xu reduction theorem are still placeholder scaffolding (see `docs/KNOWN_WEAK.md`).
+The faithful polygonal quotient layer and the bottom API are in place:
 
 - `EvalSurface` packages the Lean Eval hypotheses.
 - `ChartBoundaryInvariant` is the low-level chart-extraction interface; its unconditional C0
@@ -67,6 +68,11 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
   contraction and cyclic-rotation reflection laws, and conditional preservation of ordinary
   validity, connectivity, and Gallier validity. The syntactic `P1Subdivision` relation closes
   canonical expansion under signed target isomorphism.
+- `FiniteCyclicPresentation.P2` implements the cyclic oriented face split with possibly empty
+  pieces, exact child-boundary and multiplicity laws, and preservation of ordinary validity,
+  connectivity, and Gallier validity. Its exceptional empty-word sphere presentation regression
+  is definitionally the two-monogon sphere presentation. `P2Subdivision` records the move up to
+  signed presentation isomorphism of the target.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.
@@ -93,11 +99,19 @@ The quotient realization and Gallier-Xu normal-form layers are still placeholder
 - `NormalForm.orientableBoundaryWord` and `.nonOrientableBoundaryWord` give the canonical
   parametric families matching the vendored Eval relations. Their lengths, edge multiplicities,
   incidence validity, connectivity, and admissible occurrence pairings are certified without
-  consuming the arbitrary stored realization.
+  consuming the arbitrary stored realization. Forward maps and exact getters locate the entries
+  of each named handle, crosscap, and boundary block. Every directed identification in either word
+  is classified as the expected handle, crosscap, or boundary-seam pairing in either order, while
+  singleton free-boundary sides are excluded.
 - `RepresentativeCarrier.lean` identifies every one-face polygonal pre-realization with the exact
   vendored closed unit disk, computes its side coordinates, proves integral-period boundary
-  invariance, and supplies closure-aware quotient congruence. The canonical generator comparison
-  and the legacy realization cutover remain separate obligations.
+  invariance, and supplies closure-aware quotient congruence. `CanonicalCoordinates.lean` maps all
+  five explicit pairing families into the trusted closures, including the reversed boundary
+  indexing. `CanonicalGeneratorMaps.lean` maps arbitrary polygon generators and every trusted
+  relation constructor into the opposite equivalence closure, yielding homeomorphisms between both
+  canonical polygonal realizations and the exact Eval quotients. The legacy realization cutover
+  remains separate. `NormalForm.canonicalCellComplex` also includes the separate two-face sphere
+  presentation.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
 compatibility. New code should use the preferred names above.
@@ -112,8 +126,21 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
 - `ClassificationOfSurfaces/CanonicalWords.lean`: certified canonical normal-form words and
   one-face incidence presentations.
+- `ClassificationOfSurfaces/CanonicalPairings.lean`: exhaustive pairing classifications for
+  both canonical boundary-word families.
+- `ClassificationOfSurfaces/CanonicalCoordinates.lean`: exact closed-disk coordinates and
+  canonical-pairing-to-trusted-closure inclusions.
+- `ClassificationOfSurfaces/CanonicalGeneratorMaps.lean`: bidirectional generator maps and
+  canonical polygonal-realization homeomorphisms to the Eval quotients.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: the exact one-face disk carrier,
   side-coordinate formulas, and raw/generated quotient bridges.
+- `ClassificationOfSurfaces/SphereCarrierGeometry.lean`: compact disk carriers and the
+  conjugation boundary identity used by the two-monogon sphere realization.
+- `ClassificationOfSurfaces/SphereHemisphere.lean`: continuous upper/lower hemisphere maps,
+  exhaustive sphere pairing classification, and the generator-compatible facewise pre-map.
+- `ClassificationOfSurfaces/SphereQuotientHomeomorph.lean`: exact kernel relation, descended
+  quotient map, and the homeomorphism from the two-monogon polygonal realization to the Eval
+  sphere representative.
 - `ClassificationOfSurfaces/SignedPresentation.lean`: inverse-dart orbits and lossless
   `Fin`-labelled signed boundary words.
 - `ClassificationOfSurfaces/FiniteCyclicPresentation.lean`: packed cyclic face words, incidence
@@ -123,6 +150,9 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/FiniteCyclicP1.lean`: exact Gallier--Xu P1 word substitution and
   contraction, canonical presentation expansion, edge/face bookkeeping, and preservation
   theorems.
+- `ClassificationOfSurfaces/FiniteCyclicP2.lean`: exact Gallier--Xu P2 cyclic face cut,
+  endpoint and orientation symmetries, dependent face/edge bookkeeping, connectivity path
+  lifting, and ordinary/exceptional validity preservation.
 - `ClassificationOfSurfaces/LeanEval/ChallengeDeps.lean`: the verbatim Lean-Eval disc carrier and
   quotient relations.
 - `ClassificationOfSurfaces/LeanEval/RepresentativeSanity.lean`: project-owned radius and
@@ -137,13 +167,15 @@ compatibility. New code should use the preferred names above.
 
 ## Next Tasks
 
-1. Pack geometric triangulations as valid connected finite cyclic presentations, preserving the
-   exact cyclic boundary words.
-2. Prove Gallier-Xu rewrites and normalization on those finite cyclic presentations.
-3. Give each finite cyclic presentation its faithful polygonal realization and prove the
-   elementary rewrites preserve that realization.
-4. Identify the normalized polygon generators with the vendored `OrientableRel` and
-   `NonOrientableRel` generators up to equivalence closure. The generic one-face pairing-position,
-   common-carrier, and quotient-type bridges are complete; the canonical position formulas remain.
+1. Replace the compatibility triangulation's arbitrary all-positive boundary lists with the cyclic
+   `IntrinsicTwoComplex.faceEdge` order and certify connected incident-face chains at every
+   vertex.
+2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
+   faithful polygonal quotient; route the Eval handoff through that quotient without relying on
+   the legacy arbitrary stored realization.
+3. Combine the completed P1 and P2 relations into an elementary move closure and prove the
+   primitive subdivisions preserve the faithful polygonal quotient.
+4. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
+   transformation, and boundary grouping as derived finite subdivision chains.
 5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
    the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.

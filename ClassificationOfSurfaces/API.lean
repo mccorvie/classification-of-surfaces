@@ -4,10 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.CellComplexQuotient
+import ClassificationOfSurfaces.CanonicalCoordinates
+import ClassificationOfSurfaces.CanonicalGeneratorMaps
+import ClassificationOfSurfaces.CanonicalPairings
 import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicP1
+import ClassificationOfSurfaces.FiniteCyclicP2
 import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.FiniteCyclicRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
@@ -25,6 +29,9 @@ import ClassificationOfSurfaces.Moise.PlaneCycle
 import ClassificationOfSurfaces.PolygonalQuotient
 import ClassificationOfSurfaces.RepresentativeCarrier
 import ClassificationOfSurfaces.SignedPresentation
+import ClassificationOfSurfaces.SphereCarrierGeometry
+import ClassificationOfSurfaces.SphereHemisphere
+import ClassificationOfSurfaces.SphereQuotientHomeomorph
 
 /-!
 # Public API map
@@ -44,6 +51,9 @@ project skeleton and documents the intended handoff points between teams.
 ## Moise route (current; see `docs/MOISE_ROUTE.md` for status and handoff map)
 
 * `GeometricTriangulation` and `GeometricRealization` (`Moise/GeometricTriangulation.lean`)
+* `TriangleFamily.FaceAdjacentAtVertex`, `TriangleFamily.IsStrongVertexStarConnected`, and
+  the strong-to-legacy and strong-to-dual connectivity bridges
+  (`Moise/GeometricTriangulation.lean`)
 * `PlaneComplex`, `IsPLOn`, `IsPLOnSet` (`Moise/PlaneComplex.lean`)
 * `IntrinsicTwoComplex`, its faithful `Subdivision`, `IsPLMap`, and `PLHomeomorph`
   (`Moise/IntrinsicComplex.lean`)
@@ -162,6 +172,21 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.P1.expand_isGallierValid`
 * `FiniteCyclicPresentation.P1Subdivision`
 * `FiniteCyclicPresentation.P1Subdivision.isGallierValid`
+* `FiniteCyclicPresentation.P2Cut`
+* `FiniteCyclicPresentation.P2Cut.canonical`
+* `FiniteCyclicPresentation.P2Cut.swap`
+* `FiniteCyclicPresentation.P2Cut.flip`
+* `FiniteCyclicPresentation.P2.split`
+* `FiniteCyclicPresentation.P2.split_orientedBoundary_selected`
+* `FiniteCyclicPresentation.P2.split_orientedBoundary_right`
+* `FiniteCyclicPresentation.P2.edgeMultiplicity_split_castSucc`
+* `FiniteCyclicPresentation.P2.edgeMultiplicity_split_freshEdge`
+* `FiniteCyclicPresentation.P2.split_isSurfaceValid`
+* `FiniteCyclicPresentation.P2.split_isConnected`
+* `FiniteCyclicPresentation.P2.split_isGallierValid`
+* `FiniteCyclicPresentation.P2.split_emptyWordSphere`
+* `FiniteCyclicPresentation.P2Subdivision`
+* `FiniteCyclicPresentation.P2Subdivision.isGallierValid`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -186,6 +211,15 @@ the relation's signed target isomorphism supports renamed and reoriented target 
 The finite cyclic quotient adapter realizes those face words directly as a disjoint union of
 standard polygonal disks modulo occurrence-level side pairings. It does not use the legacy
 `SurfaceCellComplex.realization` field.
+
+`P2.split` implements Gallier--Xu's cyclic oriented face cut. Both cut pieces may be empty.
+The selected child has displayed boundary `left d`, the appended child has displayed boundary
+`d⁻¹ right`, and both are stored in the cut's chosen traversal orientation. Flipping the cut
+reverses its selected traversal and swaps its two pieces. The fresh edge has multiplicity two,
+old edge multiplicities are preserved, and validity, connectivity, and Gallier validity survive. The
+exceptional empty-word sphere presentation splits definitionally to the
+`twoMonogonSphere` presentation. `P2Subdivision` is the corresponding syntactic relation up to
+signed presentation isomorphism of the target.
 
 ## Polygonal quotient foundation
 
@@ -213,6 +247,10 @@ standard polygonal disks modulo occurrence-level side pairings. It does not use 
 * `SurfaceCellComplex.oneFaceOccurrence`
 * `SurfaceCellComplex.oneFace_mem_polygonalIdentifications_iff`
 * `Complex.ClosedUnitDisc.bdyPtOfReal_add_int`
+* `SurfaceCellComplex.not_isBoundaryDart_of_occurs_at_ne`
+* `SurfaceCellComplex.swapIdentification`
+* `SurfaceCellComplex.swapIdentification_mem_polygonalIdentifications`
+* `SurfaceCellComplex.oppositeDirectionIdentification_mem_of_get_pos_neg`
 * `quotEqvGenHomeomorph`
 * `eqvGenQuotientCongrRaw`
 * `eqvGen_map_of_generator_to_eqvGen`
@@ -222,8 +260,22 @@ standard polygonal disks modulo occurrence-level side pairings. It does not use 
 * `PolygonCell.closedUnitDiscHomeomorph_side`
 * `PolygonGluing.oneFacePreRealizationHomeomorph`
 * `PolygonGluing.oneFacePreRealizationHomeomorph_sidePoint`
+* `PolygonCell.conjHomeomorph`
+* `PolygonCell.conj_side_symm_monogon`
+* `PolygonCell.hemisphereHeight`
+* `PolygonCell.upperHemisphere`
+* `PolygonCell.lowerHemisphere`
+* `PolygonCell.upperHemisphere_side_eq_lowerHemisphere_side_symm`
+* `PolygonCell.sphereDiskPoint`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph`
 * `SurfaceCellComplex.oneFacePolygonalPreRealizationHomeomorph_sidePoint`
+* `SurfaceCellComplex.sphereBoundaryOccurrence_eq`
+* `SurfaceCellComplex.mem_sphere_polygonalIdentifications_iff`
+* `SurfaceCellComplex.spherePreMap`
+* `SurfaceCellComplex.spherePreMap_eq_of_generator`
+* `SurfaceCellComplex.spherePreMap_eq_iff_gluingRel`
+* `SurfaceCellComplex.sphereQuotientMap`
+* `SurfaceCellComplex.spherePolygonalRealizationHomeomorph`
 
 This generic layer supports disk cells with any number of marked sides and generated side
 identifications. The additive cell-complex adapter now maps boundary occurrences to polygon sides
@@ -234,16 +286,22 @@ use the quotient yet; the atomic cutover still depends on a certified
 triangulation-to-quotient bridge. The standard one-face examples now have incidence- and
 occurrence-validity witnesses, including the corrected length-six annulus word. The marked sides
 are circular arcs; issue #6's straight-edged convex representatives still require a separate PL
-bridge or a different concrete carrier. The representative-carrier bridge identifies each
-indexed disk, and hence every one-face pre-realization, with the exact vendored closed unit disk.
-It records the side-coordinate formula, integral-period boundary invariance, and closure-aware
-quotient congruence from the polygonal generated setoid to a raw relation quotient. This completes
-the common carrier and quotient-construction subproblem only: the canonical polygon generators
-still have to be compared with the vendored relations, and the legacy stored realization is still
-unrelated to the polygonal quotient. The one-face membership theorem characterizes every
-compatible ordered pairing by two distinct boundary-word positions, their non-boundary
-conditions, and the required equality or inverse-dart equality. It does not choose a unique
-partner or perform the remaining canonical-word index arithmetic.
+bridge or a different concrete carrier. The representative-carrier bridge identifies each indexed
+disk, and hence every one-face pre-realization, with the exact vendored closed unit disk. It
+records the side-coordinate formula, integral-period boundary invariance, and closure-aware
+quotient congruence from the polygonal generated setoid to a raw relation quotient. The one-face
+membership theorem characterizes compatible ordered pairings by two distinct boundary-word
+positions with the required status and dart equalities. Forward canonical block positions and
+exhaustive raw-pairing classifications for both canonical families are complete. Exact carrier
+coordinates, including
+the reversed boundary index, send all five canonical pairing families into the corresponding
+trusted equivalence closures. Exhaustive forward maps and constructor-by-constructor reverse maps
+therefore identify both generated relations, and the carrier descends to homeomorphisms from the
+canonical polygonal realizations to the exact trusted Eval quotients.
+For the sphere branch, the compatible upper/lower hemisphere map descends from the two monogons;
+its kernel is exactly the generated side-gluing relation, and compact-to-Hausdorff upgrades the
+resulting bijection to a homeomorphism with `SphereRepresentative`. The legacy stored realization
+is still unrelated to these polygonal quotients.
 
 ## Gallier-Xu tail
 
@@ -251,6 +309,10 @@ partner or perform the remaining canonical-word index arithmetic.
 * `NormalForm.NonOrientableEdge`
 * `NormalForm.orientableBoundaryWord`
 * `NormalForm.nonOrientableBoundaryWord`
+* `NormalForm.orientableHandlePosition`
+* `NormalForm.orientableBoundaryPosition`
+* `NormalForm.nonOrientableCrosscapPosition`
+* `NormalForm.nonOrientableBoundaryPosition`
 * `NormalForm.orientableBoundaryWord_length`
 * `NormalForm.nonOrientableBoundaryWord_length`
 * `NormalForm.orientableBoundaryWord_edge_occurrences`
@@ -261,6 +323,39 @@ partner or perform the remaining canonical-word index arithmetic.
 * `NormalForm.nonOrientableCellComplex_isConnected`
 * `NormalForm.orientableCellComplex_occurrencePairingValid`
 * `NormalForm.nonOrientableCellComplex_occurrencePairingValid`
+* `NormalForm.nonOrientableCrosscapIdentification`
+* `NormalForm.nonOrientableCrosscapIdentificationReverse`
+* `NormalForm.nonOrientableBoundaryIdentification`
+* `NormalForm.nonOrientableBoundaryIdentificationReverse`
+* `NormalForm.mem_nonOrientable_polygonalIdentifications_iff`
+* `NormalForm.orientableHandleAIdentification`
+* `NormalForm.orientableHandleAIdentificationReverse`
+* `NormalForm.orientableHandleBIdentification`
+* `NormalForm.orientableHandleBIdentificationReverse`
+* `NormalForm.orientableBoundaryIdentification`
+* `NormalForm.orientableBoundaryIdentificationReverse`
+* `NormalForm.mem_orientable_polygonalIdentifications_iff`
+* `NormalForm.orientableOccurrencePoint`
+* `NormalForm.nonOrientableOccurrencePoint`
+* `NormalForm.orientableCarrier_occurrencePoint`
+* `NormalForm.nonOrientableCarrier_occurrencePoint`
+* `NormalForm.orientableBoundary_trustedSource_eq_carrier_c_neg`
+* `NormalForm.orientableBoundary_trustedTarget_eq_carrier_c_pos`
+* `NormalForm.nonOrientableBoundary_trustedSource_eq_carrier_c_neg`
+* `NormalForm.nonOrientableBoundary_trustedTarget_eq_carrier_c_pos`
+* `NormalForm.orientableCarrier_handle_a_eqvGen`
+* `NormalForm.orientableCarrier_handle_b_eqvGen`
+* `NormalForm.orientableCarrier_boundary_c_eqvGen`
+* `NormalForm.nonOrientableCarrier_crosscap_a_eqvGen`
+* `NormalForm.nonOrientableCarrier_boundary_c_eqvGen`
+* `NormalForm.orientableGenerator_to_eqvGen`
+* `NormalForm.nonOrientableGenerator_to_eqvGen`
+* `NormalForm.orientableRel_to_polygonEqvGen`
+* `NormalForm.nonOrientableRel_to_polygonEqvGen`
+* `NormalForm.orientablePolygonalRealizationHomeomorph`
+* `NormalForm.nonOrientablePolygonalRealizationHomeomorph`
+* `NormalForm.orientableCellComplex`
+* `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
 * `NormalForm.IsEvalAdmissible`
 * `SurfaceCellComplex.RealizesNormalForm`
@@ -271,7 +366,17 @@ partner or perform the remaining canonical-word index arithmetic.
 
 The canonical word families match the exact commutator, crosscap, and boundary-block patterns in
 the vendored relations. Their lengths, edge multiplicities, incidence validity, connectivity, and
-Eval-admissible occurrence pairings are certified without using the stored realization.
+Eval-admissible occurrence pairings are certified without using the stored realization. Forward
+block-position maps and exact `List.get` lemmas locate every signed entry of each named handle,
+crosscap, and boundary block. Polygonal identifications in both families are classified
+exhaustively as the two directed forms of the expected handle, crosscap, or boundary-seam
+pairings, with singleton free-boundary darts excluded. Exact coordinate theorems transport every
+explicit pairing family into the trusted closures; boundary blocks use `Fin.rev` and integral
+periodicity to reconcile the benchmark's negative angles. The exhaustive classifications package
+those facts for arbitrary polygon generators, while the trusted relation constructors map back to
+named polygon pairings.
+The resulting bidirectional closure comparisons descend to homeomorphisms with `Quot
+(OrientableRel p n)` and `Quot (NonOrientableRel p n)`.
 
 The legacy reduction theorem cannot be the final proof route while
 `SurfaceCellComplex.Realization` is an arbitrary stored type. The faithful replacement route
