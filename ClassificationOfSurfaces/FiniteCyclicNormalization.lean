@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.FiniteCyclicCrosscap
+import ClassificationOfSurfaces.FiniteCyclicP2DegenerateRealization
 
 /-!
 # Stable closure for Gallier--Xu normalization chains
@@ -60,6 +61,14 @@ inductive NormalizationStep : ValidPresentation → ValidPresentation → Prop
       (h : Nonempty (UnorientedPresentationIso P.presentation Q.presentation) ∨
         Nonempty (UnorientedPresentationIso Q.presentation P.presentation)) :
       NormalizationStep P Q
+  | oneSidedP2 {P : ValidPresentation}
+      (cut : P2Cut P.presentation)
+      (honeSided :
+        (cut.left = [] ∧ 0 < cut.right.length) ∨
+          (0 < cut.left.length ∧ cut.right = [])) :
+      NormalizationStep P
+        ⟨P2.split P.presentation cut,
+          P2.split_isSurfaceValid P.presentation cut P.valid⟩
 
 namespace NormalizationStep
 
@@ -72,6 +81,17 @@ theorem ofUnorientedIsoSymm {P Q : ValidPresentation}
     (e : UnorientedPresentationIso Q.presentation P.presentation) :
     NormalizationStep P Q :=
   .unoriented (Or.inr ⟨e⟩)
+
+/-- A one-sided-degenerate P2 split is a normalization step. -/
+theorem ofOneSidedP2 {P : ValidPresentation}
+    (cut : P2Cut P.presentation)
+    (honeSided :
+      (cut.left = [] ∧ 0 < cut.right.length) ∨
+        (0 < cut.left.length ∧ cut.right = [])) :
+    NormalizationStep P
+      ⟨P2.split P.presentation cut,
+        P2.split_isSurfaceValid P.presentation cut P.valid⟩ :=
+  .oneSidedP2 cut honeSided
 
 /-- Every normalization step preserves the faithful polygonal realization of its bundled valid
 endpoints. -/
@@ -87,6 +107,9 @@ theorem polygonallyEquivalent {P Q : ValidPresentation}
         exact e.polygonallyEquivalent P.valid Q.valid
       · rcases hbackward with ⟨e⟩
         exact (e.polygonallyEquivalent Q.valid P.valid).symm
+  | oneSidedP2 cut honeSided =>
+      exact P2.oneSidedPolygonallyEquivalent
+        P.presentation cut honeSided P.valid
 
 end NormalizationStep
 
@@ -142,6 +165,17 @@ theorem ofUnorientedIsoSymm {P Q : ValidPresentation}
     (e : UnorientedPresentationIso Q.presentation P.presentation) :
     NormalizationEquivalent P Q :=
   ofStep (.ofUnorientedIsoSymm e)
+
+/-- A one-sided-degenerate P2 split is a normalization equivalence. -/
+theorem ofOneSidedP2 {P : ValidPresentation}
+    (cut : P2Cut P.presentation)
+    (honeSided :
+      (cut.left = [] ∧ 0 < cut.right.length) ∨
+        (0 < cut.left.length ∧ cut.right = [])) :
+    NormalizationEquivalent P
+      ⟨P2.split P.presentation cut,
+        P2.split_isSurfaceValid P.presentation cut P.valid⟩ :=
+  ofStep (.ofOneSidedP2 cut honeSided)
 
 theorem symm {P Q : ValidPresentation} (h : NormalizationEquivalent P Q) :
     NormalizationEquivalent Q P :=
@@ -263,6 +297,36 @@ theorem mergeNormalizationEquivalent
     (P := ⟨P, validP⟩)
     (Q := ⟨split P cut, split_isSurfaceValid P cut validP⟩)
     (P2Subdivision.canonical P cut hcut)).symm
+
+/-- Merge the two children of a one-sided-degenerate P2 split. This is the inverse form needed
+by cancellation chains, where one child is a monogon. -/
+theorem oneSidedMergeNormalizationEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (honeSided :
+      (cut.left = [] ∧ 0 < cut.right.length) ∨
+        (0 < cut.left.length ∧ cut.right = []))
+    (validP : P.IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨split P cut, split_isSurfaceValid P cut validP⟩
+      ⟨P, validP⟩ :=
+  (NormalizationEquivalent.ofOneSidedP2
+    (P := ⟨P, validP⟩) cut honeSided).symm
+
+/-- Merge any ordinary-valid canonical P2 split whose cut is either nondegenerate or
+one-sided-degenerate. -/
+theorem ordinaryMergeNormalizationEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (hcut :
+      cut.IsNondegenerate ∨
+        (cut.left = [] ∧ 0 < cut.right.length) ∨
+          (0 < cut.left.length ∧ cut.right = []))
+    (validP : P.IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨split P cut, split_isSurfaceValid P cut validP⟩
+      ⟨P, validP⟩ := by
+  rcases hcut with hnondegenerate | honeSided
+  · exact mergeNormalizationEquivalent P cut hnondegenerate validP
+  · exact oneSidedMergeNormalizationEquivalent P cut honeSided validP
 
 end P2
 
