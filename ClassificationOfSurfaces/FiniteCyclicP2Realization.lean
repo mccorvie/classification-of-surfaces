@@ -802,6 +802,798 @@ theorem positiveSelectedFaceMap_side_of_not_lt
     positiveChildPairPreMap_inr,
     positiveRightChildCellHomeomorph_side]
 
+/-! ### The complete forward pre-realization map -/
+
+theorem split_boundary_old_length_of_ne
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face) :
+    ((split P cut).boundary (oldFace P cut f)).length =
+      (P.boundary f).length := by
+  calc
+    ((split P cut).boundary (oldFace P cut f)).length =
+        (retainWord (P.boundary f)).length :=
+      congrArg List.length
+        (split_boundary_old_of_ne P cut hface)
+    _ = (P.boundary f).length := by
+      simp [retainWord]
+
+/-- A retained source face differs from its target copy only by a phantom side-count equality. -/
+noncomputable def retainedCellHomeomorph
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face) :
+    PolygonCell (P.boundary f).length ≃ₜ
+      PolygonCell
+        ((split P cut).boundary (oldFace P cut f)).length :=
+  PolygonCell.rotateHomeomorph
+    (split_boundary_old_length_of_ne P cut hface).symm 0
+
+/-- Target index corresponding to a side of a retained source face. -/
+def retainedSideIndex
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (i : Fin (P.boundary f).length) :
+    Fin ((split P cut).boundary (oldFace P cut f)).length :=
+  ⟨i.val, by
+    rw [split_boundary_old_length_of_ne P cut hface]
+    exact i.isLt⟩
+
+@[simp]
+theorem retainedCellHomeomorph_side
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (i : Fin (P.boundary f).length) (t : unitInterval) :
+    retainedCellHomeomorph P cut hface (PolygonCell.side i t) =
+      PolygonCell.side (retainedSideIndex P cut hface i) t := by
+  rw [retainedCellHomeomorph]
+  have hpos :
+      0 < ((split P cut).boundary (oldFace P cut f)).length := by
+    rw [split_boundary_old_length_of_ne P cut hface]
+    exact Nat.zero_lt_of_lt i.isLt
+  rw [PolygonCell.rotateHomeomorph_side_of_eq
+    (split_boundary_old_length_of_ne P cut hface).symm
+    hpos 0 i t]
+  congr 2
+  apply Fin.ext
+  simp only [Fin.val_mk, retainedSideIndex]
+  apply Nat.mod_eq_of_lt
+  rw [split_boundary_old_length_of_ne P cut hface]
+  exact i.isLt
+
+/-- A retained face maps directly to its unchanged target face class. -/
+noncomputable def retainedFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (validP : P.IsSurfaceValid) :
+    PolygonCell (P.boundary f).length →
+      (split P cut).PolygonalRealization
+        (split_isSurfaceValid P cut validP) :=
+  fun z =>
+    (split P cut).polygonalMk (split_isSurfaceValid P cut validP)
+      ⟨oldFace P cut f, retainedCellHomeomorph P cut hface z⟩
+
+theorem continuous_retainedFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (validP : P.IsSurfaceValid) :
+    Continuous (retainedFaceMap P cut hface validP) :=
+  ((split P cut).continuous_polygonalMk
+      (split_isSurfaceValid P cut validP)).comp
+    (continuous_sigmaMk.comp
+      (retainedCellHomeomorph P cut hface).continuous)
+
+/-- Facewise forward map: cut the selected face and retain every other face. -/
+noncomputable def positiveFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) (f : P.Face) :
+    PolygonCell (P.boundary f).length →
+      (split P cut).PolygonalRealization
+        (split_isSurfaceValid P cut validP) := by
+  classical
+  by_cases hface : f = cut.face.face
+  · subst f
+    exact positiveSelectedFaceMap
+      P cut horientation hl hr validP
+  · exact retainedFaceMap P cut hface validP
+
+theorem continuous_positiveFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) (f : P.Face) :
+    Continuous (positiveFaceMap
+      P cut horientation hl hr validP f) := by
+  classical
+  by_cases hface : f = cut.face.face
+  · subst f
+    simpa [positiveFaceMap] using
+      continuous_positiveSelectedFaceMap
+        P cut horientation hl hr validP
+  · simpa [positiveFaceMap, hface] using
+      continuous_retainedFaceMap P cut hface validP
+
+/-- Continuous forward map on the entire source polygonal pre-realization. -/
+noncomputable def positivePreMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    P.PolygonalPreRealization →
+      (split P cut).PolygonalRealization
+        (split_isSurfaceValid P cut validP) :=
+  fun x => positiveFaceMap
+    P cut horientation hl hr validP x.1 x.2
+
+theorem continuous_positivePreMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    Continuous (positivePreMap
+      P cut horientation hl hr validP) := by
+  apply continuous_sigma
+  exact continuous_positiveFaceMap
+    P cut horientation hl hr validP
+
+@[simp]
+theorem positivePreMap_selected
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell (P.boundary cut.face.face).length) :
+    positivePreMap P cut horientation hl hr validP
+        ⟨cut.face.face, z⟩ =
+      positiveSelectedFaceMap
+        P cut horientation hl hr validP z := by
+  simp [positivePreMap, positiveFaceMap]
+
+@[simp]
+theorem positivePreMap_retained
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (z : PolygonCell (P.boundary f).length) :
+    positivePreMap P cut horientation hl hr validP ⟨f, z⟩ =
+      retainedFaceMap P cut hface validP z := by
+  simp [positivePreMap, positiveFaceMap, hface]
+
+theorem positivePreMap_selected_side_of_lt
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (i : Fin (P.boundary cut.face.face).length) (t : unitInterval)
+    (hleft :
+      (positiveCutSideIndex P cut horientation hl hr i).val <
+        cut.left.length) :
+    positivePreMap P cut horientation hl hr validP
+        ⟨cut.face.face, PolygonCell.side i t⟩ =
+      (split P cut).polygonalMk (split_isSurfaceValid P cut validP)
+        ⟨oldFace P cut cut.face.face,
+          PolygonCell.side
+            (positiveSelectedChildSideIndex P cut horientation
+              (Fin.castAdd 1
+                (positiveLeftSideIndex
+                  P cut horientation hl hr i hleft))) t⟩ := by
+  rw [positivePreMap_selected,
+    positiveSelectedFaceMap_side_of_lt
+      P cut horientation hl hr validP i t hleft]
+
+theorem positivePreMap_selected_side_of_not_lt
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (i : Fin (P.boundary cut.face.face).length) (t : unitInterval)
+    (hright :
+      cut.left.length ≤
+        (positiveCutSideIndex P cut horientation hl hr i).val) :
+    positivePreMap P cut horientation hl hr validP
+        ⟨cut.face.face, PolygonCell.side i t⟩ =
+      (split P cut).polygonalMk (split_isSurfaceValid P cut validP)
+        ⟨rightFace P cut,
+          PolygonCell.side
+            (positiveRightChildSideIndex P cut horientation
+              ((positiveRightSideIndex
+                P cut horientation hl hr i hright).addNat 1)) t⟩ := by
+  rw [positivePreMap_selected,
+    positiveSelectedFaceMap_side_of_not_lt
+      P cut horientation hl hr validP i t hright]
+
+theorem positivePreMap_retained_side
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (i : Fin (P.boundary f).length) (t : unitInterval) :
+    positivePreMap P cut horientation hl hr validP
+        ⟨f, PolygonCell.side i t⟩ =
+      (split P cut).polygonalMk (split_isSurfaceValid P cut validP)
+        ⟨oldFace P cut f,
+          PolygonCell.side
+            (retainedSideIndex P cut hface i) t⟩ := by
+  rw [positivePreMap_retained
+      P cut horientation hl hr validP hface,
+    retainedFaceMap, retainedCellHomeomorph_side]
+
+/-! ### Local inverse maps for the two target children -/
+
+/-- Collapse the local child quotient back to the selected source face class. -/
+noncomputable def positiveChildGluingInvMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    DiskSquare.ParamChildGluing cut.left.length cut.right.length →
+      P.PolygonalRealization validP :=
+  fun q =>
+    P.polygonalMk validP
+      ⟨cut.face.face,
+        (positiveSelectedCellHomeomorph
+          P cut horientation hl hr).symm q⟩
+
+theorem continuous_positiveChildGluingInvMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    Continuous (positiveChildGluingInvMap
+      P cut horientation hl hr validP) :=
+  (P.continuous_polygonalMk validP).comp
+    (continuous_sigmaMk.comp
+      (positiveSelectedCellHomeomorph
+        P cut horientation hl hr).symm.continuous)
+
+@[simp]
+theorem positiveChildGluingInvMap_selectedCell
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell (P.boundary cut.face.face).length) :
+    positiveChildGluingInvMap
+        P cut horientation hl hr validP
+        (positiveSelectedCellHomeomorph
+          P cut horientation hl hr z) =
+      P.polygonalMk validP ⟨cut.face.face, z⟩ := by
+  simp [positiveChildGluingInvMap]
+
+/-- Include a point of the actual selected target child into the local child quotient. -/
+noncomputable def positiveSelectedChildToGluing
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false) :
+    PolygonCell
+        ((split P cut).boundary
+          (oldFace P cut cut.face.face)).length →
+      DiskSquare.ParamChildGluing
+        cut.left.length cut.right.length :=
+  fun z =>
+    @Quotient.mk''
+      (DiskSquare.ChildPair cut.left.length cut.right.length)
+      (DiskSquare.paramChildSeamSetoid
+        cut.left.length cut.right.length)
+      (.inl
+        ((positiveSelectedChildCellHomeomorph
+          P cut horientation).symm z))
+
+theorem continuous_positiveSelectedChildToGluing
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false) :
+    Continuous
+      (positiveSelectedChildToGluing P cut horientation) :=
+  continuous_quotient_mk'.comp
+    (continuous_inl.comp
+      (positiveSelectedChildCellHomeomorph
+        P cut horientation).symm.continuous)
+
+/-- Include a point of the actual right target child into the local child quotient. -/
+noncomputable def positiveRightChildToGluing
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false) :
+    PolygonCell
+        ((split P cut).boundary (rightFace P cut)).length →
+      DiskSquare.ParamChildGluing
+        cut.left.length cut.right.length :=
+  fun z =>
+    @Quotient.mk''
+      (DiskSquare.ChildPair cut.left.length cut.right.length)
+      (DiskSquare.paramChildSeamSetoid
+        cut.left.length cut.right.length)
+      (.inr
+        ((positiveRightChildCellHomeomorph
+          P cut horientation).symm z))
+
+theorem continuous_positiveRightChildToGluing
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false) :
+    Continuous
+      (positiveRightChildToGluing P cut horientation) :=
+  continuous_quotient_mk'.comp
+    (continuous_inr.comp
+      (positiveRightChildCellHomeomorph
+        P cut horientation).symm.continuous)
+
+@[simp]
+theorem positiveSelectedChildToGluing_apply
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (z : PolygonCell (cut.left.length + 1)) :
+    positiveSelectedChildToGluing P cut horientation
+        (positiveSelectedChildCellHomeomorph
+          P cut horientation z) =
+      @Quotient.mk''
+        (DiskSquare.ChildPair cut.left.length cut.right.length)
+        (DiskSquare.paramChildSeamSetoid
+          cut.left.length cut.right.length)
+        (.inl z) := by
+  simp [positiveSelectedChildToGluing]
+
+@[simp]
+theorem positiveRightChildToGluing_apply
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (z : PolygonCell (cut.right.length + 1)) :
+    positiveRightChildToGluing P cut horientation
+        (positiveRightChildCellHomeomorph
+          P cut horientation z) =
+      @Quotient.mk''
+        (DiskSquare.ChildPair cut.left.length cut.right.length)
+        (DiskSquare.paramChildSeamSetoid
+          cut.left.length cut.right.length)
+        (.inr z) := by
+  simp [positiveRightChildToGluing]
+
+/-- Inverse map on the selected target child. -/
+noncomputable def positiveSelectedChildInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    PolygonCell
+        ((split P cut).boundary
+          (oldFace P cut cut.face.face)).length →
+      P.PolygonalRealization validP :=
+  positiveChildGluingInvMap
+      P cut horientation hl hr validP ∘
+    positiveSelectedChildToGluing P cut horientation
+
+theorem continuous_positiveSelectedChildInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    Continuous (positiveSelectedChildInvFaceMap
+      P cut horientation hl hr validP) :=
+  (continuous_positiveChildGluingInvMap
+      P cut horientation hl hr validP).comp
+    (continuous_positiveSelectedChildToGluing
+      P cut horientation)
+
+/-- Inverse map on the right target child. -/
+noncomputable def positiveRightChildInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    PolygonCell
+        ((split P cut).boundary (rightFace P cut)).length →
+      P.PolygonalRealization validP :=
+  positiveChildGluingInvMap
+      P cut horientation hl hr validP ∘
+    positiveRightChildToGluing P cut horientation
+
+theorem continuous_positiveRightChildInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    Continuous (positiveRightChildInvFaceMap
+      P cut horientation hl hr validP) :=
+  (continuous_positiveChildGluingInvMap
+      P cut horientation hl hr validP).comp
+    (continuous_positiveRightChildToGluing
+      P cut horientation)
+
+/-- Inverse map on a retained target face. -/
+noncomputable def retainedInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (validP : P.IsSurfaceValid) :
+    PolygonCell
+        ((split P cut).boundary (oldFace P cut f)).length →
+      P.PolygonalRealization validP :=
+  fun z =>
+    P.polygonalMk validP
+      ⟨f, (retainedCellHomeomorph P cut hface).symm z⟩
+
+theorem continuous_retainedInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (validP : P.IsSurfaceValid) :
+    Continuous (retainedInvFaceMap P cut hface validP) :=
+  (P.continuous_polygonalMk validP).comp
+    (continuous_sigmaMk.comp
+      (retainedCellHomeomorph P cut hface).symm.continuous)
+
+@[simp]
+theorem retainedInvFaceMap_apply
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell (P.boundary f).length) :
+    retainedInvFaceMap P cut hface validP
+        (retainedCellHomeomorph P cut hface z) =
+      P.polygonalMk validP ⟨f, z⟩ := by
+  simp [retainedInvFaceMap]
+
+/-- Inverse map at an old target-face position, selecting the cut-child inverse exactly at the
+chosen source face. -/
+noncomputable def positiveOldInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) (f : P.Face) :
+    PolygonCell
+        ((split P cut).boundary (oldFace P cut f)).length →
+      P.PolygonalRealization validP := by
+  classical
+  by_cases hface : f = cut.face.face
+  · subst f
+    exact positiveSelectedChildInvFaceMap
+      P cut horientation hl hr validP
+  · exact retainedInvFaceMap P cut hface validP
+
+theorem continuous_positiveOldInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) (f : P.Face) :
+    Continuous (positiveOldInvFaceMap
+      P cut horientation hl hr validP f) := by
+  classical
+  by_cases hface : f = cut.face.face
+  · subst f
+    simpa [positiveOldInvFaceMap] using
+      continuous_positiveSelectedChildInvFaceMap
+        P cut horientation hl hr validP
+  · simpa [positiveOldInvFaceMap, hface] using
+      continuous_retainedInvFaceMap P cut hface validP
+
+/-- Inverse face map indexed before applying the explicit target `faceEquiv`. -/
+noncomputable def positiveIndexedInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (j : Fin (P.faces.length + 1)) :
+    PolygonCell
+        ((split P cut).boundary (faceEquiv P cut j)).length →
+      P.PolygonalRealization validP :=
+  Fin.lastCases
+    (positiveRightChildInvFaceMap
+      P cut horientation hl hr validP)
+    (fun f =>
+      positiveOldInvFaceMap
+        P cut horientation hl hr validP f)
+    j
+
+@[simp]
+theorem positiveIndexedInvFaceMap_last
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    positiveIndexedInvFaceMap
+        P cut horientation hl hr validP (Fin.last P.faces.length) =
+      positiveRightChildInvFaceMap
+        P cut horientation hl hr validP :=
+  Fin.lastCases_last
+
+@[simp]
+theorem positiveIndexedInvFaceMap_castSucc
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) (f : P.Face) :
+    positiveIndexedInvFaceMap
+        P cut horientation hl hr validP f.castSucc =
+      positiveOldInvFaceMap
+        P cut horientation hl hr validP f :=
+  Fin.lastCases_castSucc f
+
+theorem continuous_positiveIndexedInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (j : Fin (P.faces.length + 1)) :
+    Continuous (positiveIndexedInvFaceMap
+      P cut horientation hl hr validP j) := by
+  induction j using Fin.lastCases with
+  | last =>
+      rw [positiveIndexedInvFaceMap_last]
+      exact continuous_positiveRightChildInvFaceMap
+        P cut horientation hl hr validP
+  | cast f =>
+      rw [positiveIndexedInvFaceMap_castSucc]
+      exact continuous_positiveOldInvFaceMap
+        P cut horientation hl hr validP f
+
+/-- Inverse face map on the actual target face type. -/
+noncomputable def positiveInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (q : (split P cut).Face) :
+    PolygonCell ((split P cut).boundary q).length →
+      P.PolygonalRealization validP := by
+  let j := (faceEquiv P cut).symm q
+  have hq : faceEquiv P cut j = q :=
+    (faceEquiv P cut).apply_symm_apply q
+  exact hq ▸ positiveIndexedInvFaceMap
+    P cut horientation hl hr validP j
+
+theorem continuous_positiveInvFaceMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (q : (split P cut).Face) :
+    Continuous (positiveInvFaceMap
+      P cut horientation hl hr validP q) := by
+  let j := (faceEquiv P cut).symm q
+  have hq : faceEquiv P cut j = q :=
+    (faceEquiv P cut).apply_symm_apply q
+  change Continuous (hq ▸ positiveIndexedInvFaceMap
+    P cut horientation hl hr validP j)
+  cases hq
+  exact continuous_positiveIndexedInvFaceMap
+    P cut horientation hl hr validP j
+
+@[simp]
+theorem positiveInvFaceMap_oldFace
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) (f : P.Face) :
+    positiveInvFaceMap P cut horientation hl hr validP
+        (oldFace P cut f) =
+      positiveOldInvFaceMap
+        P cut horientation hl hr validP f := by
+  unfold positiveInvFaceMap
+  dsimp only
+  have hj :
+      (faceEquiv P cut).symm (oldFace P cut f) = f.castSucc :=
+    (faceEquiv P cut).symm_apply_eq.mpr rfl
+  cases hj
+  exact positiveIndexedInvFaceMap_castSucc
+    P cut horientation hl hr validP f
+
+@[simp]
+theorem positiveInvFaceMap_rightFace
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    positiveInvFaceMap P cut horientation hl hr validP
+        (rightFace P cut) =
+      positiveRightChildInvFaceMap
+        P cut horientation hl hr validP := by
+  unfold positiveInvFaceMap
+  dsimp only
+  have hj :
+      (faceEquiv P cut).symm (rightFace P cut) =
+        Fin.last P.faces.length :=
+    (faceEquiv P cut).symm_apply_eq.mpr rfl
+  cases hj
+  exact positiveIndexedInvFaceMap_last
+    P cut horientation hl hr validP
+
+/-- Continuous inverse map on the complete split polygonal pre-realization. -/
+noncomputable def positiveInvPreMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    (split P cut).PolygonalPreRealization →
+      P.PolygonalRealization validP :=
+  fun x => positiveInvFaceMap
+    P cut horientation hl hr validP x.1 x.2
+
+theorem continuous_positiveInvPreMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    Continuous (positiveInvPreMap
+      P cut horientation hl hr validP) := by
+  apply continuous_sigma
+  exact continuous_positiveInvFaceMap
+    P cut horientation hl hr validP
+
+@[simp]
+theorem positiveInvPreMap_oldFace
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) (f : P.Face)
+    (z : PolygonCell
+      ((split P cut).boundary (oldFace P cut f)).length) :
+    positiveInvPreMap P cut horientation hl hr validP
+        ⟨oldFace P cut f, z⟩ =
+      positiveOldInvFaceMap
+        P cut horientation hl hr validP f z := by
+  simp [positiveInvPreMap]
+
+@[simp]
+theorem positiveInvPreMap_rightFace
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell
+      ((split P cut).boundary (rightFace P cut)).length) :
+    positiveInvPreMap P cut horientation hl hr validP
+        ⟨rightFace P cut, z⟩ =
+      positiveRightChildInvFaceMap
+        P cut horientation hl hr validP z := by
+  simp [positiveInvPreMap]
+
+@[simp]
+theorem positiveOldInvFaceMap_selected
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    positiveOldInvFaceMap
+        P cut horientation hl hr validP cut.face.face =
+      positiveSelectedChildInvFaceMap
+        P cut horientation hl hr validP := by
+  simp [positiveOldInvFaceMap]
+
+@[simp]
+theorem positiveOldInvFaceMap_retained
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    {f : P.Face} (hface : f ≠ cut.face.face) :
+    positiveOldInvFaceMap
+        P cut horientation hl hr validP f =
+      retainedInvFaceMap P cut hface validP := by
+  simp [positiveOldInvFaceMap, hface]
+
+@[simp]
+theorem positiveSelectedChildInvFaceMap_apply
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell (cut.left.length + 1)) :
+    positiveSelectedChildInvFaceMap
+        P cut horientation hl hr validP
+        (positiveSelectedChildCellHomeomorph
+          P cut horientation z) =
+      positiveChildGluingInvMap
+        P cut horientation hl hr validP
+        (@Quotient.mk''
+          (DiskSquare.ChildPair cut.left.length cut.right.length)
+          (DiskSquare.paramChildSeamSetoid
+            cut.left.length cut.right.length)
+          (.inl z)) := by
+  simp [positiveSelectedChildInvFaceMap, Function.comp_apply]
+
+@[simp]
+theorem positiveRightChildInvFaceMap_apply
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell (cut.right.length + 1)) :
+    positiveRightChildInvFaceMap
+        P cut horientation hl hr validP
+        (positiveRightChildCellHomeomorph
+          P cut horientation z) =
+      positiveChildGluingInvMap
+        P cut horientation hl hr validP
+        (@Quotient.mk''
+          (DiskSquare.ChildPair cut.left.length cut.right.length)
+          (DiskSquare.paramChildSeamSetoid
+            cut.left.length cut.right.length)
+          (.inr z)) := by
+  simp [positiveRightChildInvFaceMap, Function.comp_apply]
+
+@[simp]
+theorem positiveInvPreMap_retained_apply
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (z : PolygonCell (P.boundary f).length) :
+    positiveInvPreMap P cut horientation hl hr validP
+        ⟨oldFace P cut f,
+          retainedCellHomeomorph P cut hface z⟩ =
+      P.polygonalMk validP ⟨f, z⟩ := by
+  rw [positiveInvPreMap_oldFace,
+    positiveOldInvFaceMap_retained
+      P cut horientation hl hr validP hface,
+    retainedInvFaceMap_apply]
+
+@[simp]
+theorem positiveInvPreMap_selectedChild_apply
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell (cut.left.length + 1)) :
+    positiveInvPreMap P cut horientation hl hr validP
+        ⟨oldFace P cut cut.face.face,
+          positiveSelectedChildCellHomeomorph
+            P cut horientation z⟩ =
+      positiveChildGluingInvMap
+        P cut horientation hl hr validP
+        (@Quotient.mk''
+          (DiskSquare.ChildPair cut.left.length cut.right.length)
+          (DiskSquare.paramChildSeamSetoid
+            cut.left.length cut.right.length)
+          (.inl z)) := by
+  rw [positiveInvPreMap_oldFace,
+    positiveOldInvFaceMap_selected,
+    positiveSelectedChildInvFaceMap_apply]
+
+@[simp]
+theorem positiveInvPreMap_rightChild_apply
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell (cut.right.length + 1)) :
+    positiveInvPreMap P cut horientation hl hr validP
+        ⟨rightFace P cut,
+          positiveRightChildCellHomeomorph
+            P cut horientation z⟩ =
+      positiveChildGluingInvMap
+        P cut horientation hl hr validP
+        (@Quotient.mk''
+          (DiskSquare.ChildPair cut.left.length cut.right.length)
+          (DiskSquare.paramChildSeamSetoid
+            cut.left.length cut.right.length)
+          (.inr z)) := by
+  rw [positiveInvPreMap_rightFace,
+    positiveRightChildInvFaceMap_apply]
+
+/-- The inverse pre-map identifies the target's fresh seam for the same local quotient reason used
+by the forward construction. -/
+theorem positiveInvPreMap_fresh_seam
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) (t : unitInterval) :
+    positiveInvPreMap P cut horientation hl hr validP
+        ⟨oldFace P cut cut.face.face,
+          positiveSelectedChildCellHomeomorph P cut horientation
+            (PolygonCell.side (Fin.last cut.left.length) t)⟩ =
+      positiveInvPreMap P cut horientation hl hr validP
+        ⟨rightFace P cut,
+          positiveRightChildCellHomeomorph P cut horientation
+            (PolygonCell.side (0 : Fin (cut.right.length + 1))
+              (unitInterval.symm t))⟩ := by
+  rw [positiveInvPreMap_selectedChild_apply,
+    positiveInvPreMap_rightChild_apply]
+  apply congrArg
+    (positiveChildGluingInvMap
+      P cut horientation hl hr validP)
+  apply Quotient.sound
+  exact Relation.EqvGen.rel _ _
+    (DiskSquare.ParamChildSeamGenerator.glue t)
+
 end P2
 
 end FiniteCyclicPresentation
