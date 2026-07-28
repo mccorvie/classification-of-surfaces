@@ -1504,6 +1504,408 @@ theorem baseSourceChildGluingHomeomorph_side
     baseChildPairMap_inr]
   exact (collarMap_old_side t).symm
 
+/-! ## Transport to an arbitrary positive surviving side count -/
+
+/-- Boundary weights which make side zero fill one digon semicircle and divide the other
+semicircle equally among the `r` old sides. -/
+def rightDegenerateWeights (r : ℕ) : List ℕ :=
+  r :: List.replicate r 1
+
+@[simp]
+theorem rightDegenerateWeights_length (r : ℕ) :
+    (rightDegenerateWeights r).length = r + 1 := by
+  simp [rightDegenerateWeights]
+
+@[simp]
+theorem rightDegenerateWeights_sum (r : ℕ) :
+    (rightDegenerateWeights r).sum = 2 * r := by
+  simp [rightDegenerateWeights]
+  omega
+
+theorem rightDegenerateWeights_positive
+    {r : ℕ} (hr : 0 < r) :
+    WeightedCircle.Positive (rightDegenerateWeights r) := by
+  intro w hw
+  simp only [rightDegenerateWeights, List.mem_cons,
+    List.mem_replicate] at hw
+  rcases hw with rfl | ⟨_, rfl⟩
+  · exact hr
+  · norm_num
+
+theorem rightDegenerateWeights_ne_nil (r : ℕ) :
+    rightDegenerateWeights r ≠ [] := by
+  simp [rightDegenerateWeights]
+
+@[simp]
+theorem rightDegenerateWeights_get_zero (r : ℕ) :
+    (rightDegenerateWeights r).get
+        ⟨0, by simp⟩ = r := by
+  simp [rightDegenerateWeights]
+
+theorem rightDegenerateWeights_take_succ
+    (r : ℕ) (i : Fin r) :
+    (rightDegenerateWeights r).take (i.val + 1) =
+      r :: List.replicate i.val 1 := by
+  simp [rightDegenerateWeights, List.take_succ_cons]
+
+@[simp]
+theorem rightDegenerateWeights_get_succ
+    (r : ℕ) (i : Fin r) :
+    (rightDegenerateWeights r).get
+        ⟨i.val + 1, by
+          simp only [rightDegenerateWeights_length]
+          omega⟩ = 1 := by
+  simp [rightDegenerateWeights]
+
+/-- The common parameter occupied by old side `i` inside the surviving digon semicircle. -/
+noncomputable def oldSideParameter
+    {r : ℕ} (hr : 0 < r) (i : Fin r)
+    (t : unitInterval) : unitInterval :=
+  ⟨((i.val : ℝ) + (t : ℝ)) / r,
+    div_nonneg (add_nonneg (Nat.cast_nonneg _) t.property.1)
+      (Nat.cast_nonneg _),
+    by
+      rw [div_le_one (by positivity)]
+      have hi : (i.val : ℝ) + 1 ≤ r := by
+        exact_mod_cast i.isLt
+      linarith [t.property.2]⟩
+
+/-- Reparameterize the `(r+1)`-gon boundary as a digon boundary, assigning the entire first
+semicircle to the fresh side. -/
+noncomputable def rightBoundaryHomeomorph
+    (r : ℕ) (hr : 0 < r) : Circle ≃ₜ Circle :=
+  WeightedCircle.circleHomeomorph
+    (rightDegenerateWeights r)
+    (rightDegenerateWeights_positive hr)
+    (rightDegenerateWeights_ne_nil r)
+
+/-- Radially extend the weighted boundary map from the surviving child to a digon. -/
+noncomputable def rightCellHomeomorph
+    (r : ℕ) (hr : 0 < r) :
+    PolygonCell (r + 1) ≃ₜ PolygonCell 2 :=
+  PolygonCell.radialHomeomorph
+    (rightBoundaryHomeomorph r hr)
+
+/-- Forget the side subdivision on the unsplit source disk. -/
+noncomputable def sourceCellHomeomorph
+    (r : ℕ) : PolygonCell r ≃ₜ PolygonCell 1 :=
+  PolygonCell.radialHomeomorph (Homeomorph.refl Circle)
+
+theorem rightBoundaryHomeomorph_fresh
+    (r : ℕ) (hr : 0 < r) (t : unitInterval) :
+    rightBoundaryHomeomorph r hr
+        (Circle.exp
+          (PolygonCell.sideAngle (0 : Fin (r + 1)) t)) =
+      Circle.exp
+        (PolygonCell.sideAngle (0 : Fin 2) t) := by
+  have h :=
+    WeightedCircle.circleHomeomorph_exp_index_add'
+      (rightDegenerateWeights r)
+      (rightDegenerateWeights_positive hr)
+      (rightDegenerateWeights_ne_nil r)
+      ⟨0, by simp⟩ t
+  rw [show PolygonCell.sideAngle (0 : Fin (r + 1)) t =
+      2 * Real.pi / (rightDegenerateWeights r).length *
+        ((0 : ℝ) + (t : ℝ)) by
+    unfold PolygonCell.sideAngle
+    simp only [rightDegenerateWeights_length,
+      Fin.val_zero, Nat.cast_zero, zero_add]
+    ring]
+  unfold rightBoundaryHomeomorph
+  have h' := h
+  simp only [Nat.cast_zero, zero_add] at h'
+  simp only [zero_add]
+  rw [h']
+  apply Circle.exp_eq_exp.mpr
+  refine ⟨0, ?_⟩
+  simp only [rightDegenerateWeights_sum,
+    List.take_zero, List.sum_nil,
+    rightDegenerateWeights_get_zero,
+    Nat.cast_zero, zero_add, Int.cast_zero,
+    zero_mul, add_zero]
+  unfold PolygonCell.sideAngle
+  simp only [Fin.val_zero, Nat.cast_zero, zero_add]
+  have hrReal : (r : ℝ) ≠ 0 := by exact_mod_cast hr.ne'
+  push_cast
+  field_simp [hrReal]
+
+theorem rightBoundaryHomeomorph_old
+    (r : ℕ) (hr : 0 < r) (i : Fin r)
+    (t : unitInterval) :
+    rightBoundaryHomeomorph r hr
+        (Circle.exp
+          (PolygonCell.sideAngle (i.addNat 1) t)) =
+      Circle.exp
+        (PolygonCell.sideAngle (1 : Fin 2)
+          (oldSideParameter hr i t)) := by
+  let j : Fin (rightDegenerateWeights r).length :=
+    ⟨i.val + 1, by
+      simp only [rightDegenerateWeights_length]
+      omega⟩
+  have h :=
+    WeightedCircle.circleHomeomorph_exp_index_add'
+      (rightDegenerateWeights r)
+      (rightDegenerateWeights_positive hr)
+      (rightDegenerateWeights_ne_nil r) j t
+  rw [show PolygonCell.sideAngle (i.addNat 1) t =
+      2 * Real.pi / (rightDegenerateWeights r).length *
+        ((j : ℝ) + (t : ℝ)) by
+    unfold PolygonCell.sideAngle
+    simp only [rightDegenerateWeights_length, j,
+      Fin.val_addNat]
+    ring]
+  unfold rightBoundaryHomeomorph
+  rw [h]
+  apply Circle.exp_eq_exp.mpr
+  refine ⟨0, ?_⟩
+  have hget :
+      (rightDegenerateWeights r).get j = 1 := by
+    dsimp [j]
+    exact rightDegenerateWeights_get_succ r i
+  rw [hget]
+  rw [rightDegenerateWeights_take_succ]
+  simp only [rightDegenerateWeights_sum,
+    List.sum_cons, List.sum_replicate,
+    nsmul_eq_mul, mul_one, Nat.cast_add,
+    Nat.cast_mul, Nat.cast_ofNat,
+    Int.cast_zero, zero_mul, add_zero]
+  unfold PolygonCell.sideAngle oldSideParameter
+  simp only [Fin.val_one, Nat.cast_one]
+  have hrReal : (r : ℝ) ≠ 0 := by exact_mod_cast hr.ne'
+  push_cast
+  field_simp [hrReal]
+  ring
+
+theorem rightCellHomeomorph_fresh
+    (r : ℕ) (hr : 0 < r) (t : unitInterval) :
+    rightCellHomeomorph r hr
+        (PolygonCell.side (0 : Fin (r + 1)) t) =
+      PolygonCell.side (0 : Fin 2) t := by
+  unfold rightCellHomeomorph
+  change
+    PolygonCell.radialHomeomorph
+        (rightBoundaryHomeomorph r hr)
+        (PolygonCell.ofCircle (r + 1)
+          (Circle.exp
+            (PolygonCell.sideAngle (0 : Fin (r + 1)) t))) =
+      PolygonCell.ofCircle 2
+        (Circle.exp
+          (PolygonCell.sideAngle (0 : Fin 2) t))
+  rw [PolygonCell.radialHomeomorph_ofCircle,
+    rightBoundaryHomeomorph_fresh]
+
+theorem rightCellHomeomorph_old
+    (r : ℕ) (hr : 0 < r) (i : Fin r)
+    (t : unitInterval) :
+    rightCellHomeomorph r hr
+        (PolygonCell.side (i.addNat 1) t) =
+      PolygonCell.side (1 : Fin 2)
+        (oldSideParameter hr i t) := by
+  unfold rightCellHomeomorph
+  change
+    PolygonCell.radialHomeomorph
+        (rightBoundaryHomeomorph r hr)
+        (PolygonCell.ofCircle (r + 1)
+          (Circle.exp
+            (PolygonCell.sideAngle (i.addNat 1) t))) =
+      PolygonCell.ofCircle 2
+        (Circle.exp
+          (PolygonCell.sideAngle (1 : Fin 2)
+            (oldSideParameter hr i t)))
+  rw [PolygonCell.radialHomeomorph_ofCircle,
+    rightBoundaryHomeomorph_old]
+
+theorem sourceCellHomeomorph_side
+    (r : ℕ) (hr : 0 < r) (i : Fin r)
+    (t : unitInterval) :
+    sourceCellHomeomorph r
+        (PolygonCell.side i t) =
+      PolygonCell.side (0 : Fin 1)
+        (oldSideParameter hr i t) := by
+  unfold sourceCellHomeomorph
+  change
+    PolygonCell.radialHomeomorph
+        (Homeomorph.refl Circle)
+        (PolygonCell.ofCircle r
+          (Circle.exp (PolygonCell.sideAngle i t))) =
+      PolygonCell.ofCircle 1
+        (Circle.exp
+          (PolygonCell.sideAngle (0 : Fin 1)
+            (oldSideParameter hr i t)))
+  rw [PolygonCell.radialHomeomorph_ofCircle]
+  apply congrArg (PolygonCell.ofCircle 1)
+  apply Circle.exp_eq_exp.mpr
+  refine ⟨0, ?_⟩
+  unfold PolygonCell.sideAngle oldSideParameter
+  simp only [Fin.val_zero, Nat.cast_zero,
+    Nat.cast_one, zero_add, div_one,
+    Int.cast_zero, zero_mul, add_zero]
+  ring
+
+/-- Simultaneously straighten a one-sided-degenerate child pair to the base monogon--digon
+pair. -/
+noncomputable def childPairBaseHomeomorph
+    (r : ℕ) (hr : 0 < r) :
+    DiskSquare.ChildPair 0 r ≃ₜ BaseChildPair :=
+  Homeomorph.sumCongr
+    (Homeomorph.refl (PolygonCell 1))
+    (rightCellHomeomorph r hr)
+
+@[simp]
+theorem childPairBaseHomeomorph_inl
+    (r : ℕ) (hr : 0 < r) (z : PolygonCell 1) :
+    childPairBaseHomeomorph r hr (.inl z) = .inl z :=
+  rfl
+
+@[simp]
+theorem childPairBaseHomeomorph_inr
+    (r : ℕ) (hr : 0 < r)
+    (z : PolygonCell (r + 1)) :
+    childPairBaseHomeomorph r hr (.inr z) =
+      .inr (rightCellHomeomorph r hr z) :=
+  rfl
+
+theorem rightCellHomeomorph_symm_fresh
+    (r : ℕ) (hr : 0 < r) (t : unitInterval) :
+    (rightCellHomeomorph r hr).symm
+        (PolygonCell.side (0 : Fin 2) t) =
+      PolygonCell.side (0 : Fin (r + 1)) t := by
+  apply (rightCellHomeomorph r hr).injective
+  rw [Homeomorph.apply_symm_apply,
+    rightCellHomeomorph_fresh]
+
+theorem childPairBase_generator_map
+    (r : ℕ) (hr : 0 < r)
+    {x y : DiskSquare.ChildPair 0 r}
+    (hxy : DiskSquare.ParamChildSeamGenerator 0 r x y) :
+    DiskSquare.ParamChildSeamGenerator 0 1
+      (childPairBaseHomeomorph r hr x)
+      (childPairBaseHomeomorph r hr y) := by
+  cases hxy with
+  | glue t =>
+      change
+        DiskSquare.ParamChildSeamGenerator 0 1
+          (.inl (PolygonCell.side (0 : Fin 1) t))
+          (.inr
+            (rightCellHomeomorph r hr
+              (PolygonCell.side (0 : Fin (r + 1))
+                (unitInterval.symm t))))
+      rw [rightCellHomeomorph_fresh]
+      exact DiskSquare.ParamChildSeamGenerator.glue t
+
+theorem childPairBase_generator_comap
+    (r : ℕ) (hr : 0 < r)
+    {x y : BaseChildPair}
+    (hxy : DiskSquare.ParamChildSeamGenerator 0 1 x y) :
+    DiskSquare.ParamChildSeamGenerator 0 r
+      ((childPairBaseHomeomorph r hr).symm x)
+      ((childPairBaseHomeomorph r hr).symm y) := by
+  cases hxy with
+  | glue t =>
+      change
+        DiskSquare.ParamChildSeamGenerator 0 r
+          (.inl (PolygonCell.side (0 : Fin 1) t))
+          (.inr
+            ((rightCellHomeomorph r hr).symm
+              (PolygonCell.side (0 : Fin 2)
+                (unitInterval.symm t))))
+      rw [rightCellHomeomorph_symm_fresh]
+      exact DiskSquare.ParamChildSeamGenerator.glue t
+
+/-- The weighted child straightening identifies exactly the two generated seam relations. -/
+theorem childPairBase_eqvGen_iff
+    (r : ℕ) (hr : 0 < r)
+    (x y : DiskSquare.ChildPair 0 r) :
+    Relation.EqvGen
+        (DiskSquare.ParamChildSeamGenerator 0 r) x y ↔
+      Relation.EqvGen
+        (DiskSquare.ParamChildSeamGenerator 0 1)
+        (childPairBaseHomeomorph r hr x)
+        (childPairBaseHomeomorph r hr y) := by
+  constructor
+  · intro hxy
+    induction hxy with
+    | rel _ _ h =>
+        exact Relation.EqvGen.rel _ _
+          (childPairBase_generator_map r hr h)
+    | refl => exact Relation.EqvGen.refl _
+    | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
+    | trans _ _ _ _ _ ih₁ ih₂ =>
+        exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  · intro hxy
+    let e := childPairBaseHomeomorph r hr
+    have hcomap :
+        ∀ {u v : BaseChildPair},
+          Relation.EqvGen
+              (DiskSquare.ParamChildSeamGenerator 0 1)
+              u v →
+            Relation.EqvGen
+              (DiskSquare.ParamChildSeamGenerator 0 r)
+              (e.symm u) (e.symm v) := by
+      intro u v huv
+      induction huv with
+      | rel _ _ h =>
+          exact Relation.EqvGen.rel _ _
+            (childPairBase_generator_comap r hr h)
+      | refl => exact Relation.EqvGen.refl _
+      | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
+      | trans _ _ _ _ _ ih₁ ih₂ =>
+          exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+    simpa only [e, Homeomorph.symm_apply_apply] using
+      hcomap hxy
+
+/-- The arbitrary one-sided-degenerate child quotient is identified with the base
+monogon--digon quotient. -/
+noncomputable def childGluingBaseHomeomorph
+    (r : ℕ) (hr : 0 < r) :
+    DiskSquare.ParamChildGluing 0 r ≃ₜ
+      DiskSquare.ParamChildGluing 0 1 :=
+  Homeomorph.Quotient.congr
+    (childPairBaseHomeomorph r hr)
+    (childPairBase_eqvGen_iff r hr)
+
+@[simp]
+theorem childGluingBaseHomeomorph_mk
+    (r : ℕ) (hr : 0 < r)
+    (x : DiskSquare.ChildPair 0 r) :
+    childGluingBaseHomeomorph r hr
+        (@Quotient.mk'' (DiskSquare.ChildPair 0 r)
+          (DiskSquare.paramChildSeamSetoid 0 r) x) =
+      @Quotient.mk'' BaseChildPair
+        (DiskSquare.paramChildSeamSetoid 0 1)
+        (childPairBaseHomeomorph r hr x) :=
+  rfl
+
+/-- The local source-to-children equivalence for any ordinary-valid right one-sided-degenerate
+P2 cut. -/
+noncomputable def sourceChildGluingHomeomorph
+    (r : ℕ) (hr : 0 < r) :
+    PolygonCell r ≃ₜ DiskSquare.ParamChildGluing 0 r :=
+  (sourceCellHomeomorph r).trans
+    (baseSourceChildGluingHomeomorph.trans
+      (childGluingBaseHomeomorph r hr).symm)
+
+/-- Every old source side is carried to the corresponding surviving-child side with its exact
+original parameter. -/
+theorem sourceChildGluingHomeomorph_side
+    (r : ℕ) (hr : 0 < r) (i : Fin r)
+    (t : unitInterval) :
+    sourceChildGluingHomeomorph r hr
+        (PolygonCell.side i t) =
+      @Quotient.mk'' (DiskSquare.ChildPair 0 r)
+        (DiskSquare.paramChildSeamSetoid 0 r)
+        (.inr (PolygonCell.side (i.addNat 1) t)) := by
+  apply (childGluingBaseHomeomorph r hr).injective
+  rw [sourceChildGluingHomeomorph,
+    Homeomorph.trans_apply, Homeomorph.trans_apply,
+    Homeomorph.apply_symm_apply,
+    childGluingBaseHomeomorph_mk,
+    childPairBaseHomeomorph_inr,
+    sourceCellHomeomorph_side,
+    rightCellHomeomorph_old]
+  exact baseSourceChildGluingHomeomorph_side
+    (oldSideParameter hr i t)
+
 end P2DegenerateDisk
 
 end LeanEval.Topology.ClassificationOfSurfaces
