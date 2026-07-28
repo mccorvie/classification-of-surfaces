@@ -3125,6 +3125,221 @@ theorem positivePolygonallyEquivalent
   (positiveRealizationEquivData
     P cut horientation hl hr validP).polygonallyEquivalent
 
+/-! ### Transport across reversal of the chosen cut orientation -/
+
+/-- Swap the selected-face position with the fresh right-child position. -/
+def flipFaceIndexEquiv
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    Fin (P.faces.length + 1) ≃ Fin (P.faces.length + 1) :=
+  Equiv.swap cut.face.face.castSucc (Fin.last P.faces.length)
+
+/-- Reversing a cut exchanges its two child faces and fixes every retained face. -/
+def flipFaceEquiv
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    (split P cut.flip).Face ≃ (split P cut).Face :=
+  ((faceEquiv P cut.flip).symm.trans
+    (flipFaceIndexEquiv P cut)).trans
+      (faceEquiv P cut)
+
+@[simp]
+theorem flipFaceEquiv_old_selected
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    flipFaceEquiv P cut
+        (oldFace P cut.flip cut.face.face) =
+      rightFace P cut := by
+  simp [flipFaceEquiv, flipFaceIndexEquiv,
+    oldFace, rightFace]
+
+@[simp]
+theorem flipFaceEquiv_right
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    flipFaceEquiv P cut (rightFace P cut.flip) =
+      oldFace P cut cut.face.face := by
+  simp [flipFaceEquiv, flipFaceIndexEquiv,
+    oldFace, rightFace]
+
+@[simp]
+theorem flipFaceEquiv_old_of_ne
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face) :
+    flipFaceEquiv P cut (oldFace P cut.flip f) =
+      oldFace P cut f := by
+  have hselected :
+      f.castSucc ≠ cut.face.face.castSucc := by
+    exact fun h =>
+      hface (Fin.castSucc_injective _ h)
+  have hlast :
+      f.castSucc ≠ Fin.last P.faces.length :=
+    Fin.castSucc_ne_last f
+  simp [flipFaceEquiv, flipFaceIndexEquiv,
+    oldFace, Equiv.swap_apply_of_ne_of_ne
+      hselected hlast]
+
+/-- Identity edge relabeling between the definitionally equal edge types of the two reversed-cut
+splits. Naming the transport keeps the signed-isomorphism boundary proof transparent. -/
+def flipEdgeRelabeling
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    EdgeRelabeling (split P cut.flip).Edge (split P cut).Edge := by
+  change
+    EdgeRelabeling (Fin (P.edgeCount + 1))
+      (Fin (P.edgeCount + 1))
+  exact EdgeRelabeling.refl _
+
+@[simp]
+theorem flipEdgeRelabeling_mapDart
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (d : (split P cut.flip).Dart) :
+    (flipEdgeRelabeling P cut).mapDart d = d := by
+  cases d <;> rfl
+
+@[simp]
+theorem map_flipEdgeRelabeling
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (word : List (split P cut.flip).Dart) :
+    word.map (flipEdgeRelabeling P cut).mapDart = word := by
+  induction word with
+  | nil => rfl
+  | cons d word ih =>
+      rw [List.map_cons,
+        flipEdgeRelabeling_mapDart]
+      exact congrArg (List.cons d) ih
+
+theorem map_boundary_flip_old_selected
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    ((split P cut.flip).boundary
+        (oldFace P cut.flip cut.face.face)).map
+          (flipEdgeRelabeling P cut).mapDart =
+      (split P cut).boundary (rightFace P cut) := by
+  calc
+    ((split P cut.flip).boundary
+        (oldFace P cut.flip cut.face.face)).map
+          (flipEdgeRelabeling P cut).mapDart =
+        (selectedBoundary P cut.flip).map
+          (flipEdgeRelabeling P cut).mapDart :=
+      congrArg
+        (List.map (flipEdgeRelabeling P cut).mapDart)
+        (split_boundary_selected P cut.flip)
+    _ = (show List (split P cut).Dart from
+        selectedBoundary P cut.flip) :=
+      map_flipEdgeRelabeling P cut _
+    _ = (show List (split P cut).Dart from
+        rightBoundary P cut) :=
+      selectedBoundary_flip P cut
+    _ = (split P cut).boundary (rightFace P cut) :=
+      (split_boundary_right P cut).symm
+
+theorem map_boundary_flip_right
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    ((split P cut.flip).boundary
+        (rightFace P cut.flip)).map
+          (flipEdgeRelabeling P cut).mapDart =
+      (split P cut).boundary
+        (oldFace P cut cut.face.face) := by
+  calc
+    ((split P cut.flip).boundary
+        (rightFace P cut.flip)).map
+          (flipEdgeRelabeling P cut).mapDart =
+        (rightBoundary P cut.flip).map
+          (flipEdgeRelabeling P cut).mapDart :=
+      congrArg
+        (List.map (flipEdgeRelabeling P cut).mapDart)
+        (split_boundary_right P cut.flip)
+    _ = (show List (split P cut).Dart from
+        rightBoundary P cut.flip) :=
+      map_flipEdgeRelabeling P cut _
+    _ = (show List (split P cut).Dart from
+        selectedBoundary P cut) :=
+      rightBoundary_flip P cut
+    _ = (split P cut).boundary
+        (oldFace P cut cut.face.face) :=
+      (split_boundary_selected P cut).symm
+
+theorem map_boundary_flip_old_of_ne
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face) :
+    ((split P cut.flip).boundary
+        (oldFace P cut.flip f)).map
+          (flipEdgeRelabeling P cut).mapDart =
+      (split P cut).boundary (oldFace P cut f) := by
+  have hfaceFlip : f ≠ cut.flip.face.face := by
+    simpa using hface
+  calc
+    ((split P cut.flip).boundary
+        (oldFace P cut.flip f)).map
+          (flipEdgeRelabeling P cut).mapDart =
+        (retainWord (P.boundary f)).map
+          (flipEdgeRelabeling P cut).mapDart :=
+      congrArg
+        (List.map (flipEdgeRelabeling P cut).mapDart)
+        (split_boundary_old_of_ne
+          P cut.flip hfaceFlip)
+    _ = (show List (split P cut).Dart from
+        retainWord (P.boundary f)) :=
+      map_flipEdgeRelabeling P cut _
+    _ = (split P cut).boundary (oldFace P cut f) :=
+      (split_boundary_old_of_ne P cut hface).symm
+
+/-- The split presentations obtained from the two orientations of a cut differ only by swapping
+the two child faces. -/
+def flipSignedPresentationIso
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    SignedPresentationIso (split P cut.flip) (split P cut) where
+  edgeRelabeling := flipEdgeRelabeling P cut
+  faceEquiv := flipFaceEquiv P cut
+  boundary_rotated := by
+    intro q
+    rcases face_cases P cut.flip q with ⟨f, rfl⟩ | rfl
+    · by_cases hface : f = cut.face.face
+      · subst f
+        rw [map_boundary_flip_old_selected,
+          flipFaceEquiv_old_selected,
+          split_boundary_right]
+      · rw [map_boundary_flip_old_of_ne P cut hface,
+          flipFaceEquiv_old_of_ne P cut hface,
+          split_boundary_old_of_ne P cut hface]
+    · rw [map_boundary_flip_right,
+        flipFaceEquiv_right,
+        split_boundary_selected]
+
+/-- A negative-orientation nondegenerate cut reduces to the positive theorem after reversing the
+cut and swapping the two child faces. -/
+theorem negativePolygonallyEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = true)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    P.PolygonallyEquivalent (split P cut) validP
+      (split_isSurfaceValid P cut validP) := by
+  have hflipOrientation :
+      cut.flip.face.orientation = false := by
+    simp [P2Cut.flip, OrientedFace.flip, horientation]
+  have hflipLeft : 0 < cut.flip.left.length := by
+    simpa [P2Cut.flip, inverseWord] using hr
+  have hflipRight : 0 < cut.flip.right.length := by
+    simpa [P2Cut.flip, inverseWord] using hl
+  let validFlip :=
+    split_isSurfaceValid P cut.flip validP
+  exact
+    (positivePolygonallyEquivalent
+      P cut.flip hflipOrientation
+        hflipLeft hflipRight validP).trans
+      ((flipSignedPresentationIso P cut).polygonallyEquivalent
+        validFlip (split_isSurfaceValid P cut validP))
+
+/-- Every nondegenerate P2 split preserves the faithful polygonal realization, independently of
+the chosen traversal orientation. -/
+theorem nondegeneratePolygonallyEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    P.PolygonallyEquivalent (split P cut) validP
+      (split_isSurfaceValid P cut validP) := by
+  cases horientation : cut.face.orientation
+  · exact positivePolygonallyEquivalent
+      P cut horientation hl hr validP
+  · exact negativePolygonallyEquivalent
+      P cut horientation hl hr validP
+
 end P2
 
 end FiniteCyclicPresentation
