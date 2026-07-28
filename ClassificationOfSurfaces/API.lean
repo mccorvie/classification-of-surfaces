@@ -12,15 +12,18 @@ import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicCanonical
 import ClassificationOfSurfaces.FiniteCyclicCanonicalRealization
+import ClassificationOfSurfaces.FiniteCyclicCancellation
 import ClassificationOfSurfaces.FiniteCyclicCrosscap
 import ClassificationOfSurfaces.FiniteCyclicDerivedRewrites
 import ClassificationOfSurfaces.FiniteCyclicDyck
+import ClassificationOfSurfaces.FiniteCyclicFaceMerge
 import ClassificationOfSurfaces.FiniteCyclicMoveRealization
 import ClassificationOfSurfaces.FiniteCyclicMoves
 import ClassificationOfSurfaces.FiniteCyclicNormalization
 import ClassificationOfSurfaces.FiniteCyclicP1
 import ClassificationOfSurfaces.FiniteCyclicP1Realization
 import ClassificationOfSurfaces.FiniteCyclicP2
+import ClassificationOfSurfaces.FiniteCyclicP2DegenerateRealization
 import ClassificationOfSurfaces.FiniteCyclicP2Realization
 import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.FiniteCyclicRealization
@@ -231,6 +234,8 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.NormalizationEquivalent.polygonallyEquivalent`
 * `FiniteCyclicPresentation.P1.contractionNormalizationEquivalent`
 * `FiniteCyclicPresentation.P2.mergeNormalizationEquivalent`
+* `FiniteCyclicPresentation.P2.oneSidedMergeNormalizationEquivalent`
+* `FiniteCyclicPresentation.P2.oneSidedPolygonallyEquivalent`
 * `FiniteCyclicPresentation.Dyck.normalizationEquivalent`
 * `FiniteCyclicPresentation.Crosscap.normalizationEquivalent`
 * `FiniteCyclicPresentation.Dyck.negativeNormalizationEquivalent`
@@ -239,6 +244,10 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.Handle.normalizationEquivalent`
 * `FiniteCyclicPresentation.HandleToCrosscaps.normalizationEquivalent`
 * `FiniteCyclicPresentation.LoopGrouping.normalizationEquivalent`
+* `FiniteCyclicPresentation.Cancellation.normalizationEquivalent`
+* `FiniteCyclicPresentation.Cancellation.Context.normalizationEquivalent`
+* `FiniteCyclicPresentation.FaceMerge.normalizationEquivalent`
+* `FiniteCyclicPresentation.FaceMerge.ContextMerge.normalizationEquivalent`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -289,12 +298,16 @@ broader comparison takes ordinary-validity proofs for both endpoints rather than
 transport validity automatically.
 
 `NormalizationEquivalent` is the stable chain API over validity-bundled presentations. Its
-primitive steps are common subdivisions and unoriented comparisons in either direction, and every
-chain produces a faithful polygonal-realization homeomorphism. Both generic pseudo-rewrites are
-available as nodes in this closure. The derived-chain layer also exposes the opposite-orientation
-Dyck and crosscap rules, the full three-Dyck handle extraction, the four-rewrite conversion of a
-handle plus a crosscap into three crosscaps, and the loop-grouping specialization; all intermediate
-validity witnesses are constructed internally.
+primitive steps are common subdivisions, unoriented comparisons in either direction, and the
+proved one-sided-degenerate P2 comparison; every chain produces a faithful
+polygonal-realization homeomorphism. Both generic pseudo-rewrites are available as nodes in this
+closure. The derived-chain layer also exposes the opposite-orientation Dyck and crosscap rules,
+the full three-Dyck handle extraction, the four-rewrite conversion of a handle plus a crosscap
+into three crosscaps, and the loop-grouping specialization; all intermediate validity witnesses
+are constructed internally. Exact inverse-pair cancellation and two-face merging are available
+both as isolated word rules and in multi-face contexts with untouched faces. Their transported
+forms isolate arbitrary edge naming, face order, traversal orientation, and cyclic starting
+points behind signed presentation isomorphisms.
 
 ## Polygonal quotient foundation
 
