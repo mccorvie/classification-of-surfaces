@@ -200,6 +200,57 @@ theorem polygonallyEquivalent {n : ℕ}
       (target_isSurfaceValid U V hUV validSource) :=
   (normalizationEquivalent U V hUV validSource).polygonallyEquivalent
 
+/-! ### Merging through an arbitrary signed-isomorphic split -/
+
+/-- Any presentation signed-isomorphic to an ordinary canonical P2 split can be merged.
+This is the stable interface used when the two child faces occur among additional untouched
+faces: all face ordering and edge naming is confined to `sourceIso`. -/
+theorem normalizationEquivalentOfSignedIso
+    {P Q : FiniteCyclicPresentation}
+    (cut : P2Cut Q)
+    (hcut :
+      cut.IsNondegenerate ∨
+        (cut.left = [] ∧ 0 < cut.right.length) ∨
+          (0 < cut.left.length ∧ cut.right = []))
+    (sourceIso : SignedPresentationIso P (P2.split Q cut))
+    (validP : P.IsSurfaceValid)
+    (validQ : Q.IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨P, validP⟩
+      ⟨Q, validQ⟩ := by
+  let validSplitFromIso : (P2.split Q cut).IsSurfaceValid :=
+    sourceIso.isSurfaceValid validP
+  let validCanonicalSplit : (P2.split Q cut).IsSurfaceValid :=
+    P2.split_isSurfaceValid Q cut validQ
+  have hsplitNode :
+      (⟨P2.split Q cut, validSplitFromIso⟩ : ValidPresentation) =
+        ⟨P2.split Q cut, validCanonicalSplit⟩ := by
+    apply ValidPresentation.ext
+    rfl
+  have hsource :
+      NormalizationEquivalent
+        ⟨P, validP⟩
+        ⟨P2.split Q cut, validSplitFromIso⟩ :=
+    NormalizationEquivalent.ofSignedIso sourceIso
+  rw [hsplitNode] at hsource
+  exact hsource.trans
+    (P2.ordinaryMergeNormalizationEquivalent Q cut hcut validQ)
+
+/-- Public realization-invariance form of merging through a signed-isomorphic split. -/
+theorem polygonallyEquivalentOfSignedIso
+    {P Q : FiniteCyclicPresentation}
+    (cut : P2Cut Q)
+    (hcut :
+      cut.IsNondegenerate ∨
+        (cut.left = [] ∧ 0 < cut.right.length) ∨
+          (0 < cut.left.length ∧ cut.right = []))
+    (sourceIso : SignedPresentationIso P (P2.split Q cut))
+    (validP : P.IsSurfaceValid)
+    (validQ : Q.IsSurfaceValid) :
+    P.PolygonallyEquivalent Q validP validQ :=
+  (normalizationEquivalentOfSignedIso
+    cut hcut sourceIso validP validQ).polygonallyEquivalent
+
 /-! ### Arbitrary separator names -/
 
 /-- Two displayed faces with an arbitrarily named, oppositely oriented separator. -/
