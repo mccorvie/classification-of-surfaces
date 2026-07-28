@@ -385,6 +385,377 @@ theorem sphereNormalizationEquivalent
   rw [← htargetNode]
   exact hsource.trans hmiddle
 
+/-! ### Cancellation in a multi-face context -/
+
+namespace Context
+
+/-- Delete the displayed pair in the first face and retain all other faces. -/
+@[reducible]
+def target {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    FiniteCyclicPresentation where
+  edgeCount := n
+  faces := X :: W
+
+/-- The base contextual cancellation spelling, with the cancellable edge named last. -/
+@[reducible]
+def source {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    FiniteCyclicPresentation where
+  edgeCount := n + 1
+  faces :=
+    ([.pos (P1.freshEdge n), .neg (P1.freshEdge n)] ++
+      P2.retainWord X) :: W.map P2.retainWord
+
+/-- Split the displayed inverse pair from the rest of the first source face. -/
+def sourceCut {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    P2Cut (source X W) where
+  face := ⟨⟨0, by simp [source]⟩, false⟩
+  left := [.pos (P1.freshEdge n)]
+  right := [.neg (P1.freshEdge n)] ++ P2.retainWord X
+  boundary_rotated := List.IsRotated.refl _
+
+/-- Split the first target face at position zero. -/
+def targetCut {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    P2Cut (target X W) :=
+  P2Cut.canonical ⟨⟨0, by simp [target]⟩, false⟩ 0
+
+@[simp]
+theorem sourceCut_left {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (sourceCut X W).left = [.pos (P1.freshEdge n)] :=
+  rfl
+
+@[simp]
+theorem sourceCut_right {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (sourceCut X W).right =
+      [.neg (P1.freshEdge n)] ++ P2.retainWord X :=
+  rfl
+
+theorem sourceCut_isNondegenerate {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (sourceCut X W).IsNondegenerate := by
+  constructor <;> simp
+
+@[simp]
+theorem targetCut_left {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (targetCut X W).left = [] :=
+  rfl
+
+@[simp]
+theorem targetCut_right {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (targetCut X W).right = X :=
+  rfl
+
+/-- Source and target retain the same face positions before the auxiliary P2 splits. -/
+def baseFaceEquiv {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (source X W).Face ≃ (target X W).Face :=
+  finCongr (by simp [source, target])
+
+/-- The face positions in the source split and the expanded target split have the same explicit
+indexing: old positions first and the right child last. -/
+def middleFaceEquiv {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (P2.split (source X W) (sourceCut X W)).Face ≃
+      (P1.expand (P2.split (target X W) (targetCut X W))
+        (P2.freshEdge (target X W))).Face :=
+  (P2.faceEquiv (source X W) (sourceCut X W)).symm |>.trans
+    ((finCongr (by simp [source, target])).trans
+      ((P2.faceEquiv (target X W) (targetCut X W)).trans
+        (P1.faceEquiv
+          (P2.split (target X W) (targetCut X W))
+          (P2.freshEdge (target X W)))))
+
+@[simp]
+theorem middleFaceEquiv_apply_val {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (f : (P2.split (source X W) (sourceCut X W)).Face) :
+    (middleFaceEquiv X W f).val = f.val := by
+  simp only [middleFaceEquiv, Equiv.trans_apply, P2.faceEquiv,
+    P1.faceEquiv, finCongr_apply, Fin.val_cast]
+  rfl
+
+@[simp]
+theorem middleFaceEquiv_oldFace {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (f : (source X W).Face) :
+    middleFaceEquiv X W
+        (P2.oldFace (source X W) (sourceCut X W) f) =
+      P1.faceEquiv
+        (P2.split (target X W) (targetCut X W))
+        (P2.freshEdge (target X W))
+        (P2.oldFace (target X W) (targetCut X W)
+          (baseFaceEquiv X W f)) := by
+  apply Fin.ext
+  rw [middleFaceEquiv_apply_val, P1.faceEquiv_apply_val]
+  change f.val = (baseFaceEquiv X W f).val
+  rfl
+
+@[simp]
+theorem middleFaceEquiv_rightFace {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    middleFaceEquiv X W
+        (P2.rightFace (source X W) (sourceCut X W)) =
+      P1.faceEquiv
+        (P2.split (target X W) (targetCut X W))
+        (P2.freshEdge (target X W))
+        (P2.rightFace (target X W) (targetCut X W)) := by
+  apply Fin.ext
+  rw [middleFaceEquiv_apply_val, P1.faceEquiv_apply_val]
+  change (source X W).faces.length = (target X W).faces.length
+  simp [source, target]
+
+/-- Splitting the contextual source is signed-isomorphic to P1 expansion of the one-sided target
+split. Untouched faces are retained through both fresh-edge embeddings. -/
+def splitSourceSignedIsoExpandSplitTarget {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    SignedPresentationIso
+      (P2.split (source X W) (sourceCut X W))
+      (P1.expand (P2.split (target X W) (targetCut X W))
+        (P2.freshEdge (target X W))) where
+  edgeRelabeling := by
+    change EdgeRelabeling (Fin (n + 2)) (Fin (n + 2))
+    exact EdgeRelabeling.refl _
+  faceEquiv := middleFaceEquiv X W
+  boundary_rotated := by
+    intro f
+    change
+      (((P2.split (source X W) (sourceCut X W)).boundary f).map
+        (EdgeRelabeling.refl (Fin (n + 2))).mapDart).IsRotated
+        ((P1.expand (P2.split (target X W) (targetCut X W))
+          (P2.freshEdge (target X W))).boundary
+            (middleFaceEquiv X W f))
+    rw [EdgeRelabeling.map_mapDart_refl]
+    let i :=
+      (P2.faceEquiv (source X W) (sourceCut X W)).symm f
+    have hf :
+        P2.faceEquiv (source X W) (sourceCut X W) i = f :=
+      (P2.faceEquiv (source X W) (sourceCut X W)).apply_symm_apply f
+    rw [← hf]
+    induction i using Fin.lastCases with
+    | last =>
+        change
+          (P2.split (source X W) (sourceCut X W)).boundary
+              (P2.rightFace (source X W) (sourceCut X W)) |>.IsRotated
+            ((P1.expand
+                (P2.split (target X W) (targetCut X W))
+                (P2.freshEdge (target X W))).boundary
+                (middleFaceEquiv X W
+                  (P2.rightFace (source X W) (sourceCut X W))))
+        rw [middleFaceEquiv_rightFace, P1.expand_boundary,
+          P2.split_boundary_right, P2.split_boundary_right]
+        simp only [sourceCut, targetCut, P2Cut.canonical, source, target,
+          P2.rightBoundary, P2.rightOrientedBoundary, P2.storedWord,
+          P2.freshEdge]
+        change
+          (SignedDart.neg (Fin.last (n + 1)) ::
+              P2.retainWord
+                (SignedDart.neg (Fin.last n) :: P2.retainWord X)).IsRotated
+            (P1.expandWord (Fin.last n)
+              (SignedDart.neg (Fin.last n) :: P2.retainWord X))
+        rw [show
+          P1.expandWord (Fin.last n)
+              (SignedDart.neg (Fin.last n) :: P2.retainWord X) =
+            SignedDart.neg (Fin.last (n + 1)) ::
+              P2.retainWord
+                (SignedDart.neg (Fin.last n) :: P2.retainWord X) by
+          rw [P1.expandWord_cons, P1.expandDart_neg_self,
+            show
+              P1.expandWord (Fin.last n) (P2.retainWord X) =
+                P2.retainWord (P2.retainWord X) by
+              simpa only [P1.freshEdge] using
+                Cancellation.expandWord_retainWord_fresh X]
+          rfl]
+    | cast j =>
+        induction j using Fin.cases with
+        | zero =>
+            change
+              (P2.split (source X W) (sourceCut X W)).boundary
+                  (P2.oldFace (source X W) (sourceCut X W) 0) |>.IsRotated
+                ((P1.expand
+                    (P2.split (target X W) (targetCut X W))
+                    (P2.freshEdge (target X W))).boundary
+                    (middleFaceEquiv X W
+                    (P2.oldFace (source X W) (sourceCut X W) 0)))
+            rw [middleFaceEquiv_oldFace, P1.expand_boundary]
+            have hsourceZero :
+                (0 : (source X W).Face) =
+                  (sourceCut X W).face.face := by
+              apply Fin.ext
+              rfl
+            have htargetZero :
+                baseFaceEquiv X W (sourceCut X W).face.face =
+                  (targetCut X W).face.face := by
+              apply Fin.ext
+              rfl
+            rw [hsourceZero, P2.split_boundary_selected,
+              htargetZero, P2.split_boundary_selected]
+            simp [sourceCut, source, target,
+              P2.selectedBoundary, P2.selectedOrientedBoundary,
+              P2.storedWord, P2.freshEdge]
+            simp [targetCut, P2Cut.canonical, P1.expandWord,
+              P1.expandDart, P2.retainWord, P1.freshEdge,
+              P1.firstSubedge]
+            exact List.IsRotated.refl _
+        | succ k =>
+            change
+              (P2.split (source X W) (sourceCut X W)).boundary
+                  (P2.oldFace (source X W) (sourceCut X W) k.succ) |>.IsRotated
+                ((P1.expand
+                    (P2.split (target X W) (targetCut X W))
+                    (P2.freshEdge (target X W))).boundary
+                    (middleFaceEquiv X W
+                    (P2.oldFace (source X W) (sourceCut X W) k.succ)))
+            rw [middleFaceEquiv_oldFace, P1.expand_boundary,
+              P2.split_boundary_old_of_ne, P2.split_boundary_old_of_ne]
+            · let kW : Fin W.length :=
+                ⟨k.val, by simpa using k.isLt⟩
+              have hsourceBoundary :
+                  (source X W).boundary k.succ =
+                    P2.retainWord (W.get kW) := by
+                simp [source, FiniteCyclicPresentation.boundary, kW]
+              have htargetBoundary :
+                  (target X W).boundary
+                      (baseFaceEquiv X W k.succ) =
+                    W.get kW := by
+                simp [target, baseFaceEquiv,
+                  FiniteCyclicPresentation.boundary, kW]
+              rw [hsourceBoundary, htargetBoundary]
+              change
+                (P2.retainWord (P2.retainWord (W.get kW))).IsRotated
+                  (P1.expandWord (P1.freshEdge n)
+                    (P2.retainWord (W.get kW)))
+              rw [Cancellation.expandWord_retainWord_fresh]
+            · intro h
+              have hval := congrArg Fin.val h
+              change k.val + 1 = 0 at hval
+              omega
+            · intro h
+              have hval := congrArg Fin.val h
+              change k.val + 1 = 0 at hval
+              omega
+
+/-- Gallier--Xu Step 1 inside a multi-face context: split the displayed pair, contract the
+resulting two-edge paths, and merge the monogon, leaving all other faces untouched. -/
+theorem normalizationEquivalent {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (hX : X ≠ [])
+    (validSource : (source X W).IsSurfaceValid)
+    (validTarget : (target X W).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨source X W, validSource⟩
+      ⟨target X W, validTarget⟩ := by
+  let sourceSplit := P2.split (source X W) (sourceCut X W)
+  let targetSplit := P2.split (target X W) (targetCut X W)
+  let expandedTargetSplit :=
+    P1.expand targetSplit (P2.freshEdge (target X W))
+  let validSourceSplit : sourceSplit.IsSurfaceValid :=
+    P2.split_isSurfaceValid (source X W) (sourceCut X W) validSource
+  let validTargetSplit : targetSplit.IsSurfaceValid :=
+    P2.split_isSurfaceValid (target X W) (targetCut X W) validTarget
+  let middleIso :
+      SignedPresentationIso sourceSplit expandedTargetSplit :=
+    splitSourceSignedIsoExpandSplitTarget X W
+  let validExpandedFromIso : expandedTargetSplit.IsSurfaceValid :=
+    middleIso.isSurfaceValid validSourceSplit
+  let validCanonicalExpanded : expandedTargetSplit.IsSurfaceValid :=
+    P1.expand_isSurfaceValid targetSplit
+      (P2.freshEdge (target X W)) validTargetSplit
+  have hsource :
+      NormalizationEquivalent
+        ⟨source X W, validSource⟩
+        ⟨sourceSplit, validSourceSplit⟩ :=
+    NormalizationEquivalent.ofP2
+      (P2Subdivision.canonical
+        (source X W) (sourceCut X W)
+        (sourceCut_isNondegenerate X W))
+  have hiso :
+      NormalizationEquivalent
+        ⟨sourceSplit, validSourceSplit⟩
+        ⟨expandedTargetSplit, validExpandedFromIso⟩ :=
+    NormalizationEquivalent.ofSignedIso middleIso
+  have hexpandedNode :
+      (⟨expandedTargetSplit, validExpandedFromIso⟩ : ValidPresentation) =
+        ⟨expandedTargetSplit, validCanonicalExpanded⟩ := by
+    apply ValidPresentation.ext
+    rfl
+  rw [hexpandedNode] at hiso
+  have hcontract :
+      NormalizationEquivalent
+        ⟨expandedTargetSplit, validCanonicalExpanded⟩
+        ⟨targetSplit, validTargetSplit⟩ :=
+    P1.contractionNormalizationEquivalent targetSplit
+      (P2.freshEdge (target X W)) validTargetSplit
+  have htarget :
+      NormalizationEquivalent
+        ⟨targetSplit, validTargetSplit⟩
+        ⟨target X W, validTarget⟩ := by
+    apply P2.oneSidedMergeNormalizationEquivalent
+    exact Or.inl
+      ⟨targetCut_left X W,
+        List.length_pos_iff_ne_nil.mpr hX⟩
+  exact hsource.trans (hiso.trans (hcontract.trans htarget))
+
+/-- Public realization-invariance form of contextual inverse-pair cancellation. -/
+theorem polygonallyEquivalent {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (hX : X ≠ [])
+    (validSource : (source X W).IsSurfaceValid)
+    (validTarget : (target X W).IsSurfaceValid) :
+    (source X W).PolygonallyEquivalent
+      (target X W) validSource validTarget :=
+  (normalizationEquivalent
+    X W hX validSource validTarget).polygonallyEquivalent
+
+/-- Transport contextual cancellation across arbitrary edge names, face orders, orientations,
+and cyclic starting points supplied by signed presentation isomorphisms. -/
+theorem normalizationEquivalentOfSignedIsos
+    {P Q : FiniteCyclicPresentation} {n : ℕ}
+    (X : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (hX : X ≠ [])
+    (sourceIso : SignedPresentationIso P (source X W))
+    (targetIso : SignedPresentationIso (target X W) Q)
+    (validP : P.IsSurfaceValid)
+    (validQ : Q.IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨P, validP⟩
+      ⟨Q, validQ⟩ := by
+  let validContextSource : (source X W).IsSurfaceValid :=
+    sourceIso.isSurfaceValid validP
+  let validContextTarget : (target X W).IsSurfaceValid :=
+    targetIso.symm.isSurfaceValid validQ
+  exact
+    (NormalizationEquivalent.ofSignedIso sourceIso).trans
+      ((normalizationEquivalent
+          X W hX validContextSource validContextTarget).trans
+        (NormalizationEquivalent.ofSignedIso targetIso))
+
+end Context
+
 /-- Transport base cancellation across arbitrary signed presentation isomorphisms. This is the
 stable constructor used after rotating a face and renaming its cancellable edge to the last
 index. -/
