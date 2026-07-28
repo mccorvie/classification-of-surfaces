@@ -52,6 +52,178 @@ def unorientedIsoOfOrientedBoundaries
           hreverse, if_true, inverseWord_inverseWord,
           EdgeRelabeling.inverseWord_map_mapDart] using hinverse
 
+/-! ### Deleting a selected edge name -/
+
+/-- The edge count after deleting one selected edge. -/
+def edgeCountAfterDelete
+    (P : FiniteCyclicPresentation) : ℕ :=
+  P.edgeCount - 1
+
+theorem edgeCountAfterDelete_add_one
+    (P : FiniteCyclicPresentation) (e : P.Edge) :
+    edgeCountAfterDelete P + 1 = P.edgeCount := by
+  have hpositive : 0 < P.edgeCount := Nat.zero_lt_of_lt e.isLt
+  exact Nat.sub_add_cancel hpositive
+
+/-- Rename an arbitrary selected edge to the last position of the one-larger edge type. -/
+def edgeToLast
+    (P : FiniteCyclicPresentation) (e : P.Edge) :
+    P.Edge ≃ Fin (edgeCountAfterDelete P + 1) := by
+  let castCount :
+      P.Edge ≃ Fin (edgeCountAfterDelete P + 1) :=
+    finCongr (edgeCountAfterDelete_add_one P e).symm
+  exact castCount.trans (Cancellation.moveToLast (castCount e))
+
+@[simp]
+theorem edgeToLast_selected
+    (P : FiniteCyclicPresentation) (e : P.Edge) :
+    edgeToLast P e e =
+      P1.freshEdge (edgeCountAfterDelete P) := by
+  simp [edgeToLast, Cancellation.moveToLast, P1.freshEdge]
+
+/-- Rename a word after moving the selected edge to the fresh-last index. -/
+def renamedTail
+    (P : FiniteCyclicPresentation) (e : P.Edge)
+    (word : List P.Dart) :
+    List (SignedDart (Fin (edgeCountAfterDelete P + 1))) :=
+  word.map (SignedDart.mapEquiv (edgeToLast P e))
+
+/-- Contract the now-unused last edge name from a renamed word. -/
+def lowerTail
+    (P : FiniteCyclicPresentation) (e : P.Edge)
+    (word : List P.Dart) :
+    List (SignedDart (Fin (edgeCountAfterDelete P))) :=
+  P1.contractWord (renamedTail P e word)
+
+theorem freshEdge_not_mem_renamedTail
+    (P : FiniteCyclicPresentation) (e : P.Edge)
+    (word : List P.Dart)
+    (he : e ∉ word.map edgeOfDart) :
+    P1.freshEdge (edgeCountAfterDelete P) ∉
+      (renamedTail P e word).map edgeOfDart := by
+  intro hfresh
+  rcases List.mem_map.mp hfresh with ⟨d, hd, hedge⟩
+  rcases List.mem_map.mp hd with ⟨old, hold, rfl⟩
+  rw [edgeOfDart_mapEquiv] at hedge
+  have holdEdge : edgeOfDart old = e := by
+    apply (edgeToLast P e).injective
+    rw [hedge, edgeToLast_selected]
+  exact he (List.mem_map.mpr ⟨old, hold, holdEdge⟩)
+
+/-- Lowering and re-embedding a renamed word which avoids the selected edge recovers that exact
+renamed word. -/
+theorem retainWord_lowerTail
+    (P : FiniteCyclicPresentation) (e : P.Edge)
+    (word : List P.Dart)
+    (he : e ∉ word.map edgeOfDart) :
+    P2.retainWord (lowerTail P e word) =
+      renamedTail P e word :=
+  Cancellation.retainWord_contractWord_of_fresh_not_mem
+    (renamedTail P e word)
+    (freshEdge_not_mem_renamedTail P e word he)
+
+/-! ### Moving a selected face pair to the endpoints -/
+
+/-- The last face index, using an existing face to certify nonemptiness. -/
+def lastFace
+    (P : FiniteCyclicPresentation) (f : P.Face) :
+    P.Face :=
+  ⟨P.faces.length - 1, by
+    have hf := f.isLt
+    omega⟩
+
+/-- Move `f` to index zero and a distinct `g` to the final index. -/
+def faceToEndpoints
+    (P : FiniteCyclicPresentation) (f g : P.Face) :
+    P.Face ≃ P.Face :=
+  let moveFirst :=
+    Equiv.swap f ⟨0, Nat.zero_lt_of_lt f.isLt⟩
+  moveFirst.trans (Equiv.swap (moveFirst g) (lastFace P f))
+
+@[simp]
+theorem faceToEndpoints_selected
+    (P : FiniteCyclicPresentation) (f g : P.Face)
+    (hfg : f ≠ g) :
+    faceToEndpoints P f g f =
+      ⟨0, Nat.zero_lt_of_lt f.isLt⟩ := by
+  let zero : P.Face := ⟨0, Nat.zero_lt_of_lt f.isLt⟩
+  let moveFirst := Equiv.swap f zero
+  have hgf : moveFirst g ≠ moveFirst f := by
+    intro h
+    exact hfg (moveFirst.injective h.symm)
+  have hgzero : moveFirst g ≠ zero := by
+    simpa [moveFirst] using hgf
+  have hvalues : f.val ≠ g.val := by
+    exact fun h ↦ hfg (Fin.ext h)
+  have hmany : 1 < P.faces.length := by
+    omega
+  have hlastZero : lastFace P f ≠ zero := by
+    intro h
+    have hval := congrArg Fin.val h
+    change P.faces.length - 1 = 0 at hval
+    omega
+  change
+    (Equiv.swap (moveFirst g) (lastFace P f)) (moveFirst f) =
+      zero
+  rw [show moveFirst f = zero by simp [moveFirst]]
+  exact Equiv.swap_apply_of_ne_of_ne hgzero.symm hlastZero.symm
+
+@[simp]
+theorem faceToEndpoints_right
+    (P : FiniteCyclicPresentation) (f g : P.Face) :
+    faceToEndpoints P f g g = lastFace P f := by
+  change
+    (Equiv.swap
+      ((Equiv.swap f ⟨0, Nat.zero_lt_of_lt f.isLt⟩) g)
+      (lastFace P f))
+      ((Equiv.swap f ⟨0, Nat.zero_lt_of_lt f.isLt⟩) g) =
+        lastFace P f
+  exact Equiv.swap_apply_left _ _
+
+/-- Number of untouched faces after selecting two distinct endpoints. -/
+def faceCountBetween
+    (P : FiniteCyclicPresentation) : ℕ :=
+  P.faces.length - 2
+
+/-- The `i`th interior position between zero and the final face index. -/
+def middleFacePosition
+    (P : FiniteCyclicPresentation) (f g : P.Face)
+    (hfg : f ≠ g) (i : Fin (faceCountBetween P)) :
+    P.Face :=
+  ⟨i.val + 1, by
+    have hvalues : f.val ≠ g.val :=
+      fun h ↦ hfg (Fin.ext h)
+    have hmany : 1 < P.faces.length := by
+      omega
+    have hi := i.isLt
+    change i.val < P.faces.length - 2 at hi
+    change i.val + 1 < P.faces.length
+    omega⟩
+
+/-- The original face occupying an interior position after moving the selected pair to the
+endpoints. -/
+def middleOriginalFace
+    (P : FiniteCyclicPresentation) (f g : P.Face)
+    (hfg : f ≠ g) (i : Fin (faceCountBetween P)) :
+    P.Face :=
+  (faceToEndpoints P f g).symm
+    (middleFacePosition P f g hfg i)
+
+/-- Enumerate the original faces not selected as endpoints, in their transported order. -/
+def middleOriginalFaces
+    (P : FiniteCyclicPresentation) (f g : P.Face)
+    (hfg : f ≠ g) :
+    List P.Face :=
+  List.ofFn (middleOriginalFace P f g hfg)
+
+@[simp]
+theorem middleOriginalFaces_length
+    (P : FiniteCyclicPresentation) (f g : P.Face)
+    (hfg : f ≠ g) :
+    (middleOriginalFaces P f g hfg).length =
+      faceCountBetween P := by
+  simp [middleOriginalFaces]
+
 /-- A nontrivial reflexive-transitive path contains a genuinely non-reflexive step. -/
 theorem exists_ne_step_of_reflTransGen
     {α : Type*} {r : α → α → Prop} {a b : α}
