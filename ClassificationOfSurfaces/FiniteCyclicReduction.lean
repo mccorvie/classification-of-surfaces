@@ -22,6 +22,36 @@ open SurfaceCellComplex
 
 namespace Reduction
 
+/-- Build an unoriented presentation isomorphism from equations stated using oriented source
+faces and stored target faces. Reversing both sides converts this convenient input convention to
+the target-oriented convention of `UnorientedPresentationIso`. -/
+def unorientedIsoOfOrientedBoundaries
+    {P Q : FiniteCyclicPresentation}
+    (edgeRelabeling : EdgeRelabeling P.Edge Q.Edge)
+    (faceEquiv : P.Face ≃ Q.Face)
+    (reverseFace : P.Face → Bool)
+    (boundary_rotated :
+      ∀ f,
+        ((P.orientedBoundary ⟨f, reverseFace f⟩).map
+          edgeRelabeling.mapDart).IsRotated
+            (Q.boundary (faceEquiv f))) :
+    UnorientedPresentationIso P Q where
+  edgeRelabeling := edgeRelabeling
+  faceEquiv := faceEquiv
+  reverseFace := reverseFace
+  boundary_rotated := by
+    intro f
+    cases hreverse : reverseFace f with
+    | false =>
+        simpa [FiniteCyclicPresentation.orientedBoundary, hreverse] using
+          boundary_rotated f
+    | true =>
+        have hinverse :=
+          inverseWord_isRotated (boundary_rotated f)
+        simpa only [FiniteCyclicPresentation.orientedBoundary,
+          hreverse, if_true, inverseWord_inverseWord,
+          EdgeRelabeling.inverseWord_map_mapDart] using hinverse
+
 /-- A nontrivial reflexive-transitive path contains a genuinely non-reflexive step. -/
 theorem exists_ne_step_of_reflTransGen
     {α : Type*} {r : α → α → Prop} {a b : α}
@@ -46,6 +76,23 @@ theorem faceAdjacent_comm
     exact ⟨e, heg, hef⟩
   · rintro ⟨e, heg, hef⟩
     exact ⟨e, hef, heg⟩
+
+/-- The contributions of two distinct faces are bounded by the total edge multiplicity. -/
+theorem add_faceEdgeMultiplicity_le_edgeMultiplicity
+    (P : FiniteCyclicPresentation)
+    (f g : P.Face) (e : P.Edge) (hfg : f ≠ g) :
+    P.faceEdgeMultiplicity f e + P.faceEdgeMultiplicity g e ≤
+      P.edgeMultiplicity e := by
+  classical
+  unfold edgeMultiplicity
+  have hsubset :
+      ({f, g} : Finset P.Face) ⊆ Finset.univ := by
+    intro x hx
+    simp
+  have hsum :=
+    Finset.sum_le_sum_of_subset
+      (f := fun q ↦ P.faceEdgeMultiplicity q e) hsubset
+  simpa [hfg] using hsum
 
 /-- A connected presentation with at least two faces contains two distinct adjacent faces. -/
 theorem exists_distinct_faceAdjacent
@@ -158,6 +205,72 @@ def PositiveOccurrence.flip
         (List.isRotated_concat (.neg e) (inverseWord occurrence.tail))
     exact
       (inverseWord_isRotated occurrence.boundary_rotated).trans hhead
+
+/-- In two distinct incident faces, the displayed occurrence consumes the entire multiplicity
+contributed by its face, so the same edge does not occur again in its tail. -/
+theorem PositiveOccurrence.edge_not_mem_tail
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (occurrence : PositiveOccurrence P f e)
+    (valid : P.IsSurfaceValid)
+    (hfg : f ≠ g)
+    (heg : e ∈ (P.boundary g).map edgeOfDart) :
+    e ∉ occurrence.tail.map edgeOfDart := by
+  classical
+  have hmapRotated :=
+    occurrence.boundary_rotated.map edgeOfDart
+  have hpositive :
+      e ∈ (P.orientedBoundary occurrence.orientedFace).map edgeOfDart := by
+    exact hmapRotated.mem_iff.mpr (by simp [edgeOfDart])
+  have hfpos : 0 < P.faceEdgeMultiplicity f e := by
+    have horiented :=
+      P.orientedBoundary_edgeMultiplicity occurrence.orientedFace e
+    rw [← occurrence.face_eq, ← horiented]
+    exact List.count_pos_iff.mpr hpositive
+  have hgpos : 0 < P.faceEdgeMultiplicity g e := by
+    exact List.count_pos_iff.mpr heg
+  have htwo :
+      P.faceEdgeMultiplicity f e + P.faceEdgeMultiplicity g e ≤
+        P.edgeMultiplicity e :=
+    add_faceEdgeMultiplicity_le_edgeMultiplicity P f g e hfg
+  have htotal := valid.2.2.2 e
+  have hfaceOne : P.faceEdgeMultiplicity f e = 1 := by
+    rcases htotal with htotal | htotal <;> omega
+  have horientedCount :
+      ((P.orientedBoundary occurrence.orientedFace).map edgeOfDart).count e =
+        P.faceEdgeMultiplicity f e := by
+    simpa only [occurrence.face_eq] using
+      P.orientedBoundary_edgeMultiplicity occurrence.orientedFace e
+  have hrotatedCount := hmapRotated.perm.count_eq e
+  have htailCount :
+      (occurrence.tail.map edgeOfDart).count e = 0 := by
+    rw [horientedCount, hfaceOne] at hrotatedCount
+    simpa [edgeOfDart] using hrotatedCount.symm
+  exact List.count_eq_zero.mp htailCount
+
+/-- The corresponding no-second-occurrence statement for a negatively displayed face. -/
+theorem NegativeOccurrence.edge_not_mem_tail
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (occurrence : NegativeOccurrence P f e)
+    (valid : P.IsSurfaceValid)
+    (hfg : f ≠ g)
+    (heg : e ∈ (P.boundary g).map edgeOfDart) :
+    e ∉ occurrence.tail.map edgeOfDart := by
+  let positive : PositiveOccurrence P f e :=
+    { orientedFace := occurrence.orientedFace.flip
+      face_eq := occurrence.face_eq
+      tail := inverseWord occurrence.tail
+      boundary_rotated := by
+        rw [P.orientedBoundary_flip]
+        have hhead :
+            (inverseWord (.neg e :: occurrence.tail)).IsRotated
+              (.pos e :: inverseWord occurrence.tail) := by
+          simpa [inverseWord, SignedDart.flip] using
+            (List.isRotated_concat (.pos e) (inverseWord occurrence.tail))
+        exact
+          (inverseWord_isRotated occurrence.boundary_rotated).trans hhead }
+  have hpositive :=
+    positive.edge_not_mem_tail valid hfg heg
+  simpa [positive, map_edgeOfDart_inverseWord] using hpositive
 
 /-- Choose the traversal orientation which displays a selected edge occurrence negatively. -/
 theorem exists_negativeOccurrence
