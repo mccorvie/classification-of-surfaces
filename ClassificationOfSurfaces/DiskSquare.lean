@@ -3221,6 +3221,66 @@ theorem sourceCellHomeomorph_right_side
     outerArc_source_right_side,
     boundaryInclusion_firstOldArc_polygonSide]
 
+@[simp]
+theorem paramChildGluingHomeomorph_mk_inl
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (z : PolygonCell (l + 1)) :
+    paramChildGluingHomeomorph l r hl hr
+        (@Quotient.mk'' (ChildPair l r)
+          (paramChildSeamSetoid l r) (.inl z)) =
+      leftPlacement (finalSideCellHomeomorph l hl z) :=
+  rfl
+
+@[simp]
+theorem paramChildGluingHomeomorph_mk_inr
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (z : PolygonCell (r + 1)) :
+    paramChildGluingHomeomorph l r hl hr
+        (@Quotient.mk'' (ChildPair l r)
+          (paramChildSeamSetoid l r) (.inr z)) =
+      rightPlacement (firstSideCellHomeomorph r hr z) :=
+  rfl
+
+/-- The complete local P2 equivalence: one unsplit polygon is homeomorphic to the quotient of
+the two child polygons by their reversed fresh-side identification. -/
+noncomputable def sourceChildGluingHomeomorph
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    PolygonCell (l + r) ≃ₜ ParamChildGluing l r :=
+  (sourceCellHomeomorph l r hl hr).trans
+    (paramChildGluingHomeomorph l r hl hr).symm
+
+/-- The local P2 homeomorphism sends every left source side to the corresponding selected-child
+side class. -/
+theorem sourceChildGluingHomeomorph_left_side
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (i : Fin l) (t : unitInterval) :
+    sourceChildGluingHomeomorph l r hl hr
+        (PolygonCell.side (Fin.castAdd r i) t) =
+      @Quotient.mk'' (ChildPair l r)
+        (paramChildSeamSetoid l r)
+        (.inl (PolygonCell.side (Fin.castAdd 1 i) t)) := by
+  apply (paramChildGluingHomeomorph l r hl hr).injective
+  rw [sourceChildGluingHomeomorph, Homeomorph.trans_apply,
+    Homeomorph.apply_symm_apply,
+    paramChildGluingHomeomorph_mk_inl,
+    sourceCellHomeomorph_left_side]
+
+/-- The local P2 homeomorphism sends every right source side to the corresponding right-child
+side class. -/
+theorem sourceChildGluingHomeomorph_right_side
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (i : Fin r) (t : unitInterval) :
+    sourceChildGluingHomeomorph l r hl hr
+        (PolygonCell.side (Fin.natAdd l i) t) =
+      @Quotient.mk'' (ChildPair l r)
+        (paramChildSeamSetoid l r)
+        (.inr (PolygonCell.side (i.addNat 1) t)) := by
+  apply (paramChildGluingHomeomorph l r hl hr).injective
+  rw [sourceChildGluingHomeomorph, Homeomorph.trans_apply,
+    Homeomorph.apply_symm_apply,
+    paramChildGluingHomeomorph_mk_inr,
+    sourceCellHomeomorph_right_side]
+
 end DiskSquare
 
 end LeanEval.Topology.ClassificationOfSurfaces
