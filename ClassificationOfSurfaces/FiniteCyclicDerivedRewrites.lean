@@ -26,6 +26,11 @@ open SurfaceCellComplex
 
 namespace Dyck
 
+@[simp]
+theorem inverseWord_singleton {α : Type*} (d : SignedDart α) :
+    inverseWord [d] = [d.flip] :=
+  rfl
+
 /-- The unique face of an explicitly indexed one-face presentation. -/
 theorem oneFace_face_eq_zero {n : ℕ}
     (word : List (SignedDart (Fin n))) (f : (oneFace word).Face) :
@@ -250,6 +255,178 @@ theorem negativeNormalizationEquivalent {n : ℕ} (a : Fin n)
 
 end Dyck
 
+namespace Crosscap
+
+/-- The cross-cap rewrite preserves the unoriented edge-occurrence multiset, hence validity. -/
+theorem target_isSurfaceValid {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (validSource : (source a X Y).IsSurfaceValid) :
+    (target a X Y).IsSurfaceValid := by
+  apply Dyck.oneFace_isSurfaceValid_of_edgePerm ?_ validSource
+  rw [List.perm_iff_count]
+  intro e
+  simp only [List.map_append, List.map_singleton, edgeOfDart,
+    map_edgeOfDart_inverseWord, List.count_append, List.count_cons,
+    List.count_nil, List.count_reverse]
+  omega
+
+/-- The cross-cap source with the distinguished edge displayed negative. -/
+@[reducible]
+def negativeSource {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Dyck.oneFace (([.neg a] ++ X) ++ ([.neg a] ++ Y))
+
+/-- The corresponding negatively oriented target. -/
+@[reducible]
+def negativeTarget {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Dyck.oneFace ((X ++ [.neg a]) ++ ([.neg a] ++ inverseWord Y))
+
+/-- The negatively oriented cross-cap rewrite preserves ordinary validity. -/
+theorem negativeTarget_isSurfaceValid {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (validSource : (negativeSource a X Y).IsSurfaceValid) :
+    (negativeTarget a X Y).IsSurfaceValid := by
+  apply Dyck.oneFace_isSurfaceValid_of_edgePerm ?_ validSource
+  rw [List.perm_iff_count]
+  intro e
+  simp only [List.map_append, List.map_singleton, edgeOfDart,
+    map_edgeOfDart_inverseWord, List.count_append, List.count_cons,
+    List.count_nil, List.count_reverse]
+  omega
+
+def negativeSourceSignedIso {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (haX : a ∉ X.map edgeOfDart)
+    (haY : a ∉ Y.map edgeOfDart) :
+    SignedPresentationIso
+      (negativeSource a X Y) (source a X Y) where
+  edgeRelabeling := Dyck.reverseEdgeRelabeling a
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [List.map_append, List.map_singleton,
+      Dyck.reverseEdgeRelabeling_neg]
+    rw [Dyck.reverseEdgeRelabeling_word a X haX,
+      Dyck.reverseEdgeRelabeling_word a Y haY]
+
+def negativeTargetSignedIso {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (haX : a ∉ X.map edgeOfDart)
+    (haY : a ∉ Y.map edgeOfDart) :
+    SignedPresentationIso
+      (negativeTarget a X Y) (target a X Y) where
+  edgeRelabeling := Dyck.reverseEdgeRelabeling a
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [List.map_append, List.map_singleton,
+      Dyck.reverseEdgeRelabeling_neg]
+    rw [Dyck.reverseEdgeRelabeling_word a X haX,
+      Dyck.reverseEdgeRelabeling_word a (inverseWord Y) (by
+        simpa [map_edgeOfDart_inverseWord] using haY)]
+
+/-- The cross-cap rewrite with both distinguished occurrences displayed negative. -/
+theorem negativeNormalizationEquivalent {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (haX : a ∉ X.map edgeOfDart)
+    (haY : a ∉ Y.map edgeOfDart)
+    (validSource : (negativeSource a X Y).IsSurfaceValid)
+    (validTarget : (negativeTarget a X Y).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨negativeSource a X Y, validSource⟩
+      ⟨negativeTarget a X Y, validTarget⟩ := by
+  let sourceIso := negativeSourceSignedIso a X Y haX haY
+  let targetIso := negativeTargetSignedIso a X Y haX haY
+  let validPositiveSource : (source a X Y).IsSurfaceValid :=
+    sourceIso.isSurfaceValid validSource
+  let validPositiveTarget : (target a X Y).IsSurfaceValid :=
+    targetIso.isSurfaceValid validTarget
+  exact
+    (NormalizationEquivalent.ofSignedIso sourceIso).trans
+      ((normalizationEquivalent a X Y haX haY
+          validPositiveSource validPositiveTarget).trans
+        (NormalizationEquivalent.ofSignedIso targetIso).symm)
+
+/-- The adjacent-crosscap source `a a X Y`. -/
+@[reducible]
+def adjacentSource {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Dyck.oneFace ([.pos a, .pos a] ++ X ++ Y)
+
+/-- The alternate cross-cap target `a Y a X⁻¹`. -/
+@[reducible]
+def adjacentTarget {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  source a Y (inverseWord X)
+
+/-- The alternate adjacent-crosscap rewrite preserves ordinary validity. -/
+theorem adjacentTarget_isSurfaceValid {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (validSource : (adjacentSource a X Y).IsSurfaceValid) :
+    (adjacentTarget a X Y).IsSurfaceValid := by
+  apply Dyck.oneFace_isSurfaceValid_of_edgePerm ?_ validSource
+  rw [List.perm_iff_count]
+  intro e
+  simp only [List.map_append, List.map_cons, List.map_nil, edgeOfDart,
+    map_edgeOfDart_inverseWord, List.count_append, List.count_cons,
+    List.count_nil, List.count_reverse]
+  omega
+
+/-- `a a X Y` is a rotation of the ordinary cross-cap target obtained from
+`a Y a X⁻¹`. -/
+theorem adjacentSource_isRotated_target {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    (adjacentSource a X Y).boundary 0 |>.IsRotated
+      ((target a Y (inverseWord X)).boundary 0) := by
+  simp only [adjacentSource, target, Dyck.oneFace_boundary_zero,
+    inverseWord_inverseWord]
+  convert
+    (List.isRotated_append
+      (l := [SignedDart.pos a, SignedDart.pos a] ++ X)
+      (l' := Y)) using 1
+  all_goals simp only [List.nil_append, List.cons_append,
+    List.append_assoc]
+
+/-- Gallier--Xu's alternate rule `a a X Y ~ a Y a X⁻¹`. -/
+theorem adjacentNormalizationEquivalent {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (haX : a ∉ X.map edgeOfDart)
+    (haY : a ∉ Y.map edgeOfDart)
+    (validSource : (adjacentSource a X Y).IsSurfaceValid)
+    (validTarget : (adjacentTarget a X Y).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨adjacentSource a X Y, validSource⟩
+      ⟨adjacentTarget a X Y, validTarget⟩ := by
+  let rotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      (adjacentSource_isRotated_target a X Y)
+  let validGenericTarget :
+      (target a Y (inverseWord X)).IsSurfaceValid :=
+    rotation.isSurfaceValid validSource
+  have hRotate :
+      NormalizationEquivalent
+        ⟨adjacentSource a X Y, validSource⟩
+        ⟨target a Y (inverseWord X), validGenericTarget⟩ :=
+    NormalizationEquivalent.ofSignedIso rotation
+  have haInverseX : a ∉ (inverseWord X).map edgeOfDart := by
+    simpa [map_edgeOfDart_inverseWord] using haX
+  have hCrosscap :
+      NormalizationEquivalent
+        ⟨source a Y (inverseWord X), validTarget⟩
+        ⟨target a Y (inverseWord X), validGenericTarget⟩ :=
+    normalizationEquivalent a Y (inverseWord X)
+      haY haInverseX validTarget validGenericTarget
+  exact hRotate.trans hCrosscap.symm
+
+end Crosscap
+
 namespace Handle
 
 /-- The source spelling for Gallier--Xu handle extraction. -/
@@ -428,6 +605,259 @@ theorem normalizationEquivalent {n : ℕ} (a b : Fin n)
       (hSecond.trans (hRotateSecond.trans hThird)))
 
 end Handle
+
+namespace HandleToCrosscaps
+
+/-- A crosscap followed by a handle, with arbitrary intervening words `X` and `Y`. -/
+@[reducible]
+def source {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Crosscap.adjacentSource a
+    (X ++ [.pos b, .pos c]) ([.neg b, .neg c] ++ Y)
+
+/-- The first alternate cross-cap rewrite. -/
+@[reducible]
+def afterFirst {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Crosscap.adjacentTarget a
+    (X ++ [.pos b, .pos c]) ([.neg b, .neg c] ++ Y)
+
+/-- Rotate the first target to expose the two negative occurrences of `b`. -/
+@[reducible]
+def secondSource {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Crosscap.negativeSource b
+    ([.neg c] ++ Y ++ [.pos a] ++ [.neg c])
+    (inverseWord X ++ [.pos a])
+
+/-- The result of rewriting the two negative occurrences of `b`. -/
+@[reducible]
+def afterSecond {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Crosscap.negativeTarget b
+    ([.neg c] ++ Y ++ [.pos a] ++ [.neg c])
+    (inverseWord X ++ [.pos a])
+
+/-- Expose the two negative occurrences of `c`. -/
+@[reducible]
+def thirdSource {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Crosscap.negativeSource c
+    (Y ++ [.pos a])
+    ([.neg b, .neg b, .neg a] ++ X)
+
+/-- The result of rewriting the two negative occurrences of `c`. -/
+@[reducible]
+def afterThird {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Crosscap.negativeTarget c
+    (Y ++ [.pos a])
+    ([.neg b, .neg b, .neg a] ++ X)
+
+/-- Expose the remaining two occurrences of `a`. -/
+@[reducible]
+def fourthSource {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Crosscap.source a
+    ([.pos b, .pos b] ++ Y)
+    ([.neg c, .neg c] ++ inverseWord X)
+
+/-- The final spelling is cyclically `a a X c c b b Y`: three crosscaps. -/
+@[reducible]
+def target {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Crosscap.target a
+    ([.pos b, .pos b] ++ Y)
+    ([.neg c, .neg c] ++ inverseWord X)
+
+theorem afterFirst_isRotated_secondSource {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    (afterFirst a b c X Y).boundary 0 |>.IsRotated
+      ((secondSource a b c X Y).boundary 0) := by
+  simp only [afterFirst, secondSource, Crosscap.adjacentTarget,
+    Crosscap.source, Crosscap.negativeSource,
+    Dyck.oneFace_boundary_zero, inverseWord_append]
+  convert
+    (List.isRotated_append
+      (l := [SignedDart.pos a])
+      (l' := [SignedDart.neg b, SignedDart.neg c] ++ Y ++
+        [SignedDart.pos a, SignedDart.neg c, SignedDart.neg b] ++
+        inverseWord X)) using 1
+  all_goals simp only [inverseWord, SignedDart.flip, List.reverse_cons,
+    List.reverse_nil, List.map_cons, List.map_nil, List.nil_append,
+    List.cons_append, List.append_assoc]
+
+theorem afterSecond_isRotated_thirdSource {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    (afterSecond a b c X Y).boundary 0 |>.IsRotated
+      ((thirdSource a b c X Y).boundary 0) := by
+  simpa only [afterSecond, thirdSource, Crosscap.negativeTarget,
+    Crosscap.negativeSource, Dyck.oneFace_boundary_zero,
+    inverseWord_append, inverseWord_inverseWord,
+    Dyck.inverseWord_singleton, SignedDart.flip,
+    List.cons_append, List.nil_append, List.append_assoc] using
+      (List.IsRotated.refl ((thirdSource a b c X Y).boundary 0))
+
+theorem afterThird_isRotated_fourthSource {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    (afterThird a b c X Y).boundary 0 |>.IsRotated
+      ((fourthSource a b c X Y).boundary 0) := by
+  simp only [afterThird, fourthSource, Crosscap.negativeTarget,
+    Crosscap.source, Dyck.oneFace_boundary_zero, inverseWord_append]
+  convert
+    (List.isRotated_append
+      (l := Y ++ [SignedDart.pos a, SignedDart.neg c,
+        SignedDart.neg c] ++ inverseWord X)
+      (l' := [SignedDart.pos a, SignedDart.pos b,
+        SignedDart.pos b])) using 1
+  all_goals simp only [inverseWord, SignedDart.flip, List.reverse_cons,
+    List.reverse_nil, List.map_cons, List.map_nil, List.nil_append,
+    List.cons_append, List.append_assoc]
+
+/-- Check the exact final cyclic order of the three crosscaps. -/
+theorem target_boundary_isRotated_crosscaps {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    (target a b c X Y).boundary 0 |>.IsRotated
+      ([.pos a, .pos a] ++ X ++
+        [.pos c, .pos c, .pos b, .pos b] ++ Y) := by
+  simp only [target, Crosscap.target, Dyck.oneFace_boundary_zero,
+    inverseWord_append, inverseWord_inverseWord]
+  convert
+    (List.isRotated_append
+      (l := [SignedDart.pos b, SignedDart.pos b] ++ Y)
+      (l' := [SignedDart.pos a, SignedDart.pos a] ++ X ++
+        [SignedDart.pos c, SignedDart.pos c])) using 1
+  all_goals simp only [inverseWord, SignedDart.flip, List.reverse_cons,
+    List.reverse_nil, List.map_cons, List.map_nil, List.nil_append,
+    List.cons_append, List.append_assoc]
+
+set_option maxHeartbeats 1600000 in
+-- The four dependent closure steps elaborate to a substantially larger term than one rewrite.
+/-- Gallier--Xu Step 5: a crosscap and a handle are equivalent to three crosscaps. -/
+theorem normalizationEquivalent {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (hab : a ≠ b) (hac : a ≠ c) (hbc : b ≠ c)
+    (haX : a ∉ X.map edgeOfDart) (haY : a ∉ Y.map edgeOfDart)
+    (hbX : b ∉ X.map edgeOfDart) (hbY : b ∉ Y.map edgeOfDart)
+    (hcX : c ∉ X.map edgeOfDart) (hcY : c ∉ Y.map edgeOfDart)
+    (validSource : (source a b c X Y).IsSurfaceValid)
+    (validTarget : (target a b c X Y).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨source a b c X Y, validSource⟩
+      ⟨target a b c X Y, validTarget⟩ := by
+  have haFirstX :
+      a ∉ (X ++ [SignedDart.pos b, SignedDart.pos c]).map edgeOfDart := by
+    simp [edgeOfDart, haX, hab, hac]
+  have haFirstY :
+      a ∉ ([SignedDart.neg b, SignedDart.neg c] ++ Y).map edgeOfDart := by
+    simp [edgeOfDart, hab, hac, haY]
+  let validAfterFirst : (afterFirst a b c X Y).IsSurfaceValid :=
+    Crosscap.adjacentTarget_isSurfaceValid a
+      (X ++ [.pos b, .pos c]) ([.neg b, .neg c] ++ Y) validSource
+  have hFirst :
+      NormalizationEquivalent
+        ⟨source a b c X Y, validSource⟩
+        ⟨afterFirst a b c X Y, validAfterFirst⟩ :=
+    Crosscap.adjacentNormalizationEquivalent a
+      (X ++ [.pos b, .pos c]) ([.neg b, .neg c] ++ Y)
+      haFirstX haFirstY validSource validAfterFirst
+  let firstRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      (afterFirst_isRotated_secondSource a b c X Y)
+  let validSecondSource : (secondSource a b c X Y).IsSurfaceValid :=
+    firstRotation.isSurfaceValid validAfterFirst
+  have hRotateFirst :
+      NormalizationEquivalent
+        ⟨afterFirst a b c X Y, validAfterFirst⟩
+        ⟨secondSource a b c X Y, validSecondSource⟩ :=
+    NormalizationEquivalent.ofSignedIso firstRotation
+  have hbSecondX :
+      b ∉ ([SignedDart.neg c] ++ Y ++
+        [SignedDart.pos a] ++ [SignedDart.neg c]).map edgeOfDart := by
+    simp [edgeOfDart, hbc, hbY, hab.symm]
+  have hbSecondY :
+      b ∉ (inverseWord X ++ [SignedDart.pos a]).map edgeOfDart := by
+    simp [map_edgeOfDart_inverseWord, hbX, edgeOfDart, hab.symm]
+  let validAfterSecond : (afterSecond a b c X Y).IsSurfaceValid :=
+    Crosscap.negativeTarget_isSurfaceValid b
+      ([.neg c] ++ Y ++ [.pos a] ++ [.neg c])
+      (inverseWord X ++ [.pos a]) validSecondSource
+  have hSecond :
+      NormalizationEquivalent
+        ⟨secondSource a b c X Y, validSecondSource⟩
+        ⟨afterSecond a b c X Y, validAfterSecond⟩ :=
+    Crosscap.negativeNormalizationEquivalent b
+      ([.neg c] ++ Y ++ [.pos a] ++ [.neg c])
+      (inverseWord X ++ [.pos a])
+      hbSecondX hbSecondY validSecondSource validAfterSecond
+  let secondRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      (afterSecond_isRotated_thirdSource a b c X Y)
+  let validThirdSource : (thirdSource a b c X Y).IsSurfaceValid :=
+    secondRotation.isSurfaceValid validAfterSecond
+  have hRotateSecond :
+      NormalizationEquivalent
+        ⟨afterSecond a b c X Y, validAfterSecond⟩
+        ⟨thirdSource a b c X Y, validThirdSource⟩ :=
+    NormalizationEquivalent.ofSignedIso secondRotation
+  have hcThirdX :
+      c ∉ (Y ++ [SignedDart.pos a]).map edgeOfDart := by
+    simp [hcY, edgeOfDart, hac.symm]
+  have hcThirdY :
+      c ∉ ([SignedDart.neg b, SignedDart.neg b,
+        SignedDart.neg a] ++ X).map edgeOfDart := by
+    simp [edgeOfDart, hbc.symm, hac.symm, hcX]
+  let validAfterThird : (afterThird a b c X Y).IsSurfaceValid :=
+    Crosscap.negativeTarget_isSurfaceValid c
+      (Y ++ [.pos a]) ([.neg b, .neg b, .neg a] ++ X)
+      validThirdSource
+  have hThird :
+      NormalizationEquivalent
+        ⟨thirdSource a b c X Y, validThirdSource⟩
+        ⟨afterThird a b c X Y, validAfterThird⟩ :=
+    Crosscap.negativeNormalizationEquivalent c
+      (Y ++ [.pos a]) ([.neg b, .neg b, .neg a] ++ X)
+      hcThirdX hcThirdY validThirdSource validAfterThird
+  let thirdRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      (afterThird_isRotated_fourthSource a b c X Y)
+  let validFourthSource : (fourthSource a b c X Y).IsSurfaceValid :=
+    thirdRotation.isSurfaceValid validAfterThird
+  have hRotateThird :
+      NormalizationEquivalent
+        ⟨afterThird a b c X Y, validAfterThird⟩
+        ⟨fourthSource a b c X Y, validFourthSource⟩ :=
+    NormalizationEquivalent.ofSignedIso thirdRotation
+  have haFourthX :
+      a ∉ ([SignedDart.pos b, SignedDart.pos b] ++ Y).map edgeOfDart := by
+    simp [edgeOfDart, hab, haY]
+  have haFourthY :
+      a ∉ ([SignedDart.neg c, SignedDart.neg c] ++
+        inverseWord X).map edgeOfDart := by
+    simp [edgeOfDart, hac, map_edgeOfDart_inverseWord, haX]
+  have hFourth :
+      NormalizationEquivalent
+        ⟨fourthSource a b c X Y, validFourthSource⟩
+        ⟨target a b c X Y, validTarget⟩ :=
+    Crosscap.normalizationEquivalent a
+      ([.pos b, .pos b] ++ Y)
+      ([.neg c, .neg c] ++ inverseWord X)
+      haFourthX haFourthY validFourthSource validTarget
+  exact hFirst.trans
+    (hRotateFirst.trans
+      (hSecond.trans
+        (hRotateSecond.trans
+          (hThird.trans (hRotateThird.trans hFourth)))))
+
+end HandleToCrosscaps
 
 namespace LoopGrouping
 

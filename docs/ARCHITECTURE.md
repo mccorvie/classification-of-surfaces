@@ -89,6 +89,9 @@ The faithful polygonal quotient layer and the bottom API are in place:
   handle extraction, and `LoopGrouping.normalizationEquivalent` implements the final block
   transport used to group boundary loops. The derived layer transports one-face validity across
   edge-occurrence permutations, so intermediate spellings do not leak proof obligations.
+- `FiniteCyclicPresentation.HandleToCrosscaps.normalizationEquivalent` implements the complete
+  four-rewrite Step 5 chain converting one crosscap plus one handle into three crosscaps, with an
+  explicit final cyclic-order theorem.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.

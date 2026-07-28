@@ -232,7 +232,10 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.Dyck.normalizationEquivalent`
 * `FiniteCyclicPresentation.Crosscap.normalizationEquivalent`
 * `FiniteCyclicPresentation.Dyck.negativeNormalizationEquivalent`
+* `FiniteCyclicPresentation.Crosscap.negativeNormalizationEquivalent`
+* `FiniteCyclicPresentation.Crosscap.adjacentNormalizationEquivalent`
 * `FiniteCyclicPresentation.Handle.normalizationEquivalent`
+* `FiniteCyclicPresentation.HandleToCrosscaps.normalizationEquivalent`
 * `FiniteCyclicPresentation.LoopGrouping.normalizationEquivalent`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
@@ -287,8 +290,9 @@ transport validity automatically.
 primitive steps are common subdivisions and unoriented comparisons in either direction, and every
 chain produces a faithful polygonal-realization homeomorphism. Both generic pseudo-rewrites are
 available as nodes in this closure. The derived-chain layer also exposes the opposite-orientation
-Dyck rule, the full three-Dyck handle extraction, and the loop-grouping specialization; all
-intermediate validity witnesses are constructed internally.
+Dyck and crosscap rules, the full three-Dyck handle extraction, the four-rewrite conversion of a
+handle plus a crosscap into three crosscaps, and the loop-grouping specialization; all intermediate
+validity witnesses are constructed internally.
 
 ## Polygonal quotient foundation
 
