@@ -479,6 +479,54 @@ theorem negativeNamedNormalizationEquivalent {n : ℕ}
     (NormalizationEquivalent.ofSignedIso signIso).trans
       (namedNormalizationEquivalent a X ha hlower validPositive)
 
+/-- Cancel a positive adjacent inverse pair exposed by a cyclic rotation. -/
+theorem normalizationEquivalentOfIsRotated {n : ℕ}
+    (word : List (SignedDart (Fin (n + 1))))
+    (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1))))
+    (hrotated : word.IsRotated ([.pos a, .neg a] ++ X))
+    (ha : a ∉ X.map edgeOfDart)
+    (hlower : lowerTail a X ≠ [])
+    (validSource : (Dyck.oneFace word).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace word, validSource⟩
+      ⟨target (lowerTail a X),
+        target_isSurfaceValid (lowerTail a X) hlower
+          ((namedSourceSignedIso a X ha).isSurfaceValid
+            ((Dyck.oneFaceSignedIsoOfIsRotated hrotated).isSurfaceValid
+              validSource))⟩ := by
+  let rotation := Dyck.oneFaceSignedIsoOfIsRotated hrotated
+  let validNamed : (namedSource a X).IsSurfaceValid :=
+    rotation.isSurfaceValid validSource
+  exact
+    (NormalizationEquivalent.ofSignedIso rotation).trans
+      (namedNormalizationEquivalent a X ha hlower validNamed)
+
+/-- Cancel a negative adjacent inverse pair exposed by a cyclic rotation. -/
+theorem negativeNormalizationEquivalentOfIsRotated {n : ℕ}
+    (word : List (SignedDart (Fin (n + 1))))
+    (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1))))
+    (hrotated : word.IsRotated ([.neg a, .pos a] ++ X))
+    (ha : a ∉ X.map edgeOfDart)
+    (hlower : lowerTail a X ≠ [])
+    (validSource : (Dyck.oneFace word).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace word, validSource⟩
+      ⟨target (lowerTail a X),
+        target_isSurfaceValid (lowerTail a X) hlower
+          ((namedSourceSignedIso a X ha).isSurfaceValid
+            ((negativeNamedSourceSignedIso a X ha).isSurfaceValid
+              ((Dyck.oneFaceSignedIsoOfIsRotated hrotated).isSurfaceValid
+                validSource)))⟩ := by
+  let rotation := Dyck.oneFaceSignedIsoOfIsRotated hrotated
+  let validNamed : (negativeNamedSource a X).IsSurfaceValid :=
+    rotation.isSurfaceValid validSource
+  exact
+    (NormalizationEquivalent.ofSignedIso rotation).trans
+      (negativeNamedNormalizationEquivalent
+        a X ha hlower validNamed)
+
 end Cancellation
 
 end FiniteCyclicPresentation
