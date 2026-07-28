@@ -16,6 +16,7 @@ import ClassificationOfSurfaces.FiniteCyclicCrosscap
 import ClassificationOfSurfaces.FiniteCyclicDyck
 import ClassificationOfSurfaces.FiniteCyclicMoveRealization
 import ClassificationOfSurfaces.FiniteCyclicMoves
+import ClassificationOfSurfaces.FiniteCyclicNormalization
 import ClassificationOfSurfaces.FiniteCyclicP1
 import ClassificationOfSurfaces.FiniteCyclicP1Realization
 import ClassificationOfSurfaces.FiniteCyclicP2
@@ -222,6 +223,13 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.UnorientedPresentationIso`
 * `FiniteCyclicPresentation.UnorientedPresentationIso.realizationHomeomorph`
 * `FiniteCyclicPresentation.Crosscap.polygonallyEquivalent`
+* `FiniteCyclicPresentation.ValidPresentation`
+* `FiniteCyclicPresentation.NormalizationStep`
+* `FiniteCyclicPresentation.NormalizationEquivalent`
+* `FiniteCyclicPresentation.NormalizationEquivalent.ofSubdivides`
+* `FiniteCyclicPresentation.NormalizationEquivalent.polygonallyEquivalent`
+* `FiniteCyclicPresentation.Dyck.normalizationEquivalent`
+* `FiniteCyclicPresentation.Crosscap.normalizationEquivalent`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -270,6 +278,11 @@ explicitly, and realizes it by cyclic disk rotations and reflections. Because th
 `IsSurfaceValid` face-uniqueness clause is intentionally stated for stored orientations, this
 broader comparison takes ordinary-validity proofs for both endpoints rather than claiming to
 transport validity automatically.
+
+`NormalizationEquivalent` is the stable chain API over validity-bundled presentations. Its
+primitive steps are common subdivisions and unoriented comparisons in either direction, and every
+chain produces a faithful polygonal-realization homeomorphism. Both generic pseudo-rewrites are
+available as nodes in this closure.
 
 ## Polygonal quotient foundation
 

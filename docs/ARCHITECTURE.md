@@ -81,6 +81,10 @@ The faithful polygonal quotient layer and the bottom API are in place:
   of face traversal, realized by reflection of the corresponding polygon disk when both endpoints
   are ordinary-valid. This comparison implements Gallier--Xu's generic cross-cap rewrite without
   conflating face reversal with signed edge relabeling.
+- `FiniteCyclicPresentation.NormalizationEquivalent` is the validity-bundled equivalence closure
+  used by derived normalization chains. Its primitive seams are common subdivisions and
+  unoriented comparisons; every chain has a polygonal-realization homeomorphism. The generic Dyck
+  and cross-cap rewrites are both registered in this closure.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.
