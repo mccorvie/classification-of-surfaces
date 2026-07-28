@@ -28,6 +28,7 @@ import ClassificationOfSurfaces.FiniteCyclicP2DegenerateRealization
 import ClassificationOfSurfaces.FiniteCyclicP2Realization
 import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.FiniteCyclicRealization
+import ClassificationOfSurfaces.FiniteCyclicReduction
 import ClassificationOfSurfaces.FiniteCyclicSignedRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.FiniteCyclicUnorientedRealization
@@ -252,6 +253,8 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.canonicalValidPresentation`
 * `FiniteCyclicPresentation.NormalizationResult`
 * `FiniteCyclicPresentation.NormalizationResult.realizationHomeomorph`
+* `FiniteCyclicPresentation.Reduction.exists_distinct_faceAdjacent`
+* `FiniteCyclicPresentation.Reduction.exists_oppositelyDisplayedAdjacentFaces`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
