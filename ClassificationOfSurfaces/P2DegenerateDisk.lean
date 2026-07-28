@@ -1128,6 +1128,382 @@ theorem baseChildGluingMap_injective :
           apply baseChildPairMap_eqvGen_of_eq
           simpa only [baseChildGluingMap_mk] using hqr
 
+/-! ## Surjectivity onto the teardrop -/
+
+theorem collarCirclePoint_eq_cusp_of_chordHeight_eq_zero
+    (z : PolygonCell 2) (hs : chordHeight z = 0) :
+    (collarCirclePoint z).val = 1 := by
+  change collarCircleValue z = 1
+  unfold collarCircleValue
+  rw [hs]
+  simp only [Complex.ofReal_zero, zero_mul, sub_zero]
+  have hsSq := chordHeight_sq z
+  rw [hs] at hsSq
+  exact_mod_cast (by nlinarith [hsSq] :
+    z.val.re ^ 2 = (1 : ℝ))
+
+/-- Every radial scale between one half and one is realized by a unique vertical chord in the
+digon collar, for any non-cusp teardrop boundary direction. -/
+theorem exists_collarMap_eq_smul_teardropMap
+    (q : PolygonCell 1) (hqnorm : ‖q.val‖ = 1)
+    (hqcusp : q.val ≠ 1) {a : ℝ}
+    (haHalf : (2 : ℝ)⁻¹ ≤ a) (haOne : a ≤ 1) :
+    ∃ w : PolygonCell 2,
+      collarMap w = (a : ℂ) * teardropMap q := by
+  have hqSphere :
+      q.val ∈ Metric.sphere (0 : ℂ) 1 := by
+    exact mem_sphere_zero_iff_norm.mpr hqnorm
+  obtain ⟨i, t, hit⟩ :=
+    PolygonCell.exists_side_eq_of_mem_sphere
+      (n := 1) (by omega) q hqSphere
+  have hi : i = (0 : Fin 1) := Subsingleton.elim _ _
+  subst i
+  let upper : PolygonCell 2 :=
+    PolygonCell.side (0 : Fin 2) (unitInterval.symm t)
+  have hcircle :
+      collarCirclePoint upper = q := by
+    rw [collarCirclePoint_side_zero_digon_symm]
+    exact hit
+  have hheight : chordHeight upper ≠ 0 := by
+    intro hs
+    apply hqcusp
+    rw [← hcircle]
+    exact collarCirclePoint_eq_cusp_of_chordHeight_eq_zero
+      upper hs
+  let s : ℝ := chordHeight upper
+  let y : ℝ := s * (3 - 4 * a)
+  have hs0 : 0 ≤ s := chordHeight_nonneg upper
+  have hspos : 0 < s := hs0.lt_of_ne' (by
+    simpa [s] using hheight)
+  have hfactorLower : -1 ≤ 3 - 4 * a := by
+    nlinarith
+  have hfactorUpper : 3 - 4 * a ≤ 1 := by
+    nlinarith
+  have hyBounds : -s ≤ y ∧ y ≤ s := by
+    dsimp [y]
+    constructor <;> nlinarith
+  have hySq : y ^ 2 ≤ s ^ 2 := by
+    exact sq_le_sq' hyBounds.1 hyBounds.2
+  let w : PolygonCell 2 :=
+    ⟨Complex.mk upper.val.re y, by
+      rw [Metric.mem_closedBall, dist_zero_right]
+      have hupperSq := chordHeight_sq upper
+      have hnormSq :
+          Complex.normSq (Complex.mk upper.val.re y) ≤ 1 := by
+        rw [Complex.normSq_apply]
+        change
+          upper.val.re * upper.val.re + y * y ≤ 1
+        nlinarith
+      rw [Complex.normSq_eq_norm_sq] at hnormSq
+      nlinarith [norm_nonneg (Complex.mk upper.val.re y)]⟩
+  have hwHeight : chordHeight w = s := by
+    have hwSq := chordHeight_sq w
+    have hupperSq := chordHeight_sq upper
+    have hwre : w.val.re = upper.val.re := by rfl
+    rw [hwre] at hwSq
+    have hw0 := chordHeight_nonneg w
+    nlinarith
+  have hwCircle : collarCirclePoint w = q := by
+    rw [← hcircle]
+    apply PolygonCell.ext
+    unfold collarCirclePoint collarCircleValue
+    dsimp only [w]
+    rw [hwHeight]
+  refine ⟨w, ?_⟩
+  have hwHeightNe : chordHeight w ≠ 0 := by
+    rw [hwHeight]
+    exact hspos.ne'
+  rw [collarMap_eq_smul_teardropMap w hwHeightNe,
+    hwCircle]
+  congr 2
+  rw [hwHeight]
+  change
+    (3 * s ^ 2 - s * y) / (4 * s ^ 2) = a
+  dsimp [y]
+  field_simp [hspos.ne']
+  ring
+
+/-- Every non-cusp teardrop point lies on a unique radial segment from a non-cusp boundary
+direction, at a scale in `(0, 1]`. -/
+theorem exists_teardrop_boundary_scale
+    (z : PolygonCell 1) (hz : z.val ≠ 1) :
+    ∃ q : PolygonCell 1, ∃ a : ℝ,
+      ‖q.val‖ = 1 ∧ q.val ≠ 1 ∧
+        0 < a ∧ a ≤ 1 ∧
+          teardropMap z = (a : ℂ) * teardropMap q := by
+  let u : ℂ := 1 - z.val
+  have hu : u ≠ 0 := by
+    intro hu0
+    apply hz
+    dsimp [u] at hu0
+    linear_combination -hu0
+  have huSqPos : 0 < Complex.normSq u :=
+    Complex.normSq_pos.mpr hu
+  have hzNormSq : Complex.normSq z.val ≤ 1 := by
+    rw [Complex.normSq_eq_norm_sq]
+    nlinarith [norm_le_one z, norm_nonneg z.val]
+  have huSqLe : Complex.normSq u ≤ 2 * u.re := by
+    rw [Complex.normSq_apply] at hzNormSq
+    rw [Complex.normSq_apply]
+    dsimp [u]
+    simp only [zero_sub]
+    nlinarith
+  have hurePos : 0 < u.re := by
+    nlinarith
+  let r : ℝ := 2 * u.re / Complex.normSq u
+  have hrPos : 0 < r := by
+    dsimp [r]
+    positivity
+  have hrOne : 1 ≤ r := by
+    dsimp [r]
+    rw [le_div_iff₀ huSqPos]
+    simpa using huSqLe
+  let qval : ℂ := 1 - (r : ℂ) * u
+  have hqNormSq : Complex.normSq qval = 1 := by
+    rw [Complex.normSq_apply]
+    simp only [qval, Complex.sub_re, Complex.one_re,
+      Complex.re_ofReal_mul, Complex.sub_im, Complex.one_im,
+      Complex.im_ofReal_mul, zero_sub]
+    have huApply := Complex.normSq_apply u
+    dsimp [r]
+    field_simp [huSqPos.ne']
+    nlinarith
+  have hqNorm : ‖qval‖ = 1 := by
+    rw [Complex.normSq_eq_norm_sq] at hqNormSq
+    nlinarith [norm_nonneg qval]
+  let q : PolygonCell 1 :=
+    ⟨qval, by
+      simp [Metric.mem_closedBall, dist_zero_right,
+        hqNorm]⟩
+  have hqne : q.val ≠ 1 := by
+    intro hq
+    have hmul : (r : ℂ) * u = 0 := by
+      dsimp [q, qval] at hq
+      linear_combination -hq
+    rcases mul_eq_zero.mp hmul with hr | hu0
+    · have hrCast : (r : ℂ) ≠ 0 := by
+        exact_mod_cast hrPos.ne'
+      exact hrCast hr
+    · exact hu hu0
+  let a : ℝ := (r ^ 2)⁻¹
+  have haPos : 0 < a := by
+    dsimp [a]
+    positivity
+  have haOne : a ≤ 1 := by
+    dsimp [a]
+    rw [inv_le_one₀ (by positivity)]
+    nlinarith [sq_nonneg r]
+  have hscale :
+      teardropMap z = (a : ℂ) * teardropMap q := by
+    unfold teardropMap
+    change u ^ 2 =
+      (a : ℂ) * (1 - q.val) ^ 2
+    have hqdiff : (1 : ℂ) - q.val = (r : ℂ) * u := by
+      dsimp [q, qval]
+      ring
+    rw [hqdiff, mul_pow]
+    dsimp [a]
+    have hrne : r ≠ 0 := hrPos.ne'
+    push_cast
+    field_simp [hrne]
+  exact ⟨q, a, by simpa [q] using hqNorm,
+    hqne, haPos, haOne, hscale⟩
+
+theorem baseChildGluingMap_surjective :
+    Function.Surjective baseChildGluingMap := by
+  rintro ⟨x, z, rfl⟩
+  by_cases hz : z.val = 1
+  · let p : PolygonCell 1 :=
+      PolygonCell.side (0 : Fin 1) 0
+    refine ⟨@Quotient.mk'' BaseChildPair
+      (DiskSquare.paramChildSeamSetoid 0 1) (.inl p), ?_⟩
+    apply Subtype.ext
+    change monogonMap p = teardropMap z
+    have hp : p.val = 1 := by
+      dsimp [p]
+      change
+        (Circle.exp
+          (PolygonCell.sideAngle (0 : Fin 1) 0) : ℂ) = 1
+      simp [PolygonCell.sideAngle]
+    unfold monogonMap teardropMap
+    rw [hz, hp]
+    ring
+  · obtain ⟨q, a, hqnorm, hqne, haPos, haOne, hscale⟩ :=
+      exists_teardrop_boundary_scale z hz
+    by_cases haHalf : a ≤ (2 : ℝ)⁻¹
+    · have hb0 : 0 ≤ 2 * a := by positivity
+      have hb1 : 2 * a ≤ 1 := by
+        norm_num at haHalf ⊢
+        linarith
+      obtain ⟨v, hv⟩ :=
+        smul_teardropMap_mem_range q hb0 hb1
+      refine ⟨@Quotient.mk'' BaseChildPair
+        (DiskSquare.paramChildSeamSetoid 0 1) (.inl v), ?_⟩
+      apply Subtype.ext
+      change monogonMap v = teardropMap z
+      unfold monogonMap
+      rw [hv, hscale]
+      push_cast
+      norm_num
+      ring
+    · have haHalf' : (2 : ℝ)⁻¹ ≤ a :=
+        le_of_not_ge haHalf
+      obtain ⟨w, hw⟩ :=
+        exists_collarMap_eq_smul_teardropMap
+          q hqnorm hqne haHalf' haOne
+      refine ⟨@Quotient.mk'' BaseChildPair
+        (DiskSquare.paramChildSeamSetoid 0 1) (.inr w), ?_⟩
+      apply Subtype.ext
+      change collarMap w = teardropMap z
+      rw [hw, hscale]
+
+/-- A monogon glued along its entire side to one side of a digon is a closed disk. -/
+noncomputable def baseChildGluingHomeomorph :
+    DiskSquare.ParamChildGluing 0 1 ≃ₜ Teardrop := by
+  let e : DiskSquare.ParamChildGluing 0 1 ≃ Teardrop :=
+    Equiv.ofBijective baseChildGluingMap
+      ⟨baseChildGluingMap_injective,
+        baseChildGluingMap_surjective⟩
+  exact Continuous.homeoOfEquivCompactToT2
+    (f := e) baseChildGluingMap.continuous
+
+@[simp]
+theorem baseChildGluingHomeomorph_apply
+    (q : DiskSquare.ParamChildGluing 0 1) :
+    baseChildGluingHomeomorph q = baseChildGluingMap q :=
+  rfl
+
+/-- The complete base equivalence from the unsplit monogon to the one-sided-degenerate child
+quotient. -/
+noncomputable def baseSourceChildGluingHomeomorph :
+    PolygonCell 1 ≃ₜ DiskSquare.ParamChildGluing 0 1 :=
+  teardropHomeomorph.trans baseChildGluingHomeomorph.symm
+
+/-! ## Exact compatibility with the surviving digon side -/
+
+theorem side_one_digon_val (t : unitInterval) :
+    (PolygonCell.side (1 : Fin 2) t : PolygonCell 2).val =
+      (Circle.exp (Real.pi * (1 + (t : ℝ))) : ℂ) := by
+  change
+    (Circle.exp
+        (PolygonCell.sideAngle (1 : Fin 2) t) : ℂ) =
+      (Circle.exp (Real.pi * (1 + (t : ℝ))) : ℂ)
+  congr 2
+  unfold PolygonCell.sideAngle
+  norm_num
+  ring
+
+theorem side_one_digon_im (t : unitInterval) :
+    (PolygonCell.side (1 : Fin 2) t : PolygonCell 2).val.im =
+      -Real.sin (Real.pi * (t : ℝ)) := by
+  rw [side_one_digon_val]
+  simp only [Circle.coe_exp,
+    Complex.exp_ofReal_mul_I_im]
+  have hangle :
+      Real.pi * (1 + (t : ℝ)) =
+        Real.pi * (t : ℝ) + Real.pi := by ring
+  rw [hangle, Real.sin_add_pi]
+
+theorem chordHeight_side_one_digon (t : unitInterval) :
+    chordHeight (PolygonCell.side (1 : Fin 2) t) =
+      Real.sin (Real.pi * (t : ℝ)) := by
+  let z : PolygonCell 2 := PolygonCell.side (1 : Fin 2) t
+  let θ : ℝ := Real.pi * (t : ℝ)
+  have hθ0 : 0 ≤ θ := mul_nonneg Real.pi_pos.le t.property.1
+  have hθπ : θ ≤ Real.pi := by
+    dsimp [θ]
+    nlinarith [Real.pi_pos, t.property.2]
+  have hsin : 0 ≤ Real.sin θ :=
+    Real.sin_nonneg_of_nonneg_of_le_pi hθ0 hθπ
+  have him : z.val.im = -Real.sin θ := by
+    simpa [z, θ] using side_one_digon_im t
+  have hnormSq : Complex.normSq z.val = 1 := by
+    have hmem :=
+      PolygonCell.side_mem_sphere (1 : Fin 2) t
+    rw [Metric.mem_sphere, Complex.dist_eq,
+      sub_zero] at hmem
+    rw [Complex.normSq_eq_norm_sq, hmem]
+    norm_num
+  rw [Complex.normSq_apply] at hnormSq
+  have hsSq := chordHeight_sq z
+  have hs0 := chordHeight_nonneg z
+  change chordHeight z = Real.sin θ
+  rw [him] at hnormSq
+  nlinarith
+
+theorem collarCirclePoint_side_one_digon (t : unitInterval) :
+    collarCirclePoint (PolygonCell.side (1 : Fin 2) t) =
+      PolygonCell.side (0 : Fin 1) t := by
+  apply PolygonCell.ext
+  let z : PolygonCell 2 := PolygonCell.side (1 : Fin 2) t
+  have hheight :
+      chordHeight z = Real.sin (Real.pi * (t : ℝ)) := by
+    simpa [z] using chordHeight_side_one_digon t
+  have him :
+      z.val.im = -Real.sin (Real.pi * (t : ℝ)) := by
+    simpa [z] using side_one_digon_im t
+  have hlower :
+      ((z.val.re : ℂ) -
+          (chordHeight z : ℂ) * Complex.I) = z.val := by
+    apply Complex.ext
+    · simp
+    · simp only [Complex.sub_im, Complex.ofReal_im,
+        Complex.mul_im, Complex.ofReal_re, Complex.I_re,
+        Complex.I_im, zero_mul, mul_one, add_zero]
+      rw [hheight, him]
+      ring
+  change collarCircleValue z =
+    (PolygonCell.side (0 : Fin 1) t : PolygonCell 1).val
+  unfold collarCircleValue
+  rw [hlower]
+  rw [side_one_digon_val]
+  change
+    ((Circle.exp (Real.pi * (1 + (t : ℝ))) : ℂ) ^ 2) =
+      (Circle.exp
+        (PolygonCell.sideAngle (0 : Fin 1) t) : ℂ)
+  rw [pow_two, ← Circle.coe_mul, ← Circle.exp_add]
+  apply congrArg (fun q : Circle ↦ (q : ℂ))
+  apply Circle.exp_eq_exp.mpr
+  refine ⟨1, ?_⟩
+  simp only [PolygonCell.sideAngle, Fin.val_zero,
+    Nat.cast_one, div_one, Int.cast_one, one_mul]
+  ring
+
+theorem collarMap_eq_teardropMap_collarCirclePoint_of_im_eq_neg
+    (z : PolygonCell 2)
+    (hy : z.val.im = -chordHeight z) :
+    collarMap z = teardropMap (collarCirclePoint z) := by
+  unfold collarMap
+  rw [hy, teardropMap_collarCirclePoint]
+  push_cast
+  ring
+
+theorem collarMap_old_side (t : unitInterval) :
+    collarMap (PolygonCell.side (1 : Fin 2) t) =
+      teardropMap (PolygonCell.side (0 : Fin 1) t) := by
+  rw [collarMap_eq_teardropMap_collarCirclePoint_of_im_eq_neg,
+    collarCirclePoint_side_one_digon]
+  rw [side_one_digon_im, chordHeight_side_one_digon]
+
+/-- In the base one-sided-degenerate P2 equivalence, the source side is exactly the surviving
+digon side. -/
+theorem baseSourceChildGluingHomeomorph_side
+    (t : unitInterval) :
+    baseSourceChildGluingHomeomorph
+        (PolygonCell.side (0 : Fin 1) t) =
+      @Quotient.mk'' BaseChildPair
+        (DiskSquare.paramChildSeamSetoid 0 1)
+        (.inr (PolygonCell.side (1 : Fin 2) t)) := by
+  apply baseChildGluingHomeomorph.injective
+  rw [baseSourceChildGluingHomeomorph,
+    Homeomorph.trans_apply, Homeomorph.apply_symm_apply,
+    baseChildGluingHomeomorph_apply,
+    baseChildGluingMap_mk]
+  apply Subtype.ext
+  rw [teardropHomeomorph_apply_val,
+    baseChildPairMap_inr]
+  exact (collarMap_old_side t).symm
+
 end P2DegenerateDisk
 
 end LeanEval.Topology.ClassificationOfSurfaces
