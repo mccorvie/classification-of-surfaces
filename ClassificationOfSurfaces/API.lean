@@ -12,6 +12,7 @@ import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicCanonical
 import ClassificationOfSurfaces.FiniteCyclicCanonicalRealization
+import ClassificationOfSurfaces.FiniteCyclicDyck
 import ClassificationOfSurfaces.FiniteCyclicMoveRealization
 import ClassificationOfSurfaces.FiniteCyclicMoves
 import ClassificationOfSurfaces.FiniteCyclicP1
@@ -214,6 +215,8 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.subdivisionStep_preservesPolygonalRealization`
 * `FiniteCyclicPresentation.Subdivides.toPolygonallyEquivalent`
 * `FiniteCyclicPresentation.HasCommonSubdivision.toPolygonallyEquivalent`
+* `FiniteCyclicPresentation.Dyck.hasCommonSubdivision`
+* `FiniteCyclicPresentation.Dyck.polygonallyEquivalent`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -249,6 +252,12 @@ exceptional empty-word sphere presentation splits definitionally to the
 `twoMonogonSphere` presentation. `P2Subdivision` is the corresponding syntactic relation for
 nondegenerate ordinary face cuts, together with that exceptional sphere conversion, up to signed
 presentation isomorphism of the target.
+
+The generic Gallier--Xu Dyck rewrite
+`a U V a⁻¹ X ~ b V U b⁻¹ X` is now an explicit common-subdivision theorem. Its two P2 splits
+are related by a signed isomorphism exchanging the retained distinguished edge with the fresh
+cutting edge. Consequently the rewrite preserves faithful polygonal realizations for ordinary-valid
+source and target presentations.
 
 ## Polygonal quotient foundation
 

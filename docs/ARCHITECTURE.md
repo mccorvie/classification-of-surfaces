@@ -74,6 +74,9 @@ The faithful polygonal quotient layer and the bottom API are in place:
   is definitionally the two-monogon sphere presentation. `P2Subdivision` records genuine
   nondegenerate face cuts, plus that exceptional sphere conversion, up to signed presentation
   isomorphism of the target.
+- `FiniteCyclicPresentation.Subdivides` closes P1/P2 steps transitively, and a common subdivision
+  yields a faithful polygonal-realization equivalence. The generic Gallier--Xu Dyck rewrite is
+  implemented by two explicit P2 cuts whose targets are signed-isomorphic.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.
@@ -174,9 +177,8 @@ compatibility. New code should use the preferred names above.
 2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
    faithful polygonal quotient; route the Eval handoff through that quotient without relying on
    the legacy arbitrary stored realization.
-3. Combine the completed P1 and P2 relations into an elementary move closure and prove the
-   primitive subdivisions preserve the faithful polygonal quotient.
-4. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
-   transformation, and boundary grouping as derived finite subdivision chains.
-5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
+3. Implement cancellation, vertex reduction, face merging, crosscap introduction, and the
+   handle/boundary grouping chains. Reuse the completed generic Dyck common-subdivision theorem
+   for the repeated word permutations.
+4. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
    the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.
