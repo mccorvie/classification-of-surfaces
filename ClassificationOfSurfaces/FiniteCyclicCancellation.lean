@@ -36,6 +36,134 @@ def source {n : ℕ} (X : List (SignedDart (Fin n))) :
     ([.pos (P1.freshEdge n), .neg (P1.freshEdge n)] ++
       P2.retainWord X)
 
+/-- Retaining after contraction recovers a word which does not use the fresh-last edge. -/
+theorem retainWord_contractWord_of_fresh_not_mem {n : ℕ}
+    (word : List (SignedDart (Fin (n + 1))))
+    (hfresh : P1.freshEdge n ∉ word.map edgeOfDart) :
+    P2.retainWord (P1.contractWord word) = word := by
+  induction word with
+  | nil => rfl
+  | cons d word ih =>
+      have htail : P1.freshEdge n ∉ word.map edgeOfDart := by
+        intro h
+        exact hfresh (by simp [h])
+      have hd : edgeOfDart d ≠ P1.freshEdge n := by
+        intro h
+        exact hfresh (by simp [h])
+      cases d with
+      | pos e =>
+          induction e using Fin.lastCases with
+          | last =>
+              exact (hd rfl).elim
+          | cast e =>
+              rw [show P1.contractWord
+                    (SignedDart.pos e.castSucc :: word) =
+                  SignedDart.pos e :: P1.contractWord word by
+                simp [P1.contractWord]]
+              change
+                P2.retainWord
+                    (SignedDart.pos e :: P1.contractWord word) =
+                  SignedDart.pos e.castSucc :: word
+              have ih' := ih htail
+              change
+                (P1.contractWord word).map P1.castSuccDart = word at ih'
+              rw [P2.retainWord, List.map_cons,
+                P1.castSuccDart_pos, ih']
+      | neg e =>
+          induction e using Fin.lastCases with
+          | last =>
+              exact (hd rfl).elim
+          | cast e =>
+              rw [show P1.contractWord
+                    (SignedDart.neg e.castSucc :: word) =
+                  SignedDart.neg e :: P1.contractWord word by
+                simp [P1.contractWord]]
+              change
+                P2.retainWord
+                    (SignedDart.neg e :: P1.contractWord word) =
+                  SignedDart.neg e.castSucc :: word
+              have ih' := ih htail
+              change
+                (P1.contractWord word).map P1.castSuccDart = word at ih'
+              rw [P2.retainWord, List.map_cons,
+                P1.castSuccDart_neg, ih']
+
+/-- Move a chosen edge name to the fresh-last position. -/
+def moveToLast {n : ℕ} (a : Fin (n + 1)) :
+    Fin (n + 1) ≃ Fin (n + 1) :=
+  Equiv.swap a (Fin.last n)
+
+/-- Rename a tail so that the displayed cancellable edge becomes last. -/
+def renamedTail {n : ℕ} (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1)))) :
+    List (SignedDart (Fin (n + 1))) :=
+  X.map (SignedDart.mapEquiv (moveToLast a))
+
+/-- Delete the now-unused last edge name from a renamed tail. -/
+def lowerTail {n : ℕ} (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1)))) :
+    List (SignedDart (Fin n)) :=
+  P1.contractWord (renamedTail a X)
+
+theorem freshEdge_not_mem_renamedTail {n : ℕ}
+    (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1))))
+    (ha : a ∉ X.map edgeOfDart) :
+    P1.freshEdge n ∉ (renamedTail a X).map edgeOfDart := by
+  intro hfresh
+  rcases List.mem_map.mp hfresh with ⟨d, hd, hedge⟩
+  rcases List.mem_map.mp hd with ⟨old, hold, rfl⟩
+  rw [edgeOfDart_mapEquiv] at hedge
+  have holdEdge : edgeOfDart old = a := by
+    apply (moveToLast a).injective
+    rw [hedge]
+    simp [moveToLast, P1.freshEdge]
+  exact ha (List.mem_map.mpr ⟨old, hold, holdEdge⟩)
+
+/-- Lowering and re-embedding a tail which avoids the cancellable edge recovers its exact
+renamed spelling. -/
+theorem retainWord_lowerTail {n : ℕ}
+    (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1))))
+    (ha : a ∉ X.map edgeOfDart) :
+    P2.retainWord (lowerTail a X) = renamedTail a X :=
+  retainWord_contractWord_of_fresh_not_mem
+    (renamedTail a X) (freshEdge_not_mem_renamedTail a X ha)
+
+/-- A one-face word with a displayed positive inverse pair. -/
+@[reducible]
+def namedSource {n : ℕ} (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1)))) :
+    FiniteCyclicPresentation :=
+  Dyck.oneFace ([.pos a, .neg a] ++ X)
+
+/-- Rename a displayed cancellable edge to last and contract the unused name from its tail. -/
+def namedSourceSignedIso {n : ℕ}
+    (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1))))
+    (ha : a ∉ X.map edgeOfDart) :
+    SignedPresentationIso
+      (namedSource a X) (source (lowerTail a X)) where
+  edgeRelabeling := EdgeRelabeling.ofEquiv (moveToLast a)
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    rw [EdgeRelabeling.map_mapDart_ofEquiv]
+    rw [retainWord_lowerTail a X ha]
+    change
+      ([SignedDart.mapEquiv (moveToLast a) (.pos a),
+          SignedDart.mapEquiv (moveToLast a) (.neg a)] ++
+        renamedTail a X).IsRotated
+        ([.pos (P1.freshEdge n), .neg (P1.freshEdge n)] ++
+          renamedTail a X)
+    have hmove : moveToLast a a = P1.freshEdge n := by
+      simp [moveToLast, P1.freshEdge]
+    rw [show SignedDart.mapEquiv (moveToLast a) (.pos a) =
+          .pos (P1.freshEdge n) by simp [hmove],
+      show SignedDart.mapEquiv (moveToLast a) (.neg a) =
+          .neg (P1.freshEdge n) by simp [hmove]]
+
 /-- Split the inverse pair from the remaining word. -/
 def sourceCut {n : ℕ} (X : List (SignedDart (Fin n))) :
     P2Cut (source X) where
@@ -286,6 +414,70 @@ theorem polygonallyEquivalentOfSignedIsos
     P.PolygonallyEquivalent Q validP validQ :=
   (normalizationEquivalentOfSignedIsos
     X hX sourceIso targetIso validP validQ).polygonallyEquivalent
+
+/-- Cancel a positively displayed adjacent inverse pair with an arbitrary edge name. -/
+theorem namedNormalizationEquivalent {n : ℕ}
+    (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1))))
+    (ha : a ∉ X.map edgeOfDart)
+    (hlower : lowerTail a X ≠ [])
+    (validSource : (namedSource a X).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨namedSource a X, validSource⟩
+      ⟨target (lowerTail a X),
+        target_isSurfaceValid (lowerTail a X) hlower
+          ((namedSourceSignedIso a X ha).isSurfaceValid validSource)⟩ := by
+  let sourceIso := namedSourceSignedIso a X ha
+  let validBase : (source (lowerTail a X)).IsSurfaceValid :=
+    sourceIso.isSurfaceValid validSource
+  exact
+    (NormalizationEquivalent.ofSignedIso sourceIso).trans
+      (normalizationEquivalent (lowerTail a X) hlower validBase)
+
+/-- A one-face word with a negatively displayed inverse pair. -/
+@[reducible]
+def negativeNamedSource {n : ℕ} (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1)))) :
+    FiniteCyclicPresentation :=
+  Dyck.oneFace ([.neg a, .pos a] ++ X)
+
+/-- Reverse only the displayed edge to turn negative cancellation into positive cancellation. -/
+def negativeNamedSourceSignedIso {n : ℕ}
+    (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1))))
+    (ha : a ∉ X.map edgeOfDart) :
+    SignedPresentationIso
+      (negativeNamedSource a X) (namedSource a X) where
+  edgeRelabeling := Dyck.reverseEdgeRelabeling a
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [List.map_append, List.map_cons, List.map_nil,
+      Dyck.reverseEdgeRelabeling_neg,
+      Dyck.reverseEdgeRelabeling_pos]
+    rw [Dyck.reverseEdgeRelabeling_word a X ha]
+
+/-- Cancel a negatively displayed adjacent inverse pair. -/
+theorem negativeNamedNormalizationEquivalent {n : ℕ}
+    (a : Fin (n + 1))
+    (X : List (SignedDart (Fin (n + 1))))
+    (ha : a ∉ X.map edgeOfDart)
+    (hlower : lowerTail a X ≠ [])
+    (validSource : (negativeNamedSource a X).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨negativeNamedSource a X, validSource⟩
+      ⟨target (lowerTail a X),
+        target_isSurfaceValid (lowerTail a X) hlower
+          ((namedSourceSignedIso a X ha).isSurfaceValid
+            ((negativeNamedSourceSignedIso a X ha).isSurfaceValid
+              validSource))⟩ := by
+  let signIso := negativeNamedSourceSignedIso a X ha
+  let validPositive : (namedSource a X).IsSurfaceValid :=
+    signIso.isSurfaceValid validSource
+  exact
+    (NormalizationEquivalent.ofSignedIso signIso).trans
+      (namedNormalizationEquivalent a X ha hlower validPositive)
 
 end Cancellation
 
