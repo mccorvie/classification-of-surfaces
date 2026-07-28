@@ -232,6 +232,40 @@ theorem normalizationEquivalent {n : ℕ} (a : Fin n)
 
 end Crosscap
 
+namespace P1
+
+/-- Contract a canonical P1 expansion inside the normalization closure. -/
+theorem contractionNormalizationEquivalent
+    (P : FiniteCyclicPresentation) (a : P.Edge)
+    (validP : P.IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨expand P a, expand_isSurfaceValid P a validP⟩
+      ⟨P, validP⟩ :=
+  (NormalizationEquivalent.ofP1
+    (P := ⟨P, validP⟩)
+    (Q := ⟨expand P a, expand_isSurfaceValid P a validP⟩)
+    (P1Subdivision.canonical P a)).symm
+
+end P1
+
+namespace P2
+
+/-- Merge the two children of a nondegenerate canonical P2 split inside the normalization
+closure. -/
+theorem mergeNormalizationEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (hcut : cut.IsNondegenerate)
+    (validP : P.IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨split P cut, split_isSurfaceValid P cut validP⟩
+      ⟨P, validP⟩ :=
+  (NormalizationEquivalent.ofP2
+    (P := ⟨P, validP⟩)
+    (Q := ⟨split P cut, split_isSurfaceValid P cut validP⟩)
+    (P2Subdivision.canonical P cut hcut)).symm
+
+end P2
+
 end FiniteCyclicPresentation
 
 end LeanEval.Topology.ClassificationOfSurfaces

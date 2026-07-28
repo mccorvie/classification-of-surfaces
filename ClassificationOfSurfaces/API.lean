@@ -229,6 +229,8 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.NormalizationEquivalent`
 * `FiniteCyclicPresentation.NormalizationEquivalent.ofSubdivides`
 * `FiniteCyclicPresentation.NormalizationEquivalent.polygonallyEquivalent`
+* `FiniteCyclicPresentation.P1.contractionNormalizationEquivalent`
+* `FiniteCyclicPresentation.P2.mergeNormalizationEquivalent`
 * `FiniteCyclicPresentation.Dyck.normalizationEquivalent`
 * `FiniteCyclicPresentation.Crosscap.normalizationEquivalent`
 * `FiniteCyclicPresentation.Dyck.negativeNormalizationEquivalent`
