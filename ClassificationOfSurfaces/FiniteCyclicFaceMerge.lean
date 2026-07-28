@@ -251,6 +251,194 @@ theorem polygonallyEquivalentOfSignedIso
   (normalizationEquivalentOfSignedIso
     cut hcut sourceIso validP validQ).polygonallyEquivalent
 
+/-! ### A merge among untouched faces -/
+
+namespace ContextMerge
+
+/-- Merge `U` and `V` into the first face while retaining the remaining face words `W`. -/
+@[reducible]
+def target {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    FiniteCyclicPresentation where
+  edgeCount := n
+  faces := (U ++ V) :: W
+
+/-- The canonical cut of the first face of a contextual merge. -/
+def targetCut {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    P2Cut (target U V W) where
+  face := ⟨⟨0, by simp [target]⟩, false⟩
+  left := U
+  right := V
+  boundary_rotated := List.IsRotated.refl _
+
+@[simp]
+theorem targetCut_left {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (targetCut U V W).left = U :=
+  rfl
+
+@[simp]
+theorem targetCut_right {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (targetCut U V W).right = V :=
+  rfl
+
+/-- The canonical source for merging in context is the exact P2 split of the target. -/
+@[reducible]
+def source {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    FiniteCyclicPresentation :=
+  P2.split (target U V W) (targetCut U V W)
+
+/-- The child occupying the selected old-face position. -/
+def selectedFace {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (source U V W).Face :=
+  P2.oldFace (target U V W) (targetCut U V W)
+    (targetCut U V W).face.face
+
+/-- The child appended by the P2 split. -/
+def rightFace {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (source U V W).Face :=
+  P2.rightFace (target U V W) (targetCut U V W)
+
+/-- The target face occupied by the `i`th untouched word. -/
+def untouchedTargetFace {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (i : Fin W.length) :
+    (target U V W).Face :=
+  ⟨i.val + 1, by
+    change i.val + 1 < ((U ++ V) :: W).length
+    simp only [List.length_cons]
+    omega⟩
+
+/-- The source face occupied by the `i`th untouched word. -/
+def untouchedSourceFace {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (i : Fin W.length) :
+    (source U V W).Face :=
+  P2.oldFace (target U V W) (targetCut U V W)
+    (untouchedTargetFace U V W i)
+
+@[simp]
+theorem source_boundary_selected {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (source U V W).boundary (selectedFace U V W) =
+      P2.retainWord U ++ [.pos (P1.freshEdge n)] := by
+  simp [source, selectedFace, targetCut, P2.selectedBoundary,
+    P2.selectedOrientedBoundary, P2.freshEdge, target]
+  rfl
+
+@[simp]
+theorem source_boundary_right {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (source U V W).boundary (rightFace U V W) =
+      [.neg (P1.freshEdge n)] ++ P2.retainWord V := by
+  simp [source, rightFace, targetCut, P2.rightBoundary,
+    P2.rightOrientedBoundary, P2.freshEdge, target]
+  rfl
+
+@[simp]
+theorem target_boundary_untouched {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (i : Fin W.length) :
+    (target U V W).boundary (untouchedTargetFace U V W i) =
+      W.get i := by
+  simp [target, untouchedTargetFace,
+    FiniteCyclicPresentation.boundary]
+
+@[simp]
+theorem source_boundary_untouched {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (i : Fin W.length) :
+    (source U V W).boundary (untouchedSourceFace U V W i) =
+      P2.retainWord (W.get i) := by
+  change
+    (P2.split (target U V W) (targetCut U V W)).boundary
+        (P2.oldFace (target U V W) (targetCut U V W)
+          (untouchedTargetFace U V W i)) =
+      P2.retainWord (W.get i)
+  rw [P2.split_boundary_old_of_ne]
+  · rw [target_boundary_untouched]
+  · intro h
+    have hval := congrArg Fin.val h
+    change i.val + 1 = 0 at hval
+    omega
+
+/-- The contextual cut is ordinary exactly under the same nonempty condition as the two-face
+special case. -/
+theorem targetCut_isOrdinary {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (hUV : U ++ V ≠ []) :
+    (targetCut U V W).IsNondegenerate ∨
+      ((targetCut U V W).left = [] ∧
+          0 < (targetCut U V W).right.length) ∨
+        (0 < (targetCut U V W).left.length ∧
+          (targetCut U V W).right = []) := by
+  by_cases hU : U = []
+  · right
+    left
+    subst U
+    exact ⟨rfl, List.length_pos_iff_ne_nil.mpr (by simpa using hUV)⟩
+  · by_cases hV : V = []
+    · right
+      right
+      exact ⟨List.length_pos_iff_ne_nil.mpr hU, hV⟩
+    · left
+      exact ⟨hU, hV⟩
+
+/-- A validity-safe contextual merge. The target-validity hypothesis is explicit because merging
+can make two cyclic face words coincide, while `IsSurfaceValid` deliberately excludes duplicate
+faces. -/
+theorem normalizationEquivalent {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (hUV : U ++ V ≠ [])
+    (validTarget : (target U V W).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨source U V W,
+        P2.split_isSurfaceValid
+          (target U V W) (targetCut U V W) validTarget⟩
+      ⟨target U V W, validTarget⟩ :=
+  P2.ordinaryMergeNormalizationEquivalent
+    (target U V W) (targetCut U V W)
+    (targetCut_isOrdinary U V W hUV) validTarget
+
+/-- Transport a contextual merge across the face ordering and edge naming of an arbitrary
+source presentation. -/
+theorem normalizationEquivalentOfSignedIso
+    {P : FiniteCyclicPresentation} {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (hUV : U ++ V ≠ [])
+    (sourceIso : SignedPresentationIso P (source U V W))
+    (validP : P.IsSurfaceValid)
+    (validTarget : (target U V W).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨P, validP⟩
+      ⟨target U V W, validTarget⟩ :=
+  FaceMerge.normalizationEquivalentOfSignedIso
+    (targetCut U V W) (targetCut_isOrdinary U V W hUV)
+    sourceIso validP validTarget
+
+end ContextMerge
+
 /-! ### Arbitrary separator names -/
 
 /-- Two displayed faces with an arbitrarily named, oppositely oriented separator. -/
