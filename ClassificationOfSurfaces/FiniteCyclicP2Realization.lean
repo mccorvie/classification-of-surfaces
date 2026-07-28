@@ -2276,6 +2276,855 @@ theorem positiveInvPreMap_fresh_seam
   exact Relation.EqvGen.rel _ _
     (DiskSquare.ParamChildSeamGenerator.glue t)
 
+/-- On every old boundary side, the inverse pre-map exactly undoes occurrence transport. -/
+theorem positiveInvPreMap_mapOccurrence_side
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (o : P.BoundaryOccurrence) (t : unitInterval) :
+    positiveInvPreMap P cut horientation hl hr validP
+        (((split P cut).occurrenceSide
+          (positiveMapOccurrence
+            P cut horientation hl hr o)).point t) =
+      P.polygonalMk validP ((P.occurrenceSide o).point t) := by
+  classical
+  rcases o with ⟨f, i⟩
+  by_cases hface : f = cut.face.face
+  · subst f
+    by_cases hleft :
+        (positiveCutSideIndex
+          P cut horientation hl hr i).val < cut.left.length
+    · rw [positiveMapOccurrence_selected_of_lt
+          P cut horientation hl hr i hleft]
+      change
+        positiveInvPreMap P cut horientation hl hr validP
+            ⟨oldFace P cut cut.face.face,
+              PolygonCell.side
+                (positiveSelectedChildSideIndex P cut horientation
+                  (Fin.castAdd 1
+                    (positiveLeftSideIndex
+                      P cut horientation hl hr i hleft))) t⟩ =
+          P.polygonalMk validP
+            ⟨cut.face.face, PolygonCell.side i t⟩
+      rw [← positiveSelectedChildCellHomeomorph_side
+          P cut horientation
+          (Fin.castAdd 1
+            (positiveLeftSideIndex
+              P cut horientation hl hr i hleft)) t,
+        positiveInvPreMap_selectedChild_apply,
+        ← positiveSelectedCellHomeomorph_side_of_lt
+          P cut horientation hl hr i t hleft,
+        positiveChildGluingInvMap_selectedCell]
+    · have hright :
+          cut.left.length ≤
+            (positiveCutSideIndex
+              P cut horientation hl hr i).val :=
+        Nat.le_of_not_gt hleft
+      rw [positiveMapOccurrence_selected_of_not_lt
+          P cut horientation hl hr i hleft]
+      change
+        positiveInvPreMap P cut horientation hl hr validP
+            ⟨rightFace P cut,
+              PolygonCell.side
+                (positiveRightChildSideIndex P cut horientation
+                  ((positiveRightSideIndex
+                    P cut horientation hl hr i hright).addNat 1)) t⟩ =
+          P.polygonalMk validP
+            ⟨cut.face.face, PolygonCell.side i t⟩
+      rw [← positiveRightChildCellHomeomorph_side
+          P cut horientation
+          ((positiveRightSideIndex
+            P cut horientation hl hr i hright).addNat 1) t,
+        positiveInvPreMap_rightChild_apply,
+        ← positiveSelectedCellHomeomorph_side_of_not_lt
+          P cut horientation hl hr i t hright,
+        positiveChildGluingInvMap_selectedCell]
+  · rw [positiveMapOccurrence_retained
+        P cut horientation hl hr hface i]
+    change
+      positiveInvPreMap P cut horientation hl hr validP
+          ⟨oldFace P cut f,
+            PolygonCell.side (retainedSideIndex P cut hface i) t⟩ =
+        P.polygonalMk validP ⟨f, PolygonCell.side i t⟩
+    rw [← retainedCellHomeomorph_side P cut hface i t,
+      positiveInvPreMap_retained_apply]
+
+/-- Every target boundary occurrence on an old edge is the transported copy of a source
+occurrence. The two omitted target occurrences are exactly the fresh seam. -/
+theorem exists_positiveMapOccurrence_eq_of_edge_castSucc
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (q : (split P cut).BoundaryOccurrence) (e : P.Edge)
+    (hedge : q.edge = e.castSucc) :
+    ∃ o : P.BoundaryOccurrence,
+      positiveMapOccurrence P cut horientation hl hr o = q := by
+  classical
+  rcases q with ⟨qf, j⟩
+  rcases face_cases P cut qf with ⟨f, rfl⟩ | rfl
+  · by_cases hface : f = cut.face.face
+    · subst f
+      by_cases hj : j.val < cut.left.length
+      · let k : Fin (cut.left.length + cut.right.length) :=
+          Fin.castAdd cut.right.length ⟨j.val, hj⟩
+        obtain ⟨i, hi⟩ :=
+          positiveCutSideIndex_surjective
+            P cut horientation hl hr k
+        have hleft :
+            (positiveCutSideIndex
+              P cut horientation hl hr i).val < cut.left.length := by
+          rw [hi]
+          exact hj
+        refine ⟨⟨cut.face.face, i⟩, ?_⟩
+        rw [positiveMapOccurrence_selected_of_lt
+          P cut horientation hl hr i hleft]
+        apply Sigma.ext
+        · rfl
+        · apply heq_of_eq
+          apply Fin.ext
+          simp only [positiveSelectedChildSideIndex,
+            Fin.val_castAdd, positiveLeftSideIndex_val]
+          rw [hi]
+          rfl
+      · have hjval : j.val = cut.left.length := by
+          have hlen :=
+            positive_split_boundary_selected_length
+              P cut horientation
+          have hjlt := j.isLt
+          omega
+        have hqfresh :
+            (show (split P cut).BoundaryOccurrence from
+              ⟨oldFace P cut cut.face.face, j⟩) =
+              positiveSelectedFreshOccurrence
+                P cut horientation := by
+          apply Sigma.ext
+          · rfl
+          · apply heq_of_eq
+            apply Fin.ext
+            exact hjval
+        have hqedge := congrArg BoundaryOccurrence.edge hqfresh
+        rw [positiveSelectedFreshOccurrence_edge] at hqedge
+        have hbad : e.castSucc = freshEdge P :=
+          hedge.symm.trans hqedge
+        exact
+          (P1.firstSubedge_ne_freshEdge e hbad).elim
+    · let i : Fin (P.boundary f).length :=
+        ⟨j.val, by
+          rw [← split_boundary_old_length_of_ne P cut hface]
+          exact j.isLt⟩
+      refine ⟨⟨f, i⟩, ?_⟩
+      rw [positiveMapOccurrence_retained
+        P cut horientation hl hr hface i]
+      apply Sigma.ext
+      · rfl
+      · apply heq_of_eq
+        apply Fin.ext
+        rfl
+  · by_cases hj : j.val = 0
+    · have hqfresh :
+          (show (split P cut).BoundaryOccurrence from
+            ⟨rightFace P cut, j⟩) =
+            positiveRightFreshOccurrence P cut horientation := by
+        apply Sigma.ext
+        · rfl
+        · apply heq_of_eq
+          apply Fin.ext
+          exact hj
+      have hqedge := congrArg BoundaryOccurrence.edge hqfresh
+      rw [positiveRightFreshOccurrence_edge] at hqedge
+      have hbad : e.castSucc = freshEdge P :=
+        hedge.symm.trans hqedge
+      exact
+        (P1.firstSubedge_ne_freshEdge e hbad).elim
+    · have hjpos : 0 < j.val := Nat.pos_of_ne_zero hj
+      let rightIndex : Fin cut.right.length :=
+        ⟨j.val - 1, by
+          have hlen :=
+            positive_split_boundary_right_length
+              P cut horientation
+          have hjlt := j.isLt
+          omega⟩
+      let k : Fin (cut.left.length + cut.right.length) :=
+        Fin.natAdd cut.left.length rightIndex
+      obtain ⟨i, hi⟩ :=
+        positiveCutSideIndex_surjective
+          P cut horientation hl hr k
+      have hright :
+          cut.left.length ≤
+            (positiveCutSideIndex
+              P cut horientation hl hr i).val := by
+        rw [hi]
+        simp only [k, Fin.val_natAdd]
+        omega
+      have hnotleft :
+          ¬(positiveCutSideIndex
+              P cut horientation hl hr i).val < cut.left.length :=
+        Nat.not_lt.mpr hright
+      refine ⟨⟨cut.face.face, i⟩, ?_⟩
+      rw [positiveMapOccurrence_selected_of_not_lt
+        P cut horientation hl hr i hnotleft]
+      apply Sigma.ext
+      · rfl
+      · apply heq_of_eq
+        apply Fin.ext
+        simp only [positiveRightChildSideIndex,
+          Fin.val_addNat, positiveRightSideIndex_val]
+        rw [hi]
+        simp only [k, Fin.val_natAdd, rightIndex]
+        omega
+
+/-- Compatible boundary occurrences in a pairing carry the same unoriented edge. -/
+theorem targetPairing_edge_eq_source_edge
+    {P : FiniteCyclicPresentation} (pairing : P.BoundaryPairing) :
+    pairing.target.edge = pairing.source.edge := by
+  cases hdirection : pairing.direction with
+  | same =>
+      have hcompatible :
+          pairing.target.dart = pairing.source.dart := by
+        simpa only [hdirection] using pairing.compatible
+      simp only [BoundaryOccurrence.edge, hcompatible]
+  | opposite =>
+      have hcompatible :
+          pairing.target.dart = pairing.source.dart.flip := by
+        simpa only [hdirection] using pairing.compatible
+      simp only [BoundaryOccurrence.edge, hcompatible,
+        edgeOfDart_flip]
+
+/-- Once source and target occurrences agree, compatibility forces the same parameter direction. -/
+theorem targetPairing_direction_eq_of_source_target_eq
+    {P : FiniteCyclicPresentation} (p q : P.BoundaryPairing)
+    (hsource : p.source = q.source)
+    (htarget : p.target = q.target) :
+    p.direction = q.direction := by
+  have hsourceDart :=
+    congrArg BoundaryOccurrence.dart hsource
+  have htargetDart :=
+    congrArg BoundaryOccurrence.dart htarget
+  cases hp : p.direction <;> cases hq : q.direction
+  · rfl
+  · have hpcompatible :
+        p.target.dart = p.source.dart := by
+      simpa only [hp] using p.compatible
+    have hqcompatible :
+        q.target.dart = q.source.dart.flip := by
+      simpa only [hq] using q.compatible
+    have hbad : p.source.dart = p.source.dart.flip := by
+      calc
+        p.source.dart = p.target.dart := hpcompatible.symm
+        _ = q.target.dart := htargetDart
+        _ = q.source.dart.flip := hqcompatible
+        _ = p.source.dart.flip :=
+          congrArg SignedDart.flip hsourceDart.symm
+    cases hdart : p.source.dart <;>
+      simp [hdart, SignedDart.flip] at hbad
+  · have hpcompatible :
+        p.target.dart = p.source.dart.flip := by
+      simpa only [hp] using p.compatible
+    have hqcompatible :
+        q.target.dart = q.source.dart := by
+      simpa only [hq] using q.compatible
+    have hbad : p.source.dart.flip = p.source.dart := by
+      calc
+        p.source.dart.flip = p.target.dart := hpcompatible.symm
+        _ = q.target.dart := htargetDart
+        _ = q.source.dart := hqcompatible
+        _ = p.source.dart := hsourceDart.symm
+    cases hdart : p.source.dart <;>
+      simp [hdart, SignedDart.flip] at hbad
+  · rfl
+
+/-- Boundary pairings are determined by their two occurrences and parameter direction. -/
+theorem targetPairing_eq_of_source_target_direction_eq
+    {P : FiniteCyclicPresentation} (p q : P.BoundaryPairing)
+    (hsource : p.source = q.source)
+    (htarget : p.target = q.target)
+    (hdirection : p.direction = q.direction) :
+    p = q := by
+  cases p
+  cases q
+  simp_all
+
+/-- The two explicitly constructed fresh occurrences exhaust the fresh edge. -/
+theorem positiveFreshOccurrence_cases
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (validP : P.IsSurfaceValid)
+    (q : (split P cut).BoundaryOccurrence)
+    (hedge : q.edge = freshEdge P) :
+    q = positiveSelectedFreshOccurrence P cut horientation ∨
+      q = positiveRightFreshOccurrence P cut horientation := by
+  by_cases hselected :
+      q = positiveSelectedFreshOccurrence P cut horientation
+  · exact Or.inl hselected
+  · let validQ := split_isSurfaceValid P cut validP
+    obtain ⟨_partner, _hpartner, hunique⟩ :=
+      validQ.exists_unique_partner
+        (positiveSelectedFreshOccurrence P cut horientation)
+        (by
+          rw [positiveSelectedFreshOccurrence_edge]
+          exact positiveFresh_not_boundary P cut)
+    have hqcondition :
+        positiveSelectedFreshOccurrence P cut horientation ≠ q ∧
+          q.edge =
+            (positiveSelectedFreshOccurrence
+              P cut horientation).edge := by
+      constructor
+      · exact Ne.symm hselected
+      · rw [positiveSelectedFreshOccurrence_edge]
+        exact hedge
+    have hrightcondition :
+        positiveSelectedFreshOccurrence P cut horientation ≠
+            positiveRightFreshOccurrence P cut horientation ∧
+          (positiveRightFreshOccurrence
+              P cut horientation).edge =
+            (positiveSelectedFreshOccurrence
+              P cut horientation).edge := by
+      constructor
+      · exact positiveSelectedFreshOccurrence_ne_right
+          P cut horientation
+      · rw [positiveRightFreshOccurrence_edge,
+          positiveSelectedFreshOccurrence_edge]
+    exact Or.inr
+      ((hunique q hqcondition).trans
+        (hunique
+          (positiveRightFreshOccurrence P cut horientation)
+          hrightcondition).symm)
+
+/-- A target pairing based at an old edge is exactly the transported pairing of the two
+corresponding source occurrences. -/
+theorem exists_positiveMapPairing_eq_of_source_edge_castSucc
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (q : (split P cut).BoundaryPairing) (e : P.Edge)
+    (hsourceEdge : q.source.edge = e.castSucc) :
+    ∃ r : P.BoundaryPairing,
+      positiveMapPairing P cut horientation hl hr r = q := by
+  have htargetEdge : q.target.edge = e.castSucc :=
+    (targetPairing_edge_eq_source_edge q).trans hsourceEdge
+  obtain ⟨source, hsource⟩ :=
+    exists_positiveMapOccurrence_eq_of_edge_castSucc
+      P cut horientation hl hr q.source e hsourceEdge
+  obtain ⟨target, htarget⟩ :=
+    exists_positiveMapOccurrence_eq_of_edge_castSucc
+      P cut horientation hl hr q.target e htargetEdge
+  have hsourceOldEdge : source.edge = e := by
+    have hmapEdge :=
+      congrArg BoundaryOccurrence.edge hsource
+    rw [positiveMapOccurrence_edge, hsourceEdge] at hmapEdge
+    exact Fin.castSucc_injective P.edgeCount hmapEdge
+  have htargetOldEdge : target.edge = e := by
+    have hmapEdge :=
+      congrArg BoundaryOccurrence.edge htarget
+    rw [positiveMapOccurrence_edge, htargetEdge] at hmapEdge
+    exact Fin.castSucc_injective P.edgeCount hmapEdge
+  have heInternal : ¬P.IsBoundaryEdge e := by
+    intro heBoundary
+    apply q.source_not_boundary
+    unfold IsBoundaryEdge at heBoundary ⊢
+    rw [hsourceEdge]
+    exact
+      (edgeMultiplicity_split_castSucc P cut e).symm.trans
+        heBoundary
+  have hsourceInternal : ¬P.IsBoundaryEdge source.edge := by
+    rw [hsourceOldEdge]
+    exact heInternal
+  obtain ⟨r, hrsource⟩ :=
+    validP.exists_pairing_source source hsourceInternal
+  obtain ⟨_partner, _hpartner, hunique⟩ :=
+    validP.exists_unique_partner source hsourceInternal
+  have hsourceneTarget : source ≠ target := by
+    intro heq
+    apply q.source_ne_target
+    calc
+      q.source =
+          positiveMapOccurrence
+            P cut horientation hl hr source :=
+        hsource.symm
+      _ = positiveMapOccurrence
+            P cut horientation hl hr target :=
+        congrArg
+          (positiveMapOccurrence
+            P cut horientation hl hr) heq
+      _ = q.target := htarget
+  have hrcondition :
+      source ≠ r.target ∧ r.target.edge = source.edge := by
+    constructor
+    · intro heq
+      exact r.source_ne_target (hrsource.trans heq)
+    · calc
+        r.target.edge = r.source.edge :=
+          targetPairing_edge_eq_source_edge r
+        _ = source.edge :=
+          congrArg BoundaryOccurrence.edge hrsource
+  have htcondition :
+      source ≠ target ∧ target.edge = source.edge := by
+    exact
+      ⟨hsourceneTarget,
+        htargetOldEdge.trans hsourceOldEdge.symm⟩
+  have hrtarget : r.target = target :=
+    (hunique r.target hrcondition).trans
+      (hunique target htcondition).symm
+  have hmapSource :
+      (positiveMapPairing
+        P cut horientation hl hr r).source = q.source := by
+    rw [positiveMapPairing_source, hrsource, hsource]
+  have hmapTarget :
+      (positiveMapPairing
+        P cut horientation hl hr r).target = q.target := by
+    rw [positiveMapPairing_target, hrtarget, htarget]
+  have hmapDirection :
+      (positiveMapPairing
+        P cut horientation hl hr r).direction = q.direction :=
+    targetPairing_direction_eq_of_source_target_eq
+      (positiveMapPairing
+        P cut horientation hl hr r) q
+      hmapSource hmapTarget
+  exact ⟨r,
+    targetPairing_eq_of_source_target_direction_eq
+      (positiveMapPairing
+        P cut horientation hl hr r) q
+      hmapSource hmapTarget hmapDirection⟩
+
+/-- Occurrence-side form of the exact fresh-seam equality for the inverse pre-map. -/
+theorem positiveInvPreMap_fresh_occurrence_seam
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) (t : unitInterval) :
+    positiveInvPreMap P cut horientation hl hr validP
+        (((split P cut).occurrenceSide
+          (positiveSelectedFreshOccurrence
+            P cut horientation)).point t) =
+      positiveInvPreMap P cut horientation hl hr validP
+        (((split P cut).occurrenceSide
+          (positiveRightFreshOccurrence
+            P cut horientation)).point
+              (unitInterval.symm t)) := by
+  rw [← positiveChildPairPreMap_fresh_inl
+      P cut horientation t,
+    ← positiveChildPairPreMap_fresh_inr
+      P cut horientation (unitInterval.symm t)]
+  exact positiveInvPreMap_fresh_seam
+    P cut horientation hl hr validP t
+
+/-- The inverse pre-map identifies every target gluing generator: old-edge generators are
+transported source pairings, while the final edge is the fresh child seam. -/
+theorem positiveInvPreMap_pairing_eq
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (q : (split P cut).BoundaryPairing) (t : unitInterval) :
+    positiveInvPreMap P cut horientation hl hr validP
+        (q.identification.source.point t) =
+      positiveInvPreMap P cut horientation hl hr validP
+        (q.identification.target.point
+          (q.identification.parameter t)) := by
+  let edge : Fin (P.edgeCount + 1) := q.source.edge
+  have hsourceEdge : q.source.edge = edge := rfl
+  refine Fin.lastCases
+    (motive := fun edge : Fin (P.edgeCount + 1) =>
+      q.source.edge = edge →
+        positiveInvPreMap P cut horientation hl hr validP
+            (q.identification.source.point t) =
+          positiveInvPreMap P cut horientation hl hr validP
+            (q.identification.target.point
+              (q.identification.parameter t)))
+    ?_ (fun e hedge ↦ ?_) edge hsourceEdge
+  · intro hedge
+    have hfresh : q.source.edge = freshEdge P := by
+      simpa only [freshEdge, P1.freshEdge] using hedge
+    have htargetFresh : q.target.edge = freshEdge P :=
+      (targetPairing_edge_eq_source_edge q).trans hfresh
+    rcases positiveFreshOccurrence_cases
+        P cut horientation validP q.source hfresh with
+      hsourceSelected | hsourceRight
+    · rcases positiveFreshOccurrence_cases
+          P cut horientation validP q.target htargetFresh with
+        htargetSelected | htargetRight
+      · exact (q.source_ne_target
+          (hsourceSelected.trans htargetSelected.symm)).elim
+      · have hdirection : q.direction = .opposite := by
+          cases hdirection : q.direction with
+          | same =>
+              have hcompatible := q.compatible
+              rw [hdirection, hsourceSelected, htargetRight,
+                positiveRightFreshOccurrence_dart,
+                positiveSelectedFreshOccurrence_dart] at hcompatible
+              cases hcompatible
+          | opposite => rfl
+        rw [BoundaryPairing.identification_source,
+          BoundaryPairing.identification_target]
+        simpa [hsourceSelected, htargetRight, hdirection,
+            PolygonGluing.Identification.parameter] using
+          positiveInvPreMap_fresh_occurrence_seam
+            P cut horientation hl hr validP t
+    · rcases positiveFreshOccurrence_cases
+          P cut horientation validP q.target htargetFresh with
+        htargetSelected | htargetRight
+      · have hdirection : q.direction = .opposite := by
+          cases hdirection : q.direction with
+          | same =>
+              have hcompatible := q.compatible
+              rw [hdirection, hsourceRight, htargetSelected,
+                positiveSelectedFreshOccurrence_dart,
+                positiveRightFreshOccurrence_dart] at hcompatible
+              cases hcompatible
+          | opposite => rfl
+        rw [BoundaryPairing.identification_source,
+          BoundaryPairing.identification_target]
+        simpa [hsourceRight, htargetSelected, hdirection,
+            PolygonGluing.Identification.parameter] using
+          (positiveInvPreMap_fresh_occurrence_seam
+            P cut horientation hl hr validP
+            (unitInterval.symm t)).symm
+      · exact (q.source_ne_target
+          (hsourceRight.trans htargetRight.symm)).elim
+  · obtain ⟨r, hr⟩ :=
+      exists_positiveMapPairing_eq_of_source_edge_castSucc
+        P cut horientation hl hr validP q e hedge
+    rw [← hr, BoundaryPairing.identification_source,
+      BoundaryPairing.identification_target]
+    simp only [positiveMapPairing_source,
+      positiveMapPairing_target]
+    rw [positiveInvPreMap_mapOccurrence_side,
+      positiveInvPreMap_mapOccurrence_side]
+    simpa [positiveMapPairing,
+        PolygonGluing.Identification.parameter] using
+      P.polygonalMk_pairing_eq validP r t
+
+/-- The inverse pre-map is constant on the complete target gluing relation. -/
+theorem positiveInvPreMap_respects
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    {x y : (split P cut).PolygonalPreRealization}
+    (hxy :
+      (split P cut).PolygonalGluingRel
+        (split_isSurfaceValid P cut validP) x y) :
+    positiveInvPreMap P cut horientation hl hr validP x =
+      positiveInvPreMap P cut horientation hl hr validP y := by
+  change Relation.EqvGen
+    (PolygonGluing.Generator
+      ((split P cut).polygonalIdentifications
+        (split_isSurfaceValid P cut validP))) x y at hxy
+  induction hxy with
+  | rel _ _ hgenerator =>
+      cases hgenerator with
+      | glue identification hmem t =>
+          rcases hmem with ⟨pairing, rfl⟩
+          exact positiveInvPreMap_pairing_eq
+            P cut horientation hl hr validP pairing t
+  | refl => rfl
+  | symm _ _ _ ih => exact ih.symm
+  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+
+/-- Forward map after descent through the source polygonal quotient. -/
+noncomputable def positiveRealizationMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    P.PolygonalRealization validP →
+      (split P cut).PolygonalRealization
+        (split_isSurfaceValid P cut validP) :=
+  Quotient.lift
+    (positivePreMap P cut horientation hl hr validP)
+    (fun _ _ hxy =>
+      positivePreMap_respects
+        P cut horientation hl hr validP hxy)
+
+/-- Inverse map after descent through the target polygonal quotient. -/
+noncomputable def positiveRealizationInvMap
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    (split P cut).PolygonalRealization
+        (split_isSurfaceValid P cut validP) →
+      P.PolygonalRealization validP :=
+  Quotient.lift
+    (positiveInvPreMap P cut horientation hl hr validP)
+    (fun _ _ hxy =>
+      positiveInvPreMap_respects
+        P cut horientation hl hr validP hxy)
+
+@[simp]
+theorem positiveRealizationMap_polygonalMk
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (x : P.PolygonalPreRealization) :
+    positiveRealizationMap P cut horientation hl hr validP
+        (P.polygonalMk validP x) =
+      positivePreMap P cut horientation hl hr validP x :=
+  rfl
+
+@[simp]
+theorem positiveRealizationInvMap_polygonalMk
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (y : (split P cut).PolygonalPreRealization) :
+    positiveRealizationInvMap P cut horientation hl hr validP
+        ((split P cut).polygonalMk
+          (split_isSurfaceValid P cut validP) y) =
+      positiveInvPreMap P cut horientation hl hr validP y :=
+  rfl
+
+/-- On the locally glued child pair, the descended inverse is the explicit collapse map. -/
+theorem positiveRealizationInvMap_childGluing
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (q : DiskSquare.ParamChildGluing
+      cut.left.length cut.right.length) :
+    positiveRealizationInvMap P cut horientation hl hr validP
+        (positiveChildGluingMap
+          P cut horientation validP q) =
+      positiveChildGluingInvMap
+        P cut horientation hl hr validP q := by
+  induction q using Quotient.inductionOn'
+  case _ x =>
+    cases x with
+    | inl z =>
+        rw [positiveChildGluingMap_mk]
+        change
+          positiveInvPreMap P cut horientation hl hr validP
+              ⟨oldFace P cut cut.face.face,
+                positiveSelectedChildCellHomeomorph
+                  P cut horientation z⟩ =
+            positiveChildGluingInvMap
+              P cut horientation hl hr validP
+              (@Quotient.mk''
+                (DiskSquare.ChildPair
+                  cut.left.length cut.right.length)
+                (DiskSquare.paramChildSeamSetoid
+                  cut.left.length cut.right.length)
+                (.inl z))
+        exact positiveInvPreMap_selectedChild_apply
+          P cut horientation hl hr validP z
+    | inr z =>
+        rw [positiveChildGluingMap_mk]
+        change
+          positiveInvPreMap P cut horientation hl hr validP
+              ⟨rightFace P cut,
+                positiveRightChildCellHomeomorph
+                  P cut horientation z⟩ =
+            positiveChildGluingInvMap
+              P cut horientation hl hr validP
+              (@Quotient.mk''
+                (DiskSquare.ChildPair
+                  cut.left.length cut.right.length)
+                (DiskSquare.paramChildSeamSetoid
+                  cut.left.length cut.right.length)
+                (.inr z))
+        exact positiveInvPreMap_rightChild_apply
+          P cut horientation hl hr validP z
+
+/-- The descended forward map sends the explicit child-collapse class back to the same local
+child quotient class. -/
+theorem positiveRealizationMap_childGluingInv
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (q : DiskSquare.ParamChildGluing
+      cut.left.length cut.right.length) :
+    positiveRealizationMap P cut horientation hl hr validP
+        (positiveChildGluingInvMap
+          P cut horientation hl hr validP q) =
+      positiveChildGluingMap P cut horientation validP q := by
+  rw [positiveChildGluingInvMap,
+    positiveRealizationMap_polygonalMk,
+    positivePreMap_selected]
+  simp [positiveSelectedFaceMap, Function.comp_apply]
+
+/-- Including a selected-child point in the local child quotient and then in the global quotient
+is its ordinary polygonal quotient class. -/
+theorem positiveChildGluingMap_selectedChildToGluing
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell
+      ((split P cut).boundary
+        (oldFace P cut cut.face.face)).length) :
+    positiveChildGluingMap P cut horientation validP
+        (positiveSelectedChildToGluing
+          P cut horientation z) =
+      (split P cut).polygonalMk
+        (split_isSurfaceValid P cut validP)
+        ⟨oldFace P cut cut.face.face, z⟩ := by
+  rw [positiveSelectedChildToGluing,
+    positiveChildGluingMap_mk]
+  simp [positiveChildPairMap,
+    positiveChildPairPreMap, Function.comp_apply]
+
+/-- Including a right-child point in the local child quotient and then in the global quotient is
+its ordinary polygonal quotient class. -/
+theorem positiveChildGluingMap_rightChildToGluing
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (validP : P.IsSurfaceValid)
+    (z : PolygonCell
+      ((split P cut).boundary (rightFace P cut)).length) :
+    positiveChildGluingMap P cut horientation validP
+        (positiveRightChildToGluing
+          P cut horientation z) =
+      (split P cut).polygonalMk
+        (split_isSurfaceValid P cut validP)
+        ⟨rightFace P cut, z⟩ := by
+  rw [positiveRightChildToGluing,
+    positiveChildGluingMap_mk]
+  simp [positiveChildPairMap,
+    positiveChildPairPreMap, Function.comp_apply]
+
+/-- The descended inverse is a left inverse on every source pre-realization point. -/
+theorem positiveRealization_left_inverse_mk
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (x : P.PolygonalPreRealization) :
+    positiveRealizationInvMap P cut horientation hl hr validP
+        (positivePreMap P cut horientation hl hr validP x) =
+      P.polygonalMk validP x := by
+  rcases x with ⟨f, z⟩
+  by_cases hface : f = cut.face.face
+  · subst f
+    rw [positivePreMap_selected]
+    change
+      positiveRealizationInvMap P cut horientation hl hr validP
+          (positiveChildGluingMap P cut horientation validP
+            (positiveSelectedCellHomeomorph
+              P cut horientation hl hr z)) =
+        P.polygonalMk validP ⟨cut.face.face, z⟩
+    rw [positiveRealizationInvMap_childGluing,
+      positiveChildGluingInvMap_selectedCell]
+  · rw [positivePreMap_retained
+        P cut horientation hl hr validP hface,
+      retainedFaceMap,
+      positiveRealizationInvMap_polygonalMk,
+      positiveInvPreMap_retained_apply]
+
+/-- The descended forward map is a right inverse on every target pre-realization point. -/
+theorem positiveRealization_right_inverse_mk
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (y : (split P cut).PolygonalPreRealization) :
+    positiveRealizationMap P cut horientation hl hr validP
+        (positiveInvPreMap P cut horientation hl hr validP y) =
+      (split P cut).polygonalMk
+        (split_isSurfaceValid P cut validP) y := by
+  rcases y with ⟨q, z⟩
+  rcases face_cases P cut q with ⟨f, rfl⟩ | rfl
+  · by_cases hface : f = cut.face.face
+    · subst f
+      rw [positiveInvPreMap_oldFace,
+        positiveOldInvFaceMap_selected]
+      change
+        positiveRealizationMap P cut horientation hl hr validP
+            (positiveChildGluingInvMap
+              P cut horientation hl hr validP
+              (positiveSelectedChildToGluing
+                P cut horientation z)) =
+          (split P cut).polygonalMk
+            (split_isSurfaceValid P cut validP)
+            ⟨oldFace P cut cut.face.face, z⟩
+      rw [positiveRealizationMap_childGluingInv,
+        positiveChildGluingMap_selectedChildToGluing]
+    · rw [positiveInvPreMap_oldFace,
+        positiveOldInvFaceMap_retained
+          P cut horientation hl hr validP hface]
+      change
+        positiveRealizationMap P cut horientation hl hr validP
+            (P.polygonalMk validP
+              ⟨f, (retainedCellHomeomorph
+                P cut hface).symm z⟩) =
+          (split P cut).polygonalMk
+            (split_isSurfaceValid P cut validP)
+            ⟨oldFace P cut f, z⟩
+      rw [positiveRealizationMap_polygonalMk,
+        positivePreMap_retained
+          P cut horientation hl hr validP hface,
+        retainedFaceMap]
+      simp
+  · rw [positiveInvPreMap_rightFace]
+    change
+      positiveRealizationMap P cut horientation hl hr validP
+          (positiveChildGluingInvMap
+            P cut horientation hl hr validP
+            (positiveRightChildToGluing
+              P cut horientation z)) =
+        (split P cut).polygonalMk
+          (split_isSurfaceValid P cut validP)
+          ⟨rightFace P cut, z⟩
+    rw [positiveRealizationMap_childGluingInv,
+      positiveChildGluingMap_rightChildToGluing]
+
+/-- Complete cut-and-paste certificate for a positive, nondegenerate P2 face split. -/
+noncomputable def positiveRealizationEquivData
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    RealizationEquivData P (split P cut) validP
+      (split_isSurfaceValid P cut validP) where
+  toPre :=
+    positivePreMap P cut horientation hl hr validP
+  invPre :=
+    positiveInvPreMap P cut horientation hl hr validP
+  continuous_toPre :=
+    continuous_positivePreMap
+      P cut horientation hl hr validP
+  continuous_invPre :=
+    continuous_positiveInvPreMap
+      P cut horientation hl hr validP
+  to_respects := fun _ _ hxy =>
+    positivePreMap_respects
+      P cut horientation hl hr validP hxy
+  inv_respects := fun _ _ hxy =>
+    positiveInvPreMap_respects
+      P cut horientation hl hr validP hxy
+  left_inverse_mk :=
+    positiveRealization_left_inverse_mk
+      P cut horientation hl hr validP
+  right_inverse_mk :=
+    positiveRealization_right_inverse_mk
+      P cut horientation hl hr validP
+
+/-- Explicit homeomorphism induced by a positive, nondegenerate P2 face split. -/
+noncomputable def positiveRealizationHomeomorph
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    P.PolygonalRealization validP ≃ₜ
+      (split P cut).PolygonalRealization
+        (split_isSurfaceValid P cut validP) :=
+  (positiveRealizationEquivData
+    P cut horientation hl hr validP).homeomorph
+
+/-- Propositional realization-invariance form for a positive, nondegenerate P2 face split. -/
+theorem positivePolygonallyEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid) :
+    P.PolygonallyEquivalent (split P cut) validP
+      (split_isSurfaceValid P cut validP) :=
+  (positiveRealizationEquivData
+    P cut horientation hl hr validP).polygonallyEquivalent
+
 end P2
 
 end FiniteCyclicPresentation
