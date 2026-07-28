@@ -799,6 +799,103 @@ theorem firstSideCellHomeomorph_side_re
   rw [firstSideCellHomeomorph_side]
   exact firstSideBoundaryHomeomorph_re r hr t
 
+@[simp]
+theorem finalSideBoundaryHomeomorph_zero_im
+    (l : ℕ) (hl : 0 < l) :
+    (finalSideBoundaryHomeomorph l hl
+      (Circle.exp
+        (PolygonCell.sideAngle (Fin.last l) 0))).1.im = -1 := by
+  rw [finalSideBoundaryHomeomorph_apply]
+  rw [circleBoundaryHomeomorph_val]
+  change
+    (radialToBoundary
+      (Circle.exp (-(Real.pi / 4) + Real.pi / 2 * (0 : ℝ)))
+      _).im = -1
+  unfold radialToBoundary
+  rw [Complex.div_ofReal_im]
+  simp only [mul_zero, add_zero, Circle.coe_exp, Complex.exp_ofReal_mul_I_im,
+    Real.sin_neg, Real.sin_pi_div_four, maxAbs]
+  rw [Complex.exp_ofReal_mul_I_re, Real.cos_neg,
+    Real.cos_pi_div_four]
+  have hsqrt : 0 < Real.sqrt 2 := Real.sqrt_pos.2 (by norm_num)
+  have hhalf : 0 < Real.sqrt 2 / 2 := div_pos hsqrt (by norm_num)
+  rw [abs_of_pos hhalf, abs_neg, abs_of_pos hhalf, max_self]
+  field_simp [hsqrt.ne']
+
+@[simp]
+theorem finalSideBoundaryHomeomorph_one_im
+    (l : ℕ) (hl : 0 < l) :
+    (finalSideBoundaryHomeomorph l hl
+      (Circle.exp
+        (PolygonCell.sideAngle (Fin.last l) 1))).1.im = 1 := by
+  rw [finalSideBoundaryHomeomorph_apply]
+  rw [circleBoundaryHomeomorph_val]
+  change
+    (radialToBoundary
+      (Circle.exp (-(Real.pi / 4) + Real.pi / 2 * (1 : ℝ)))
+      _).im = 1
+  unfold radialToBoundary
+  rw [Complex.div_ofReal_im]
+  simp only [mul_one, Circle.coe_exp, Complex.exp_ofReal_mul_I_im,
+    Complex.exp_ofReal_mul_I_re]
+  have hangle :
+      -(Real.pi / 4) + Real.pi / 2 = Real.pi / 4 := by ring
+  rw [hangle, Real.sin_pi_div_four]
+  simp only [maxAbs, Circle.coe_exp, Complex.exp_ofReal_mul_I_re,
+    Complex.exp_ofReal_mul_I_im, Real.cos_pi_div_four,
+    Real.sin_pi_div_four]
+  have hsqrt : 0 < Real.sqrt 2 := Real.sqrt_pos.2 (by norm_num)
+  have hhalf : 0 < Real.sqrt 2 / 2 := div_pos hsqrt (by norm_num)
+  rw [abs_of_pos hhalf, max_self]
+  field_simp [hsqrt.ne']
+
+/-- The distinguished final side covers every point of the local square's right edge. -/
+theorem exists_finalSideCellHomeomorph_side_of_re_eq_one
+    (l : ℕ) (hl : 0 < l) (z : square) (hz : z.1.re = 1) :
+    ∃ t : unitInterval,
+      finalSideCellHomeomorph l hl
+        (PolygonCell.side (Fin.last l) t) = z := by
+  have hzIm : z.1.im ∈ Set.Icc (-1 : ℝ) 1 := by
+    have him := abs_im_le_maxAbs z.1 |>.trans z.2
+    rw [abs_le] at him
+    exact him
+  let seamIm : unitInterval → ℝ := fun t ↦
+    (finalSideCellHomeomorph l hl
+      (PolygonCell.side (Fin.last l) t)).1.im
+  have hcontinuous : Continuous seamIm := by
+    dsimp [seamIm]
+    fun_prop
+  have hzero : seamIm 0 = -1 := by
+    dsimp [seamIm]
+    rw [finalSideCellHomeomorph_side]
+    exact finalSideBoundaryHomeomorph_zero_im l hl
+  have hone : seamIm 1 = 1 := by
+    dsimp [seamIm]
+    rw [finalSideCellHomeomorph_side]
+    exact finalSideBoundaryHomeomorph_one_im l hl
+  have hrange : z.1.im ∈ Set.range seamIm := by
+    apply (intermediate_value_univ (0 : unitInterval) 1 hcontinuous)
+    simpa only [hzero, hone] using hzIm
+  rcases hrange with ⟨t, ht⟩
+  refine ⟨t, ?_⟩
+  apply Subtype.ext
+  apply Complex.ext
+  · exact (finalSideCellHomeomorph_side_re l hl t).trans hz.symm
+  · exact ht
+
+/-- The distinguished first side covers every point of the local square's right edge. -/
+theorem exists_firstSideCellHomeomorph_side_of_re_eq_one
+    (r : ℕ) (hr : 0 < r) (z : square) (hz : z.1.re = 1) :
+    ∃ t : unitInterval,
+      firstSideCellHomeomorph r hr
+        (PolygonCell.side (0 : Fin (r + 1)) t) = z := by
+  obtain ⟨t, ht⟩ :=
+    exists_finalSideCellHomeomorph_side_of_re_eq_one r hr z hz
+  refine ⟨unitInterval.symm t, ?_⟩
+  apply Subtype.ext
+  exact (finalSideCell_eq_firstSideCell_symm r r hr hr t).symm.trans
+    (congrArg Subtype.val ht)
+
 /-! ## Gluing two square models along their right sides -/
 
 /-- Place a local square as the left half of the outer square. -/
@@ -1108,6 +1205,1046 @@ noncomputable def squareGluingHomeomorph : SquareGluing ≃ₜ square := by
 theorem squareGluingHomeomorph_apply (q : SquareGluing) :
     squareGluingHomeomorph q = squareGluingMap q :=
   rfl
+
+/-! ## Transporting the seam model to two nondegenerate polygon cells -/
+
+/-- The two polygon cells occurring in a nondegenerate, positively oriented P2 split. -/
+abbrev ChildPair (l r : ℕ) :=
+  Sum (PolygonCell (l + 1)) (PolygonCell (r + 1))
+
+/--
+The geometric seam relation on the two child cells, expressed through their square models.
+This formulation records the entire common edge and is convenient for quotient-kernel arguments.
+-/
+inductive ChildSeamGenerator (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    ChildPair l r → ChildPair l r → Prop
+  | glue (z : PolygonCell (l + 1)) (w : PolygonCell (r + 1))
+      (hz : (finalSideCellHomeomorph l hl z).1.re = 1)
+      (hw : (firstSideCellHomeomorph r hr w).1.re = 1)
+      (him :
+        (finalSideCellHomeomorph l hl z).1.im =
+          (firstSideCellHomeomorph r hr w).1.im) :
+      ChildSeamGenerator l r hl hr (.inl z) (.inr w)
+
+abbrev childSeamSetoid (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    Setoid (ChildPair l r) :=
+  Relation.EqvGen.setoid (ChildSeamGenerator l r hl hr)
+
+/-- The quotient of the two child polygon cells by their complete common side. -/
+abbrev ChildGluing (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :=
+  Quotient (childSeamSetoid l r hl hr)
+
+/-- Straighten both P2 child cells simultaneously to their local square models. -/
+noncomputable def childPairSquarePairHomeomorph
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    ChildPair l r ≃ₜ SquarePair :=
+  Homeomorph.sumCongr
+    (finalSideCellHomeomorph l hl)
+    (firstSideCellHomeomorph r hr)
+
+@[simp]
+theorem childPairSquarePairHomeomorph_inl
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (z : PolygonCell (l + 1)) :
+    childPairSquarePairHomeomorph l r hl hr (.inl z) =
+      .inl (finalSideCellHomeomorph l hl z) :=
+  rfl
+
+@[simp]
+theorem childPairSquarePairHomeomorph_inr
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (z : PolygonCell (r + 1)) :
+    childPairSquarePairHomeomorph l r hl hr (.inr z) =
+      .inr (firstSideCellHomeomorph r hr z) :=
+  rfl
+
+theorem childSeamGenerator_map
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    {x y : ChildPair l r}
+    (hxy : ChildSeamGenerator l r hl hr x y) :
+    SeamGenerator
+      (childPairSquarePairHomeomorph l r hl hr x)
+      (childPairSquarePairHomeomorph l r hl hr y) := by
+  cases hxy with
+  | glue z w hz hw him =>
+      exact SeamGenerator.glue
+        (finalSideCellHomeomorph l hl z)
+        (firstSideCellHomeomorph r hr w) hz hw him
+
+theorem childSeamGenerator_comap
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    {x y : ChildPair l r}
+    (hxy :
+      SeamGenerator
+        (childPairSquarePairHomeomorph l r hl hr x)
+        (childPairSquarePairHomeomorph l r hl hr y)) :
+    ChildSeamGenerator l r hl hr x y := by
+  cases x <;> cases y
+  all_goals
+    cases hxy
+  case inl.inr.glue z w hz hw him =>
+    exact ChildSeamGenerator.glue z w hz hw him
+
+/-- The simultaneous child straightening identifies exactly the two generated seam relations. -/
+theorem childSeam_eqvGen_iff
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x y : ChildPair l r) :
+    Relation.EqvGen (ChildSeamGenerator l r hl hr) x y ↔
+      Relation.EqvGen SeamGenerator
+        (childPairSquarePairHomeomorph l r hl hr x)
+        (childPairSquarePairHomeomorph l r hl hr y) := by
+  constructor
+  · intro hxy
+    induction hxy with
+    | rel _ _ h =>
+        exact Relation.EqvGen.rel _ _
+          (childSeamGenerator_map l r hl hr h)
+    | refl => exact Relation.EqvGen.refl _
+    | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
+    | trans _ _ _ _ _ ih₁ ih₂ =>
+        exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  · intro hxy
+    let e := childPairSquarePairHomeomorph l r hl hr
+    have hcomap :
+        ∀ {u v : SquarePair}, Relation.EqvGen SeamGenerator u v →
+          Relation.EqvGen (ChildSeamGenerator l r hl hr)
+            (e.symm u) (e.symm v) := by
+      intro u v huv
+      induction huv with
+      | rel _ _ h =>
+          apply Relation.EqvGen.rel _ _
+          apply childSeamGenerator_comap l r hl hr
+          simpa only [e, Homeomorph.apply_symm_apply] using h
+      | refl => exact Relation.EqvGen.refl _
+      | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
+      | trans _ _ _ _ _ ih₁ ih₂ =>
+          exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+    simpa only [e, Homeomorph.symm_apply_apply] using hcomap hxy
+
+/-- The actual two-child polygon quotient of a nondegenerate P2 cut is a closed disk. -/
+noncomputable def childGluingHomeomorph
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    ChildGluing l r hl hr ≃ₜ square :=
+  (Homeomorph.Quotient.congr
+      (childPairSquarePairHomeomorph l r hl hr)
+      (childSeam_eqvGen_iff l r hl hr)).trans
+    squareGluingHomeomorph
+
+/-- A marked side of a polygon with at least two sides has no parameter self-overlap. -/
+theorem PolygonCell.side_injective_of_two_le
+    {n : ℕ} (hn : 2 ≤ n) (i : Fin n) :
+    Function.Injective (PolygonCell.side i) := by
+  intro s t hst
+  have hexp :
+      Circle.exp (PolygonCell.sideAngle i s) =
+        Circle.exp (PolygonCell.sideAngle i t) := by
+    apply Circle.ext
+    exact congrArg PolygonCell.val hst
+  let a : ℝ := 2 * Real.pi * i.val / n
+  let b : ℝ := 2 * Real.pi * (i.val + 1) / n
+  have hnpos : 0 < (n : ℝ) := by positivity
+  have hab : b - a < 2 * Real.pi := by
+    have hnTwo : (2 : ℝ) ≤ n := by exact_mod_cast hn
+    have hnOne : (1 : ℝ) < n := lt_of_lt_of_le (by norm_num) hnTwo
+    have hcalc : b - a = (2 * Real.pi) / n := by
+      dsimp [a, b]
+      field_simp
+      ring
+    rw [hcalc, div_lt_iff₀ hnpos]
+    nlinarith [Real.pi_pos]
+  have hsMem : PolygonCell.sideAngle i s ∈ Set.Icc a b := by
+    dsimp [PolygonCell.sideAngle, a, b]
+    constructor
+    · apply div_le_div_of_nonneg_right _ hnpos.le
+      nlinarith [s.property.1, Real.pi_pos]
+    · apply div_le_div_of_nonneg_right _ hnpos.le
+      nlinarith [s.property.2, Real.pi_pos]
+  have htMem : PolygonCell.sideAngle i t ∈ Set.Icc a b := by
+    dsimp [PolygonCell.sideAngle, a, b]
+    constructor
+    · apply div_le_div_of_nonneg_right _ hnpos.le
+      nlinarith [t.property.1, Real.pi_pos]
+    · apply div_le_div_of_nonneg_right _ hnpos.le
+      nlinarith [t.property.2, Real.pi_pos]
+  have hangle :=
+    Circle.exp_injOn_Icc hab hsMem htMem hexp
+  apply Subtype.ext
+  dsimp [PolygonCell.sideAngle] at hangle
+  have hfactor : 2 * Real.pi / n ≠ 0 := by positivity
+  have hargs :
+      (i.val : ℝ) + (s : ℝ) =
+        (i.val : ℝ) + (t : ℝ) := by
+    apply mul_left_cancel₀ hfactor
+    calc
+      (2 * Real.pi / n) * ((i.val : ℝ) + (s : ℝ)) =
+          2 * Real.pi * ((i.val : ℝ) + (s : ℝ)) / n := by ring
+      _ = 2 * Real.pi * ((i.val : ℝ) + (t : ℝ)) / n := hangle
+      _ = (2 * Real.pi / n) * ((i.val : ℝ) + (t : ℝ)) := by ring
+  exact add_left_cancel hargs
+
+/-- The parameter-level fresh-edge identification used by a positive P2 split. -/
+inductive ParamChildSeamGenerator (l r : ℕ) :
+    ChildPair l r → ChildPair l r → Prop
+  | glue (t : unitInterval) :
+      ParamChildSeamGenerator l r
+        (.inl (PolygonCell.side (Fin.last l) t))
+        (.inr
+          (PolygonCell.side (0 : Fin (r + 1))
+            (unitInterval.symm t)))
+
+theorem paramChildSeamGenerator_to_childSeam
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    {x y : ChildPair l r}
+    (hxy : ParamChildSeamGenerator l r x y) :
+    ChildSeamGenerator l r hl hr x y := by
+  cases hxy with
+  | glue t =>
+      refine ChildSeamGenerator.glue _ _
+        (finalSideCellHomeomorph_side_re l hl t)
+        (firstSideCellHomeomorph_side_re r hr (unitInterval.symm t)) ?_
+      exact congrArg Complex.im
+        (finalSideCell_eq_firstSideCell_symm l r hl hr t)
+
+theorem childSeamGenerator_to_paramEqvGen
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    {x y : ChildPair l r}
+    (hxy : ChildSeamGenerator l r hl hr x y) :
+    Relation.EqvGen (ParamChildSeamGenerator l r) x y := by
+  cases hxy with
+  | glue z w hz hw him =>
+      obtain ⟨t, ht⟩ :=
+        exists_finalSideCellHomeomorph_side_of_re_eq_one l hl
+          (finalSideCellHomeomorph l hl z) hz
+      obtain ⟨u, hu⟩ :=
+        exists_firstSideCellHomeomorph_side_of_re_eq_one r hr
+          (firstSideCellHomeomorph r hr w) hw
+      have hzSide : z = PolygonCell.side (Fin.last l) t := by
+        apply (finalSideCellHomeomorph l hl).injective
+        exact ht.symm
+      have hwSide :
+          w = PolygonCell.side (0 : Fin (r + 1)) u := by
+        apply (firstSideCellHomeomorph r hr).injective
+        exact hu.symm
+      have hSquare :
+          finalSideCellHomeomorph l hl z =
+            firstSideCellHomeomorph r hr w := by
+        apply Subtype.ext
+        apply Complex.ext
+        · exact hz.trans hw.symm
+        · exact him
+      have hside :
+          PolygonCell.side (0 : Fin (r + 1)) u =
+            PolygonCell.side (0 : Fin (r + 1))
+              (unitInterval.symm t) := by
+        apply (firstSideCellHomeomorph r hr).injective
+        calc
+          firstSideCellHomeomorph r hr
+              (PolygonCell.side (0 : Fin (r + 1)) u) =
+              firstSideCellHomeomorph r hr w := congrArg _ hwSide.symm
+          _ = finalSideCellHomeomorph l hl z := hSquare.symm
+          _ = finalSideCellHomeomorph l hl
+              (PolygonCell.side (Fin.last l) t) := congrArg _ hzSide
+          _ = firstSideCellHomeomorph r hr
+              (PolygonCell.side (0 : Fin (r + 1))
+                (unitInterval.symm t)) := by
+                apply Subtype.ext
+                exact finalSideCell_eq_firstSideCell_symm l r hl hr t
+      have hut : u = unitInterval.symm t :=
+        PolygonCell.side_injective_of_two_le
+          (n := r + 1) (by omega) (0 : Fin (r + 1)) hside
+      subst u
+      rw [hzSide, hwSide]
+      exact Relation.EqvGen.rel _ _
+        (ParamChildSeamGenerator.glue t)
+
+/-- The square-model seam is exactly the equivalence closure of the fresh-side parameter map. -/
+theorem paramChildSeam_eqvGen_iff
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x y : ChildPair l r) :
+    Relation.EqvGen (ParamChildSeamGenerator l r) x y ↔
+      Relation.EqvGen (ChildSeamGenerator l r hl hr) x y := by
+  constructor
+  · intro hxy
+    induction hxy with
+    | rel _ _ h =>
+        exact Relation.EqvGen.rel _ _
+          (paramChildSeamGenerator_to_childSeam l r hl hr h)
+    | refl => exact Relation.EqvGen.refl _
+    | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
+    | trans _ _ _ _ _ ih₁ ih₂ =>
+        exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  · intro hxy
+    induction hxy with
+    | rel _ _ h =>
+        exact childSeamGenerator_to_paramEqvGen l r hl hr h
+    | refl => exact Relation.EqvGen.refl _
+    | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
+    | trans _ _ _ _ _ ih₁ ih₂ =>
+        exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+
+abbrev paramChildSeamSetoid (l r : ℕ) :
+    Setoid (ChildPair l r) :=
+  Relation.EqvGen.setoid (ParamChildSeamGenerator l r)
+
+abbrev ParamChildGluing (l r : ℕ) :=
+  Quotient (paramChildSeamSetoid l r)
+
+/--
+Two nondegenerate P2 child polygons, glued by the precise reversed fresh-edge parameter, form a
+closed disk.
+-/
+noncomputable def paramChildGluingHomeomorph
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    ParamChildGluing l r ≃ₜ square :=
+  (Homeomorph.Quotient.congrRight
+      (paramChildSeam_eqvGen_iff l r hl hr)).trans
+    (childGluingHomeomorph l r hl hr)
+
+/-! ## The external boundary arcs of the glued child disk -/
+
+/-- The old-boundary arc of the selected child, before placing its square on the left. -/
+noncomputable def finalOldArcLocal
+    (l : ℕ) (hl : 0 < l) : C(Set.Icc (0 : ℝ) l, square) where
+  toFun s :=
+    finalSideCellHomeomorph l hl
+      (PolygonCell.ofCircle (l + 1)
+        (Circle.exp (2 * Real.pi * s.1 / (l + 1))))
+  continuous_toFun := by
+    apply (finalSideCellHomeomorph l hl).continuous.comp
+    apply (PolygonCell.ofCircle (l + 1)).continuous.comp
+    apply Circle.exp.continuous.comp
+    fun_prop
+
+/-- The old-boundary arc of the right child, before its horizontal reflection. -/
+noncomputable def firstOldArcLocal
+    (r : ℕ) (hr : 0 < r) : C(Set.Icc (0 : ℝ) r, square) where
+  toFun s :=
+    firstSideCellHomeomorph r hr
+      (PolygonCell.ofCircle (r + 1)
+        (Circle.exp
+          (2 * Real.pi * (1 + s.1) / (r + 1))))
+  continuous_toFun := by
+    apply (firstSideCellHomeomorph r hr).continuous.comp
+    apply (PolygonCell.ofCircle (r + 1)).continuous.comp
+    apply Circle.exp.continuous.comp
+    fun_prop
+
+@[simp]
+theorem finalOldArcLocal_apply
+    (l : ℕ) (hl : 0 < l) (s : Set.Icc (0 : ℝ) l) :
+    finalOldArcLocal l hl s =
+      finalSideCellHomeomorph l hl
+        (PolygonCell.ofCircle (l + 1)
+          (Circle.exp (2 * Real.pi * s.1 / (l + 1)))) :=
+  rfl
+
+@[simp]
+theorem firstOldArcLocal_apply
+    (r : ℕ) (hr : 0 < r) (s : Set.Icc (0 : ℝ) r) :
+    firstOldArcLocal r hr s =
+      firstSideCellHomeomorph r hr
+        (PolygonCell.ofCircle (r + 1)
+          (Circle.exp
+            (2 * Real.pi * (1 + s.1) / (r + 1)))) :=
+  rfl
+
+theorem finalOldArcLocal_re_eq_one_iff_endpoint
+    (l : ℕ) (hl : 0 < l) (s : Set.Icc (0 : ℝ) l) :
+    (finalOldArcLocal l hl s).1.re = 1 ↔
+      s.1 = 0 ∨ s.1 = l := by
+  constructor
+  · intro hre
+    obtain ⟨t, ht⟩ :=
+      exists_finalSideCellHomeomorph_side_of_re_eq_one l hl
+        (finalOldArcLocal l hl s) hre
+    have hcell :
+        PolygonCell.ofCircle (l + 1)
+            (Circle.exp (2 * Real.pi * s.1 / (l + 1))) =
+          PolygonCell.side (Fin.last l) t := by
+      apply (finalSideCellHomeomorph l hl).injective
+      exact ht.symm
+    have hexp :
+        Circle.exp (2 * Real.pi * s.1 / (l + 1)) =
+          Circle.exp
+            (2 * Real.pi * ((l : ℝ) + (t : ℝ)) / (l + 1)) := by
+      apply Circle.ext
+      simpa [PolygonCell.ofCircle, PolygonCell.side,
+        PolygonCell.sideAngle] using congrArg PolygonCell.val hcell
+    obtain ⟨k, hk⟩ := Circle.exp_eq_exp.mp hexp
+    have hnpos : 0 < (l + 1 : ℝ) := by positivity
+    have hpi : 2 * Real.pi ≠ 0 := by positivity
+    have heq :
+        s.1 = (l : ℝ) + (t : ℝ) + (k : ℝ) * (l + 1) := by
+      field_simp [hnpos.ne'] at hk
+      nlinarith [Real.pi_pos]
+    have hkUpper : (k : ℝ) ≤ 0 := by
+      nlinarith [s.2.2, t.property.1, hnpos]
+    have hkLower : (-1 : ℝ) ≤ k := by
+      nlinarith [s.2.1, t.property.2, hnpos]
+    have hkUpperInt : k ≤ 0 := by exact_mod_cast hkUpper
+    have hkLowerInt : (-1 : ℤ) ≤ k := by exact_mod_cast hkLower
+    have hkCases : k = -1 ∨ k = 0 := by omega
+    rcases hkCases with rfl | rfl
+    · left
+      norm_num at heq
+      nlinarith [s.2.1, t.property.2]
+    · right
+      norm_num at heq
+      exact_mod_cast (by nlinarith [s.2.2, t.property.1] :
+        s.1 = (l : ℝ))
+  · intro hs
+    rcases hs with hs | hs
+    · have hs0 : s = ⟨0, by constructor <;> positivity⟩ :=
+        Subtype.ext hs
+      subst s
+      rw [finalOldArcLocal_apply]
+      norm_num
+      change
+        (finalSideCellHomeomorph l hl
+          (PolygonCell.ofCircle (l + 1) 1)).1.re = 1
+      have hcell :
+          PolygonCell.ofCircle (l + 1) 1 =
+            PolygonCell.side (Fin.last l) 1 := by
+        change
+          PolygonCell.ofCircle (l + 1) 1 =
+            PolygonCell.ofCircle (l + 1)
+              (Circle.exp (PolygonCell.sideAngle (Fin.last l) 1))
+        apply congrArg (PolygonCell.ofCircle (l + 1))
+        rw [← Circle.exp_zero]
+        apply Circle.exp_eq_exp.mpr
+        refine ⟨-1, ?_⟩
+        simp [PolygonCell.sideAngle]
+        field_simp [hl.ne']
+        ring
+      rw [hcell]
+      exact finalSideCellHomeomorph_side_re l hl 1
+    · have hsl : s = ⟨l, by simp⟩ := Subtype.ext hs
+      subst s
+      rw [finalOldArcLocal_apply]
+      change
+        (finalSideCellHomeomorph l hl
+          (PolygonCell.ofCircle (l + 1)
+            (Circle.exp (2 * Real.pi * l / (l + 1))))).1.re = 1
+      have hcell :
+          PolygonCell.ofCircle (l + 1)
+              (Circle.exp (2 * Real.pi * l / (l + 1))) =
+            PolygonCell.side (Fin.last l) 0 := by
+        change
+          PolygonCell.ofCircle (l + 1)
+              (Circle.exp (2 * Real.pi * l / (l + 1))) =
+            PolygonCell.ofCircle (l + 1)
+              (Circle.exp
+                (PolygonCell.sideAngle (Fin.last l) 0))
+        apply congrArg (PolygonCell.ofCircle (l + 1))
+        apply congrArg Circle.exp
+        unfold PolygonCell.sideAngle
+        simp only [Fin.val_last]
+        push_cast
+        ring
+      rw [hcell]
+      exact finalSideCellHomeomorph_side_re l hl 0
+
+@[simp]
+theorem finalOldArcLocal_zero_im
+    (l : ℕ) (hl : 0 < l) :
+    (finalOldArcLocal l hl ⟨0, by constructor <;> positivity⟩).1.im = 1 := by
+  rw [finalOldArcLocal_apply]
+  norm_num
+  change
+    (finalSideCellHomeomorph l hl
+      (PolygonCell.ofCircle (l + 1) 1)).1.im = 1
+  have hcell :
+      PolygonCell.ofCircle (l + 1) 1 =
+        PolygonCell.side (Fin.last l) 1 := by
+    change
+      PolygonCell.ofCircle (l + 1) 1 =
+        PolygonCell.ofCircle (l + 1)
+          (Circle.exp (PolygonCell.sideAngle (Fin.last l) 1))
+    apply congrArg (PolygonCell.ofCircle (l + 1))
+    rw [← Circle.exp_zero]
+    apply Circle.exp_eq_exp.mpr
+    refine ⟨-1, ?_⟩
+    simp [PolygonCell.sideAngle]
+    field_simp [hl.ne']
+    ring
+  rw [hcell, finalSideCellHomeomorph_side]
+  exact finalSideBoundaryHomeomorph_one_im l hl
+
+@[simp]
+theorem finalOldArcLocal_last_im
+    (l : ℕ) (hl : 0 < l) :
+    (finalOldArcLocal l hl ⟨l, by simp [hl.le]⟩).1.im = -1 := by
+  rw [finalOldArcLocal_apply]
+  change
+    (finalSideCellHomeomorph l hl
+      (PolygonCell.ofCircle (l + 1)
+        (Circle.exp (2 * Real.pi * l / (l + 1))))).1.im = -1
+  have hcell :
+      PolygonCell.ofCircle (l + 1)
+          (Circle.exp (2 * Real.pi * l / (l + 1))) =
+        PolygonCell.side (Fin.last l) 0 := by
+    change
+      PolygonCell.ofCircle (l + 1)
+          (Circle.exp (2 * Real.pi * l / (l + 1))) =
+        PolygonCell.ofCircle (l + 1)
+          (Circle.exp
+            (PolygonCell.sideAngle (Fin.last l) 0))
+    apply congrArg (PolygonCell.ofCircle (l + 1))
+    apply congrArg Circle.exp
+    unfold PolygonCell.sideAngle
+    simp only [Fin.val_last]
+    push_cast
+    ring
+  rw [hcell, finalSideCellHomeomorph_side]
+  exact finalSideBoundaryHomeomorph_zero_im l hl
+
+theorem finalOldArcLocal_abs_im_eq_one_of_re_eq_one
+    (l : ℕ) (hl : 0 < l) (s : Set.Icc (0 : ℝ) l)
+    (hs : (finalOldArcLocal l hl s).1.re = 1) :
+    |(finalOldArcLocal l hl s).1.im| = 1 := by
+  rcases (finalOldArcLocal_re_eq_one_iff_endpoint l hl s).mp hs with h | h
+  · have hs0 : s = ⟨0, by constructor <;> positivity⟩ := Subtype.ext h
+    subst s
+    rw [finalOldArcLocal_zero_im]
+    norm_num
+  · have hsl : s = ⟨l, by simp [hl.le]⟩ := Subtype.ext h
+    subst s
+    rw [finalOldArcLocal_last_im]
+    norm_num
+
+theorem firstOldArcLocal_re_eq_one_iff_endpoint
+    (r : ℕ) (hr : 0 < r) (s : Set.Icc (0 : ℝ) r) :
+    (firstOldArcLocal r hr s).1.re = 1 ↔
+      s.1 = 0 ∨ s.1 = r := by
+  constructor
+  · intro hre
+    obtain ⟨t, ht⟩ :=
+      exists_firstSideCellHomeomorph_side_of_re_eq_one r hr
+        (firstOldArcLocal r hr s) hre
+    have hcell :
+        PolygonCell.ofCircle (r + 1)
+            (Circle.exp
+              (2 * Real.pi * (1 + s.1) / (r + 1))) =
+          PolygonCell.side (0 : Fin (r + 1)) t := by
+      apply (firstSideCellHomeomorph r hr).injective
+      exact ht.symm
+    have hexp :
+        Circle.exp
+            (2 * Real.pi * (1 + s.1) / (r + 1)) =
+          Circle.exp (2 * Real.pi * (t : ℝ) / (r + 1)) := by
+      apply Circle.ext
+      simpa [PolygonCell.ofCircle, PolygonCell.side,
+        PolygonCell.sideAngle] using congrArg PolygonCell.val hcell
+    obtain ⟨k, hk⟩ := Circle.exp_eq_exp.mp hexp
+    have hnpos : 0 < (r + 1 : ℝ) := by positivity
+    have hpi : 2 * Real.pi ≠ 0 := by positivity
+    have heq :
+        1 + s.1 = (t : ℝ) + (k : ℝ) * (r + 1) := by
+      field_simp [hnpos.ne'] at hk
+      nlinarith [Real.pi_pos]
+    have hkUpper : (k : ℝ) ≤ 1 := by
+      nlinarith [s.2.2, t.property.1, hnpos]
+    have hkLower : (0 : ℝ) ≤ k := by
+      nlinarith [s.2.1, t.property.2, hnpos]
+    have hkUpperInt : k ≤ 1 := by exact_mod_cast hkUpper
+    have hkLowerInt : (0 : ℤ) ≤ k := by exact_mod_cast hkLower
+    have hkCases : k = 0 ∨ k = 1 := by omega
+    rcases hkCases with rfl | rfl
+    · left
+      norm_num at heq
+      nlinarith [s.2.1, t.property.2]
+    · right
+      norm_num at heq
+      exact_mod_cast (by nlinarith [s.2.2, t.property.1] :
+        s.1 = (r : ℝ))
+  · intro hs
+    rcases hs with hs | hs
+    · have hs0 : s = ⟨0, by constructor <;> positivity⟩ :=
+        Subtype.ext hs
+      subst s
+      rw [firstOldArcLocal_apply]
+      norm_num
+      change
+        (firstSideCellHomeomorph r hr
+          (PolygonCell.ofCircle (r + 1)
+            (Circle.exp (2 * Real.pi / (r + 1))))).1.re = 1
+      have hcell :
+          PolygonCell.ofCircle (r + 1)
+              (Circle.exp (2 * Real.pi / (r + 1))) =
+            PolygonCell.side (0 : Fin (r + 1)) 1 := by
+        change
+          PolygonCell.ofCircle (r + 1)
+              (Circle.exp (2 * Real.pi / (r + 1))) =
+            PolygonCell.ofCircle (r + 1)
+              (Circle.exp
+                (PolygonCell.sideAngle (0 : Fin (r + 1)) 1))
+        apply congrArg (PolygonCell.ofCircle (r + 1))
+        apply congrArg Circle.exp
+        unfold PolygonCell.sideAngle
+        norm_num
+      rw [hcell]
+      exact firstSideCellHomeomorph_side_re r hr 1
+    · have hsr : s = ⟨r, by simp⟩ := Subtype.ext hs
+      subst s
+      rw [firstOldArcLocal_apply]
+      change
+        (firstSideCellHomeomorph r hr
+          (PolygonCell.ofCircle (r + 1)
+            (Circle.exp
+              (2 * Real.pi * (1 + (r : ℝ)) / (r + 1))))).1.re = 1
+      have hcell :
+          PolygonCell.ofCircle (r + 1)
+              (Circle.exp
+                (2 * Real.pi * (1 + (r : ℝ)) / (r + 1))) =
+            PolygonCell.side (0 : Fin (r + 1)) 0 := by
+        apply PolygonCell.ext
+        change
+          (Circle.exp
+              (2 * Real.pi * (1 + (r : ℝ)) / (r + 1)) : ℂ) =
+            (Circle.exp (PolygonCell.sideAngle
+              (0 : Fin (r + 1)) 0) : ℂ)
+        apply congrArg (fun z : Circle ↦ (z : ℂ))
+        apply Circle.exp_eq_exp.mpr
+        refine ⟨1, ?_⟩
+        simp [PolygonCell.sideAngle]
+        field_simp [hr.ne']
+        ring
+      rw [hcell]
+      exact firstSideCellHomeomorph_side_re r hr 0
+
+@[simp]
+theorem firstOldArcLocal_zero_im
+    (r : ℕ) (hr : 0 < r) :
+    (firstOldArcLocal r hr ⟨0, by constructor <;> positivity⟩).1.im = -1 := by
+  rw [firstOldArcLocal_apply]
+  norm_num
+  change
+    (firstSideCellHomeomorph r hr
+      (PolygonCell.ofCircle (r + 1)
+        (Circle.exp (2 * Real.pi / (r + 1))))).1.im = -1
+  have hcell :
+      PolygonCell.ofCircle (r + 1)
+          (Circle.exp (2 * Real.pi / (r + 1))) =
+        PolygonCell.side (0 : Fin (r + 1)) 1 := by
+    change
+      PolygonCell.ofCircle (r + 1)
+          (Circle.exp (2 * Real.pi / (r + 1))) =
+        PolygonCell.ofCircle (r + 1)
+          (Circle.exp
+            (PolygonCell.sideAngle (0 : Fin (r + 1)) 1))
+    apply congrArg (PolygonCell.ofCircle (r + 1))
+    apply congrArg Circle.exp
+    unfold PolygonCell.sideAngle
+    norm_num
+  rw [hcell, firstSideCellHomeomorph_side]
+  have h :=
+    finalSide_eq_firstSide_symm r r hr hr (0 : unitInterval)
+  have him := congrArg (fun z : boundary ↦ z.1.im) h
+  calc
+    (firstSideBoundaryHomeomorph r hr
+        (Circle.exp
+          (PolygonCell.sideAngle (0 : Fin (r + 1)) 1))).1.im =
+        (finalSideBoundaryHomeomorph r hr
+          (Circle.exp
+            (PolygonCell.sideAngle (Fin.last r) 0))).1.im := by
+          simpa using him.symm
+    _ = -1 := finalSideBoundaryHomeomorph_zero_im r hr
+
+@[simp]
+theorem firstOldArcLocal_last_im
+    (r : ℕ) (hr : 0 < r) :
+    (firstOldArcLocal r hr ⟨r, by simp [hr.le]⟩).1.im = 1 := by
+  rw [firstOldArcLocal_apply]
+  change
+    (firstSideCellHomeomorph r hr
+      (PolygonCell.ofCircle (r + 1)
+        (Circle.exp
+          (2 * Real.pi * (1 + (r : ℝ)) / (r + 1))))).1.im = 1
+  have hcell :
+      PolygonCell.ofCircle (r + 1)
+          (Circle.exp
+            (2 * Real.pi * (1 + (r : ℝ)) / (r + 1))) =
+        PolygonCell.side (0 : Fin (r + 1)) 0 := by
+    apply PolygonCell.ext
+    change
+      (Circle.exp
+          (2 * Real.pi * (1 + (r : ℝ)) / (r + 1)) : ℂ) =
+        (Circle.exp
+          (PolygonCell.sideAngle (0 : Fin (r + 1)) 0) : ℂ)
+    apply congrArg (fun z : Circle ↦ (z : ℂ))
+    apply Circle.exp_eq_exp.mpr
+    refine ⟨1, ?_⟩
+    simp [PolygonCell.sideAngle]
+    field_simp [hr.ne']
+    ring
+  rw [hcell, firstSideCellHomeomorph_side]
+  have h :=
+    finalSide_eq_firstSide_symm r r hr hr (1 : unitInterval)
+  have him := congrArg (fun z : boundary ↦ z.1.im) h
+  calc
+    (firstSideBoundaryHomeomorph r hr
+        (Circle.exp
+          (PolygonCell.sideAngle (0 : Fin (r + 1)) 0))).1.im =
+        (finalSideBoundaryHomeomorph r hr
+          (Circle.exp
+            (PolygonCell.sideAngle (Fin.last r) 1))).1.im := by
+          simpa using him.symm
+    _ = 1 := finalSideBoundaryHomeomorph_one_im r hr
+
+theorem firstOldArcLocal_abs_im_eq_one_of_re_eq_one
+    (r : ℕ) (hr : 0 < r) (s : Set.Icc (0 : ℝ) r)
+    (hs : (firstOldArcLocal r hr s).1.re = 1) :
+    |(firstOldArcLocal r hr s).1.im| = 1 := by
+  rcases (firstOldArcLocal_re_eq_one_iff_endpoint r hr s).mp hs with h | h
+  · have hs0 : s = ⟨0, by constructor <;> positivity⟩ := Subtype.ext h
+    subst s
+    rw [firstOldArcLocal_zero_im]
+    norm_num
+  · have hsr : s = ⟨r, by simp [hr.le]⟩ := Subtype.ext h
+    subst s
+    rw [firstOldArcLocal_last_im]
+    norm_num
+
+theorem finalOldArcLocal_mem_boundary
+    (l : ℕ) (hl : 0 < l) (s : Set.Icc (0 : ℝ) l) :
+    (finalOldArcLocal l hl s).1 ∈ boundary := by
+  rw [finalOldArcLocal_apply]
+  change
+    maxAbs
+      (cellSquareHomeomorph (finalSideBoundaryHomeomorph l hl)
+        (PolygonCell.ofCircle (l + 1)
+          (Circle.exp (2 * Real.pi * s.1 / (l + 1))))).1 = 1
+  rw [cellSquareHomeomorph_ofCircle]
+  exact
+    (finalSideBoundaryHomeomorph l hl
+      (Circle.exp (2 * Real.pi * s.1 / (l + 1)))).property
+
+theorem firstOldArcLocal_mem_boundary
+    (r : ℕ) (hr : 0 < r) (s : Set.Icc (0 : ℝ) r) :
+    (firstOldArcLocal r hr s).1 ∈ boundary := by
+  rw [firstOldArcLocal_apply]
+  change
+    maxAbs
+      (cellSquareHomeomorph (firstSideBoundaryHomeomorph r hr)
+        (PolygonCell.ofCircle (r + 1)
+          (Circle.exp
+            (2 * Real.pi * (1 + s.1) / (r + 1))))).1 = 1
+  rw [cellSquareHomeomorph_ofCircle]
+  exact
+    (firstSideBoundaryHomeomorph r hr
+      (Circle.exp
+        (2 * Real.pi * (1 + s.1) / (r + 1)))).property
+
+theorem leftPlacement_mem_boundary_of_mem_boundary
+    (z : square) (hz : z.1 ∈ boundary)
+    (hseam : z.1.re = 1 → |z.1.im| = 1) :
+    (leftPlacement z).1 ∈ boundary := by
+  change maxAbs (leftPlacement z).1 = 1
+  apply le_antisymm (leftPlacement z).2
+  change 1 ≤ max |(z.1.re - 1) / 2| |z.1.im|
+  change max |z.1.re| |z.1.im| = 1 at hz
+  rcases le_total |z.1.re| |z.1.im| with hle | hle
+  · have him : |z.1.im| = 1 := by
+      rw [max_eq_right hle] at hz
+      exact hz
+    rw [him]
+    exact le_max_right _ _
+  · have hreAbs : |z.1.re| = 1 := by
+      rw [max_eq_left hle] at hz
+      exact hz
+    rcases eq_or_eq_neg_of_abs_eq (by simpa using hreAbs) with hre | hre
+    · have him := hseam hre
+      rw [him]
+      exact le_max_right _ _
+    · have hre' : z.1.re = -1 := by simpa using hre
+      rw [hre']
+      norm_num
+
+theorem rightPlacement_mem_boundary_of_mem_boundary
+    (z : square) (hz : z.1 ∈ boundary)
+    (hseam : z.1.re = 1 → |z.1.im| = 1) :
+    (rightPlacement z).1 ∈ boundary := by
+  change maxAbs (rightPlacement z).1 = 1
+  apply le_antisymm (rightPlacement z).2
+  change 1 ≤ max |(1 - z.1.re) / 2| |z.1.im|
+  change max |z.1.re| |z.1.im| = 1 at hz
+  rcases le_total |z.1.re| |z.1.im| with hle | hle
+  · have him : |z.1.im| = 1 := by
+      rw [max_eq_right hle] at hz
+      exact hz
+    rw [him]
+    exact le_max_right _ _
+  · have hreAbs : |z.1.re| = 1 := by
+      rw [max_eq_left hle] at hz
+      exact hz
+    rcases eq_or_eq_neg_of_abs_eq (by simpa using hreAbs) with hre | hre
+    · have him := hseam hre
+      rw [him]
+      exact le_max_right _ _
+    · have hre' : z.1.re = -1 := by simpa using hre
+      rw [hre']
+      norm_num
+
+/-- The selected child's old boundary, placed on the outer square frontier. -/
+noncomputable def finalOldArc
+    (l : ℕ) (hl : 0 < l) : C(Set.Icc (0 : ℝ) l, boundary) where
+  toFun s :=
+    ⟨(leftPlacement (finalOldArcLocal l hl s)).1,
+      leftPlacement_mem_boundary_of_mem_boundary
+        (finalOldArcLocal l hl s)
+        (finalOldArcLocal_mem_boundary l hl s)
+        (finalOldArcLocal_abs_im_eq_one_of_re_eq_one l hl s)⟩
+  continuous_toFun := by
+    apply continuous_induced_rng.2
+    change Continuous (fun s : Set.Icc (0 : ℝ) l ↦
+      (leftPlacement (finalOldArcLocal l hl s)).1)
+    exact continuous_subtype_val.comp
+      (leftPlacement.continuous.comp
+        (finalOldArcLocal l hl).continuous)
+
+/-- The right child's old boundary, reflected and placed on the outer square frontier. -/
+noncomputable def firstOldArc
+    (r : ℕ) (hr : 0 < r) : C(Set.Icc (0 : ℝ) r, boundary) where
+  toFun s :=
+    ⟨(rightPlacement (firstOldArcLocal r hr s)).1,
+      rightPlacement_mem_boundary_of_mem_boundary
+        (firstOldArcLocal r hr s)
+        (firstOldArcLocal_mem_boundary r hr s)
+        (firstOldArcLocal_abs_im_eq_one_of_re_eq_one r hr s)⟩
+  continuous_toFun := by
+    apply continuous_induced_rng.2
+    change Continuous (fun s : Set.Icc (0 : ℝ) r ↦
+      (rightPlacement (firstOldArcLocal r hr s)).1)
+    exact continuous_subtype_val.comp
+      (rightPlacement.continuous.comp
+        (firstOldArcLocal r hr).continuous)
+
+@[simp]
+theorem finalOldArc_val
+    (l : ℕ) (hl : 0 < l) (s : Set.Icc (0 : ℝ) l) :
+    (finalOldArc l hl s).1 =
+      (leftPlacement (finalOldArcLocal l hl s)).1 :=
+  rfl
+
+@[simp]
+theorem firstOldArc_val
+    (r : ℕ) (hr : 0 < r) (s : Set.Icc (0 : ℝ) r) :
+    (firstOldArc r hr s).1 =
+      (rightPlacement (firstOldArcLocal r hr s)).1 :=
+  rfl
+
+@[simp]
+theorem finalOldArc_zero_re (l : ℕ) (hl : 0 < l) :
+    (finalOldArc l hl ⟨0, by constructor <;> positivity⟩).1.re = 0 := by
+  rw [finalOldArc_val, leftPlacement_re]
+  rw [(finalOldArcLocal_re_eq_one_iff_endpoint l hl _).2 (Or.inl rfl)]
+  norm_num
+
+@[simp]
+theorem finalOldArc_zero_im (l : ℕ) (hl : 0 < l) :
+    (finalOldArc l hl ⟨0, by constructor <;> positivity⟩).1.im = 1 := by
+  exact finalOldArcLocal_zero_im l hl
+
+@[simp]
+theorem finalOldArc_last_re (l : ℕ) (hl : 0 < l) :
+    (finalOldArc l hl ⟨l, by simp⟩).1.re = 0 := by
+  rw [finalOldArc_val, leftPlacement_re]
+  rw [(finalOldArcLocal_re_eq_one_iff_endpoint l hl _).2 (Or.inr rfl)]
+  norm_num
+
+@[simp]
+theorem finalOldArc_last_im (l : ℕ) (hl : 0 < l) :
+    (finalOldArc l hl ⟨l, by simp⟩).1.im = -1 := by
+  exact finalOldArcLocal_last_im l hl
+
+@[simp]
+theorem firstOldArc_zero_re (r : ℕ) (hr : 0 < r) :
+    (firstOldArc r hr ⟨0, by constructor <;> positivity⟩).1.re = 0 := by
+  rw [firstOldArc_val, rightPlacement_re]
+  rw [(firstOldArcLocal_re_eq_one_iff_endpoint r hr _).2 (Or.inl rfl)]
+  norm_num
+
+@[simp]
+theorem firstOldArc_zero_im (r : ℕ) (hr : 0 < r) :
+    (firstOldArc r hr ⟨0, by constructor <;> positivity⟩).1.im = -1 := by
+  exact firstOldArcLocal_zero_im r hr
+
+@[simp]
+theorem firstOldArc_last_re (r : ℕ) (hr : 0 < r) :
+    (firstOldArc r hr ⟨r, by simp⟩).1.re = 0 := by
+  rw [firstOldArc_val, rightPlacement_re]
+  rw [(firstOldArcLocal_re_eq_one_iff_endpoint r hr _).2 (Or.inr rfl)]
+  norm_num
+
+@[simp]
+theorem firstOldArc_last_im (r : ℕ) (hr : 0 < r) :
+    (firstOldArc r hr ⟨r, by simp⟩).1.im = 1 := by
+  exact firstOldArcLocal_last_im r hr
+
+theorem finalOldArc_re_nonpos
+    (l : ℕ) (hl : 0 < l) (s : Set.Icc (0 : ℝ) l) :
+    (finalOldArc l hl s).1.re ≤ 0 :=
+  leftPlacement_re_nonpos (finalOldArcLocal l hl s)
+
+theorem firstOldArc_re_nonneg
+    (r : ℕ) (hr : 0 < r) (s : Set.Icc (0 : ℝ) r) :
+    0 ≤ (firstOldArc r hr s).1.re :=
+  rightPlacement_re_nonneg (firstOldArcLocal r hr s)
+
+theorem finalOldArc_re_eq_zero_iff_endpoint
+    (l : ℕ) (hl : 0 < l) (s : Set.Icc (0 : ℝ) l) :
+    (finalOldArc l hl s).1.re = 0 ↔
+      s.1 = 0 ∨ s.1 = l := by
+  rw [finalOldArc_val, leftPlacement_re]
+  constructor
+  · intro h
+    apply (finalOldArcLocal_re_eq_one_iff_endpoint l hl s).mp
+    linarith
+  · intro h
+    rw [(finalOldArcLocal_re_eq_one_iff_endpoint l hl s).2 h]
+    norm_num
+
+theorem firstOldArc_re_eq_zero_iff_endpoint
+    (r : ℕ) (hr : 0 < r) (s : Set.Icc (0 : ℝ) r) :
+    (firstOldArc r hr s).1.re = 0 ↔
+      s.1 = 0 ∨ s.1 = r := by
+  rw [firstOldArc_val, rightPlacement_re]
+  constructor
+  · intro h
+    apply (firstOldArcLocal_re_eq_one_iff_endpoint r hr s).mp
+    linarith
+  · intro h
+    rw [(firstOldArcLocal_re_eq_one_iff_endpoint r hr s).2 h]
+    norm_num
+
+theorem finalOldArc_injective
+    (l : ℕ) (hl : 0 < l) :
+    Function.Injective (finalOldArc l hl) := by
+  intro s t hst
+  have hplacement :
+      leftPlacement (finalOldArcLocal l hl s) =
+        leftPlacement (finalOldArcLocal l hl t) := by
+    apply Subtype.ext
+    exact congrArg (fun q : boundary ↦ q.1) hst
+  have hlocal :
+      finalOldArcLocal l hl s = finalOldArcLocal l hl t :=
+    leftPlacement_injective hplacement
+  have hcell :
+      PolygonCell.ofCircle (l + 1)
+          (Circle.exp (2 * Real.pi * s.1 / (l + 1))) =
+        PolygonCell.ofCircle (l + 1)
+          (Circle.exp (2 * Real.pi * t.1 / (l + 1))) := by
+    apply (finalSideCellHomeomorph l hl).injective
+    simpa only [finalOldArcLocal_apply] using hlocal
+  have hexp :
+      Circle.exp (2 * Real.pi * s.1 / (l + 1)) =
+        Circle.exp (2 * Real.pi * t.1 / (l + 1)) := by
+    apply Circle.ext
+    exact congrArg PolygonCell.val hcell
+  let b : ℝ := 2 * Real.pi * l / (l + 1)
+  have hb : b < 2 * Real.pi := by
+    dsimp [b]
+    rw [div_lt_iff₀ (by positivity : (0 : ℝ) < l + 1)]
+    nlinarith [Real.pi_pos]
+  have hsMem :
+      2 * Real.pi * s.1 / (l + 1) ∈ Set.Icc (0 : ℝ) b := by
+    dsimp [b]
+    constructor
+    · exact div_nonneg
+        (mul_nonneg (mul_nonneg (by positivity) Real.pi_pos.le) s.2.1)
+        (by positivity)
+    · apply div_le_div_of_nonneg_right _ (by positivity)
+      nlinarith [s.2.2, Real.pi_pos]
+  have htMem :
+      2 * Real.pi * t.1 / (l + 1) ∈ Set.Icc (0 : ℝ) b := by
+    dsimp [b]
+    constructor
+    · exact div_nonneg
+        (mul_nonneg (mul_nonneg (by positivity) Real.pi_pos.le) t.2.1)
+        (by positivity)
+    · apply div_le_div_of_nonneg_right _ (by positivity)
+      nlinarith [t.2.2, Real.pi_pos]
+  have hangle :=
+    Circle.exp_injOn_Icc (a := 0) (b := b) (by simpa using hb)
+      hsMem htMem hexp
+  apply Subtype.ext
+  have hfactor : 0 < 2 * Real.pi / (l + 1 : ℝ) := by positivity
+  have hsform :
+      2 * Real.pi * s.1 / (l + 1) =
+        (2 * Real.pi / (l + 1)) * s.1 := by ring
+  have htform :
+      2 * Real.pi * t.1 / (l + 1) =
+        (2 * Real.pi / (l + 1)) * t.1 := by ring
+  rw [hsform, htform] at hangle
+  exact (mul_left_cancel₀ hfactor.ne' hangle)
+
+theorem firstOldArc_injective
+    (r : ℕ) (hr : 0 < r) :
+    Function.Injective (firstOldArc r hr) := by
+  intro s t hst
+  have hplacement :
+      rightPlacement (firstOldArcLocal r hr s) =
+        rightPlacement (firstOldArcLocal r hr t) := by
+    apply Subtype.ext
+    exact congrArg (fun q : boundary ↦ q.1) hst
+  have hlocal :
+      firstOldArcLocal r hr s = firstOldArcLocal r hr t :=
+    rightPlacement_injective hplacement
+  have hcell :
+      PolygonCell.ofCircle (r + 1)
+          (Circle.exp
+            (2 * Real.pi * (1 + s.1) / (r + 1))) =
+        PolygonCell.ofCircle (r + 1)
+          (Circle.exp
+            (2 * Real.pi * (1 + t.1) / (r + 1))) := by
+    apply (firstSideCellHomeomorph r hr).injective
+    simpa only [firstOldArcLocal_apply] using hlocal
+  have hexp :
+      Circle.exp
+          (2 * Real.pi * (1 + s.1) / (r + 1)) =
+        Circle.exp
+          (2 * Real.pi * (1 + t.1) / (r + 1)) := by
+    apply Circle.ext
+    exact congrArg PolygonCell.val hcell
+  let a : ℝ := 2 * Real.pi / (r + 1)
+  have hab : 2 * Real.pi - a < 2 * Real.pi := by
+    dsimp [a]
+    have : 0 < 2 * Real.pi / (r + 1 : ℝ) := by positivity
+    linarith
+  have hsMem :
+      2 * Real.pi * (1 + s.1) / (r + 1) ∈
+        Set.Icc a (2 * Real.pi) := by
+    dsimp [a]
+    constructor
+    · apply div_le_div_of_nonneg_right _ (by positivity)
+      nlinarith [s.2.1, Real.pi_pos]
+    · rw [div_le_iff₀ (by positivity : (0 : ℝ) < r + 1)]
+      nlinarith [s.2.2, Real.pi_pos]
+  have htMem :
+      2 * Real.pi * (1 + t.1) / (r + 1) ∈
+        Set.Icc a (2 * Real.pi) := by
+    dsimp [a]
+    constructor
+    · apply div_le_div_of_nonneg_right _ (by positivity)
+      nlinarith [t.2.1, Real.pi_pos]
+    · rw [div_le_iff₀ (by positivity : (0 : ℝ) < r + 1)]
+      nlinarith [t.2.2, Real.pi_pos]
+  have hangle :=
+    Circle.exp_injOn_Icc (a := a) (b := 2 * Real.pi) hab
+      hsMem htMem hexp
+  apply Subtype.ext
+  have hfactor : 0 < 2 * Real.pi / (r + 1 : ℝ) := by positivity
+  have hsform :
+      2 * Real.pi * (1 + s.1) / (r + 1) =
+        (2 * Real.pi / (r + 1)) * (1 + s.1) := by ring
+  have htform :
+      2 * Real.pi * (1 + t.1) / (r + 1) =
+        (2 * Real.pi / (r + 1)) * (1 + t.1) := by ring
+  rw [hsform, htform] at hangle
+  have hsum :
+      (1 : ℝ) + s.1 = 1 + t.1 :=
+    mul_left_cancel₀ hfactor.ne' hangle
+  linarith
 
 end DiskSquare
 
