@@ -77,6 +77,10 @@ The faithful polygonal quotient layer and the bottom API are in place:
 - `FiniteCyclicPresentation.Subdivides` closes P1/P2 steps transitively, and a common subdivision
   yields a faithful polygonal-realization equivalence. The generic Gallier--Xu Dyck rewrite is
   implemented by two explicit P2 cuts whose targets are signed-isomorphic.
+- `FiniteCyclicPresentation.UnorientedPresentationIso` additionally permits independent reversal
+  of face traversal, realized by reflection of the corresponding polygon disk when both endpoints
+  are ordinary-valid. This comparison implements Gallier--Xu's generic cross-cap rewrite without
+  conflating face reversal with signed edge relabeling.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.
@@ -177,8 +181,8 @@ compatibility. New code should use the preferred names above.
 2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
    faithful polygonal quotient; route the Eval handoff through that quotient without relying on
    the legacy arbitrary stored realization.
-3. Implement cancellation, vertex reduction, face merging, crosscap introduction, and the
-   handle/boundary grouping chains. Reuse the completed generic Dyck common-subdivision theorem
-   for the repeated word permutations.
+3. Implement cancellation, vertex reduction, face merging, and the handle/boundary grouping
+   chains. Reuse the completed generic Dyck and cross-cap rewrite theorems for the repeated word
+   transformations.
 4. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
    the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.

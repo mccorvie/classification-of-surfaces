@@ -12,6 +12,7 @@ import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicCanonical
 import ClassificationOfSurfaces.FiniteCyclicCanonicalRealization
+import ClassificationOfSurfaces.FiniteCyclicCrosscap
 import ClassificationOfSurfaces.FiniteCyclicDyck
 import ClassificationOfSurfaces.FiniteCyclicMoveRealization
 import ClassificationOfSurfaces.FiniteCyclicMoves
@@ -23,6 +24,7 @@ import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.FiniteCyclicRealization
 import ClassificationOfSurfaces.FiniteCyclicSignedRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
+import ClassificationOfSurfaces.FiniteCyclicUnorientedRealization
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -217,6 +219,9 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.HasCommonSubdivision.toPolygonallyEquivalent`
 * `FiniteCyclicPresentation.Dyck.hasCommonSubdivision`
 * `FiniteCyclicPresentation.Dyck.polygonallyEquivalent`
+* `FiniteCyclicPresentation.UnorientedPresentationIso`
+* `FiniteCyclicPresentation.UnorientedPresentationIso.realizationHomeomorph`
+* `FiniteCyclicPresentation.Crosscap.polygonallyEquivalent`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -258,6 +263,13 @@ The generic Gallier--Xu Dyck rewrite
 are related by a signed isomorphism exchanging the retained distinguished edge with the fresh
 cutting edge. Consequently the rewrite preserves faithful polygonal realizations for ordinary-valid
 source and target presentations.
+
+Gallier--Xu's cross-cap rewrite `a X a Y ~ b b Y⁻¹ X` reverses one child face before
+the second P2 merge. `UnorientedPresentationIso` records that independent face-traversal choice
+explicitly, and realizes it by cyclic disk rotations and reflections. Because the current
+`IsSurfaceValid` face-uniqueness clause is intentionally stated for stored orientations, this
+broader comparison takes ordinary-validity proofs for both endpoints rather than claiming to
+transport validity automatically.
 
 ## Polygonal quotient foundation
 
