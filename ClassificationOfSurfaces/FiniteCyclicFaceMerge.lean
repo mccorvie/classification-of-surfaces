@@ -200,6 +200,93 @@ theorem polygonallyEquivalent {n : ℕ}
       (target_isSurfaceValid U V hUV validSource) :=
   (normalizationEquivalent U V hUV validSource).polygonallyEquivalent
 
+/-! ### Arbitrary separator names -/
+
+/-- Two displayed faces with an arbitrarily named, oppositely oriented separator. -/
+@[reducible]
+def namedSource {n : ℕ} (a : Fin (n + 1))
+    (U V : List (SignedDart (Fin (n + 1)))) :
+    FiniteCyclicPresentation where
+  edgeCount := n + 1
+  faces := [[.pos a] ++ U, [.neg a] ++ V]
+
+/-- Rename the separator to last and delete that name from both remaining face words. -/
+def namedSourceSignedIso {n : ℕ}
+    (a : Fin (n + 1))
+    (U V : List (SignedDart (Fin (n + 1))))
+    (haU : a ∉ U.map edgeOfDart)
+    (haV : a ∉ V.map edgeOfDart) :
+    SignedPresentationIso
+      (namedSource a U V)
+      (source
+        (Cancellation.lowerTail a U)
+        (Cancellation.lowerTail a V)) where
+  edgeRelabeling :=
+    EdgeRelabeling.ofEquiv (Cancellation.moveToLast a)
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    rw [EdgeRelabeling.map_mapDart_ofEquiv]
+    fin_cases f
+    · change
+        ([SignedDart.mapEquiv
+            (Cancellation.moveToLast a) (.pos a)] ++
+          Cancellation.renamedTail a U).IsRotated
+          ([.pos (P1.freshEdge n)] ++
+            P2.retainWord (Cancellation.lowerTail a U))
+      rw [Cancellation.retainWord_lowerTail a U haU]
+      have hmove :
+          Cancellation.moveToLast a a = P1.freshEdge n := by
+        simp [Cancellation.moveToLast, P1.freshEdge]
+      rw [show SignedDart.mapEquiv
+          (Cancellation.moveToLast a) (.pos a) =
+            .pos (P1.freshEdge n) by simp [hmove]]
+    · change
+        ([SignedDart.mapEquiv
+            (Cancellation.moveToLast a) (.neg a)] ++
+          Cancellation.renamedTail a V).IsRotated
+          ([.neg (P1.freshEdge n)] ++
+            P2.retainWord (Cancellation.lowerTail a V))
+      rw [Cancellation.retainWord_lowerTail a V haV]
+      have hmove :
+          Cancellation.moveToLast a a = P1.freshEdge n := by
+        simp [Cancellation.moveToLast, P1.freshEdge]
+      rw [show SignedDart.mapEquiv
+          (Cancellation.moveToLast a) (.neg a) =
+            .neg (P1.freshEdge n) by simp [hmove]]
+
+/-- Merge two displayed faces with an arbitrary separator name. -/
+theorem namedNormalizationEquivalent {n : ℕ}
+    (a : Fin (n + 1))
+    (U V : List (SignedDart (Fin (n + 1))))
+    (haU : a ∉ U.map edgeOfDart)
+    (haV : a ∉ V.map edgeOfDart)
+    (hUV :
+      Cancellation.lowerTail a U ++
+        Cancellation.lowerTail a V ≠ [])
+    (validSource : (namedSource a U V).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨namedSource a U V, validSource⟩
+      ⟨target
+          (Cancellation.lowerTail a U)
+          (Cancellation.lowerTail a V),
+        target_isSurfaceValid
+          (Cancellation.lowerTail a U)
+          (Cancellation.lowerTail a V) hUV
+          ((namedSourceSignedIso a U V haU haV).isSurfaceValid
+            validSource)⟩ := by
+  let sourceIso := namedSourceSignedIso a U V haU haV
+  let validBase :
+      (source
+        (Cancellation.lowerTail a U)
+        (Cancellation.lowerTail a V)).IsSurfaceValid :=
+    sourceIso.isSurfaceValid validSource
+  exact
+    (NormalizationEquivalent.ofSignedIso sourceIso).trans
+      (normalizationEquivalent
+        (Cancellation.lowerTail a U)
+        (Cancellation.lowerTail a V) hUV validBase)
+
 end FaceMerge
 
 end FiniteCyclicPresentation
