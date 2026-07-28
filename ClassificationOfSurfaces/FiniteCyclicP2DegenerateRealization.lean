@@ -1935,6 +1935,97 @@ theorem rightDegeneratePolygonallyEquivalent
   (rightDegenerateRealizationEquivData
     P cut horientation hleft hr validP).polygonallyEquivalent
 
+/-! ### Transport to every one-sided-degenerate cut -/
+
+/-- A positive cut with an empty right word reduces to the base theorem by swapping its two
+displayed pieces. -/
+theorem leftDegeneratePolygonallyEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hright : cut.right = [])
+    (validP : P.IsSurfaceValid) :
+    P.PolygonallyEquivalent (split P cut) validP
+      (split_isSurfaceValid P cut validP) := by
+  have hswapOrientation :
+      cut.swap.face.orientation = false := by
+    simpa [P2Cut.swap] using horientation
+  have hswapLeft : cut.swap.left = [] := by
+    simpa [P2Cut.swap] using hright
+  have hswapRight : 0 < cut.swap.right.length := by
+    simpa [P2Cut.swap] using hl
+  let validSwap :=
+    split_isSurfaceValid P cut.swap validP
+  exact
+    (rightDegeneratePolygonallyEquivalent
+      P cut.swap hswapOrientation hswapLeft hswapRight validP).trans
+      ((swapSignedPresentationIso P cut).polygonallyEquivalent
+        validSwap (split_isSurfaceValid P cut validP))
+
+/-- Every positive one-sided-degenerate cut preserves polygonal realization. -/
+theorem positiveOneSidedPolygonallyEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (honeSided :
+      (cut.left = [] ∧ 0 < cut.right.length) ∨
+        (0 < cut.left.length ∧ cut.right = []))
+    (validP : P.IsSurfaceValid) :
+    P.PolygonallyEquivalent (split P cut) validP
+      (split_isSurfaceValid P cut validP) := by
+  rcases honeSided with ⟨hleft, hr⟩ | ⟨hl, hright⟩
+  · exact rightDegeneratePolygonallyEquivalent
+      P cut horientation hleft hr validP
+  · exact leftDegeneratePolygonallyEquivalent
+      P cut horientation hl hright validP
+
+/-- A negative one-sided cut reduces to the positive theorem after reversing the cut. -/
+theorem negativeOneSidedPolygonallyEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = true)
+    (honeSided :
+      (cut.left = [] ∧ 0 < cut.right.length) ∨
+        (0 < cut.left.length ∧ cut.right = []))
+    (validP : P.IsSurfaceValid) :
+    P.PolygonallyEquivalent (split P cut) validP
+      (split_isSurfaceValid P cut validP) := by
+  have hflipOrientation :
+      cut.flip.face.orientation = false := by
+    simp [P2Cut.flip, OrientedFace.flip, horientation]
+  have hflipOneSided :
+      (cut.flip.left = [] ∧ 0 < cut.flip.right.length) ∨
+        (0 < cut.flip.left.length ∧ cut.flip.right = []) := by
+    rcases honeSided with ⟨hleft, hr⟩ | ⟨hl, hright⟩
+    · right
+      constructor
+      · simpa [P2Cut.flip, inverseWord] using hr
+      · simp [P2Cut.flip, inverseWord, hleft]
+    · left
+      constructor
+      · simp [P2Cut.flip, inverseWord, hright]
+      · simpa [P2Cut.flip, inverseWord] using hl
+  let validFlip :=
+    split_isSurfaceValid P cut.flip validP
+  exact
+    (positiveOneSidedPolygonallyEquivalent
+      P cut.flip hflipOrientation hflipOneSided validP).trans
+      ((flipSignedPresentationIso P cut).polygonallyEquivalent
+        validFlip (split_isSurfaceValid P cut validP))
+
+/-- Every one-sided-degenerate P2 split preserves the faithful polygonal realization,
+independently of traversal orientation and of which displayed cut word is empty. -/
+theorem oneSidedPolygonallyEquivalent
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (honeSided :
+      (cut.left = [] ∧ 0 < cut.right.length) ∨
+        (0 < cut.left.length ∧ cut.right = []))
+    (validP : P.IsSurfaceValid) :
+    P.PolygonallyEquivalent (split P cut) validP
+      (split_isSurfaceValid P cut validP) := by
+  cases horientation : cut.face.orientation
+  · exact positiveOneSidedPolygonallyEquivalent
+      P cut horientation honeSided validP
+  · exact negativeOneSidedPolygonallyEquivalent
+      P cut horientation honeSided validP
+
 end P2
 
 end FiniteCyclicPresentation
