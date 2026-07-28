@@ -255,6 +255,8 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.NormalizationResult.realizationHomeomorph`
 * `FiniteCyclicPresentation.Reduction.exists_distinct_faceAdjacent`
 * `FiniteCyclicPresentation.Reduction.exists_oppositelyDisplayedAdjacentFaces`
+* `FiniteCyclicPresentation.Reduction.mergeNormalizationEquivalent`
+* `FiniteCyclicPresentation.Reduction.mergeTarget_faces_length`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen

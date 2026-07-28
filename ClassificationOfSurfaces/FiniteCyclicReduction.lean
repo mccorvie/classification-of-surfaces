@@ -224,6 +224,56 @@ theorem middleOriginalFaces_length
       faceCountBetween P := by
   simp [middleOriginalFaces]
 
+/-- Every face is the selected face, the right face, or a uniquely positioned untouched face. -/
+theorem face_eq_selected_or_right_or_middle
+    (P : FiniteCyclicPresentation) (f g q : P.Face)
+    (hfg : f ≠ g) :
+    q = f ∨ q = g ∨
+      ∃ i : Fin (faceCountBetween P),
+        q = middleOriginalFace P f g hfg i := by
+  let position := faceToEndpoints P f g q
+  by_cases hzero : position.val = 0
+  · left
+    apply (faceToEndpoints P f g).injective
+    apply Fin.ext
+    rw [faceToEndpoints_selected P f g hfg]
+    exact hzero
+  · by_cases hlast :
+      position.val = P.faces.length - 1
+    · right
+      left
+      apply (faceToEndpoints P f g).injective
+      apply Fin.ext
+      rw [faceToEndpoints_right]
+      exact hlast
+    · right
+      right
+      have hvalues : f.val ≠ g.val :=
+        fun h ↦ hfg (Fin.ext h)
+      have hmany : 1 < P.faces.length := by
+        omega
+      have hpositionPositive : 0 < position.val := by
+        omega
+      have hpositionBelow : position.val < P.faces.length - 1 := by
+        have hlt := position.isLt
+        omega
+      let i : Fin (faceCountBetween P) :=
+        ⟨position.val - 1, by
+          change position.val - 1 < P.faces.length - 2
+          omega⟩
+      refine ⟨i, ?_⟩
+      apply (faceToEndpoints P f g).injective
+      change
+        faceToEndpoints P f g q =
+          faceToEndpoints P f g
+            ((faceToEndpoints P f g).symm
+              (middleFacePosition P f g hfg i))
+      rw [Equiv.apply_symm_apply]
+      apply Fin.ext
+      change position.val = i.val + 1
+      simp only [i]
+      omega
+
 /-- A nontrivial reflexive-transitive path contains a genuinely non-reflexive step. -/
 theorem exists_ne_step_of_reflTransGen
     {α : Type*} {r : α → α → Prop} {a b : α}
@@ -265,6 +315,49 @@ theorem add_faceEdgeMultiplicity_le_edgeMultiplicity
     Finset.sum_le_sum_of_subset
       (f := fun q ↦ P.faceEdgeMultiplicity q e) hsubset
   simpa [hfg] using hsum
+
+/-- Three distinct face contributions are bounded by total edge multiplicity. -/
+theorem add_three_faceEdgeMultiplicity_le_edgeMultiplicity
+    (P : FiniteCyclicPresentation)
+    (f g q : P.Face) (e : P.Edge)
+    (hfg : f ≠ g) (hfq : f ≠ q) (hgq : g ≠ q) :
+    P.faceEdgeMultiplicity f e +
+        P.faceEdgeMultiplicity g e +
+        P.faceEdgeMultiplicity q e ≤
+      P.edgeMultiplicity e := by
+  classical
+  unfold edgeMultiplicity
+  have hsubset :
+      ({f, g, q} : Finset P.Face) ⊆ Finset.univ := by
+    intro x hx
+    simp
+  have hsum :=
+    Finset.sum_le_sum_of_subset
+      (f := fun r ↦ P.faceEdgeMultiplicity r e) hsubset
+  simpa [hfg, hfq, hgq, Nat.add_assoc] using hsum
+
+/-- Once two distinct faces contain an edge of surface multiplicity at most two, no third face
+contains that edge. -/
+theorem edge_not_mem_boundary_of_other
+    (P : FiniteCyclicPresentation)
+    (valid : P.IsSurfaceValid)
+    (f g q : P.Face) (e : P.Edge)
+    (hfg : f ≠ g) (hfq : f ≠ q) (hgq : g ≠ q)
+    (hef : e ∈ (P.boundary f).map edgeOfDart)
+    (heg : e ∈ (P.boundary g).map edgeOfDart) :
+    e ∉ (P.boundary q).map edgeOfDart := by
+  classical
+  intro heq
+  have hfpos : 0 < P.faceEdgeMultiplicity f e :=
+    List.count_pos_iff.mpr hef
+  have hgpos : 0 < P.faceEdgeMultiplicity g e :=
+    List.count_pos_iff.mpr heg
+  have hqpos : 0 < P.faceEdgeMultiplicity q e :=
+    List.count_pos_iff.mpr heq
+  have hthree :=
+    add_three_faceEdgeMultiplicity_le_edgeMultiplicity
+      P f g q e hfg hfq hgq
+  rcases valid.2.2.2 e with htotal | htotal <;> omega
 
 /-- A connected presentation with at least two faces contains two distinct adjacent faces. -/
 theorem exists_distinct_faceAdjacent
@@ -378,6 +471,52 @@ def PositiveOccurrence.flip
     exact
       (inverseWord_isRotated occurrence.boundary_rotated).trans hhead
 
+/-- The underlying stored face contains the positively displayed edge. -/
+theorem PositiveOccurrence.edge_mem_boundary
+    {P : FiniteCyclicPresentation} {f : P.Face} {e : P.Edge}
+    (occurrence : PositiveOccurrence P f e) :
+    e ∈ (P.boundary f).map edgeOfDart := by
+  have hmapRotated :=
+    occurrence.boundary_rotated.map edgeOfDart
+  have horientedMem :
+      e ∈ (P.orientedBoundary occurrence.orientedFace).map edgeOfDart :=
+    hmapRotated.mem_iff.mpr (by simp [edgeOfDart])
+  have horientedPositive :
+      0 <
+        ((P.orientedBoundary occurrence.orientedFace).map
+          edgeOfDart).count e :=
+    List.count_pos_iff.mpr horientedMem
+  have hfacePositive :
+      0 < P.faceEdgeMultiplicity occurrence.orientedFace.face e := by
+    rw [← P.orientedBoundary_edgeMultiplicity
+      occurrence.orientedFace e]
+    exact horientedPositive
+  rw [occurrence.face_eq] at hfacePositive
+  exact List.count_pos_iff.mp hfacePositive
+
+/-- The underlying stored face contains the negatively displayed edge. -/
+theorem NegativeOccurrence.edge_mem_boundary
+    {P : FiniteCyclicPresentation} {f : P.Face} {e : P.Edge}
+    (occurrence : NegativeOccurrence P f e) :
+    e ∈ (P.boundary f).map edgeOfDart := by
+  have hmapRotated :=
+    occurrence.boundary_rotated.map edgeOfDart
+  have horientedMem :
+      e ∈ (P.orientedBoundary occurrence.orientedFace).map edgeOfDart :=
+    hmapRotated.mem_iff.mpr (by simp [edgeOfDart])
+  have horientedPositive :
+      0 <
+        ((P.orientedBoundary occurrence.orientedFace).map
+          edgeOfDart).count e :=
+    List.count_pos_iff.mpr horientedMem
+  have hfacePositive :
+      0 < P.faceEdgeMultiplicity occurrence.orientedFace.face e := by
+    rw [← P.orientedBoundary_edgeMultiplicity
+      occurrence.orientedFace e]
+    exact horientedPositive
+  rw [occurrence.face_eq] at hfacePositive
+  exact List.count_pos_iff.mp hfacePositive
+
 /-- In two distinct incident faces, the displayed occurrence consumes the entire multiplicity
 contributed by its face, so the same edge does not occur again in its tail. -/
 theorem PositiveOccurrence.edge_not_mem_tail
@@ -443,6 +582,374 @@ theorem NegativeOccurrence.edge_not_mem_tail
   have hpositive :=
     positive.edge_not_mem_tail valid hfg heg
   simpa [positive, map_edgeOfDart_inverseWord] using hpositive
+
+/-- The lowered left word used by the canonical contextual merge. -/
+def mergeLeftWord
+    {P : FiniteCyclicPresentation} {f : P.Face} {e : P.Edge}
+    (occurrence : PositiveOccurrence P f e) :
+    List (SignedDart (Fin (edgeCountAfterDelete P))) :=
+  lowerTail P e occurrence.tail
+
+/-- The lowered right word used by the canonical contextual merge. -/
+def mergeRightWord
+    {P : FiniteCyclicPresentation} {g : P.Face} {e : P.Edge}
+    (occurrence : NegativeOccurrence P g e) :
+    List (SignedDart (Fin (edgeCountAfterDelete P))) :=
+  lowerTail P e occurrence.tail
+
+/-- Lower and enumerate all faces not selected for a merge. -/
+def mergeMiddleWords
+    (P : FiniteCyclicPresentation) (e : P.Edge)
+    (f g : P.Face) (hfg : f ≠ g) :
+    List (List (SignedDart (Fin (edgeCountAfterDelete P)))) :=
+  (middleOriginalFaces P f g hfg).map
+    (fun q ↦ lowerTail P e (P.boundary q))
+
+@[simp]
+theorem mergeMiddleWords_length
+    (P : FiniteCyclicPresentation) (e : P.Edge)
+    (f g : P.Face) (hfg : f ≠ g) :
+    (mergeMiddleWords P e f g hfg).length =
+      faceCountBetween P := by
+  simp [mergeMiddleWords]
+
+@[simp]
+theorem mergeMiddleWords_get
+    (P : FiniteCyclicPresentation) (e : P.Edge)
+    (f g : P.Face) (hfg : f ≠ g)
+    (i : Fin (faceCountBetween P)) :
+    (mergeMiddleWords P e f g hfg).get
+        ⟨i.val, by
+          rw [mergeMiddleWords_length]
+          exact i.isLt⟩ =
+      lowerTail P e
+        (P.boundary (middleOriginalFace P f g hfg i)) := by
+  simp [mergeMiddleWords, middleOriginalFaces,
+    middleOriginalFace]
+
+theorem faceCountBetween_add_two
+    (P : FiniteCyclicPresentation) (f g : P.Face)
+    (hfg : f ≠ g) :
+    faceCountBetween P + 2 = P.faces.length := by
+  have hvalues : f.val ≠ g.val :=
+    fun h ↦ hfg (Fin.ext h)
+  have hmany : 1 < P.faces.length := by
+    omega
+  simp only [faceCountBetween]
+  omega
+
+/-- The canonical contextual P2 source associated to two oppositely displayed adjacent faces. -/
+@[reducible]
+def mergeSource
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) :
+    FiniteCyclicPresentation :=
+  FaceMerge.ContextMerge.source
+    (mergeLeftWord left) (mergeRightWord right)
+    (mergeMiddleWords P e f g hfg)
+
+/-- The presentation after merging the selected adjacent faces and deleting their separator. -/
+@[reducible]
+def mergeTarget
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) :
+    FiniteCyclicPresentation :=
+  FaceMerge.ContextMerge.target
+    (mergeLeftWord left) (mergeRightWord right)
+    (mergeMiddleWords P e f g hfg)
+
+@[simp]
+theorem mergeSource_faces_length
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) :
+    (mergeSource left right hfg).faces.length =
+      P.faces.length := by
+  rw [show
+    (mergeSource left right hfg).faces.length =
+      (mergeMiddleWords P e f g hfg).length + 2 by
+    rw [P2.split_faces_length]
+    simp [FaceMerge.ContextMerge.target]]
+  rw [mergeMiddleWords_length, faceCountBetween_add_two P f g hfg]
+
+@[simp]
+theorem mergeTarget_faces_length
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) :
+    (mergeTarget left right hfg).faces.length =
+      P.faces.length - 1 := by
+  change
+    (mergeMiddleWords P e f g hfg).length + 1 =
+      P.faces.length - 1
+  rw [mergeMiddleWords_length]
+  have hadd := faceCountBetween_add_two P f g hfg
+  omega
+
+/-- Reindex the input faces to the selected/interior/right ordering of its contextual merge
+source. -/
+def mergeFaceEquiv
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) :
+    P.Face ≃ (mergeSource left right hfg).Face :=
+  (faceToEndpoints P f g).trans
+    (finCongr (mergeSource_faces_length left right hfg).symm)
+
+@[simp]
+theorem mergeFaceEquiv_selected
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) :
+    mergeFaceEquiv left right hfg f =
+      FaceMerge.ContextMerge.selectedFace
+        (mergeLeftWord left) (mergeRightWord right)
+        (mergeMiddleWords P e f g hfg) := by
+  apply Fin.ext
+  simp [mergeFaceEquiv, FaceMerge.ContextMerge.selectedFace,
+    faceToEndpoints_selected P f g hfg]
+  change 0 = 0
+  rfl
+
+@[simp]
+theorem mergeFaceEquiv_right
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) :
+    mergeFaceEquiv left right hfg g =
+      FaceMerge.ContextMerge.rightFace
+        (mergeLeftWord left) (mergeRightWord right)
+        (mergeMiddleWords P e f g hfg) := by
+  apply Fin.ext
+  rw [show
+    (mergeFaceEquiv left right hfg g).val =
+      (lastFace P f).val by
+    simp [mergeFaceEquiv]
+    rfl]
+  change P.faces.length - 1 =
+    (mergeMiddleWords P e f g hfg).length + 1
+  rw [mergeMiddleWords_length]
+  have hadd := faceCountBetween_add_two P f g hfg
+  omega
+
+@[simp]
+theorem mergeFaceEquiv_middle
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g)
+    (i : Fin (faceCountBetween P)) :
+    mergeFaceEquiv left right hfg
+        (middleOriginalFace P f g hfg i) =
+      FaceMerge.ContextMerge.untouchedSourceFace
+        (mergeLeftWord left) (mergeRightWord right)
+        (mergeMiddleWords P e f g hfg)
+        ⟨i.val, by
+          rw [mergeMiddleWords_length]
+          exact i.isLt⟩ := by
+  apply Fin.ext
+  simp [mergeFaceEquiv, middleOriginalFace,
+    middleFacePosition,
+    FaceMerge.ContextMerge.untouchedSourceFace,
+    FaceMerge.ContextMerge.untouchedTargetFace]
+  change i.val + 1 = i.val + 1
+  rfl
+
+/-- Reverse precisely the two selected source faces according to the traversals used to expose
+their separator; untouched faces retain their stored orientation. -/
+def mergeReverseFace
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (q : P.Face) :
+    Bool :=
+  if q = f then left.orientedFace.orientation
+  else if q = g then right.orientedFace.orientation
+  else false
+
+/-- The arbitrary adjacent pair is the canonical contextual merge source after renaming the
+separator, reordering faces, and choosing the two displayed traversal orientations. -/
+def mergeUnorientedIso
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g)
+    (valid : P.IsSurfaceValid) :
+    UnorientedPresentationIso P (mergeSource left right hfg) := by
+  apply unorientedIsoOfOrientedBoundaries
+    (EdgeRelabeling.ofEquiv (edgeToLast P e))
+    (mergeFaceEquiv left right hfg)
+    (mergeReverseFace left right)
+  intro q
+  by_cases hqf : q = f
+  · subst q
+    rw [mergeFaceEquiv_selected,
+      FaceMerge.ContextMerge.source_boundary_selected]
+    have hreverse :
+        mergeReverseFace left right f =
+          left.orientedFace.orientation := by
+      simp [mergeReverseFace]
+    rw [hreverse]
+    have horientedFace :
+        (⟨f, left.orientedFace.orientation⟩ : P.OrientedFace) =
+          left.orientedFace := by
+      cases hleft : left.orientedFace with
+      | mk face orientation =>
+          have hface : face = f := by
+            simpa [hleft] using left.face_eq
+          subst face
+          rfl
+    rw [horientedFace]
+    change
+      ((P.orientedBoundary left.orientedFace).map
+        (SignedDart.mapEquiv (edgeToLast P e))).IsRotated
+          (P2.retainWord (lowerTail P e left.tail) ++
+            [.pos (P1.freshEdge (edgeCountAfterDelete P))])
+    rw [retainWord_lowerTail P e left.tail
+      (left.edge_not_mem_tail valid hfg
+        right.edge_mem_boundary)]
+    have hmapped :=
+      left.boundary_rotated.map
+        (SignedDart.mapEquiv (edgeToLast P e))
+    apply hmapped.trans
+    change
+      (SignedDart.pos (edgeToLast P e e) ::
+          renamedTail P e left.tail).IsRotated
+        (renamedTail P e left.tail ++
+          [SignedDart.pos (P1.freshEdge
+            (edgeCountAfterDelete P))])
+    rw [edgeToLast_selected]
+    exact List.IsRotated.cons_append_singleton
+  · by_cases hqg : q = g
+    · subst q
+      rw [mergeFaceEquiv_right,
+        FaceMerge.ContextMerge.source_boundary_right]
+      have hreverse :
+          mergeReverseFace left right g =
+            right.orientedFace.orientation := by
+        simp [mergeReverseFace, hfg.symm]
+      rw [hreverse]
+      have horientedFace :
+          (⟨g, right.orientedFace.orientation⟩ : P.OrientedFace) =
+            right.orientedFace := by
+        cases hright : right.orientedFace with
+        | mk face orientation =>
+            have hface : face = g := by
+              simpa [hright] using right.face_eq
+            subst face
+            rfl
+      rw [horientedFace]
+      change
+        ((P.orientedBoundary right.orientedFace).map
+          (SignedDart.mapEquiv (edgeToLast P e))).IsRotated
+            ([.neg (P1.freshEdge (edgeCountAfterDelete P))] ++
+              P2.retainWord (lowerTail P e right.tail))
+      rw [retainWord_lowerTail P e right.tail
+        (right.edge_not_mem_tail valid hfg.symm
+          left.edge_mem_boundary)]
+      have hmapped :=
+        right.boundary_rotated.map
+          (SignedDart.mapEquiv (edgeToLast P e))
+      simpa [SignedDart.mapEquiv, edgeToLast_selected,
+        renamedTail] using hmapped
+    · rcases face_eq_selected_or_right_or_middle
+        P f g q hfg with hselected | hright | ⟨i, hmiddle⟩
+      · exact (hqf hselected).elim
+      · exact (hqg hright).elim
+      · subst q
+        rw [mergeFaceEquiv_middle,
+          FaceMerge.ContextMerge.source_boundary_untouched,
+          mergeMiddleWords_get]
+        have hmiddleF :
+            middleOriginalFace P f g hfg i ≠ f := by
+          intro h
+          apply hqf
+          exact h
+        have hmiddleG :
+            middleOriginalFace P f g hfg i ≠ g := by
+          intro h
+          apply hqg
+          exact h
+        rw [show
+          mergeReverseFace left right
+              (middleOriginalFace P f g hfg i) = false by
+            simp [mergeReverseFace, hmiddleF, hmiddleG]]
+        change
+          ((P.boundary (middleOriginalFace P f g hfg i)).map
+            (SignedDart.mapEquiv (edgeToLast P e))).IsRotated
+              (P2.retainWord
+                (lowerTail P e
+                  (P.boundary
+                    (middleOriginalFace P f g hfg i))))
+        rw [retainWord_lowerTail P e
+          (P.boundary (middleOriginalFace P f g hfg i))
+          (edge_not_mem_boundary_of_other P valid f g
+            (middleOriginalFace P f g hfg i) e hfg
+            (Ne.symm hmiddleF) (Ne.symm hmiddleG)
+            left.edge_mem_boundary right.edge_mem_boundary)]
+        exact List.IsRotated.refl _
+
+/-- Merge an arbitrary oppositely displayed adjacent pair. Target validity remains explicit:
+under the project's strict stored-word uniqueness clause, a merge can make its new word coincide
+cyclically with an untouched face. -/
+theorem mergeNormalizationEquivalent
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g)
+    (validP : P.IsSurfaceValid)
+    (validTarget : (mergeTarget left right hfg).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨P, validP⟩
+      ⟨mergeTarget left right hfg, validTarget⟩ := by
+  let U := mergeLeftWord left
+  let V := mergeRightWord right
+  let W := mergeMiddleWords P e f g hfg
+  have hUV : U ++ V ≠ [] := by
+    let first :
+        (FaceMerge.ContextMerge.target U V W).Face :=
+      ⟨0, by simp [FaceMerge.ContextMerge.target]⟩
+    intro hempty
+    apply validTarget.2.1 first
+    change U ++ V = []
+    exact hempty
+  let validSource :
+      (FaceMerge.ContextMerge.source U V W).IsSurfaceValid :=
+    P2.split_isSurfaceValid
+      (FaceMerge.ContextMerge.target U V W)
+      (FaceMerge.ContextMerge.targetCut U V W)
+      validTarget
+  have hiso :
+      NormalizationEquivalent
+        ⟨P, validP⟩
+        ⟨FaceMerge.ContextMerge.source U V W, validSource⟩ := by
+    apply NormalizationEquivalent.ofUnorientedIso
+    exact mergeUnorientedIso left right hfg validP
+  exact hiso.trans
+    (FaceMerge.ContextMerge.normalizationEquivalent
+      U V W hUV validTarget)
+
+/-- Faithful polygonal-realization invariance of the arbitrary adjacent-face merge. -/
+theorem mergePolygonallyEquivalent
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g)
+    (validP : P.IsSurfaceValid)
+    (validTarget : (mergeTarget left right hfg).IsSurfaceValid) :
+    P.PolygonallyEquivalent
+      (mergeTarget left right hfg) validP validTarget :=
+  (mergeNormalizationEquivalent
+    left right hfg validP validTarget).polygonallyEquivalent
 
 /-- Choose the traversal orientation which displays a selected edge occurrence negatively. -/
 theorem exists_negativeOccurrence
