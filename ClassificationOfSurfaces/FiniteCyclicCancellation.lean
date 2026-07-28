@@ -211,6 +211,36 @@ theorem normalizationEquivalent {n : ℕ}
         List.length_pos_iff_ne_nil.mpr hX⟩
   exact hsource.trans (hmiddle.trans htarget)
 
+/-- Transport base cancellation across arbitrary signed presentation isomorphisms. This is the
+stable constructor used after rotating a face and renaming its cancellable edge to the last
+index. -/
+theorem normalizationEquivalentOfSignedIsos
+    {P Q : FiniteCyclicPresentation} {n : ℕ}
+    (X : List (SignedDart (Fin n))) (hX : X ≠ [])
+    (sourceIso : SignedPresentationIso P (source X))
+    (targetIso : SignedPresentationIso (target X) Q)
+    (validP : P.IsSurfaceValid) (validQ : Q.IsSurfaceValid) :
+    NormalizationEquivalent ⟨P, validP⟩ ⟨Q, validQ⟩ := by
+  let validSource : (source X).IsSurfaceValid :=
+    sourceIso.isSurfaceValid validP
+  let validTarget : (target X).IsSurfaceValid :=
+    target_isSurfaceValid X hX validSource
+  exact
+    (NormalizationEquivalent.ofSignedIso sourceIso).trans
+      ((normalizationEquivalent X hX validSource).trans
+        (NormalizationEquivalent.ofSignedIso targetIso))
+
+/-- Cancellation preserves faithful polygonal realization, in the transported public form. -/
+theorem polygonallyEquivalentOfSignedIsos
+    {P Q : FiniteCyclicPresentation} {n : ℕ}
+    (X : List (SignedDart (Fin n))) (hX : X ≠ [])
+    (sourceIso : SignedPresentationIso P (source X))
+    (targetIso : SignedPresentationIso (target X) Q)
+    (validP : P.IsSurfaceValid) (validQ : Q.IsSurfaceValid) :
+    P.PolygonallyEquivalent Q validP validQ :=
+  (normalizationEquivalentOfSignedIsos
+    X hX sourceIso targetIso validP validQ).polygonallyEquivalent
+
 end Cancellation
 
 end FiniteCyclicPresentation
