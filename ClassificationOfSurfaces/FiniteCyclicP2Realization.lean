@@ -3342,6 +3342,25 @@ theorem nondegeneratePolygonallyEquivalent
 
 end P2
 
+/-- Every ordinary P2 subdivision preserves the faithful polygonal realization.
+
+For an ordinary-valid source, the exceptional empty-word-sphere alternative in
+`P2Subdivision` is impossible, so the public move relation supplies exactly the two positivity
+hypotheses required by the local two-disk gluing model. -/
+theorem P2Subdivision.preservesPolygonalRealization :
+    P2Subdivision.PreservesPolygonalRealization := by
+  intro P Q hPQ validP validQ
+  rcases hPQ with ⟨cut, hcut | hempty, ⟨e⟩⟩
+  · have hlengths :
+        0 < cut.left.length ∧ 0 < cut.right.length :=
+      (P2Cut.isNondegenerate_iff_lengths_pos cut).mp hcut
+    let validSplit := P2.split_isSurfaceValid P cut validP
+    exact
+      (P2.nondegeneratePolygonallyEquivalent
+        P cut hlengths.1 hlengths.2 validP).trans
+      (e.polygonallyEquivalent validSplit validQ)
+  · exact (hempty.not_isSurfaceValid validP).elim
+
 end FiniteCyclicPresentation
 
 end LeanEval.Topology.ClassificationOfSurfaces

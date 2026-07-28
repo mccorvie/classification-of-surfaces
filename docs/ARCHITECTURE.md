@@ -71,8 +71,9 @@ The faithful polygonal quotient layer and the bottom API are in place:
 - `FiniteCyclicPresentation.P2` implements the cyclic oriented face split with possibly empty
   pieces, exact child-boundary and multiplicity laws, and preservation of ordinary validity,
   connectivity, and Gallier validity. Its exceptional empty-word sphere presentation regression
-  is definitionally the two-monogon sphere presentation. `P2Subdivision` records the move up to
-  signed presentation isomorphism of the target.
+  is definitionally the two-monogon sphere presentation. `P2Subdivision` records genuine
+  nondegenerate face cuts, plus that exceptional sphere conversion, up to signed presentation
+  isomorphism of the target.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.
