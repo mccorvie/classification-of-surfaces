@@ -79,6 +79,73 @@ theorem positiveCutSideIndex_val
         (cut.left.length + cut.right.length) :=
   rfl
 
+/-- Cyclic alignment of the source boundary is injective on side indices. -/
+theorem positiveCutSideIndex_injective
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length) :
+    Function.Injective
+      (positiveCutSideIndex P cut horientation hl hr) := by
+  intro i j hij
+  have hmod :
+      i.val + positiveCutRotation P cut horientation ≡
+        j.val + positiveCutRotation P cut horientation
+          [MOD (cut.left.length + cut.right.length)] := by
+    exact congrArg Fin.val hij
+  have hcancel :
+      i.val ≡ j.val
+        [MOD (cut.left.length + cut.right.length)] :=
+    Nat.ModEq.add_right_cancel'
+      (positiveCutRotation P cut horientation) hmod
+  apply Fin.ext
+  unfold Nat.ModEq at hcancel
+  rw [← sourceBoundaryLength_eq_cutLength P cut,
+    Nat.mod_eq_of_lt i.isLt,
+    Nat.mod_eq_of_lt j.isLt] at hcancel
+  exact hcancel
+
+theorem positiveCutSideIndex_surjective
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length) :
+    Function.Surjective
+      (positiveCutSideIndex P cut horientation hl hr) := by
+  exact ((Fintype.bijective_iff_injective_and_card
+    (positiveCutSideIndex P cut horientation hl hr)).2
+      ⟨positiveCutSideIndex_injective
+          P cut horientation hl hr,
+        by
+          simp only [Fintype.card_fin]
+          exact sourceBoundaryLength_eq_cutLength P cut⟩).2
+
+/-- Lookup at the rotated linear cut index recovers the stored source dart. -/
+theorem cutBoundary_get_positiveCutSideIndex
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (i : Fin (P.boundary cut.face.face).length) :
+    (cut.left ++ cut.right)[
+        (positiveCutSideIndex P cut horientation hl hr i).val] =
+      (P.boundary cut.face.face)[i.val] := by
+  have hiCut :
+      i.val < (cut.left ++ cut.right).length := by
+    rw [List.length_append,
+      ← sourceBoundaryLength_eq_cutLength P cut]
+    exact i.isLt
+  have hpoint :=
+    congrArg (fun word => word[i.val]?)
+      (rotate_cutBoundary_eq_sourceBoundary
+        P cut horientation)
+  rw [List.getElem?_rotate hiCut] at hpoint
+  rw [List.getElem?_eq_getElem
+      (Nat.mod_lt _
+        (by
+          rw [List.length_append]
+          exact Nat.add_pos_left hl _)),
+    List.getElem?_eq_getElem i.isLt] at hpoint
+  exact Option.some.inj (by
+    simpa [positiveCutSideIndex, List.length_append] using hpoint)
+
 /-- The selected source face, with its cyclic starting point aligned to the cut, is exactly the
 local one-polygon-to-two-child quotient model. -/
 noncomputable def positiveSelectedCellHomeomorph
@@ -166,6 +233,56 @@ theorem positiveRightSideIndex_val
       (positiveCutSideIndex P cut horientation hl hr i).val -
         cut.left.length :=
   rfl
+
+/-- In the left branch, the local cut-piece lookup is the stored source dart. -/
+theorem left_get_positiveLeftSideIndex
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (i : Fin (P.boundary cut.face.face).length)
+    (hleft :
+      (positiveCutSideIndex P cut horientation hl hr i).val <
+        cut.left.length) :
+    cut.left.get
+        (positiveLeftSideIndex
+          P cut horientation hl hr i hleft) =
+      (P.boundary cut.face.face).get i := by
+  change cut.left[
+      (positiveCutSideIndex P cut horientation hl hr i).val] =
+    (P.boundary cut.face.face)[i.val]
+  rw [← cutBoundary_get_positiveCutSideIndex
+    P cut horientation hl hr i]
+  change cut.left[
+      (positiveCutSideIndex P cut horientation hl hr i).val] =
+    (cut.left ++ cut.right)[
+      (positiveCutSideIndex P cut horientation hl hr i).val]
+  exact (List.getElem_append_left hleft).symm
+
+/-- In the right branch, the local cut-piece lookup is the stored source dart. -/
+theorem right_get_positiveRightSideIndex
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (i : Fin (P.boundary cut.face.face).length)
+    (hright :
+      cut.left.length ≤
+        (positiveCutSideIndex P cut horientation hl hr i).val) :
+    cut.right.get
+        (positiveRightSideIndex
+          P cut horientation hl hr i hright) =
+      (P.boundary cut.face.face).get i := by
+  change cut.right[
+      (positiveCutSideIndex P cut horientation hl hr i).val -
+        cut.left.length] =
+    (P.boundary cut.face.face)[i.val]
+  rw [← cutBoundary_get_positiveCutSideIndex
+    P cut horientation hl hr i]
+  change cut.right[
+      (positiveCutSideIndex P cut horientation hl hr i).val -
+        cut.left.length] =
+    (cut.left ++ cut.right)[
+      (positiveCutSideIndex P cut horientation hl hr i).val]
+  exact (List.getElem_append_right hright).symm
 
 /-- Exact selected-face computation for a side belonging to the left cut piece. -/
 theorem positiveSelectedCellHomeomorph_side_of_lt
@@ -1020,6 +1137,571 @@ theorem positivePreMap_retained_side
   rw [positivePreMap_retained
       P cut horientation hl hr validP hface,
     retainedFaceMap, retainedCellHomeomorph_side]
+
+theorem oldFace_injective
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    Function.Injective (oldFace P cut) := by
+  intro f g hfg
+  have hcast :
+      f.castSucc = g.castSucc :=
+    (faceEquiv P cut).injective hfg
+  exact Fin.castSucc_injective _ hcast
+
+theorem oldFace_ne_rightFace
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (f : P.Face) :
+    oldFace P cut f ≠ rightFace P cut := by
+  intro h
+  have hindex :
+      f.castSucc = Fin.last P.faces.length :=
+    (faceEquiv P cut).injective h
+  have hval := congrArg Fin.val hindex
+  exact (Nat.ne_of_lt f.isLt) hval
+
+/-- Transport a source boundary occurrence to the child or retained target face that carries the
+same old edge after a positive nondegenerate split. -/
+noncomputable def positiveMapOccurrence
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (o : P.BoundaryOccurrence) :
+    (split P cut).BoundaryOccurrence := by
+  classical
+  rcases o with ⟨f, i⟩
+  by_cases hface : f = cut.face.face
+  · subst f
+    by_cases hleft :
+        (positiveCutSideIndex
+          P cut horientation hl hr i).val < cut.left.length
+    · exact
+        ⟨oldFace P cut cut.face.face,
+          positiveSelectedChildSideIndex P cut horientation
+            (Fin.castAdd 1
+              (positiveLeftSideIndex
+                P cut horientation hl hr i hleft))⟩
+    · exact
+        ⟨rightFace P cut,
+          positiveRightChildSideIndex P cut horientation
+            ((positiveRightSideIndex
+              P cut horientation hl hr i
+                (Nat.le_of_not_gt hleft)).addNat 1)⟩
+  · exact
+      ⟨oldFace P cut f, retainedSideIndex P cut hface i⟩
+
+@[simp]
+theorem positiveMapOccurrence_selected_of_lt
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (i : Fin (P.boundary cut.face.face).length)
+    (hleft :
+      (positiveCutSideIndex P cut horientation hl hr i).val <
+        cut.left.length) :
+    positiveMapOccurrence P cut horientation hl hr
+        ⟨cut.face.face, i⟩ =
+      ⟨oldFace P cut cut.face.face,
+        positiveSelectedChildSideIndex P cut horientation
+          (Fin.castAdd 1
+            (positiveLeftSideIndex
+              P cut horientation hl hr i hleft))⟩ := by
+  change
+    (i.val + positiveCutRotation P cut horientation) %
+        (cut.left.length + cut.right.length) <
+      cut.left.length at hleft
+  simp [positiveMapOccurrence, hleft]
+
+@[simp]
+theorem positiveMapOccurrence_selected_of_not_lt
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (i : Fin (P.boundary cut.face.face).length)
+    (hleft :
+      ¬(positiveCutSideIndex P cut horientation hl hr i).val <
+        cut.left.length) :
+    positiveMapOccurrence P cut horientation hl hr
+        ⟨cut.face.face, i⟩ =
+      ⟨rightFace P cut,
+        positiveRightChildSideIndex P cut horientation
+          ((positiveRightSideIndex
+            P cut horientation hl hr i
+              (Nat.le_of_not_gt hleft)).addNat 1)⟩ := by
+  change
+    ¬(i.val + positiveCutRotation P cut horientation) %
+        (cut.left.length + cut.right.length) <
+      cut.left.length at hleft
+  simp [positiveMapOccurrence, hleft]
+
+@[simp]
+theorem positiveMapOccurrence_retained
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    {f : P.Face} (hface : f ≠ cut.face.face)
+    (i : Fin (P.boundary f).length) :
+    positiveMapOccurrence P cut horientation hl hr ⟨f, i⟩ =
+      ⟨oldFace P cut f, retainedSideIndex P cut hface i⟩ := by
+  simp [positiveMapOccurrence, hface]
+
+/-- Exact side-point computation for the complete forward occurrence transport. -/
+theorem positivePreMap_occurrenceSide
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (o : P.BoundaryOccurrence) (t : unitInterval) :
+    positivePreMap P cut horientation hl hr validP
+        ((P.occurrenceSide o).point t) =
+      (split P cut).polygonalMk
+        (split_isSurfaceValid P cut validP)
+        (((split P cut).occurrenceSide
+          (positiveMapOccurrence
+            P cut horientation hl hr o)).point t) := by
+  classical
+  rcases o with ⟨f, i⟩
+  by_cases hface : f = cut.face.face
+  · subst f
+    by_cases hleft :
+        (positiveCutSideIndex
+          P cut horientation hl hr i).val < cut.left.length
+    · rw [positiveMapOccurrence_selected_of_lt
+        P cut horientation hl hr i hleft]
+      simp only [occurrenceSide, PolygonGluing.Side.point]
+      convert
+        positivePreMap_selected_side_of_lt
+          P cut horientation hl hr validP i t hleft using 1 <;> rfl
+    · have hright :
+          cut.left.length ≤
+            (positiveCutSideIndex
+              P cut horientation hl hr i).val :=
+        Nat.le_of_not_gt hleft
+      rw [positiveMapOccurrence_selected_of_not_lt
+        P cut horientation hl hr i hleft]
+      simp only [occurrenceSide, PolygonGluing.Side.point]
+      convert
+        positivePreMap_selected_side_of_not_lt
+          P cut horientation hl hr validP i t hright using 1 <;> rfl
+  · rw [positiveMapOccurrence_retained
+      P cut horientation hl hr hface i]
+    simp only [occurrenceSide, PolygonGluing.Side.point]
+    convert
+      positivePreMap_retained_side
+        P cut horientation hl hr validP hface i t using 1 <;> rfl
+
+/-- The transported occurrence carries exactly the retained old dart. -/
+theorem positiveMapOccurrence_dart
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (o : P.BoundaryOccurrence) :
+    (positiveMapOccurrence
+        P cut horientation hl hr o).dart =
+      P1.castSuccDart o.dart := by
+  classical
+  rcases o with ⟨f, i⟩
+  by_cases hface : f = cut.face.face
+  · subst f
+    by_cases hleft :
+        (positiveCutSideIndex
+          P cut horientation hl hr i).val < cut.left.length
+    · rw [positiveMapOccurrence_selected_of_lt
+        P cut horientation hl hr i hleft,
+        BoundaryOccurrence.dart_mk]
+      rw [List.get_of_eq (split_boundary_selected P cut)]
+      change
+        (selectedBoundary P cut).get
+            ⟨(positiveLeftSideIndex
+                P cut horientation hl hr i hleft).val,
+              by
+                rw [selectedBoundary_of_orientation_false
+                  P cut horientation]
+                simp [retainWord]
+                have hlocal := (positiveLeftSideIndex
+                  P cut horientation hl hr i hleft).isLt
+                exact Nat.le_of_lt (by
+                  simpa only [positiveLeftSideIndex_val,
+                    positiveCutSideIndex_val] using hlocal)⟩ =
+          P1.castSuccDart ((P.boundary cut.face.face)[i.val])
+      rw [List.get_of_eq
+        (selectedBoundary_of_orientation_false
+          P cut horientation)]
+      change
+        (retainWord cut.left ++ [.pos (freshEdge P)])[
+            (positiveLeftSideIndex
+              P cut horientation hl hr i hleft).val]'(by
+                simp [retainWord]
+                have hlocal := (positiveLeftSideIndex
+                  P cut horientation hl hr i hleft).isLt
+                exact Nat.le_of_lt (by
+                  simpa only [positiveLeftSideIndex_val,
+                    positiveCutSideIndex_val] using hlocal)) =
+          P1.castSuccDart ((P.boundary cut.face.face)[i.val])
+      have hretain :
+          (positiveLeftSideIndex
+              P cut horientation hl hr i hleft).val <
+            (retainWord cut.left).length := by
+        unfold retainWord
+        simpa using
+          (positiveLeftSideIndex
+            P cut horientation hl hr i hleft).isLt
+      rw [List.getElem_append_left hretain]
+      change
+        (List.map P1.castSuccDart cut.left)[
+            (positiveLeftSideIndex
+              P cut horientation hl hr i hleft).val] =
+          P1.castSuccDart ((P.boundary cut.face.face)[i.val])
+      rw [List.getElem_map]
+      exact congrArg P1.castSuccDart
+        (left_get_positiveLeftSideIndex
+          P cut horientation hl hr i hleft)
+    · have hright :
+          cut.left.length ≤
+            (positiveCutSideIndex
+              P cut horientation hl hr i).val :=
+        Nat.le_of_not_gt hleft
+      rw [positiveMapOccurrence_selected_of_not_lt
+        P cut horientation hl hr i hleft,
+        BoundaryOccurrence.dart_mk]
+      rw [List.get_of_eq (split_boundary_right P cut)]
+      change
+        (rightBoundary P cut).get
+            ⟨(positiveRightSideIndex
+                P cut horientation hl hr i hright).val + 1,
+              by
+                rw [rightBoundary_of_orientation_false
+                  P cut horientation]
+                simp [retainWord, Nat.add_comm]
+                have hlocal := (positiveRightSideIndex
+                  P cut horientation hl hr i hright).isLt
+                simpa only [positiveRightSideIndex_val,
+                  positiveCutSideIndex_val] using hlocal⟩ =
+          P1.castSuccDart ((P.boundary cut.face.face)[i.val])
+      rw [List.get_of_eq
+        (rightBoundary_of_orientation_false
+          P cut horientation)]
+      change
+        (.neg (freshEdge P) :: retainWord cut.right)[
+            (positiveRightSideIndex
+              P cut horientation hl hr i hright).val + 1]'(by
+                simp [retainWord]
+                have hlocal := (positiveRightSideIndex
+                  P cut horientation hl hr i hright).isLt
+                simpa only [positiveRightSideIndex_val,
+                  positiveCutSideIndex_val] using hlocal) =
+          P1.castSuccDart ((P.boundary cut.face.face)[i.val])
+      rw [List.getElem_cons_succ]
+      change
+        (List.map P1.castSuccDart cut.right)[
+            (positiveRightSideIndex
+              P cut horientation hl hr i hright).val] =
+          P1.castSuccDart ((P.boundary cut.face.face)[i.val])
+      rw [List.getElem_map]
+      exact congrArg P1.castSuccDart
+        (right_get_positiveRightSideIndex
+          P cut horientation hl hr i hright)
+  · rw [positiveMapOccurrence_retained
+      P cut horientation hl hr hface i,
+      BoundaryOccurrence.dart_mk]
+    rw [List.get_of_eq
+      (split_boundary_old_of_ne P cut hface)]
+    change
+      (List.map P1.castSuccDart (P.boundary f))[i.val] =
+        P1.castSuccDart ((P.boundary f)[i.val])
+    rw [List.getElem_map]
+
+@[simp]
+theorem positiveMapOccurrence_edge
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (o : P.BoundaryOccurrence) :
+    (positiveMapOccurrence
+        P cut horientation hl hr o).edge =
+      o.edge.castSucc := by
+  rw [BoundaryOccurrence.edge,
+    positiveMapOccurrence_dart]
+  change edgeOfDart (P1.castSuccDart o.dart) =
+    (edgeOfDart o.dart).castSucc
+  exact P1.edgeOfDart_castSuccDart o.dart
+
+/-- Distinct source boundary positions remain distinct after routing the selected face between its
+two P2 children. -/
+theorem positiveMapOccurrence_injective
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length) :
+    Function.Injective
+      (positiveMapOccurrence P cut horientation hl hr) := by
+  classical
+  rintro ⟨f, i⟩ ⟨g, j⟩ hmap
+  by_cases hf : f = cut.face.face
+  · subst f
+    by_cases hg : g = cut.face.face
+    · subst g
+      by_cases hi :
+          (positiveCutSideIndex
+            P cut horientation hl hr i).val < cut.left.length
+      · by_cases hj :
+          (positiveCutSideIndex
+            P cut horientation hl hr j).val < cut.left.length
+        · rw [positiveMapOccurrence_selected_of_lt
+              P cut horientation hl hr i hi,
+            positiveMapOccurrence_selected_of_lt
+              P cut horientation hl hr j hj] at hmap
+          have hval := congrArg
+            (fun o : (split P cut).BoundaryOccurrence => o.2.val) hmap
+          have hindex :
+              positiveCutSideIndex P cut horientation hl hr i =
+                positiveCutSideIndex P cut horientation hl hr j := by
+            apply Fin.ext
+            simpa [positiveSelectedChildSideIndex,
+              positiveLeftSideIndex] using hval
+          have hij :=
+            positiveCutSideIndex_injective
+              P cut horientation hl hr hindex
+          subst j
+          rfl
+        · rw [positiveMapOccurrence_selected_of_lt
+              P cut horientation hl hr i hi,
+            positiveMapOccurrence_selected_of_not_lt
+              P cut horientation hl hr j hj] at hmap
+          exact (oldFace_ne_rightFace P cut cut.face.face
+            (congrArg Sigma.fst hmap)).elim
+      · by_cases hj :
+          (positiveCutSideIndex
+            P cut horientation hl hr j).val < cut.left.length
+        · rw [positiveMapOccurrence_selected_of_not_lt
+              P cut horientation hl hr i hi,
+            positiveMapOccurrence_selected_of_lt
+              P cut horientation hl hr j hj] at hmap
+          exact (oldFace_ne_rightFace P cut cut.face.face
+            (congrArg Sigma.fst hmap).symm).elim
+        · rw [positiveMapOccurrence_selected_of_not_lt
+              P cut horientation hl hr i hi,
+            positiveMapOccurrence_selected_of_not_lt
+              P cut horientation hl hr j hj] at hmap
+          have hval := congrArg
+            (fun o : (split P cut).BoundaryOccurrence => o.2.val) hmap
+          have hiright :
+              cut.left.length ≤
+                (positiveCutSideIndex
+                  P cut horientation hl hr i).val :=
+            Nat.le_of_not_gt hi
+          have hjright :
+              cut.left.length ≤
+                (positiveCutSideIndex
+                  P cut horientation hl hr j).val :=
+            Nat.le_of_not_gt hj
+          have hindex :
+              positiveCutSideIndex P cut horientation hl hr i =
+                positiveCutSideIndex P cut horientation hl hr j := by
+            apply Fin.ext
+            simp only [positiveRightChildSideIndex,
+              Fin.val_addNat, positiveRightSideIndex_val] at hval
+            omega
+          have hij :=
+            positiveCutSideIndex_injective
+              P cut horientation hl hr hindex
+          subst j
+          rfl
+    · by_cases hi :
+        (positiveCutSideIndex
+          P cut horientation hl hr i).val < cut.left.length
+      · rw [positiveMapOccurrence_selected_of_lt
+            P cut horientation hl hr i hi,
+          positiveMapOccurrence_retained
+            P cut horientation hl hr hg j] at hmap
+        have hface :
+            cut.face.face = g :=
+          oldFace_injective P cut (congrArg Sigma.fst hmap)
+        exact (hg hface.symm).elim
+      · rw [positiveMapOccurrence_selected_of_not_lt
+            P cut horientation hl hr i hi,
+          positiveMapOccurrence_retained
+            P cut horientation hl hr hg j] at hmap
+        exact (oldFace_ne_rightFace P cut g
+          (congrArg Sigma.fst hmap).symm).elim
+  · by_cases hg : g = cut.face.face
+    · subst g
+      by_cases hj :
+          (positiveCutSideIndex
+            P cut horientation hl hr j).val < cut.left.length
+      · rw [positiveMapOccurrence_retained
+            P cut horientation hl hr hf i,
+          positiveMapOccurrence_selected_of_lt
+            P cut horientation hl hr j hj] at hmap
+        have hface :
+            f = cut.face.face :=
+          oldFace_injective P cut (congrArg Sigma.fst hmap)
+        exact (hf hface).elim
+      · rw [positiveMapOccurrence_retained
+            P cut horientation hl hr hf i,
+          positiveMapOccurrence_selected_of_not_lt
+            P cut horientation hl hr j hj] at hmap
+        exact (oldFace_ne_rightFace P cut f
+          (congrArg Sigma.fst hmap)).elim
+    · rw [positiveMapOccurrence_retained
+          P cut horientation hl hr hf i,
+        positiveMapOccurrence_retained
+          P cut horientation hl hr hg j] at hmap
+      have hface :
+          f = g :=
+        oldFace_injective P cut (congrArg Sigma.fst hmap)
+      subst g
+      have hval := congrArg
+        (fun o : (split P cut).BoundaryOccurrence => o.2.val) hmap
+      have hij : i = j := by
+        apply Fin.ext
+        simpa [retainedSideIndex] using hval
+      subst j
+      rfl
+
+/-- Transport an old-edge source pairing to the corresponding pairing of target occurrences. -/
+noncomputable def positiveMapPairing
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (pairing : P.BoundaryPairing) :
+    (split P cut).BoundaryPairing where
+  source :=
+    positiveMapOccurrence
+      P cut horientation hl hr pairing.source
+  target :=
+    positiveMapOccurrence
+      P cut horientation hl hr pairing.target
+  source_ne_target := by
+    intro h
+    exact pairing.source_ne_target
+      (positiveMapOccurrence_injective
+        P cut horientation hl hr h)
+  source_not_boundary := by
+    rw [positiveMapOccurrence_edge]
+    intro hboundary
+    apply pairing.source_not_boundary
+    unfold IsBoundaryEdge at hboundary ⊢
+    rw [edgeMultiplicity_split_castSucc P cut]
+    exact hboundary
+  target_not_boundary := by
+    rw [positiveMapOccurrence_edge]
+    intro hboundary
+    apply pairing.target_not_boundary
+    unfold IsBoundaryEdge at hboundary ⊢
+    rw [edgeMultiplicity_split_castSucc P cut]
+    exact hboundary
+  direction := pairing.direction
+  compatible := by
+    cases hdirection : pairing.direction with
+    | same =>
+        have hcompatible := pairing.compatible
+        rw [hdirection] at hcompatible
+        change
+          (positiveMapOccurrence
+            P cut horientation hl hr pairing.target).dart =
+          (positiveMapOccurrence
+            P cut horientation hl hr pairing.source).dart
+        rw [positiveMapOccurrence_dart,
+          positiveMapOccurrence_dart]
+        change
+          P1.castSuccDart pairing.target.dart =
+            P1.castSuccDart pairing.source.dart
+        exact congrArg P1.castSuccDart hcompatible
+    | opposite =>
+        have hcompatible := pairing.compatible
+        rw [hdirection] at hcompatible
+        change
+          (positiveMapOccurrence
+            P cut horientation hl hr pairing.target).dart =
+          (positiveMapOccurrence
+            P cut horientation hl hr pairing.source).dart.flip
+        rw [positiveMapOccurrence_dart,
+          positiveMapOccurrence_dart]
+        change
+          P1.castSuccDart pairing.target.dart =
+            (P1.castSuccDart pairing.source.dart).flip
+        rw [← P2.castSuccDart_flip]
+        exact congrArg P1.castSuccDart hcompatible
+
+@[simp]
+theorem positiveMapPairing_source
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (pairing : P.BoundaryPairing) :
+    (positiveMapPairing
+      P cut horientation hl hr pairing).source =
+      positiveMapOccurrence
+        P cut horientation hl hr pairing.source :=
+  rfl
+
+@[simp]
+theorem positiveMapPairing_target
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (pairing : P.BoundaryPairing) :
+    (positiveMapPairing
+      P cut horientation hl hr pairing).target =
+      positiveMapOccurrence
+        P cut horientation hl hr pairing.target :=
+  rfl
+
+@[simp]
+theorem positiveMapPairing_direction
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (pairing : P.BoundaryPairing) :
+    (positiveMapPairing
+      P cut horientation hl hr pairing).direction =
+      pairing.direction :=
+  rfl
+
+/-- Every source gluing generator has equal images under the complete forward P2 map. -/
+theorem positivePreMap_pairing_eq
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    (pairing : P.BoundaryPairing) (t : unitInterval) :
+    positivePreMap P cut horientation hl hr validP
+        (pairing.identification.source.point t) =
+      positivePreMap P cut horientation hl hr validP
+        (pairing.identification.target.point
+          (pairing.identification.parameter t)) := by
+  rw [BoundaryPairing.identification_source,
+    BoundaryPairing.identification_target,
+    positivePreMap_occurrenceSide,
+    positivePreMap_occurrenceSide]
+  simpa [positiveMapPairing,
+      PolygonGluing.Identification.parameter] using
+    (split P cut).polygonalMk_pairing_eq
+      (split_isSurfaceValid P cut validP)
+      (positiveMapPairing
+        P cut horientation hl hr pairing) t
+
+/-- The forward pre-map is constant on the complete source gluing relation. -/
+theorem positivePreMap_respects
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (horientation : cut.face.orientation = false)
+    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (validP : P.IsSurfaceValid)
+    {x y : P.PolygonalPreRealization}
+    (hxy : P.PolygonalGluingRel validP x y) :
+    positivePreMap P cut horientation hl hr validP x =
+      positivePreMap P cut horientation hl hr validP y := by
+  change Relation.EqvGen
+    (PolygonGluing.Generator
+      (P.polygonalIdentifications validP)) x y at hxy
+  induction hxy with
+  | rel _ _ hgenerator =>
+      cases hgenerator with
+      | glue identification hmem t =>
+          rcases hmem with ⟨pairing, rfl⟩
+          exact positivePreMap_pairing_eq
+            P cut horientation hl hr validP pairing t
+  | refl => rfl
+  | symm _ _ _ ih => exact ih.symm
+  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
 
 /-! ### Local inverse maps for the two target children -/
 
