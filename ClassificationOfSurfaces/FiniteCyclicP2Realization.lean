@@ -3175,6 +3175,248 @@ theorem flipFaceEquiv_old_of_ne
     oldFace, Equiv.swap_apply_of_ne_of_ne
       hselected hlast]
 
+/-- Swapping the two cut pieces exchanges the child faces and fixes every retained face. -/
+def swapFaceEquiv
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    (split P cut.swap).Face ≃ (split P cut).Face :=
+  ((faceEquiv P cut.swap).symm.trans
+    (flipFaceIndexEquiv P cut)).trans
+      (faceEquiv P cut)
+
+@[simp]
+theorem swapFaceEquiv_old_selected
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    swapFaceEquiv P cut
+        (oldFace P cut.swap cut.face.face) =
+      rightFace P cut := by
+  simp [swapFaceEquiv, flipFaceIndexEquiv,
+    oldFace, rightFace]
+
+@[simp]
+theorem swapFaceEquiv_right
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    swapFaceEquiv P cut (rightFace P cut.swap) =
+      oldFace P cut cut.face.face := by
+  simp [swapFaceEquiv, flipFaceIndexEquiv,
+    oldFace, rightFace]
+
+@[simp]
+theorem swapFaceEquiv_old_of_ne
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face) :
+    swapFaceEquiv P cut (oldFace P cut.swap f) =
+      oldFace P cut f := by
+  have hselected :
+      f.castSucc ≠ cut.face.face.castSucc := by
+    exact fun h =>
+      hface (Fin.castSucc_injective _ h)
+  have hlast :
+      f.castSucc ≠ Fin.last P.faces.length :=
+    Fin.castSucc_ne_last f
+  simp [swapFaceEquiv, flipFaceIndexEquiv,
+    oldFace, Equiv.swap_apply_of_ne_of_ne
+      hselected hlast]
+
+/-- The raw edge relabeling for a swapped cut reverses precisely the fresh edge. -/
+def swapRawEdgeRelabeling
+    (P : FiniteCyclicPresentation) (_cut : P2Cut P) :
+    EdgeRelabeling (Fin (P.edgeCount + 1))
+      (Fin (P.edgeCount + 1)) where
+  edgeEquiv := Equiv.refl _
+  reverse := fun e ↦ decide (e = freshEdge P)
+
+/-- The raw swapped-cut relabeling at the two split presentations' exact edge types. -/
+def swapEdgeRelabeling
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    EdgeRelabeling (split P cut.swap).Edge
+      (split P cut).Edge := by
+  change
+    EdgeRelabeling (Fin (P.edgeCount + 1))
+      (Fin (P.edgeCount + 1))
+  exact swapRawEdgeRelabeling P cut
+
+@[simp]
+theorem swapEdgeRelabeling_edgeEquiv
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (e : Fin (P.edgeCount + 1)) :
+    (swapRawEdgeRelabeling P cut).edgeEquiv e = e :=
+  rfl
+
+@[simp]
+theorem swapEdgeRelabeling_pos_fresh
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    (swapRawEdgeRelabeling P cut).mapDart (.pos (freshEdge P)) =
+      .neg (freshEdge P) := by
+  simp [swapRawEdgeRelabeling, EdgeRelabeling.mapDart]
+
+@[simp]
+theorem swapEdgeRelabeling_neg_fresh
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    (swapRawEdgeRelabeling P cut).mapDart (.neg (freshEdge P)) =
+      .pos (freshEdge P) := by
+  simp [swapRawEdgeRelabeling, EdgeRelabeling.mapDart]
+
+@[simp]
+theorem swapEdgeRelabeling_castSucc
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (d : P.Dart) :
+    (swapRawEdgeRelabeling P cut).mapDart (P1.castSuccDart d) =
+      P1.castSuccDart d := by
+  have hne :
+      (edgeOfDart d).castSucc ≠ freshEdge P :=
+    P1.firstSubedge_ne_freshEdge (edgeOfDart d)
+  cases d with
+  | pos e =>
+      have he : e.castSucc ≠ freshEdge P := by
+        simpa [edgeOfDart] using hne
+      simp [swapRawEdgeRelabeling, EdgeRelabeling.mapDart, he]
+  | neg e =>
+      have he : e.castSucc ≠ freshEdge P := by
+        simpa [edgeOfDart] using hne
+      simp [swapRawEdgeRelabeling, EdgeRelabeling.mapDart, he]
+
+@[simp]
+theorem map_swapEdgeRelabeling_retainWord
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (word : List P.Dart) :
+    (retainWord word).map (swapRawEdgeRelabeling P cut).mapDart =
+      retainWord word := by
+  change
+    (word.map P1.castSuccDart).map
+        (swapRawEdgeRelabeling P cut).mapDart =
+      word.map P1.castSuccDart
+  rw [List.map_map]
+  apply List.map_congr_left
+  intro d _hd
+  exact swapEdgeRelabeling_castSucc P cut d
+
+theorem map_swap_selectedBoundary
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    (selectedBoundary P cut.swap).map
+        (swapRawEdgeRelabeling P cut).mapDart |>.IsRotated
+      (rightBoundary P cut) := by
+  cases h : cut.face.orientation
+  · rw [selectedBoundary_of_orientation_false P cut.swap (by simpa using h),
+      rightBoundary_of_orientation_false P cut h]
+    simp only [List.map_append, List.map_singleton,
+      swapEdgeRelabeling_pos_fresh,
+      map_swapEdgeRelabeling_retainWord, P2Cut.swap]
+    exact
+      (List.isRotated_append
+        (l := retainWord cut.right)
+        (l' := [SignedDart.neg (freshEdge P)]))
+  · rw [selectedBoundary_of_orientation_true P cut.swap (by simpa using h),
+      rightBoundary_of_orientation_true P cut h]
+    simp only [List.map_cons, swapEdgeRelabeling_neg_fresh,
+      ← EdgeRelabeling.inverseWord_map_mapDart,
+      map_swapEdgeRelabeling_retainWord, P2Cut.swap]
+    exact
+      (List.isRotated_append
+        (l := [SignedDart.pos (freshEdge P)])
+        (l' := inverseWord (retainWord cut.right)))
+
+theorem map_swap_rightBoundary
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    (rightBoundary P cut.swap).map
+        (swapRawEdgeRelabeling P cut).mapDart |>.IsRotated
+      (selectedBoundary P cut) := by
+  cases h : cut.face.orientation
+  · rw [rightBoundary_of_orientation_false P cut.swap (by simpa using h),
+      selectedBoundary_of_orientation_false P cut h]
+    simp only [List.map_cons, swapEdgeRelabeling_neg_fresh,
+      map_swapEdgeRelabeling_retainWord, P2Cut.swap]
+    exact
+      (List.isRotated_append
+        (l := [SignedDart.pos (freshEdge P)])
+        (l' := retainWord cut.left))
+  · rw [rightBoundary_of_orientation_true P cut.swap (by simpa using h),
+      selectedBoundary_of_orientation_true P cut h]
+    simp only [List.map_append, List.map_singleton,
+      swapEdgeRelabeling_pos_fresh,
+      ← EdgeRelabeling.inverseWord_map_mapDart,
+      map_swapEdgeRelabeling_retainWord, P2Cut.swap]
+    exact
+      (List.isRotated_append
+        (l := inverseWord (retainWord cut.left))
+        (l' := [SignedDart.neg (freshEdge P)]))
+
+theorem map_boundary_swap_old_selected
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    (((split P cut.swap).boundary
+        (oldFace P cut.swap cut.face.face)).map
+          (swapEdgeRelabeling P cut).mapDart).IsRotated
+      ((split P cut).boundary (rightFace P cut)) := by
+  have hface : cut.face.face = cut.swap.face.face := by
+    rfl
+  rw [hface, split_boundary_selected, split_boundary_right]
+  change
+    ((selectedBoundary P cut.swap).map
+      (swapRawEdgeRelabeling P cut).mapDart).IsRotated
+        (rightBoundary P cut)
+  exact map_swap_selectedBoundary P cut
+
+theorem map_boundary_swap_right
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    (((split P cut.swap).boundary
+        (rightFace P cut.swap)).map
+          (swapEdgeRelabeling P cut).mapDart).IsRotated
+      ((split P cut).boundary
+        (oldFace P cut cut.face.face)) := by
+  rw [split_boundary_right, split_boundary_selected]
+  change
+    ((rightBoundary P cut.swap).map
+      (swapRawEdgeRelabeling P cut).mapDart).IsRotated
+        (selectedBoundary P cut)
+  exact map_swap_rightBoundary P cut
+
+theorem map_boundary_swap_old_of_ne
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {f : P.Face} (hface : f ≠ cut.face.face) :
+    ((split P cut.swap).boundary
+        (oldFace P cut.swap f)).map
+          (swapEdgeRelabeling P cut).mapDart =
+      (split P cut).boundary (oldFace P cut f) := by
+  have hfaceSwap : f ≠ cut.swap.face.face := by
+    simpa using hface
+  calc
+    ((split P cut.swap).boundary
+        (oldFace P cut.swap f)).map
+          (swapEdgeRelabeling P cut).mapDart =
+        (retainWord (P.boundary f)).map
+          (swapEdgeRelabeling P cut).mapDart :=
+      congrArg
+        (List.map (swapEdgeRelabeling P cut).mapDart)
+        (split_boundary_old_of_ne P cut.swap hfaceSwap)
+    _ = (show List (split P cut).Dart from
+        retainWord (P.boundary f)) :=
+      by
+        change
+          (retainWord (P.boundary f)).map
+              (swapRawEdgeRelabeling P cut).mapDart =
+            retainWord (P.boundary f)
+        exact map_swapEdgeRelabeling_retainWord P cut _
+    _ = (split P cut).boundary (oldFace P cut f) :=
+      (split_boundary_old_of_ne P cut hface).symm
+
+/-- Swapping the two displayed P2 pieces changes only child order and fresh-edge orientation. -/
+def swapSignedPresentationIso
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    SignedPresentationIso (split P cut.swap) (split P cut) where
+  edgeRelabeling := swapEdgeRelabeling P cut
+  faceEquiv := swapFaceEquiv P cut
+  boundary_rotated := by
+    intro q
+    rcases face_cases P cut.swap q with ⟨f, rfl⟩ | rfl
+    · by_cases hface : f = cut.face.face
+      · subst f
+        simpa only [swapFaceEquiv_old_selected] using
+          map_boundary_swap_old_selected P cut
+      · rw [map_boundary_swap_old_of_ne P cut hface,
+          swapFaceEquiv_old_of_ne P cut hface,
+          split_boundary_old_of_ne P cut hface]
+    · simpa only [swapFaceEquiv_right] using
+        map_boundary_swap_right P cut
+
 /-- Identity edge relabeling between the definitionally equal edge types of the two reversed-cut
 splits. Naming the transport keeps the signed-isomorphism boundary proof transparent. -/
 def flipEdgeRelabeling
