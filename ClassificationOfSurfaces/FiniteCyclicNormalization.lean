@@ -43,6 +43,18 @@ theorem coe_presentation (P : ValidPresentation) :
     (P : FiniteCyclicPresentation) = P.presentation :=
   rfl
 
+@[ext]
+theorem ext {P Q : ValidPresentation}
+    (h : P.presentation = Q.presentation) :
+    P = Q := by
+  cases P with
+  | mk presentation valid =>
+      cases Q with
+      | mk presentation' valid' =>
+          dsimp at h
+          subst presentation'
+          rfl
+
 /-- Package an ordinary-valid presentation. -/
 def mk' (P : FiniteCyclicPresentation) (validP : P.IsSurfaceValid) :
     ValidPresentation :=
