@@ -20,6 +20,7 @@ import ClassificationOfSurfaces.FiniteCyclicFaceMerge
 import ClassificationOfSurfaces.FiniteCyclicMoveRealization
 import ClassificationOfSurfaces.FiniteCyclicMoves
 import ClassificationOfSurfaces.FiniteCyclicNormalization
+import ClassificationOfSurfaces.FiniteCyclicNormalizationResult
 import ClassificationOfSurfaces.FiniteCyclicP1
 import ClassificationOfSurfaces.FiniteCyclicP1Realization
 import ClassificationOfSurfaces.FiniteCyclicP2
@@ -248,6 +249,9 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.Cancellation.Context.normalizationEquivalent`
 * `FiniteCyclicPresentation.FaceMerge.normalizationEquivalent`
 * `FiniteCyclicPresentation.FaceMerge.ContextMerge.normalizationEquivalent`
+* `FiniteCyclicPresentation.canonicalValidPresentation`
+* `FiniteCyclicPresentation.NormalizationResult`
+* `FiniteCyclicPresentation.NormalizationResult.realizationHomeomorph`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
