@@ -17,17 +17,6 @@ namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
 
-/-- The normal forms that actually appear in the Lean Eval conclusion.
-
-The orientable sphere is represented by the separate sphere branch, so an orientable polygonal
-normal form must have a handle or a boundary component; nonorientable forms must have at least one
-crosscap. -/
-def NormalForm.IsEvalAdmissible : NormalForm → Prop
-  | NormalForm.sphere => True
-  | NormalForm.orientable handles boundaryComponents =>
-      1 ≤ handles ∨ 1 ≤ boundaryComponents
-  | NormalForm.nonOrientable crosscaps _boundaryComponents => 1 ≤ crosscaps
-
 /-- A surface cell complex realizes the quotient space attached to a named normal form.
 
 This is the local target for the Gallier--Xu canonical-complex construction. The quotient
