@@ -85,6 +85,10 @@ The faithful polygonal quotient layer and the bottom API are in place:
   used by derived normalization chains. Its primitive seams are common subdivisions and
   unoriented comparisons; every chain has a polygonal-realization homeomorphism. The generic Dyck
   and cross-cap rewrites are both registered in this closure.
+- `FiniteCyclicPresentation.Handle.normalizationEquivalent` implements Gallier--Xu's three-Dyck
+  handle extraction, and `LoopGrouping.normalizationEquivalent` implements the final block
+  transport used to group boundary loops. The derived layer transports one-face validity across
+  edge-occurrence permutations, so intermediate spellings do not leak proof obligations.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.

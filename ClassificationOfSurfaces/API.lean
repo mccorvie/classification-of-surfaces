@@ -13,6 +13,7 @@ import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicCanonical
 import ClassificationOfSurfaces.FiniteCyclicCanonicalRealization
 import ClassificationOfSurfaces.FiniteCyclicCrosscap
+import ClassificationOfSurfaces.FiniteCyclicDerivedRewrites
 import ClassificationOfSurfaces.FiniteCyclicDyck
 import ClassificationOfSurfaces.FiniteCyclicMoveRealization
 import ClassificationOfSurfaces.FiniteCyclicMoves
@@ -230,6 +231,9 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.NormalizationEquivalent.polygonallyEquivalent`
 * `FiniteCyclicPresentation.Dyck.normalizationEquivalent`
 * `FiniteCyclicPresentation.Crosscap.normalizationEquivalent`
+* `FiniteCyclicPresentation.Dyck.negativeNormalizationEquivalent`
+* `FiniteCyclicPresentation.Handle.normalizationEquivalent`
+* `FiniteCyclicPresentation.LoopGrouping.normalizationEquivalent`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -282,7 +286,9 @@ transport validity automatically.
 `NormalizationEquivalent` is the stable chain API over validity-bundled presentations. Its
 primitive steps are common subdivisions and unoriented comparisons in either direction, and every
 chain produces a faithful polygonal-realization homeomorphism. Both generic pseudo-rewrites are
-available as nodes in this closure.
+available as nodes in this closure. The derived-chain layer also exposes the opposite-orientation
+Dyck rule, the full three-Dyck handle extraction, and the loop-grouping specialization; all
+intermediate validity witnesses are constructed internally.
 
 ## Polygonal quotient foundation
 
