@@ -2246,6 +2246,981 @@ theorem firstOldArc_injective
     mul_left_cancel₀ hfactor.ne' hangle
   linarith
 
+/-! ## The outer boundary assembled from the two old-boundary arcs -/
+
+/-- A continuous coordinate, from `0` to `3`, along the left half of the square boundary.
+It starts at the midpoint of the top edge, passes the two left corners, and ends at the
+midpoint of the bottom edge. -/
+noncomputable def leftPerimeter (z : boundary) : ℝ :=
+  -z.1.re + (1 - z.1.im) / 2 + (1 - z.1.im) * (1 + z.1.re)
+
+theorem continuous_leftPerimeter : Continuous leftPerimeter := by
+  unfold leftPerimeter
+  fun_prop
+
+theorem boundary_left_cases (z : boundary) (hz : z.1.re ≤ 0) :
+    z.1.re = -1 ∨ z.1.im = 1 ∨ z.1.im = -1 := by
+  have hzBoundary := z.property
+  change max |z.1.re| |z.1.im| = 1 at hzBoundary
+  rcases (max_eq_iff.mp hzBoundary) with hre | him
+  · rcases eq_or_eq_neg_of_abs_eq hre.1 with hrePos | hreNeg
+    · exfalso
+      linarith
+    · exact Or.inl hreNeg
+  · rcases eq_or_eq_neg_of_abs_eq him.1 with himPos | himNeg
+    · exact Or.inr (Or.inl himPos)
+    · exact Or.inr (Or.inr himNeg)
+
+theorem boundary_right_cases (z : boundary) (hz : 0 ≤ z.1.re) :
+    z.1.re = 1 ∨ z.1.im = 1 ∨ z.1.im = -1 := by
+  have hzBoundary := z.property
+  change max |z.1.re| |z.1.im| = 1 at hzBoundary
+  rcases (max_eq_iff.mp hzBoundary) with hre | him
+  · rcases eq_or_eq_neg_of_abs_eq hre.1 with hrePos | hreNeg
+    · exact Or.inl hrePos
+    · exfalso
+      linarith
+  · rcases eq_or_eq_neg_of_abs_eq him.1 with himPos | himNeg
+    · exact Or.inr (Or.inl himPos)
+    · exact Or.inr (Or.inr himNeg)
+
+theorem leftPerimeter_mem_Icc
+    (z : boundary) (hz : z.1.re ≤ 0) :
+    leftPerimeter z ∈ Set.Icc (0 : ℝ) 3 := by
+  have hre := abs_re_le_maxAbs z.1
+  have him := abs_im_le_maxAbs z.1
+  rw [z.property] at hre him
+  rw [abs_le] at hre him
+  rcases boundary_left_cases z hz with hzLeft | hzTop | hzBottom
+  · simp only [leftPerimeter, hzLeft]
+    constructor <;> linarith
+  · simp only [leftPerimeter, hzTop]
+    constructor <;> linarith
+  · simp only [leftPerimeter, hzBottom]
+    constructor <;> linarith
+
+theorem leftPerimeter_injective
+    {z w : boundary} (hz : z.1.re ≤ 0) (hw : w.1.re ≤ 0)
+    (hzw : leftPerimeter z = leftPerimeter w) :
+    z = w := by
+  have hzRe := abs_re_le_maxAbs z.1
+  have hzIm := abs_im_le_maxAbs z.1
+  have hwRe := abs_re_le_maxAbs w.1
+  have hwIm := abs_im_le_maxAbs w.1
+  rw [z.property] at hzRe hzIm
+  rw [w.property] at hwRe hwIm
+  rw [abs_le] at hzRe hzIm hwRe hwIm
+  rcases boundary_left_cases z hz with hzLeft | hzTop | hzBottom
+  · rcases boundary_left_cases w hw with hwLeft | hwTop | hwBottom
+    · apply Subtype.ext
+      apply Complex.ext
+      · linarith
+      · simp only [leftPerimeter, hzLeft, hwLeft] at hzw
+        linarith
+    · simp only [leftPerimeter, hzLeft, hwTop] at hzw
+      apply Subtype.ext
+      apply Complex.ext
+      · linarith
+      · linarith
+    · simp only [leftPerimeter, hzLeft, hwBottom] at hzw
+      apply Subtype.ext
+      apply Complex.ext
+      · linarith
+      · linarith
+  · rcases boundary_left_cases w hw with hwLeft | hwTop | hwBottom
+    · simp only [leftPerimeter, hzTop, hwLeft] at hzw
+      apply Subtype.ext
+      apply Complex.ext
+      · linarith
+      · linarith
+    · apply Subtype.ext
+      apply Complex.ext
+      · simp only [leftPerimeter, hzTop, hwTop] at hzw
+        linarith
+      · linarith
+    · exfalso
+      simp only [leftPerimeter, hzTop, hwBottom] at hzw
+      linarith
+  · rcases boundary_left_cases w hw with hwLeft | hwTop | hwBottom
+    · simp only [leftPerimeter, hzBottom, hwLeft] at hzw
+      apply Subtype.ext
+      apply Complex.ext
+      · linarith
+      · linarith
+    · exfalso
+      simp only [leftPerimeter, hzBottom, hwTop] at hzw
+      linarith
+    · apply Subtype.ext
+      apply Complex.ext
+      · simp only [leftPerimeter, hzBottom, hwBottom] at hzw
+        linarith
+      · linarith
+
+/-- The analogous coordinate on the right half, oriented from bottom to top. -/
+noncomputable def rightPerimeter (z : boundary) : ℝ :=
+  leftPerimeter
+    ⟨-z.1, by
+      change maxAbs (-z.1) = 1
+      have hzBoundary := z.property
+      change maxAbs z.1 = 1 at hzBoundary
+      simpa only [maxAbs, Complex.neg_re, Complex.neg_im, abs_neg] using
+        hzBoundary⟩
+
+theorem continuous_rightPerimeter : Continuous rightPerimeter := by
+  unfold rightPerimeter
+  exact continuous_leftPerimeter.comp
+    (continuous_induced_rng.2 continuous_subtype_val.neg)
+
+theorem rightPerimeter_mem_Icc
+    (z : boundary) (hz : 0 ≤ z.1.re) :
+    rightPerimeter z ∈ Set.Icc (0 : ℝ) 3 := by
+  apply leftPerimeter_mem_Icc
+  change -z.1.re ≤ 0
+  linarith
+
+theorem rightPerimeter_injective
+    {z w : boundary} (hz : 0 ≤ z.1.re) (hw : 0 ≤ w.1.re)
+    (hzw : rightPerimeter z = rightPerimeter w) :
+    z = w := by
+  have hneg :
+      (⟨-z.1, by
+          change maxAbs (-z.1) = 1
+          have hzBoundary := z.property
+          change maxAbs z.1 = 1 at hzBoundary
+          simpa only [maxAbs, Complex.neg_re, Complex.neg_im, abs_neg] using
+            hzBoundary⟩ : boundary) =
+        ⟨-w.1, by
+          change maxAbs (-w.1) = 1
+          have hwBoundary := w.property
+          change maxAbs w.1 = 1 at hwBoundary
+          simpa only [maxAbs, Complex.neg_re, Complex.neg_im, abs_neg] using
+            hwBoundary⟩ := by
+    apply leftPerimeter_injective
+    · change -z.1.re ≤ 0
+      linarith
+    · change -w.1.re ≤ 0
+      linarith
+    · exact hzw
+  apply Subtype.ext
+  have := congrArg (fun q : boundary ↦ q.1) hneg
+  dsimp at this
+  exact neg_injective this
+
+@[simp]
+theorem leftPerimeter_finalOldArc_zero (l : ℕ) (hl : 0 < l) :
+    leftPerimeter
+        (finalOldArc l hl ⟨0, by constructor <;> positivity⟩) =
+      0 := by
+  unfold leftPerimeter
+  rw [finalOldArc_zero_re, finalOldArc_zero_im]
+  norm_num
+
+@[simp]
+theorem leftPerimeter_finalOldArc_last (l : ℕ) (hl : 0 < l) :
+    leftPerimeter (finalOldArc l hl ⟨l, by simp⟩) = 3 := by
+  unfold leftPerimeter
+  rw [finalOldArc_last_re, finalOldArc_last_im]
+  norm_num
+
+@[simp]
+theorem rightPerimeter_firstOldArc_zero (r : ℕ) (hr : 0 < r) :
+    rightPerimeter
+        (firstOldArc r hr ⟨0, by constructor <;> positivity⟩) =
+      0 := by
+  unfold rightPerimeter leftPerimeter
+  simp only [Complex.neg_re, Complex.neg_im]
+  rw [firstOldArc_zero_re, firstOldArc_zero_im]
+  norm_num
+
+@[simp]
+theorem rightPerimeter_firstOldArc_last (r : ℕ) (hr : 0 < r) :
+    rightPerimeter (firstOldArc r hr ⟨r, by simp⟩) = 3 := by
+  unfold rightPerimeter leftPerimeter
+  simp only [Complex.neg_re, Complex.neg_im]
+  rw [firstOldArc_last_re, firstOldArc_last_im]
+  norm_num
+
+theorem exists_finalOldArc_of_re_nonpos
+    (l : ℕ) (hl : 0 < l) (z : boundary) (hz : z.1.re ≤ 0) :
+    ∃ s : Set.Icc (0 : ℝ) l, finalOldArc l hl s = z := by
+  letI : PreconnectedSpace (Set.Icc (0 : ℝ) l) :=
+    isPreconnected_iff_preconnectedSpace.mp isPreconnected_Icc
+  let perimeter : Set.Icc (0 : ℝ) l → ℝ :=
+    fun s ↦ leftPerimeter (finalOldArc l hl s)
+  have hcontinuous : Continuous perimeter :=
+    continuous_leftPerimeter.comp (finalOldArc l hl).continuous
+  have hzRange : leftPerimeter z ∈ Set.range perimeter := by
+    apply (intermediate_value_univ
+      (⟨0, by constructor <;> positivity⟩ : Set.Icc (0 : ℝ) l)
+      ⟨l, by simp⟩ hcontinuous)
+    simpa only [perimeter, leftPerimeter_finalOldArc_zero,
+      leftPerimeter_finalOldArc_last] using leftPerimeter_mem_Icc z hz
+  rcases hzRange with ⟨s, hs⟩
+  refine ⟨s, ?_⟩
+  apply leftPerimeter_injective (finalOldArc_re_nonpos l hl s) hz
+  exact hs
+
+theorem exists_firstOldArc_of_re_nonneg
+    (r : ℕ) (hr : 0 < r) (z : boundary) (hz : 0 ≤ z.1.re) :
+    ∃ s : Set.Icc (0 : ℝ) r, firstOldArc r hr s = z := by
+  letI : PreconnectedSpace (Set.Icc (0 : ℝ) r) :=
+    isPreconnected_iff_preconnectedSpace.mp isPreconnected_Icc
+  let perimeter : Set.Icc (0 : ℝ) r → ℝ :=
+    fun s ↦ rightPerimeter (firstOldArc r hr s)
+  have hcontinuous : Continuous perimeter :=
+    continuous_rightPerimeter.comp (firstOldArc r hr).continuous
+  have hzRange : rightPerimeter z ∈ Set.range perimeter := by
+    apply (intermediate_value_univ
+      (⟨0, by constructor <;> positivity⟩ : Set.Icc (0 : ℝ) r)
+      ⟨r, by simp⟩ hcontinuous)
+    simpa only [perimeter, rightPerimeter_firstOldArc_zero,
+      rightPerimeter_firstOldArc_last] using rightPerimeter_mem_Icc z hz
+  rcases hzRange with ⟨s, hs⟩
+  refine ⟨s, ?_⟩
+  apply rightPerimeter_injective (firstOldArc_re_nonneg r hr s) hz
+  exact hs
+
+/-- Clip a parameter for the combined outer boundary to the left child's old arc. -/
+def finalArcParameter (l r : ℕ) :
+    Set.Icc (0 : ℝ) (l + r) → Set.Icc (0 : ℝ) l :=
+  fun x ↦
+    ⟨min x.1 l,
+      ⟨le_min x.2.1 (Nat.cast_nonneg l), min_le_right _ _⟩⟩
+
+theorem continuous_finalArcParameter (l r : ℕ) :
+    Continuous (finalArcParameter l r) := by
+  apply continuous_induced_rng.2
+  exact continuous_subtype_val.min continuous_const
+
+/-- Clip and translate a combined parameter to the right child's old arc. -/
+def firstArcParameter (l r : ℕ) :
+    Set.Icc (0 : ℝ) (l + r) → Set.Icc (0 : ℝ) r :=
+  fun x ↦
+    ⟨max (x.1 - l) 0,
+      ⟨le_max_right _ _,
+        max_le
+          (by
+            have hx := x.2.2
+            push_cast at hx ⊢
+            linarith)
+          (Nat.cast_nonneg r)⟩⟩
+
+theorem continuous_firstArcParameter (l r : ℕ) :
+    Continuous (firstArcParameter l r) := by
+  apply continuous_induced_rng.2
+  exact
+    (continuous_subtype_val.sub continuous_const).max continuous_const
+
+theorem finalOldArc_last_eq_firstOldArc_zero
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    finalOldArc l hl ⟨l, by simp⟩ =
+      firstOldArc r hr ⟨0, by constructor <;> positivity⟩ := by
+  apply Subtype.ext
+  apply Complex.ext
+  · exact (finalOldArc_last_re l hl).trans
+      (firstOldArc_zero_re r hr).symm
+  · exact (finalOldArc_last_im l hl).trans
+      (firstOldArc_zero_im r hr).symm
+
+/-- The full outer boundary path: the selected child's old sides followed by the right
+child's old sides.  Its two endpoints both map to the top midpoint. -/
+noncomputable def outerArc
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    C(Set.Icc (0 : ℝ) (l + r), boundary) where
+  toFun x :=
+    if x.1 ≤ l then
+      finalOldArc l hl (finalArcParameter l r x)
+    else
+      firstOldArc r hr (firstArcParameter l r x)
+  continuous_toFun := by
+    apply Continuous.if_le
+      ((finalOldArc l hl).continuous.comp
+        (continuous_finalArcParameter l r))
+      ((firstOldArc r hr).continuous.comp
+        (continuous_firstArcParameter l r))
+      continuous_subtype_val continuous_const
+    intro x hx
+    have hxValue : x.1 = l := hx
+    have hfinal :
+        finalArcParameter l r x =
+          (⟨l, by simp⟩ : Set.Icc (0 : ℝ) l) := by
+      apply Subtype.ext
+      simp [finalArcParameter, hxValue]
+    have hfirst :
+        firstArcParameter l r x =
+          (⟨0, by constructor <;> positivity⟩ :
+            Set.Icc (0 : ℝ) r) := by
+      apply Subtype.ext
+      simp [firstArcParameter, hxValue]
+    simpa only [Function.comp_apply, hfinal, hfirst] using
+      finalOldArc_last_eq_firstOldArc_zero l r hl hr
+
+theorem outerArc_apply_of_le
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x : Set.Icc (0 : ℝ) (l + r)) (hx : x.1 ≤ l) :
+    outerArc l r hl hr x =
+      finalOldArc l hl
+        ⟨x.1, ⟨x.2.1, hx⟩⟩ := by
+  change
+    (if x.1 ≤ l then
+      finalOldArc l hl (finalArcParameter l r x)
+    else
+      firstOldArc r hr (firstArcParameter l r x)) = _
+  rw [if_pos hx]
+  apply congrArg (finalOldArc l hl)
+  apply Subtype.ext
+  simp [finalArcParameter, min_eq_left hx]
+
+theorem outerArc_apply_of_not_le
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x : Set.Icc (0 : ℝ) (l + r)) (hx : ¬x.1 ≤ l) :
+    outerArc l r hl hr x =
+      firstOldArc r hr
+        ⟨x.1 - l,
+          ⟨by linarith,
+            by
+              have hxUpper := x.2.2
+              push_cast at hxUpper ⊢
+              linarith⟩⟩ := by
+  change
+    (if x.1 ≤ l then
+      finalOldArc l hl (finalArcParameter l r x)
+    else
+      firstOldArc r hr (firstArcParameter l r x)) = _
+  rw [if_neg hx]
+  apply congrArg (firstOldArc r hr)
+  apply Subtype.ext
+  simp [firstArcParameter, max_eq_left (by linarith : 0 ≤ x.1 - l)]
+
+@[simp]
+theorem outerArc_zero
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    outerArc l r hl hr
+        ⟨0, by constructor <;> positivity⟩ =
+      finalOldArc l hl
+        ⟨0, by constructor <;> positivity⟩ := by
+  apply outerArc_apply_of_le
+  positivity
+
+@[simp]
+theorem outerArc_split
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    outerArc l r hl hr
+        ⟨l, by
+          constructor
+          · exact Nat.cast_nonneg l
+          · have hrNonneg : (0 : ℝ) ≤ r := Nat.cast_nonneg r
+            push_cast
+            linarith⟩ =
+      finalOldArc l hl ⟨l, by simp⟩ := by
+  apply outerArc_apply_of_le
+  rfl
+
+@[simp]
+theorem outerArc_last
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    outerArc l r hl hr
+        ⟨l + r, by
+          constructor
+          · positivity
+          · rfl⟩ =
+      firstOldArc r hr ⟨r, by simp⟩ := by
+  rw [outerArc_apply_of_not_le]
+  · congr 1
+    apply Subtype.ext
+    push_cast
+    ring
+  · have hrReal : (0 : ℝ) < r := by exact_mod_cast hr
+    push_cast
+    linarith
+
+theorem outerArc_endpoints
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    outerArc l r hl hr
+        ⟨0, by constructor <;> positivity⟩ =
+      outerArc l r hl hr
+        ⟨l + r, by
+          constructor
+          · exact add_nonneg (Nat.cast_nonneg l) (Nat.cast_nonneg r)
+          · rfl⟩ := by
+  rw [outerArc_zero, outerArc_last]
+  apply Subtype.ext
+  apply Complex.ext
+  · exact (finalOldArc_zero_re l hl).trans
+      (firstOldArc_last_re r hr).symm
+  · exact (finalOldArc_zero_im l hl).trans
+      (firstOldArc_last_im r hr).symm
+
+theorem outerArc_surjective
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    Function.Surjective (outerArc l r hl hr) := by
+  intro z
+  rcases le_total z.1.re 0 with hzLeft | hzRight
+  · obtain ⟨s, hs⟩ := exists_finalOldArc_of_re_nonpos l hl z hzLeft
+    let x : Set.Icc (0 : ℝ) (l + r) :=
+      ⟨s.1, ⟨s.2.1, s.2.2.trans (by
+        have hrNonneg : (0 : ℝ) ≤ r := Nat.cast_nonneg r
+        push_cast
+        linarith)⟩⟩
+    refine ⟨x, ?_⟩
+    rw [outerArc_apply_of_le l r hl hr x s.2.2]
+    simpa only [x] using hs
+  · obtain ⟨s, hs⟩ := exists_firstOldArc_of_re_nonneg r hr z hzRight
+    let x : Set.Icc (0 : ℝ) (l + r) :=
+      ⟨l + s.1, by
+        constructor
+        · exact add_nonneg (Nat.cast_nonneg l) s.2.1
+        · push_cast
+          linarith [s.2.2]⟩
+    refine ⟨x, ?_⟩
+    by_cases hsZero : s.1 = 0
+    · have hxValue : x.1 = l := by
+        dsimp [x]
+        linarith
+      have hx :
+          x = (⟨l, by
+            constructor
+            · exact Nat.cast_nonneg l
+            · have hrNonneg : (0 : ℝ) ≤ r := Nat.cast_nonneg r
+              push_cast
+              linarith⟩ :
+            Set.Icc (0 : ℝ) (l + r)) :=
+        Subtype.ext hxValue
+      have hsSubtype :
+          s = (⟨0, by constructor <;> positivity⟩ :
+            Set.Icc (0 : ℝ) r) :=
+        Subtype.ext hsZero
+      rw [hx, outerArc_split,
+        finalOldArc_last_eq_firstOldArc_zero l r hl hr]
+      rw [← hsSubtype]
+      exact hs
+    · have hxNot : ¬x.1 ≤ l := by
+        dsimp [x]
+        have hsPos : 0 < s.1 := lt_of_le_of_ne s.2.1 (Ne.symm hsZero)
+        push_cast
+        linarith
+      rw [outerArc_apply_of_not_le l r hl hr x hxNot]
+      simpa only [x, add_sub_cancel_left] using hs
+
+theorem outerArc_cross_endpoints
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x y : Set.Icc (0 : ℝ) (l + r))
+    (hx : x.1 ≤ l) (hy : ¬y.1 ≤ l)
+    (hxy : outerArc l r hl hr x = outerArc l r hl hr y) :
+    x.1 = 0 ∧ y.1 = l + r := by
+  let sx : Set.Icc (0 : ℝ) l :=
+    ⟨x.1, ⟨x.2.1, hx⟩⟩
+  let ty : Set.Icc (0 : ℝ) r :=
+    ⟨y.1 - l,
+      ⟨by linarith,
+        by
+          have hyUpper := y.2.2
+          push_cast at hyUpper ⊢
+          linarith⟩⟩
+  have harc :
+      finalOldArc l hl sx = firstOldArc r hr ty := by
+    rw [outerArc_apply_of_le l r hl hr x hx,
+      outerArc_apply_of_not_le l r hl hr y hy] at hxy
+    simpa only [sx, ty] using hxy
+  have hre :=
+    congrArg (fun q : boundary ↦ q.1.re) harc
+  have hsNonpos := finalOldArc_re_nonpos l hl sx
+  have htNonneg := firstOldArc_re_nonneg r hr ty
+  have hsZero : (finalOldArc l hl sx).1.re = 0 := by
+    apply le_antisymm hsNonpos
+    linarith
+  have htZero : (firstOldArc r hr ty).1.re = 0 := by
+    apply le_antisymm
+    · linarith
+    · exact htNonneg
+  have hsEndpoint :=
+    (finalOldArc_re_eq_zero_iff_endpoint l hl sx).mp hsZero
+  have htEndpoint :=
+    (firstOldArc_re_eq_zero_iff_endpoint r hr ty).mp htZero
+  have htNotZero : ty.1 ≠ 0 := by
+    intro ht
+    apply hy
+    dsimp [ty] at ht
+    linarith
+  have htLast : ty.1 = r :=
+    htEndpoint.resolve_left htNotZero
+  have hsNotLast : sx.1 ≠ l := by
+    intro hsLast
+    have hsEq :
+        sx = (⟨l, by simp⟩ : Set.Icc (0 : ℝ) l) :=
+      Subtype.ext hsLast
+    have htEq :
+        ty = (⟨r, by simp⟩ : Set.Icc (0 : ℝ) r) :=
+      Subtype.ext htLast
+    have him := congrArg (fun q : boundary ↦ q.1.im) harc
+    rw [hsEq, htEq, finalOldArc_last_im, firstOldArc_last_im] at him
+    norm_num at him
+  have hsFirst : sx.1 = 0 :=
+    hsEndpoint.resolve_right hsNotLast
+  constructor
+  · exact hsFirst
+  · dsimp [ty] at htLast
+    push_cast at htLast ⊢
+    linarith
+
+theorem outerArc_eq_imp_endpointIdent
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x y : Set.Icc (0 : ℝ) (l + r))
+    (hxy : outerArc l r hl hr x = outerArc l r hl hr y) :
+    x = y ∨
+      (x.1 = 0 ∧ y.1 = l + r) ∨
+      (x.1 = l + r ∧ y.1 = 0) := by
+  by_cases hx : x.1 ≤ l
+  · by_cases hy : y.1 ≤ l
+    · left
+      have hxy' := hxy
+      rw [outerArc_apply_of_le l r hl hr x hx,
+        outerArc_apply_of_le l r hl hr y hy] at hxy'
+      have hparameters := finalOldArc_injective l hl hxy'
+      apply Subtype.ext
+      exact congrArg (fun q : Set.Icc (0 : ℝ) l ↦ q.1) hparameters
+    · exact Or.inr (Or.inl
+        (outerArc_cross_endpoints l r hl hr x y hx hy hxy))
+  · by_cases hy : y.1 ≤ l
+    · have hcross :=
+        outerArc_cross_endpoints l r hl hr y x hy hx hxy.symm
+      exact Or.inr (Or.inr ⟨hcross.2, hcross.1⟩)
+    · left
+      have hxy' := hxy
+      rw [outerArc_apply_of_not_le l r hl hr x hx,
+        outerArc_apply_of_not_le l r hl hr y hy] at hxy'
+      have hparameters := firstOldArc_injective r hr hxy'
+      have hvalues :=
+        congrArg (fun q : Set.Icc (0 : ℝ) r ↦ q.1) hparameters
+      apply Subtype.ext
+      push_cast at hvalues ⊢
+      linarith
+
+section OuterBoundary
+
+variable (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+
+variable [Fact (0 < (l + r : ℝ))]
+
+/-- Remove the syntactic leading zero from the endpoint interval used by `AddCircle`. -/
+def outerEndpointParameter :
+    C(Set.Icc (0 : ℝ) (0 + (l + r)),
+      Set.Icc (0 : ℝ) (l + r)) where
+  toFun x :=
+    ⟨x.1, by simpa only [zero_add] using x.2⟩
+  continuous_toFun :=
+    continuous_induced_rng.2 continuous_subtype_val
+
+/-- The outer path with the syntactic endpoint interval used by `AddCircle.EndpointIdent`. -/
+noncomputable def outerEndpointArc :
+    C(Set.Icc (0 : ℝ) (0 + (l + r)), boundary) :=
+  (outerArc l r hl hr).comp (outerEndpointParameter l r)
+
+@[simp]
+theorem outerEndpointArc_apply
+    (x : Set.Icc (0 : ℝ) (0 + (l + r))) :
+    outerEndpointArc l r hl hr x =
+      outerArc l r hl hr
+        ⟨x.1, by simpa only [zero_add] using x.2⟩ :=
+  rfl
+
+theorem outerArc_endpointIdent
+    (x y : Set.Icc (0 : ℝ) (0 + (l + r)))
+    (hxy : AddCircle.EndpointIdent (l + r : ℝ) 0 x y) :
+    outerEndpointArc l r hl hr x = outerEndpointArc l r hl hr y := by
+  cases hxy
+  rw [outerEndpointArc_apply, outerEndpointArc_apply]
+  simpa only [zero_add] using outerArc_endpoints l r hl hr
+
+/-- The pasted outer path after identifying its top endpoints. -/
+noncomputable def outerBoundaryQuotMap :
+    C(Quot (AddCircle.EndpointIdent (l + r : ℝ) 0), boundary) where
+  toFun :=
+    Quot.lift (outerEndpointArc l r hl hr)
+      (outerArc_endpointIdent l r hl hr)
+  continuous_toFun :=
+    continuous_quot_lift (outerArc_endpointIdent l r hl hr)
+      (outerEndpointArc l r hl hr).continuous
+
+theorem outerBoundaryQuotMap_mk
+    (x : Set.Icc (0 : ℝ) (0 + (l + r))) :
+    outerBoundaryQuotMap l r hl hr (Quot.mk _ x) =
+      outerEndpointArc l r hl hr x :=
+  rfl
+
+theorem outerBoundaryQuotMap_surjective :
+    Function.Surjective (outerBoundaryQuotMap l r hl hr) := by
+  intro z
+  obtain ⟨x, hx⟩ := outerArc_surjective l r hl hr z
+  let x' : Set.Icc (0 : ℝ) (0 + (l + r)) :=
+    ⟨x.1, by simpa only [zero_add] using x.2⟩
+  refine ⟨Quot.mk _ x', ?_⟩
+  exact hx
+
+theorem outerBoundaryQuotMap_injective :
+    Function.Injective (outerBoundaryQuotMap l r hl hr) := by
+  intro q₁ q₂ hq
+  induction q₁ using Quot.inductionOn with
+  | _ x =>
+      induction q₂ using Quot.inductionOn with
+      | _ y =>
+          change
+            outerEndpointArc l r hl hr x =
+              outerEndpointArc l r hl hr y at hq
+          let x' : Set.Icc (0 : ℝ) (l + r) :=
+            ⟨x.1, by simpa only [zero_add] using x.2⟩
+          let y' : Set.Icc (0 : ℝ) (l + r) :=
+            ⟨y.1, by simpa only [zero_add] using y.2⟩
+          have hq' :
+              outerArc l r hl hr x' =
+                outerArc l r hl hr y' :=
+            hq
+          rcases outerArc_eq_imp_endpointIdent l r hl hr x' y' hq' with
+            hxy | hends | hends
+          · have hvalues := congrArg Subtype.val hxy
+            have : x = y := Subtype.ext hvalues
+            subst y
+            rfl
+          · have hx :
+                x =
+                  (⟨0, by
+                    constructor
+                    · rfl
+                    · positivity⟩ :
+                    Set.Icc (0 : ℝ) (0 + (l + r))) :=
+              Subtype.ext hends.1
+            have hy :
+                y =
+                  (⟨0 + (l + r), by
+                    constructor
+                    · positivity
+                    · rfl⟩ :
+                    Set.Icc (0 : ℝ) (0 + (l + r))) := by
+              apply Subtype.ext
+              simpa only [zero_add] using hends.2
+            rw [hx, hy]
+            exact Quot.sound AddCircle.EndpointIdent.mk
+          · have hx :
+                x =
+                  (⟨0 + (l + r), by
+                    constructor
+                    · positivity
+                    · rfl⟩ :
+                    Set.Icc (0 : ℝ) (0 + (l + r))) := by
+              apply Subtype.ext
+              simpa only [zero_add] using hends.1
+            have hy :
+                y =
+                  (⟨0, by
+                    constructor
+                    · rfl
+                    · positivity⟩ :
+                    Set.Icc (0 : ℝ) (0 + (l + r))) :=
+              Subtype.ext hends.2
+            rw [hx, hy]
+            exact (Quot.sound AddCircle.EndpointIdent.mk).symm
+
+theorem outerBoundaryQuotMap_bijective :
+    Function.Bijective (outerBoundaryQuotMap l r hl hr) :=
+  ⟨outerBoundaryQuotMap_injective l r hl hr,
+    outerBoundaryQuotMap_surjective l r hl hr⟩
+
+/-- The endpoint quotient of the pasted old-boundary path is exactly the square boundary. -/
+noncomputable def outerBoundaryQuotHomeomorph :
+    Quot (AddCircle.EndpointIdent (l + r : ℝ) 0) ≃ₜ boundary :=
+  Continuous.homeoOfEquivCompactToT2
+    (f := Equiv.ofBijective (outerBoundaryQuotMap l r hl hr)
+      (outerBoundaryQuotMap_bijective l r hl hr))
+    (outerBoundaryQuotMap l r hl hr).continuous
+
+@[simp]
+theorem outerBoundaryQuotHomeomorph_mk
+    (x : Set.Icc (0 : ℝ) (0 + (l + r))) :
+    outerBoundaryQuotHomeomorph l r hl hr (Quot.mk _ x) =
+      outerEndpointArc l r hl hr x :=
+  rfl
+
+/-- The additive circle parameterized by the old sides is the outer square boundary. -/
+noncomputable def outerAddCircleHomeomorph :
+    AddCircle (l + r : ℝ) ≃ₜ boundary := by
+  letI : Fact (0 < (l + r : ℝ)) := ⟨by positivity⟩
+  exact
+    (AddCircle.homeoIccQuot (l + r : ℝ) 0).trans
+      (outerBoundaryQuotHomeomorph l r hl hr)
+
+/-- The exact boundary parameterization used to extend the old sides across the selected
+source polygon. -/
+noncomputable def outerBoundaryHomeomorph : Circle ≃ₜ boundary :=
+  (AddCircle.homeomorphCircle
+      (by positivity : (l + r : ℝ) ≠ 0)).symm.trans
+    (outerAddCircleHomeomorph l r hl hr)
+
+end OuterBoundary
+
+theorem outerAddCircleHomeomorph_apply_of_mem_Ico
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x : ℝ) (hx : x ∈ Set.Ico 0 (l + r : ℝ)) :
+    outerAddCircleHomeomorph l r hl hr
+        (x : AddCircle (l + r : ℝ)) =
+      outerArc l r hl hr
+        ⟨x, ⟨hx.1, hx.2.le⟩⟩ := by
+  letI : Fact (0 < (l + r : ℝ)) := ⟨by positivity⟩
+  unfold outerAddCircleHomeomorph
+  simp only [Homeomorph.trans_apply]
+  have hsource :
+      (AddCircle.homeoIccQuot (l + r : ℝ) 0)
+          (x : AddCircle (l + r : ℝ)) =
+        Quot.mk _
+          (⟨x, hx.1, by simpa only [zero_add] using hx.2.le⟩ :
+            Set.Icc (0 : ℝ) (0 + (l + r))) := by
+    change Quot.mk _
+      (Set.inclusion Set.Ico_subset_Icc_self
+        (AddCircle.equivIco (l + r : ℝ) 0
+          (x : AddCircle (l + r : ℝ)))) = _
+    rw [AddCircle.equivIco, QuotientAddGroup.equivIcoMod_coe]
+    apply congrArg (Quot.mk _)
+    apply Subtype.ext
+    exact (toIcoMod_eq_self (Fact.out : 0 < (l + r : ℝ))).2
+      (by simpa only [zero_add] using hx)
+  rw [hsource, outerBoundaryQuotHomeomorph_mk,
+    outerEndpointArc_apply]
+
+theorem outerBoundaryHomeomorph_exp_of_mem_Ico
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x : ℝ) (hx : x ∈ Set.Ico 0 (l + r : ℝ)) :
+    outerBoundaryHomeomorph l r hl hr
+        (Circle.exp (2 * Real.pi / (l + r) * x)) =
+      outerArc l r hl hr
+        ⟨x, ⟨hx.1, hx.2.le⟩⟩ := by
+  have hperiod : (l + r : ℝ) ≠ 0 := by positivity
+  rw [show
+      Circle.exp (2 * Real.pi / (l + r) * x) =
+        AddCircle.homeomorphCircle hperiod
+          (x : AddCircle (l + r : ℝ)) by
+    rw [AddCircle.homeomorphCircle_apply, AddCircle.toCircle_apply_mk]]
+  unfold outerBoundaryHomeomorph
+  simp only [Homeomorph.trans_apply, Homeomorph.symm_apply_apply]
+  exact outerAddCircleHomeomorph_apply_of_mem_Ico l r hl hr x hx
+
+theorem outerBoundaryHomeomorph_exp_of_mem_Icc
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x : ℝ) (hx : x ∈ Set.Icc 0 (l + r : ℝ)) :
+    outerBoundaryHomeomorph l r hl hr
+        (Circle.exp (2 * Real.pi / (l + r) * x)) =
+      outerArc l r hl hr ⟨x, hx⟩ := by
+  by_cases hxLast : x = (l + r : ℝ)
+  · subst x
+    have hperiod : (l + r : ℝ) ≠ 0 := by positivity
+    have hexp :
+        Circle.exp
+            (2 * Real.pi / (l + r : ℝ) * (l + r : ℝ)) =
+          Circle.exp (2 * Real.pi / (l + r : ℝ) * 0) := by
+      apply Circle.exp_eq_exp.mpr
+      refine ⟨1, ?_⟩
+      field_simp [hperiod]
+      ring
+    rw [hexp]
+    rw [outerBoundaryHomeomorph_exp_of_mem_Ico
+      l r hl hr 0 (by constructor <;> positivity)]
+    exact outerArc_endpoints l r hl hr
+  · apply outerBoundaryHomeomorph_exp_of_mem_Ico
+    exact ⟨hx.1, lt_of_le_of_ne hx.2 hxLast⟩
+
+/-- The combined real parameter of a polygon side. -/
+def polygonSideParameter {n : ℕ} (i : Fin n) (t : unitInterval) :
+    Set.Icc (0 : ℝ) n :=
+  ⟨(i : ℝ) + (t : ℝ), by
+    constructor
+    · exact add_nonneg (Nat.cast_nonneg i) t.property.1
+    · have hi : (i : ℝ) + 1 ≤ n := by
+        exact_mod_cast i.isLt
+      linarith [t.property.2]⟩
+
+/-- The same parameter with the split side count displayed as a sum in `ℝ`. -/
+def sourceSideParameter
+    (l r : ℕ) (i : Fin (l + r)) (t : unitInterval) :
+    Set.Icc (0 : ℝ) ((l : ℝ) + r) :=
+  ⟨(i : ℝ) + (t : ℝ), by
+    have h := (polygonSideParameter i t).2
+    change
+      0 ≤ (i : ℝ) + (t : ℝ) ∧
+        (i : ℝ) + (t : ℝ) ≤ (l + r : ℕ) at h
+    change
+      0 ≤ (i : ℝ) + (t : ℝ) ∧
+        (i : ℝ) + (t : ℝ) ≤ (l : ℝ) + r
+    simpa only [Nat.cast_add] using h⟩
+
+/-- Extend the exact outer-boundary parameterization across the unsplit source polygon. -/
+noncomputable def sourceCellHomeomorph
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r) :
+    PolygonCell (l + r) ≃ₜ square :=
+  cellSquareHomeomorph (outerBoundaryHomeomorph l r hl hr)
+
+theorem sourceCellHomeomorph_ofCircle_exp
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (x : ℝ) (hx : x ∈ Set.Icc 0 (l + r : ℝ)) :
+    sourceCellHomeomorph l r hl hr
+        (PolygonCell.ofCircle (l + r)
+          (Circle.exp (2 * Real.pi / (l + r) * x))) =
+      boundaryInclusion (outerArc l r hl hr ⟨x, hx⟩) := by
+  rw [sourceCellHomeomorph, cellSquareHomeomorph_ofCircle,
+    outerBoundaryHomeomorph_exp_of_mem_Icc]
+
+theorem sourceCellHomeomorph_side
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (i : Fin (l + r)) (t : unitInterval) :
+    sourceCellHomeomorph l r hl hr (PolygonCell.side i t) =
+      boundaryInclusion
+        (outerArc l r hl hr (sourceSideParameter l r i t)) := by
+  change
+    sourceCellHomeomorph l r hl hr
+        (PolygonCell.ofCircle (l + r)
+          (Circle.exp (PolygonCell.sideAngle i t))) = _
+  have hangle :
+      PolygonCell.sideAngle i t =
+        2 * Real.pi / (l + r : ℝ) *
+          ((i : ℝ) + (t : ℝ)) := by
+    unfold PolygonCell.sideAngle
+    push_cast
+    ring
+  rw [hangle]
+  exact sourceCellHomeomorph_ofCircle_exp l r hl hr
+    ((i : ℝ) + (t : ℝ)) (sourceSideParameter l r i t).2
+
+theorem boundaryInclusion_finalOldArc_polygonSide
+    (l : ℕ) (hl : 0 < l) (i : Fin l) (t : unitInterval) :
+    boundaryInclusion
+        (finalOldArc l hl (polygonSideParameter i t)) =
+      leftPlacement
+        (finalSideCellHomeomorph l hl
+          (PolygonCell.side (Fin.castAdd 1 i) t)) := by
+  apply Subtype.ext
+  change
+    (leftPlacement
+        (finalOldArcLocal l hl (polygonSideParameter i t))).1 =
+      (leftPlacement
+        (finalSideCellHomeomorph l hl
+          (PolygonCell.side (Fin.castAdd 1 i) t))).1
+  apply congrArg Subtype.val
+  apply congrArg leftPlacement
+  rw [finalOldArcLocal_apply, PolygonCell.side]
+  apply congrArg (finalSideCellHomeomorph l hl)
+  apply PolygonCell.ext
+  apply congrArg (fun z : Circle ↦ (z : ℂ))
+  apply congrArg Circle.exp
+  unfold PolygonCell.sideAngle polygonSideParameter
+  simp only [Fin.val_castAdd]
+  push_cast
+  ring
+
+theorem boundaryInclusion_firstOldArc_polygonSide
+    (r : ℕ) (hr : 0 < r) (i : Fin r) (t : unitInterval) :
+    boundaryInclusion
+        (firstOldArc r hr (polygonSideParameter i t)) =
+      rightPlacement
+        (firstSideCellHomeomorph r hr
+          (PolygonCell.side (i.addNat 1) t)) := by
+  apply Subtype.ext
+  change
+    (rightPlacement
+        (firstOldArcLocal r hr (polygonSideParameter i t))).1 =
+      (rightPlacement
+        (firstSideCellHomeomorph r hr
+          (PolygonCell.side (i.addNat 1) t))).1
+  apply congrArg Subtype.val
+  apply congrArg rightPlacement
+  rw [firstOldArcLocal_apply, PolygonCell.side]
+  apply congrArg (firstSideCellHomeomorph r hr)
+  apply PolygonCell.ext
+  apply congrArg (fun z : Circle ↦ (z : ℂ))
+  apply congrArg Circle.exp
+  unfold PolygonCell.sideAngle polygonSideParameter
+  simp only [Fin.val_addNat]
+  push_cast
+  ring
+
+theorem outerArc_source_left_side
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (i : Fin l) (t : unitInterval) :
+    outerArc l r hl hr
+        (sourceSideParameter l r (Fin.castAdd r i) t) =
+      finalOldArc l hl (polygonSideParameter i t) := by
+  have hx :
+      (sourceSideParameter l r (Fin.castAdd r i) t).1 ≤ l := by
+    change (i : ℝ) + (t : ℝ) ≤ l
+    exact (polygonSideParameter i t).2.2
+  rw [outerArc_apply_of_le l r hl hr _ hx]
+  apply congrArg (finalOldArc l hl)
+  apply Subtype.ext
+  rfl
+
+theorem outerArc_source_right_side
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (i : Fin r) (t : unitInterval) :
+    outerArc l r hl hr
+        (sourceSideParameter l r (Fin.natAdd l i) t) =
+      firstOldArc r hr (polygonSideParameter i t) := by
+  let x :=
+    sourceSideParameter l r (Fin.natAdd l i) t
+  let s := polygonSideParameter i t
+  by_cases hsZero : s.1 = 0
+  · have hxLe : x.1 ≤ l := by
+      dsimp [x, sourceSideParameter, s, polygonSideParameter] at hsZero ⊢
+      simp only [Fin.val_natAdd, Nat.cast_add]
+      linarith
+    rw [outerArc_apply_of_le l r hl hr x hxLe]
+    have hxLast :
+        (⟨x.1, ⟨x.2.1, hxLe⟩⟩ : Set.Icc (0 : ℝ) l) =
+          ⟨l, by simp⟩ := by
+      apply Subtype.ext
+      dsimp [x, sourceSideParameter, s, polygonSideParameter] at hsZero ⊢
+      simp only [Fin.val_natAdd, Nat.cast_add]
+      linarith
+    rw [hxLast, finalOldArc_last_eq_firstOldArc_zero l r hl hr]
+    apply congrArg (firstOldArc r hr)
+    apply Subtype.ext
+    exact hsZero.symm
+  · have hsPos : 0 < s.1 :=
+      lt_of_le_of_ne s.2.1 (Ne.symm hsZero)
+    have hxNot : ¬x.1 ≤ l := by
+      dsimp [x, sourceSideParameter, s, polygonSideParameter] at hsPos ⊢
+      simp only [Fin.val_natAdd, Nat.cast_add]
+      linarith
+    rw [outerArc_apply_of_not_le l r hl hr x hxNot]
+    apply congrArg (firstOldArc r hr)
+    apply Subtype.ext
+    dsimp [x, sourceSideParameter, s, polygonSideParameter]
+    simp only [Fin.val_natAdd, Nat.cast_add]
+    ring
+
+/-- On every old left side, the unsplit source polygon map agrees exactly with the
+corresponding placed child side. -/
+theorem sourceCellHomeomorph_left_side
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (i : Fin l) (t : unitInterval) :
+    sourceCellHomeomorph l r hl hr
+        (PolygonCell.side (Fin.castAdd r i) t) =
+      leftPlacement
+        (finalSideCellHomeomorph l hl
+          (PolygonCell.side (Fin.castAdd 1 i) t)) := by
+  rw [sourceCellHomeomorph_side,
+    outerArc_source_left_side,
+    boundaryInclusion_finalOldArc_polygonSide]
+
+/-- On every old right side, the unsplit source polygon map agrees exactly with the
+corresponding reflected and placed child side. -/
+theorem sourceCellHomeomorph_right_side
+    (l r : ℕ) (hl : 0 < l) (hr : 0 < r)
+    (i : Fin r) (t : unitInterval) :
+    sourceCellHomeomorph l r hl hr
+        (PolygonCell.side (Fin.natAdd l i) t) =
+      rightPlacement
+        (firstSideCellHomeomorph r hr
+          (PolygonCell.side (i.addNat 1) t)) := by
+  rw [sourceCellHomeomorph_side,
+    outerArc_source_right_side,
+    boundaryInclusion_firstOldArc_polygonSide]
+
 end DiskSquare
 
 end LeanEval.Topology.ClassificationOfSurfaces
