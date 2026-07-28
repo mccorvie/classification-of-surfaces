@@ -12,13 +12,26 @@ import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
 import ClassificationOfSurfaces.FiniteCyclicCanonical
 import ClassificationOfSurfaces.FiniteCyclicCanonicalRealization
+import ClassificationOfSurfaces.FiniteCyclicCancellation
+import ClassificationOfSurfaces.FiniteCyclicCrosscap
+import ClassificationOfSurfaces.FiniteCyclicDerivedRewrites
+import ClassificationOfSurfaces.FiniteCyclicDyck
+import ClassificationOfSurfaces.FiniteCyclicFaceMerge
+import ClassificationOfSurfaces.FiniteCyclicMoveRealization
 import ClassificationOfSurfaces.FiniteCyclicMoves
+import ClassificationOfSurfaces.FiniteCyclicNormalization
+import ClassificationOfSurfaces.FiniteCyclicNormalizationResult
 import ClassificationOfSurfaces.FiniteCyclicP1
+import ClassificationOfSurfaces.FiniteCyclicP1Realization
 import ClassificationOfSurfaces.FiniteCyclicP2
+import ClassificationOfSurfaces.FiniteCyclicP2DegenerateRealization
+import ClassificationOfSurfaces.FiniteCyclicP2Realization
 import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.FiniteCyclicRealization
+import ClassificationOfSurfaces.FiniteCyclicReduction
 import ClassificationOfSurfaces.FiniteCyclicSignedRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
+import ClassificationOfSurfaces.FiniteCyclicUnorientedRealization
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -190,8 +203,10 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.P1.expand_isGallierValid`
 * `FiniteCyclicPresentation.P1Subdivision`
 * `FiniteCyclicPresentation.P1Subdivision.isGallierValid`
+* `FiniteCyclicPresentation.P1Subdivision.preservesPolygonalRealization`
 * `FiniteCyclicPresentation.P2Cut`
 * `FiniteCyclicPresentation.P2Cut.canonical`
+* `FiniteCyclicPresentation.P2Cut.IsNondegenerate`
 * `FiniteCyclicPresentation.P2Cut.swap`
 * `FiniteCyclicPresentation.P2Cut.flip`
 * `FiniteCyclicPresentation.P2.split`
@@ -205,6 +220,43 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.P2.split_emptyWordSphere`
 * `FiniteCyclicPresentation.P2Subdivision`
 * `FiniteCyclicPresentation.P2Subdivision.isGallierValid`
+* `FiniteCyclicPresentation.P2Subdivision.preservesPolygonalRealization`
+* `FiniteCyclicPresentation.subdivisionStep_preservesPolygonalRealization`
+* `FiniteCyclicPresentation.Subdivides.toPolygonallyEquivalent`
+* `FiniteCyclicPresentation.HasCommonSubdivision.toPolygonallyEquivalent`
+* `FiniteCyclicPresentation.Dyck.hasCommonSubdivision`
+* `FiniteCyclicPresentation.Dyck.polygonallyEquivalent`
+* `FiniteCyclicPresentation.UnorientedPresentationIso`
+* `FiniteCyclicPresentation.UnorientedPresentationIso.realizationHomeomorph`
+* `FiniteCyclicPresentation.Crosscap.polygonallyEquivalent`
+* `FiniteCyclicPresentation.ValidPresentation`
+* `FiniteCyclicPresentation.NormalizationStep`
+* `FiniteCyclicPresentation.NormalizationEquivalent`
+* `FiniteCyclicPresentation.NormalizationEquivalent.ofSubdivides`
+* `FiniteCyclicPresentation.NormalizationEquivalent.polygonallyEquivalent`
+* `FiniteCyclicPresentation.P1.contractionNormalizationEquivalent`
+* `FiniteCyclicPresentation.P2.mergeNormalizationEquivalent`
+* `FiniteCyclicPresentation.P2.oneSidedMergeNormalizationEquivalent`
+* `FiniteCyclicPresentation.P2.oneSidedPolygonallyEquivalent`
+* `FiniteCyclicPresentation.Dyck.normalizationEquivalent`
+* `FiniteCyclicPresentation.Crosscap.normalizationEquivalent`
+* `FiniteCyclicPresentation.Dyck.negativeNormalizationEquivalent`
+* `FiniteCyclicPresentation.Crosscap.negativeNormalizationEquivalent`
+* `FiniteCyclicPresentation.Crosscap.adjacentNormalizationEquivalent`
+* `FiniteCyclicPresentation.Handle.normalizationEquivalent`
+* `FiniteCyclicPresentation.HandleToCrosscaps.normalizationEquivalent`
+* `FiniteCyclicPresentation.LoopGrouping.normalizationEquivalent`
+* `FiniteCyclicPresentation.Cancellation.normalizationEquivalent`
+* `FiniteCyclicPresentation.Cancellation.Context.normalizationEquivalent`
+* `FiniteCyclicPresentation.FaceMerge.normalizationEquivalent`
+* `FiniteCyclicPresentation.FaceMerge.ContextMerge.normalizationEquivalent`
+* `FiniteCyclicPresentation.canonicalValidPresentation`
+* `FiniteCyclicPresentation.NormalizationResult`
+* `FiniteCyclicPresentation.NormalizationResult.realizationHomeomorph`
+* `FiniteCyclicPresentation.Reduction.exists_distinct_faceAdjacent`
+* `FiniteCyclicPresentation.Reduction.exists_oppositelyDisplayedAdjacentFaces`
+* `FiniteCyclicPresentation.Reduction.mergeNormalizationEquivalent`
+* `FiniteCyclicPresentation.Reduction.mergeTarget_faces_length`
 
 This packed layer retains only finite signed face words. A signed presentation isomorphism may
 relabel faces, rotate individual face boundaries, and independently reverse the chosen
@@ -230,14 +282,41 @@ The finite cyclic quotient adapter realizes those face words directly as a disjo
 standard polygonal disks modulo occurrence-level side pairings. It does not use the legacy
 `SurfaceCellComplex.realization` field.
 
-`P2.split` implements Gallier--Xu's cyclic oriented face cut. Both cut pieces may be empty.
+`P2.split` implements Gallier--Xu's cyclic oriented face-cut formula. Its raw cut pieces may be
+empty so the same construction expresses the exceptional empty-word-sphere conversion.
 The selected child has displayed boundary `left d`, the appended child has displayed boundary
 `d⁻¹ right`, and both are stored in the cut's chosen traversal orientation. Flipping the cut
 reverses its selected traversal and swaps its two pieces. The fresh edge has multiplicity two,
 old edge multiplicities are preserved, and validity, connectivity, and Gallier validity survive. The
 exceptional empty-word sphere presentation splits definitionally to the
-`twoMonogonSphere` presentation. `P2Subdivision` is the corresponding syntactic relation up to
-signed presentation isomorphism of the target.
+`twoMonogonSphere` presentation. `P2Subdivision` is the corresponding syntactic relation for
+nondegenerate ordinary face cuts, together with that exceptional sphere conversion, up to signed
+presentation isomorphism of the target.
+
+The generic Gallier--Xu Dyck rewrite
+`a U V a⁻¹ X ~ b V U b⁻¹ X` is now an explicit common-subdivision theorem. Its two P2 splits
+are related by a signed isomorphism exchanging the retained distinguished edge with the fresh
+cutting edge. Consequently the rewrite preserves faithful polygonal realizations for ordinary-valid
+source and target presentations.
+
+Gallier--Xu's cross-cap rewrite `a X a Y ~ b b Y⁻¹ X` reverses one child face before
+the second P2 merge. `UnorientedPresentationIso` records that independent face-traversal choice
+explicitly, and realizes it by cyclic disk rotations and reflections. Because the current
+`IsSurfaceValid` face-uniqueness clause is intentionally stated for stored orientations, this
+broader comparison takes ordinary-validity proofs for both endpoints rather than claiming to
+transport validity automatically.
+
+`NormalizationEquivalent` is the stable chain API over validity-bundled presentations. Its
+primitive steps are common subdivisions, unoriented comparisons in either direction, and the
+proved one-sided-degenerate P2 comparison; every chain produces a faithful
+polygonal-realization homeomorphism. Both generic pseudo-rewrites are available as nodes in this
+closure. The derived-chain layer also exposes the opposite-orientation Dyck and crosscap rules,
+the full three-Dyck handle extraction, the four-rewrite conversion of a handle plus a crosscap
+into three crosscaps, and the loop-grouping specialization; all intermediate validity witnesses
+are constructed internally. Exact inverse-pair cancellation and two-face merging are available
+both as isolated word rules and in multi-face contexts with untouched faces. Their transported
+forms isolate arbitrary edge naming, face order, traversal orientation, and cyclic starting
+points behind signed presentation isomorphisms.
 
 ## Polygonal quotient foundation
 

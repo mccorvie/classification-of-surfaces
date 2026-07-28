@@ -71,8 +71,27 @@ The faithful polygonal quotient layer and the bottom API are in place:
 - `FiniteCyclicPresentation.P2` implements the cyclic oriented face split with possibly empty
   pieces, exact child-boundary and multiplicity laws, and preservation of ordinary validity,
   connectivity, and Gallier validity. Its exceptional empty-word sphere presentation regression
-  is definitionally the two-monogon sphere presentation. `P2Subdivision` records the move up to
-  signed presentation isomorphism of the target.
+  is definitionally the two-monogon sphere presentation. `P2Subdivision` records genuine
+  nondegenerate face cuts, plus that exceptional sphere conversion, up to signed presentation
+  isomorphism of the target.
+- `FiniteCyclicPresentation.Subdivides` closes P1/P2 steps transitively, and a common subdivision
+  yields a faithful polygonal-realization equivalence. The generic Gallier--Xu Dyck rewrite is
+  implemented by two explicit P2 cuts whose targets are signed-isomorphic.
+- `FiniteCyclicPresentation.UnorientedPresentationIso` additionally permits independent reversal
+  of face traversal, realized by reflection of the corresponding polygon disk when both endpoints
+  are ordinary-valid. This comparison implements Gallier--Xu's generic cross-cap rewrite without
+  conflating face reversal with signed edge relabeling.
+- `FiniteCyclicPresentation.NormalizationEquivalent` is the validity-bundled equivalence closure
+  used by derived normalization chains. Its primitive seams are common subdivisions and
+  unoriented comparisons; every chain has a polygonal-realization homeomorphism. The generic Dyck
+  and cross-cap rewrites are both registered in this closure.
+- `FiniteCyclicPresentation.Handle.normalizationEquivalent` implements Gallier--Xu's three-Dyck
+  handle extraction, and `LoopGrouping.normalizationEquivalent` implements the final block
+  transport used to group boundary loops. The derived layer transports one-face validity across
+  edge-occurrence permutations, so intermediate spellings do not leak proof obligations.
+- `FiniteCyclicPresentation.HandleToCrosscaps.normalizationEquivalent` implements the complete
+  four-rewrite Step 5 chain converting one crosscap plus one handle into three crosscaps, with an
+  explicit final cyclic-order theorem.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
   arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
   independently of the still-placeholder `SurfaceCellComplex.Realization`.
@@ -173,9 +192,8 @@ compatibility. New code should use the preferred names above.
 2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
    faithful polygonal quotient; route the Eval handoff through that quotient without relying on
    the legacy arbitrary stored realization.
-3. Combine the completed P1 and P2 relations into an elementary move closure and prove the
-   primitive subdivisions preserve the faithful polygonal quotient.
-4. Implement cancellation, vertex reduction, face merging, crosscap/handle grouping, the Dyck
-   transformation, and boundary grouping as derived finite subdivision chains.
-5. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
+3. Implement cancellation, vertex reduction, face merging, and the handle/boundary grouping
+   chains. Reuse the completed generic Dyck and cross-cap rewrite theorems for the repeated word
+   transformations.
+4. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
    the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.

@@ -9,8 +9,11 @@ import ClassificationOfSurfaces.FiniteCyclicP1
 # Gallier--Xu P2 face subdivision
 
 This file formalizes the second primitive subdivision from Gallier--Xu, Definition 6.3. A cyclic
-boundary is cut, in a chosen traversal orientation, into two possibly empty pieces `left` and
-`right`. The selected face is replaced by two faces whose boundaries in that same orientation
+boundary is cut, in a chosen traversal orientation, into two pieces `left` and `right`. The
+presentation-level construction permits empty pieces so that it also expresses Gallier--Xu's
+exceptional empty-word-sphere conversion. The public `P2Subdivision` relation requires both
+pieces to be nonempty for an ordinary face subdivision. The selected face is replaced by two
+faces whose boundaries in that same orientation
 are
 
 * `left d`, and
@@ -42,6 +45,18 @@ structure P2Cut (P : FiniteCyclicPresentation) where
   boundary_rotated : (P.orientedBoundary face).IsRotated (left ++ right)
 
 namespace P2Cut
+
+/-- A genuine face cut has an old boundary side on each side of the new cutting edge.
+
+The raw `P2Cut` structure also represents the exceptional empty-word-sphere conversion, for which
+both pieces are necessarily empty. -/
+def IsNondegenerate {P : FiniteCyclicPresentation} (cut : P2Cut P) : Prop :=
+  cut.left ≠ [] ∧ cut.right ≠ []
+
+theorem isNondegenerate_iff_lengths_pos {P : FiniteCyclicPresentation}
+    (cut : P2Cut P) :
+    cut.IsNondegenerate ↔ 0 < cut.left.length ∧ 0 < cut.right.length := by
+  simp only [IsNondegenerate, List.length_pos_iff_ne_nil]
 
 /-- Cut a chosen oriented representative at a linear position. -/
 def canonical {P : FiniteCyclicPresentation} (face : P.OrientedFace)
@@ -124,6 +139,26 @@ theorem swap_flip {P : FiniteCyclicPresentation} (cut : P2Cut P) :
     cut.swap.flip = cut.flip.swap := by
   cases cut
   rfl
+
+@[simp]
+theorem isNondegenerate_swap {P : FiniteCyclicPresentation} (cut : P2Cut P) :
+    cut.swap.IsNondegenerate ↔ cut.IsNondegenerate := by
+  rw [isNondegenerate_iff_lengths_pos, isNondegenerate_iff_lengths_pos]
+  change
+    (0 < cut.right.length ∧ 0 < cut.left.length) ↔
+      0 < cut.left.length ∧ 0 < cut.right.length
+  exact and_comm
+
+@[simp]
+theorem isNondegenerate_flip {P : FiniteCyclicPresentation} (cut : P2Cut P) :
+    cut.flip.IsNondegenerate ↔ cut.IsNondegenerate := by
+  rw [isNondegenerate_iff_lengths_pos, isNondegenerate_iff_lengths_pos]
+  change
+    (0 < (inverseWord cut.right).length ∧
+      0 < (inverseWord cut.left).length) ↔
+        0 < cut.left.length ∧ 0 < cut.right.length
+  simp only [inverseWord_length]
+  exact and_comm
 
 end P2Cut
 
@@ -1160,43 +1195,57 @@ end P2
 
 /-- A Gallier--Xu P2 face subdivision, up to signed presentation isomorphism of the target.
 
-This is a syntactic move relation and deliberately does not bundle source validity. -/
+An ordinary P2 move cuts between two distinct places of a nonempty cyclic boundary, so both old
+boundary pieces are nonempty. The sole degenerate case admitted here is Gallier--Xu's exceptional
+empty-word sphere, whose conversion to the ordinary-valid two-monogon presentation is also
+represented by the raw `P2.split` construction. This is a syntactic move relation and
+deliberately does not bundle source validity. -/
 def P2Subdivision (P Q : FiniteCyclicPresentation) : Prop :=
-  ∃ cut : P2Cut P, Nonempty (SignedPresentationIso (P2.split P cut) Q)
+  ∃ cut : P2Cut P,
+    (cut.IsNondegenerate ∨ P.IsEmptyWordSphere) ∧
+      Nonempty (SignedPresentationIso (P2.split P cut) Q)
 
 namespace P2Subdivision
 
-/-- The canonical P2 split is a P2 subdivision. -/
-theorem canonical (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+/-- A canonical nondegenerate split is a P2 subdivision. -/
+theorem canonical (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (hcut : cut.IsNondegenerate) :
     P2Subdivision P (P2.split P cut) :=
-  ⟨cut, ⟨SignedPresentationIso.refl _⟩⟩
+  ⟨cut, Or.inl hcut, ⟨SignedPresentationIso.refl _⟩⟩
+
+/-- The raw split of an exceptional empty-word sphere is an allowed exceptional P2 step. -/
+theorem canonicalEmptyWordSphere (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (hP : P.IsEmptyWordSphere) :
+    P2Subdivision P (P2.split P cut) :=
+  ⟨cut, Or.inr hP, ⟨SignedPresentationIso.refl _⟩⟩
 
 /-- P2 subdivisions preserve ordinary incidence validity. -/
 theorem isSurfaceValid {P Q : FiniteCyclicPresentation}
     (hPQ : P2Subdivision P Q) (h : P.IsSurfaceValid) :
     Q.IsSurfaceValid := by
-  rcases hPQ with ⟨cut, ⟨e⟩⟩
+  rcases hPQ with ⟨cut, _hcut, ⟨e⟩⟩
   exact e.isSurfaceValid (P2.split_isSurfaceValid P cut h)
 
 /-- P2 subdivisions preserve face-incidence connectivity. -/
 theorem isConnected {P Q : FiniteCyclicPresentation}
     (hPQ : P2Subdivision P Q) (h : P.IsConnected) :
     Q.IsConnected := by
-  rcases hPQ with ⟨cut, ⟨e⟩⟩
+  rcases hPQ with ⟨cut, _hcut, ⟨e⟩⟩
   exact e.isConnected (P2.split_isConnected P cut h)
 
 /-- P2 subdivisions preserve Gallier validity. -/
 theorem isGallierValid {P Q : FiniteCyclicPresentation}
     (hPQ : P2Subdivision P Q) (h : P.IsGallierValid) :
     Q.IsGallierValid := by
-  rcases hPQ with ⟨cut, ⟨e⟩⟩
+  rcases hPQ with ⟨cut, _hcut, ⟨e⟩⟩
   exact e.isGallierValid (P2.split_isGallierValid P cut h)
 
 /-- The exceptional sphere presentation subdivides to the two-monogon sphere presentation. -/
 theorem emptyWordSphere_twoMonogonSphere :
     P2Subdivision emptyWordSphere twoMonogonSphere := by
   simpa only [P2.split_emptyWordSphere] using
-    canonical emptyWordSphere P2.emptyWordSphereCut
+    canonicalEmptyWordSphere emptyWordSphere P2.emptyWordSphereCut
+      emptyWordSphere_isEmptyWordSphere
 
 end P2Subdivision
 
