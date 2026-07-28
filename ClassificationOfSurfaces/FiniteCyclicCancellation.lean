@@ -211,6 +211,52 @@ theorem normalizationEquivalent {n : ℕ}
         List.length_pos_iff_ne_nil.mpr hX⟩
   exact hsource.trans (hmiddle.trans htarget)
 
+/-- The zero-tail cancellation branch lands at the ordinary two-monogon sphere. -/
+theorem sphereNormalizationEquivalent
+    (validSource : (source ([] : List (SignedDart (Fin 0)))).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨source ([] : List (SignedDart (Fin 0))), validSource⟩
+      ⟨twoMonogonSphere, twoMonogonSphere_isSurfaceValid⟩ := by
+  let X : List (SignedDart (Fin 0)) := []
+  let sourceSplit := P2.split (source X) (sourceCut X)
+  let targetSplit := P2.split (target X) (targetCut X)
+  let validSourceSplit : sourceSplit.IsSurfaceValid :=
+    P2.split_isSurfaceValid (source X) (sourceCut X) validSource
+  have htargetSplit : targetSplit = twoMonogonSphere := by
+    rfl
+  let validTargetSplit : targetSplit.IsSurfaceValid :=
+    htargetSplit.symm ▸ twoMonogonSphere_isSurfaceValid
+  have hsource :
+      NormalizationEquivalent
+        ⟨source X, validSource⟩
+        ⟨sourceSplit, validSourceSplit⟩ :=
+    NormalizationEquivalent.ofP2
+      (P2Subdivision.canonical
+        (source X) (sourceCut X) (sourceCut_isNondegenerate X))
+  have hmiddle :
+      NormalizationEquivalent
+        ⟨sourceSplit, validSourceSplit⟩
+        ⟨targetSplit, validTargetSplit⟩ := by
+    have hcontract :=
+      P1.contractionNormalizationEquivalent
+        targetSplit (P2.freshEdge (target X)) validTargetSplit
+    have hnode :
+        (⟨sourceSplit, validSourceSplit⟩ : ValidPresentation) =
+          ⟨P1.expand targetSplit (P2.freshEdge (target X)),
+            P1.expand_isSurfaceValid targetSplit
+              (P2.freshEdge (target X)) validTargetSplit⟩ := by
+      apply ValidPresentation.ext
+      exact split_source_eq_expand_split_target X
+    rw [hnode]
+    exact hcontract
+  have htargetNode :
+      (⟨targetSplit, validTargetSplit⟩ : ValidPresentation) =
+        ⟨twoMonogonSphere, twoMonogonSphere_isSurfaceValid⟩ := by
+    apply ValidPresentation.ext
+    exact htargetSplit
+  rw [← htargetNode]
+  exact hsource.trans hmiddle
+
 /-- Transport base cancellation across arbitrary signed presentation isomorphisms. This is the
 stable constructor used after rotating a face and renaming its cancellable edge to the last
 index. -/
