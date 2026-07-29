@@ -204,6 +204,20 @@ def IsPairReduced {n : ℕ}
     (word : List (SignedDart (Fin n))) : Prop :=
   IsEmpty (CancellablePair word)
 
+/-- A word with fewer than two darts cannot contain a cyclically adjacent inverse pair. -/
+theorem isPairReduced_of_length_lt_two {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (hshort : word.length < 2) :
+    IsPairReduced word := by
+  constructor
+  intro pair
+  have hlength := pair.rotated.perm.length_eq
+  have hpairLength :
+      (inversePair pair.edge pair.negativeFirst).length = 2 := by
+    cases pair.negativeFirst <;> rfl
+  rw [List.length_append, hpairLength] at hlength
+  omega
+
 /-- Validity forces the displayed inverse pair's edge to be absent from its remaining tail. -/
 theorem CancellablePair.edge_not_mem_tail {n : ℕ}
     {word : List (SignedDart (Fin n))}
@@ -14135,6 +14149,33 @@ theorem normalizationEquivalent_resolveEnvelope
   exact henvelope.trans
     (htarget ▸ terminal.resolveEnvelope.equivalent)
 
+/-- Finish the fresh-carrier resolution at a certified residual-empty marked endpoint. -/
+noncomputable def finishEnvelope
+    (terminal : TerminalProtectedWord) :
+    MarkedExtractionResult
+      terminal.resolveEnvelope.targetState :=
+  terminal.resolveEnvelope.targetState.finishExtractions
+    terminal.resolveEnvelope.targetProtectedNonempty
+    (isPairReduced_of_length_lt_two
+      terminal.resolveEnvelope_residualLength_lt_two)
+
+/-- The completely executed boundary-envelope chain preserves the original realization. -/
+theorem normalizationEquivalent_finishEnvelope
+    (terminal : TerminalProtectedWord) :
+    NormalizationEquivalent terminal.validPresentation
+      ⟨Dyck.oneFace
+          (ReductionToken.expand
+            terminal.finishEnvelope.targetTokens),
+        terminal.finishEnvelope.targetState.valid⟩ :=
+  terminal.normalizationEquivalent_resolveEnvelope.trans
+    terminal.finishEnvelope.equivalent
+
+theorem finishEnvelope_residualDarts_eq_nil
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.residualDarts
+      terminal.finishEnvelope.targetTokens = [] :=
+  terminal.finishEnvelope.targetResidualEmpty
+
 end TerminalProtectedWord
 
 namespace MarkedExecutionState
@@ -14182,6 +14223,50 @@ theorem expand_eq_toTerminalProtectedWord_sequenceWord {n : ℕ}
     tokens state.classified residualEmpty
 
 end MarkedExecutionState
+
+namespace TerminalProtectedWord
+
+/-- Atom-level terminal word returned by the fully executed fresh boundary envelope. -/
+noncomputable def boundaryNormalizedWord
+    (terminal : TerminalProtectedWord) :
+    TerminalProtectedWord :=
+  terminal.finishEnvelope.targetState.toTerminalProtectedWord
+    terminal.finishEnvelope.targetProtectedNonempty
+    terminal.finishEnvelope.targetResidualEmpty
+
+/-- The boundary-envelope execution exposes a residual-empty protected atom word equivalent to
+the original terminal word. -/
+theorem normalizationEquivalent_boundaryNormalizedWord
+    (terminal : TerminalProtectedWord) :
+    NormalizationEquivalent terminal.validPresentation
+      terminal.boundaryNormalizedWord.validPresentation := by
+  have htarget :
+      (⟨Dyck.oneFace
+            (ReductionToken.expand
+              terminal.finishEnvelope.targetTokens),
+          terminal.finishEnvelope.targetState.valid⟩ :
+        ValidPresentation) =
+        terminal.boundaryNormalizedWord.validPresentation := by
+    apply ValidPresentation.ext
+    exact congrArg Dyck.oneFace
+      (MarkedExecutionState.expand_eq_toTerminalProtectedWord_sequenceWord
+        terminal.finishEnvelope.targetState
+        terminal.finishEnvelope.targetProtectedNonempty
+        terminal.finishEnvelope.targetResidualEmpty)
+  have hequivalent :
+      NormalizationEquivalent
+        (⟨Dyck.oneFace
+              (ReductionToken.expand
+                terminal.finishEnvelope.targetTokens),
+            terminal.finishEnvelope.targetState.valid⟩ :
+          ValidPresentation)
+        terminal.boundaryNormalizedWord.validPresentation := by
+    rw [← htarget]
+    exact NormalizationEquivalent.refl _
+  exact terminal.normalizationEquivalent_finishEnvelope.trans
+    hequivalent
+
+end TerminalProtectedWord
 
 /-- The isolated terminal obligation after the terminating marked recursion: normalize a valid,
 classified marked word whose residual contribution is empty. -/
