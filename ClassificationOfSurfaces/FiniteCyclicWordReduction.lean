@@ -2627,6 +2627,186 @@ theorem exists_negativeNormalizationEquivalent {n : ℕ}
 
 end BoundaryBlockCommute
 
+namespace CrosscapBlockCommute
+
+/-- A positive completed crosscap lying at the head of a positive/negative residual pair. -/
+def positiveSourceWord {n : ℕ}
+    (outer carrier : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  .pos outer :: .pos carrier :: .pos carrier ::
+    insideTail ++ .neg outer :: outsideTail
+
+/-- Commute the completed crosscap through the residual pair.  The old residual carrier becomes
+the completed crosscap, while the old crosscap carrier becomes the residual pair around the
+strictly shorter protected interval. -/
+def positiveTargetWord {n : ℕ}
+    (outer carrier : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  [.pos outer, .pos outer, .neg carrier] ++
+    insideTail ++ .pos carrier :: inverseWord outsideTail
+
+/-- The positive contextual crosscap commute is an adjacent-crosscap rewrite followed by an
+ordinary crosscap grouping, with cyclic rotations between the displayed spellings. -/
+theorem exists_positiveNormalizationEquivalent {n : ℕ}
+    (outer carrier : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hcarrierOuter : carrier ≠ outer)
+    (hcarrierInside :
+      carrier ∉ insideTail.map edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉ outsideTail.map edgeOfDart)
+    (houterInside :
+      outer ∉ insideTail.map edgeOfDart)
+    (houterOutside :
+      outer ∉ outsideTail.map edgeOfDart)
+    (validSource :
+      (Dyck.oneFace
+        (positiveSourceWord outer carrier
+          insideTail outsideTail)).IsSurfaceValid) :
+    ∃ validTarget :
+        (Dyck.oneFace
+          (positiveTargetWord outer carrier
+            insideTail outsideTail)).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (positiveSourceWord outer carrier
+            insideTail outsideTail),
+          validSource⟩
+        ⟨Dyck.oneFace
+          (positiveTargetWord outer carrier
+            insideTail outsideTail),
+          validTarget⟩ := by
+  let adjacentX :=
+    insideTail ++ [.neg outer] ++ outsideTail
+  let adjacentY : List (SignedDart (Fin n)) :=
+    [.pos outer]
+  have hsourceRotated :
+      (positiveSourceWord outer carrier
+        insideTail outsideTail).IsRotated
+        ((Crosscap.adjacentSource carrier
+          adjacentX adjacentY).boundary 0) := by
+    simpa [positiveSourceWord, adjacentX, adjacentY,
+      Crosscap.adjacentSource, Dyck.oneFace_boundary_zero,
+      List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l := [SignedDart.pos outer])
+        (l' :=
+          [SignedDart.pos carrier,
+            SignedDart.pos carrier] ++
+          insideTail ++ [SignedDart.neg outer] ++
+          outsideTail))
+  let sourceRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated hsourceRotated
+  let validAdjacentSource :
+      (Crosscap.adjacentSource carrier
+        adjacentX adjacentY).IsSurfaceValid :=
+    sourceRotation.isSurfaceValid validSource
+  have hcarrierAdjacentX :
+      carrier ∉ adjacentX.map edgeOfDart := by
+    simp [adjacentX, hcarrierInside,
+      hcarrierOuter, hcarrierOutside]
+  have hcarrierAdjacentY :
+      carrier ∉ adjacentY.map edgeOfDart := by
+    simp [adjacentY, hcarrierOuter]
+  let validAdjacentTarget :=
+    Crosscap.adjacentTarget_isSurfaceValid carrier
+      adjacentX adjacentY validAdjacentSource
+  have hadjacent :=
+    Crosscap.adjacentNormalizationEquivalent carrier
+      adjacentX adjacentY
+      hcarrierAdjacentX hcarrierAdjacentY
+      validAdjacentSource validAdjacentTarget
+  let groupingX :=
+    SignedDart.pos carrier ::
+      inverseWord outsideTail
+  let groupingY :=
+    inverseWord insideTail ++
+      [SignedDart.pos carrier]
+  have hadjacentTargetRotated :
+      (Crosscap.adjacentTarget carrier
+        adjacentX adjacentY).boundary 0 |>.IsRotated
+        ((Crosscap.source outer
+          groupingX groupingY).boundary 0) := by
+    simpa [adjacentX, adjacentY, groupingX, groupingY,
+      Crosscap.adjacentTarget, Crosscap.source,
+      Dyck.oneFace_boundary_zero, inverseWord,
+      SignedDart.flip, Function.comp_def,
+      List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l := [SignedDart.pos carrier])
+        (l' :=
+          [SignedDart.pos outer,
+            SignedDart.pos carrier] ++
+          inverseWord outsideTail ++
+          [SignedDart.pos outer] ++
+          inverseWord insideTail))
+  let groupingRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      hadjacentTargetRotated
+  let validGroupingSource :
+      (Crosscap.source outer
+        groupingX groupingY).IsSurfaceValid :=
+    groupingRotation.isSurfaceValid validAdjacentTarget
+  have houterGroupingX :
+      outer ∉ groupingX.map edgeOfDart := by
+    simp [groupingX, hcarrierOuter.symm,
+      map_edgeOfDart_inverseWord, houterOutside]
+  have houterGroupingY :
+      outer ∉ groupingY.map edgeOfDart := by
+    simp [groupingY, map_edgeOfDart_inverseWord,
+      houterInside, hcarrierOuter.symm]
+  let validGroupingTarget :=
+    Crosscap.target_isSurfaceValid outer
+      groupingX groupingY validGroupingSource
+  have hgrouping :=
+    Crosscap.normalizationEquivalent outer
+      groupingX groupingY
+      houterGroupingX houterGroupingY
+      validGroupingSource validGroupingTarget
+  have hinverseGroupingY :
+      inverseWord groupingY =
+        SignedDart.neg carrier :: insideTail := by
+    simp [groupingY, inverseWord_append]
+    rfl
+  have htargetRotated :
+      (Crosscap.target outer
+        groupingX groupingY).boundary 0 |>.IsRotated
+        (positiveTargetWord outer carrier
+          insideTail outsideTail) := by
+    simpa [positiveTargetWord, groupingX, groupingY,
+      Crosscap.target, Dyck.oneFace_boundary_zero,
+      hinverseGroupingY, List.cons_append,
+      List.append_assoc] using
+      (List.isRotated_append
+        (l :=
+          SignedDart.pos carrier ::
+            inverseWord outsideTail)
+        (l' :=
+          [SignedDart.pos outer,
+            SignedDart.pos outer,
+            SignedDart.neg carrier] ++
+          insideTail))
+  let targetRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated htargetRotated
+  let validTarget :
+      (Dyck.oneFace
+        (positiveTargetWord outer carrier
+          insideTail outsideTail)).IsSurfaceValid :=
+    targetRotation.isSurfaceValid validGroupingTarget
+  exact
+    ⟨validTarget,
+      (NormalizationEquivalent.ofSignedIso sourceRotation).trans
+        (hadjacent.trans
+          ((NormalizationEquivalent.ofSignedIso
+              groupingRotation).trans
+            (hgrouping.trans
+              (NormalizationEquivalent.ofSignedIso
+                targetRotation))))⟩
+
+end CrosscapBlockCommute
+
 /-- One non-residual atom allowed in a classified marked execution state. -/
 inductive ProtectedAtom (n : ℕ)
   | boundary (hole : Fin n) (negative : Bool)
