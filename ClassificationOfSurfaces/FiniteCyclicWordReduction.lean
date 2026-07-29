@@ -4984,6 +4984,41 @@ theorem IsSeparated.of_perm {n : ℕ}
     ((residualPerm.map edgeOfDart).mem_iff.mpr hResidual)
     (protectedPerm.mem_iff.mpr hProtected)
 
+/-- Permuting atomic marked tokens permutes their flattened protected-edge lists. -/
+theorem protectedEdges_perm {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (permuted : tokens.Perm target) :
+    (protectedEdges tokens).Perm
+      (protectedEdges target) := by
+  simpa [protectedEdges, List.flatMap] using
+    (List.Perm.flatMap permuted
+      (f := extractedEdges) (g := extractedEdges)
+      (fun _ _ => List.Perm.refl _))
+
+/-- Duplicate-freeness of protected names depends only on the multiset of marked tokens. -/
+theorem protectedEdges_nodup_of_perm {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (nodup : (protectedEdges tokens).Nodup)
+    (permuted : tokens.Perm target) :
+    (protectedEdges target).Nodup :=
+  (protectedEdges_perm permuted).nodup_iff.mp nodup
+
+/-- Lowering an absent ambient edge preserves duplicate-freeness of all protected names. -/
+theorem protectedEdges_nodup_lowerTokensAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand tokens).map edgeOfDart)
+    (nodup : (protectedEdges tokens).Nodup) :
+    (protectedEdges
+      (lowerTokensAvoiding a tokens ha)).Nodup := by
+  have mappedNodup :
+      ((protectedEdges
+        (lowerTokensAvoiding a tokens ha)).map
+          (Cancellation.restoreEdge a)).Nodup := by
+    rw [protectedEdges_lowerTokensAvoiding_map_restoreEdge]
+    exact nodup
+  exact mappedNodup.of_map _
+
 /-- A separated marked word cannot protect an edge that still occurs residually. -/
 theorem IsSeparated.not_mem_protected_of_mem_residual {n : ℕ}
     {tokens : List (ReductionToken n)}
@@ -7007,6 +7042,78 @@ structure MarkedBoundaryPairContraction {n : ℕ}
 
 namespace MarkedBoundaryPairContraction
 
+/-- Build a boundary contraction from a displayed adjacent pair.  Separation rules the protected
+names out of the residual tail, while duplicate-freeness of protected names supplies distinctness
+and rules them out of every protected tail token. -/
+def ofRotatedOfProtectedNodup {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (first second : Fin (n + 1))
+    (firstNegative secondNegative : Bool)
+    (tailTokens : List (ReductionToken (n + 1)))
+    (rotated :
+      tokens.IsRotated
+        ([.extracted (.boundary first firstNegative),
+          .extracted (.boundary second secondNegative)] ++
+          tailTokens))
+    (separated : ReductionToken.IsSeparated tokens)
+    (protectedNodup :
+      (ReductionToken.protectedEdges tokens).Nodup) :
+    MarkedBoundaryPairContraction tokens := by
+  let displayedTokens :=
+    [.extracted (.boundary first firstNegative),
+      .extracted (.boundary second secondNegative)] ++
+      tailTokens
+  have separatedDisplayed :
+      ReductionToken.IsSeparated displayedTokens :=
+    separated.of_isRotated rotated
+  have protectedNodupDisplayed :
+      (ReductionToken.protectedEdges displayedTokens).Nodup :=
+    (ReductionToken.protectedEdges_isRotated
+      rotated).nodup_iff.mp protectedNodup
+  have protectedFacts :
+      first ≠ second ∧
+        first ∉ ReductionToken.protectedEdges tailTokens ∧
+        second ∉ ReductionToken.protectedEdges tailTokens := by
+    simpa [displayedTokens, ExtractedBlock.edges] using
+      protectedNodupDisplayed
+  have not_mem_tail (edge : Fin (n + 1))
+      (headProtected :
+        edge ∈
+          ReductionToken.protectedEdges displayedTokens)
+      (tailProtected :
+        edge ∉ ReductionToken.protectedEdges tailTokens) :
+      edge ∉
+        (ReductionToken.expand tailTokens).map edgeOfDart := by
+    rw [ReductionToken.mem_map_edgeOfDart_expand_iff,
+      not_or]
+    refine ⟨?_, tailProtected⟩
+    intro residualTail
+    apply (List.disjoint_left.mp separatedDisplayed)
+      (b := edge)
+    · change edge ∈
+        (ReductionToken.residualDarts
+          tailTokens).map edgeOfDart
+      exact residualTail
+    · exact headProtected
+  exact
+    { first := first
+      second := second
+      firstNegative := firstNegative
+      secondNegative := secondNegative
+      tailTokens := tailTokens
+      rotated := rotated
+      first_ne_second := protectedFacts.1
+      first_not_mem_tail :=
+        not_mem_tail first
+          (by simp [displayedTokens,
+            ExtractedBlock.edges])
+          protectedFacts.2.1
+      second_not_mem_tail :=
+        not_mem_tail second
+          (by simp [displayedTokens,
+            ExtractedBlock.edges])
+          protectedFacts.2.2 }
+
 /-- Exact marked target after contracting the second boundary subdivision edge. -/
 def targetTokens {n : ℕ}
     {tokens : List (ReductionToken (n + 1))}
@@ -7190,6 +7297,76 @@ theorem targetTokens_isSeparated {n : ℕ}
   · exact
       (List.disjoint_left.mp loweredTailSeparated)
         heTailResidual heTailProtected
+
+/-- Boundary-subdivision contraction preserves duplicate-freeness of protected edge names. -/
+theorem targetTokens_protectedEdges_nodup {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (contraction : MarkedBoundaryPairContraction tokens)
+    (nodup :
+      (ReductionToken.protectedEdges tokens).Nodup) :
+    (ReductionToken.protectedEdges
+      contraction.targetTokens).Nodup := by
+  let displayedTokens :=
+    [.extracted
+        (.boundary contraction.first
+          contraction.firstNegative),
+      .extracted
+        (.boundary contraction.second
+          contraction.secondNegative)] ++
+      contraction.tailTokens
+  have displayedNodup :
+      (ReductionToken.protectedEdges
+        displayedTokens).Nodup :=
+    (ReductionToken.protectedEdges_isRotated
+      contraction.rotated).nodup_iff.mp nodup
+  have sourceFacts :
+      contraction.first ∉
+          ReductionToken.protectedEdges
+            contraction.tailTokens ∧
+        (ReductionToken.protectedEdges
+          contraction.tailTokens).Nodup := by
+    have allFacts :
+        contraction.first ≠ contraction.second ∧
+          contraction.first ∉
+            ReductionToken.protectedEdges
+              contraction.tailTokens ∧
+          contraction.second ∉
+            ReductionToken.protectedEdges
+              contraction.tailTokens ∧
+          (ReductionToken.protectedEdges
+            contraction.tailTokens).Nodup := by
+      simpa [displayedTokens,
+        ExtractedBlock.edges] using displayedNodup
+    exact ⟨allFacts.2.1, allFacts.2.2.2⟩
+  let loweredTail :=
+    ReductionToken.lowerTokensAvoiding
+      contraction.second contraction.tailTokens
+      contraction.second_not_mem_tail
+  have loweredTailNodup :
+      (ReductionToken.protectedEdges loweredTail).Nodup :=
+    ReductionToken.protectedEdges_nodup_lowerTokensAvoiding
+      contraction.second contraction.tailTokens
+      contraction.second_not_mem_tail sourceFacts.2
+  rw [targetTokens]
+  simp only [ReductionToken.protectedEdges_cons,
+    ReductionToken.extractedEdges_extracted,
+    ExtractedBlock.edges, List.singleton_append,
+    List.nodup_cons]
+  refine ⟨?_, loweredTailNodup⟩
+  intro hlowered
+  apply sourceFacts.1
+  rw [←
+    ReductionToken.protectedEdges_lowerTokensAvoiding_map_restoreEdge
+      contraction.second contraction.tailTokens
+      contraction.second_not_mem_tail]
+  exact List.mem_map.mpr
+    ⟨Cancellation.lowerEdge
+        contraction.second contraction.first
+        contraction.first_ne_second,
+      hlowered,
+      Cancellation.restoreEdge_lowerEdge
+        contraction.second contraction.first
+        contraction.first_ne_second⟩
 
 end MarkedBoundaryPairContraction
 
