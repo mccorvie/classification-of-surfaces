@@ -6544,6 +6544,141 @@ theorem targetTokens_isSeparated {n : ℕ}
 
 end MarkedCrosscapBlockCommute
 
+/-- A completed handle at the head of a protected residual-pair interval. -/
+structure MarkedHandleBlockCommute {n : ℕ}
+    (tokens : List (ReductionToken n)) where
+  outer : Fin n
+  first : Fin n
+  second : Fin n
+  outerNegative : Bool
+  insideTokens : List (ReductionToken n)
+  outsideTokens : List (ReductionToken n)
+  rotated :
+    tokens.IsRotated
+      (.residual (dart outer outerNegative) ::
+        .completed (.handle first second) ::
+        insideTokens ++
+        .residual (dart outer (!outerNegative)) ::
+        outsideTokens)
+  first_ne_second : first ≠ second
+  first_ne_outer : first ≠ outer
+  second_ne_outer : second ≠ outer
+  first_not_mem_inside :
+    first ∉
+      (ReductionToken.expand insideTokens).map edgeOfDart
+  first_not_mem_outside :
+    first ∉
+      (ReductionToken.expand outsideTokens).map edgeOfDart
+  second_not_mem_inside :
+    second ∉
+      (ReductionToken.expand insideTokens).map edgeOfDart
+  second_not_mem_outside :
+    second ∉
+      (ReductionToken.expand outsideTokens).map edgeOfDart
+  outer_not_mem_inside :
+    outer ∉
+      (ReductionToken.expand insideTokens).map edgeOfDart
+  outer_not_mem_outside :
+    outer ∉
+      (ReductionToken.expand outsideTokens).map edgeOfDart
+
+namespace MarkedHandleBlockCommute
+
+/-- Exact marked target after moving the completed handle outside the residual pair. -/
+def targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedHandleBlockCommute tokens) :
+    List (ReductionToken n) :=
+  .completed (.handle commute.first
+      commute.second) ::
+    .residual
+      (dart commute.outer commute.outerNegative) ::
+    commute.insideTokens ++
+    .residual
+      (dart commute.outer (!commute.outerNegative)) ::
+    commute.outsideTokens
+
+/-- Handle commuting merely permutes atomic marked tokens. -/
+theorem perm_targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedHandleBlockCommute tokens) :
+    tokens.Perm commute.targetTokens := by
+  apply commute.rotated.perm.trans
+  simpa [targetTokens] using
+    (List.Perm.swap
+      (.residual
+        (dart commute.outer commute.outerNegative))
+      (.completed
+        (.handle commute.first commute.second))
+      (commute.insideTokens ++
+        .residual
+          (dart commute.outer
+            (!commute.outerNegative)) ::
+        commute.outsideTokens)).symm
+
+/-- Expansion of the marked source is the generic contextual handle source spelling. -/
+theorem expand_isRotated_sourceWord {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedHandleBlockCommute tokens) :
+    (ReductionToken.expand tokens).IsRotated
+      (HandleBlockCommute.sourceWord
+        commute.outer commute.first commute.second
+        commute.outerNegative
+        (ReductionToken.expand commute.insideTokens)
+        (ReductionToken.expand
+          commute.outsideTokens)) := by
+  have hexpanded :=
+    ReductionToken.expand_isRotated commute.rotated
+  cases hnegative : commute.outerNegative <;>
+    simpa [HandleBlockCommute.sourceWord,
+      HandleBlockCommute.positiveSourceWord,
+      HandleBlockCommute.negativeSourceWord,
+      hnegative, ReductionToken.expand_cons,
+      ReductionToken.expand_append,
+      ReductionToken.word_residual,
+      ReductionToken.word_completed,
+      CompletedBlock.word, dart,
+      List.append_assoc] using hexpanded
+
+/-- Expansion of the exact marked target is the generic contextual handle target spelling. -/
+theorem expand_targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedHandleBlockCommute tokens) :
+    ReductionToken.expand commute.targetTokens =
+      HandleBlockCommute.targetWord
+        commute.outer commute.first commute.second
+        commute.outerNegative
+        (ReductionToken.expand commute.insideTokens)
+        (ReductionToken.expand
+          commute.outsideTokens) := by
+  cases hnegative : commute.outerNegative <;>
+    simp [targetTokens, HandleBlockCommute.targetWord,
+      HandleBlockCommute.positiveTargetWord,
+      HandleBlockCommute.negativeTargetWord,
+      hnegative, ReductionToken.expand_cons,
+      ReductionToken.expand_append,
+      ReductionToken.word_residual,
+      ReductionToken.word_completed,
+      CompletedBlock.word, dart]
+
+/-- Handle commuting preserves the separated namespace invariant. -/
+theorem targetTokens_isSeparated {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedHandleBlockCommute tokens)
+    (separated : ReductionToken.IsSeparated tokens) :
+    ReductionToken.IsSeparated commute.targetTokens :=
+  separated.of_perm commute.perm_targetTokens
+
+/-- Handle commuting preserves the classified-token grammar. -/
+theorem targetTokens_allClassified {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedHandleBlockCommute tokens)
+    (classified : ReductionToken.AllClassified tokens) :
+    ReductionToken.AllClassified commute.targetTokens :=
+  classified.of_perm commute.perm_targetTokens
+
+end MarkedHandleBlockCommute
+
 namespace MarkedResidualCancellablePair
 
 /-- Under the classified-state invariant, the interval crossed by a lifted residual cancellation
