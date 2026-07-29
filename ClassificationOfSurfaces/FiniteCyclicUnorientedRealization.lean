@@ -147,6 +147,34 @@ theorem isBoundaryEdge_iff (e : UnorientedPresentationIso P Q) (a : P.Edge) :
   unfold IsBoundaryEdge
   rw [e.edgeMultiplicity_eq]
 
+/-- Face adjacency is preserved when target faces may be read in either orientation. -/
+theorem map_faceAdjacent (e : UnorientedPresentationIso P Q)
+    {f g : P.Face} (h : P.FaceAdjacent f g) :
+    Q.FaceAdjacent (e.faceEquiv f) (e.faceEquiv g) := by
+  rcases h with ⟨a, hfa, hga⟩
+  refine ⟨e.edgeEquiv a, ?_, ?_⟩
+  · apply List.count_pos_iff.mp
+    change 0 < Q.faceEdgeMultiplicity (e.faceEquiv f) (e.edgeEquiv a)
+    rw [← e.faceEdgeMultiplicity_eq f a]
+    exact List.count_pos_iff.mpr hfa
+  · apply List.count_pos_iff.mp
+    change 0 < Q.faceEdgeMultiplicity (e.faceEquiv g) (e.edgeEquiv a)
+    rw [← e.faceEdgeMultiplicity_eq g a]
+    exact List.count_pos_iff.mpr hga
+
+/-- Face-incidence connectivity is preserved by an unoriented presentation isomorphism. -/
+theorem isConnected (e : UnorientedPresentationIso P Q)
+    (h : P.IsConnected) : Q.IsConnected := by
+  refine ⟨e.faceEquiv.nonempty_congr.mp h.1, ?_⟩
+  intro q r
+  have hchain := h.2 (e.faceEquiv.symm q) (e.faceEquiv.symm r)
+  have hmapped :=
+    hchain.lift e.faceEquiv fun _ _ hadj ↦ e.map_faceAdjacent hadj
+  change Relation.ReflTransGen Q.FaceAdjacent
+    (e.faceEquiv (e.faceEquiv.symm q))
+      (e.faceEquiv (e.faceEquiv.symm r)) at hmapped
+  simpa only [e.faceEquiv.apply_symm_apply] using hmapped
+
 /-- Looking up the reversed signed word reverses the finite index and flips the dart. -/
 theorem inverseWord_get_rev {α : Type*}
     (word : List (SignedDart α)) (i : Fin word.length) :

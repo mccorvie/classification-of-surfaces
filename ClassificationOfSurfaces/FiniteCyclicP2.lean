@@ -1097,6 +1097,125 @@ theorem split_isConnected
   rcases oldFace_to_target P cut r with ⟨g, hr⟩
   exact hq.trans ((map_faceChain P cut (h.2 f g)).trans hr)
 
+/-- Collapse both child faces of a P2 split back to their source face. -/
+def collapseFace
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (q : (split P cut).Face) : P.Face :=
+  if h : q.val < P.faces.length then
+    ⟨q.val, h⟩
+  else
+    cut.face.face
+
+@[simp]
+theorem collapseFace_oldFace
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) (f : P.Face) :
+    collapseFace P cut (oldFace P cut f) = f := by
+  apply Fin.ext
+  simp [collapseFace, oldFace]
+
+@[simp]
+theorem collapseFace_rightFace
+    (P : FiniteCyclicPresentation) (cut : P2Cut P) :
+    collapseFace P cut (rightFace P cut) = cut.face.face := by
+  apply Fin.ext
+  simp [collapseFace, rightFace]
+
+/-- A retained old edge in a child face comes from the corresponding collapsed source face. -/
+private theorem oldEdge_mem_collapseFace
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (q : (split P cut).Face) (e : P.Edge)
+    (h : e.castSucc ∈ ((split P cut).boundary q).map edgeOfDart) :
+    e ∈ (P.boundary (collapseFace P cut q)).map edgeOfDart := by
+  rcases face_cases P cut q with ⟨f, rfl⟩ | rfl
+  · rw [collapseFace_oldFace]
+    by_cases hface : f = cut.face.face
+    · subst f
+      apply List.count_pos_iff.mp
+      have hpositive :
+          0 < (split P cut).faceEdgeMultiplicity
+            (oldFace P cut cut.face.face) e.castSucc :=
+        List.count_pos_iff.mpr h
+      rw [faceEdgeMultiplicity_split_selected_castSucc] at hpositive
+      change 0 < P.faceEdgeMultiplicity cut.face.face e
+      rw [faceEdgeMultiplicity_cut_eq_add]
+      omega
+    · apply List.count_pos_iff.mp
+      have hpositive :
+          0 < (split P cut).faceEdgeMultiplicity
+            (oldFace P cut f) e.castSucc :=
+        List.count_pos_iff.mpr h
+      rw [faceEdgeMultiplicity_split_old_of_ne P cut hface] at hpositive
+      exact hpositive
+  · rw [collapseFace_rightFace]
+    apply List.count_pos_iff.mp
+    have hpositive :
+        0 < (split P cut).faceEdgeMultiplicity
+          (rightFace P cut) e.castSucc :=
+      List.count_pos_iff.mpr h
+    rw [faceEdgeMultiplicity_split_right_castSucc] at hpositive
+    change 0 < P.faceEdgeMultiplicity cut.face.face e
+    rw [faceEdgeMultiplicity_cut_eq_add]
+    omega
+
+/-- Any child containing the fresh cutting edge collapses to the selected source face. -/
+private theorem collapseFace_eq_of_freshEdge_mem
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (q : (split P cut).Face)
+    (h : freshEdge P ∈ ((split P cut).boundary q).map edgeOfDart) :
+    collapseFace P cut q = cut.face.face := by
+  rcases face_cases P cut q with ⟨f, rfl⟩ | rfl
+  · rw [collapseFace_oldFace]
+    by_contra hface
+    have hpositive :
+        0 < (split P cut).faceEdgeMultiplicity
+          (oldFace P cut f) (freshEdge P) :=
+      List.count_pos_iff.mpr h
+    rw [faceEdgeMultiplicity_split_old_freshEdge_of_ne P cut hface] at hpositive
+    omega
+  · exact collapseFace_rightFace P cut
+
+/-- Collapsing the child faces sends target adjacency to a source adjacency path. -/
+theorem collapse_faceAdjacent_chain
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {q r : (split P cut).Face}
+    (h : (split P cut).FaceAdjacent q r) :
+    Relation.ReflTransGen P.FaceAdjacent
+      (collapseFace P cut q) (collapseFace P cut r) := by
+  rcases h with ⟨b, hqb, hrb⟩
+  change Fin (P.edgeCount + 1) at b
+  revert hqb hrb
+  refine Fin.lastCases ?_ (fun e hqb hrb ↦ ?_) b
+  · intro hqb hrb
+    rw [collapseFace_eq_of_freshEdge_mem P cut q hqb,
+      collapseFace_eq_of_freshEdge_mem P cut r hrb]
+  · exact Relation.ReflTransGen.single
+      ⟨e, oldEdge_mem_collapseFace P cut q e hqb,
+        oldEdge_mem_collapseFace P cut r e hrb⟩
+
+/-- Collapsing the child faces sends target adjacency paths to source adjacency paths. -/
+theorem collapse_faceChain
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    {q r : (split P cut).Face}
+    (h : Relation.ReflTransGen (split P cut).FaceAdjacent q r) :
+    Relation.ReflTransGen P.FaceAdjacent
+      (collapseFace P cut q) (collapseFace P cut r) := by
+  induction h using Relation.ReflTransGen.trans_induction_on with
+  | refl => exact Relation.ReflTransGen.refl
+  | single hadj => exact collapse_faceAdjacent_chain P cut hadj
+  | trans _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+
+/-- A P2 split is connected only if its source presentation is connected. -/
+theorem isConnected_of_split
+    (P : FiniteCyclicPresentation) (cut : P2Cut P)
+    (h : (split P cut).IsConnected) :
+    P.IsConnected := by
+  refine ⟨?_, ?_⟩
+  · exact (Nonempty.map (collapseFace P cut) h.1)
+  · intro f g
+    have hchain := h.2 (oldFace P cut f) (oldFace P cut g)
+    have hmapped := collapse_faceChain P cut hchain
+    simpa only [collapseFace_oldFace] using hmapped
+
 /-- Every P2 split of an exceptional empty-word presentation is ordinarily valid. -/
 theorem split_isSurfaceValid_of_isEmptyWordSphere
     (P : FiniteCyclicPresentation) (cut : P2Cut P)

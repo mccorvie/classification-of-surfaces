@@ -216,6 +216,40 @@ def middleOriginalFaces
     List P.Face :=
   List.ofFn (middleOriginalFace P f g hfg)
 
+theorem middleOriginalFace_ne_selected
+    (P : FiniteCyclicPresentation) (f g : P.Face)
+    (hfg : f ≠ g) (i : Fin (faceCountBetween P)) :
+    middleOriginalFace P f g hfg i ≠ f := by
+  intro h
+  have hpositions := congrArg (faceToEndpoints P f g) h
+  have hmiddle :
+      faceToEndpoints P f g
+          (middleOriginalFace P f g hfg i) =
+        middleFacePosition P f g hfg i := by
+    simp [middleOriginalFace]
+  rw [hmiddle, faceToEndpoints_selected P f g hfg] at hpositions
+  have hval := congrArg Fin.val hpositions
+  change i.val + 1 = 0 at hval
+  omega
+
+theorem middleOriginalFace_ne_right
+    (P : FiniteCyclicPresentation) (f g : P.Face)
+    (hfg : f ≠ g) (i : Fin (faceCountBetween P)) :
+    middleOriginalFace P f g hfg i ≠ g := by
+  intro h
+  have hpositions := congrArg (faceToEndpoints P f g) h
+  have hmiddle :
+      faceToEndpoints P f g
+          (middleOriginalFace P f g hfg i) =
+        middleFacePosition P f g hfg i := by
+    simp [middleOriginalFace]
+  rw [hmiddle, faceToEndpoints_right] at hpositions
+  have hval := congrArg Fin.val hpositions
+  change i.val + 1 = P.faces.length - 1 at hval
+  have hi := i.isLt
+  change i.val < P.faces.length - 2 at hi
+  omega
+
 @[simp]
 theorem middleOriginalFaces_length
     (P : FiniteCyclicPresentation) (f g : P.Face)
@@ -898,6 +932,339 @@ def mergeUnorientedIso
             left.edge_mem_boundary right.edge_mem_boundary)]
         exact List.IsRotated.refl _
 
+/-- The specialized unoriented comparison used by an adjacent-face merge preserves ordinary
+validity.  Reversing either selected face cannot create a duplicate: both selected faces contain
+the fresh separator, untouched faces do not, and the two selected occurrences have opposite
+signs. -/
+theorem mergeSource_isSurfaceValid
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g)
+    (validP : P.IsSurfaceValid) :
+    (mergeSource left right hfg).IsSurfaceValid := by
+  classical
+  let U := mergeLeftWord left
+  let V := mergeRightWord right
+  let W := mergeMiddleWords P e f g hfg
+  let base := FaceMerge.ContextMerge.target U V W
+  let cut := FaceMerge.ContextMerge.targetCut U V W
+  let iso := mergeUnorientedIso left right hfg validP
+  have hfaces (q : (mergeSource left right hfg).Face) :
+      q = FaceMerge.ContextMerge.selectedFace U V W ∨
+        (∃ i : Fin W.length,
+          q = FaceMerge.ContextMerge.untouchedSourceFace U V W i) ∨
+        q = FaceMerge.ContextMerge.rightFace U V W := by
+    rcases P2.face_cases base cut q with ⟨p, hp⟩ | hp
+    · induction p using Fin.cases with
+      | zero =>
+          left
+          rw [hp]
+          apply Fin.ext
+          rfl
+      | succ i =>
+          right
+          left
+          refine ⟨i, ?_⟩
+          rw [hp]
+          apply Fin.ext
+          rfl
+    · exact Or.inr (Or.inr hp)
+  have hselectedRight
+      (h :
+        ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.selectedFace U V W)).IsRotated
+          ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.rightFace U V W))) :
+      False := by
+    have hmem :
+        P2.selectedFreshDart base cut ∈
+          (mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.selectedFace U V W) := by
+      change
+        P2.selectedFreshDart base cut ∈
+          (P2.split base cut).boundary
+            (P2.oldFace base cut cut.face.face)
+      rw [P2.split_boundary_selected]
+      exact P2.selectedFreshDart_mem_selectedBoundary base cut
+    have htarget := h.mem_iff.mp hmem
+    change
+      P2.selectedFreshDart base cut ∈
+        (P2.split base cut).boundary (P2.rightFace base cut)
+        at htarget
+    rw [P2.split_boundary_right] at htarget
+    exact P2.selectedFreshDart_not_mem_rightBoundary
+      base cut htarget
+  have hselectedUntouched
+      (i : Fin W.length)
+      (h :
+        ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.selectedFace U V W)).IsRotated
+          ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.untouchedSourceFace U V W i))) :
+      False := by
+    have hmem :
+        P2.selectedFreshDart base cut ∈
+          (mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.selectedFace U V W) := by
+      change
+        P2.selectedFreshDart base cut ∈
+          (P2.split base cut).boundary
+            (P2.oldFace base cut cut.face.face)
+      rw [P2.split_boundary_selected]
+      exact P2.selectedFreshDart_mem_selectedBoundary base cut
+    have htarget := h.mem_iff.mp hmem
+    rw [FaceMerge.ContextMerge.source_boundary_untouched] at htarget
+    exact P2.selectedFreshDart_not_mem_retainWord
+      base cut (W.get i) htarget
+  have hrightUntouched
+      (i : Fin W.length)
+      (h :
+        ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.rightFace U V W)).IsRotated
+          ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.untouchedSourceFace U V W i))) :
+      False := by
+    have hmem :
+        P2.rightFreshDart base cut ∈
+          (mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.rightFace U V W) := by
+      change
+        P2.rightFreshDart base cut ∈
+          (P2.split base cut).boundary (P2.rightFace base cut)
+      rw [P2.split_boundary_right]
+      exact P2.rightFreshDart_mem_rightBoundary base cut
+    have htarget := h.mem_iff.mp hmem
+    rw [FaceMerge.ContextMerge.source_boundary_untouched] at htarget
+    exact P2.rightFreshDart_not_mem_retainWord
+      base cut (W.get i) htarget
+  have huntouched
+      (i j : Fin W.length)
+      (h :
+        ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.untouchedSourceFace U V W i)).IsRotated
+          ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.untouchedSourceFace U V W j))) :
+      FaceMerge.ContextMerge.untouchedSourceFace U V W i =
+        FaceMerge.ContextMerge.untouchedSourceFace U V W j := by
+    let i' : Fin (faceCountBetween P) :=
+      ⟨i.val, by simpa [W, mergeMiddleWords_length] using i.isLt⟩
+    let j' : Fin (faceCountBetween P) :=
+      ⟨j.val, by simpa [W, mergeMiddleWords_length] using j.isLt⟩
+    let fi := middleOriginalFace P f g hfg i'
+    let fj := middleOriginalFace P f g hfg j'
+    have hfi : fi ≠ f :=
+      middleOriginalFace_ne_selected P f g hfg i'
+    have hfig : fi ≠ g :=
+      middleOriginalFace_ne_right P f g hfg i'
+    have hfj : fj ≠ f :=
+      middleOriginalFace_ne_selected P f g hfg j'
+    have hfjg : fj ≠ g :=
+      middleOriginalFace_ne_right P f g hfg j'
+    have hiFace :
+        iso.faceEquiv fi =
+          FaceMerge.ContextMerge.untouchedSourceFace U V W i := by
+      apply Fin.ext
+      change
+        (mergeFaceEquiv left right hfg
+          (middleOriginalFace P f g hfg i')).val =
+            i.val + 1
+      rw [mergeFaceEquiv_middle]
+      rfl
+    have hjFace :
+        iso.faceEquiv fj =
+          FaceMerge.ContextMerge.untouchedSourceFace U V W j := by
+      apply Fin.ext
+      change
+        (mergeFaceEquiv left right hfg
+          (middleOriginalFace P f g hfg j')).val =
+            j.val + 1
+      rw [mergeFaceEquiv_middle]
+      rfl
+    have hiReverse :
+        mergeReverseFace left right fi = false := by
+      simp [mergeReverseFace, hfi, hfig]
+    have hjReverse :
+        mergeReverseFace left right fj = false := by
+      simp [mergeReverseFace, hfj, hfjg]
+    have hiFace' :
+        mergeFaceEquiv left right hfg fi =
+          FaceMerge.ContextMerge.untouchedSourceFace U V W i :=
+      hiFace
+    have hjFace' :
+        mergeFaceEquiv left right hfg fj =
+          FaceMerge.ContextMerge.untouchedSourceFace U V W j :=
+      hjFace
+    have hi := iso.boundary_rotated fi
+    have hj := iso.boundary_rotated fj
+    change
+      ((P.boundary fi).map
+          iso.edgeRelabeling.mapDart).IsRotated
+        ((mergeSource left right hfg).orientedBoundary
+          ⟨mergeFaceEquiv left right hfg fi,
+            mergeReverseFace left right fi⟩) at hi
+    change
+      ((P.boundary fj).map
+          iso.edgeRelabeling.mapDart).IsRotated
+        ((mergeSource left right hfg).orientedBoundary
+          ⟨mergeFaceEquiv left right hfg fj,
+            mergeReverseFace left right fj⟩) at hj
+    have hi' :
+        ((P.boundary fi).map iso.edgeRelabeling.mapDart).IsRotated
+          ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.untouchedSourceFace U V W i)) := by
+      rw [hiFace', hiReverse] at hi
+      simpa [FiniteCyclicPresentation.orientedBoundary] using hi
+    have hj' :
+        ((P.boundary fj).map iso.edgeRelabeling.mapDart).IsRotated
+          ((mergeSource left right hfg).boundary
+            (FaceMerge.ContextMerge.untouchedSourceFace U V W j)) := by
+      rw [hjFace', hjReverse] at hj
+      simpa [FiniteCyclicPresentation.orientedBoundary] using hj
+    have hmapped := hi'.trans (h.trans hj'.symm)
+    have horiginal :=
+      hmapped.map iso.edgeRelabeling.symm.mapDart
+    rw [EdgeRelabeling.map_mapDart_symm,
+      EdgeRelabeling.map_mapDart_symm] at horiginal
+    have hfij := validP.2.2.1 fi fj horiginal
+    exact hiFace.symm.trans
+      ((congrArg iso.faceEquiv hfij).trans hjFace)
+  refine ⟨iso.faceEquiv.nonempty_congr.mp validP.1, ?_, ?_, ?_⟩
+  · intro q hq
+    let p := iso.faceEquiv.symm q
+    have hlength := iso.boundary_length_eq p
+    rw [iso.faceEquiv.apply_symm_apply] at hlength
+    have hp : (P.boundary p).length = 0 := by
+      simpa only [hq, List.length_nil] using hlength
+    exact validP.2.1 p (List.length_eq_zero_iff.mp hp)
+  · intro q r hqr
+    rcases hfaces q with hq | ⟨i, hq⟩ | hq <;>
+      rcases hfaces r with hr | ⟨j, hr⟩ | hr
+    · exact hq.trans hr.symm
+    · subst q
+      subst r
+      exact (hselectedUntouched j hqr).elim
+    · subst q
+      subst r
+      exact (hselectedRight hqr).elim
+    · subst q
+      subst r
+      exact (hselectedUntouched i hqr.symm).elim
+    · subst q
+      subst r
+      exact huntouched i j hqr
+    · subst q
+      subst r
+      exact (hrightUntouched i hqr.symm).elim
+    · subst q
+      subst r
+      exact (hselectedRight hqr.symm).elim
+    · subst q
+      subst r
+      exact (hrightUntouched j hqr).elim
+    · exact hq.trans hr.symm
+  · intro b
+    let a := iso.edgeEquiv.symm b
+    have hmultiplicity := validP.2.2.2 a
+    rw [iso.edgeMultiplicity_eq] at hmultiplicity
+    dsimp [a] at hmultiplicity
+    simpa only [iso.edgeEquiv.apply_symm_apply] using hmultiplicity
+
+/-- The validity-safe result of merging an arbitrary adjacent pair while retaining its separator
+as a cancellable adjacent inverse marker. -/
+@[reducible]
+def markedMergeTarget
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) :
+    FiniteCyclicPresentation :=
+  FaceMerge.ContextMerge.markedTarget
+    (mergeLeftWord left) (mergeRightWord right)
+    (mergeMiddleWords P e f g hfg)
+
+/-- An arbitrary marked merge preserves strict ordinary validity. -/
+theorem markedMergeTarget_isSurfaceValid
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g)
+    (validP : P.IsSurfaceValid) :
+    (markedMergeTarget left right hfg).IsSurfaceValid :=
+  FaceMerge.ContextMerge.markedTarget_isSurfaceValid
+    (mergeLeftWord left) (mergeRightWord right)
+    (mergeMiddleWords P e f g hfg)
+    (mergeSource_isSurfaceValid left right hfg validP)
+
+/-- An arbitrary marked merge preserves face-incidence connectivity. -/
+theorem markedMergeTarget_isConnected
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g)
+    (validP : P.IsSurfaceValid)
+    (connectedP : P.IsConnected) :
+    (markedMergeTarget left right hfg).IsConnected :=
+  FaceMerge.ContextMerge.markedTarget_isConnected
+    (mergeLeftWord left) (mergeRightWord right)
+    (mergeMiddleWords P e f g hfg)
+    ((mergeUnorientedIso left right hfg validP).isConnected connectedP)
+
+/-- Merge any oppositely displayed adjacent pair without a target-validity side condition.  The
+retained inverse marker is canceled only after the face recursion, preventing intermediate cyclic
+duplicate faces. -/
+theorem markedMergeNormalizationEquivalent
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g)
+    (validP : P.IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨P, validP⟩
+      ⟨markedMergeTarget left right hfg,
+        markedMergeTarget_isSurfaceValid left right hfg validP⟩ := by
+  let validSource :=
+    mergeSource_isSurfaceValid left right hfg validP
+  have hsource :
+      NormalizationEquivalent
+        ⟨P, validP⟩
+        ⟨mergeSource left right hfg, validSource⟩ :=
+    NormalizationEquivalent.ofUnorientedIso
+      (mergeUnorientedIso left right hfg validP)
+  exact hsource.trans
+    (FaceMerge.ContextMerge.markedNormalizationEquivalent
+      (mergeLeftWord left) (mergeRightWord right)
+      (mergeMiddleWords P e f g hfg) validSource)
+
+/-- A marked merge removes exactly one face. -/
+@[simp]
+theorem markedMergeTarget_faces_length
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) :
+    (markedMergeTarget left right hfg).faces.length =
+      P.faces.length - 1 := by
+  simp only [markedMergeTarget,
+    FaceMerge.ContextMerge.markedTarget,
+    List.length_cons, List.length_map]
+  rw [mergeMiddleWords_length]
+  have hadd := faceCountBetween_add_two P f g hfg
+  omega
+
+/-- Faithful polygonal-realization invariance of the arbitrary marked merge. -/
+theorem markedMergePolygonallyEquivalent
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e)
+    (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g)
+    (validP : P.IsSurfaceValid) :
+    P.PolygonallyEquivalent
+      (markedMergeTarget left right hfg) validP
+      (markedMergeTarget_isSurfaceValid left right hfg validP) :=
+  (markedMergeNormalizationEquivalent
+    left right hfg validP).polygonallyEquivalent
+
 /-- Merge an arbitrary oppositely displayed adjacent pair. Target validity remains explicit:
 under the project's strict stored-word uniqueness clause, a merge can make its new word coincide
 cyclically with an untouched face. -/
@@ -975,6 +1342,68 @@ theorem exists_oppositelyDisplayedAdjacentFaces
     ⟨f, g, e, hfg,
       exists_positiveOccurrence P f e hef,
       exists_negativeOccurrence P g e heg⟩
+
+/-- The validity-safe output of merging a connected presentation down to one face. -/
+structure OneFaceReduction (P : ValidPresentation) where
+  target : ValidPresentation
+  connected : target.presentation.IsConnected
+  faces_length : target.presentation.faces.length = 1
+  equivalent : NormalizationEquivalent P target
+
+/-- Repeated marked merges reduce every connected ordinary-valid presentation to one face.
+
+Each merge retains its separator as an adjacent inverse marker.  Consequently every recursive
+target remains strictly valid even when deleting the separator immediately would duplicate an
+untouched cyclic face word. -/
+noncomputable def reduceToOneFace
+    (P : ValidPresentation)
+    (connectedP : P.presentation.IsConnected) :
+    OneFaceReduction P := by
+  classical
+  by_cases hone : P.presentation.faces.length = 1
+  · exact
+      { target := P
+        connected := connectedP
+        faces_length := hone
+        equivalent := NormalizationEquivalent.refl P }
+  · have hpositive : 0 < P.presentation.faces.length := by
+      rcases P.valid.1 with ⟨f⟩
+      have hf := f.isLt
+      omega
+    have hmany : 1 < P.presentation.faces.length := by
+      omega
+    have hwitness :=
+      exists_oppositelyDisplayedAdjacentFaces
+        P.presentation connectedP hmany
+    let f := Classical.choose hwitness
+    have hwitnessF := Classical.choose_spec hwitness
+    let g := Classical.choose hwitnessF
+    have hwitnessG := Classical.choose_spec hwitnessF
+    let e := Classical.choose hwitnessG
+    have hdisplayed := Classical.choose_spec hwitnessG
+    have hfg : f ≠ g := hdisplayed.1
+    let left := Classical.choice hdisplayed.2.1
+    let right := Classical.choice hdisplayed.2.2
+    let validTarget :=
+      markedMergeTarget_isSurfaceValid left right hfg P.valid
+    let target : ValidPresentation :=
+      ⟨markedMergeTarget left right hfg, validTarget⟩
+    have connectedTarget : target.presentation.IsConnected :=
+      markedMergeTarget_isConnected
+        left right hfg P.valid connectedP
+    have firstEquivalent : NormalizationEquivalent P target :=
+      markedMergeNormalizationEquivalent left right hfg P.valid
+    have result : OneFaceReduction target :=
+      reduceToOneFace target connectedTarget
+    exact
+      { target := result.target
+        connected := result.connected
+        faces_length := result.faces_length
+        equivalent := firstEquivalent.trans result.equivalent }
+termination_by P.presentation.faces.length
+decreasing_by
+  rw [markedMergeTarget_faces_length]
+  omega
 
 end Reduction
 

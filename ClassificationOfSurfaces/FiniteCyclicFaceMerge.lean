@@ -264,6 +264,60 @@ def target {n : ℕ}
   edgeCount := n
   faces := (U ++ V) :: W
 
+/-! ### Marked merging
+
+Deleting the separating edge immediately can make the merged word cyclically equal to an
+untouched face.  The marked merge instead retains that edge as an adjacent inverse pair.  Its
+two occurrences distinguish the merged face from every untouched face, so ordinary validity is
+preserved.  A later contextual cancellation removes the marker after the face-merging recursion
+has finished.
+-/
+
+/-- Merge the first and last displayed children while retaining their separator as an adjacent
+inverse pair in the merged face. -/
+@[reducible]
+def markedTarget {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    FiniteCyclicPresentation where
+  edgeCount := n + 1
+  faces :=
+    (P2.retainWord U ++
+      [.pos (P1.freshEdge n), .neg (P1.freshEdge n)] ++
+      P2.retainWord V) ::
+      W.map P2.retainWord
+
+/-- Cut the marked merged face immediately after the positive marker occurrence. -/
+def markedTargetCut {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    P2Cut (markedTarget U V W) where
+  face := ⟨⟨0, by simp [markedTarget]⟩, false⟩
+  left := P2.retainWord U ++ [.pos (P1.freshEdge n)]
+  right := [.neg (P1.freshEdge n)] ++ P2.retainWord V
+  boundary_rotated := by
+    change
+      (P2.retainWord U ++
+          [SignedDart.pos (P1.freshEdge n),
+            SignedDart.neg (P1.freshEdge n)] ++
+          P2.retainWord V).IsRotated
+        ((P2.retainWord U ++
+            [SignedDart.pos (P1.freshEdge n)]) ++
+          ([SignedDart.neg (P1.freshEdge n)] ++ P2.retainWord V))
+    simpa only [List.append_assoc, List.singleton_append,
+      List.cons_append, List.nil_append] using
+      (List.IsRotated.refl
+        (P2.retainWord U ++
+          [SignedDart.pos (P1.freshEdge n),
+            SignedDart.neg (P1.freshEdge n)] ++
+          P2.retainWord V))
+
+theorem markedTargetCut_isNondegenerate {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (markedTargetCut U V W).IsNondegenerate := by
+  constructor <;> simp [markedTargetCut]
+
 /-- The canonical cut of the first face of a contextual merge. -/
 def targetCut {n : ℕ}
     (U V : List (SignedDart (Fin n)))
@@ -295,6 +349,59 @@ def source {n : ℕ}
     (W : List (List (SignedDart (Fin n)))) :
     FiniteCyclicPresentation :=
   P2.split (target U V W) (targetCut U V W)
+
+/-- Match the face positions of the expanded contextual source with the split marked target. -/
+def markedMiddleFaceEquiv {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (P1.expand (source U V W) (P1.freshEdge n)).Face ≃
+      (P2.split (markedTarget U V W) (markedTargetCut U V W)).Face :=
+  finCongr (by
+    rw [P1.expand_faces_length]
+    change
+      (P2.split (target U V W)
+          (targetCut U V W)).faces.length =
+        (P2.split (markedTarget U V W)
+          (markedTargetCut U V W)).faces.length
+    rw [P2.split_faces_length, P2.split_faces_length]
+    simp [target, markedTarget])
+
+@[simp]
+theorem markedMiddleFaceEquiv_apply_val {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (f : (P1.expand (source U V W) (P1.freshEdge n)).Face) :
+    (markedMiddleFaceEquiv U V W f).val = f.val :=
+  rfl
+
+@[simp]
+theorem markedMiddleFaceEquiv_oldFace {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (f : (target U V W).Face) :
+    markedMiddleFaceEquiv U V W
+        (P1.faceEquiv (source U V W) (P1.freshEdge n)
+          (P2.oldFace (target U V W) (targetCut U V W) f)) =
+      P2.oldFace (markedTarget U V W) (markedTargetCut U V W)
+        ⟨f.val, by
+          change f.val < (W.map P2.retainWord).length + 1
+          simpa [target] using f.isLt⟩ := by
+  apply Fin.ext
+  change f.val = f.val
+  rfl
+
+@[simp]
+theorem markedMiddleFaceEquiv_rightFace {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    markedMiddleFaceEquiv U V W
+        (P1.faceEquiv (source U V W) (P1.freshEdge n)
+          (P2.rightFace (target U V W) (targetCut U V W))) =
+      P2.rightFace (markedTarget U V W) (markedTargetCut U V W) := by
+  apply Fin.ext
+  change (target U V W).faces.length =
+    (markedTarget U V W).faces.length
+  simp [target, markedTarget]
 
 /-- The child occupying the selected old-face position. -/
 def selectedFace {n : ℕ}
@@ -379,6 +486,344 @@ theorem source_boundary_untouched {n : ℕ}
     have hval := congrArg Fin.val h
     change i.val + 1 = 0 at hval
     omega
+
+/-- P1 expansion of the retained separator in the contextual source is signed-isomorphic to the
+P2 split of the marked target. -/
+def expandSourceSignedIsoSplitMarkedTarget {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    SignedPresentationIso
+      (P1.expand (source U V W) (P1.freshEdge n))
+      (P2.split (markedTarget U V W) (markedTargetCut U V W)) where
+  edgeRelabeling := by
+    change EdgeRelabeling (Fin (n + 2)) (Fin (n + 2))
+    exact EdgeRelabeling.refl _
+  faceEquiv := markedMiddleFaceEquiv U V W
+  boundary_rotated := by
+    intro f
+    let p :=
+      (P1.faceEquiv (source U V W) (P1.freshEdge n)).symm f
+    have hf :
+        P1.faceEquiv (source U V W) (P1.freshEdge n) p = f :=
+      (P1.faceEquiv (source U V W)
+        (P1.freshEdge n)).apply_symm_apply f
+    rw [← hf, P1.expand_boundary]
+    simp only [id_eq]
+    have hmap :
+        (P1.expandWord (P1.freshEdge n)
+            ((source U V W).boundary p)).map
+              (EdgeRelabeling.refl (Fin (n + 2))).mapDart =
+          P1.expandWord (P1.freshEdge n)
+            ((source U V W).boundary p) :=
+      EdgeRelabeling.map_mapDart_refl _
+    refine Eq.mpr
+      (congrArg
+        (fun word ↦ word.IsRotated
+          ((P2.split (markedTarget U V W)
+            (markedTargetCut U V W)).boundary
+              (markedMiddleFaceEquiv U V W
+                (P1.faceEquiv (source U V W)
+                  (P1.freshEdge n) p))))
+        hmap) ?_
+    rcases P2.face_cases (target U V W) (targetCut U V W) p with
+      ⟨q, hq⟩ | hq
+    · rw [hq]
+      rw [markedMiddleFaceEquiv_oldFace]
+      induction q using Fin.cases with
+      | zero =>
+          have hsourceBoundary :
+              (source U V W).boundary
+                  (P2.oldFace (target U V W) (targetCut U V W) 0) =
+                P2.selectedBoundary (target U V W)
+                  (targetCut U V W) := by
+            rw [P2.split_boundary_old]
+            simp [targetCut]
+          have htargetBoundary :
+              (P2.split (markedTarget U V W)
+                  (markedTargetCut U V W)).boundary
+                    (P2.oldFace (markedTarget U V W)
+                      (markedTargetCut U V W)
+                      ⟨(0 : (target U V W).Face).val, by
+                        change 0 <
+                          (W.map P2.retainWord).length + 1
+                        simp⟩) =
+                P2.selectedBoundary (markedTarget U V W)
+                  (markedTargetCut U V W) := by
+            rw [P2.split_boundary_old]
+            simp [markedTargetCut]
+          rw [hsourceBoundary, htargetBoundary]
+          simp only [targetCut, markedTargetCut,
+            P2.selectedBoundary, P2.selectedOrientedBoundary,
+            P2.storedWord, Bool.false_eq_true, if_false,
+            P2.freshEdge]
+          rw [P1.expandWord_append,
+            Cancellation.expandWord_retainWord_fresh,
+            P1.expandWord_singleton, P1.expandDart_pos_self]
+          simp [P2.retainWord, P1.firstSubedge, P1.freshEdge]
+          exact List.IsRotated.refl _
+      | succ i =>
+          let iW : Fin W.length :=
+            ⟨i.val, by simpa [target] using i.isLt⟩
+          have hsource :
+              (source U V W).boundary
+                  (P2.oldFace (target U V W) (targetCut U V W)
+                    i.succ) =
+                P2.retainWord (W.get iW) := by
+            rw [P2.split_boundary_old_of_ne]
+            · simp [target, FiniteCyclicPresentation.boundary, iW]
+            · intro h
+              have hval := congrArg Fin.val h
+              change i.val + 1 = 0 at hval
+              omega
+          rw [hsource]
+          rw [show
+            P1.expandWord (P1.freshEdge n)
+                (P2.retainWord (W.get iW)) =
+              P2.retainWord (P2.retainWord (W.get iW)) by
+            exact Cancellation.expandWord_retainWord_fresh _]
+          rw [P2.split_boundary_old_of_ne]
+          · simp [markedTarget, FiniteCyclicPresentation.boundary, iW,
+              P2.retainWord]
+            exact List.IsRotated.refl _
+          · intro h
+            have hval := congrArg Fin.val h
+            change i.val + 1 = 0 at hval
+            omega
+    · rw [hq]
+      rw [markedMiddleFaceEquiv_rightFace,
+        P2.split_boundary_right, P2.split_boundary_right]
+      simp only [targetCut, markedTargetCut, P2.rightBoundary,
+        P2.rightOrientedBoundary, P2.storedWord, if_false,
+        Bool.false_eq_true, P2.freshEdge]
+      rw [P1.expandWord_cons, P1.expandDart_neg_self,
+        Cancellation.expandWord_retainWord_fresh]
+      simp [P2.retainWord, P1.firstSubedge, P1.freshEdge]
+      exact List.IsRotated.refl _
+
+@[simp]
+theorem markedTarget_boundary_zero {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n)))) :
+    (markedTarget U V W).boundary 0 =
+      P2.retainWord U ++
+        [.pos (P1.freshEdge n), .neg (P1.freshEdge n)] ++
+        P2.retainWord V :=
+  rfl
+
+@[simp]
+theorem markedTarget_boundary_succ {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (i : Fin W.length) :
+    (markedTarget U V W).boundary
+        ⟨i.val + 1, by
+          change i.val + 1 < (W.map P2.retainWord).length + 1
+          simp⟩ =
+      P2.retainWord (W.get i) := by
+  simp [markedTarget, FiniteCyclicPresentation.boundary]
+
+@[simp]
+theorem markedTarget_boundary_succMap {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (i : Fin (W.map P2.retainWord).length) :
+    (markedTarget U V W).boundary i.succ =
+      P2.retainWord
+        (W.get ⟨i.val, by simpa using i.isLt⟩) := by
+  let iW : Fin W.length := ⟨i.val, by simpa using i.isLt⟩
+  have hface :
+      i.succ =
+        (⟨iW.val + 1, by
+          change iW.val + 1 < (W.map P2.retainWord).length + 1
+          simp⟩ : (markedTarget U V W).Face) := by
+    apply Fin.ext
+    rfl
+  rw [hface, markedTarget_boundary_succ]
+
+/-- The adjacent inverse marker makes the merged face distinct from every untouched face, so a
+marked merge preserves the project's strict ordinary validity predicate. -/
+theorem markedTarget_isSurfaceValid {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (validSource : (source U V W).IsSurfaceValid) :
+    (markedTarget U V W).IsSurfaceValid := by
+  classical
+  let marker := P1.freshEdge n
+  let validExpanded :
+      (P1.expand (source U V W) marker).IsSurfaceValid :=
+    P1.expand_isSurfaceValid (source U V W) marker validSource
+  let middleIso :=
+    expandSourceSignedIsoSplitMarkedTarget U V W
+  let validSplit :
+      (P2.split (markedTarget U V W)
+        (markedTargetCut U V W)).IsSurfaceValid :=
+    middleIso.isSurfaceValid validExpanded
+  refine ⟨⟨0, by simp [markedTarget]⟩, ?_, ?_, ?_⟩
+  · intro f
+    induction f using Fin.cases with
+    | zero =>
+        rw [markedTarget_boundary_zero]
+        simp
+    | succ i =>
+        let iW : Fin W.length :=
+          ⟨i.val, by simpa using i.isLt⟩
+        have hsourceNonempty :=
+          validSource.2.1
+            (untouchedSourceFace U V W iW)
+        rw [source_boundary_untouched] at hsourceNonempty
+        rw [markedTarget_boundary_succMap]
+        intro hnil
+        apply hsourceNonempty
+        exact (P2.retainWord_eq_nil_iff _).mpr
+          (by simpa [iW] using hnil)
+  · intro f g hfg
+    induction f using Fin.cases with
+    | zero =>
+        induction g using Fin.cases with
+        | zero => rfl
+        | succ j =>
+            let jW : Fin W.length :=
+              ⟨j.val, by simpa using j.isLt⟩
+            have hmarker :
+                SignedDart.pos marker ∈
+                  (markedTarget U V W).boundary 0 := by
+              simp [marker]
+            have htarget := hfg.mem_iff.mp hmarker
+            rw [markedTarget_boundary_succMap] at htarget
+            have hmarkerEq :
+                P2.freshEdge (target U V W) = marker := by
+              apply Fin.ext
+              rfl
+            have hnot :
+                SignedDart.pos marker ∉
+                  P2.retainWord (W.get jW) := by
+              rw [← hmarkerEq]
+              exact
+                P2.pos_freshEdge_not_mem_retainWord
+                  (target U V W) (W.get jW)
+            exact (hnot (by simpa [jW] using htarget)).elim
+    | succ i =>
+        induction g using Fin.cases with
+        | zero =>
+            let iW : Fin W.length :=
+              ⟨i.val, by simpa using i.isLt⟩
+            have hmarker :
+                SignedDart.pos marker ∈
+                  (markedTarget U V W).boundary 0 := by
+              simp [marker]
+            have hsource := hfg.symm.mem_iff.mp hmarker
+            rw [markedTarget_boundary_succMap] at hsource
+            have hmarkerEq :
+                P2.freshEdge (target U V W) = marker := by
+              apply Fin.ext
+              rfl
+            have hnot :
+                SignedDart.pos marker ∉
+                  P2.retainWord (W.get iW) := by
+              rw [← hmarkerEq]
+              exact
+                P2.pos_freshEdge_not_mem_retainWord
+                  (target U V W) (W.get iW)
+            exact (hnot (by simpa [iW] using hsource)).elim
+        | succ j =>
+            let iW : Fin W.length :=
+              ⟨i.val, by simpa using i.isLt⟩
+            let jW : Fin W.length :=
+              ⟨j.val, by simpa using j.isLt⟩
+            have hboundaries :
+                (P2.retainWord (W.get iW)).IsRotated
+                  (P2.retainWord (W.get jW)) := by
+              rw [markedTarget_boundary_succMap,
+                markedTarget_boundary_succMap] at hfg
+              simpa [iW, jW] using hfg
+            have hsourceBoundaries :
+                ((source U V W).boundary
+                    (untouchedSourceFace U V W iW)).IsRotated
+                  ((source U V W).boundary
+                    (untouchedSourceFace U V W jW)) := by
+              rw [source_boundary_untouched,
+                source_boundary_untouched]
+              exact hboundaries
+            have hsourceFaces :=
+              validSource.2.2.1
+                (untouchedSourceFace U V W iW)
+                (untouchedSourceFace U V W jW)
+                hsourceBoundaries
+            apply Fin.ext
+            have hval := congrArg Fin.val hsourceFaces
+            have holdVal (k : Fin W.length) :
+                (untouchedSourceFace U V W k).val =
+                  k.val + 1 :=
+              rfl
+            rw [holdVal iW, holdVal jW] at hval
+            have hij : iW.val = jW.val :=
+              Nat.add_right_cancel hval
+            simpa [iW, jW] using hij
+  · intro e
+    rw [P2.edgeMultiplicity_split_castSucc
+      (markedTarget U V W) (markedTargetCut U V W) e]
+    exact validSplit.2.2.2 e.castSucc
+
+/-- The validity-safe marked merge preserves face-incidence connectivity. -/
+theorem markedTarget_isConnected {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (connectedSource : (source U V W).IsConnected) :
+    (markedTarget U V W).IsConnected := by
+  have connectedExpanded :
+      (P1.expand (source U V W) (P1.freshEdge n)).IsConnected :=
+    P1.expand_isConnected
+      (source U V W) (P1.freshEdge n) connectedSource
+  have connectedSplit :
+      (P2.split (markedTarget U V W)
+        (markedTargetCut U V W)).IsConnected :=
+    (expandSourceSignedIsoSplitMarkedTarget U V W).isConnected
+      connectedExpanded
+  exact P2.isConnected_of_split
+    (markedTarget U V W) (markedTargetCut U V W) connectedSplit
+
+/-- The validity-safe marked merge is a common P1/P2 subdivision: expand the old separator in
+the source and cut the marked parent along the fresh second subedge. -/
+theorem markedNormalizationEquivalent {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (validSource : (source U V W).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨source U V W, validSource⟩
+      ⟨markedTarget U V W,
+        markedTarget_isSurfaceValid U V W validSource⟩ := by
+  let expandedSource :=
+    P1.expand (source U V W) (P1.freshEdge n)
+  let splitMarked :=
+    P2.split (markedTarget U V W) (markedTargetCut U V W)
+  have hsourceExpanded :
+      Subdivides (source U V W) expandedSource :=
+    Subdivides.p1
+      (P1Subdivision.canonical
+        (source U V W) (P1.freshEdge n))
+  have hexpandedSplit :
+      Subdivides expandedSource splitMarked :=
+    Subdivides.signedIso
+      (expandSourceSignedIsoSplitMarkedTarget U V W)
+  have htargetSplit :
+      Subdivides (markedTarget U V W) splitMarked :=
+    Subdivides.p2
+      (P2Subdivision.canonical
+        (markedTarget U V W) (markedTargetCut U V W)
+        (markedTargetCut_isNondegenerate U V W))
+  exact NormalizationEquivalent.ofCommonSubdivision
+    ⟨splitMarked, hsourceExpanded.trans hexpandedSplit,
+      htargetSplit⟩
+
+/-- Faithful realization invariance of the validity-safe marked merge. -/
+theorem markedPolygonallyEquivalent {n : ℕ}
+    (U V : List (SignedDart (Fin n)))
+    (W : List (List (SignedDart (Fin n))))
+    (validSource : (source U V W).IsSurfaceValid) :
+    (source U V W).PolygonallyEquivalent
+      (markedTarget U V W) validSource
+      (markedTarget_isSurfaceValid U V W validSource) :=
+  (markedNormalizationEquivalent U V W validSource).polygonallyEquivalent
 
 /-- The contextual cut is ordinary exactly under the same nonempty condition as the two-face
 special case. -/
