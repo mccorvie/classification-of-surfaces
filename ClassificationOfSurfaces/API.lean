@@ -30,6 +30,8 @@ import ClassificationOfSurfaces.FiniteCyclicPresentation
 import ClassificationOfSurfaces.FiniteCyclicRealization
 import ClassificationOfSurfaces.FiniteCyclicReduction
 import ClassificationOfSurfaces.FiniteCyclicSignedRealization
+import ClassificationOfSurfaces.FiniteCyclicSphereRealization
+import ClassificationOfSurfaces.FiniteCyclicTerminalNormalization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.FiniteCyclicUnorientedRealization
 import ClassificationOfSurfaces.FiniteCyclicWordReduction
@@ -253,7 +255,10 @@ code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTrian
 * `FiniteCyclicPresentation.FaceMerge.ContextMerge.normalizationEquivalent`
 * `FiniteCyclicPresentation.canonicalValidPresentation`
 * `FiniteCyclicPresentation.NormalizationResult`
+* `FiniteCyclicPresentation.NormalizationResult.polygonallyEquivalent`
 * `FiniteCyclicPresentation.NormalizationResult.realizationHomeomorph`
+* `FiniteCyclicPresentation.normalizeConnectedToCanonical`
+* `FiniteCyclicPresentation.exists_admissible_normalForm_polygonallyEquivalent`
 * `FiniteCyclicPresentation.Reduction.exists_distinct_faceAdjacent`
 * `FiniteCyclicPresentation.Reduction.exists_oppositelyDisplayedAdjacentFaces`
 * `FiniteCyclicPresentation.Reduction.mergeNormalizationEquivalent`
@@ -266,6 +271,13 @@ multiplicities, and connectivity are invariant under these operations. Each stor
 two non-mutating oriented views: the negative view reverses the word and flips every dart, and
 signed presentation isomorphisms transport either view up to cyclic rotation. The original
 orientation-preserving `PresentationIso` embeds into this general layer.
+
+The Gallier--Xu normalization recursion is complete at this interface. Every valid connected
+finite-cyclic presentation reaches the single existing `NormalForm.canonicalPresentation` for an
+Eval-admissible normal form, through a `NormalizationEquivalent` chain and hence a
+`PolygonallyEquivalent` proof. The terminal argument orders boundary blocks, converts handles to
+crosscaps exactly when a crosscap is present, normalizes edge orientations, and positionally
+relabels the result to the existing canonical words.
 
 Gallier--Xu's exceptional one-face, zero-edge, empty-boundary sphere is represented explicitly by
 `emptyWordSphere`, without weakening ordinary `IsSurfaceValid`. `IsGallierValid` adds exactly its
@@ -424,6 +436,7 @@ is still unrelated to these polygonal quotients.
 * `NormalForm.canonicalPresentation_isConnected`
 * `NormalForm.canonicalPresentation_isGallierValid`
 * `FiniteCyclicPresentation.ofOneFaceWordRealizationHomeomorph`
+* `NormalForm.canonicalSphereRealizationHomeomorph`
 * `NormalForm.canonicalOrientableRealizationHomeomorph`
 * `NormalForm.canonicalNonOrientableRealizationHomeomorph`
 * `NormalForm.orientableCellComplex_isSurfaceValid`
