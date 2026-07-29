@@ -82,6 +82,32 @@ noncomputable def oneFaceSignedIsoToOfOneFaceWord {n : ℕ}
     exact rotated.map
       (SignedDart.mapEquiv (Fintype.equivFin Edge))
 
+/-- Signed version of the finished one-face adapter.  In addition to renaming edge names, this
+allows each finished block edge to be reversed independently before landing at the single
+project-owned canonical word. -/
+noncomputable def oneFaceSignedIsoToOfOneFaceWordRelabeling {n : ℕ}
+    {Edge : Type} [Fintype Edge]
+    (sourceWord : List (SignedDart (Fin n)))
+    (typedWord : List (SignedDart Edge))
+    (edgeRelabeling : EdgeRelabeling (Fin n) Edge)
+    (rotated :
+      (sourceWord.map edgeRelabeling.mapDart).IsRotated
+        typedWord) :
+    SignedPresentationIso
+      (Dyck.oneFace sourceWord)
+      (ofOneFaceWord typedWord) where
+  edgeRelabeling :=
+    edgeRelabeling.trans
+      (EdgeRelabeling.ofEquiv (Fintype.equivFin Edge))
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    rw [Dyck.oneFace_boundary, ofOneFaceWord_boundary,
+      EdgeRelabeling.map_mapDart_trans,
+      EdgeRelabeling.map_mapDart_ofEquiv]
+    exact rotated.map
+      (SignedDart.mapEquiv (Fintype.equivFin Edge))
+
 /-- A finished orientable word, up to its explicit edge relabeling and cyclic rotation, gives a
 normalization result at the exact existing orientable canonical presentation. -/
 noncomputable def orientableNormalizationResultOfRotated
@@ -118,6 +144,47 @@ noncomputable def nonOrientableNormalizationResultOfRotated
     (oneFaceSignedIsoToOfOneFaceWord
       sourceWord (NormalForm.nonOrientableBoundaryWord p n)
       edgeEquiv rotated)
+
+/-- Signed finished orientable word adapter, permitting independent orientation normalization of
+every handle and boundary-loop edge. -/
+noncomputable def orientableNormalizationResultOfSignedRotated
+    {k p n : ℕ}
+    (sourceWord : List (SignedDart (Fin k)))
+    (edgeRelabeling :
+      EdgeRelabeling (Fin k)
+        (NormalForm.OrientableEdge p n))
+    (rotated :
+      (sourceWord.map edgeRelabeling.mapDart).IsRotated
+        (NormalForm.orientableBoundaryWord p n))
+    (valid : (Dyck.oneFace sourceWord).IsSurfaceValid)
+    (admissible : (NormalForm.orientable p n).IsEvalAdmissible) :
+    NormalizationResult ⟨Dyck.oneFace sourceWord, valid⟩ :=
+  (NormalizationResult.canonical
+      (NormalForm.orientable p n) admissible).ofSignedIso
+    (oneFaceSignedIsoToOfOneFaceWordRelabeling
+      sourceWord (NormalForm.orientableBoundaryWord p n)
+      edgeRelabeling rotated)
+
+/-- Signed finished nonorientable word adapter, permitting independent orientation normalization
+of every crosscap and boundary-loop edge. -/
+noncomputable def nonOrientableNormalizationResultOfSignedRotated
+    {k p n : ℕ}
+    (sourceWord : List (SignedDart (Fin k)))
+    (edgeRelabeling :
+      EdgeRelabeling (Fin k)
+        (NormalForm.NonOrientableEdge p n))
+    (rotated :
+      (sourceWord.map edgeRelabeling.mapDart).IsRotated
+        (NormalForm.nonOrientableBoundaryWord p n))
+    (valid : (Dyck.oneFace sourceWord).IsSurfaceValid)
+    (admissible :
+      (NormalForm.nonOrientable p n).IsEvalAdmissible) :
+    NormalizationResult ⟨Dyck.oneFace sourceWord, valid⟩ :=
+  (NormalizationResult.canonical
+      (NormalForm.nonOrientable p n) admissible).ofSignedIso
+    (oneFaceSignedIsoToOfOneFaceWordRelabeling
+      sourceWord (NormalForm.nonOrientableBoundaryWord p n)
+      edgeRelabeling rotated)
 
 /-- The two possible signed spellings of an adjacent inverse pair. -/
 def inversePair {Edge : Type} (a : Edge) : Bool → List (SignedDart Edge)
