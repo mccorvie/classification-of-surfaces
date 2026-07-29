@@ -2647,6 +2647,253 @@ def positiveTargetWord {n : ℕ}
   [.pos outer, .pos outer, .neg carrier] ++
     insideTail ++ .pos carrier :: inverseWord outsideTail
 
+/-- Contextual crosscap source with arbitrary orientations on both distinguished edges. -/
+def sourceWord {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  dart outer outerNegative ::
+    dart carrier carrierNegative ::
+    dart carrier carrierNegative ::
+    insideTail ++ dart outer (!outerNegative) ::
+      outsideTail
+
+/-- Arbitrarily oriented contextual crosscap target. -/
+def targetWord {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  [dart outer outerNegative,
+    dart outer outerNegative,
+    dart carrier (!carrierNegative)] ++
+    insideTail ++ dart carrier carrierNegative ::
+      inverseWord outsideTail
+
+/-- Reverse exactly the displayed orientations of the two distinguished edges. -/
+def orientationRelabeling {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool) :
+    EdgeRelabeling (Fin n) (Fin n) :=
+  signedRelabeling (Equiv.refl _) fun edge ↦
+    if edge = outer then outerNegative
+    else if edge = carrier then carrierNegative
+    else false
+
+@[simp]
+theorem orientationRelabeling_mapDart_outer {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool) :
+    (orientationRelabeling outer carrier
+      outerNegative carrierNegative).mapDart
+        (dart outer outerNegative) =
+      .pos outer := by
+  simpa [orientationRelabeling] using
+    (signedRelabeling_mapDart_dart_self
+      (Equiv.refl (Fin n))
+      (fun edge ↦
+        if edge = outer then outerNegative
+        else if edge = carrier then carrierNegative
+        else false)
+      outer)
+
+@[simp]
+theorem orientationRelabeling_mapDart_outer_opposite {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool) :
+    (orientationRelabeling outer carrier
+      outerNegative carrierNegative).mapDart
+        (dart outer (!outerNegative)) =
+      .neg outer := by
+  simpa [orientationRelabeling] using
+    (signedRelabeling_mapDart_dart_not_self
+      (Equiv.refl (Fin n))
+      (fun edge ↦
+        if edge = outer then outerNegative
+        else if edge = carrier then carrierNegative
+        else false)
+      outer)
+
+@[simp]
+theorem orientationRelabeling_mapDart_carrier {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool)
+    (hcarrierOuter : carrier ≠ outer) :
+    (orientationRelabeling outer carrier
+      outerNegative carrierNegative).mapDart
+        (dart carrier carrierNegative) =
+      .pos carrier := by
+  simpa [orientationRelabeling, hcarrierOuter] using
+    (signedRelabeling_mapDart_dart_self
+      (Equiv.refl (Fin n))
+      (fun edge ↦
+        if edge = outer then outerNegative
+        else if edge = carrier then carrierNegative
+        else false)
+      carrier)
+
+@[simp]
+theorem orientationRelabeling_mapDart_carrier_opposite {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool)
+    (hcarrierOuter : carrier ≠ outer) :
+    (orientationRelabeling outer carrier
+      outerNegative carrierNegative).mapDart
+        (dart carrier (!carrierNegative)) =
+      .neg carrier := by
+  simpa [orientationRelabeling, hcarrierOuter] using
+    (signedRelabeling_mapDart_dart_not_self
+      (Equiv.refl (Fin n))
+      (fun edge ↦
+        if edge = outer then outerNegative
+        else if edge = carrier then carrierNegative
+        else false)
+      carrier)
+
+/-- The two-edge orientation normalization fixes every word avoiding both distinguished names. -/
+theorem orientationRelabeling_word {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool)
+    (word : List (SignedDart (Fin n)))
+    (houter : outer ∉ word.map edgeOfDart)
+    (hcarrier : carrier ∉ word.map edgeOfDart) :
+    word.map
+        (orientationRelabeling outer carrier
+          outerNegative carrierNegative).mapDart =
+      word := by
+  induction word with
+  | nil =>
+      rfl
+  | cons head tail ih =>
+      have hheadOuter : edgeOfDart head ≠ outer := by
+        intro heq
+        apply houter
+        simp [heq]
+      have hheadCarrier : edgeOfDart head ≠ carrier := by
+        intro heq
+        apply hcarrier
+        simp [heq]
+      have htailOuter :
+          outer ∉ tail.map edgeOfDart := by
+        intro hmem
+        exact houter (by simp [hmem])
+      have htailCarrier :
+          carrier ∉ tail.map edgeOfDart := by
+        intro hmem
+        exact hcarrier (by simp [hmem])
+      rw [List.map_cons, ih htailOuter htailCarrier]
+      congr 1
+      cases head <;>
+        simp_all [orientationRelabeling,
+          signedRelabeling, EdgeRelabeling.mapDart]
+
+/-- Independent sign normalization identifies the generic and positive source spellings. -/
+def sourceSignedIso {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hcarrierOuter : carrier ≠ outer)
+    (hcarrierInside :
+      carrier ∉ insideTail.map edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉ outsideTail.map edgeOfDart)
+    (houterInside :
+      outer ∉ insideTail.map edgeOfDart)
+    (houterOutside :
+      outer ∉ outsideTail.map edgeOfDart) :
+    SignedPresentationIso
+      (Dyck.oneFace
+        (sourceWord outer carrier
+          outerNegative carrierNegative
+          insideTail outsideTail))
+      (Dyck.oneFace
+        (positiveSourceWord outer carrier
+          insideTail outsideTail)) where
+  edgeRelabeling :=
+    orientationRelabeling outer carrier
+      outerNegative carrierNegative
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro face
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [sourceWord, positiveSourceWord,
+      List.map_cons, List.map_append]
+    rw [
+      orientationRelabeling_word outer carrier
+        outerNegative carrierNegative
+        insideTail houterInside hcarrierInside,
+      orientationRelabeling_word outer carrier
+        outerNegative carrierNegative
+        outsideTail houterOutside hcarrierOutside,
+      orientationRelabeling_mapDart_outer
+        outer carrier outerNegative carrierNegative,
+      orientationRelabeling_mapDart_outer_opposite
+        outer carrier outerNegative carrierNegative,
+      orientationRelabeling_mapDart_carrier
+        outer carrier outerNegative carrierNegative
+        hcarrierOuter]
+
+/-- Independent sign normalization identifies the generic and positive target spellings. -/
+def targetSignedIso {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hcarrierOuter : carrier ≠ outer)
+    (hcarrierInside :
+      carrier ∉ insideTail.map edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉ outsideTail.map edgeOfDart)
+    (houterInside :
+      outer ∉ insideTail.map edgeOfDart)
+    (houterOutside :
+      outer ∉ outsideTail.map edgeOfDart) :
+    SignedPresentationIso
+      (Dyck.oneFace
+        (targetWord outer carrier
+          outerNegative carrierNegative
+          insideTail outsideTail))
+      (Dyck.oneFace
+        (positiveTargetWord outer carrier
+          insideTail outsideTail)) where
+  edgeRelabeling :=
+    orientationRelabeling outer carrier
+      outerNegative carrierNegative
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro face
+    have houterInverseOutside :
+        outer ∉
+          (inverseWord outsideTail).map edgeOfDart := by
+      simpa [map_edgeOfDart_inverseWord] using
+        houterOutside
+    have hcarrierInverseOutside :
+        carrier ∉
+          (inverseWord outsideTail).map edgeOfDart := by
+      simpa [map_edgeOfDart_inverseWord] using
+        hcarrierOutside
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [targetWord, positiveTargetWord,
+      List.map_cons, List.map_append]
+    rw [
+      orientationRelabeling_word outer carrier
+        outerNegative carrierNegative
+        insideTail houterInside hcarrierInside,
+      orientationRelabeling_word outer carrier
+        outerNegative carrierNegative
+        (inverseWord outsideTail)
+        houterInverseOutside hcarrierInverseOutside,
+      orientationRelabeling_mapDart_outer
+        outer carrier outerNegative carrierNegative,
+      orientationRelabeling_mapDart_carrier
+        outer carrier outerNegative carrierNegative
+        hcarrierOuter,
+      orientationRelabeling_mapDart_carrier_opposite
+        outer carrier outerNegative carrierNegative
+        hcarrierOuter]
+    simp
+    exact List.IsRotated.refl _
+
 /-- The positive contextual crosscap commute is an adjacent-crosscap rewrite followed by an
 ordinary crosscap grouping, with cyclic rotations between the displayed spellings. -/
 theorem exists_positiveNormalizationEquivalent {n : ℕ}
@@ -2804,6 +3051,80 @@ theorem exists_positiveNormalizationEquivalent {n : ℕ}
             (hgrouping.trans
               (NormalizationEquivalent.ofSignedIso
                 targetRotation))))⟩
+
+/-- Contextual crosscap commuting supports arbitrary orientations on both distinguished edges. -/
+theorem exists_normalizationEquivalent {n : ℕ}
+    (outer carrier : Fin n)
+    (outerNegative carrierNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hcarrierOuter : carrier ≠ outer)
+    (hcarrierInside :
+      carrier ∉ insideTail.map edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉ outsideTail.map edgeOfDart)
+    (houterInside :
+      outer ∉ insideTail.map edgeOfDart)
+    (houterOutside :
+      outer ∉ outsideTail.map edgeOfDart)
+    (validSource :
+      (Dyck.oneFace
+        (sourceWord outer carrier
+          outerNegative carrierNegative
+          insideTail outsideTail)).IsSurfaceValid) :
+    ∃ validTarget :
+        (Dyck.oneFace
+          (targetWord outer carrier
+            outerNegative carrierNegative
+            insideTail outsideTail)).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (sourceWord outer carrier
+            outerNegative carrierNegative
+            insideTail outsideTail),
+          validSource⟩
+        ⟨Dyck.oneFace
+          (targetWord outer carrier
+            outerNegative carrierNegative
+            insideTail outsideTail),
+          validTarget⟩ := by
+  let sourceIso :=
+    sourceSignedIso outer carrier
+      outerNegative carrierNegative
+      insideTail outsideTail hcarrierOuter
+      hcarrierInside hcarrierOutside
+      houterInside houterOutside
+  let validPositiveSource :
+      (Dyck.oneFace
+        (positiveSourceWord outer carrier
+          insideTail outsideTail)).IsSurfaceValid :=
+    sourceIso.isSurfaceValid validSource
+  let positiveWitness :=
+    exists_positiveNormalizationEquivalent
+      outer carrier insideTail outsideTail
+      hcarrierOuter hcarrierInside hcarrierOutside
+      houterInside houterOutside validPositiveSource
+  let validPositiveTarget :=
+    Classical.choose positiveWitness
+  have hpositive :=
+    Classical.choose_spec positiveWitness
+  let targetIso :=
+    targetSignedIso outer carrier
+      outerNegative carrierNegative
+      insideTail outsideTail hcarrierOuter
+      hcarrierInside hcarrierOutside
+      houterInside houterOutside
+  let validTarget :
+      (Dyck.oneFace
+        (targetWord outer carrier
+          outerNegative carrierNegative
+          insideTail outsideTail)).IsSurfaceValid :=
+    targetIso.symm.isSurfaceValid validPositiveTarget
+  exact
+    ⟨validTarget,
+      (NormalizationEquivalent.ofSignedIso sourceIso).trans
+        (hpositive.trans
+          (NormalizationEquivalent.ofSignedIso
+            targetIso).symm)⟩
 
 end CrosscapBlockCommute
 
