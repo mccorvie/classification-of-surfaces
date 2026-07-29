@@ -56,6 +56,69 @@ def explicitOneFaceSignedIso
       omega
     rw [hf]
 
+/-- Relabel a finished `Fin`-indexed one-face word directly to the existing typed one-face
+adapter.  This is the final bridge used by canonical normalization; it does not introduce a
+second spelling of any Lean-Eval representative. -/
+noncomputable def oneFaceSignedIsoToOfOneFaceWord {n : ℕ}
+    {Edge : Type} [Fintype Edge]
+    (sourceWord : List (SignedDart (Fin n)))
+    (typedWord : List (SignedDart Edge))
+    (edgeEquiv : Fin n ≃ Edge)
+    (rotated :
+      (sourceWord.map (SignedDart.mapEquiv edgeEquiv)).IsRotated
+        typedWord) :
+    SignedPresentationIso
+      (Dyck.oneFace sourceWord)
+      (ofOneFaceWord typedWord) where
+  edgeRelabeling :=
+    EdgeRelabeling.ofEquiv
+      (edgeEquiv.trans (Fintype.equivFin Edge))
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    rw [Dyck.oneFace_boundary, ofOneFaceWord_boundary,
+      EdgeRelabeling.map_mapDart_ofEquiv,
+      map_mapEquiv_trans]
+    exact rotated.map
+      (SignedDart.mapEquiv (Fintype.equivFin Edge))
+
+/-- A finished orientable word, up to its explicit edge relabeling and cyclic rotation, gives a
+normalization result at the exact existing orientable canonical presentation. -/
+noncomputable def orientableNormalizationResultOfRotated
+    {k p n : ℕ}
+    (sourceWord : List (SignedDart (Fin k)))
+    (edgeEquiv : Fin k ≃ NormalForm.OrientableEdge p n)
+    (rotated :
+      (sourceWord.map (SignedDart.mapEquiv edgeEquiv)).IsRotated
+        (NormalForm.orientableBoundaryWord p n))
+    (valid : (Dyck.oneFace sourceWord).IsSurfaceValid)
+    (admissible : (NormalForm.orientable p n).IsEvalAdmissible) :
+    NormalizationResult ⟨Dyck.oneFace sourceWord, valid⟩ :=
+  (NormalizationResult.canonical
+      (NormalForm.orientable p n) admissible).ofSignedIso
+    (oneFaceSignedIsoToOfOneFaceWord
+      sourceWord (NormalForm.orientableBoundaryWord p n)
+      edgeEquiv rotated)
+
+/-- A finished nonorientable word, up to its explicit edge relabeling and cyclic rotation, gives
+a normalization result at the exact existing nonorientable canonical presentation. -/
+noncomputable def nonOrientableNormalizationResultOfRotated
+    {k p n : ℕ}
+    (sourceWord : List (SignedDart (Fin k)))
+    (edgeEquiv : Fin k ≃ NormalForm.NonOrientableEdge p n)
+    (rotated :
+      (sourceWord.map (SignedDart.mapEquiv edgeEquiv)).IsRotated
+        (NormalForm.nonOrientableBoundaryWord p n))
+    (valid : (Dyck.oneFace sourceWord).IsSurfaceValid)
+    (admissible :
+      (NormalForm.nonOrientable p n).IsEvalAdmissible) :
+    NormalizationResult ⟨Dyck.oneFace sourceWord, valid⟩ :=
+  (NormalizationResult.canonical
+      (NormalForm.nonOrientable p n) admissible).ofSignedIso
+    (oneFaceSignedIsoToOfOneFaceWord
+      sourceWord (NormalForm.nonOrientableBoundaryWord p n)
+      edgeEquiv rotated)
+
 /-- The two possible signed spellings of an adjacent inverse pair. -/
 def inversePair {Edge : Type} (a : Edge) : Bool → List (SignedDart Edge)
   | false => [.pos a, .neg a]
