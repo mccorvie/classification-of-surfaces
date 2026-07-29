@@ -2058,6 +2058,13 @@ def edges {n : ℕ} : CompletedBlock n → List (Fin n)
   | .handle a b => [a, b]
   | .boundary carrier hole _ _ => [carrier, hole, carrier]
 
+/-- Distinct-name spine of a completed block.  Unlike `edges`, this records a boundary carrier
+once rather than once per dart occurrence. -/
+def names {n : ℕ} : CompletedBlock n → List (Fin n)
+  | .crosscap a _ => [a]
+  | .handle a b => [a, b]
+  | .boundary carrier hole _ _ => [carrier, hole]
+
 /-- Reverse a completed block as one atomic cyclic-word segment. -/
 def inverse {n : ℕ} : CompletedBlock n → CompletedBlock n
   | .crosscap a negative => .crosscap a (!negative)
@@ -2136,6 +2143,10 @@ theorem edges_inverse {n : ℕ} (block : CompletedBlock n) :
     block.inverse.edges = block.edges.reverse := by
   cases block <;> rfl
 
+theorem names_inverse_perm {n : ℕ} (block : CompletedBlock n) :
+    block.inverse.names.Perm block.names := by
+  cases block <;> simp [inverse, names]
+
 @[simp]
 theorem word_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
     (block : CompletedBlock n) :
@@ -2178,6 +2189,12 @@ theorem mem_map_edgeOfDart_word_iff {n : ℕ}
         cases holeNegative <;>
           simp [word, edges, boundaryLoopWord]
 
+@[simp]
+theorem mem_names_iff_mem_edges {n : ℕ}
+    (block : CompletedBlock n) (a : Fin n) :
+    a ∈ block.names ↔ a ∈ block.edges := by
+  cases block <;> simp [names, edges] <;> tauto
+
 /-- Expanding a lowered completed block agrees with word-level cancellation lowering. -/
 theorem word_lowerAvoiding {n : ℕ}
     (a : Fin (n + 1))
@@ -2216,6 +2233,17 @@ theorem edges_lowerAvoiding_map_restoreEdge {n : ℕ}
       block.edges := by
   cases block <;>
     simp [lowerAvoiding, edges]
+
+/-- Re-embedding the distinct names of a lowered block recovers its old name spine. -/
+theorem names_lowerAvoiding_map_restoreEdge {n : ℕ}
+    (a : Fin (n + 1))
+    (block : CompletedBlock (n + 1))
+    (ha : a ∉ block.edges) :
+    (block.lowerAvoiding a ha).names.map
+        (Cancellation.restoreEdge a) =
+      block.names := by
+  cases block <;>
+    simp [lowerAvoiding, names]
 
 /-- Concatenate a completed block sequence into its exact signed one-face word. -/
 def sequenceWord {n : ℕ} (blocks : List (CompletedBlock n)) :
@@ -4129,6 +4157,12 @@ def extractedEdges {n : ℕ} : ReductionToken n → List (Fin n)
   | .extracted block => block.edges
   | .completed block => block.edges
 
+/-- One occurrence of every protected edge name represented by a token. -/
+def extractedNames {n : ℕ} : ReductionToken n → List (Fin n)
+  | .residual _ => []
+  | .extracted block => block.edges
+  | .completed block => block.names
+
 @[simp]
 theorem word_residual {n : ℕ} (dart : SignedDart (Fin n)) :
     word (.residual dart) = [dart] :=
@@ -4181,6 +4215,34 @@ theorem extractedEdges_completed {n : ℕ}
     extractedEdges (.completed block) =
       block.edges :=
   rfl
+
+@[simp]
+theorem extractedNames_residual {n : ℕ}
+    (dart : SignedDart (Fin n)) :
+    extractedNames (.residual dart) = [] :=
+  rfl
+
+@[simp]
+theorem extractedNames_extracted {n : ℕ}
+    (block : ExtractedBlock n) :
+    extractedNames (.extracted block) = block.edges :=
+  rfl
+
+@[simp]
+theorem extractedNames_completed {n : ℕ}
+    (block : CompletedBlock n) :
+    extractedNames (.completed block) = block.names :=
+  rfl
+
+@[simp]
+theorem mem_extractedNames_iff_mem_extractedEdges {n : ℕ}
+    (token : ReductionToken n) (a : Fin n) :
+    a ∈ token.extractedNames ↔ a ∈ token.extractedEdges := by
+  cases token with
+  | residual => simp
+  | extracted => rfl
+  | completed block =>
+      exact CompletedBlock.mem_names_iff_mem_edges block a
 
 /-- Structural grammar of marked execution states.  Extracted crosscaps and handles are promoted
 immediately to completed blocks; only a boundary singleton may remain in the intermediate
@@ -4384,6 +4446,20 @@ theorem extractedEdges_inverse {n : ℕ}
   | completed block =>
       exact CompletedBlock.edges_inverse block
 
+theorem extractedNames_inverse_perm {n : ℕ}
+    (token : ReductionToken n) :
+    token.inverse.extractedNames.Perm
+      token.extractedNames := by
+  cases token with
+  | residual =>
+      simp
+  | extracted block =>
+      simpa [inverse, extractedNames,
+        ExtractedBlock.edges_inverse] using
+          List.reverse_perm block.edges
+  | completed block =>
+      exact CompletedBlock.names_inverse_perm block
+
 @[simp]
 theorem inverse_inverse {n : ℕ} (token : ReductionToken n) :
     token.inverse.inverse = token := by
@@ -4536,6 +4612,26 @@ theorem extractedEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
         CompletedBlock.edges_lowerAvoiding_map_restoreEdge
           a block _
 
+/-- Re-embedding a lowered token's distinct protected names recovers its old name spine. -/
+theorem extractedNames_lowerAvoiding_map_restoreEdge {n : ℕ}
+    (a : Fin (n + 1))
+    (token : ReductionToken (n + 1))
+    (ha : a ∉ token.word.map edgeOfDart) :
+    (token.lowerAvoiding a ha).extractedNames.map
+        (Cancellation.restoreEdge a) =
+      token.extractedNames := by
+  cases token with
+  | residual =>
+      rfl
+  | extracted block =>
+      exact
+        ExtractedBlock.edges_lowerAvoiding_map_restoreEdge
+          a block _
+  | completed block =>
+      exact
+        CompletedBlock.names_lowerAvoiding_map_restoreEdge
+          a block _
+
 /-- Expand a marked word to the exact signed word on which normalization moves act. -/
 def expand {n : ℕ} (tokens : List (ReductionToken n)) :
     List (SignedDart (Fin n)) :=
@@ -4550,6 +4646,12 @@ def residualDarts {n : ℕ} (tokens : List (ReductionToken n)) :
 def protectedEdges {n : ℕ} (tokens : List (ReductionToken n)) :
     List (Fin n) :=
   (tokens.map extractedEdges).flatten
+
+/-- Distinct-name spine of all protected tokens.  Each token contributes each of its edge names
+once, so global `Nodup` expresses disjoint ownership of protected names. -/
+def protectedNames {n : ℕ} (tokens : List (ReductionToken n)) :
+    List (Fin n) :=
+  (tokens.map extractedNames).flatten
 
 /-- Residual darts and already-extracted blocks use disjoint ambient edge names. -/
 def IsSeparated {n : ℕ} (tokens : List (ReductionToken n)) : Prop :=
@@ -4704,8 +4806,41 @@ theorem protectedEdges_cons {n : ℕ}
 theorem protectedEdges_append {n : ℕ}
     (left right : List (ReductionToken n)) :
     protectedEdges (left ++ right) =
-      protectedEdges left ++ protectedEdges right := by
+    protectedEdges left ++ protectedEdges right := by
   simp [protectedEdges]
+
+@[simp]
+theorem protectedNames_nil {n : ℕ} :
+    protectedNames ([] : List (ReductionToken n)) = [] :=
+  rfl
+
+@[simp]
+theorem protectedNames_cons {n : ℕ}
+    (token : ReductionToken n)
+    (tokens : List (ReductionToken n)) :
+    protectedNames (token :: tokens) =
+      token.extractedNames ++ protectedNames tokens := by
+  simp [protectedNames]
+
+@[simp]
+theorem protectedNames_append {n : ℕ}
+    (left right : List (ReductionToken n)) :
+    protectedNames (left ++ right) =
+      protectedNames left ++ protectedNames right := by
+  simp [protectedNames]
+
+/-- The distinct-name spine and occurrence-level protected list have identical membership. -/
+theorem mem_protectedNames_iff_mem_protectedEdges {n : ℕ}
+    (tokens : List (ReductionToken n)) (a : Fin n) :
+    a ∈ protectedNames tokens ↔
+      a ∈ protectedEdges tokens := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      simp only [protectedNames_cons, protectedEdges_cons,
+        List.mem_append]
+      rw [mem_extractedNames_iff_mem_extractedEdges, ih]
 
 /-- Cancellation lowering distributes over concatenation. -/
 theorem Cancellation.lowerTail_append {n : ℕ}
@@ -4774,8 +4909,8 @@ theorem length_lowerTokensAvoiding {n : ℕ}
         (token.lowerAvoiding a _ ::
           lowerTokensAvoiding a tokens _).length =
             (token :: tokens).length
-      simp only [List.length_cons, Nat.add_left_cancel_iff]
-      exact ih _
+      simpa only [List.length_cons] using
+        congrArg Nat.succ (ih _)
 
 theorem AllClassified.lowerTokensAvoiding {n : ℕ}
     (a : Fin (n + 1))
@@ -4882,6 +5017,33 @@ theorem protectedEdges_lowerTokensAvoiding_map_restoreEdge
       rw [token.extractedEdges_lowerAvoiding_map_restoreEdge,
         ih]
 
+/-- Re-embedding all distinct protected names after lowering recovers the source name spine. -/
+theorem protectedNames_lowerTokensAvoiding_map_restoreEdge
+    {n : ℕ} (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand tokens).map edgeOfDart) :
+    (protectedNames
+      (lowerTokensAvoiding a tokens ha)).map
+        (Cancellation.restoreEdge a) =
+      protectedNames tokens := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      rw [show
+        lowerTokensAvoiding a (token :: tokens) ha =
+          token.lowerAvoiding a (by
+            intro htoken
+            apply ha
+            simp [htoken]) ::
+          lowerTokensAvoiding a tokens (by
+            intro htokens
+            apply ha
+            simp [htokens]) by rfl]
+      simp only [protectedNames_cons, List.map_append]
+      rw [token.extractedNames_lowerAvoiding_map_restoreEdge,
+        ih]
+
 /-- Injective cancellation lowering preserves separation of residual and protected names. -/
 theorem IsSeparated.lowerTokensAvoiding {n : ℕ}
     (a : Fin (n + 1))
@@ -4980,6 +5142,14 @@ theorem protectedEdges_isRotated {n : ℕ}
       (protectedEdges target) := by
   exact isRotated_flatten (hrotated.map extractedEdges)
 
+/-- Distinct protected-name spines rotate with their atomic marked tokens. -/
+theorem protectedNames_isRotated {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (hrotated : tokens.IsRotated target) :
+    (protectedNames tokens).IsRotated
+      (protectedNames target) := by
+  exact isRotated_flatten (hrotated.map extractedNames)
+
 /-- Residual edge names rotate with their atomic marked tokens. -/
 theorem residualEdges_isRotated {n : ℕ}
     {tokens target : List (ReductionToken n)}
@@ -5029,38 +5199,38 @@ theorem IsSeparated.of_perm {n : ℕ}
     ((residualPerm.map edgeOfDart).mem_iff.mpr hResidual)
     (protectedPerm.mem_iff.mpr hProtected)
 
-/-- Permuting atomic marked tokens permutes their flattened protected-edge lists. -/
-theorem protectedEdges_perm {n : ℕ}
+/-- Permuting atomic marked tokens permutes their distinct protected-name spines. -/
+theorem protectedNames_perm {n : ℕ}
     {tokens target : List (ReductionToken n)}
     (permuted : tokens.Perm target) :
-    (protectedEdges tokens).Perm
-      (protectedEdges target) := by
-  simpa [protectedEdges, List.flatMap] using
+    (protectedNames tokens).Perm
+      (protectedNames target) := by
+  simpa [protectedNames, List.flatMap] using
     (List.Perm.flatMap permuted
-      (f := extractedEdges) (g := extractedEdges)
+      (f := extractedNames) (g := extractedNames)
       (fun _ _ => List.Perm.refl _))
 
 /-- Duplicate-freeness of protected names depends only on the multiset of marked tokens. -/
-theorem protectedEdges_nodup_of_perm {n : ℕ}
+theorem protectedNames_nodup_of_perm {n : ℕ}
     {tokens target : List (ReductionToken n)}
-    (nodup : (protectedEdges tokens).Nodup)
+    (nodup : (protectedNames tokens).Nodup)
     (permuted : tokens.Perm target) :
-    (protectedEdges target).Nodup :=
-  (protectedEdges_perm permuted).nodup_iff.mp nodup
+    (protectedNames target).Nodup :=
+  (protectedNames_perm permuted).nodup_iff.mp nodup
 
 /-- Lowering an absent ambient edge preserves duplicate-freeness of all protected names. -/
-theorem protectedEdges_nodup_lowerTokensAvoiding {n : ℕ}
+theorem protectedNames_nodup_lowerTokensAvoiding {n : ℕ}
     (a : Fin (n + 1))
     (tokens : List (ReductionToken (n + 1)))
     (ha : a ∉ (expand tokens).map edgeOfDart)
-    (nodup : (protectedEdges tokens).Nodup) :
-    (protectedEdges
+    (nodup : (protectedNames tokens).Nodup) :
+    (protectedNames
       (lowerTokensAvoiding a tokens ha)).Nodup := by
   have mappedNodup :
-      ((protectedEdges
+      ((protectedNames
         (lowerTokensAvoiding a tokens ha)).map
           (Cancellation.restoreEdge a)).Nodup := by
-    rw [protectedEdges_lowerTokensAvoiding_map_restoreEdge]
+    rw [protectedNames_lowerTokensAvoiding_map_restoreEdge]
     exact nodup
   exact mappedNodup.of_map _
 
@@ -7102,7 +7272,7 @@ def ofRotatedOfProtectedNodup {n : ℕ}
           tailTokens))
     (separated : ReductionToken.IsSeparated tokens)
     (protectedNodup :
-      (ReductionToken.protectedEdges tokens).Nodup) :
+      (ReductionToken.protectedNames tokens).Nodup) :
     MarkedBoundaryPairContraction tokens := by
   let displayedTokens :=
     [.extracted (.boundary first firstNegative),
@@ -7112,18 +7282,18 @@ def ofRotatedOfProtectedNodup {n : ℕ}
       ReductionToken.IsSeparated displayedTokens :=
     separated.of_isRotated rotated
   have protectedNodupDisplayed :
-      (ReductionToken.protectedEdges displayedTokens).Nodup :=
-    (ReductionToken.protectedEdges_isRotated
+      (ReductionToken.protectedNames displayedTokens).Nodup :=
+    (ReductionToken.protectedNames_isRotated
       rotated).nodup_iff.mp protectedNodup
   have protectedFacts :
       first ≠ second ∧
-        first ∉ ReductionToken.protectedEdges tailTokens ∧
-        second ∉ ReductionToken.protectedEdges tailTokens := by
+        first ∉ ReductionToken.protectedNames tailTokens ∧
+        second ∉ ReductionToken.protectedNames tailTokens := by
     have facts :
         (first ≠ second ∧
-          first ∉ ReductionToken.protectedEdges tailTokens) ∧
-        second ∉ ReductionToken.protectedEdges tailTokens ∧
-          (ReductionToken.protectedEdges tailTokens).Nodup := by
+          first ∉ ReductionToken.protectedNames tailTokens) ∧
+        second ∉ ReductionToken.protectedNames tailTokens ∧
+          (ReductionToken.protectedNames tailTokens).Nodup := by
       simpa [displayedTokens, ExtractedBlock.edges] using
         protectedNodupDisplayed
     exact ⟨facts.1.1, facts.1.2, facts.2.1⟩
@@ -7132,12 +7302,12 @@ def ofRotatedOfProtectedNodup {n : ℕ}
         edge ∈
           ReductionToken.protectedEdges displayedTokens)
       (tailProtected :
-        edge ∉ ReductionToken.protectedEdges tailTokens) :
+        edge ∉ ReductionToken.protectedNames tailTokens) :
       edge ∉
         (ReductionToken.expand tailTokens).map edgeOfDart := by
     rw [ReductionToken.mem_map_edgeOfDart_expand_iff,
       not_or]
-    refine ⟨?_, tailProtected⟩
+    refine ⟨?_, ?_⟩
     intro residualTail
     exact (List.disjoint_left.mp separatedDisplayed)
       (by
@@ -7146,6 +7316,11 @@ def ofRotatedOfProtectedNodup {n : ℕ}
           tailTokens).map edgeOfDart
         exact residualTail)
       headProtected
+    · intro hprotected
+      apply tailProtected
+      exact
+        (ReductionToken.mem_protectedNames_iff_mem_protectedEdges
+          tailTokens edge).mpr hprotected
   exact
     { first := first
       second := second
@@ -7349,13 +7524,13 @@ theorem targetTokens_isSeparated {n : ℕ}
       (List.disjoint_left.mp loweredTailSeparated)
         heTailResidual heTailProtected
 
-/-- Boundary-subdivision contraction preserves duplicate-freeness of protected edge names. -/
-theorem targetTokens_protectedEdges_nodup {n : ℕ}
+/-- Boundary-subdivision contraction preserves duplicate-freeness of protected name spines. -/
+theorem targetTokens_protectedNames_nodup {n : ℕ}
     {tokens : List (ReductionToken (n + 1))}
     (contraction : MarkedBoundaryPairContraction tokens)
     (nodup :
-      (ReductionToken.protectedEdges tokens).Nodup) :
-    (ReductionToken.protectedEdges
+      (ReductionToken.protectedNames tokens).Nodup) :
+    (ReductionToken.protectedNames
       contraction.targetTokens).Nodup := by
   let displayedTokens :=
     [.extracted
@@ -7366,35 +7541,35 @@ theorem targetTokens_protectedEdges_nodup {n : ℕ}
           contraction.secondNegative)] ++
       contraction.tailTokens
   have displayedNodup :
-      (ReductionToken.protectedEdges
+      (ReductionToken.protectedNames
         displayedTokens).Nodup :=
-    (ReductionToken.protectedEdges_isRotated
+    (ReductionToken.protectedNames_isRotated
       contraction.rotated).nodup_iff.mp nodup
   have sourceFacts :
       contraction.first ∉
-          ReductionToken.protectedEdges
+          ReductionToken.protectedNames
             contraction.tailTokens ∧
-        (ReductionToken.protectedEdges
+        (ReductionToken.protectedNames
           contraction.tailTokens).Nodup := by
     have allFacts :
         contraction.first ≠ contraction.second ∧
           contraction.first ∉
-            ReductionToken.protectedEdges
+            ReductionToken.protectedNames
               contraction.tailTokens ∧
           contraction.second ∉
-            ReductionToken.protectedEdges
+            ReductionToken.protectedNames
               contraction.tailTokens ∧
-          (ReductionToken.protectedEdges
+          (ReductionToken.protectedNames
             contraction.tailTokens).Nodup := by
       have facts :
           (contraction.first ≠ contraction.second ∧
             contraction.first ∉
-              ReductionToken.protectedEdges
+              ReductionToken.protectedNames
                 contraction.tailTokens) ∧
           contraction.second ∉
-              ReductionToken.protectedEdges
+              ReductionToken.protectedNames
                 contraction.tailTokens ∧
-            (ReductionToken.protectedEdges
+            (ReductionToken.protectedNames
               contraction.tailTokens).Nodup := by
         simpa [displayedTokens,
           ExtractedBlock.edges] using displayedNodup
@@ -7407,20 +7582,20 @@ theorem targetTokens_protectedEdges_nodup {n : ℕ}
       contraction.second contraction.tailTokens
       contraction.second_not_mem_tail
   have loweredTailNodup :
-      (ReductionToken.protectedEdges loweredTail).Nodup :=
-    ReductionToken.protectedEdges_nodup_lowerTokensAvoiding
+      (ReductionToken.protectedNames loweredTail).Nodup :=
+    ReductionToken.protectedNames_nodup_lowerTokensAvoiding
       contraction.second contraction.tailTokens
       contraction.second_not_mem_tail sourceFacts.2
   rw [targetTokens]
-  simp only [ReductionToken.protectedEdges_cons,
-    ReductionToken.extractedEdges_extracted,
+  simp only [ReductionToken.protectedNames_cons,
+    ReductionToken.extractedNames_extracted,
     ExtractedBlock.edges, List.singleton_append,
     List.nodup_cons]
   refine ⟨?_, loweredTailNodup⟩
   intro hlowered
   apply sourceFacts.1
   rw [←
-    ReductionToken.protectedEdges_lowerTokensAvoiding_map_restoreEdge
+    ReductionToken.protectedNames_lowerTokensAvoiding_map_restoreEdge
       contraction.second contraction.tailTokens
       contraction.second_not_mem_tail]
   exact List.mem_map.mpr
@@ -7593,7 +7768,7 @@ def toBoundaryPairContraction {n : ℕ}
           insideTokens)
     (separated : ReductionToken.IsSeparated tokens)
     (protectedNodup :
-      (ReductionToken.protectedEdges tokens).Nodup) :
+      (ReductionToken.protectedNames tokens).Nodup) :
     MarkedBoundaryPairContraction tokens := by
   let contractionTail :=
     insideTokens ++
@@ -7643,7 +7818,7 @@ noncomputable def boundaryContractionTargetPair {n : ℕ}
           insideTokens)
     (separated : ReductionToken.IsSeparated tokens)
     (protectedNodup :
-      (ReductionToken.protectedEdges tokens).Nodup) :
+      (ReductionToken.protectedNames tokens).Nodup) :
     MarkedResidualCancellablePair
       (pair.toBoundaryPairContraction first second
         firstNegative secondNegative insideTokens hbetween
@@ -7770,7 +7945,7 @@ theorem boundaryContractionTargetPair_between_length_lt {n : ℕ}
           insideTokens)
     (separated : ReductionToken.IsSeparated tokens)
     (protectedNodup :
-      (ReductionToken.protectedEdges tokens).Nodup) :
+      (ReductionToken.protectedNames tokens).Nodup) :
     (pair.boundaryContractionTargetPair first second
         firstNegative secondNegative insideTokens hbetween
         separated protectedNodup).betweenTokens.length <
