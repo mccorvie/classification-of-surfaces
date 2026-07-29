@@ -5133,6 +5133,51 @@ def ofProtectedAtom {n : ℕ} :
   | .completed block =>
       .completed block
 
+/-- Number of still-raw boundary singleton tokens in a marked word. -/
+def rawBoundaryCount {n : ℕ} :
+    List (ReductionToken n) → ℕ
+  | [] => 0
+  | .extracted (.boundary _ _) :: tokens =>
+      1 + rawBoundaryCount tokens
+  | _ :: tokens =>
+      rawBoundaryCount tokens
+
+@[simp]
+theorem rawBoundaryCount_append {n : ℕ}
+    (left right : List (ReductionToken n)) :
+    rawBoundaryCount (left ++ right) =
+      rawBoundaryCount left + rawBoundaryCount right := by
+  induction left with
+  | nil =>
+      simp [rawBoundaryCount]
+  | cons token tokens ih =>
+      cases token with
+      | residual =>
+          simpa [rawBoundaryCount] using ih
+      | extracted block =>
+          cases block <;>
+            simp [rawBoundaryCount, ih] <;>
+            omega
+      | completed =>
+          simpa [rawBoundaryCount] using ih
+
+@[simp]
+theorem rawBoundaryCount_map_ofProtectedAtom {n : ℕ}
+    (atoms : List (ProtectedAtom n)) :
+    rawBoundaryCount (atoms.map ofProtectedAtom) =
+      ProtectedAtom.rawBoundaryCount atoms := by
+  induction atoms with
+  | nil =>
+      rfl
+  | cons atom atoms ih =>
+      cases atom with
+      | boundary =>
+          simp [rawBoundaryCount,
+            ProtectedAtom.rawBoundaryCount, ofProtectedAtom, ih]
+      | completed block =>
+          simp [rawBoundaryCount,
+            ProtectedAtom.rawBoundaryCount, ofProtectedAtom, ih]
+
 /-- Exact signed word represented by one marked token. -/
 def word {n : ℕ} : ReductionToken n →
     List (SignedDart (Fin n))
@@ -5682,6 +5727,30 @@ def inverseSequence {n : ℕ} (tokens : List (ReductionToken n)) :
     List (ReductionToken n) :=
   (tokens.map inverse).reverse
 
+@[simp]
+theorem rawBoundaryCount_inverseSequence {n : ℕ}
+    (tokens : List (ReductionToken n)) :
+    rawBoundaryCount (inverseSequence tokens) =
+      rawBoundaryCount tokens := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      rw [show inverseSequence (token :: tokens) =
+          inverseSequence tokens ++ [token.inverse] by
+        simp [inverseSequence]]
+      rw [rawBoundaryCount_append, ih]
+      cases token with
+      | residual =>
+          simp [rawBoundaryCount, inverse]
+      | extracted block =>
+          cases block <;>
+            simp [rawBoundaryCount, inverse,
+              ExtractedBlock.inverse] <;>
+            omega
+      | completed =>
+          simp [rawBoundaryCount, inverse]
+
 /-- Initially every dart is still residual. -/
 def ofWord {n : ℕ} (word : List (SignedDart (Fin n))) :
     List (ReductionToken n) :=
@@ -5949,6 +6018,32 @@ def lowerTokensAvoiding {n : ℕ} (a : Fin (n + 1)) :
           intro htokens
           apply ha
           simp [htokens])
+
+@[simp]
+theorem rawBoundaryCount_lowerTokensAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand tokens).map edgeOfDart) :
+    rawBoundaryCount (lowerTokensAvoiding a tokens ha) =
+      rawBoundaryCount tokens := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      cases token with
+      | residual =>
+          simp [lowerTokensAvoiding, lowerAvoiding,
+            rawBoundaryCount, ih]
+      | extracted block =>
+          cases block <;>
+            simp [lowerTokensAvoiding, lowerAvoiding,
+              ExtractedBlock.lowerAvoiding,
+              rawBoundaryCount, ih]
+      | completed block =>
+          cases block <;>
+            simp [lowerTokensAvoiding, lowerAvoiding,
+              CompletedBlock.lowerAvoiding,
+              rawBoundaryCount, ih]
 
 /-- Marked cancellation lowering distributes over token concatenation. -/
 theorem lowerTokensAvoiding_append {n : ℕ}
@@ -12520,6 +12615,10 @@ structure MarkedResidualPairShortening {n : ℕ}
   residualLengthEq :
     (ReductionToken.residualDarts targetTokens).length =
       (ReductionToken.residualDarts tokens).length
+  rawBoundaryCountTailEq :
+    ReductionToken.rawBoundaryCount
+        targetPair.tailTokens =
+      ReductionToken.rawBoundaryCount pair.tailTokens
   betweenLengthLt :
     targetPair.betweenTokens.length <
       pair.betweenTokens.length
@@ -12548,6 +12647,10 @@ def prepend {n m : ℕ}
     (betweenLengthEq :
       middlePair.betweenTokens.length =
         pair.betweenTokens.length)
+    (rawBoundaryCountTailEq :
+      ReductionToken.rawBoundaryCount
+          middlePair.tailTokens =
+        ReductionToken.rawBoundaryCount pair.tailTokens)
     (tail :
       MarkedResidualPairShortening middlePair middleState) :
     MarkedResidualPairShortening pair state where
@@ -12560,6 +12663,8 @@ def prepend {n m : ℕ}
   equivalent := stepEquivalent.trans tail.equivalent
   residualLengthEq :=
     tail.residualLengthEq.trans residualLengthEq
+  rawBoundaryCountTailEq :=
+    tail.rawBoundaryCountTailEq.trans rawBoundaryCountTailEq
   betweenLengthLt := by
     rw [← betweenLengthEq]
     exact tail.betweenLengthLt
@@ -12587,6 +12692,10 @@ structure MarkedResidualPairRotation {n : ℕ}
   residualLengthEq :
     (ReductionToken.residualDarts targetTokens).length =
       (ReductionToken.residualDarts tokens).length
+  rawBoundaryCountTailEq :
+    ReductionToken.rawBoundaryCount
+        targetPair.tailTokens =
+      ReductionToken.rawBoundaryCount pair.tailTokens
   betweenLengthEq :
     targetPair.betweenTokens.length =
       pair.betweenTokens.length
@@ -12636,6 +12745,7 @@ noncomputable def rotateBoundaryAtom {n : ℕ}
           residualLengthEq :=
             ReductionToken.residualDarts_length_of_perm
               step.perm_targetTokens
+          rawBoundaryCountTailEq := rfl
           betweenLengthEq := by
             rw [hbetween]
             dsimp [targetPair,
@@ -12713,6 +12823,11 @@ noncomputable def shortenBoundaryBlock {n : ℕ}
           protectedNonempty step.perm_targetTokens
       equivalent := execution.equivalent
       residualLengthEq := ?_
+      rawBoundaryCountTailEq := by
+        dsimp [targetPair,
+          MarkedBoundaryBlockCommute.targetPair]
+        rw [stepOutside]
+        simp [ReductionToken.rawBoundaryCount]
       betweenLengthLt := ?_ }
   · rw [targetPair.residualDarts_length_eq,
       pair.residualDarts_length_eq]
@@ -12768,6 +12883,11 @@ noncomputable def shortenCrosscapBlock {n : ℕ}
           CompletedBlock.names]
       equivalent := execution.equivalent
       residualLengthEq := ?_
+      rawBoundaryCountTailEq := by
+        dsimp [targetPair,
+          MarkedCrosscapBlockCommute.targetPair]
+        rw [stepOutside]
+        simp [ReductionToken.rawBoundaryCount]
       betweenLengthLt := ?_ }
   · rw [targetPair.residualDarts_length_eq,
       pair.residualDarts_length_eq]
@@ -12823,6 +12943,11 @@ noncomputable def shortenHandleBlock {n : ℕ}
           protectedNonempty step.perm_targetTokens
       equivalent := execution.equivalent
       residualLengthEq := ?_
+      rawBoundaryCountTailEq := by
+        dsimp [targetPair,
+          MarkedHandleBlockCommute.targetPair]
+        rw [stepOutside]
+        simp [ReductionToken.rawBoundaryCount]
       betweenLengthLt := ?_ }
   · rw [targetPair.residualDarts_length_eq,
       pair.residualDarts_length_eq]
@@ -12877,6 +13002,15 @@ noncomputable def shortenBoundaryPair {n : ℕ}
       equivalent := execution.equivalent
       residualLengthEq :=
         step.residualDarts_targetTokens_length_eq
+      rawBoundaryCountTailEq := by
+        change
+          ReductionToken.rawBoundaryCount
+              (ReductionToken.lowerTokensAvoiding second
+                pair.tailTokens _) =
+            ReductionToken.rawBoundaryCount pair.tailTokens
+        exact
+          ReductionToken.rawBoundaryCount_lowerTokensAvoiding
+            second pair.tailTokens _
       betweenLengthLt :=
         pair.boundaryContractionTargetPair_between_length_lt
           first second firstNegative secondNegative
@@ -12904,6 +13038,12 @@ structure MarkedResidualPairResolution {n : ℕ}
       ⟨Dyck.oneFace
         (ReductionToken.expand targetTokens),
         targetState.valid⟩
+  residualLengthEqTail :
+    (ReductionToken.residualDarts targetTokens).length =
+      (ReductionToken.residualDarts pair.tailTokens).length
+  rawBoundaryCountEqTail :
+    ReductionToken.rawBoundaryCount targetTokens =
+      ReductionToken.rawBoundaryCount pair.tailTokens
   residualLengthLt :
     (ReductionToken.residualDarts targetTokens).length <
       (ReductionToken.residualDarts tokens).length
@@ -12929,6 +13069,10 @@ def prepend {n m : ℕ}
     (residualLengthEq :
       (ReductionToken.residualDarts middleTokens).length =
         (ReductionToken.residualDarts tokens).length)
+    (rawBoundaryCountTailEq :
+      ReductionToken.rawBoundaryCount
+          middlePair.tailTokens =
+        ReductionToken.rawBoundaryCount pair.tailTokens)
     (tail :
       MarkedResidualPairResolution middlePair middleState) :
     MarkedResidualPairResolution pair state where
@@ -12938,6 +13082,13 @@ def prepend {n m : ℕ}
   targetProtectedNonempty :=
     tail.targetProtectedNonempty
   equivalent := stepEquivalent.trans tail.equivalent
+  residualLengthEqTail := by
+    rw [tail.residualLengthEqTail]
+    have hsource := pair.residualDarts_length_eq
+    have hmiddle := middlePair.residualDarts_length_eq
+    omega
+  rawBoundaryCountEqTail :=
+    tail.rawBoundaryCountEqTail.trans rawBoundaryCountTailEq
   residualLengthLt := by
     rw [← residualLengthEq]
     exact tail.residualLengthLt
@@ -13024,6 +13175,23 @@ noncomputable def resolveAdjacent {n : ℕ}
               adjacent.tailTokens at hrestore
         rw [htarget] at hrestore
         exact tailProtectedNonempty (by simpa using hrestore.symm)
+      have hrestore :=
+        ReductionToken.residualEdges_lowerTokensAvoiding_map_restoreEdge
+          adjacent.edge adjacent.tailTokens
+            (adjacent.edge_not_mem_tailTokens state.valid)
+      have htargetLength :
+          (ReductionToken.residualDarts targetTokens).length =
+            (ReductionToken.residualDarts
+              pair.tailTokens).length := by
+        have hlength := congrArg List.length hrestore
+        have hlowered :
+            (ReductionToken.residualDarts targetTokens).length =
+              (ReductionToken.residualDarts
+                adjacent.tailTokens).length := by
+          simpa [targetTokens,
+            MarkedCancellablePair.cancellationTargetTokens] using
+              hlength
+        exact hlowered
       refine
         { targetEdgeCount := k
           targetTokens := targetTokens
@@ -13035,22 +13203,17 @@ noncomputable def resolveAdjacent {n : ℕ}
                 execution.targetProtectedNodup }
           targetProtectedNonempty := targetProtectedNonempty
           equivalent := execution.equivalent
+          residualLengthEqTail := htargetLength
+          rawBoundaryCountEqTail := by
+            change
+              ReductionToken.rawBoundaryCount
+                  (ReductionToken.lowerTokensAvoiding
+                    pair.edge pair.tailTokens _) =
+                ReductionToken.rawBoundaryCount pair.tailTokens
+            exact
+              ReductionToken.rawBoundaryCount_lowerTokensAvoiding
+                pair.edge pair.tailTokens _
           residualLengthLt := ?_ }
-      have hrestore :=
-        ReductionToken.residualEdges_lowerTokensAvoiding_map_restoreEdge
-          adjacent.edge adjacent.tailTokens
-            (adjacent.edge_not_mem_tailTokens state.valid)
-      have htargetLength :
-          (ReductionToken.residualDarts targetTokens).length =
-            (ReductionToken.residualDarts
-              adjacent.tailTokens).length := by
-        have hlength := congrArg List.length hrestore
-        simpa [targetTokens,
-          MarkedCancellablePair.cancellationTargetTokens] using
-            hlength
-      have hadjacentTail :
-          adjacent.tailTokens = pair.tailTokens := rfl
-      rw [hadjacentTail] at htargetLength
       rw [htargetLength, pair.residualDarts_length_eq]
       omega
 
@@ -13083,6 +13246,13 @@ noncomputable def resolveBoundary {n : ℕ}
         simp [closure, MarkedBoundaryClosure.targetTokens,
           CompletedBlock.names]
       equivalent := execution.equivalent
+      residualLengthEqTail := by
+        simp [closure, MarkedBoundaryClosure.targetTokens,
+          MarkedResidualCancellablePair.toBoundaryClosure]
+      rawBoundaryCountEqTail := by
+        simp [closure, MarkedBoundaryClosure.targetTokens,
+          MarkedResidualCancellablePair.toBoundaryClosure,
+          ReductionToken.rawBoundaryCount]
       residualLengthLt := ?_ }
   rw [pair.residualDarts_length_eq]
   simp [closure, MarkedBoundaryClosure.targetTokens,
@@ -13142,7 +13312,8 @@ noncomputable def resolveFuel {n : ℕ}
                     MarkedResidualPairResolution.prepend pair state
                       shortening.targetPair shortening.targetState
                       shortening.equivalent
-                      shortening.residualLengthEq tail
+                      shortening.residualLengthEq
+                      shortening.rawBoundaryCountTailEq tail
               | crosscap carrier carrierNegative =>
                   have hbetween' :
                       pair.betweenTokens =
@@ -13169,7 +13340,8 @@ noncomputable def resolveFuel {n : ℕ}
                     MarkedResidualPairResolution.prepend pair state
                       shortening.targetPair shortening.targetState
                       shortening.equivalent
-                      shortening.residualLengthEq tail
+                      shortening.residualLengthEq
+                      shortening.rawBoundaryCountTailEq tail
               | handle first second =>
                   have hbetween' :
                       pair.betweenTokens =
@@ -13196,7 +13368,8 @@ noncomputable def resolveFuel {n : ℕ}
                     MarkedResidualPairResolution.prepend pair state
                       shortening.targetPair shortening.targetState
                       shortening.equivalent
-                      shortening.residualLengthEq tail
+                      shortening.residualLengthEq
+                      shortening.rawBoundaryCountTailEq tail
           | boundary hole holeNegative =>
               cases rest with
               | nil =>
@@ -13238,7 +13411,8 @@ noncomputable def resolveFuel {n : ℕ}
                         MarkedResidualPairResolution.prepend pair state
                           shortening.targetPair shortening.targetState
                           shortening.equivalent
-                          shortening.residualLengthEq tail
+                          shortening.residualLengthEq
+                          shortening.rawBoundaryCountTailEq tail
                   | completed block =>
                       let insideTokens :=
                         .completed block :: remainingTokens
@@ -13281,7 +13455,9 @@ noncomputable def resolveFuel {n : ℕ}
                               state rotation.targetPair
                               rotation.targetState rotation.equivalent
                               rotation.residualLengthEq
-                              rotation.betweenLengthEq shorteningAfter
+                              rotation.betweenLengthEq
+                              rotation.rawBoundaryCountTailEq
+                              shorteningAfter
                           have hfuelPositive : 0 < fuel := by
                             have := shortening.betweenLengthLt
                             omega
@@ -13301,7 +13477,8 @@ noncomputable def resolveFuel {n : ℕ}
                               state shortening.targetPair
                               shortening.targetState
                               shortening.equivalent
-                              shortening.residualLengthEq tail
+                              shortening.residualLengthEq
+                              shortening.rawBoundaryCountTailEq tail
                       | crosscap carrier carrierNegative =>
                           let shorteningAfter :=
                             rotation.targetPair.shortenCrosscapBlock
@@ -13316,7 +13493,9 @@ noncomputable def resolveFuel {n : ℕ}
                               state rotation.targetPair
                               rotation.targetState rotation.equivalent
                               rotation.residualLengthEq
-                              rotation.betweenLengthEq shorteningAfter
+                              rotation.betweenLengthEq
+                              rotation.rawBoundaryCountTailEq
+                              shorteningAfter
                           have hfuelPositive : 0 < fuel := by
                             have := shortening.betweenLengthLt
                             omega
@@ -13336,7 +13515,8 @@ noncomputable def resolveFuel {n : ℕ}
                               state shortening.targetPair
                               shortening.targetState
                               shortening.equivalent
-                              shortening.residualLengthEq tail
+                              shortening.residualLengthEq
+                              shortening.rawBoundaryCountTailEq tail
                       | handle first second =>
                           let shorteningAfter :=
                             rotation.targetPair.shortenHandleBlock
@@ -13352,7 +13532,9 @@ noncomputable def resolveFuel {n : ℕ}
                               state rotation.targetPair
                               rotation.targetState rotation.equivalent
                               rotation.residualLengthEq
-                              rotation.betweenLengthEq shorteningAfter
+                              rotation.betweenLengthEq
+                              rotation.rawBoundaryCountTailEq
+                              shorteningAfter
                           have hfuelPositive : 0 < fuel := by
                             have := shortening.betweenLengthLt
                             omega
@@ -13372,7 +13554,8 @@ noncomputable def resolveFuel {n : ℕ}
                               state shortening.targetPair
                               shortening.targetState
                               shortening.equivalent
-                              shortening.residualLengthEq tail
+                              shortening.residualLengthEq
+                              shortening.rawBoundaryCountTailEq tail
 termination_by fuel
 decreasing_by
   all_goals
@@ -14103,6 +14286,21 @@ theorem resolveEnvelope_residualLength_lt_two
     terminal.resolveEnvelope.residualLengthLt
   simpa using h
 
+theorem resolveEnvelope_residualDarts_eq_nil
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.residualDarts
+      terminal.resolveEnvelope.targetTokens = [] := by
+  apply List.length_eq_zero_iff.mp
+  rw [terminal.resolveEnvelope.residualLengthEqTail]
+  rfl
+
+theorem resolveEnvelope_rawBoundaryCount_eq_zero
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.rawBoundaryCount
+      terminal.resolveEnvelope.targetTokens = 0 := by
+  rw [terminal.resolveEnvelope.rawBoundaryCountEqTail]
+  rfl
+
 /-- Boundary enveloping followed by the existing marked resolver preserves the realization of
 the original terminal protected word. -/
 theorem normalizationEquivalent_resolveEnvelope
@@ -14230,9 +14428,22 @@ namespace TerminalProtectedWord
 noncomputable def boundaryNormalizedWord
     (terminal : TerminalProtectedWord) :
     TerminalProtectedWord :=
-  terminal.finishEnvelope.targetState.toTerminalProtectedWord
-    terminal.finishEnvelope.targetProtectedNonempty
-    terminal.finishEnvelope.targetResidualEmpty
+  terminal.resolveEnvelope.targetState.toTerminalProtectedWord
+    terminal.resolveEnvelope.targetProtectedNonempty
+    terminal.resolveEnvelope_residualDarts_eq_nil
+
+theorem boundaryNormalizedWord_rawBoundaryCount_eq_zero
+    (terminal : TerminalProtectedWord) :
+    ProtectedAtom.rawBoundaryCount
+      terminal.boundaryNormalizedWord.atoms = 0 := by
+  have hraw :=
+    terminal.resolveEnvelope_rawBoundaryCount_eq_zero
+  rw [ReductionToken.eq_map_terminalAtoms
+    terminal.resolveEnvelope.targetTokens
+    terminal.resolveEnvelope.targetState.classified
+    terminal.resolveEnvelope_residualDarts_eq_nil] at hraw
+  simpa [boundaryNormalizedWord,
+    MarkedExecutionState.toTerminalProtectedWord] using hraw
 
 /-- The boundary-envelope execution exposes a residual-empty protected atom word equivalent to
 the original terminal word. -/
@@ -14243,27 +14454,27 @@ theorem normalizationEquivalent_boundaryNormalizedWord
   have htarget :
       (⟨Dyck.oneFace
             (ReductionToken.expand
-              terminal.finishEnvelope.targetTokens),
-          terminal.finishEnvelope.targetState.valid⟩ :
+              terminal.resolveEnvelope.targetTokens),
+          terminal.resolveEnvelope.targetState.valid⟩ :
         ValidPresentation) =
         terminal.boundaryNormalizedWord.validPresentation := by
     apply ValidPresentation.ext
     exact congrArg Dyck.oneFace
       (MarkedExecutionState.expand_eq_toTerminalProtectedWord_sequenceWord
-        terminal.finishEnvelope.targetState
-        terminal.finishEnvelope.targetProtectedNonempty
-        terminal.finishEnvelope.targetResidualEmpty)
+        terminal.resolveEnvelope.targetState
+        terminal.resolveEnvelope.targetProtectedNonempty
+        terminal.resolveEnvelope_residualDarts_eq_nil)
   have hequivalent :
       NormalizationEquivalent
         (⟨Dyck.oneFace
               (ReductionToken.expand
-                terminal.finishEnvelope.targetTokens),
-            terminal.finishEnvelope.targetState.valid⟩ :
+                terminal.resolveEnvelope.targetTokens),
+            terminal.resolveEnvelope.targetState.valid⟩ :
           ValidPresentation)
         terminal.boundaryNormalizedWord.validPresentation := by
     rw [← htarget]
     exact NormalizationEquivalent.refl _
-  exact terminal.normalizationEquivalent_finishEnvelope.trans
+  exact terminal.normalizationEquivalent_resolveEnvelope.trans
     hequivalent
 
 end TerminalProtectedWord
