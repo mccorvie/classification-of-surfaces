@@ -3400,7 +3400,6 @@ theorem exists_positiveNormalizationEquivalent {n : ℕ}
       firstU firstV firstX
       hfirstU hfirstV hfirstX
       validFirstSource validFirstTarget
-
   let secondU : List (SignedDart (Fin n)) :=
     [.neg first]
   let secondV : List (SignedDart (Fin n)) :=
@@ -3451,7 +3450,6 @@ theorem exists_positiveNormalizationEquivalent {n : ℕ}
       secondU secondV secondX
       hsecondU hsecondV hsecondX
       validSecondSource validSecondTarget
-
   let thirdU : List (SignedDart (Fin n)) :=
     [.pos second]
   let thirdV : List (SignedDart (Fin n)) :=
@@ -3505,7 +3503,6 @@ theorem exists_positiveNormalizationEquivalent {n : ℕ}
       thirdU thirdV thirdX
       hthirdU hthirdV hthirdX
       validThirdSource validThirdTarget
-
   let fourthU :=
     insideTail ++
       SignedDart.neg outer ::
@@ -7044,6 +7041,256 @@ noncomputable def toCrosscapBlockCommuteOfValid {n : ℕ}
       hcarrierOuter hcarrierInside hcarrierOutside
       houterInside houterOutside
 
+/-- A lifted residual pair whose protected interval begins with a completed handle exposes the
+exact contextual handle transition. -/
+def toHandleBlockCommute {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (first second : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.handle first second) ::
+        insideTokens)
+    (hfirstSecond : first ≠ second)
+    (hfirstOuter : first ≠ pair.edge)
+    (hsecondOuter : second ≠ pair.edge)
+    (hfirstInside :
+      first ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart)
+    (hfirstOutside :
+      first ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart)
+    (hsecondInside :
+      second ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart)
+    (hsecondOutside :
+      second ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart)
+    (houterInside :
+      pair.edge ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart)
+    (houterOutside :
+      pair.edge ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart) :
+    MarkedHandleBlockCommute tokens where
+  outer := pair.edge
+  first := first
+  second := second
+  outerNegative := pair.negativeFirst
+  insideTokens := insideTokens
+  outsideTokens := pair.tailTokens
+  rotated := by
+    simpa [hbetween] using pair.rotated
+  first_ne_second := hfirstSecond
+  first_ne_outer := hfirstOuter
+  second_ne_outer := hsecondOuter
+  first_not_mem_inside := hfirstInside
+  first_not_mem_outside := hfirstOutside
+  second_not_mem_inside := hsecondInside
+  second_not_mem_outside := hsecondOutside
+  outer_not_mem_inside := houterInside
+  outer_not_mem_outside := houterOutside
+
+/-- Surface multiplicity supplies every distinction and freshness condition needed for a
+contextual handle transition. -/
+noncomputable def toHandleBlockCommuteOfValid {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (first second : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.handle first second) ::
+        insideTokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    MarkedHandleBlockCommute tokens := by
+  let displayed :=
+    dart pair.edge pair.negativeFirst ::
+      (CompletedBlock.handle first second).word ++
+      ReductionToken.expand insideTokens ++
+      dart pair.edge (!pair.negativeFirst) ::
+      ReductionToken.expand pair.tailTokens
+  have hexpanded :
+      (ReductionToken.expand tokens).IsRotated
+        displayed := by
+    have h :=
+      ReductionToken.expand_isRotated pair.rotated
+    rw [hbetween] at h
+    simpa [displayed, ReductionToken.expand_cons,
+      ReductionToken.expand_append,
+      ReductionToken.word_residual,
+      ReductionToken.word_completed,
+      List.append_assoc] using h
+  have hvalidCount (edge : Fin (n + 1)) :
+      (displayed.map edgeOfDart).count edge = 1 ∨
+        (displayed.map edgeOfDart).count edge = 2 := by
+    have hmultiplicity := valid.2.2.2 edge
+    rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
+    have hcount :=
+      (hexpanded.map edgeOfDart).perm.count_eq
+        edge
+    omega
+  have hfirstLower :
+      2 ≤
+        (displayed.map edgeOfDart).count first := by
+    simp [displayed, CompletedBlock.word,
+      List.count_cons]
+    omega
+  have hfirstCount :
+      (displayed.map edgeOfDart).count first = 2 := by
+    have h := hvalidCount first
+    omega
+  have hsecondLower :
+      2 ≤
+        (displayed.map edgeOfDart).count second := by
+    simp [displayed, CompletedBlock.word,
+      List.count_cons]
+    omega
+  have hsecondCount :
+      (displayed.map edgeOfDart).count second = 2 := by
+    have h := hvalidCount second
+    omega
+  have houterLower :
+      2 ≤
+        (displayed.map edgeOfDart).count
+          pair.edge := by
+    simp [displayed, CompletedBlock.word,
+      List.count_cons]
+    omega
+  have houterCount :
+      (displayed.map edgeOfDart).count
+          pair.edge = 2 := by
+    have h := hvalidCount pair.edge
+    omega
+  have hfirstSecond : first ≠ second := by
+    intro heq
+    subst second
+    simp [displayed, CompletedBlock.word,
+      List.count_cons] at hfirstCount
+    omega
+  have hfirstOuter : first ≠ pair.edge := by
+    intro heq
+    subst first
+    simp [displayed, CompletedBlock.word,
+      hfirstSecond.symm] at houterCount
+  have hsecondOuter : second ≠ pair.edge := by
+    intro heq
+    subst second
+    simp [displayed, CompletedBlock.word,
+      hfirstSecond] at houterCount
+  have hfirstSum :
+      (displayed.map edgeOfDart).count first =
+        2 +
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count first +
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count first := by
+    simp [displayed, CompletedBlock.word,
+      hfirstSecond.symm, hfirstOuter.symm]
+    omega
+  have hsecondSum :
+      (displayed.map edgeOfDart).count second =
+        2 +
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count second +
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count second := by
+    simp [displayed, CompletedBlock.word,
+      hfirstSecond, hsecondOuter.symm]
+    omega
+  have houterSum :
+      (displayed.map edgeOfDart).count pair.edge =
+        2 +
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count pair.edge +
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count pair.edge := by
+    simp [displayed, CompletedBlock.word,
+      hfirstOuter, hsecondOuter]
+    omega
+  have hfirstInside :
+      first ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count first :=
+      List.count_pos_iff.mpr hmem
+    omega
+  have hfirstOutside :
+      first ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count first :=
+      List.count_pos_iff.mpr hmem
+    omega
+  have hsecondInside :
+      second ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count second :=
+      List.count_pos_iff.mpr hmem
+    omega
+  have hsecondOutside :
+      second ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count second :=
+      List.count_pos_iff.mpr hmem
+    omega
+  have houterInside :
+      pair.edge ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count pair.edge :=
+      List.count_pos_iff.mpr hmem
+    omega
+  have houterOutside :
+      pair.edge ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count pair.edge :=
+      List.count_pos_iff.mpr hmem
+    omega
+  exact
+    pair.toHandleBlockCommute first second
+      insideTokens hbetween
+      hfirstSecond hfirstOuter hsecondOuter
+      hfirstInside hfirstOutside
+      hsecondInside hsecondOutside
+      houterInside houterOutside
+
 /-- Exhaustive local disposition of a lifted residual inverse pair.  The first two constructors
 are already executable.  The final constructor isolates the remaining contextual move: commuting
 a nontrivial protected interval out of the inverse pair before cancellation. -/
@@ -8684,6 +8931,110 @@ noncomputable def commute {n : ℕ}
   simpa only [htarget] using hchain
 
 end MarkedCrosscapBlockCommute
+
+/-- Proof-producing commute of one completed handle through a contextual residual pair. -/
+structure MarkedHandleBlockCommuteResult {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedHandleBlockCommute tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    Type where
+  targetValid :
+    (Dyck.oneFace
+      (ReductionToken.expand commute.targetTokens)).IsSurfaceValid
+  targetSeparated :
+    ReductionToken.IsSeparated commute.targetTokens
+  targetClassified :
+    ReductionToken.AllClassified commute.targetTokens
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand commute.targetTokens),
+        targetValid⟩
+
+namespace MarkedHandleBlockCommute
+
+/-- Execute contextual handle commuting through the exact four-Dyck word chain. -/
+noncomputable def commute {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (step : MarkedHandleBlockCommute tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (classified : ReductionToken.AllClassified tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    MarkedHandleBlockCommuteResult step valid := by
+  let sourceRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      step.expand_isRotated_sourceWord
+  let validSourceWord :
+      (Dyck.oneFace
+        (HandleBlockCommute.sourceWord
+          step.outer step.first step.second
+          step.outerNegative
+          (ReductionToken.expand step.insideTokens)
+          (ReductionToken.expand
+            step.outsideTokens))).IsSurfaceValid :=
+    sourceRotation.isSurfaceValid valid
+  let witness :=
+    HandleBlockCommute.exists_normalizationEquivalent
+      step.outer step.first step.second
+      step.outerNegative
+      (ReductionToken.expand step.insideTokens)
+      (ReductionToken.expand step.outsideTokens)
+      step.first_ne_second
+      step.first_ne_outer step.second_ne_outer
+      step.first_not_mem_inside
+      step.first_not_mem_outside
+      step.second_not_mem_inside
+      step.second_not_mem_outside
+      step.outer_not_mem_inside
+      step.outer_not_mem_outside
+      validSourceWord
+  let validTargetWord := Classical.choose witness
+  have hequivalentWord :=
+    Classical.choose_spec witness
+  have htarget :
+      ReductionToken.expand step.targetTokens =
+        HandleBlockCommute.targetWord
+          step.outer step.first step.second
+          step.outerNegative
+          (ReductionToken.expand step.insideTokens)
+          (ReductionToken.expand
+            step.outsideTokens) :=
+    step.expand_targetTokens
+  have targetValid :
+      (Dyck.oneFace
+        (ReductionToken.expand
+          step.targetTokens)).IsSurfaceValid := by
+    rw [htarget]
+    exact validTargetWord
+  refine
+    { targetValid := targetValid
+      targetSeparated :=
+        step.targetTokens_isSeparated separated
+      targetClassified :=
+        step.targetTokens_allClassified classified
+      equivalent := ?_ }
+  have hrotation :
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (ReductionToken.expand tokens), valid⟩
+        ⟨Dyck.oneFace
+          (HandleBlockCommute.sourceWord
+            step.outer step.first step.second
+            step.outerNegative
+            (ReductionToken.expand step.insideTokens)
+            (ReductionToken.expand
+              step.outsideTokens)),
+          validSourceWord⟩ :=
+    NormalizationEquivalent.ofSignedIso sourceRotation
+  have hchain := hrotation.trans hequivalentWord
+  simpa only [htarget] using hchain
+
+end MarkedHandleBlockCommute
 
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
