@@ -5601,6 +5601,53 @@ theorem mem_map_edgeOfDart_expand_iff {n : ℕ}
             ih]
           tauto
 
+/-- A name absent from a token's protected part has the same multiplicity in its exact word and
+its residual contribution. -/
+theorem count_map_edgeOfDart_word_eq_residualWord_of_not_mem_extractedEdges
+    {n : ℕ} (token : ReductionToken n) (a : Fin n)
+    (ha : a ∉ token.extractedEdges) :
+    (token.word.map edgeOfDart).count a =
+      (token.residualWord.map edgeOfDart).count a := by
+  cases token with
+  | residual dart =>
+      rfl
+  | extracted block =>
+      simp only [word_extracted, residualWord_extracted,
+        List.map_nil, List.count_nil]
+      apply List.count_eq_zero.mpr
+      simpa only [ExtractedBlock.mem_map_edgeOfDart_word_iff,
+        extractedEdges_extracted] using ha
+  | completed block =>
+      simp only [word_completed, residualWord_completed,
+        List.map_nil, List.count_nil]
+      apply List.count_eq_zero.mpr
+      simpa only [CompletedBlock.mem_map_edgeOfDart_word_iff,
+        extractedEdges_completed] using ha
+
+/-- A name absent from every protected token has the same multiplicity in the expanded word and
+the erased residual word. -/
+theorem count_map_edgeOfDart_expand_eq_residualDarts_of_not_mem_protectedEdges
+    {n : ℕ} (tokens : List (ReductionToken n)) (a : Fin n)
+    (ha : a ∉ protectedEdges tokens) :
+    ((expand tokens).map edgeOfDart).count a =
+      ((residualDarts tokens).map edgeOfDart).count a := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      have htoken : a ∉ token.extractedEdges := by
+        intro hmem
+        exact ha (by simp [hmem])
+      have htail : a ∉ protectedEdges tokens := by
+        intro hmem
+        exact ha (by simp [hmem])
+      simp only [expand_cons, residualDarts_cons,
+        List.map_append, List.count_append]
+      rw [
+        count_map_edgeOfDart_word_eq_residualWord_of_not_mem_extractedEdges
+          token a htoken,
+        ih htail]
+
 /-- Flattening preserves a cyclic rotation of a list of lists. -/
 theorem isRotated_flatten {α : Type*}
     {lists target : List (List α)}
@@ -6248,6 +6295,25 @@ def ofWord {n : ℕ}
   protectedNodup := by
     simp
 
+/-- Surface multiplicities restrict to the erased residual word because separation rules out any
+residual name from all protected blocks. -/
+theorem hasValidUsedMultiplicities_residualDarts {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (state : MarkedExecutionState tokens) :
+    HasValidUsedMultiplicities
+      (ReductionToken.residualDarts tokens) := by
+  intro edge hedge
+  have hnotProtected :
+      edge ∉ ReductionToken.protectedEdges tokens := by
+    intro hprotected
+    exact (List.disjoint_left.mp state.separated)
+      hedge hprotected
+  rw [←
+    ReductionToken.count_map_edgeOfDart_expand_eq_residualDarts_of_not_mem_protectedEdges
+      tokens edge hnotProtected]
+  simpa only [Dyck.oneFace_edgeMultiplicity] using
+    state.valid.2.2.2 edge
+
 end MarkedExecutionState
 
 /-- Forget an actionable feature's occurrence decomposition while retaining its extracted block. -/
@@ -6266,6 +6332,14 @@ def extractedEdges {n : ℕ}
     (feature : ActionablePairReductionFeature word) :
     List (Fin n) :=
   feature.block.edges
+
+/-- Every actionable feature consumes at least one edge name. -/
+theorem extractedEdges_ne_nil {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word) :
+    feature.extractedEdges ≠ [] := by
+  cases feature <;>
+    simp [extractedEdges, block, ExtractedBlock.edges]
 
 /-- The edge names inside one extracted block are distinct. -/
 theorem extractedEdges_nodup {n : ℕ}
@@ -6791,6 +6865,24 @@ theorem protectedNames_targetTokens_perm {n : ℕ}
         ExtractedBlock.edges, CompletedBlock.names,
         List.append_assoc] using
           (List.Perm.cons a (List.Perm.cons b hreorder))
+
+/-- Every marked extraction creates at least one protected name. -/
+theorem protectedNames_targetTokens_ne_nil {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens) :
+    ReductionToken.protectedNames marked.targetTokens ≠ [] := by
+  intro hnil
+  obtain ⟨edge, hedge⟩ :=
+    List.exists_mem_of_ne_nil
+      marked.residualFeature.extractedEdges
+      marked.residualFeature.extractedEdges_ne_nil
+  have htarget :
+      edge ∈
+        ReductionToken.protectedNames
+          marked.targetTokens :=
+    marked.protectedNames_targetTokens_perm.mem_iff.mpr
+      (List.mem_append.mpr (Or.inl hedge))
+  simpa [hnil] using htarget
 
 /-- Extraction preserves global ownership uniqueness of protected names. -/
 theorem targetTokens_protectedNames_nodup {n : ℕ}
@@ -12695,6 +12787,111 @@ noncomputable def resolve {n : ℕ}
 
 end MarkedResidualCancellablePair
 
+/-- Certified marked endpoint after all cancellable pairs have been removed from the erased
+residual word.  Already protected names remain present, even when cancellations lower the ambient
+edge type. -/
+structure MarkedPairReductionResult {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (state : MarkedExecutionState tokens) where
+  targetEdgeCount : ℕ
+  targetTokens : List (ReductionToken targetEdgeCount)
+  targetState : MarkedExecutionState targetTokens
+  targetProtectedNonempty :
+    ReductionToken.protectedNames targetTokens ≠ []
+  targetReduced :
+    IsPairReduced (ReductionToken.residualDarts targetTokens)
+  targetResidualLengthLe :
+    (ReductionToken.residualDarts targetTokens).length ≤
+      (ReductionToken.residualDarts tokens).length
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens),
+        state.valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand targetTokens),
+        targetState.valid⟩
+
+namespace MarkedExecutionState
+
+/-- Fuel-bounded execution of residual inverse-pair reduction inside a classified marked word.
+Each resolved pair strictly decreases the erased residual length. -/
+noncomputable def reduceResidualPairsFuel {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (fuel : ℕ)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (hbound :
+      (ReductionToken.residualDarts tokens).length ≤ fuel) :
+    MarkedPairReductionResult state := by
+  by_cases hpairs :
+      Nonempty
+        (CancellablePair
+          (ReductionToken.residualDarts tokens))
+  · cases n with
+    | zero =>
+        let pair := Classical.choice hpairs
+        exact Fin.elim0 pair.edge
+    | succ k =>
+        let residualPair := Classical.choice hpairs
+        let markedPair :=
+          MarkedResidualCancellablePair.lift residualPair
+        let resolution :=
+          markedPair.resolve state protectedNonempty
+        have hfuelPositive : 0 < fuel := by
+          have := resolution.residualLengthLt
+          omega
+        have htargetBound :
+            (ReductionToken.residualDarts
+                resolution.targetTokens).length ≤
+              fuel - 1 := by
+          have := resolution.residualLengthLt
+          omega
+        let tail :=
+          reduceResidualPairsFuel (fuel - 1)
+            resolution.targetState
+            resolution.targetProtectedNonempty htargetBound
+        exact
+          { targetEdgeCount := tail.targetEdgeCount
+            targetTokens := tail.targetTokens
+            targetState := tail.targetState
+            targetProtectedNonempty :=
+              tail.targetProtectedNonempty
+            targetReduced := tail.targetReduced
+            targetResidualLengthLe := by
+              have htail := tail.targetResidualLengthLe
+              have hstep := resolution.residualLengthLt
+              omega
+            equivalent :=
+              resolution.equivalent.trans tail.equivalent }
+  · exact
+      { targetEdgeCount := n
+        targetTokens := tokens
+        targetState := state
+        targetProtectedNonempty := protectedNonempty
+        targetReduced :=
+          ⟨fun pair => hpairs ⟨pair⟩⟩
+        targetResidualLengthLe := le_rfl
+        equivalent := NormalizationEquivalent.refl _ }
+termination_by fuel
+decreasing_by
+  all_goals
+    exact Nat.sub_lt (by assumption) (by omega)
+
+/-- Execute all residual inverse-pair cancellations in a marked state which already owns at least
+one protected name. -/
+noncomputable def reduceResidualPairs {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ []) :
+    MarkedPairReductionResult state :=
+  reduceResidualPairsFuel
+    (ReductionToken.residualDarts tokens).length
+    state protectedNonempty (le_refl _)
+
+end MarkedExecutionState
+
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
     (word : List (SignedDart (Fin n)))
@@ -12893,6 +13090,194 @@ noncomputable def extractPairReductionFeature {n : ℕ}
     ActionablePairReductionResult word valid :=
   (Classical.choice
     (exists_actionablePairReductionFeature word valid reduced hn)).extract valid
+
+/-- Certified endpoint of the marked extraction recursion: no residual darts remain, every token
+is classified, and at least one protected name survives. -/
+structure MarkedExtractionResult {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (state : MarkedExecutionState tokens) where
+  targetEdgeCount : ℕ
+  targetTokens : List (ReductionToken targetEdgeCount)
+  targetState : MarkedExecutionState targetTokens
+  targetProtectedNonempty :
+    ReductionToken.protectedNames targetTokens ≠ []
+  targetResidualEmpty :
+    ReductionToken.residualDarts targetTokens = []
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens),
+        state.valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand targetTokens),
+        targetState.valid⟩
+
+namespace MarkedExecutionState
+
+/-- Fuel-bounded marked Gallier--Xu extraction after at least one protected block has been created.
+Every extraction strictly shortens the residual word, and the intervening marked pair reducer
+restores pair reduction before the recursive call. -/
+noncomputable def finishExtractionsFuel {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (fuel : ℕ)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (reduced :
+      IsPairReduced (ReductionToken.residualDarts tokens))
+    (hbound :
+      (ReductionToken.residualDarts tokens).length ≤ fuel) :
+    MarkedExtractionResult state := by
+  by_cases hresidual :
+      ReductionToken.residualDarts tokens = []
+  · exact
+      { targetEdgeCount := n
+        targetTokens := tokens
+        targetState := state
+        targetProtectedNonempty := protectedNonempty
+        targetResidualEmpty := hresidual
+        equivalent := NormalizationEquivalent.refl _ }
+  · let feature :=
+      Classical.choice
+        (exists_actionablePairReductionFeature_of_usedMultiplicities
+          (ReductionToken.residualDarts tokens)
+          state.hasValidUsedMultiplicities_residualDarts
+          reduced hresidual)
+    let marked :=
+      MarkedActionablePairReductionFeature.lift feature
+    have hmarkedFeature :
+        marked.residualFeature = feature := by
+      dsimp [marked]
+      cases feature <;> rfl
+    let execution :=
+      marked.extract state.separated state.classified
+        state.protectedNodup state.valid
+    let extractedState :
+        MarkedExecutionState marked.targetTokens :=
+      { valid := execution.targetValid
+        separated := execution.targetSeparated
+        classified := execution.targetClassified
+        protectedNodup :=
+          execution.targetProtectedNodup }
+    have extractedProtectedNonempty :
+        ReductionToken.protectedNames
+            marked.targetTokens ≠ [] :=
+      marked.protectedNames_targetTokens_ne_nil
+    let reduction :=
+      extractedState.reduceResidualPairs
+        extractedProtectedNonempty
+    have hextractionShort :
+        (ReductionToken.residualDarts
+            marked.targetTokens).length <
+          (ReductionToken.residualDarts tokens).length := by
+      rw [marked.residualDarts_targetTokens, hmarkedFeature]
+      exact feature.residualWord_length_lt
+    have hnextShort :
+        (ReductionToken.residualDarts
+            reduction.targetTokens).length <
+          (ReductionToken.residualDarts tokens).length :=
+      reduction.targetResidualLengthLe.trans_lt
+        hextractionShort
+    have hfuelPositive : 0 < fuel := by
+      omega
+    have htargetBound :
+        (ReductionToken.residualDarts
+            reduction.targetTokens).length ≤
+          fuel - 1 := by
+      omega
+    let tail :=
+      finishExtractionsFuel (fuel - 1)
+        reduction.targetState
+        reduction.targetProtectedNonempty
+        reduction.targetReduced htargetBound
+    exact
+      { targetEdgeCount := tail.targetEdgeCount
+        targetTokens := tail.targetTokens
+        targetState := tail.targetState
+        targetProtectedNonempty :=
+          tail.targetProtectedNonempty
+        targetResidualEmpty := tail.targetResidualEmpty
+        equivalent :=
+          execution.equivalent.trans
+            (reduction.equivalent.trans tail.equivalent) }
+termination_by fuel
+decreasing_by
+  exact Nat.sub_lt hfuelPositive (by omega)
+
+/-- Finish marked extraction from a pair-reduced state which already owns a protected name. -/
+noncomputable def finishExtractions {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (reduced :
+      IsPairReduced (ReductionToken.residualDarts tokens)) :
+    MarkedExtractionResult state :=
+  finishExtractionsFuel
+    (ReductionToken.residualDarts tokens).length
+    state protectedNonempty reduced (le_refl _)
+
+/-- Execute the complete marked extraction recursion from an arbitrary pair-reduced valid one-face
+word.  The first extraction establishes protected-name ownership; subsequent calls use
+`finishExtractions`. -/
+noncomputable def normalizePairReducedMarked {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (reduced : IsPairReduced word) :
+    MarkedExtractionResult
+      (MarkedExecutionState.ofWord word valid) := by
+  let initialState :=
+    MarkedExecutionState.ofWord word valid
+  have hword : word ≠ [] := by
+    simpa only [Dyck.oneFace_boundary] using
+      valid.2.1 (0 : (Dyck.oneFace word).Face)
+  have initialReduced :
+      IsPairReduced
+        (ReductionToken.residualDarts
+          (ReductionToken.ofWord word)) := by
+    simpa using reduced
+  have initialResidualNonempty :
+      ReductionToken.residualDarts
+          (ReductionToken.ofWord word) ≠ [] := by
+    simpa using hword
+  let feature :=
+    Classical.choice
+      (exists_actionablePairReductionFeature_of_usedMultiplicities
+        (ReductionToken.residualDarts
+          (ReductionToken.ofWord word))
+        initialState.hasValidUsedMultiplicities_residualDarts
+        initialReduced initialResidualNonempty)
+  let marked :=
+    MarkedActionablePairReductionFeature.lift feature
+  let execution :=
+    marked.extract initialState.separated
+      initialState.classified initialState.protectedNodup
+      initialState.valid
+  let extractedState :
+      MarkedExecutionState marked.targetTokens :=
+    { valid := execution.targetValid
+      separated := execution.targetSeparated
+      classified := execution.targetClassified
+      protectedNodup :=
+        execution.targetProtectedNodup }
+  let reduction :=
+    extractedState.reduceResidualPairs
+      marked.protectedNames_targetTokens_ne_nil
+  let tail :=
+    reduction.targetState.finishExtractions
+      reduction.targetProtectedNonempty
+      reduction.targetReduced
+  exact
+    { targetEdgeCount := tail.targetEdgeCount
+      targetTokens := tail.targetTokens
+      targetState := tail.targetState
+      targetProtectedNonempty :=
+        tail.targetProtectedNonempty
+      targetResidualEmpty := tail.targetResidualEmpty
+      equivalent :=
+        execution.equivalent.trans
+          (reduction.equivalent.trans tail.equivalent) }
+
+end MarkedExecutionState
 
 end Pairing
 
