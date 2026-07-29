@@ -2281,6 +2281,90 @@ theorem normalForm_isEvalAdmissible_of_ne_nil {n : ℕ}
 
 end CompletedBlock
 
+/-- One non-residual atom allowed in a classified marked execution state. -/
+inductive ProtectedAtom (n : ℕ)
+  | boundary (hole : Fin n) (negative : Bool)
+  | completed (block : CompletedBlock n)
+
+namespace ProtectedAtom
+
+/-- Exact signed word represented by one classified protected atom. -/
+def word {n : ℕ} : ProtectedAtom n →
+    List (SignedDart (Fin n))
+  | .boundary hole negative =>
+      [dart hole negative]
+  | .completed block =>
+      block.word
+
+/-- Edge names protected by one classified atom. -/
+def edges {n : ℕ} : ProtectedAtom n → List (Fin n)
+  | .boundary hole _ => [hole]
+  | .completed block => block.edges
+
+/-- Reverse one protected atom. -/
+def inverse {n : ℕ} : ProtectedAtom n → ProtectedAtom n
+  | .boundary hole negative =>
+      .boundary hole (!negative)
+  | .completed block =>
+      .completed block.inverse
+
+/-- Concatenate a protected atom sequence into its exact signed word. -/
+def sequenceWord {n : ℕ} (atoms : List (ProtectedAtom n)) :
+    List (SignedDart (Fin n)) :=
+  (atoms.map word).flatten
+
+/-- Reverse a protected atom sequence at atom granularity. -/
+def inverseSequence {n : ℕ}
+    (atoms : List (ProtectedAtom n)) :
+    List (ProtectedAtom n) :=
+  (atoms.map inverse).reverse
+
+@[simp]
+theorem word_inverse {n : ℕ} (atom : ProtectedAtom n) :
+    atom.inverse.word = inverseWord atom.word := by
+  cases atom with
+  | boundary hole negative =>
+      cases negative <;> rfl
+  | completed block =>
+      exact CompletedBlock.word_inverse block
+
+@[simp]
+theorem sequenceWord_nil {n : ℕ} :
+    sequenceWord ([] : List (ProtectedAtom n)) = [] :=
+  rfl
+
+@[simp]
+theorem sequenceWord_cons {n : ℕ}
+    (atom : ProtectedAtom n)
+    (atoms : List (ProtectedAtom n)) :
+    sequenceWord (atom :: atoms) =
+      atom.word ++ sequenceWord atoms := by
+  simp [sequenceWord]
+
+@[simp]
+theorem sequenceWord_append {n : ℕ}
+    (left right : List (ProtectedAtom n)) :
+    sequenceWord (left ++ right) =
+      sequenceWord left ++ sequenceWord right := by
+  simp [sequenceWord]
+
+@[simp]
+theorem sequenceWord_inverseSequence {n : ℕ}
+    (atoms : List (ProtectedAtom n)) :
+    sequenceWord (inverseSequence atoms) =
+      inverseWord (sequenceWord atoms) := by
+  induction atoms with
+  | nil =>
+      rfl
+  | cons atom atoms ih =>
+      rw [show inverseSequence (atom :: atoms) =
+          inverseSequence atoms ++ [atom.inverse] by
+        simp [inverseSequence]]
+      rw [sequenceWord_append, ih]
+      simp [inverseWord_append]
+
+end ProtectedAtom
+
 /-- A marked normalization word.  Residual darts are still available to subsequent pairing
 reductions; extracted blocks are atomic tokens whose exact dart succession must be preserved. -/
 inductive ReductionToken (n : ℕ)
@@ -2289,6 +2373,14 @@ inductive ReductionToken (n : ℕ)
   | completed (block : CompletedBlock n)
 
 namespace ReductionToken
+
+/-- Embed a classified protected atom as one marked token. -/
+def ofProtectedAtom {n : ℕ} :
+    ProtectedAtom n → ReductionToken n
+  | .boundary hole negative =>
+      .extracted (.boundary hole negative)
+  | .completed block =>
+      .completed block
 
 /-- Exact signed word represented by one marked token. -/
 def word {n : ℕ} : ReductionToken n →
@@ -2395,6 +2487,30 @@ theorem isClassified_completed {n : ℕ}
     IsClassified (.completed block) :=
   trivial
 
+@[simp]
+theorem isClassified_ofProtectedAtom {n : ℕ}
+    (atom : ProtectedAtom n) :
+    IsClassified (ofProtectedAtom atom) := by
+  cases atom <;> trivial
+
+@[simp]
+theorem word_ofProtectedAtom {n : ℕ}
+    (atom : ProtectedAtom n) :
+    word (ofProtectedAtom atom) = atom.word := by
+  cases atom <;> rfl
+
+@[simp]
+theorem residualWord_ofProtectedAtom {n : ℕ}
+    (atom : ProtectedAtom n) :
+    residualWord (ofProtectedAtom atom) = [] := by
+  cases atom <;> rfl
+
+@[simp]
+theorem extractedEdges_ofProtectedAtom {n : ℕ}
+    (atom : ProtectedAtom n) :
+    extractedEdges (ofProtectedAtom atom) = atom.edges := by
+  cases atom <;> rfl
+
 theorem AllClassified.of_isRotated {n : ℕ}
     {tokens target : List (ReductionToken n)}
     (classified : AllClassified tokens)
@@ -2450,6 +2566,13 @@ def mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m) :
   | .extracted block => .extracted (block.mapEquiv e)
   | .completed block =>
       .completed (block.mapEquiv e)
+
+@[simp]
+theorem inverse_ofProtectedAtom {n : ℕ}
+    (atom : ProtectedAtom n) :
+    inverse (ofProtectedAtom atom) =
+      ofProtectedAtom atom.inverse := by
+  cases atom <;> rfl
 
 theorem IsClassified.inverse {n : ℕ}
     {token : ReductionToken n}
@@ -2749,6 +2872,17 @@ theorem expand_append {n : ℕ}
   simp [expand]
 
 @[simp]
+theorem expand_map_ofProtectedAtom {n : ℕ}
+    (atoms : List (ProtectedAtom n)) :
+    expand (atoms.map ofProtectedAtom) =
+      ProtectedAtom.sequenceWord atoms := by
+  induction atoms with
+  | nil =>
+      rfl
+  | cons atom atoms ih =>
+      simp [ProtectedAtom.sequenceWord, ih]
+
+@[simp]
 theorem residualDarts_nil {n : ℕ} :
     residualDarts ([] : List (ReductionToken n)) = [] :=
   rfl
@@ -2766,6 +2900,56 @@ theorem residualDarts_append {n : ℕ}
     residualDarts (left ++ right) =
       residualDarts left ++ residualDarts right := by
   simp [residualDarts]
+
+/-- A classified token list with no residual darts is exactly a list of typed protected atoms. -/
+theorem exists_eq_map_ofProtectedAtom_of_allClassified_of_residualDarts_eq_nil
+    {n : ℕ} (tokens : List (ReductionToken n))
+    (classified : AllClassified tokens)
+    (residual_nil : residualDarts tokens = []) :
+    ∃ atoms : List (ProtectedAtom n),
+      tokens = atoms.map ofProtectedAtom := by
+  induction tokens with
+  | nil =>
+      exact ⟨[], rfl⟩
+  | cons token tokens ih =>
+      have tokenClassified :
+          token.IsClassified :=
+        classified token (by simp)
+      have tailClassified :
+          AllClassified tokens := by
+        intro tailToken htail
+        exact classified tailToken (by simp [htail])
+      cases token with
+      | residual dart =>
+          simp only [residualDarts_cons,
+            residualWord_residual,
+            List.singleton_append] at residual_nil
+          exact (List.cons_ne_nil dart _ residual_nil).elim
+      | extracted block =>
+          cases block with
+          | boundary hole negative =>
+              have tailResidual :
+                  residualDarts tokens = [] := by
+                simpa only [residualDarts_cons,
+                  residualWord_extracted,
+                  List.nil_append] using residual_nil
+              rcases ih tailClassified tailResidual with
+                ⟨atoms, rfl⟩
+              exact
+                ⟨.boundary hole negative :: atoms, rfl⟩
+          | crosscap =>
+              exact tokenClassified.elim
+          | handle =>
+              exact tokenClassified.elim
+      | completed block =>
+          have tailResidual :
+              residualDarts tokens = [] := by
+            simpa only [residualDarts_cons,
+              residualWord_completed,
+              List.nil_append] using residual_nil
+          rcases ih tailClassified tailResidual with
+            ⟨atoms, rfl⟩
+          exact ⟨.completed block :: atoms, rfl⟩
 
 @[simp]
 theorem protectedEdges_nil {n : ℕ} :
@@ -4503,6 +4687,26 @@ end MarkedBoundaryClosure
 
 namespace MarkedResidualCancellablePair
 
+/-- Under the classified-state invariant, the interval crossed by a lifted residual cancellation
+is an exact finite list of typed protected atoms. -/
+theorem exists_betweenAtoms {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (classified : ReductionToken.AllClassified tokens) :
+    ∃ atoms : List (ProtectedAtom (n + 1)),
+      pair.betweenTokens =
+        atoms.map ReductionToken.ofProtectedAtom := by
+  have displayed :=
+    classified.of_isRotated pair.rotated
+  have betweenClassified :
+      ReductionToken.AllClassified pair.betweenTokens := by
+    intro token htoken
+    exact displayed token (by simp [htoken])
+  exact
+    ReductionToken.exists_eq_map_ofProtectedAtom_of_allClassified_of_residualDarts_eq_nil
+      pair.betweenTokens betweenClassified
+      pair.residual_between
+
 /-- A lifted residual pair surrounding exactly one boundary singleton is a boundary closure. -/
 def toBoundaryClosure {n : ℕ}
     {tokens : List (ReductionToken (n + 1))}
@@ -4563,6 +4767,57 @@ noncomputable def disposition {n : ℕ}
     · exact .contextual hempty (by
         intro hole holeNegative hbetween
         exact hboundary ⟨hole, holeNegative, hbetween⟩)
+
+/-- Classified-state refinement of `Disposition`: every genuinely contextual interval exposes
+its first typed protected atom and the exact remaining atom list. -/
+inductive ClassifiedDisposition {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens) : Type
+  | adjacent
+      (between_eq : pair.betweenTokens = []) :
+      ClassifiedDisposition pair
+  | boundary
+      (hole : Fin (n + 1)) (holeNegative : Bool)
+      (between_eq :
+        pair.betweenTokens =
+          [.extracted (.boundary hole holeNegative)]) :
+      ClassifiedDisposition pair
+  | structured
+      (first : ProtectedAtom (n + 1))
+      (rest : List (ProtectedAtom (n + 1)))
+      (between_eq :
+        pair.betweenTokens =
+          (first :: rest).map
+            ReductionToken.ofProtectedAtom) :
+      ClassifiedDisposition pair
+
+/-- Exhaustively expose the typed protected interval of a lifted residual pair.  A singleton raw
+boundary atom is kept as the dedicated executable boundary-closure case. -/
+noncomputable def classifiedDisposition {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (classified : ReductionToken.AllClassified tokens) :
+    ClassifiedDisposition pair := by
+  let witness := pair.exists_betweenAtoms classified
+  have hatoms := Classical.choose_spec witness
+  cases hatomsList : Classical.choose witness with
+  | nil =>
+      rw [hatomsList] at hatoms
+      exact .adjacent (by simpa using hatoms)
+  | cons first rest =>
+      rw [hatomsList] at hatoms
+      cases first with
+      | boundary hole holeNegative =>
+          cases rest with
+          | nil =>
+              exact .boundary hole holeNegative
+                (by simpa [ReductionToken.ofProtectedAtom] using hatoms)
+          | cons second rest =>
+              exact .structured
+                (.boundary hole holeNegative)
+                (second :: rest) hatoms
+      | completed block =>
+          exact .structured (.completed block) rest hatoms
 
 end MarkedResidualCancellablePair
 
