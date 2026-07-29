@@ -2290,6 +2290,25 @@ theorem sequenceWord_append {n : ℕ}
       sequenceWord left ++ sequenceWord right := by
   simp [sequenceWord]
 
+/-- Concatenate the distinct-name spines owned by a completed block sequence. -/
+def sequenceNames {n : ℕ}
+    (blocks : List (CompletedBlock n)) :
+    List (Fin n) :=
+  (blocks.map names).flatten
+
+@[simp]
+theorem sequenceNames_nil {n : ℕ} :
+    sequenceNames ([] : List (CompletedBlock n)) = [] :=
+  rfl
+
+@[simp]
+theorem sequenceNames_cons {n : ℕ}
+    (block : CompletedBlock n)
+    (blocks : List (CompletedBlock n)) :
+    sequenceNames (block :: blocks) =
+      block.names ++ sequenceNames blocks := by
+  simp [sequenceNames]
+
 /-- Number of completed crosscap blocks. -/
 def crosscapCount {n : ℕ} :
     List (CompletedBlock n) → ℕ
@@ -5113,6 +5132,49 @@ theorem normalForm_isEvalAdmissible_of_ne_nil {n : ℕ}
       1 ≤ crosscapCount atoms +
         2 * handleCount atoms
     omega
+
+/-- A protected atom sequence with no raw boundary singleton consists entirely of completed
+blocks. -/
+theorem exists_eq_map_completed_of_rawBoundaryCount_eq_zero
+    {n : ℕ} (atoms : List (ProtectedAtom n))
+    (hraw : rawBoundaryCount atoms = 0) :
+    ∃ blocks : List (CompletedBlock n),
+      atoms = blocks.map .completed := by
+  induction atoms with
+  | nil =>
+      exact ⟨[], rfl⟩
+  | cons atom atoms ih =>
+      cases atom with
+      | boundary =>
+          simp [rawBoundaryCount] at hraw
+      | completed block =>
+          have htail :
+              rawBoundaryCount atoms = 0 := by
+            simpa [rawBoundaryCount] using hraw
+          rcases ih htail with ⟨blocks, rfl⟩
+          exact ⟨block :: blocks, rfl⟩
+
+@[simp]
+theorem sequenceWord_map_completed {n : ℕ}
+    (blocks : List (CompletedBlock n)) :
+    sequenceWord (blocks.map .completed) =
+      CompletedBlock.sequenceWord blocks := by
+  induction blocks with
+  | nil =>
+      rfl
+  | cons block blocks ih =>
+      simp [ih, word]
+
+@[simp]
+theorem sequenceNames_map_completed {n : ℕ}
+    (blocks : List (CompletedBlock n)) :
+    sequenceNames (blocks.map .completed) =
+      CompletedBlock.sequenceNames blocks := by
+  induction blocks with
+  | nil =>
+      rfl
+  | cons block blocks ih =>
+      simp [ih, names]
 
 end ProtectedAtom
 
@@ -14422,6 +14484,37 @@ theorem expand_eq_toTerminalProtectedWord_sequenceWord {n : ℕ}
 
 end MarkedExecutionState
 
+/-- Exact block-level endpoint after every raw boundary singleton has been completed. -/
+structure TerminalCompletedWord where
+  edgeCount : ℕ
+  blocks : List (CompletedBlock edgeCount)
+  blocksNonempty : blocks ≠ []
+  namesNodup : (CompletedBlock.sequenceNames blocks).Nodup
+  valid :
+    (Dyck.oneFace
+      (CompletedBlock.sequenceWord blocks)).IsSurfaceValid
+
+namespace TerminalCompletedWord
+
+/-- Validity-bundled finite-cyclic presentation displayed by a terminal completed-block word. -/
+def validPresentation (terminal : TerminalCompletedWord) :
+    ValidPresentation :=
+  ⟨Dyck.oneFace
+      (CompletedBlock.sequenceWord terminal.blocks),
+    terminal.valid⟩
+
+/-- Exact canonical normal form selected by the completed block counts. -/
+def normalForm (terminal : TerminalCompletedWord) :
+    NormalForm :=
+  CompletedBlock.normalForm terminal.blocks
+
+theorem admissible (terminal : TerminalCompletedWord) :
+    terminal.normalForm.IsEvalAdmissible :=
+  CompletedBlock.normalForm_isEvalAdmissible_of_ne_nil
+    terminal.blocks terminal.blocksNonempty
+
+end TerminalCompletedWord
+
 namespace TerminalProtectedWord
 
 /-- Atom-level terminal word returned by the fully executed fresh boundary envelope. -/
@@ -14477,6 +14570,99 @@ theorem normalizationEquivalent_boundaryNormalizedWord
   exact terminal.normalizationEquivalent_resolveEnvelope.trans
     hequivalent
 
+/-- Extract the unique completed-block sequence from a raw-free terminal atom word. -/
+noncomputable def completedBlocks
+    (terminal : TerminalProtectedWord)
+    (hraw :
+      ProtectedAtom.rawBoundaryCount terminal.atoms = 0) :
+    List (CompletedBlock terminal.edgeCount) :=
+  Classical.choose
+    (ProtectedAtom.exists_eq_map_completed_of_rawBoundaryCount_eq_zero
+      terminal.atoms hraw)
+
+theorem atoms_eq_map_completedBlocks
+    (terminal : TerminalProtectedWord)
+    (hraw :
+      ProtectedAtom.rawBoundaryCount terminal.atoms = 0) :
+    terminal.atoms =
+      (terminal.completedBlocks hraw).map .completed :=
+  Classical.choose_spec
+    (ProtectedAtom.exists_eq_map_completed_of_rawBoundaryCount_eq_zero
+      terminal.atoms hraw)
+
+theorem completedBlocks_ne_nil
+    (terminal : TerminalProtectedWord)
+    (hraw :
+      ProtectedAtom.rawBoundaryCount terminal.atoms = 0) :
+    terminal.completedBlocks hraw ≠ [] := by
+  intro hnil
+  apply terminal.atomsNonempty
+  rw [terminal.atoms_eq_map_completedBlocks hraw, hnil]
+  rfl
+
+/-- Completed-block endpoint selected by the fully executed boundary normalization. -/
+noncomputable def boundaryCompletedWord
+    (terminal : TerminalProtectedWord) :
+    TerminalCompletedWord where
+  edgeCount := terminal.boundaryNormalizedWord.edgeCount
+  blocks :=
+    terminal.boundaryNormalizedWord.completedBlocks
+      terminal.boundaryNormalizedWord_rawBoundaryCount_eq_zero
+  blocksNonempty :=
+    terminal.boundaryNormalizedWord.completedBlocks_ne_nil
+      terminal.boundaryNormalizedWord_rawBoundaryCount_eq_zero
+  namesNodup := by
+    rw [← ProtectedAtom.sequenceNames_map_completed,
+      ← terminal.boundaryNormalizedWord.atoms_eq_map_completedBlocks
+        terminal.boundaryNormalizedWord_rawBoundaryCount_eq_zero]
+    exact terminal.boundaryNormalizedWord.namesNodup
+  valid := by
+    rw [← ProtectedAtom.sequenceWord_map_completed,
+      ← terminal.boundaryNormalizedWord.atoms_eq_map_completedBlocks
+        terminal.boundaryNormalizedWord_rawBoundaryCount_eq_zero]
+    exact terminal.boundaryNormalizedWord.valid
+
+/-- Boundary normalization lands exactly in the completed-block terminal interface. -/
+theorem normalizationEquivalent_boundaryCompletedWord
+    (terminal : TerminalProtectedWord) :
+    NormalizationEquivalent terminal.validPresentation
+      terminal.boundaryCompletedWord.validPresentation := by
+  have htarget :
+      terminal.boundaryNormalizedWord.validPresentation =
+        terminal.boundaryCompletedWord.validPresentation := by
+    apply ValidPresentation.ext
+    change
+      Dyck.oneFace
+          (ProtectedAtom.sequenceWord
+            terminal.boundaryNormalizedWord.atoms) =
+        Dyck.oneFace
+          (CompletedBlock.sequenceWord
+            terminal.boundaryCompletedWord.blocks)
+    rw [terminal.boundaryNormalizedWord.atoms_eq_map_completedBlocks
+      terminal.boundaryNormalizedWord_rawBoundaryCount_eq_zero]
+    exact congrArg Dyck.oneFace
+      (ProtectedAtom.sequenceWord_map_completed _)
+  have hequivalent :
+      NormalizationEquivalent
+        terminal.boundaryNormalizedWord.validPresentation
+        terminal.boundaryCompletedWord.validPresentation := by
+    rw [← htarget]
+    exact NormalizationEquivalent.refl _
+  exact
+    terminal.normalizationEquivalent_boundaryNormalizedWord.trans
+      hequivalent
+
+/-- Exact normal form selected after constructive raw-boundary completion. -/
+noncomputable def completedNormalForm
+    (terminal : TerminalProtectedWord) :
+    NormalForm :=
+  terminal.boundaryCompletedWord.normalForm
+
+theorem completedAdmissible
+    (terminal : TerminalProtectedWord) :
+    terminal.completedNormalForm.IsEvalAdmissible :=
+  terminal.boundaryCompletedWord.admissible
+
 end TerminalProtectedWord
 
 /-- The isolated terminal obligation after the terminating marked recursion: normalize a valid,
@@ -14492,14 +14678,37 @@ structure TerminalMarkedNormalizer where
         ⟨Dyck.oneFace (ReductionToken.expand tokens),
           state.valid⟩
 
+/-- Narrow completed-block obligation: order and orient a valid, nonempty, duplicate-free block
+sequence and perform the nonorientable handle conversion. -/
+structure TerminalCompletedNormalizer where
+  equivalent :
+    (terminal : TerminalCompletedWord) →
+      NormalizationEquivalent terminal.validPresentation
+        (canonicalValidPresentation terminal.normalForm
+          terminal.admissible)
+
 /-- Narrow terminal obligation at the proof's stable seam: normalize a duplicate-free nonempty
-sequence of protected atoms to the exact canonical presentation selected by its block counts. -/
+sequence of protected atoms to the exact canonical presentation selected after boundary
+completion. -/
 structure TerminalProtectedNormalizer where
   equivalent :
     (terminal : TerminalProtectedWord) →
       NormalizationEquivalent terminal.validPresentation
-        (canonicalValidPresentation terminal.normalForm
-          terminal.admissible)
+        (canonicalValidPresentation terminal.completedNormalForm
+          terminal.completedAdmissible)
+
+namespace TerminalCompletedNormalizer
+
+/-- A completed-block normalizer discharges the protected-word seam after constructive boundary
+completion. -/
+noncomputable def toTerminalProtectedNormalizer
+    (normalizer : TerminalCompletedNormalizer) :
+    TerminalProtectedNormalizer where
+  equivalent terminal :=
+    terminal.normalizationEquivalent_boundaryCompletedWord.trans
+      (normalizer.equivalent terminal.boundaryCompletedWord)
+
+end TerminalCompletedNormalizer
 
 namespace TerminalProtectedNormalizer
 
@@ -14508,8 +14717,8 @@ noncomputable def normalize
     (normalizer : TerminalProtectedNormalizer)
     (terminal : TerminalProtectedWord) :
     NormalizationResult terminal.validPresentation where
-  normalForm := terminal.normalForm
-  admissible := terminal.admissible
+  normalForm := terminal.completedNormalForm
+  admissible := terminal.completedAdmissible
   equivalent := normalizer.equivalent terminal
 
 /-- A protected-word normalizer discharges the token-level terminal interface used by the marked
