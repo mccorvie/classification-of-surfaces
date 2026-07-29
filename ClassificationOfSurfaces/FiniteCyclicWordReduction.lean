@@ -3731,6 +3731,283 @@ theorem exists_normalizationEquivalent {n : ℕ}
 
 end HandleBlockCommute
 
+namespace BoundaryPairContraction
+
+/-- Two consecutive extracted boundary darts with arbitrary independent orientations. -/
+def sourceWord {n : ℕ}
+    (first second : Fin (n + 1))
+    (firstNegative secondNegative : Bool)
+    (tail : List (SignedDart (Fin (n + 1)))) :
+    List (SignedDart (Fin (n + 1))) :=
+  [dart first firstNegative,
+    dart second secondNegative] ++ tail
+
+/-- Contract the second boundary edge and retain one positively normalized boundary dart. -/
+def targetWord {n : ℕ}
+    (first second : Fin (n + 1))
+    (hfirstSecond : first ≠ second)
+    (tail : List (SignedDart (Fin (n + 1)))) :
+    List (SignedDart (Fin n)) :=
+  .pos (Cancellation.lowerEdge second first
+      hfirstSecond) ::
+    Cancellation.lowerTail second tail
+
+/-- P1 expansion is just edge-name retention on a word avoiding the subdivided edge. -/
+theorem expandWord_avoiding {n : ℕ}
+    (edge : Fin n)
+    (word : List (SignedDart (Fin n)))
+    (hedge : edge ∉ word.map edgeOfDart) :
+    P1.expandWord edge word =
+      P2.retainWord word := by
+  induction word with
+  | nil =>
+      rfl
+  | cons head tail ih =>
+      have hhead : edgeOfDart head ≠ edge := by
+        intro heq
+        apply hedge
+        simp [heq]
+      have htail :
+          edge ∉ tail.map edgeOfDart := by
+        intro hmem
+        exact hedge (by simp [hmem])
+      rw [P1.expandWord_cons, ih htail]
+      cases head with
+      | pos old =>
+          have hold : old ≠ edge := by
+            simpa using hhead
+          rw [P1.expandDart_pos_of_ne hold]
+          rfl
+      | neg old =>
+          have hold : old ≠ edge := by
+            simpa using hhead
+          rw [P1.expandDart_neg_of_ne hold]
+          rfl
+
+/-- Independent sign normalization identifies the generic and positive adjacent-boundary
+spellings. -/
+def sourceSignSignedIso {n : ℕ}
+    (first second : Fin (n + 1))
+    (firstNegative secondNegative : Bool)
+    (tail : List (SignedDart (Fin (n + 1))))
+    (hfirstSecond : first ≠ second)
+    (hfirstTail :
+      first ∉ tail.map edgeOfDart)
+    (hsecondTail :
+      second ∉ tail.map edgeOfDart) :
+    SignedPresentationIso
+      (Dyck.oneFace
+        (sourceWord first second
+          firstNegative secondNegative tail))
+      (Dyck.oneFace
+        (sourceWord first second false false tail)) where
+  edgeRelabeling :=
+    CrosscapBlockCommute.orientationRelabeling
+      first second firstNegative secondNegative
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro face
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [sourceWord, List.map_append,
+      List.map_cons]
+    rw [
+      CrosscapBlockCommute.orientationRelabeling_word
+        first second firstNegative secondNegative
+        tail hfirstTail hsecondTail,
+      CrosscapBlockCommute.orientationRelabeling_mapDart_outer
+        first second firstNegative secondNegative,
+      CrosscapBlockCommute.orientationRelabeling_mapDart_carrier
+        first second firstNegative secondNegative
+        hfirstSecond.symm]
+    exact List.IsRotated.refl _
+
+/-- The positive adjacent-boundary spelling is exactly a P1 expansion after moving the second
+edge to the fresh-last name. -/
+def positiveSourceSignedIso {n : ℕ}
+    (first second : Fin (n + 1))
+    (tail : List (SignedDart (Fin (n + 1))))
+    (hfirstSecond : first ≠ second)
+    (hfirstTail :
+      first ∉ tail.map edgeOfDart)
+    (hsecondTail :
+      second ∉ tail.map edgeOfDart) :
+    SignedPresentationIso
+      (Dyck.oneFace
+        (sourceWord first second false false tail))
+      (P1.expand
+        (Dyck.oneFace
+          (targetWord first second
+            hfirstSecond tail))
+        (Cancellation.lowerEdge second first
+          hfirstSecond)) where
+  edgeRelabeling :=
+    EdgeRelabeling.ofEquiv
+      (Cancellation.moveToLast second)
+  faceEquiv :=
+    P1.faceEquiv
+      (Dyck.oneFace
+        (targetWord first second
+          hfirstSecond tail))
+      (Cancellation.lowerEdge second first
+        hfirstSecond)
+  boundary_rotated := by
+    intro face
+    let loweredFirst :=
+      Cancellation.lowerEdge second first
+        hfirstSecond
+    have hloweredFirstTail :
+        loweredFirst ∉
+          (Cancellation.lowerTail second tail).map
+            edgeOfDart := by
+      intro hmem
+      have hrestored :
+          first ∈ tail.map edgeOfDart := by
+        rw [← Cancellation.restoreEdges_lowerTail
+          second tail hsecondTail]
+        exact List.mem_map.mpr
+          ⟨loweredFirst, hmem,
+            Cancellation.restoreEdge_lowerEdge
+              second first hfirstSecond⟩
+      exact hfirstTail hrestored
+    have hfirstMove :
+        Cancellation.moveToLast second first =
+          loweredFirst.castSucc :=
+      (Cancellation.castSucc_lowerEdge
+        second first hfirstSecond).symm
+    have hsecondMove :
+        Cancellation.moveToLast second second =
+          P1.freshEdge n := by
+      simp [Cancellation.moveToLast,
+        P1.freshEdge]
+    rw [Dyck.oneFace_boundary,
+      P1.expand_boundary, Dyck.oneFace_boundary]
+    rw [EdgeRelabeling.map_mapDart_ofEquiv]
+    simp only [sourceWord, targetWord,
+      List.map_append, List.map_cons,
+      List.map_nil, P1.expandWord_cons,
+      P1.expandDart_pos_self]
+    rw [expandWord_avoiding loweredFirst
+        (Cancellation.lowerTail second tail)
+        hloweredFirstTail,
+      Cancellation.retainWord_lowerTail
+        second tail hsecondTail]
+    change
+      ([SignedDart.pos
+          (Cancellation.moveToLast second first),
+        SignedDart.pos
+          (Cancellation.moveToLast second second)] ++
+        Cancellation.renamedTail second tail).IsRotated
+      ([SignedDart.pos (P1.firstSubedge loweredFirst),
+        SignedDart.pos (P1.freshEdge n)] ++
+        Cancellation.renamedTail second tail)
+    rw [hfirstMove, hsecondMove]
+    exact List.IsRotated.refl _
+
+/-- Contracting two adjacent once-used boundary darts is a signed isomorphism followed by one
+inverse P1 move. -/
+theorem exists_normalizationEquivalent {n : ℕ}
+    (first second : Fin (n + 1))
+    (firstNegative secondNegative : Bool)
+    (tail : List (SignedDart (Fin (n + 1))))
+    (hfirstSecond : first ≠ second)
+    (hfirstTail :
+      first ∉ tail.map edgeOfDart)
+    (hsecondTail :
+      second ∉ tail.map edgeOfDart)
+    (validSource :
+      (Dyck.oneFace
+        (sourceWord first second
+          firstNegative secondNegative
+          tail)).IsSurfaceValid) :
+    ∃ validTarget :
+        (Dyck.oneFace
+          (targetWord first second
+            hfirstSecond tail)).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (sourceWord first second
+            firstNegative secondNegative tail),
+          validSource⟩
+        ⟨Dyck.oneFace
+          (targetWord first second
+            hfirstSecond tail),
+          validTarget⟩ := by
+  let signIso :=
+    sourceSignSignedIso first second
+      firstNegative secondNegative tail
+      hfirstSecond hfirstTail hsecondTail
+  let validPositiveSource :
+      (Dyck.oneFace
+        (sourceWord first second false false
+          tail)).IsSurfaceValid :=
+    signIso.isSurfaceValid validSource
+  let expansionIso :=
+    positiveSourceSignedIso first second tail
+      hfirstSecond hfirstTail hsecondTail
+  let validExpansion :
+      (P1.expand
+        (Dyck.oneFace
+          (targetWord first second
+            hfirstSecond tail))
+        (Cancellation.lowerEdge second first
+          hfirstSecond)).IsSurfaceValid :=
+    expansionIso.isSurfaceValid validPositiveSource
+  let validTarget :
+      (Dyck.oneFace
+        (targetWord first second
+          hfirstSecond tail)).IsSurfaceValid :=
+    isSurfaceValid_of_p1Expand _ _ validExpansion
+  have hsign :
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (sourceWord first second
+            firstNegative secondNegative tail),
+          validSource⟩
+        ⟨Dyck.oneFace
+          (sourceWord first second false false tail),
+          validPositiveSource⟩ :=
+    NormalizationEquivalent.ofSignedIso signIso
+  have hexpansion :
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (sourceWord first second false false tail),
+          validPositiveSource⟩
+        ⟨P1.expand
+          (Dyck.oneFace
+            (targetWord first second
+              hfirstSecond tail))
+          (Cancellation.lowerEdge second first
+            hfirstSecond),
+          validExpansion⟩ :=
+    NormalizationEquivalent.ofSignedIso expansionIso
+  have hcontraction :
+      NormalizationEquivalent
+        ⟨P1.expand
+          (Dyck.oneFace
+            (targetWord first second
+              hfirstSecond tail))
+          (Cancellation.lowerEdge second first
+            hfirstSecond),
+          validExpansion⟩
+        ⟨Dyck.oneFace
+          (targetWord first second
+            hfirstSecond tail),
+          validTarget⟩ := by
+    simpa only using
+      (P1.contractionNormalizationEquivalent
+        (Dyck.oneFace
+          (targetWord first second
+            hfirstSecond tail))
+        (Cancellation.lowerEdge second first
+          hfirstSecond)
+        validTarget)
+  exact
+    ⟨validTarget,
+      hsign.trans
+        (hexpansion.trans hcontraction)⟩
+
+end BoundaryPairContraction
+
 /-- One non-residual atom allowed in a classified marked execution state. -/
 inductive ProtectedAtom (n : ℕ)
   | boundary (hole : Fin n) (negative : Bool)
