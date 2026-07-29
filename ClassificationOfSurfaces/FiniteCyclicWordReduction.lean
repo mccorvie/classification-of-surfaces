@@ -911,6 +911,178 @@ theorem OppositeOccurrenceForm.between_ne_nil {n : ℕ}
       rotated := by
         simpa [inversePair, hbetween] using form.rotated }
 
+/-! ### Proof-producing extraction of the easy pairing features -/
+
+/-- The cyclic spelling obtained by displaying a boundary edge at the head of its word. -/
+def BoundaryOccurrenceForm.headWord {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : BoundaryOccurrenceForm word a) :
+    List (SignedDart (Fin n)) :=
+  dart a form.negative :: form.remainder
+
+/-- Displaying a certified boundary occurrence at the head is already a normalization
+equivalence: it is only a cyclic change of the distinguished face word. -/
+theorem BoundaryOccurrenceForm.exists_normalizationEquivalent_head {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : BoundaryOccurrenceForm word a)
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    ∃ validHead : (Dyck.oneFace form.headWord).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩
+        ⟨Dyck.oneFace form.headWord, validHead⟩ := by
+  let rotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated form.rotated
+  let validHead :
+      (Dyck.oneFace form.headWord).IsSurfaceValid :=
+    rotation.isSurfaceValid valid
+  exact ⟨validHead, NormalizationEquivalent.ofSignedIso rotation⟩
+
+/-- The grouped spelling produced from a certified crosscap occurrence.  The segment after the
+second occurrence is reversed, exactly as in the Gallier--Xu crosscap rewrite. -/
+def CrosscapOccurrenceForm.groupedWord {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : CrosscapOccurrenceForm word a) :
+    List (SignedDart (Fin n)) :=
+  [dart a form.negative, dart a form.negative] ++
+    inverseWord form.remainder ++ form.between
+
+/-- The positive crosscap target is cyclically the chosen grouped spelling. -/
+theorem CrosscapOccurrenceForm.positiveTarget_isRotated_grouped {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : CrosscapOccurrenceForm word a)
+    (hpositive : form.negative = false) :
+    (Crosscap.target a form.between form.remainder).boundary 0 |>.IsRotated
+      form.groupedWord := by
+  simp only [Crosscap.target, Dyck.oneFace_boundary_zero]
+  convert
+    (List.isRotated_append
+      (l := form.between)
+      (l' := [SignedDart.pos a, SignedDart.pos a] ++
+        inverseWord form.remainder)) using 1
+  all_goals
+    simp [CrosscapOccurrenceForm.groupedWord, dart, hpositive,
+      List.cons_append, List.append_assoc]
+
+/-- The negative crosscap target is cyclically the chosen grouped spelling. -/
+theorem CrosscapOccurrenceForm.negativeTarget_isRotated_grouped {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : CrosscapOccurrenceForm word a)
+    (hnegative : form.negative = true) :
+    (Crosscap.negativeTarget a form.between form.remainder).boundary 0 |>.IsRotated
+      form.groupedWord := by
+  simp only [Crosscap.negativeTarget, Dyck.oneFace_boundary_zero]
+  convert
+    (List.isRotated_append
+      (l := form.between)
+      (l' := [SignedDart.neg a, SignedDart.neg a] ++
+        inverseWord form.remainder)) using 1
+  all_goals
+    simp [CrosscapOccurrenceForm.groupedWord, dart, hnegative,
+      List.cons_append, List.append_assoc]
+
+/-- A certified equally oriented pair can be moved to an adjacent crosscap block by an exact
+normalization chain.  Both signs are supported; the grouped block retains the input sign. -/
+theorem CrosscapOccurrenceForm.exists_normalizationEquivalent_grouped {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : CrosscapOccurrenceForm word a)
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    ∃ validGrouped : (Dyck.oneFace form.groupedWord).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩
+        ⟨Dyck.oneFace form.groupedWord, validGrouped⟩ := by
+  let sourceRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated form.rotated
+  have hToDisplayed :
+      NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩
+        ⟨Dyck.oneFace
+            (dart a form.negative :: form.between ++
+              dart a form.negative :: form.remainder),
+          sourceRotation.isSurfaceValid valid⟩ :=
+    NormalizationEquivalent.ofSignedIso sourceRotation
+  cases horientation : form.negative
+  · have hsource :
+        Dyck.oneFace
+            (dart a form.negative :: form.between ++
+              dart a form.negative :: form.remainder) =
+          Crosscap.source a form.between form.remainder := by
+      simp [Crosscap.source, dart, horientation,
+        List.cons_append]
+    let validSource :
+        (Crosscap.source a form.between form.remainder).IsSurfaceValid :=
+      hsource ▸ sourceRotation.isSurfaceValid valid
+    let validTarget :
+        (Crosscap.target a form.between form.remainder).IsSurfaceValid :=
+      Crosscap.target_isSurfaceValid a form.between form.remainder validSource
+    have hCrosscap :
+        NormalizationEquivalent
+          ⟨Crosscap.source a form.between form.remainder, validSource⟩
+          ⟨Crosscap.target a form.between form.remainder, validTarget⟩ :=
+      Crosscap.normalizationEquivalent a form.between form.remainder
+        form.edge_not_mem_between form.edge_not_mem_remainder
+        validSource validTarget
+    let targetRotation :=
+      Dyck.oneFaceSignedIsoOfIsRotated
+        (form.positiveTarget_isRotated_grouped horientation)
+    let validGrouped :
+        (Dyck.oneFace form.groupedWord).IsSurfaceValid :=
+      targetRotation.isSurfaceValid validTarget
+    have hDisplayed :
+        (⟨Dyck.oneFace
+              (dart a form.negative :: form.between ++
+                dart a form.negative :: form.remainder),
+            sourceRotation.isSurfaceValid valid⟩ :
+          ValidPresentation) =
+          ⟨Crosscap.source a form.between form.remainder, validSource⟩ :=
+      ValidPresentation.ext hsource
+    rw [hDisplayed] at hToDisplayed
+    exact ⟨validGrouped,
+      hToDisplayed.trans
+        (hCrosscap.trans
+          (NormalizationEquivalent.ofSignedIso targetRotation))⟩
+  · have hsource :
+        Dyck.oneFace
+            (dart a form.negative :: form.between ++
+              dart a form.negative :: form.remainder) =
+          Crosscap.negativeSource a form.between form.remainder := by
+      simp [Crosscap.negativeSource, dart, horientation,
+        List.cons_append]
+    let validSource :
+        (Crosscap.negativeSource a form.between form.remainder).IsSurfaceValid :=
+      hsource ▸ sourceRotation.isSurfaceValid valid
+    let validTarget :
+        (Crosscap.negativeTarget a form.between form.remainder).IsSurfaceValid :=
+      Crosscap.negativeTarget_isSurfaceValid
+        a form.between form.remainder validSource
+    have hCrosscap :
+        NormalizationEquivalent
+          ⟨Crosscap.negativeSource a form.between form.remainder, validSource⟩
+          ⟨Crosscap.negativeTarget a form.between form.remainder, validTarget⟩ :=
+      Crosscap.negativeNormalizationEquivalent
+        a form.between form.remainder
+        form.edge_not_mem_between form.edge_not_mem_remainder
+        validSource validTarget
+    let targetRotation :=
+      Dyck.oneFaceSignedIsoOfIsRotated
+        (form.negativeTarget_isRotated_grouped horientation)
+    let validGrouped :
+        (Dyck.oneFace form.groupedWord).IsSurfaceValid :=
+      targetRotation.isSurfaceValid validTarget
+    have hDisplayed :
+        (⟨Dyck.oneFace
+              (dart a form.negative :: form.between ++
+                dart a form.negative :: form.remainder),
+            sourceRotation.isSurfaceValid valid⟩ :
+          ValidPresentation) =
+          ⟨Crosscap.negativeSource a form.between form.remainder,
+            validSource⟩ :=
+      ValidPresentation.ext hsource
+    rw [hDisplayed] at hToDisplayed
+    exact ⟨validGrouped,
+      hToDisplayed.trans
+        (hCrosscap.trans
+          (NormalizationEquivalent.ofSignedIso targetRotation))⟩
+
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
     (word : List (SignedDart (Fin n)))
