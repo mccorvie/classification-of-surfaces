@@ -1363,6 +1363,166 @@ theorem hasValidUsedMultiplicities_residualWord {n : ℕ}
 
 end ActionablePairReductionFeature
 
+/-- Lower an edge name after moving a distinguished, unused name to the last position. -/
+def Cancellation.lowerEdge {n : ℕ}
+    (a e : Fin (n + 1)) (hne : e ≠ a) : Fin n :=
+  (Cancellation.moveToLast a e).castPred (by
+    intro hlast
+    apply hne
+    apply (Cancellation.moveToLast a).injective
+    rw [hlast]
+    simp [Cancellation.moveToLast])
+
+@[simp]
+theorem Cancellation.castSucc_lowerEdge {n : ℕ}
+    (a e : Fin (n + 1)) (hne : e ≠ a) :
+    (Cancellation.lowerEdge a e hne).castSucc =
+      Cancellation.moveToLast a e := by
+  simp [Cancellation.lowerEdge]
+
+/-- Re-embed a lowered edge into the old namespace, undoing the move-to-last relabeling. -/
+def Cancellation.restoreEdge {n : ℕ}
+    (a : Fin (n + 1)) (e : Fin n) : Fin (n + 1) :=
+  (Cancellation.moveToLast a).symm e.castSucc
+
+@[simp]
+theorem Cancellation.restoreEdge_lowerEdge {n : ℕ}
+    (a e : Fin (n + 1)) (hne : e ≠ a) :
+    Cancellation.restoreEdge a
+        (Cancellation.lowerEdge a e hne) =
+      e := by
+  apply (Cancellation.moveToLast a).injective
+  simp [Cancellation.restoreEdge]
+
+@[simp]
+def Cancellation.lowerDart {n : ℕ}
+    (a : Fin (n + 1)) (d : SignedDart (Fin (n + 1)))
+    (hne : edgeOfDart d ≠ a) : SignedDart (Fin n) :=
+  match d with
+  | .pos e => .pos (Cancellation.lowerEdge a e hne)
+  | .neg e => .neg (Cancellation.lowerEdge a e hne)
+
+/-- Re-embed a lowered dart into the old namespace. -/
+def Cancellation.restoreDart {n : ℕ}
+    (a : Fin (n + 1)) :
+    SignedDart (Fin n) → SignedDart (Fin (n + 1))
+  | .pos e => .pos (Cancellation.restoreEdge a e)
+  | .neg e => .neg (Cancellation.restoreEdge a e)
+
+@[simp]
+theorem Cancellation.restoreDart_lowerDart {n : ℕ}
+    (a : Fin (n + 1)) (d : SignedDart (Fin (n + 1)))
+    (hne : edgeOfDart d ≠ a) :
+    Cancellation.restoreDart a
+        (Cancellation.lowerDart a d hne) =
+      d := by
+  cases d <;>
+    simp [Cancellation.lowerDart,
+      Cancellation.restoreDart]
+
+@[simp]
+theorem Cancellation.restoreEdge_edgeOfDart_lowerDart {n : ℕ}
+    (a : Fin (n + 1)) (d : SignedDart (Fin (n + 1)))
+    (hne : edgeOfDart d ≠ a) :
+    Cancellation.restoreEdge a
+        (edgeOfDart
+          (Cancellation.lowerDart a d hne)) =
+      edgeOfDart d := by
+  cases d <;>
+    simp [Cancellation.lowerDart]
+
+@[simp]
+theorem Cancellation.contractDart_mapEquiv_moveToLast {n : ℕ}
+    (a : Fin (n + 1)) (d : SignedDart (Fin (n + 1)))
+    (hne : edgeOfDart d ≠ a) :
+    P1.contractDart
+        (SignedDart.mapEquiv
+          (Cancellation.moveToLast a) d) =
+      some (Cancellation.lowerDart a d hne) := by
+  cases d with
+  | pos e =>
+      change
+        P1.contractDart
+            (.pos (Cancellation.moveToLast a e)) =
+          some (.pos (Cancellation.lowerEdge a e hne))
+      have hmove :
+          Cancellation.moveToLast a e =
+            (Cancellation.lowerEdge a e hne).castSucc :=
+        (Cancellation.castSucc_lowerEdge a e hne).symm
+      rw [hmove, P1.contractDart_pos_castSucc]
+  | neg e =>
+      change
+        P1.contractDart
+            (.neg (Cancellation.moveToLast a e)) =
+          some (.neg (Cancellation.lowerEdge a e hne))
+      have hmove :
+          Cancellation.moveToLast a e =
+            (Cancellation.lowerEdge a e hne).castSucc :=
+        (Cancellation.castSucc_lowerEdge a e hne).symm
+      rw [hmove, P1.contractDart_neg_castSucc]
+
+/-- Lower a word which avoids a distinguished edge, preserving its exact dart order. -/
+def Cancellation.lowerWordAvoiding {n : ℕ}
+    (a : Fin (n + 1)) :
+    (word : List (SignedDart (Fin (n + 1)))) →
+      a ∉ word.map edgeOfDart →
+      List (SignedDart (Fin n))
+  | [], _ => []
+  | d :: word, ha =>
+      Cancellation.lowerDart a d (by
+        intro hedge
+        apply ha
+        simp [hedge]) ::
+        Cancellation.lowerWordAvoiding a word (by
+          intro htail
+          apply ha
+          simp [htail])
+
+/-- Lowering a word explicitly agrees with moving the removed name last and applying P1
+contraction. -/
+theorem Cancellation.lowerWordAvoiding_eq_lowerTail {n : ℕ}
+    (a : Fin (n + 1))
+    (word : List (SignedDart (Fin (n + 1))))
+    (ha : a ∉ word.map edgeOfDart) :
+    Cancellation.lowerWordAvoiding a word ha =
+      Cancellation.lowerTail a word := by
+  induction word with
+  | nil =>
+      rfl
+  | cons d word ih =>
+      have hd : edgeOfDart d ≠ a := by
+        intro hedge
+        apply ha
+        simp [hedge]
+      have htail : a ∉ word.map edgeOfDart := by
+        intro hmem
+        apply ha
+        simp [hmem]
+      simp only [Cancellation.lowerWordAvoiding,
+        Cancellation.lowerTail, Cancellation.renamedTail,
+        List.map_cons, P1.contractWord, List.filterMap_cons]
+      rw [Cancellation.contractDart_mapEquiv_moveToLast
+        a d hd]
+      simp only [List.cons.injEq, true_and]
+      exact ih htail
+
+/-- Removing an absent ambient edge name does not turn a nonempty word into the empty word. -/
+theorem Cancellation.lowerTail_ne_nil_of_ne_nil {n : ℕ}
+    (a : Fin (n + 1))
+    (word : List (SignedDart (Fin (n + 1))))
+    (ha : a ∉ word.map edgeOfDart)
+    (hne : word ≠ []) :
+    Cancellation.lowerTail a word ≠ [] := by
+  intro hlower
+  have hretained :=
+    Cancellation.retainWord_lowerTail a word ha
+  rw [hlower] at hretained
+  have hrenamed :
+      Cancellation.renamedTail a word = [] := by
+    simpa using hretained.symm
+  apply hne
+  simpa [Cancellation.renamedTail] using hrenamed
+
 /-- The combinatorial block contributed by one actionable extraction.  Orientations on boundary
 and crosscap blocks are retained until the final signed relabeling; handle extraction has already
 normalized both distinguished edge orientations. -/
@@ -1400,6 +1560,36 @@ def mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m) :
   | .boundary a negative => .boundary (e a) negative
   | .crosscap a negative => .crosscap (e a) negative
   | .handle a b => .handle (e a) (e b)
+
+/-- Remove an ambient edge name known not to occur in an extracted block. -/
+def lowerAvoiding {n : ℕ} (a : Fin (n + 1))
+    (block : ExtractedBlock (n + 1))
+    (ha : a ∉ block.edges) : ExtractedBlock n :=
+  match block with
+  | .boundary e negative =>
+      .boundary
+        (Cancellation.lowerEdge a e (by
+          intro hea
+          subst e
+          exact ha (by simp [edges])))
+        negative
+  | .crosscap e negative =>
+      .crosscap
+        (Cancellation.lowerEdge a e (by
+          intro hea
+          subst e
+          exact ha (by simp [edges])))
+        negative
+  | .handle e f =>
+      .handle
+        (Cancellation.lowerEdge a e (by
+          intro hea
+          subst e
+          exact ha (by simp [edges])))
+        (Cancellation.lowerEdge a f (by
+          intro hfa
+          subst f
+          exact ha (by simp [edges])))
 
 @[simp]
 theorem word_inverse {n : ℕ} (block : ExtractedBlock n) :
@@ -1466,6 +1656,45 @@ theorem inverse_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
     (block.mapEquiv e).inverse =
       block.inverse.mapEquiv e := by
   cases block <;> rfl
+
+/-- Expanding a lowered block agrees with renaming its old spelling and contracting the unused
+last edge. -/
+theorem word_lowerAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (block : ExtractedBlock (n + 1))
+    (ha : a ∉ block.edges) :
+    (block.lowerAvoiding a ha).word =
+      Cancellation.lowerTail a block.word := by
+  have haWord : a ∉ block.word.map edgeOfDart := by
+    simpa only [mem_map_edgeOfDart_word_iff] using ha
+  rw [← Cancellation.lowerWordAvoiding_eq_lowerTail
+    a block.word haWord]
+  cases block with
+  | boundary e negative =>
+      cases negative <;>
+        simp [lowerAvoiding, word,
+          Cancellation.lowerWordAvoiding,
+          Cancellation.lowerDart, dart]
+  | crosscap e negative =>
+      cases negative <;>
+        simp [lowerAvoiding, word,
+          Cancellation.lowerWordAvoiding,
+          Cancellation.lowerDart, dart]
+  | handle e f =>
+      simp [lowerAvoiding, word,
+        Cancellation.lowerWordAvoiding,
+        Cancellation.lowerDart]
+
+/-- Re-embedding the edge names of a lowered block recovers its original edge list. -/
+theorem edges_lowerAvoiding_map_restoreEdge {n : ℕ}
+    (a : Fin (n + 1))
+    (block : ExtractedBlock (n + 1))
+    (ha : a ∉ block.edges) :
+    (block.lowerAvoiding a ha).edges.map
+        (Cancellation.restoreEdge a) =
+      block.edges := by
+  cases block <;>
+    simp [lowerAvoiding, edges]
 
 /-- Concatenate a sequence of extracted blocks into its exact signed boundary word. -/
 def sequenceWord {n : ℕ} (blocks : List (ExtractedBlock n)) :
@@ -1653,6 +1882,78 @@ theorem inverse_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
   | extracted block =>
       simp [inverse, mapEquiv]
 
+/-- Lower a marked token known not to use the removed ambient edge. -/
+def lowerAvoiding {n : ℕ} (a : Fin (n + 1))
+    (token : ReductionToken (n + 1))
+    (ha : a ∉ token.word.map edgeOfDart) :
+    ReductionToken n :=
+  match token with
+  | .residual d =>
+      .residual
+        (Cancellation.lowerDart a d (by
+          intro hedge
+          apply ha
+          simp [hedge]))
+  | .extracted block =>
+      .extracted
+        (block.lowerAvoiding a (by
+          intro hblock
+          apply ha
+          exact
+            (ExtractedBlock.mem_map_edgeOfDart_word_iff
+              block a).mpr hblock))
+
+/-- Lowering one marked token agrees with word-level cancellation lowering. -/
+theorem word_lowerAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (token : ReductionToken (n + 1))
+    (ha : a ∉ token.word.map edgeOfDart) :
+    (token.lowerAvoiding a ha).word =
+      Cancellation.lowerTail a token.word := by
+  cases token with
+  | residual d =>
+      simpa only [lowerAvoiding, word,
+        Cancellation.lowerWordAvoiding] using
+        Cancellation.lowerWordAvoiding_eq_lowerTail
+          a [d] ha
+  | extracted block =>
+      exact ExtractedBlock.word_lowerAvoiding a block _
+
+/-- Re-embedding residual edge names after lowering one token recovers the old residual names. -/
+theorem residualEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
+    (a : Fin (n + 1))
+    (token : ReductionToken (n + 1))
+    (ha : a ∉ token.word.map edgeOfDart) :
+    ((token.lowerAvoiding a ha).residualWord.map
+        edgeOfDart).map (Cancellation.restoreEdge a) =
+      token.residualWord.map edgeOfDart := by
+  cases token with
+  | residual d =>
+      change
+        [Cancellation.restoreEdge a
+          (edgeOfDart
+            (Cancellation.lowerDart a d _))] =
+          [edgeOfDart d]
+      rw [Cancellation.restoreEdge_edgeOfDart_lowerDart]
+  | extracted =>
+      rfl
+
+/-- Re-embedding protected edge names after lowering one token recovers the old protected names. -/
+theorem extractedEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
+    (a : Fin (n + 1))
+    (token : ReductionToken (n + 1))
+    (ha : a ∉ token.word.map edgeOfDart) :
+    (token.lowerAvoiding a ha).extractedEdges.map
+        (Cancellation.restoreEdge a) =
+      token.extractedEdges := by
+  cases token with
+  | residual =>
+      rfl
+  | extracted block =>
+      exact
+        ExtractedBlock.edges_lowerAvoiding_map_restoreEdge
+          a block _
+
 /-- Expand a marked word to the exact signed word on which normalization moves act. -/
 def expand {n : ℕ} (tokens : List (ReductionToken n)) :
     List (SignedDart (Fin n)) :=
@@ -1744,6 +2045,140 @@ theorem protectedEdges_append {n : ℕ}
     protectedEdges (left ++ right) =
       protectedEdges left ++ protectedEdges right := by
   simp [protectedEdges]
+
+/-- Cancellation lowering distributes over concatenation. -/
+theorem Cancellation.lowerTail_append {n : ℕ}
+    (a : Fin (n + 1))
+    (left right : List (SignedDart (Fin (n + 1)))) :
+    Cancellation.lowerTail a (left ++ right) =
+      Cancellation.lowerTail a left ++
+        Cancellation.lowerTail a right := by
+  simp [Cancellation.lowerTail, Cancellation.renamedTail]
+
+/-- Lower every token in a marked word which avoids the removed edge. -/
+def lowerTokensAvoiding {n : ℕ} (a : Fin (n + 1)) :
+    (tokens : List (ReductionToken (n + 1))) →
+      a ∉ (expand tokens).map edgeOfDart →
+      List (ReductionToken n)
+  | [], _ => []
+  | token :: tokens, ha =>
+      token.lowerAvoiding a (by
+        intro htoken
+        apply ha
+        simp [htoken]) ::
+        lowerTokensAvoiding a tokens (by
+          intro htokens
+          apply ha
+          simp [htokens])
+
+/-- Expanding a lowered marked word gives exactly the ordinary cancellation target word. -/
+theorem expand_lowerTokensAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand tokens).map edgeOfDart) :
+    expand (lowerTokensAvoiding a tokens ha) =
+      Cancellation.lowerTail a (expand tokens) := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      rw [show
+        lowerTokensAvoiding a (token :: tokens) ha =
+          token.lowerAvoiding a (by
+            intro htoken
+            apply ha
+            simp [htoken]) ::
+          lowerTokensAvoiding a tokens (by
+            intro htokens
+            apply ha
+            simp [htokens]) by rfl]
+      rw [expand_cons,
+        token.word_lowerAvoiding,
+        ih]
+      rw [expand_cons,
+        Cancellation.lowerTail_append]
+
+/-- Re-embedding all residual edge names after lowering a marked word recovers the source
+residual namespace exactly. -/
+theorem residualEdges_lowerTokensAvoiding_map_restoreEdge
+    {n : ℕ} (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand tokens).map edgeOfDart) :
+    (((residualDarts
+      (lowerTokensAvoiding a tokens ha)).map
+        edgeOfDart).map (Cancellation.restoreEdge a)) =
+      (residualDarts tokens).map edgeOfDart := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      rw [show
+        lowerTokensAvoiding a (token :: tokens) ha =
+          token.lowerAvoiding a (by
+            intro htoken
+            apply ha
+            simp [htoken]) ::
+          lowerTokensAvoiding a tokens (by
+            intro htokens
+            apply ha
+            simp [htokens]) by rfl]
+      simp only [residualDarts_cons, List.map_append]
+      rw [token.residualEdges_lowerAvoiding_map_restoreEdge,
+        ih]
+
+/-- Re-embedding all protected edge names after lowering a marked word recovers the source
+protected namespace exactly. -/
+theorem protectedEdges_lowerTokensAvoiding_map_restoreEdge
+    {n : ℕ} (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand tokens).map edgeOfDart) :
+    (protectedEdges
+      (lowerTokensAvoiding a tokens ha)).map
+        (Cancellation.restoreEdge a) =
+      protectedEdges tokens := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      rw [show
+        lowerTokensAvoiding a (token :: tokens) ha =
+          token.lowerAvoiding a (by
+            intro htoken
+            apply ha
+            simp [htoken]) ::
+          lowerTokensAvoiding a tokens (by
+            intro htokens
+            apply ha
+            simp [htokens]) by rfl]
+      simp only [protectedEdges_cons, List.map_append]
+      rw [token.extractedEdges_lowerAvoiding_map_restoreEdge,
+        ih]
+
+/-- Injective cancellation lowering preserves separation of residual and protected names. -/
+theorem IsSeparated.lowerTokensAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand tokens).map edgeOfDart)
+    (separated : IsSeparated tokens) :
+    IsSeparated (lowerTokensAvoiding a tokens ha) := by
+  rw [IsSeparated, List.disjoint_left]
+  intro e heResidual heProtected
+  have hrestoredResidual :
+      Cancellation.restoreEdge a e ∈
+        (residualDarts tokens).map edgeOfDart := by
+    rw [←
+      residualEdges_lowerTokensAvoiding_map_restoreEdge
+        a tokens ha]
+    exact List.mem_map.mpr ⟨e, heResidual, rfl⟩
+  have hrestoredProtected :
+      Cancellation.restoreEdge a e ∈
+        protectedEdges tokens := by
+    rw [←
+      protectedEdges_lowerTokensAvoiding_map_restoreEdge
+        a tokens ha]
+    exact List.mem_map.mpr ⟨e, heProtected, rfl⟩
+  exact (List.disjoint_left.mp separated)
+    hrestoredResidual hrestoredProtected
 
 /-- An edge occurs in the expanded word exactly when it is residual or protected in an extracted
 block token. -/
@@ -2860,6 +3295,71 @@ theorem expandedFeature_block_word_append_residualWord {n : ℕ}
 
 end MarkedActionablePairReductionFeature
 
+/-- An inverse pair which is adjacent at marked-token granularity.  Unlike adjacency only after
+erasing protected blocks, this is immediately executable by the ordinary cancellation chain. -/
+structure MarkedCancellablePair {n : ℕ}
+    (tokens : List (ReductionToken (n + 1))) where
+  edge : Fin (n + 1)
+  negativeFirst : Bool
+  tailTokens : List (ReductionToken (n + 1))
+  rotated :
+    tokens.IsRotated
+      (.residual (dart edge negativeFirst) ::
+        .residual (dart edge (!negativeFirst)) ::
+        tailTokens)
+
+namespace MarkedCancellablePair
+
+/-- Expanding a token-adjacent pair gives an ordinary cancellable pair on the full word. -/
+def expandedPair {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedCancellablePair tokens) :
+    CancellablePair (ReductionToken.expand tokens) where
+  edge := pair.edge
+  tail := ReductionToken.expand pair.tailTokens
+  negativeFirst := pair.negativeFirst
+  rotated := by
+    have hrotated :=
+      ReductionToken.expand_isRotated pair.rotated
+    cases hnegative : pair.negativeFirst <;>
+      simp [inversePair, dart, hnegative] at hrotated ⊢ <;>
+      exact hrotated
+
+/-- Validity ensures that the removed edge is absent from every remaining marked token. -/
+theorem edge_not_mem_tailTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedCancellablePair tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    pair.edge ∉
+      (ReductionToken.expand pair.tailTokens).map edgeOfDart :=
+  pair.expandedPair.edge_not_mem_tail valid
+
+/-- Separation of residual and protected names passes to the marked tail after deleting the
+displayed residual pair. -/
+theorem tailTokens_isSeparated {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedCancellablePair tokens)
+    (separated : ReductionToken.IsSeparated tokens) :
+    ReductionToken.IsSeparated pair.tailTokens := by
+  have separatedDisplayed :=
+    separated.of_isRotated pair.rotated
+  rw [ReductionToken.IsSeparated,
+    List.disjoint_left] at separatedDisplayed ⊢
+  intro e heResidual heProtected
+  apply separatedDisplayed
+  · simp only [ReductionToken.residualDarts_cons,
+      ReductionToken.residualWord_residual,
+      List.singleton_append, List.map_cons,
+      edgeOfDart_dart, List.mem_cons]
+    exact Or.inr (Or.inr heResidual)
+  · simpa only [ReductionToken.protectedEdges_cons,
+      ReductionToken.extractedEdges_residual,
+      List.nil_append] using heProtected
+
+end MarkedCancellablePair
+
 /-- A complete proof-relevant decomposition trace.  Each step extracts one certified block, then
 pair-reduces the strictly shorter residual before continuing. -/
 inductive ResidualDecomposition {n : ℕ} :
@@ -3923,6 +4423,139 @@ noncomputable def extract {n : ℕ}
   simpa only [htarget] using hequivalent
 
 end MarkedActionablePairReductionFeature
+
+/-- Proof-producing cancellation of a token-adjacent inverse pair, retaining the lowered marked
+target rather than flattening previously extracted blocks. -/
+structure MarkedCancellationResult {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedCancellablePair tokens)
+    (valid :
+      (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    Type where
+  targetTokens : List (ReductionToken n)
+  targetValid :
+    (Dyck.oneFace
+      (ReductionToken.expand targetTokens)).IsSurfaceValid
+  targetSeparated :
+    ReductionToken.IsSeparated targetTokens
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
+      ⟨Dyck.oneFace (ReductionToken.expand targetTokens),
+        targetValid⟩
+
+namespace MarkedCancellablePair
+
+/-- Execute an inverse pair which is genuinely adjacent in the marked word.  The nonempty-tail
+hypothesis selects the ordinary cancellation endpoint; the empty-tail sphere endpoint remains
+handled by the outer cancellation recursion. -/
+noncomputable def cancel {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedCancellablePair tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (valid :
+      (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid)
+    (tail_nonempty :
+      ReductionToken.expand pair.tailTokens ≠ []) :
+    MarkedCancellationResult pair valid := by
+  let ha := pair.edge_not_mem_tailTokens valid
+  let targetTokens :=
+    ReductionToken.lowerTokensAvoiding
+      pair.edge pair.tailTokens ha
+  have targetSeparated :
+      ReductionToken.IsSeparated targetTokens :=
+    (pair.tailTokens_isSeparated separated).lowerTokensAvoiding
+      pair.edge pair.tailTokens ha
+  have htarget :
+      ReductionToken.expand targetTokens =
+        Cancellation.lowerTail pair.edge
+          (ReductionToken.expand pair.tailTokens) := by
+    exact ReductionToken.expand_lowerTokensAvoiding
+      pair.edge pair.tailTokens ha
+  have hlower :
+      Cancellation.lowerTail pair.edge
+          (ReductionToken.expand pair.tailTokens) ≠ [] :=
+    Cancellation.lowerTail_ne_nil_of_ne_nil
+      pair.edge (ReductionToken.expand pair.tailTokens)
+      ha tail_nonempty
+  cases hnegative : pair.negativeFirst
+  · have hrotated :
+        (ReductionToken.expand tokens).IsRotated
+          ([.pos pair.edge, .neg pair.edge] ++
+            ReductionToken.expand pair.tailTokens) := by
+      have hexpanded :=
+        ReductionToken.expand_isRotated pair.rotated
+      simpa [dart, hnegative] using hexpanded
+    let validTarget :
+        (Cancellation.target
+          (Cancellation.lowerTail pair.edge
+            (ReductionToken.expand
+              pair.tailTokens))).IsSurfaceValid :=
+      Cancellation.target_isSurfaceValid
+        (Cancellation.lowerTail pair.edge
+          (ReductionToken.expand pair.tailTokens))
+        hlower
+        ((Cancellation.namedSourceSignedIso pair.edge
+          (ReductionToken.expand pair.tailTokens) ha).isSurfaceValid
+          ((Dyck.oneFaceSignedIsoOfIsRotated
+            hrotated).isSurfaceValid valid))
+    have targetValid :
+        (Dyck.oneFace
+          (ReductionToken.expand targetTokens)).IsSurfaceValid := by
+      rw [htarget]
+      exact validTarget
+    refine
+      { targetTokens := targetTokens
+        targetValid := targetValid
+        targetSeparated := targetSeparated
+        equivalent := ?_ }
+    have hequivalent :=
+      Cancellation.normalizationEquivalentOfIsRotated
+        (ReductionToken.expand tokens) pair.edge
+        (ReductionToken.expand pair.tailTokens)
+        hrotated ha hlower valid
+    simpa only [htarget] using hequivalent
+  · have hrotated :
+        (ReductionToken.expand tokens).IsRotated
+          ([.neg pair.edge, .pos pair.edge] ++
+            ReductionToken.expand pair.tailTokens) := by
+      have hexpanded :=
+        ReductionToken.expand_isRotated pair.rotated
+      simpa [dart, hnegative] using hexpanded
+    let validTarget :
+        (Cancellation.target
+          (Cancellation.lowerTail pair.edge
+            (ReductionToken.expand
+              pair.tailTokens))).IsSurfaceValid :=
+      Cancellation.target_isSurfaceValid
+        (Cancellation.lowerTail pair.edge
+          (ReductionToken.expand pair.tailTokens))
+        hlower
+        ((Cancellation.namedSourceSignedIso pair.edge
+          (ReductionToken.expand pair.tailTokens) ha).isSurfaceValid
+          ((Cancellation.negativeNamedSourceSignedIso
+            pair.edge
+            (ReductionToken.expand pair.tailTokens) ha).isSurfaceValid
+            ((Dyck.oneFaceSignedIsoOfIsRotated
+              hrotated).isSurfaceValid valid)))
+    have targetValid :
+        (Dyck.oneFace
+          (ReductionToken.expand targetTokens)).IsSurfaceValid := by
+      rw [htarget]
+      exact validTarget
+    refine
+      { targetTokens := targetTokens
+        targetValid := targetValid
+        targetSeparated := targetSeparated
+        equivalent := ?_ }
+    have hequivalent :=
+      Cancellation.negativeNormalizationEquivalentOfIsRotated
+        (ReductionToken.expand tokens) pair.edge
+        (ReductionToken.expand pair.tailTokens)
+        hrotated ha hlower valid
+    simpa only [htarget] using hequivalent
+
+end MarkedCancellablePair
 
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
