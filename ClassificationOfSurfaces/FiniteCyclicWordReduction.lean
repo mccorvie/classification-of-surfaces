@@ -2281,6 +2281,352 @@ theorem normalForm_isEvalAdmissible_of_ne_nil {n : ℕ}
 
 end CompletedBlock
 
+namespace BoundaryBlockCommute
+
+/-- A completed positive-carrier boundary loop lying inside an opposite residual pair. -/
+def sourceWord {n : ℕ}
+    (outer carrier hole : Fin n)
+    (outerNegative holeNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  dart outer outerNegative ::
+    (CompletedBlock.boundary carrier hole false
+      holeNegative).word ++
+    insideTail ++
+    dart outer (!outerNegative) ::
+    outsideTail
+
+/-- Move the completed loop outside the residual pair, leaving the residual pair around the
+strictly shorter protected interval. -/
+def targetWord {n : ℕ}
+    (outer carrier hole : Fin n)
+    (outerNegative holeNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  (CompletedBlock.boundary carrier hole false
+      holeNegative).word ++
+    dart outer outerNegative ::
+    insideTail ++
+    dart outer (!outerNegative) ::
+    outsideTail
+
+/-- The same contextual loop with its carrier displayed negative first. -/
+def negativeSourceWord {n : ℕ}
+    (outer carrier hole : Fin n)
+    (outerNegative holeNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  dart outer outerNegative ::
+    (CompletedBlock.boundary carrier hole true
+      holeNegative).word ++
+    insideTail ++
+    dart outer (!outerNegative) ::
+    outsideTail
+
+/-- Negative-carrier target spelling. -/
+def negativeTargetWord {n : ℕ}
+    (outer carrier hole : Fin n)
+    (outerNegative holeNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  (CompletedBlock.boundary carrier hole true
+      holeNegative).word ++
+    dart outer outerNegative ::
+    insideTail ++
+    dart outer (!outerNegative) ::
+    outsideTail
+
+/-- Positive-carrier boundary-loop commuting is exactly one `LoopGrouping` rewrite between two
+cyclic rotations. -/
+theorem exists_positiveNormalizationEquivalent {n : ℕ}
+    (outer carrier hole : Fin n)
+    (outerNegative holeNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hcarrierHole : carrier ≠ hole)
+    (hcarrierOuter : carrier ≠ outer)
+    (hcarrierInside :
+      carrier ∉ insideTail.map edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉ outsideTail.map edgeOfDart)
+    (validSource :
+      (Dyck.oneFace
+        (sourceWord outer carrier hole outerNegative
+          holeNegative insideTail outsideTail)).IsSurfaceValid) :
+    ∃ validTarget :
+        (Dyck.oneFace
+          (targetWord outer carrier hole outerNegative
+            holeNegative insideTail outsideTail)).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (sourceWord outer carrier hole outerNegative
+            holeNegative insideTail outsideTail),
+          validSource⟩
+        ⟨Dyck.oneFace
+          (targetWord outer carrier hole outerNegative
+            holeNegative insideTail outsideTail),
+          validTarget⟩ := by
+  let loopBody := [dart hole holeNegative]
+  let separating :=
+    insideTail ++
+      [dart outer (!outerNegative)] ++ outsideTail
+  let moved := [dart outer outerNegative]
+  have hsourceRotated :
+      (sourceWord outer carrier hole outerNegative
+        holeNegative insideTail outsideTail).IsRotated
+        ((LoopGrouping.source carrier
+          loopBody separating moved).boundary 0) := by
+    simpa [sourceWord, loopBody, separating, moved,
+      CompletedBlock.word, boundaryLoopWord, dart,
+      LoopGrouping.source, Dyck.oneFace_boundary_zero,
+      List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l := [dart outer outerNegative])
+        (l' :=
+          [SignedDart.pos carrier,
+            dart hole holeNegative,
+            SignedDart.neg carrier] ++
+          insideTail ++
+          [dart outer (!outerNegative)] ++
+          outsideTail))
+  let sourceRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated hsourceRotated
+  let validLoopSource :
+      (LoopGrouping.source carrier
+        loopBody separating moved).IsSurfaceValid :=
+    sourceRotation.isSurfaceValid validSource
+  have htargetRotated :
+      (LoopGrouping.target carrier
+        loopBody separating moved).boundary 0 |>.IsRotated
+          (targetWord outer carrier hole outerNegative
+            holeNegative insideTail outsideTail) := by
+    simpa [targetWord, loopBody, separating, moved,
+      CompletedBlock.word, boundaryLoopWord, dart,
+      List.cons_append, List.append_assoc] using
+      (LoopGrouping.target_boundary_isRotated_grouped
+        carrier loopBody separating moved)
+  let targetRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated htargetRotated
+  have hperm :
+      ((sourceWord outer carrier hole outerNegative
+          holeNegative insideTail outsideTail).map
+        edgeOfDart).Perm
+        ((targetWord outer carrier hole outerNegative
+          holeNegative insideTail outsideTail).map
+        edgeOfDart) := by
+    rw [List.perm_iff_count]
+    intro edge
+    simp only [sourceWord, targetWord,
+      CompletedBlock.word, boundaryLoopWord,
+      List.map_cons, List.map_append,
+      edgeOfDart_dart, List.count_cons,
+      List.count_append]
+    omega
+  let validTarget :
+      (Dyck.oneFace
+        (targetWord outer carrier hole outerNegative
+          holeNegative insideTail outsideTail)).IsSurfaceValid :=
+    Dyck.oneFace_isSurfaceValid_of_edgePerm hperm validSource
+  let validLoopTarget :
+      (LoopGrouping.target carrier
+        loopBody separating moved).IsSurfaceValid :=
+    targetRotation.symm.isSurfaceValid validTarget
+  have hcarrierBody :
+      carrier ∉ loopBody.map edgeOfDart := by
+    simp [loopBody, hcarrierHole]
+  have hcarrierSeparating :
+      carrier ∉ separating.map edgeOfDart := by
+    simp [separating, hcarrierInside,
+      hcarrierOuter, hcarrierOutside]
+  have hcarrierMoved :
+      carrier ∉ moved.map edgeOfDart := by
+    simp [moved, hcarrierOuter]
+  have hgroup :=
+    LoopGrouping.normalizationEquivalent carrier
+      loopBody separating moved
+      hcarrierBody hcarrierSeparating hcarrierMoved
+      validLoopSource validLoopTarget
+  exact
+    ⟨validTarget,
+      (NormalizationEquivalent.ofSignedIso sourceRotation).trans
+        (hgroup.trans
+          (NormalizationEquivalent.ofSignedIso targetRotation))⟩
+
+/-- Reversing only the loop carrier identifies the negative and positive source spellings. -/
+def negativeSourceSignedIso {n : ℕ}
+    (outer carrier hole : Fin n)
+    (outerNegative holeNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hcarrierHole : carrier ≠ hole)
+    (hcarrierOuter : carrier ≠ outer)
+    (hcarrierInside :
+      carrier ∉ insideTail.map edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉ outsideTail.map edgeOfDart) :
+    SignedPresentationIso
+      (Dyck.oneFace
+        (negativeSourceWord outer carrier hole
+          outerNegative holeNegative insideTail outsideTail))
+      (Dyck.oneFace
+        (sourceWord outer carrier hole
+          outerNegative holeNegative insideTail outsideTail)) where
+  edgeRelabeling := Dyck.reverseEdgeRelabeling carrier
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    have houterMap (orientation : Bool) :
+        (Dyck.reverseEdgeRelabeling carrier).mapDart
+            (dart outer orientation) =
+          dart outer orientation := by
+      have houterCarrier : outer ≠ carrier :=
+        hcarrierOuter.symm
+      cases orientation <;>
+        simp [dart, Dyck.reverseEdgeRelabeling,
+          EdgeRelabeling.mapDart, houterCarrier]
+    have hholeMap :
+        (Dyck.reverseEdgeRelabeling carrier).mapDart
+            (dart hole holeNegative) =
+          dart hole holeNegative := by
+      have hholeCarrier : hole ≠ carrier :=
+        hcarrierHole.symm
+      cases holeNegative <;>
+        simp [dart, Dyck.reverseEdgeRelabeling,
+          EdgeRelabeling.mapDart, hholeCarrier]
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [negativeSourceWord, sourceWord,
+      CompletedBlock.word, boundaryLoopWord,
+      List.map_cons, List.map_append]
+    rw [Dyck.reverseEdgeRelabeling_word carrier
+        insideTail hcarrierInside,
+      Dyck.reverseEdgeRelabeling_word carrier
+        outsideTail hcarrierOutside,
+      houterMap outerNegative,
+      houterMap (!outerNegative), hholeMap]
+    simp only [dart, Bool.not_true, Bool.not_false,
+      Dyck.reverseEdgeRelabeling_neg,
+      Dyck.reverseEdgeRelabeling_pos,
+      List.map_nil]
+    exact List.IsRotated.refl _
+
+/-- Reversing only the loop carrier identifies the negative and positive target spellings. -/
+def negativeTargetSignedIso {n : ℕ}
+    (outer carrier hole : Fin n)
+    (outerNegative holeNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hcarrierHole : carrier ≠ hole)
+    (hcarrierOuter : carrier ≠ outer)
+    (hcarrierInside :
+      carrier ∉ insideTail.map edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉ outsideTail.map edgeOfDart) :
+    SignedPresentationIso
+      (Dyck.oneFace
+        (negativeTargetWord outer carrier hole
+          outerNegative holeNegative insideTail outsideTail))
+      (Dyck.oneFace
+        (targetWord outer carrier hole
+          outerNegative holeNegative insideTail outsideTail)) where
+  edgeRelabeling := Dyck.reverseEdgeRelabeling carrier
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    have houterMap (orientation : Bool) :
+        (Dyck.reverseEdgeRelabeling carrier).mapDart
+            (dart outer orientation) =
+          dart outer orientation := by
+      have houterCarrier : outer ≠ carrier :=
+        hcarrierOuter.symm
+      cases orientation <;>
+        simp [dart, Dyck.reverseEdgeRelabeling,
+          EdgeRelabeling.mapDart, houterCarrier]
+    have hholeMap :
+        (Dyck.reverseEdgeRelabeling carrier).mapDart
+            (dart hole holeNegative) =
+          dart hole holeNegative := by
+      have hholeCarrier : hole ≠ carrier :=
+        hcarrierHole.symm
+      cases holeNegative <;>
+        simp [dart, Dyck.reverseEdgeRelabeling,
+          EdgeRelabeling.mapDart, hholeCarrier]
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [negativeTargetWord, targetWord,
+      CompletedBlock.word, boundaryLoopWord,
+      List.map_cons, List.map_append]
+    rw [Dyck.reverseEdgeRelabeling_word carrier
+        insideTail hcarrierInside,
+      Dyck.reverseEdgeRelabeling_word carrier
+        outsideTail hcarrierOutside,
+      houterMap outerNegative,
+      houterMap (!outerNegative), hholeMap]
+    simp only [dart, Bool.not_true, Bool.not_false,
+      Dyck.reverseEdgeRelabeling_neg,
+      Dyck.reverseEdgeRelabeling_pos,
+      List.map_nil]
+    exact List.IsRotated.refl _
+
+/-- Negative-carrier boundary-loop commuting reduces to the positive theorem by a signed
+presentation isomorphism at each endpoint. -/
+theorem exists_negativeNormalizationEquivalent {n : ℕ}
+    (outer carrier hole : Fin n)
+    (outerNegative holeNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hcarrierHole : carrier ≠ hole)
+    (hcarrierOuter : carrier ≠ outer)
+    (hcarrierInside :
+      carrier ∉ insideTail.map edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉ outsideTail.map edgeOfDart)
+    (validSource :
+      (Dyck.oneFace
+        (negativeSourceWord outer carrier hole outerNegative
+          holeNegative insideTail outsideTail)).IsSurfaceValid) :
+    ∃ validTarget :
+        (Dyck.oneFace
+          (negativeTargetWord outer carrier hole outerNegative
+            holeNegative insideTail outsideTail)).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (negativeSourceWord outer carrier hole outerNegative
+            holeNegative insideTail outsideTail),
+          validSource⟩
+        ⟨Dyck.oneFace
+          (negativeTargetWord outer carrier hole outerNegative
+            holeNegative insideTail outsideTail),
+          validTarget⟩ := by
+  let sourceIso :=
+    negativeSourceSignedIso outer carrier hole
+      outerNegative holeNegative insideTail outsideTail
+      hcarrierHole hcarrierOuter
+      hcarrierInside hcarrierOutside
+  let validPositiveSource :
+      (Dyck.oneFace
+        (sourceWord outer carrier hole outerNegative
+          holeNegative insideTail outsideTail)).IsSurfaceValid :=
+    sourceIso.isSurfaceValid validSource
+  let positiveWitness :=
+    exists_positiveNormalizationEquivalent
+      outer carrier hole outerNegative holeNegative
+      insideTail outsideTail hcarrierHole hcarrierOuter
+      hcarrierInside hcarrierOutside validPositiveSource
+  let validPositiveTarget := Classical.choose positiveWitness
+  have hpositive := Classical.choose_spec positiveWitness
+  let targetIso :=
+    negativeTargetSignedIso outer carrier hole
+      outerNegative holeNegative insideTail outsideTail
+      hcarrierHole hcarrierOuter
+      hcarrierInside hcarrierOutside
+  let validTarget :
+      (Dyck.oneFace
+        (negativeTargetWord outer carrier hole outerNegative
+          holeNegative insideTail outsideTail)).IsSurfaceValid :=
+    targetIso.symm.isSurfaceValid validPositiveTarget
+  exact
+    ⟨validTarget,
+      (NormalizationEquivalent.ofSignedIso sourceIso).trans
+        (hpositive.trans
+          (NormalizationEquivalent.ofSignedIso targetIso).symm)⟩
+
+end BoundaryBlockCommute
+
 /-- One non-residual atom allowed in a classified marked execution state. -/
 inductive ProtectedAtom (n : ℕ)
   | boundary (hole : Fin n) (negative : Bool)
@@ -2519,6 +2865,15 @@ theorem AllClassified.of_isRotated {n : ℕ}
   intro token htoken
   exact classified token
     (rotated.perm.mem_iff.mpr htoken)
+
+theorem AllClassified.of_perm {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (classified : AllClassified tokens)
+    (permuted : tokens.Perm target) :
+    AllClassified target := by
+  intro token htoken
+  exact classified token
+    (permuted.mem_iff.mpr htoken)
 
 theorem AllClassified.of_append_left {n : ℕ}
     {left right : List (ReductionToken n)}
@@ -3221,6 +3576,32 @@ theorem IsSeparated.of_isRotated {n : ℕ}
         haResidual)
       ((protectedEdges_isRotated hrotated).perm.mem_iff.mpr
         haProtected)
+
+/-- Separation depends only on the multiset of atomic marked tokens. -/
+theorem IsSeparated.of_perm {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (separated : IsSeparated tokens)
+    (permuted : tokens.Perm target) :
+    IsSeparated target := by
+  have residualPerm :
+      (residualDarts tokens).Perm
+        (residualDarts target) := by
+    simpa [residualDarts, List.flatMap] using
+      (List.Perm.flatMap permuted
+        (f := residualWord) (g := residualWord)
+        (fun _ _ => List.Perm.refl _))
+  have protectedPerm :
+      (protectedEdges tokens).Perm
+        (protectedEdges target) := by
+    simpa [protectedEdges, List.flatMap] using
+      (List.Perm.flatMap permuted
+        (f := extractedEdges) (g := extractedEdges)
+        (fun _ _ => List.Perm.refl _))
+  rw [IsSeparated, List.disjoint_left]
+  intro edge hResidual hProtected
+  exact (List.disjoint_left.mp separated)
+    ((residualPerm.map edgeOfDart).mem_iff.mpr hResidual)
+    (protectedPerm.mem_iff.mpr hProtected)
 
 /-- A separated marked word cannot protect an edge that still occurs residually. -/
 theorem IsSeparated.not_mem_protected_of_mem_residual {n : ℕ}
@@ -4685,6 +5066,143 @@ theorem targetTokens_isSeparated {n : ℕ}
 
 end MarkedBoundaryClosure
 
+/-- A completed boundary-loop atom at the head of a protected residual-pair interval.  One
+`LoopGrouping` move commutes this atom out of that interval. -/
+structure MarkedBoundaryBlockCommute {n : ℕ}
+    (tokens : List (ReductionToken n)) where
+  outer : Fin n
+  carrier : Fin n
+  hole : Fin n
+  outerNegative : Bool
+  carrierNegative : Bool
+  holeNegative : Bool
+  insideTokens : List (ReductionToken n)
+  outsideTokens : List (ReductionToken n)
+  rotated :
+    tokens.IsRotated
+      (.residual (dart outer outerNegative) ::
+        .completed (.boundary carrier hole
+          carrierNegative holeNegative) ::
+        insideTokens ++
+        .residual (dart outer (!outerNegative)) ::
+        outsideTokens)
+  carrier_ne_hole : carrier ≠ hole
+  carrier_ne_outer : carrier ≠ outer
+  carrier_not_mem_inside :
+    carrier ∉
+      (ReductionToken.expand insideTokens).map edgeOfDart
+  carrier_not_mem_outside :
+    carrier ∉
+      (ReductionToken.expand outsideTokens).map edgeOfDart
+
+namespace MarkedBoundaryBlockCommute
+
+/-- Exact marked target after commuting the completed boundary loop out of the residual pair. -/
+def targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedBoundaryBlockCommute tokens) :
+    List (ReductionToken n) :=
+  .completed (.boundary commute.carrier commute.hole
+      commute.carrierNegative commute.holeNegative) ::
+    .residual (dart commute.outer commute.outerNegative) ::
+    commute.insideTokens ++
+    .residual (dart commute.outer
+      (!commute.outerNegative)) ::
+    commute.outsideTokens
+
+/-- The commute target merely permutes atomic marked tokens. -/
+theorem perm_targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedBoundaryBlockCommute tokens) :
+    tokens.Perm commute.targetTokens := by
+  apply commute.rotated.perm.trans
+  simpa [targetTokens] using
+    (List.Perm.swap
+      (.residual
+        (dart commute.outer commute.outerNegative))
+      (.completed
+        (.boundary commute.carrier commute.hole
+          commute.carrierNegative commute.holeNegative))
+      (commute.insideTokens ++
+        .residual
+          (dart commute.outer
+            (!commute.outerNegative)) ::
+        commute.outsideTokens)).symm
+
+/-- Expansion of the marked source has exactly the word-level boundary-block commute spelling. -/
+theorem expand_isRotated_sourceWord {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedBoundaryBlockCommute tokens) :
+    (ReductionToken.expand tokens).IsRotated
+      (if commute.carrierNegative then
+        BoundaryBlockCommute.negativeSourceWord
+          commute.outer commute.carrier commute.hole
+          commute.outerNegative commute.holeNegative
+          (ReductionToken.expand commute.insideTokens)
+          (ReductionToken.expand commute.outsideTokens)
+      else
+        BoundaryBlockCommute.sourceWord
+          commute.outer commute.carrier commute.hole
+          commute.outerNegative commute.holeNegative
+          (ReductionToken.expand commute.insideTokens)
+          (ReductionToken.expand commute.outsideTokens)) := by
+  have hexpanded :=
+    ReductionToken.expand_isRotated commute.rotated
+  cases hnegative : commute.carrierNegative <;>
+    simpa [hnegative, BoundaryBlockCommute.sourceWord,
+      BoundaryBlockCommute.negativeSourceWord,
+      ReductionToken.expand_cons,
+      ReductionToken.expand_append,
+      ReductionToken.word_residual,
+      ReductionToken.word_completed,
+      CompletedBlock.word, List.append_assoc] using
+      hexpanded
+
+/-- Expansion of the exact marked target is the word-level commute target. -/
+theorem expand_targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedBoundaryBlockCommute tokens) :
+    ReductionToken.expand commute.targetTokens =
+      if commute.carrierNegative then
+        BoundaryBlockCommute.negativeTargetWord
+          commute.outer commute.carrier commute.hole
+          commute.outerNegative commute.holeNegative
+          (ReductionToken.expand commute.insideTokens)
+          (ReductionToken.expand commute.outsideTokens)
+      else
+        BoundaryBlockCommute.targetWord
+          commute.outer commute.carrier commute.hole
+          commute.outerNegative commute.holeNegative
+          (ReductionToken.expand commute.insideTokens)
+          (ReductionToken.expand commute.outsideTokens) := by
+  cases hnegative : commute.carrierNegative <;>
+    simp [targetTokens, hnegative,
+      BoundaryBlockCommute.targetWord,
+      BoundaryBlockCommute.negativeTargetWord,
+      ReductionToken.expand_cons,
+      ReductionToken.expand_append,
+      ReductionToken.word_residual,
+      ReductionToken.word_completed,
+      CompletedBlock.word, List.append_assoc]
+
+/-- Boundary-block commuting preserves the separated namespace invariant. -/
+theorem targetTokens_isSeparated {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedBoundaryBlockCommute tokens)
+    (separated : ReductionToken.IsSeparated tokens) :
+    ReductionToken.IsSeparated commute.targetTokens :=
+  separated.of_perm commute.perm_targetTokens
+
+/-- Boundary-block commuting preserves the classified-token grammar. -/
+theorem targetTokens_allClassified {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedBoundaryBlockCommute tokens)
+    (classified : ReductionToken.AllClassified tokens) :
+    ReductionToken.AllClassified commute.targetTokens :=
+  classified.of_perm commute.perm_targetTokens
+
+end MarkedBoundaryBlockCommute
+
 namespace MarkedResidualCancellablePair
 
 /-- Under the classified-state invariant, the interval crossed by a lifted residual cancellation
@@ -4723,6 +5241,145 @@ def toBoundaryClosure {n : ℕ}
   tailTokens := pair.tailTokens
   rotated := by
     simpa [hbetween] using pair.rotated
+
+/-- A lifted residual pair whose protected interval begins with a completed boundary loop exposes
+the exact boundary-block commute transition. -/
+def toBoundaryBlockCommute {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier hole : Fin (n + 1))
+    (carrierNegative holeNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.boundary carrier hole
+          carrierNegative holeNegative) ::
+        insideTokens)
+    (hcarrierHole : carrier ≠ hole)
+    (hcarrierOuter : carrier ≠ pair.edge)
+    (hcarrierInside :
+      carrier ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart) :
+    MarkedBoundaryBlockCommute tokens where
+  outer := pair.edge
+  carrier := carrier
+  hole := hole
+  outerNegative := pair.negativeFirst
+  carrierNegative := carrierNegative
+  holeNegative := holeNegative
+  insideTokens := insideTokens
+  outsideTokens := pair.tailTokens
+  rotated := by
+    simpa [hbetween] using pair.rotated
+  carrier_ne_hole := hcarrierHole
+  carrier_ne_outer := hcarrierOuter
+  carrier_not_mem_inside := hcarrierInside
+  carrier_not_mem_outside := hcarrierOutside
+
+/-- Surface multiplicity supplies all freshness conditions needed to commute a completed
+boundary-loop atom at the head of a lifted residual-pair interval. -/
+noncomputable def toBoundaryBlockCommuteOfValid {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier hole : Fin (n + 1))
+    (carrierNegative holeNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.boundary carrier hole
+          carrierNegative holeNegative) ::
+        insideTokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    MarkedBoundaryBlockCommute tokens := by
+  let displayed :=
+    dart pair.edge pair.negativeFirst ::
+      (CompletedBlock.boundary carrier hole
+        carrierNegative holeNegative).word ++
+      ReductionToken.expand insideTokens ++
+      dart pair.edge (!pair.negativeFirst) ::
+      ReductionToken.expand pair.tailTokens
+  have hexpanded :
+      (ReductionToken.expand tokens).IsRotated displayed := by
+    have h :=
+      ReductionToken.expand_isRotated pair.rotated
+    rw [hbetween] at h
+    simpa [displayed, ReductionToken.expand_cons,
+      ReductionToken.expand_append,
+      ReductionToken.word_residual,
+      ReductionToken.word_completed,
+      List.append_assoc] using h
+  have hmultiplicity := valid.2.2.2 carrier
+  rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
+  have hcount :=
+    (hexpanded.map edgeOfDart).perm.count_eq carrier
+  have hdisplayedMultiplicity :
+      (displayed.map edgeOfDart).count carrier = 1 ∨
+        (displayed.map edgeOfDart).count carrier = 2 := by
+    omega
+  have hdisplayedLower :
+      2 ≤ (displayed.map edgeOfDart).count carrier := by
+    simp [displayed, CompletedBlock.word,
+      boundaryLoopWord, List.count_cons]
+    omega
+  have hdisplayed :
+      (displayed.map edgeOfDart).count carrier = 2 := by
+    omega
+  have hcarrierHole : carrier ≠ hole := by
+    intro heq
+    subst hole
+    simp [displayed, CompletedBlock.word,
+      boundaryLoopWord, List.count_cons] at hdisplayed
+    omega
+  have hcarrierOuter : carrier ≠ pair.edge := by
+    intro heq
+    subst carrier
+    simp [displayed, CompletedBlock.word,
+      boundaryLoopWord, List.count_cons] at hdisplayed
+  have hsum :
+      (displayed.map edgeOfDart).count carrier =
+        2 +
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count carrier +
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count carrier := by
+    simp [displayed, CompletedBlock.word,
+      boundaryLoopWord,
+      hcarrierHole.symm, hcarrierOuter.symm]
+    omega
+  have hcarrierInside :
+      carrier ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count carrier :=
+      List.count_pos_iff.mpr hmem
+    omega
+  have hcarrierOutside :
+      carrier ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count carrier :=
+      List.count_pos_iff.mpr hmem
+    omega
+  exact
+    pair.toBoundaryBlockCommute carrier hole
+      carrierNegative holeNegative insideTokens
+      hbetween hcarrierHole hcarrierOuter
+      hcarrierInside hcarrierOutside
 
 /-- Exhaustive local disposition of a lifted residual inverse pair.  The first two constructors
 are already executable.  The final constructor isolates the remaining contextual move: commuting
@@ -6094,6 +6751,175 @@ noncomputable def close {n : ℕ}
         NormalizationEquivalent.ofSignedIso rotation }
 
 end MarkedBoundaryClosure
+
+/-- Proof-producing commute of one completed boundary loop out of a contextual residual pair. -/
+structure MarkedBoundaryBlockCommuteResult {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedBoundaryBlockCommute tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    Type where
+  targetValid :
+    (Dyck.oneFace
+      (ReductionToken.expand commute.targetTokens)).IsSurfaceValid
+  targetSeparated :
+    ReductionToken.IsSeparated commute.targetTokens
+  targetClassified :
+    ReductionToken.AllClassified commute.targetTokens
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand commute.targetTokens),
+        targetValid⟩
+
+namespace MarkedBoundaryBlockCommute
+
+/-- Execute the contextual boundary-loop commute through the exact word-level `LoopGrouping`
+chain, supporting either orientation of the loop carrier. -/
+noncomputable def commute {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (step : MarkedBoundaryBlockCommute tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (classified : ReductionToken.AllClassified tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    MarkedBoundaryBlockCommuteResult step valid := by
+  cases hnegative : step.carrierNegative
+  · have hsource :
+        (ReductionToken.expand tokens).IsRotated
+          (BoundaryBlockCommute.sourceWord
+            step.outer step.carrier step.hole
+            step.outerNegative step.holeNegative
+            (ReductionToken.expand step.insideTokens)
+            (ReductionToken.expand step.outsideTokens)) := by
+      simpa [hnegative] using step.expand_isRotated_sourceWord
+    let sourceRotation :=
+      Dyck.oneFaceSignedIsoOfIsRotated hsource
+    let validSourceWord :
+        (Dyck.oneFace
+          (BoundaryBlockCommute.sourceWord
+            step.outer step.carrier step.hole
+            step.outerNegative step.holeNegative
+            (ReductionToken.expand step.insideTokens)
+            (ReductionToken.expand
+              step.outsideTokens))).IsSurfaceValid :=
+      sourceRotation.isSurfaceValid valid
+    let witness :=
+      BoundaryBlockCommute.exists_positiveNormalizationEquivalent
+        step.outer step.carrier step.hole
+        step.outerNegative step.holeNegative
+        (ReductionToken.expand step.insideTokens)
+        (ReductionToken.expand step.outsideTokens)
+        step.carrier_ne_hole step.carrier_ne_outer
+        step.carrier_not_mem_inside
+        step.carrier_not_mem_outside validSourceWord
+    let validTargetWord := Classical.choose witness
+    have hequivalentWord := Classical.choose_spec witness
+    have htarget :
+        ReductionToken.expand step.targetTokens =
+          BoundaryBlockCommute.targetWord
+            step.outer step.carrier step.hole
+            step.outerNegative step.holeNegative
+            (ReductionToken.expand step.insideTokens)
+            (ReductionToken.expand step.outsideTokens) := by
+      simpa [hnegative] using step.expand_targetTokens
+    have targetValid :
+        (Dyck.oneFace
+          (ReductionToken.expand
+            step.targetTokens)).IsSurfaceValid := by
+      rw [htarget]
+      exact validTargetWord
+    refine
+      { targetValid := targetValid
+        targetSeparated :=
+          step.targetTokens_isSeparated separated
+        targetClassified :=
+          step.targetTokens_allClassified classified
+        equivalent := ?_ }
+    have hrotation :
+        NormalizationEquivalent
+          ⟨Dyck.oneFace
+            (ReductionToken.expand tokens), valid⟩
+          ⟨Dyck.oneFace
+            (BoundaryBlockCommute.sourceWord
+              step.outer step.carrier step.hole
+              step.outerNegative step.holeNegative
+              (ReductionToken.expand step.insideTokens)
+              (ReductionToken.expand step.outsideTokens)),
+            validSourceWord⟩ :=
+      NormalizationEquivalent.ofSignedIso sourceRotation
+    have hchain := hrotation.trans hequivalentWord
+    simpa only [htarget] using hchain
+  · have hsource :
+        (ReductionToken.expand tokens).IsRotated
+          (BoundaryBlockCommute.negativeSourceWord
+            step.outer step.carrier step.hole
+            step.outerNegative step.holeNegative
+            (ReductionToken.expand step.insideTokens)
+            (ReductionToken.expand step.outsideTokens)) := by
+      simpa [hnegative] using step.expand_isRotated_sourceWord
+    let sourceRotation :=
+      Dyck.oneFaceSignedIsoOfIsRotated hsource
+    let validSourceWord :
+        (Dyck.oneFace
+          (BoundaryBlockCommute.negativeSourceWord
+            step.outer step.carrier step.hole
+            step.outerNegative step.holeNegative
+            (ReductionToken.expand step.insideTokens)
+            (ReductionToken.expand
+              step.outsideTokens))).IsSurfaceValid :=
+      sourceRotation.isSurfaceValid valid
+    let witness :=
+      BoundaryBlockCommute.exists_negativeNormalizationEquivalent
+        step.outer step.carrier step.hole
+        step.outerNegative step.holeNegative
+        (ReductionToken.expand step.insideTokens)
+        (ReductionToken.expand step.outsideTokens)
+        step.carrier_ne_hole step.carrier_ne_outer
+        step.carrier_not_mem_inside
+        step.carrier_not_mem_outside validSourceWord
+    let validTargetWord := Classical.choose witness
+    have hequivalentWord := Classical.choose_spec witness
+    have htarget :
+        ReductionToken.expand step.targetTokens =
+          BoundaryBlockCommute.negativeTargetWord
+            step.outer step.carrier step.hole
+            step.outerNegative step.holeNegative
+            (ReductionToken.expand step.insideTokens)
+            (ReductionToken.expand step.outsideTokens) := by
+      simpa [hnegative] using step.expand_targetTokens
+    have targetValid :
+        (Dyck.oneFace
+          (ReductionToken.expand
+            step.targetTokens)).IsSurfaceValid := by
+      rw [htarget]
+      exact validTargetWord
+    refine
+      { targetValid := targetValid
+        targetSeparated :=
+          step.targetTokens_isSeparated separated
+        targetClassified :=
+          step.targetTokens_allClassified classified
+        equivalent := ?_ }
+    have hrotation :
+        NormalizationEquivalent
+          ⟨Dyck.oneFace
+            (ReductionToken.expand tokens), valid⟩
+          ⟨Dyck.oneFace
+            (BoundaryBlockCommute.negativeSourceWord
+              step.outer step.carrier step.hole
+              step.outerNegative step.holeNegative
+              (ReductionToken.expand step.insideTokens)
+              (ReductionToken.expand step.outsideTokens)),
+            validSourceWord⟩ :=
+      NormalizationEquivalent.ofSignedIso sourceRotation
+    have hchain := hrotation.trans hequivalentWord
+    simpa only [htarget] using hchain
+
+end MarkedBoundaryBlockCommute
 
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
