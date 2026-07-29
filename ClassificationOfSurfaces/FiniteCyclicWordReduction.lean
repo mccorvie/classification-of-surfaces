@@ -6145,6 +6145,193 @@ noncomputable def toBoundaryBlockCommuteOfValid {n : ℕ}
       hbetween hcarrierHole hcarrierOuter
       hcarrierInside hcarrierOutside
 
+/-- A lifted residual pair whose protected interval begins with a completed crosscap exposes the
+exact contextual crosscap transition. -/
+def toCrosscapBlockCommute {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier : Fin (n + 1))
+    (carrierNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.crosscap carrier
+          carrierNegative) ::
+        insideTokens)
+    (hcarrierOuter : carrier ≠ pair.edge)
+    (hcarrierInside :
+      carrier ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart)
+    (hcarrierOutside :
+      carrier ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart)
+    (houterInside :
+      pair.edge ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart)
+    (houterOutside :
+      pair.edge ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart) :
+    MarkedCrosscapBlockCommute tokens where
+  outer := pair.edge
+  carrier := carrier
+  outerNegative := pair.negativeFirst
+  carrierNegative := carrierNegative
+  insideTokens := insideTokens
+  outsideTokens := pair.tailTokens
+  rotated := by
+    simpa [hbetween] using pair.rotated
+  carrier_ne_outer := hcarrierOuter
+  carrier_not_mem_inside := hcarrierInside
+  carrier_not_mem_outside := hcarrierOutside
+  outer_not_mem_inside := houterInside
+  outer_not_mem_outside := houterOutside
+
+/-- Surface multiplicity supplies every freshness condition needed for a contextual crosscap
+transition at the head of a lifted residual-pair interval. -/
+noncomputable def toCrosscapBlockCommuteOfValid {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier : Fin (n + 1))
+    (carrierNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.crosscap carrier
+          carrierNegative) ::
+        insideTokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    MarkedCrosscapBlockCommute tokens := by
+  let displayed :=
+    dart pair.edge pair.negativeFirst ::
+      (CompletedBlock.crosscap carrier
+        carrierNegative).word ++
+      ReductionToken.expand insideTokens ++
+      dart pair.edge (!pair.negativeFirst) ::
+      ReductionToken.expand pair.tailTokens
+  have hexpanded :
+      (ReductionToken.expand tokens).IsRotated
+        displayed := by
+    have h :=
+      ReductionToken.expand_isRotated pair.rotated
+    rw [hbetween] at h
+    simpa [displayed, ReductionToken.expand_cons,
+      ReductionToken.expand_append,
+      ReductionToken.word_residual,
+      ReductionToken.word_completed,
+      List.append_assoc] using h
+  have hvalidCount (edge : Fin (n + 1)) :
+      (displayed.map edgeOfDart).count edge = 1 ∨
+        (displayed.map edgeOfDart).count edge = 2 := by
+    have hmultiplicity := valid.2.2.2 edge
+    rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
+    have hcount :=
+      (hexpanded.map edgeOfDart).perm.count_eq
+        edge
+    omega
+  have hcarrierLower :
+      2 ≤
+        (displayed.map edgeOfDart).count
+          carrier := by
+    simp [displayed, CompletedBlock.word,
+      List.count_cons]
+    omega
+  have hcarrierCount :
+      (displayed.map edgeOfDart).count
+          carrier = 2 := by
+    have h := hvalidCount carrier
+    omega
+  have houterLower :
+      2 ≤
+        (displayed.map edgeOfDart).count
+          pair.edge := by
+    simp [displayed, CompletedBlock.word,
+      List.count_cons]
+    omega
+  have houterCount :
+      (displayed.map edgeOfDart).count
+          pair.edge = 2 := by
+    have h := hvalidCount pair.edge
+    omega
+  have hcarrierOuter : carrier ≠ pair.edge := by
+    intro heq
+    subst carrier
+    simp [displayed, CompletedBlock.word] at houterCount
+  have hcarrierSum :
+      (displayed.map edgeOfDart).count carrier =
+        2 +
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count carrier +
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count carrier := by
+    simp [displayed, CompletedBlock.word,
+      hcarrierOuter.symm]
+    omega
+  have houterSum :
+      (displayed.map edgeOfDart).count pair.edge =
+        2 +
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count pair.edge +
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count pair.edge := by
+    simp [displayed, CompletedBlock.word,
+      hcarrierOuter]
+    omega
+  have hcarrierInside :
+      carrier ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count carrier :=
+      List.count_pos_iff.mpr hmem
+    omega
+  have hcarrierOutside :
+      carrier ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count carrier :=
+      List.count_pos_iff.mpr hmem
+    omega
+  have houterInside :
+      pair.edge ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand insideTokens).map
+            edgeOfDart).count pair.edge :=
+      List.count_pos_iff.mpr hmem
+    omega
+  have houterOutside :
+      pair.edge ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart := by
+    intro hmem
+    have hpositive :
+        0 <
+          ((ReductionToken.expand pair.tailTokens).map
+            edgeOfDart).count pair.edge :=
+      List.count_pos_iff.mpr hmem
+    omega
+  exact
+    pair.toCrosscapBlockCommute carrier
+      carrierNegative insideTokens hbetween
+      hcarrierOuter hcarrierInside hcarrierOutside
+      houterInside houterOutside
+
 /-- Exhaustive local disposition of a lifted residual inverse pair.  The first two constructors
 are already executable.  The final constructor isolates the remaining contextual move: commuting
 a nontrivial protected interval out of the inverse pair before cancellation. -/
@@ -7684,6 +7871,107 @@ noncomputable def commute {n : ℕ}
     simpa only [htarget] using hchain
 
 end MarkedBoundaryBlockCommute
+
+/-- Proof-producing commute of one completed crosscap through a contextual residual pair. -/
+structure MarkedCrosscapBlockCommuteResult {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedCrosscapBlockCommute tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    Type where
+  targetValid :
+    (Dyck.oneFace
+      (ReductionToken.expand commute.targetTokens)).IsSurfaceValid
+  targetSeparated :
+    ReductionToken.IsSeparated commute.targetTokens
+  targetClassified :
+    ReductionToken.AllClassified commute.targetTokens
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand commute.targetTokens),
+        targetValid⟩
+
+namespace MarkedCrosscapBlockCommute
+
+/-- Execute contextual crosscap commuting through the exact two-crosscap word chain. -/
+noncomputable def commute {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (step : MarkedCrosscapBlockCommute tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (classified : ReductionToken.AllClassified tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    MarkedCrosscapBlockCommuteResult step valid := by
+  let sourceRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      step.expand_isRotated_sourceWord
+  let validSourceWord :
+      (Dyck.oneFace
+        (CrosscapBlockCommute.sourceWord
+          step.outer step.carrier
+          step.outerNegative step.carrierNegative
+          (ReductionToken.expand step.insideTokens)
+          (ReductionToken.expand
+            step.outsideTokens))).IsSurfaceValid :=
+    sourceRotation.isSurfaceValid valid
+  let witness :=
+    CrosscapBlockCommute.exists_normalizationEquivalent
+      step.outer step.carrier
+      step.outerNegative step.carrierNegative
+      (ReductionToken.expand step.insideTokens)
+      (ReductionToken.expand step.outsideTokens)
+      step.carrier_ne_outer
+      step.carrier_not_mem_inside
+      step.carrier_not_mem_outside
+      step.outer_not_mem_inside
+      step.outer_not_mem_outside
+      validSourceWord
+  let validTargetWord := Classical.choose witness
+  have hequivalentWord :=
+    Classical.choose_spec witness
+  have htarget :
+      ReductionToken.expand step.targetTokens =
+        CrosscapBlockCommute.targetWord
+          step.outer step.carrier
+          step.outerNegative step.carrierNegative
+          (ReductionToken.expand step.insideTokens)
+          (ReductionToken.expand
+            step.outsideTokens) :=
+    step.expand_targetTokens
+  have targetValid :
+      (Dyck.oneFace
+        (ReductionToken.expand
+          step.targetTokens)).IsSurfaceValid := by
+    rw [htarget]
+    exact validTargetWord
+  refine
+    { targetValid := targetValid
+      targetSeparated :=
+        step.targetTokens_isSeparated separated
+      targetClassified :=
+        step.targetTokens_allClassified classified
+      equivalent := ?_ }
+  have hrotation :
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (ReductionToken.expand tokens), valid⟩
+        ⟨Dyck.oneFace
+          (CrosscapBlockCommute.sourceWord
+            step.outer step.carrier
+            step.outerNegative step.carrierNegative
+            (ReductionToken.expand step.insideTokens)
+            (ReductionToken.expand
+              step.outsideTokens)),
+          validSourceWord⟩ :=
+    NormalizationEquivalent.ofSignedIso sourceRotation
+  have hchain := hrotation.trans hequivalentWord
+  simpa only [htarget] using hchain
+
+end MarkedCrosscapBlockCommute
 
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
