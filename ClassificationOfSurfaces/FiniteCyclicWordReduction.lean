@@ -593,6 +593,14 @@ theorem edgeOfDart_dart {α : Type*} (a : α) (negative : Bool) :
   cases negative <;> rfl
 
 @[simp]
+theorem edgeOfDart_pos {α : Type*} (a : α) :
+    edgeOfDart (.pos a) = a := rfl
+
+@[simp]
+theorem edgeOfDart_neg {α : Type*} (a : α) :
+    edgeOfDart (.neg a) = a := rfl
+
+@[simp]
 theorem dart_edgeOfDart_dartNegative {α : Type*}
     (d : SignedDart α) :
     dart (edgeOfDart d) (dartNegative d) = d := by
@@ -1056,6 +1064,130 @@ inductive ActionablePairReductionFeature {n : ℕ}
   | boundary (a : Fin n) (form : BoundaryOccurrenceForm word a)
   | crosscap (a : Fin n) (form : CrosscapOccurrenceForm word a)
   | handle (a b : Fin n) (form : InterleavedOccurrenceForm word a b)
+
+namespace ActionablePairReductionFeature
+
+/-- Delete the darts of the extracted block, retaining the exact residual order produced by the
+proof-generating rewrite endpoint. -/
+def residualWord {n : ℕ} {word : List (SignedDart (Fin n))} :
+    ActionablePairReductionFeature word →
+      List (SignedDart (Fin n))
+  | .boundary _ form =>
+      form.remainder
+  | .crosscap _ form =>
+      inverseWord form.remainder ++ form.between
+  | .handle _ _ form =>
+      form.remainder ++ form.beforeOutsideB ++
+        form.beforeNegA ++ form.beforeB
+
+/-- Every actionable extraction strictly shortens its residual word. -/
+theorem residualWord_length_lt {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word) :
+    feature.residualWord.length < word.length := by
+  cases feature with
+  | boundary a form =>
+      have hlength := form.rotated.perm.length_eq
+      simp only [residualWord, List.length_cons] at hlength ⊢
+      omega
+  | crosscap a form =>
+      have hlength := form.rotated.perm.length_eq
+      simp only [residualWord, List.length_append,
+        inverseWord_length, List.length_cons] at hlength ⊢
+      omega
+  | handle a b form =>
+      have hlength := form.rotated.perm.length_eq
+      simp only [residualWord, List.length_append,
+        List.length_cons] at hlength ⊢
+      omega
+
+/-- Counts of every edge still used by the residual word agree with their counts in the source
+word. -/
+theorem count_residualWord_of_mem {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word)
+    (e : Fin n)
+    (he : e ∈ feature.residualWord.map edgeOfDart) :
+    (word.map edgeOfDart).count e =
+      (feature.residualWord.map edgeOfDart).count e := by
+  cases feature with
+  | boundary a form =>
+      have hae : a ≠ e := by
+        intro h
+        subst e
+        exact form.edge_not_mem_remainder he
+      have hcount :=
+        (form.rotated.map edgeOfDart).perm.count_eq e
+      simp only [residualWord, List.map_cons,
+        edgeOfDart_dart, List.count_cons] at hcount ⊢
+      simp [hae] at hcount
+      exact hcount
+  | crosscap a form =>
+      have haResidual :
+          a ∉ (inverseWord form.remainder ++
+            form.between).map edgeOfDart := by
+        simp [map_edgeOfDart_inverseWord,
+          form.edge_not_mem_remainder,
+          form.edge_not_mem_between]
+      have hae : a ≠ e := by
+        intro h
+        subst e
+        exact haResidual he
+      have hcount :=
+        (form.rotated.map edgeOfDart).perm.count_eq e
+      simp only [residualWord, List.map_cons, List.map_append,
+        edgeOfDart_dart, List.count_cons,
+        List.count_append] at hcount ⊢
+      rw [map_edgeOfDart_inverseWord, List.count_reverse]
+      simp [hae] at hcount
+      omega
+  | handle a b form =>
+      have haResidual :
+          a ∉ (form.remainder ++ form.beforeOutsideB ++
+            form.beforeNegA ++ form.beforeB).map edgeOfDart := by
+        simp [form.a_not_mem_remainder,
+          form.a_not_mem_beforeOutsideB,
+          form.a_not_mem_beforeNegA,
+          form.a_not_mem_beforeB]
+      have hbResidual :
+          b ∉ (form.remainder ++ form.beforeOutsideB ++
+            form.beforeNegA ++ form.beforeB).map edgeOfDart := by
+        simp [form.b_not_mem_remainder,
+          form.b_not_mem_beforeOutsideB,
+          form.b_not_mem_beforeNegA,
+          form.b_not_mem_beforeB]
+      have hae : a ≠ e := by
+        intro h
+        subst e
+        exact haResidual he
+      have hbe : b ≠ e := by
+        intro h
+        subst e
+        exact hbResidual he
+      have hcount :=
+        (form.rotated.map edgeOfDart).perm.count_eq e
+      simp only [residualWord, List.map_cons, List.map_append,
+        edgeOfDart_pos, edgeOfDart_neg, edgeOfDart_dart,
+        List.count_cons,
+        List.count_append] at hcount ⊢
+      simp [hae, hbe] at hcount
+      omega
+
+/-- Used-edge surface multiplicities survive deletion of an extracted block. -/
+theorem hasValidUsedMultiplicities_residualWord {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word)
+    (multiplicities : HasValidUsedMultiplicities word) :
+    HasValidUsedMultiplicities feature.residualWord := by
+  intro e he
+  rw [← feature.count_residualWord_of_mem e he]
+  apply multiplicities e
+  exact List.count_pos_iff.mp
+    (by
+      rw [feature.count_residualWord_of_mem e he]
+      exact List.count_pos_iff.mpr he)
+
+end ActionablePairReductionFeature
 
 /-- One descent step from a directed opposite arc: either an immediately extractable feature,
 or a strictly shorter opposite arc nested inside it. -/
