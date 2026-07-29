@@ -27,11 +27,11 @@ Contents:
 * non-examples: `ℝ` and `ℚ` admit no geometric triangulation;
 * vacuity probes: empty face families and one-point vertex types cannot triangulate a nonempty
   space;
-* an executable witness showing why the legacy triangulation/cell-presentation bridge remains in
-  the weakness ledger;
+* an executable witness showing why an arbitrary finite triangulation record is not itself a
+  certified cell presentation;
 * cell-complex non-examples: an unused dart orbit and disconnected face systems;
 * a record of the vacuity failure of the retiring `SurfaceTriangulable` predicate, kept as
-  documentation of why `GeometricTriangulation` replaces it (see `docs/KNOWN_WEAK.md`).
+  documentation of why `GeometricTriangulation` replaces it.
 -/
 
 namespace LeanEval
@@ -202,11 +202,9 @@ def disconnectedBoundaryFaces : SurfaceCellComplex where
   Face := Bool
   Dart := SurfaceCellComplex.SignedDart Bool
   Vertex := PUnit
-  realization := PUnit
   faceFintype := inferInstance
   dartFintype := inferInstance
   vertexFintype := inferInstance
-  realizationTop := inferInstance
   inv := SurfaceCellComplex.SignedDart.flipEquiv Bool
   source := fun _ => PUnit.unit
   target := fun _ => PUnit.unit

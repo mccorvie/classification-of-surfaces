@@ -1,10 +1,8 @@
 # Architecture
 
 This is the short human summary of the project. For the authoritative Lean declarations, read
-`ClassificationOfSurfaces/API.lean`. **For the triangulation route (the `Moise/` directory),
-read `docs/MOISE_ROUTE.md` — it supersedes the deleted `codex_strategy_moise_pl.md` and any PL-route
-description below, which refer to the retired `PL.lean` layer (see `docs/KNOWN_WEAK.md`).**
-For the proof dependency graph, read `blueprint/src/content.tex`.
+`ClassificationOfSurfaces/API.lean`. For the theorem-by-theorem dependency graph and the
+mathematical proof narrative, read `blueprint/src/content.tex`.
 
 ## Target
 
@@ -12,11 +10,10 @@ The Lean Eval theorem says that every compact connected Hausdorff topological 2-
 boundary is homeomorphic to the sphere, an orientable normal-form quotient, or a non-orientable
 normal-form quotient.
 
-## Main Split
+## Proof Structure
 
 The completed topological route produces a faithful geometric triangulation. The classification
-tail passes through exact finite cyclic boundary words, not through the arbitrary stored
-realization of the legacy cell-complex scaffold:
+tail passes through exact finite cyclic boundary words and their computed polygonal realization:
 
 ```text
 GeometricTriangulation
@@ -30,7 +27,7 @@ The combinatorial normalization and polygonal realization are separate proof lay
 theorem assembles their homeomorphisms with the geometric-triangulation realization
 bridge.
 
-## Current Baseline
+## Completed Proof
 
 The repository builds. On the triangulation side, the Moise/Radó chain is complete end-to-end for
 compact connected Eval surfaces, including manifolds with boundary:
@@ -43,12 +40,11 @@ moise_triangulation :
 The relative polygonal replacement preserves the ambient boundary stratum exactly, and the
 exposed-boundary-face invariant is carried through affine subdivision, common relabeling, and
 gluing.  The former C0 chart-boundary hypothesis itself is discharged by planar no-retraction,
-Brouwer's fixed-point theorem, and invariance of domain.  See `docs/MOISE_ROUTE.md` for the live
-status and `docs/RADO_AUDIT.md` for the definition-faithfulness audit.
+Brouwer's fixed-point theorem, and invariance of domain. Executable semantic anchors in
+`Moise/Anchors.lean` and `Moise/Countermodels.lean` guard the definitions against vacuous
+realizations.
 
-The legacy stored `SurfaceCellComplex.Realization` and its `Equivalent` relation remain placeholder
-scaffolding pending structural cleanup (see `docs/KNOWN_WEAK.md`), but the public proof does not use
-them. The faithful polygonal quotient layer and the bottom API are complete:
+The faithful polygonal quotient layer and the bottom API are complete:
 
 - `EvalSurface` packages the Lean Eval hypotheses.
 - `ChartBoundaryInvariant` is the low-level chart-extraction interface; its unconditional C0
@@ -93,16 +89,13 @@ them. The faithful polygonal quotient layer and the bottom API are complete:
   four-rewrite Step 5 chain converting one crosscap plus one handle into three crosscaps, with an
   explicit final cyclic-order theorem.
 - `PolygonCell` and `PolygonGluing` provide all-arity disk cells with circular indexed boundary
-  arcs, generated side identifications, quotient topology, and quotient-congruence lemmas
-  independently of the still-placeholder `SurfaceCellComplex.Realization`.
+  arcs, generated side identifications, quotient topology, and quotient-congruence lemmas.
 - `SurfaceCellComplex.BoundaryOccurrence`, `BoundaryPairing`, and `PolygonalRealization` provide
-  an additive occurrence-indexed adapter to that quotient. Its pairing facts are derived from
+  an occurrence-indexed adapter to that quotient. Its pairing facts are derived from
   `IsSurfaceValid`, with nonempty face boundaries as the only polygon-specific extra condition.
   `mem_polygonalIdentifications_iff_exists_occurrences` exposes every compatible ordered pairing,
   and `oneFace_mem_polygonalIdentifications_iff` specializes it to two distinct finite positions
   in a one-face boundary word. Neither theorem chooses a unique matching.
-  The atomic realization cutover remains blocked on the certified triangulation-to-quotient
-  bridge. Straight-edged convex models remain separate work.
 - `FiniteSurfaceTriangulation.toCellComplex` preserves triangle faces, vertices, oriented edge
   darts, and oriented triangle boundary words; boundary status is then derived from occurrence
   multiplicity rather than copied from the triangulation's boundary flags.
@@ -119,12 +112,12 @@ them. The faithful polygonal quotient layer and the bottom API are complete:
   canonical endpoint and polygonal-realization equivalence.
 - Boundary-word examples for the disk, annulus, torus, projective plane, and Mobius strip have
   incidence- and occurrence-validity witnesses. The annulus now uses the length-six, two-contour
-  word.
-  Homeomorphisms identifying these polygonal quotients with the named surfaces remain future work.
+  word. These are combinatorial regression examples; the classification theorem uses the
+  parametric canonical representatives below.
 - `NormalForm.orientableBoundaryWord` and `.nonOrientableBoundaryWord` give the canonical
   parametric families matching the vendored Eval relations. Their lengths, edge multiplicities,
-  incidence validity, connectivity, and admissible occurrence pairings are certified without
-  consuming the arbitrary stored realization. Forward maps and exact getters locate the entries
+  incidence validity, connectivity, and admissible occurrence pairings are certified
+  combinatorially. Forward maps and exact getters locate the entries
   of each named handle, crosscap, and boundary block. Every directed identification in either word
   is classified as the expected handle, crosscap, or boundary-seam pairing in either order, while
   singleton free-boundary sides are excluded.
@@ -139,16 +132,14 @@ them. The faithful polygonal quotient layer and the bottom API are complete:
   orientable, and nonorientable canonical realization homeomorphisms. `classification_of_surfaces`
   transports those endpoints across the geometric bridge to the input surface.
 
-Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
-compatibility. New code should use the preferred names above.
-
 ## File Map
 
-- `ClassificationOfSurfaces/API.lean`: public API map and collaborator entry point.
+- `ClassificationOfSurfaces/API.lean`: public API map and preferred code entry point.
 - `ClassificationOfSurfaces/Surface.lean`: Eval hypothesis wrapper.
-- `ClassificationOfSurfaces/Moise/`: the triangulation route (see `docs/MOISE_ROUTE.md`).
-- `ClassificationOfSurfaces/Triangulation.lean`: legacy triangulation interface, fed by the
-  `GeometricTriangulation` bridge.
+- `ClassificationOfSurfaces/Moise/`: the geometric triangulation theorem and its supporting
+  polygonal/PL development.
+- `ClassificationOfSurfaces/Triangulation.lean`: finite triangulation incidence package fed by
+  the `GeometricTriangulation` bridge.
 - `ClassificationOfSurfaces/CellComplex.lean`: shared finite surface cell-complex API.
 - `ClassificationOfSurfaces/CanonicalWords.lean`: certified canonical normal-form words and
   one-face incidence presentations.
@@ -190,9 +181,3 @@ compatibility. New code should use the preferred names above.
 - `ClassificationOfSurfaces/LeanEval/SpecAudit.lean`: compile-time check that the public theorem
   has the exact Lean-Eval conclusion over the vendored constants.
 - `ClassificationOfSurfaces/Examples.lean`: small regression examples.
-
-## Next Tasks
-
-The classification proof is complete. The remaining follow-up is structural cleanup: remove the
-unused legacy stored realization fields and compatibility aliases without changing the faithful
-finite-cyclic public theorem path.

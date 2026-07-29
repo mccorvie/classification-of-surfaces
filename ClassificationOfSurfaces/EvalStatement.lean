@@ -34,21 +34,14 @@ theorem classification_of_surfaces (S : Type*) [TopologicalSpace S]
     compact_eval_surface_finiteCyclicPresentation_isConnected S
   rcases compact_eval_surface_polygonalRealization_homeomorphic_surface S with
     ⟨hPS⟩
-  rcases P.hasEvalRepresentative validP connectedP with hP | hP
-  · rcases hP with ⟨hPR⟩
+  rcases P.hasEvalRepresentative validP connectedP with hP | ⟨p, n, hP⟩
+  · obtain ⟨hPR⟩ := hP
     exact Or.inl ⟨hPS.symm.trans hPR⟩
-  · rcases hP with ⟨p, n, hP⟩
-    right
-    refine ⟨p, n, ?_⟩
-    rcases hP with hP | hP
-    · left
-      rcases hP with ⟨hpn, hPR⟩
-      rcases hPR with ⟨hPR⟩
-      exact ⟨hpn, ⟨hPS.symm.trans hPR⟩⟩
-    · right
-      rcases hP with ⟨hp, hPR⟩
-      rcases hPR with ⟨hPR⟩
-      exact ⟨hp, ⟨hPS.symm.trans hPR⟩⟩
+  · rcases hP with hP | hP
+    · obtain ⟨hpn, ⟨hPR⟩⟩ := hP
+      exact Or.inr ⟨p, n, Or.inl ⟨hpn, ⟨hPS.symm.trans hPR⟩⟩⟩
+    · obtain ⟨hp, ⟨hPR⟩⟩ := hP
+      exact Or.inr ⟨p, n, Or.inr ⟨hp, ⟨hPS.symm.trans hPR⟩⟩⟩
 
 /-- Blueprint-facing spelling of `classification_of_surfaces`. -/
 theorem topological_classification_of_surfaces (S : Type*) [TopologicalSpace S]

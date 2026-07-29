@@ -1,42 +1,28 @@
 # Design Decisions
 
-This file records project-level design decisions and open design questions. It is intentionally
-shorter and more stable than `docs/MOISE_ROUTE.md`: use this file to see what choices are
-accepted, provisional, or still open before building new code on top of them.
+This file records the stable project-level design choices embodied by the completed proof.
 
-Not every item in this file is decided. The `Active Decisions` section records choices the current
-code and docs assume; the `Open Decisions` section records questions that still need resolution.
-
-## Active Decisions
+## Decisions
 
 ### D1. Main Interface Between Topology and Combinatorics
 
-Decision: the intended meeting point is a theorem producing a `SurfaceCellComplex` whose realization is
-homeomorphic to the input surface.
+Decision: the topology/combinatorics meeting point is the finite-cyclic presentation computed from
+a faithful `GeometricTriangulation`, together with its polygonal realization:
 
 ```lean
-∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization)
+compact_eval_surface_polygonalRealization_homeomorphic_surface :
+  Nonempty (
+    (compact_eval_surface_finiteCyclicPresentation S).PolygonalRealization
+      (compact_eval_surface_finiteCyclicPresentation_isSurfaceValid S) ≃ₜ S)
 ```
 
-Reason: Gallier-Xu's normal-form proof works on cell complexes, not directly on arbitrary
-triangulations. Triangulations should be internal to the topology bridge.
+Reason: Gallier--Xu's normal-form proof consumes exact signed cyclic face words. The finite-cyclic
+presentation retains precisely that data, while its quotient is computed faithfully from the
+words rather than stored independently.
 
 Status: accepted.
 
-Preferred Lean name: `SurfaceCellComplex`. The older `CellComplex` name remains as a compatibility
-alias for early scaffold code and should not be used in new declarations.
-
-### D2. Direction of Development
-
-Decision: develop the combinatorial objects from the bottom first, while keeping the topology bridge
-as a named theorem boundary.
-
-Reason: top-down decomposition often fails when the bottom definitions do not match the high-level
-interfaces. Here the clean split is useful only if `SurfaceCellComplex` is the right concrete object.
-
-Status: accepted.
-
-### D3. Non-Homeomorphism of Normal Forms
+### D2. Non-Homeomorphism of Normal Forms
 
 Decision: non-homeomorphism/uniqueness of normal forms is out of the critical path for the Lean Eval
 statement.
@@ -47,7 +33,7 @@ existence-side arguments.
 
 Status: accepted.
 
-### D4. Derived Cell-Complex Validity and Connectivity
+### D3. Derived Cell-Complex Validity and Connectivity
 
 Decision: `SurfaceCellComplex` stores raw finite incidence data. Validity and connectedness are
 separate predicates derived from that data, following
@@ -63,17 +49,17 @@ where vertices are derived from the boundary words. Likewise, boundary-edge stat
 the derived predicate `IsBoundaryDart`, not a user-supplied label.
 
 Constructors return raw presentations; validity proofs are supplied separately when their inputs
-justify them. In particular, the legacy `FiniteSurfaceTriangulation.Valid` interface does not yet
-contain enough edge-multiplicity or connectivity data to prove that every `toCellComplex` result
-satisfies the new predicates.
+justify them. An arbitrary `FiniteSurfaceTriangulation` therefore needs an `IncidenceCertificate`
+before its `toCellComplex` result is known valid and connected. The geometric triangulation bridge
+constructs this certificate.
 
 Reason: stored `Prop` fields did not require either proposition to hold. Derived predicates expose
-the actual proof obligations and keep topological connectedness of the placeholder realization from
-being mistaken for combinatorial connectedness.
+the actual proof obligations and prevent topological connectedness from being mistaken for
+combinatorial connectedness.
 
 Status: accepted.
 
-### D5. Normalize Dart Names Before Gallier--Xu Rewrites
+### D4. Normalize Dart Names Before Gallier--Xu Rewrites
 
 Decision: take the quotient of `SurfaceCellComplex.Dart` by the inverse-dart relation, choose one
 orientation in each finite orbit, and relabel the orbits by `Fin`. This gives a lossless
@@ -89,86 +75,40 @@ presentation's original name type or its stored endpoint enrichment.
 
 Status: accepted.
 
-## Open Decisions
+### D5. Cyclic Words Are Lists with Explicit Rotation
 
-### O1. Cyclic Words
+Decision: store each face boundary as a list and express cyclic changes with explicit
+`List.IsRotated`-style relations, signed presentation isomorphisms, and normalization
+equivalences. Do not quotient the word type by rotation.
 
-Options:
+Reason: Gallier--Xu rewrites need concrete positions and getters. Explicit rotation preserves that
+computational access while allowing proofs to ignore the chosen starting point.
 
-- represent cyclic words as quotient types of lists under rotation;
-- represent them as lists plus a relation `CyclicPerm` used in theorem statements;
-- use a canonical rotation when labels have decidable order.
+### D6. Boundary Components Are Derived
 
-Current leaning: start with lists plus an explicit relation. Quotients may make rewriting painful too
-early.
+Decision: do not store boundary components in `SurfaceCellComplex`. Boundary darts are derived
+from occurrence multiplicity, while canonical normal forms carry the explicit numerical parameters
+required by the Eval statement.
 
-Status: open.
+Reason: this keeps the raw presentation minimal and prevents stored component labels from
+disagreeing with the boundary words.
 
-### O2. Boundary Components
+### D7. Realization of a Surface Cell Complex
 
-Options:
+Decision: compute topology as an occurrence-indexed quotient of a disjoint union of polygonal
+disks. `PolygonalQuotient.lean` supplies all-arity disk cells and generated side identifications;
+`CellComplexQuotient.lean` pairs boundary occurrences and defines
+`SurfaceCellComplex.PolygonalRealization`.
 
-- store boundary components explicitly in `SurfaceCellComplex`;
-- derive them from unmatched boundary cycles;
-- avoid boundary-component data until normal forms.
+Reason: occurrence pairing correctly handles repeated dart values, while circularly indexed cells
+keep monogons and digons nondegenerate. The exact Eval representatives are compared through
+generator maps between equivalence closures in `RepresentativeCarrier.lean`,
+`CanonicalCoordinates.lean`, and `CanonicalGeneratorMaps.lean`.
 
-Current leaning: derive when possible, but keep normal-form parameters explicit because the eval
-statement uses `p n`.
-
-Status: open.
-
-### O3. Realization of `SurfaceCellComplex`
-
-Options:
-
-- quotient of a disjoint union of polygonal disks;
-- quotient of abstract faces/edges/vertices with topology induced later;
-- bridge through finite CW complexes.
-
-Current leaning: use the generic quotient foundation in `PolygonalQuotient.lean`. It models an
-`n`-sided cell as a closed disk with `n` marked circular boundary arcs, so monogons and digons do
-not degenerate. Side identifications use either the identity parameter or the affine reversal
-`t ↦ 1 - t`, and their equivalence closure has the quotient topology. The required adapter must
-pair boundary *occurrences* rather than dart values. The additive adapter in
-`CellComplexQuotient.lean` now does so. Its unique-partner theorem derives the once-or-twice orbit
-condition and inverse-invariance of boundary status from `IsSurfaceValid`; only nonempty face
-boundaries remain adapter-specific. `SurfaceCellComplex.sphere` uses the required two-monogon
-presentation rather than a side-free disk. The standard examples satisfy both incidence and
-occurrence-level criteria, including the length-six annulus word. The next dependency is the
-certified triangulation-to-quotient bridge. This topological carrier does not by itself supply the
-straight-edged convex polygons requested for the explicit normal-form representatives. The public
-`OrientableRel` and `NonOrientableRel` names are fixed to the exact closed-unit-disk relations in
-the trusted Lean-Eval statement. The exact benchmark carrier is not duplicated:
-`RepresentativeCarrier.lean` forgets the `PolygonCell` wrapper, computes every marked-side
-coordinate, and bridges a raw `Quot` with the `Quotient` by its `Relation.EqvGen` setoid.
-Consequently the canonical comparison maps generators in both directions into the opposite
-equivalence closure; equality of raw generator relations is neither required nor generally right.
-`oneFace_mem_polygonalIdentifications_iff` replaces a compatible one-face pairing by two finite
-word positions with boundary-status and dart-equality conditions. `CanonicalWords.lean` supplies
-forward position maps and exact getters for every named handle, crosscap, and boundary block.
-`CanonicalPairings.lean` applies that interface to both canonical words and proves that every
-directed generator is exactly a handle, crosscap, or boundary-seam pairing, in one of its two
-orders; the once-occurring free boundary darts cannot generate an identification. These theorems
-classify the finite raw generator sets. `CanonicalCoordinates.lean` computes every carrier image,
-uses `Fin.rev` plus one-turn periodicity for boundary seams, and maps all five explicit pairing
-families into the corresponding trusted `EqvGen` closures. `CanonicalGeneratorMaps.lean` packages
-the exhaustive forward maps, maps every trusted constructor back to its named polygon pairing,
-and descends both comparisons to the exact Eval quotients.
-
-Status: resolved. The public proof uses the faithful finite-cyclic polygonal realization; the
-legacy stored realization remains only as structural cleanup. The canonical Eval-quotient
-comparison is implemented for every admissible orientable and nonorientable parameter pair.
-
-### O4. Topological Bridge Target
-
-Options:
-
-- project-specific finite triangulations;
-- mathlib classical CW complexes;
-- theorem-boundary triangulation directly to `SurfaceCellComplex`.
+### D8. Topological Bridge Target
 
 Decision: use `GeometricTriangulation.toFiniteCyclicPresentation` and
-`FiniteCyclicPresentation.PolygonalRealization` as the public bridge. The legacy
-`SurfaceCellComplex.Realization` is not part of the classification proof.
+`FiniteCyclicPresentation.PolygonalRealization` as the public topology/combinatorics bridge.
 
-Status: resolved.
+Reason: the finite-cyclic presentation retains exactly the signed boundary data used by
+normalization, and its realization is proved homeomorphic to the source geometric triangulation.

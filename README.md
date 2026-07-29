@@ -1,23 +1,19 @@
 # Classification of Compact Surfaces
 
-This repository is a collaborative Lean formalization project for the Lean Eval challenge
+This repository contains a Lean proof of the Lean Eval challenge
 `topological_classification_of_surfaces`.  [Link](https://lean-lang.org/eval/problems/topological_classification_of_surfaces/)
 
-Goal: prove that every compact connected Hausdorff topological 2-manifold with boundary is
+It proves that every compact connected Hausdorff topological 2-manifold with boundary is
 homeomorphic to the sphere, an orientable normal-form quotient, or a non-orientable normal-form
 quotient.
 
 ## Documents
 
-- `ClassificationOfSurfaces/API.lean`: public Lean API map and preferred collaborator entry point.
-- `docs/ARCHITECTURE.md`: concise architecture overview and current next tasks.
-- `docs/AUTOFORMALIZATION_GUIDE.md`: operating rules for human-plus-agent formalization work.
-- `docs/MOISE_ROUTE.md`: the completed triangulation route and handoff map.
-- `docs/RADO_AUDIT.md`: primary-source and executable definition-faithfulness audit.
-- `docs/KNOWN_WEAK.md`: weakness ledger (placeholder definitions; do not extend).
-- `blueprint/src/content.tex`: Lean blueprint, kept in sync with the repository state.
-- `docs/MATHLIB_SURVEY.md`: current mathlib starting points and gaps.
-- `docs/DESIGN_DECISIONS.md`: accepted decisions and still-open design questions.
+- `ClassificationOfSurfaces/API.lean`: public Lean API map and preferred code entry point.
+- `docs/ARCHITECTURE.md`: proof architecture and source-file map.
+- `docs/DESIGN_DECISIONS.md`: stable design choices behind the formalization.
+- `docs/AUTOFORMALIZATION_GUIDE.md`: definition-faithfulness and maintenance rules.
+- `blueprint/src/content.tex`: theorem-by-theorem proof blueprint.
 - `CONTRIBUTING.md`: collaboration workflow.
 
 ## Build
@@ -51,10 +47,10 @@ GeometricTriangulation
 
 The final theorem `classification_of_surfaces`, with blueprint-facing wrapper
 `topological_classification_of_surfaces`, is the composition of these faithful homeomorphisms.
-The legacy `SurfaceCellComplex.Realization`, `CellComplex`, and `FiniteTriangulation` scaffolding
-still compiles for compatibility but is not used by the public proof.
+`SurfaceCellComplex` now contains only finite incidence data; its former arbitrary realization
+fields and compatibility aliases have been removed.
 
-## Current Status
+## Result
 
 - The repository builds with `lake build`.
 - The bottom API has concrete finite combinatorial data:
@@ -71,5 +67,4 @@ still compiles for compatibility but is not used by the public proof.
   quotient.
 - The sphere, orientable, and nonorientable canonical presentations realize the exact vendored
   Lean-Eval representatives.
-- `classification_of_surfaces` composes this chain without using the legacy arbitrary stored
-  realization.
+- `classification_of_surfaces` composes this faithful chain directly.

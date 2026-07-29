@@ -1,27 +1,26 @@
 % !TEX root = web.tex
 % Lean blueprint for the classification-of-surfaces project.
 %
-% Faithfulness conventions (kept in sync with the repository state; see
-% docs/MOISE_ROUTE.md for the prose roadmap and docs/KNOWN_WEAK.md for the
-% weakness ledger):
+% Faithfulness conventions:
 %   * \lean{...} names are attached only to declarations that exist and compile;
 %   * \leanok on a statement means the Lean statement exists and compiles;
 %   * \leanok on a proof means the Lean proof of THAT declaration contains no
-%     sorry (transitive readiness is what the dependency graph displays);
-%   * planned declarations carry no \lean pointer and their proofs are marked
-%     \notready.
+%     sorry (transitive dependencies are displayed by the dependency graph).
 
-\chapter{The triangulation theorem: the Moise route}
+\chapter{The Moise--Rad\'o triangulation theorem}
 
 This chapter records a bordered extension of Rad\'o's triangulation theorem,
 following the induction in Moise, \emph{Geometric Topology in Dimensions 2
 and 3}, Ch.~8.  Moise states the theorem for $2$-manifolds in his
 boundary-free sense; the Lean route carries the construction through
 half-disk charts for the Eval statement.  Its inputs are the
-\emph{polygonal} Jordan and Schoenflies theorems (Ch.~2--3) and the PL
-approximation theorem (Ch.~5--6).  The full Jordan curve theorem (Ch.~4) and
-the full Schoenflies theorem (Ch.~9) are not on this route.  The Lean files
-live in \texttt{ClassificationOfSurfaces/Moise/}.
+\emph{polygonal} Jordan and Schoenflies theorems (Ch.~2--3) and the
+frontier-controlled, locally finite form of PL approximation (Ch.~5--6).
+The finite uniform PL approximation theorem is also recorded below, but the
+Rad\'o crossing step uses its adaptive controlled counterpart.  The full
+Jordan curve theorem (Ch.~4) and the full Schoenflies theorem (Ch.~9) are not
+on this route.  The Lean files live in
+\texttt{ClassificationOfSurfaces/Moise/}.
 
 \section{The Eval surface interface}
 
@@ -35,7 +34,9 @@ the chart's extended target.  At regularity $C^0$ this is proved from planar
 no-retraction, Brouwer's fixed-point theorem, and invariance of domain.  The
 typeclass keeps the low-level dependency modular, while
 \texttt{chartBoundaryInvariant\_of\_invarianceOfDomain} supplies it
-unconditionally.  Only this implication is used by the Rad\'o route.
+unconditionally.  This class records the boundary-to-frontier implication;
+the chart-extraction layer below combines it with the reverse any-chart
+characterization to obtain a boundary-faithful chart.
 \end{definition}
 
 \begin{definition}[Lean Eval compact surface with boundary]
@@ -288,6 +289,7 @@ two-dimensional plane complex.
 \end{theorem}
 
 \begin{proof}
+\leanok
 Place the compact closed region in a large triangle, subdivide that triangle
 successively by the finitely many affine lines through the polygon's edges, and
 retain the chambers on the bounded side of polygonal Jordan.  Each chamber
@@ -311,12 +313,14 @@ Combine \ref{moise:thm:region_polyhedron} with the realization bridge.
 \begin{theorem}[Schoenflies for polygons; Moise Ch.~3, Thm.~5]
 \label{moise:thm:polygonal_schoenflies}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.polygonal_schoenflies}
+\leanok
 \uses{moise:thm:polygonal_schoenflies_rel}
 Any two polygons in the plane are equivalent under a homeomorphism of the whole
 plane.
 \end{theorem}
 
 \begin{proof}
+\leanok
 Apply relative straightening to both polygons and compose the resulting maps
 with the affine ambient equivalence between the two target triangles.
 \end{proof}
@@ -324,6 +328,7 @@ with the affine ambient equivalence between the two target triangles.
 \begin{theorem}[Relative Schoenflies for polygons; Moise Ch.~3, Thm.~7]
 \label{moise:thm:polygonal_schoenflies_rel}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle.polygonal_schoenflies_rel}
+\leanok
 \uses{moise:thm:region_polyhedron}
 The straightening homeomorphism can be chosen supported in any prescribed open
 set containing the closed region: it sends the polygon to the frontier of a
@@ -331,6 +336,7 @@ triangle and is the identity outside the open set.
 \end{theorem}
 
 \begin{proof}
+\leanok
 Choose the homeomorphisms in Moise's Thm.~4 induction supported in the open
 set.
 \end{proof}
@@ -365,7 +371,8 @@ everything.
 
 \begin{theorem}[Cone extension; Moise Ch.~5, Thms.~3--6]
 \label{moise:thm:cone_extension}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_extension_of_triangle_boundary}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_extension_of_triangle_boundary,
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_extension_of_triangle_to_polygon_boundary}
 \leanok
 \uses{moise:def:pl_maps,moise:thm:polygonal_jordan}
 A map that is PL and injective on the frontier of a triangle, carrying it onto
@@ -374,13 +381,15 @@ triangles.
 \end{theorem}
 
 \begin{proof}
+\leanok
 Cone from an interior point: the extension is affine on each segment from the
 cone point to the boundary.
 \end{proof}
 
 \begin{theorem}[One-skeleton approximation; Moise Ch.~6, Thm.~2]
 \label{moise:thm:one_skeleton_approx}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_approximation_one_skeleton}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.PlaneComplex.exists_graph_PL_approximation_facewise,
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_approximation_one_skeleton}
 \leanok
 \uses{moise:def:pl_maps,moise:lem:broken_line_connected}
 An embedding of the support of a finite one-dimensional plane complex into the
@@ -389,6 +398,7 @@ all vertices.
 \end{theorem}
 
 \begin{proof}
+\leanok
 Subdivide finely, replace each small arc by a broken line in a small
 neighborhood (\ref{moise:lem:broken_line_connected}), keeping the broken lines
 disjoint except at shared endpoints.
@@ -396,13 +406,15 @@ disjoint except at shared endpoints.
 
 \begin{theorem}[PL approximation of embedded 2-manifolds; Moise Ch.~6, Thm.~3]
 \label{moise:thm:pl_approximation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_approximation_two_manifold}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_approximation_pure_two_complex,
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.pl_approximation_two_manifold}
 \leanok
 \uses{moise:thm:one_skeleton_approx,moise:thm:cone_extension,moise:thm:polygonal_schoenflies_rel}
 An embedding of the support of a finite combinatorial $2$-manifold-with-boundary
 into the plane can be $\varepsilon$-approximated by a PL embedding.  This is
 the single point of the whole route where dimension two is used (Moise's remark
-at the end of Ch.~8).
+at the end of Ch.~8).  This is the finite uniform theorem; the Rad\'o crossing
+step below uses the corresponding adaptive, frontier-controlled construction.
 \end{theorem}
 
 \begin{proof}
@@ -434,10 +446,11 @@ out by the model disk of radius one half.
 \leanok
 \uses{moise:def:moise_chart,moise:def:chart_boundary_invariant}
 A chart is boundary-faithful when disk charts contain no manifold-boundary
-points and half-disk charts send manifold-boundary points to the model edge
-line.  This is exactly what \ref{moise:def:chart_boundary_invariant} yields;
-the converse of the half-disk clause is not needed and is deliberately not part
-of this interface.
+points and half-disk charts send points to the model edge line \emph{if and
+only if} they lie in the manifold-boundary stratum.  The forward half-disk
+implication comes from \ref{moise:def:chart_boundary_invariant}; the reverse
+implication uses the any-chart characterization of boundary points and is used
+later to preserve the boundary line through controlled chart straightening.
 \end{definition}
 
 \begin{lemma}[Local chart extraction]
@@ -455,7 +468,9 @@ Take the preferred mathlib chart; a small ball (interior case) or relative
 half-ball (edge case) about the image point lies in the chart image, and the
 recentering homeomorphism $v\mapsto\varepsilon^{-1}(v-p)$ straightens it onto
 the standard model.  \ref{moise:def:chart_boundary_invariant} places boundary
-points on the frontier of the extended target, hence on the edge line.
+points on the frontier of the extended target, hence on the edge line; the
+any-chart boundary characterization supplies the converse edge-line
+implication.
 \end{proof}
 
 \begin{lemma}[Finite chart cover]
@@ -529,7 +544,10 @@ most half the old diameter; iterate.
 \uses{moise:lem:intrinsic_fine_subdivision}
 If a compact subset of a partial triangulation lies in an ambient open set,
 then it is carried by a finite face restriction of a faithful refinement whose
-support still lies in that open set.
+support still lies in that open set.  This is a useful finite collar theorem,
+but it is not used in the final crossing weld: frontier continuity there
+requires the adaptive construction whose mesh and approximation error vanish
+toward the overlap frontier.
 \end{lemma}
 
 \begin{proof}
@@ -541,13 +559,18 @@ subordinate to the open set.
 
 \begin{lemma}[Vanishing-error frontier glue]
 \label{moise:lem:frontier_glue}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.continuous_frontierGlue}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.continuous_frontierGlue,
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.continuous_frontierGlue_of_matches,
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.isEmbedding_frontierGlue_of_matches}
 \leanok
 If a continuous map is replaced on an open set by a continuous approximation
 whose error tends to zero at the frontier, the replacement and the unchanged
 map glue to a continuous global map.  Distance to the complement is strongly
 positive on compact subsets of the open set and gives a canonical
-frontier-vanishing control.
+frontier-vanishing control.  The topology-only
+\texttt{MatchesAtFrontier} form is the one used by the chart straightening,
+and injectivity plus cross-image disjointness upgrades the paste to an
+embedding.
 \end{lemma}
 
 \begin{proof}
@@ -555,6 +578,36 @@ frontier-vanishing control.
 At interior and exterior points continuity is local.  At a frontier point,
 combine the approximation bound with continuity of the unchanged map and the
 triangle inequality.
+\end{proof}
+
+\begin{theorem}[Frontier-controlled chart straightening]
+\label{moise:thm:controlled_chart_straightening}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.IntrinsicTwoComplex.RegionControlledAdaptiveComplex.exists_polygonalReplacement_of_comparison,
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation.exists_straightenedChartOpen,
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation.exists_straightenedChartAway,
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.PartialTriangulation.exists_boundaryPreservingStraightening}
+\leanok
+\uses{moise:def:boundary_faithful,moise:thm:cone_extension,
+  moise:thm:polygonal_schoenflies_rel,moise:lem:frontier_glue}
+On an open chart overlap, an adaptive locally finite subdivision supports a
+cellwise polygonal replacement within any strongly positive error control.
+Shrinking the control toward the overlap frontier makes the replacement match
+the old embedding there.  It stays in the permitted chart region, is disjoint
+from the unchanged outside image, and preserves the half-plane boundary
+stratum.  Consequently it pastes to a boundary-preserving embedding of the old
+intrinsic complex.
+\end{theorem}
+
+\begin{proof}
+\leanok
+Choose an adaptive open cover subordinate to the pointwise error and target
+region controls.  Polygonalize its locally finite one-skeleton, fill every
+face using the polygonal Schoenflies/cone-extension construction, and use the
+facewise comparison separation to obtain a compatible homeomorphism of
+supports.  The vanishing error gives
+\texttt{MatchesAtFrontier}; \ref{moise:lem:frontier_glue} then pastes the
+replacement to the unchanged embedding.  Boundary-face regularity and the
+coordinate-zero preservation theorem give the boundary-stratum equivalence.
 \end{proof}
 
 \begin{theorem}[Gluing along a common presentation; Moise Thm.~7.6]
@@ -581,7 +634,8 @@ a compact realization into a Hausdorff surface.
 \label{moise:thm:crossing_weld}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.Moise.MoiseChart.exists_crossing_weld}
 \leanok
-\uses{moise:def:rado_invariant,moise:def:boundary_faithful,moise:thm:pl_approximation,moise:lem:finite_compact_collar,moise:lem:frontier_glue}
+\uses{moise:def:rado_invariant,moise:def:boundary_faithful,
+  moise:thm:controlled_chart_straightening}
 In the genuine crossing case, the straightened old complex and the chart patch
 admit a common welded presentation: a common vertex type carrying both face
 families, embeddings agreeing exactly on the shared realization, the joint
@@ -642,7 +696,8 @@ normal forms. The Eval quotient relations now faithfully match the vendored
 closed-disc benchmark. The faithful cyclic-presentation normalization,
 elementary-move realization theorems, geometric quotient bridge, and canonical
 polygonal comparison with all three Eval representative families are complete.
-The public proof does not use the arbitrary legacy cell-complex realization.
+Surface cell complexes contain only finite incidence data; topology is computed
+by the polygonal quotient.
 
 \section{Cell complexes and the topological bridge}
 
@@ -650,41 +705,44 @@ The public proof does not use the arbitrary legacy cell-complex realization.
 \label{moise:def:surface_cell_complex}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex,
   LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.IsSurfaceValid,
-  LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.IsConnected,
-  LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Realization}
+  LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.IsConnected}
 \leanok
 A finite combinatorial presentation of a compact bordered surface by faces,
-oriented darts, pairing, and boundary words, with a realization space.
+oriented darts, pairing, and boundary words.
 Validity and connectedness are incidence-derived predicates rather than stored
-propositions.  \emph{Ledger note:} the realization is currently an arbitrary
-stored type; the final model should be the polygon-quotient realization.
+propositions. Its realization is the occurrence-indexed polygonal quotient
+defined below.
 \end{definition}
 
-\begin{definition}[Finite surface triangulation (legacy interface)]
+\begin{definition}[Finite surface triangulation incidence package]
 \label{moise:def:finite_surface_triangulation}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation, LeanEval.Topology.ClassificationOfSurfaces.GeometricTriangulation.toFiniteSurfaceTriangulation}
 \leanok
 \uses{moise:def:geometric_triangulation}
-The legacy triangulation package consumed by the cell-complex conversion.  Its
-content now comes exclusively from \ref{moise:def:geometric_triangulation}
-through the compatibility bridge; the legacy object itself is in the weakness
-ledger and should not be extended.
+The finite triangulation package consumed by the cell-complex conversion. In
+the classification proof its data comes from
+\ref{moise:def:geometric_triangulation}; the resulting incidence certificate
+proves that the converted presentation is valid and connected.
 \end{definition}
 
 \begin{definition}[Raw triangulation-to-cell-presentation bridge]
 \label{moise:def:triangulation_cell_complex}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex,
+  LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex_isSurfaceValid_of_incidenceCertificate,
+  LeanEval.Topology.ClassificationOfSurfaces.FiniteSurfaceTriangulation.toCellComplex_isConnected_of_incidenceCertificate}
 \leanok
 \uses{moise:def:finite_surface_triangulation,moise:def:surface_cell_complex}
 The compatibility bridge copies each triangle to a face and each edge to a
-signed dart, and retains the legacy stored realization.  It does not prove
-\texttt{IsSurfaceValid}, \texttt{IsConnected}, or agreement with the
-polygonal quotient realization.
+signed dart. With an incidence certificate it proves \texttt{IsSurfaceValid}
+and \texttt{IsConnected}; the public topological handoff instead proceeds
+directly through the finite-cyclic presentation.
 \end{definition}
 
 \begin{theorem}[Faithful polygonal-realization handoff]
 \label{moise:thm:compact_surface_cellulable}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_polygonalRealization_homeomorphic_surface}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.GeometricTriangulation.toFiniteCyclicPresentation,
+  LeanEval.Topology.ClassificationOfSurfaces.GeometricTriangulation.polygonalRealization_homeomorphic_of_surface,
+  LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_polygonalRealization_homeomorphic_surface}
 \leanok
 \uses{moise:def:eval_surface,moise:thm:moise_triangulation}
 The valid finite-cyclic presentation enumerated from the Rad\'o triangulation
@@ -704,13 +762,12 @@ geometric triangulation's homeomorphism to the surface.
 
 \begin{definition}[Polygonal pre-realization and gluing relation]
 \label{moise:def:gluing_relation}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.PreRealization, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.GluingRel}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PolygonGluing.PreRealization,
+  LeanEval.Topology.ClassificationOfSurfaces.PolygonGluing.Realization}
 \leanok
-\uses{moise:def:surface_cell_complex}
-\emph{Ledger note: placeholders.}  The pre-realization is currently the stored
-realization carrier and the gluing relation is the bottom relation.  The final
-model: disjoint union of standard polygons, glued by the affine identifications
-of paired boundary arcs.
+The pre-realization is the disjoint union of standard polygonal discs. The
+realization is its quotient by the equivalence relation generated by affine
+identifications of paired boundary arcs.
 \end{definition}
 
 \begin{definition}[Polygonal occurrence adapter]
@@ -726,12 +783,13 @@ a labelled side. The identification set consists of all ordered pairs of
 distinct non-boundary occurrences whose darts are equal or inverse according
 to the parameter direction. The polygonal realization is the quotient by the
 equivalence relation generated by those compatible pairings. This construction
-does not use the placeholder stored realization.
+is the topological realization of the finite incidence presentation.
 \end{definition}
 
 \begin{lemma}[Quotient congruence]
 \label{moise:lem:cell_realization_quotient_congr}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.realizationCongr, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.realizationCongrRight}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.PolygonGluing.realizationCongr,
+  LeanEval.Topology.ClassificationOfSurfaces.PolygonGluing.realizationCongrRight}
 \leanok
 \uses{moise:def:gluing_relation}
 A homeomorphism of pre-realizations carrying one gluing relation to the other
@@ -741,34 +799,36 @@ descends to the realizations (mathlib's
 
 \begin{proof}
 \leanok
-Currently trivial through the placeholder model; must be re-proved through the
-quotient model when \ref{moise:def:gluing_relation} is implemented.
+Apply mathlib's quotient-homeomorphism congruence to the two generated setoids.
 \end{proof}
 
-\begin{definition}[Elementary cell-complex moves]
+\begin{definition}[Elementary finite-cyclic moves]
 \label{moise:def:gx_elementary_moves}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.Equivalent}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.NormalizationEquivalent}
 \leanok
-\uses{moise:def:surface_cell_complex}
-\emph{Ledger note.}  The intended equivalence is generated by the Gallier--Xu
-elementary moves (edge subdivision, face splitting); the current Lean
-`Equivalent` is the placeholder ``homeomorphic realizations''.  The finite-cyclic
-P1 and P2 primitives are formalized, but their combined move closure and
-polygonal-realization preservation are not.
+\uses{moise:def:gluing_relation}
+The validity-bundled equivalence closure is generated by faithful
+Gallier--Xu subdivisions and unoriented presentation comparisons. The
+finite-cyclic P1 and P2 primitives implement edge subdivision and face
+splitting, up to signed presentation isomorphism.
 \end{definition}
 
 \begin{lemma}[Elementary moves preserve realization]
 \label{moise:lem:elementary_moves_preserve_realization}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.NormalizationEquivalent.polygonallyEquivalent}
+\leanok
 \uses{moise:def:gx_elementary_moves,moise:lem:cell_realization_quotient_congr}
 If $L$ is obtained from $K$ by one elementary Gallier--Xu move, then
-$|K|\cong|L|$.  (Not yet stated in Lean; blocked on the quotient realization
-model.)
+$|K|\cong|L|$.
 \end{lemma}
 
 \begin{proof}
-\notready
-Reparametrize the subdivided arc, or split one polygon into two along the new
-diagonal; descend by quotient congruence.
+\leanok
+The P1 realization theorem reparametrizes a subdivided boundary side.  The P2
+realization theorems split a polygon along the new diagonal, including the
+degenerate and exceptional sphere cases.  Signed presentation isomorphisms and
+independent face reversals act by quotient congruence.  Induction over
+\texttt{NormalizationEquivalent} composes these homeomorphisms.
 \end{proof}
 
 \section{Gallier--Xu normal-form reduction}
@@ -847,9 +907,8 @@ admissibility bounds the words are nonempty and have certified occurrence
 pairings for the polygonal quotient adapter. Forward block-position maps and
 exact \texttt{List.get} theorems locate every signed entry of each named
 handle, crosscap, and boundary block. They do not exhaust or classify an
-arbitrary finite position in either word. No claim is made here about the
-legacy stored realization; the sphere uses its separate two-monogon incidence
-presentation.
+arbitrary finite position in either word. The sphere uses its separate
+two-monogon incidence presentation.
 \end{definition}
 
 \begin{lemma}[Canonical nonorientable pairing classification]
@@ -952,8 +1011,7 @@ polygonal pairing.  Apply
 \lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.IsEvalAdmissible,
   LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.NormalizationResult}
 \leanok
-\uses{moise:def:eval_quotient_representatives,
-  moise:def:canonical_normal_form_complexes}
+\uses{moise:def:canonical_normal_form_complexes,moise:def:gx_elementary_moves}
 A normalization result records an admissible normal-form name and a
 validity-safe Gallier--Xu equivalence from the input finite-cyclic presentation
 to the single canonical presentation selected by that name.
@@ -964,8 +1022,7 @@ to the single canonical presentation selected by that name.
 \lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.exists_admissible_normalForm_polygonallyEquivalent}
 \leanok
 \uses{moise:def:normal_form_witness,moise:def:gx_elementary_moves,
-  moise:lem:elementary_moves_preserve_realization,
-  moise:lem:canonical_generator_comparison}
+  moise:lem:elementary_moves_preserve_realization}
 Every valid connected finite-cyclic surface presentation is polygonally
 equivalent to the canonical presentation of an admissible normal form.
 \end{theorem}
@@ -979,12 +1036,35 @@ polygonal realization, and the terminal word is signed-isomorphic to the
 existing canonical presentation.
 \end{proof}
 
+\begin{lemma}[Canonical endpoint realization homeomorphisms]
+\label{moise:lem:canonical_endpoint_realizations}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalSphereRealizationHomeomorph,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalOrientableRealizationHomeomorph,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalNonOrientableRealizationHomeomorph}
+\leanok
+\uses{moise:def:eval_quotient_representatives,
+  moise:def:canonical_normal_form_complexes,
+  moise:lem:canonical_generator_comparison}
+Each admissible canonical finite-cyclic presentation realizes the exact
+corresponding Eval target: the separate two-monogon presentation realizes the
+sphere, while the orientable and nonorientable one-face words realize the two
+vendored quotient relations.
+\end{lemma}
+
+\begin{proof}
+\leanok
+For the sphere, identify the two monogons with the two hemispheres and descend
+the boundary gluing.  For the other branches, enumerate the typed canonical
+one-face word and compose that quotient congruence with
+\ref{moise:lem:canonical_generator_comparison}.
+\end{proof}
+
 \begin{lemma}[Finite-cyclic presentation gives an Eval branch]
 \label{moise:lem:normal_form_witness_eval_branch}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.hasEvalRepresentative}
 \leanok
 \uses{moise:def:normal_form_witness,moise:thm:gx_normal_form,
-  moise:lem:canonical_generator_comparison}
+  moise:lem:canonical_endpoint_realizations}
 A valid connected finite-cyclic presentation realizes the sphere, an
 admissible orientable Eval quotient, or an admissible nonorientable Eval
 quotient.
@@ -1003,7 +1083,8 @@ supplies the positivity side conditions.
 \label{moise:thm:eval_classification_of_surfaces}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.classification_of_surfaces, LeanEval.Topology.ClassificationOfSurfaces.topological_classification_of_surfaces}
 \leanok
-\uses{moise:thm:compact_surface_cellulable,moise:thm:gx_normal_form,moise:lem:normal_form_witness_eval_branch}
+\uses{moise:thm:compact_surface_cellulable,
+  moise:lem:normal_form_witness_eval_branch}
 Every compact connected Hausdorff topological $2$-manifold with boundary in the
 Lean Eval sense is homeomorphic to the sphere representative or to one of the
 normal-form quotient spaces named in the Eval problem.

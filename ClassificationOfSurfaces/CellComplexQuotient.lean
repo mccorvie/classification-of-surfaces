@@ -18,12 +18,9 @@ inverse darts uses parameter reversal. `OccurrencePairingValid` combines the inc
 `IsSurfaceValid` predicate with the nonempty-boundary condition needed by the current polygon
 model. The public polygonal gluing relation requires a witness of this predicate.
 
-The definitions here are additive. `SurfaceCellComplex.Realization` still denotes the stored
-placeholder realization until the triangulation bridge can be cut over atomically.
 `SurfaceCellComplex.sphere` uses the explicit two-monogon presentation needed by this polygonal
 realization, and the standard one-face examples have occurrence-validity witnesses. The adapter
-now derives its orbit conditions from `IsSurfaceValid`; the remaining cutover dependency is a
-certified triangulation-to-quotient homeomorphism.
+derives its orbit conditions from `IsSurfaceValid`.
 -/
 
 namespace LeanEval

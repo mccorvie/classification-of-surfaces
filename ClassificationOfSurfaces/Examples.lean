@@ -11,8 +11,7 @@ import ClassificationOfSurfaces.NormalForm
 
 This file names the small surfaces we should keep as regression tests while the definitions mature.
 The examples are concrete one-face boundary-word presentations in the shared `SurfaceCellComplex`
-API. Homeomorphisms from their currently stored realizations to the vendored Lean-Eval quotients
-are deliberately not asserted until quotient realizations are implemented.
+API. Their topology is supplied by the faithful polygonal quotient layer.
 -/
 
 namespace LeanEval
@@ -76,7 +75,7 @@ deriving DecidableEq, Repr, Fintype
 open SurfaceCellComplex.SignedDart
 
 /-- One-face boundary-word presentation for the disk. -/
-def diskCellComplex : CellComplex :=
+def diskCellComplex : SurfaceCellComplex :=
   SurfaceCellComplex.oneFacePresentation DiskEdge [pos DiskEdge.h]
 
 /-- One-face boundary-word presentation for the annulus: `d₀ c₀ d₀⁻¹ d₁ c₁ d₁⁻¹`.
@@ -84,23 +83,23 @@ def diskCellComplex : CellComplex :=
 The `dᵢ` pairs are internal seams and the single occurrences `cᵢ` are the two boundary
 contours. This is a renaming of the genus-zero, two-contour normal form from Gallier--Xu
 Definition 6.5. -/
-def annulusCellComplex : CellComplex :=
+def annulusCellComplex : SurfaceCellComplex :=
   SurfaceCellComplex.oneFacePresentation AnnulusEdge
     [pos AnnulusEdge.d₀, pos AnnulusEdge.c₀, neg AnnulusEdge.d₀,
       pos AnnulusEdge.d₁, pos AnnulusEdge.c₁, neg AnnulusEdge.d₁]
 
 /-- One-face boundary-word presentation for the torus: `a b a⁻¹ b⁻¹`. -/
-def torusCellComplex : CellComplex :=
+def torusCellComplex : SurfaceCellComplex :=
   SurfaceCellComplex.oneFacePresentation TorusEdge
     [pos TorusEdge.a, pos TorusEdge.b, neg TorusEdge.a, neg TorusEdge.b]
 
 /-- One-face boundary-word presentation for the projective plane: `a a`. -/
-def projectivePlaneCellComplex : CellComplex :=
+def projectivePlaneCellComplex : SurfaceCellComplex :=
   SurfaceCellComplex.oneFacePresentation ProjectivePlaneEdge
     [pos ProjectivePlaneEdge.a, pos ProjectivePlaneEdge.a]
 
 /-- One-face boundary-word presentation for the Mobius strip: `a a h`. -/
-def mobiusStripCellComplex : CellComplex :=
+def mobiusStripCellComplex : SurfaceCellComplex :=
   SurfaceCellComplex.oneFacePresentation MobiusStripEdge
     [pos MobiusStripEdge.a, pos MobiusStripEdge.a, pos MobiusStripEdge.h]
 

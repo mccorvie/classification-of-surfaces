@@ -61,7 +61,7 @@ theorem rotate_cutBoundary_eq_sourceBoundary
 noncomputable def positiveCutSideIndex
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
-    (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
+    (hl : 0 < cut.left.length) (_hr : 0 < cut.right.length)
     (i : Fin (P.boundary cut.face.face).length) :
     Fin (cut.left.length + cut.right.length) :=
   ⟨(i.val + positiveCutRotation P cut horientation) %
@@ -252,10 +252,6 @@ theorem left_get_positiveLeftSideIndex
     (P.boundary cut.face.face)[i.val]
   rw [← cutBoundary_get_positiveCutSideIndex
     P cut horientation hl hr i]
-  change cut.left[
-      (positiveCutSideIndex P cut horientation hl hr i).val] =
-    (cut.left ++ cut.right)[
-      (positiveCutSideIndex P cut horientation hl hr i).val]
   exact (List.getElem_append_left hleft).symm
 
 /-- In the right branch, the local cut-piece lookup is the stored source dart. -/
@@ -674,13 +670,13 @@ theorem continuous_positiveChildPairPreMap
     (horientation : cut.face.orientation = false) :
     Continuous (positiveChildPairPreMap P cut horientation) := by
   apply Continuous.sumElim
-  · show Continuous (fun z =>
+  · change Continuous (fun z =>
       (⟨oldFace P cut cut.face.face,
         positiveSelectedChildCellHomeomorph P cut horientation z⟩ :
           (split P cut).PolygonalPreRealization))
     exact continuous_sigmaMk.comp
       (positiveSelectedChildCellHomeomorph P cut horientation).continuous
-  · show Continuous (fun z =>
+  · change Continuous (fun z =>
       (⟨rightFace P cut,
         positiveRightChildCellHomeomorph P cut horientation z⟩ :
           (split P cut).PolygonalPreRealization))
@@ -1315,7 +1311,11 @@ theorem positiveMapOccurrence_dart
               by
                 rw [selectedBoundary_of_orientation_false
                   P cut horientation]
-                simp [retainWord]
+                simp only [retainWord, List.length_map,
+                  positiveLeftSideIndex_val,
+                  positiveCutSideIndex_val, List.length_append,
+                  List.length_cons, List.length_nil, zero_add,
+                  Order.lt_add_one_iff]
                 have hlocal := (positiveLeftSideIndex
                   P cut horientation hl hr i hleft).isLt
                 exact Nat.le_of_lt (by
@@ -1329,7 +1329,11 @@ theorem positiveMapOccurrence_dart
         (retainWord cut.left ++ [.pos (freshEdge P)])[
             (positiveLeftSideIndex
               P cut horientation hl hr i hleft).val]'(by
-                simp [retainWord]
+                simp only [retainWord, List.length_map,
+                  positiveLeftSideIndex_val,
+                  positiveCutSideIndex_val, List.length_append,
+                  List.length_cons, List.length_nil, zero_add,
+                  Order.lt_add_one_iff]
                 have hlocal := (positiveLeftSideIndex
                   P cut horientation hl hr i hleft).isLt
                 exact Nat.le_of_lt (by

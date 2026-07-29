@@ -16,9 +16,8 @@ complexes.
 
 For Eval-admissible parameters, the words are nonempty and therefore also satisfy
 `SurfaceCellComplex.OccurrencePairingValid`. These are combinatorial and polygonal-pairing
-certificates only: no claim is made about the arbitrary stored `SurfaceCellComplex.Realization`.
-The remaining topological step is to compare their faithful polygonal realizations with the
-closed-disc quotients defined in `LeanEval/ChallengeDeps.lean`.
+certificates. Their faithful polygonal realizations are compared with the closed-disc quotients
+defined in `LeanEval/ChallengeDeps.lean` by the canonical realization layer.
 -/
 
 namespace LeanEval
