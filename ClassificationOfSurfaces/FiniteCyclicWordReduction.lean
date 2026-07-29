@@ -6676,6 +6676,128 @@ theorem targetTokens_allClassified {n : ℕ}
 
 end MarkedHandleBlockCommute
 
+namespace MarkedBoundaryBlockCommute
+
+/-- After commuting a completed boundary loop, the same residual pair surrounds exactly the
+strictly shorter protected interval. -/
+def targetPair {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (commute : MarkedBoundaryBlockCommute tokens)
+    (residualInside :
+      ReductionToken.residualDarts
+        commute.insideTokens = []) :
+    MarkedResidualCancellablePair
+      commute.targetTokens where
+  edge := commute.outer
+  negativeFirst := commute.outerNegative
+  betweenTokens := commute.insideTokens
+  tailTokens :=
+    commute.outsideTokens ++
+      [.completed
+        (.boundary commute.carrier commute.hole
+          commute.carrierNegative
+          commute.holeNegative)]
+  rotated := by
+    simpa [targetTokens, List.append_assoc] using
+      (List.isRotated_append
+        (l :=
+          [.completed
+            (.boundary commute.carrier commute.hole
+              commute.carrierNegative
+              commute.holeNegative)])
+        (l' :=
+          .residual
+              (dart commute.outer
+                commute.outerNegative) ::
+            commute.insideTokens ++
+            .residual
+              (dart commute.outer
+                (!commute.outerNegative)) ::
+            commute.outsideTokens))
+  residual_between := residualInside
+
+end MarkedBoundaryBlockCommute
+
+namespace MarkedCrosscapBlockCommute
+
+/-- After contextual crosscap commuting, the old crosscap carrier is the new residual carrier
+around exactly the strict tail of the protected interval. -/
+def targetPair {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (commute : MarkedCrosscapBlockCommute tokens)
+    (residualInside :
+      ReductionToken.residualDarts
+        commute.insideTokens = []) :
+    MarkedResidualCancellablePair
+      commute.targetTokens where
+  edge := commute.carrier
+  negativeFirst := !commute.carrierNegative
+  betweenTokens := commute.insideTokens
+  tailTokens :=
+    ReductionToken.inverseSequence
+        commute.outsideTokens ++
+      [.completed
+        (.crosscap commute.outer
+          commute.outerNegative)]
+  rotated := by
+    simpa [targetTokens, List.append_assoc] using
+      (List.isRotated_append
+        (l :=
+          [.completed
+            (.crosscap commute.outer
+              commute.outerNegative)])
+        (l' :=
+          .residual
+              (dart commute.carrier
+                (!commute.carrierNegative)) ::
+            commute.insideTokens ++
+            .residual
+              (dart commute.carrier
+                commute.carrierNegative) ::
+            ReductionToken.inverseSequence
+              commute.outsideTokens))
+  residual_between := residualInside
+
+end MarkedCrosscapBlockCommute
+
+namespace MarkedHandleBlockCommute
+
+/-- After commuting a completed handle, the same residual pair surrounds exactly the strict tail
+of the protected interval. -/
+def targetPair {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (commute : MarkedHandleBlockCommute tokens)
+    (residualInside :
+      ReductionToken.residualDarts
+        commute.insideTokens = []) :
+    MarkedResidualCancellablePair
+      commute.targetTokens where
+  edge := commute.outer
+  negativeFirst := commute.outerNegative
+  betweenTokens := commute.insideTokens
+  tailTokens :=
+    commute.outsideTokens ++
+      [.completed
+        (.handle commute.first commute.second)]
+  rotated := by
+    simpa [targetTokens, List.append_assoc] using
+      (List.isRotated_append
+        (l :=
+          [.completed
+            (.handle commute.first commute.second)])
+        (l' :=
+          .residual
+              (dart commute.outer
+                commute.outerNegative) ::
+            commute.insideTokens ++
+            .residual
+              (dart commute.outer
+                (!commute.outerNegative)) ::
+            commute.outsideTokens))
+  residual_between := residualInside
+
+end MarkedHandleBlockCommute
+
 namespace MarkedResidualCancellablePair
 
 /-- Under the classified-state invariant, the interval crossed by a lifted residual cancellation
