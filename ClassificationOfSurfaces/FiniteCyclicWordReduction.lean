@@ -3148,6 +3148,176 @@ def positiveTargetWord {n : ℕ}
     .neg second, .pos outer] ++
     insideTail ++ .neg outer :: outsideTail
 
+/-- The contextual handle source with its residual carrier displayed negative first. -/
+def negativeSourceWord {n : ℕ}
+    (outer first second : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  [.neg outer, .pos first, .pos second,
+    .neg first, .neg second] ++
+    insideTail ++ .pos outer :: outsideTail
+
+/-- Negative-residual-carrier target spelling. -/
+def negativeTargetWord {n : ℕ}
+    (outer first second : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  [.pos first, .pos second, .neg first,
+    .neg second, .neg outer] ++
+    insideTail ++ .pos outer :: outsideTail
+
+/-- Contextual handle source with arbitrary residual-carrier orientation. -/
+def sourceWord {n : ℕ}
+    (outer first second : Fin n)
+    (outerNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  if outerNegative then
+    negativeSourceWord outer first second
+      insideTail outsideTail
+  else
+    positiveSourceWord outer first second
+      insideTail outsideTail
+
+/-- Contextual handle target with arbitrary residual-carrier orientation. -/
+def targetWord {n : ℕ}
+    (outer first second : Fin n)
+    (outerNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  if outerNegative then
+    negativeTargetWord outer first second
+      insideTail outsideTail
+  else
+    positiveTargetWord outer first second
+      insideTail outsideTail
+
+/-- Reversing only the residual carrier identifies negative and positive handle sources. -/
+def negativeSourceSignedIso {n : ℕ}
+    (outer first second : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hfirstOuter : first ≠ outer)
+    (hsecondOuter : second ≠ outer)
+    (houterInside :
+      outer ∉ insideTail.map edgeOfDart)
+    (houterOutside :
+      outer ∉ outsideTail.map edgeOfDart) :
+    SignedPresentationIso
+      (Dyck.oneFace
+        (negativeSourceWord outer first second
+          insideTail outsideTail))
+      (Dyck.oneFace
+        (positiveSourceWord outer first second
+          insideTail outsideTail)) where
+  edgeRelabeling := Dyck.reverseEdgeRelabeling outer
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro face
+    have hfirstPos :
+        (Dyck.reverseEdgeRelabeling outer).mapDart
+            (.pos first) =
+          .pos first := by
+      simpa using
+        (Dyck.reverseEdgeRelabeling_of_ne
+          outer first hfirstOuter false)
+    have hfirstNeg :
+        (Dyck.reverseEdgeRelabeling outer).mapDart
+            (.neg first) =
+          .neg first := by
+      simpa using
+        (Dyck.reverseEdgeRelabeling_of_ne
+          outer first hfirstOuter true)
+    have hsecondPos :
+        (Dyck.reverseEdgeRelabeling outer).mapDart
+            (.pos second) =
+          .pos second := by
+      simpa using
+        (Dyck.reverseEdgeRelabeling_of_ne
+          outer second hsecondOuter false)
+    have hsecondNeg :
+        (Dyck.reverseEdgeRelabeling outer).mapDart
+            (.neg second) =
+          .neg second := by
+      simpa using
+        (Dyck.reverseEdgeRelabeling_of_ne
+          outer second hsecondOuter true)
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [negativeSourceWord,
+      positiveSourceWord, List.map_append,
+      List.map_cons]
+    rw [Dyck.reverseEdgeRelabeling_word outer
+        insideTail houterInside,
+      Dyck.reverseEdgeRelabeling_word outer
+        outsideTail houterOutside,
+      hfirstPos, hsecondPos,
+      hfirstNeg, hsecondNeg]
+    simp only [Dyck.reverseEdgeRelabeling_neg,
+      Dyck.reverseEdgeRelabeling_pos, List.map_nil]
+    exact List.IsRotated.refl _
+
+/-- Reversing only the residual carrier identifies negative and positive handle targets. -/
+def negativeTargetSignedIso {n : ℕ}
+    (outer first second : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hfirstOuter : first ≠ outer)
+    (hsecondOuter : second ≠ outer)
+    (houterInside :
+      outer ∉ insideTail.map edgeOfDart)
+    (houterOutside :
+      outer ∉ outsideTail.map edgeOfDart) :
+    SignedPresentationIso
+      (Dyck.oneFace
+        (negativeTargetWord outer first second
+          insideTail outsideTail))
+      (Dyck.oneFace
+        (positiveTargetWord outer first second
+          insideTail outsideTail)) where
+  edgeRelabeling := Dyck.reverseEdgeRelabeling outer
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro face
+    have hfirstPos :
+        (Dyck.reverseEdgeRelabeling outer).mapDart
+            (.pos first) =
+          .pos first := by
+      simpa using
+        (Dyck.reverseEdgeRelabeling_of_ne
+          outer first hfirstOuter false)
+    have hfirstNeg :
+        (Dyck.reverseEdgeRelabeling outer).mapDart
+            (.neg first) =
+          .neg first := by
+      simpa using
+        (Dyck.reverseEdgeRelabeling_of_ne
+          outer first hfirstOuter true)
+    have hsecondPos :
+        (Dyck.reverseEdgeRelabeling outer).mapDart
+            (.pos second) =
+          .pos second := by
+      simpa using
+        (Dyck.reverseEdgeRelabeling_of_ne
+          outer second hsecondOuter false)
+    have hsecondNeg :
+        (Dyck.reverseEdgeRelabeling outer).mapDart
+            (.neg second) =
+          .neg second := by
+      simpa using
+        (Dyck.reverseEdgeRelabeling_of_ne
+          outer second hsecondOuter true)
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    simp only [negativeTargetWord,
+      positiveTargetWord, List.map_append,
+      List.map_cons]
+    rw [Dyck.reverseEdgeRelabeling_word outer
+        insideTail houterInside,
+      Dyck.reverseEdgeRelabeling_word outer
+        outsideTail houterOutside,
+      hfirstPos, hsecondPos,
+      hfirstNeg, hsecondNeg]
+    simp only [Dyck.reverseEdgeRelabeling_neg,
+      Dyck.reverseEdgeRelabeling_pos, List.map_nil]
+    exact List.IsRotated.refl _
+
 /-- Commuting a completed handle through a residual pair is a four-Dyck chain. -/
 theorem exists_positiveNormalizationEquivalent {n : ℕ}
     (outer first second : Fin n)
@@ -3432,6 +3602,106 @@ theorem exists_positiveNormalizationEquivalent {n : ℕ}
                     (hfourth.trans
                       (NormalizationEquivalent.ofSignedIso
                         targetRotation))))))))⟩
+
+/-- Contextual handle commuting supports either orientation of the residual carrier. -/
+theorem exists_normalizationEquivalent {n : ℕ}
+    (outer first second : Fin n)
+    (outerNegative : Bool)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hfirstSecond : first ≠ second)
+    (hfirstOuter : first ≠ outer)
+    (hsecondOuter : second ≠ outer)
+    (hfirstInside :
+      first ∉ insideTail.map edgeOfDart)
+    (hfirstOutside :
+      first ∉ outsideTail.map edgeOfDart)
+    (hsecondInside :
+      second ∉ insideTail.map edgeOfDart)
+    (hsecondOutside :
+      second ∉ outsideTail.map edgeOfDart)
+    (houterInside :
+      outer ∉ insideTail.map edgeOfDart)
+    (houterOutside :
+      outer ∉ outsideTail.map edgeOfDart)
+    (validSource :
+      (Dyck.oneFace
+        (sourceWord outer first second
+          outerNegative insideTail outsideTail)).IsSurfaceValid) :
+    ∃ validTarget :
+        (Dyck.oneFace
+          (targetWord outer first second
+            outerNegative insideTail outsideTail)).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (sourceWord outer first second
+            outerNegative insideTail outsideTail),
+          validSource⟩
+        ⟨Dyck.oneFace
+          (targetWord outer first second
+            outerNegative insideTail outsideTail),
+          validTarget⟩ := by
+  cases outerNegative with
+  | false =>
+    simpa [sourceWord, targetWord] using
+      (exists_positiveNormalizationEquivalent
+        outer first second insideTail outsideTail
+        hfirstSecond hfirstOuter hsecondOuter
+        hfirstInside hfirstOutside
+        hsecondInside hsecondOutside validSource)
+  | true =>
+    let sourceIso :=
+      negativeSourceSignedIso outer first second
+        insideTail outsideTail
+        hfirstOuter hsecondOuter
+        houterInside houterOutside
+    let validPositiveSource :
+        (Dyck.oneFace
+          (positiveSourceWord outer first second
+            insideTail outsideTail)).IsSurfaceValid :=
+      sourceIso.isSurfaceValid (by
+        simpa [sourceWord] using validSource)
+    let positiveWitness :=
+      exists_positiveNormalizationEquivalent
+        outer first second insideTail outsideTail
+        hfirstSecond hfirstOuter hsecondOuter
+        hfirstInside hfirstOutside
+        hsecondInside hsecondOutside
+        validPositiveSource
+    let validPositiveTarget :=
+      Classical.choose positiveWitness
+    have hpositive :=
+      Classical.choose_spec positiveWitness
+    let targetIso :=
+      negativeTargetSignedIso outer first second
+        insideTail outsideTail
+        hfirstOuter hsecondOuter
+        houterInside houterOutside
+    let validTarget :
+        (Dyck.oneFace
+          (negativeTargetWord outer first second
+            insideTail outsideTail)).IsSurfaceValid :=
+      targetIso.symm.isSurfaceValid validPositiveTarget
+    have result :
+        ∃ validNegativeTarget :
+            (Dyck.oneFace
+              (negativeTargetWord outer first second
+                insideTail outsideTail)).IsSurfaceValid,
+          NormalizationEquivalent
+            ⟨Dyck.oneFace
+              (negativeSourceWord outer first second
+                insideTail outsideTail),
+              (by
+                simpa [sourceWord] using validSource)⟩
+            ⟨Dyck.oneFace
+              (negativeTargetWord outer first second
+                insideTail outsideTail),
+              validNegativeTarget⟩ :=
+      ⟨validTarget,
+        (NormalizationEquivalent.ofSignedIso sourceIso).trans
+          (hpositive.trans
+            (NormalizationEquivalent.ofSignedIso
+              targetIso).symm)⟩
+    simpa [sourceWord, targetWord] using result
 
 end HandleBlockCommute
 
