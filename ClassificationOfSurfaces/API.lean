@@ -32,6 +32,7 @@ import ClassificationOfSurfaces.FiniteCyclicReduction
 import ClassificationOfSurfaces.FiniteCyclicSignedRealization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.FiniteCyclicUnorientedRealization
+import ClassificationOfSurfaces.FiniteCyclicWordReduction
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -317,6 +318,10 @@ are constructed internally. Exact inverse-pair cancellation and two-face merging
 both as isolated word rules and in multi-face contexts with untouched faces. Their transported
 forms isolate arbitrary edge naming, face order, traversal orientation, and cyclic starting
 points behind signed presentation isomorphisms.
+Validity-safe marked merging now gives a total face-count recursion from every connected valid
+presentation to one face. A second well-founded recursion cancels all cyclic adjacent inverse
+pairs—including the retained merge markers—and lands either at the exact canonical sphere node
+or at a pair-reduced valid one-face word.
 
 ## Polygonal quotient foundation
 
