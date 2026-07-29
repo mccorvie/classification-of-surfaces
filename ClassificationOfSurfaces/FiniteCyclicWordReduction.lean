@@ -4516,6 +4516,11 @@ def edges {n : ℕ} : ProtectedAtom n → List (Fin n)
   | .boundary hole _ => [hole]
   | .completed block => block.edges
 
+/-- Distinct protected names owned by one classified atom. -/
+def names {n : ℕ} : ProtectedAtom n → List (Fin n)
+  | .boundary hole _ => [hole]
+  | .completed block => block.names
+
 /-- Reverse one protected atom. -/
 def inverse {n : ℕ} : ProtectedAtom n → ProtectedAtom n
   | .boundary hole negative =>
@@ -4527,6 +4532,11 @@ def inverse {n : ℕ} : ProtectedAtom n → ProtectedAtom n
 def sequenceWord {n : ℕ} (atoms : List (ProtectedAtom n)) :
     List (SignedDart (Fin n)) :=
   (atoms.map word).flatten
+
+/-- Concatenate the distinct-name spines owned by a protected atom sequence. -/
+def sequenceNames {n : ℕ} (atoms : List (ProtectedAtom n)) :
+    List (Fin n) :=
+  (atoms.map names).flatten
 
 /-- Reverse a protected atom sequence at atom granularity. -/
 def inverseSequence {n : ℕ}
@@ -4577,6 +4587,108 @@ theorem sequenceWord_inverseSequence {n : ℕ}
         simp [inverseSequence]]
       rw [sequenceWord_append, ih]
       simp [inverseWord_append]
+
+/-- Number of raw once-used boundary darts.  Terminal normalization groups and contracts every
+such dart to one representative of the remaining outer boundary component. -/
+def rawBoundaryCount {n : ℕ} :
+    List (ProtectedAtom n) → ℕ
+  | [] => 0
+  | .boundary _ _ :: atoms => 1 + rawBoundaryCount atoms
+  | _ :: atoms => rawBoundaryCount atoms
+
+/-- Number of boundary components already displayed as completed carrier loops. -/
+def completedBoundaryCount {n : ℕ} :
+    List (ProtectedAtom n) → ℕ
+  | [] => 0
+  | .completed (.boundary _ _ _ _) :: atoms =>
+      1 + completedBoundaryCount atoms
+  | _ :: atoms => completedBoundaryCount atoms
+
+/-- Number of boundary components selected by a terminal atom sequence.  Completed loops are
+already distinct boundary components.  All remaining raw boundary darts lie on the one outer
+boundary component and therefore contribute one component collectively, rather than one each. -/
+def boundaryCount {n : ℕ}
+    (atoms : List (ProtectedAtom n)) : ℕ :=
+  completedBoundaryCount atoms +
+    if rawBoundaryCount atoms = 0 then 0 else 1
+
+/-- Number of completed crosscap blocks. -/
+def crosscapCount {n : ℕ} :
+    List (ProtectedAtom n) → ℕ
+  | [] => 0
+  | .completed (.crosscap _ _) :: atoms =>
+      1 + crosscapCount atoms
+  | _ :: atoms => crosscapCount atoms
+
+/-- Number of completed handle blocks. -/
+def handleCount {n : ℕ} :
+    List (ProtectedAtom n) → ℕ
+  | [] => 0
+  | .completed (.handle _ _) :: atoms =>
+      1 + handleCount atoms
+  | _ :: atoms => handleCount atoms
+
+/-- Normal-form parameters selected by a terminal protected-atom sequence.  Completed boundary
+loops contribute individually; any remaining raw boundary darts collectively contribute the one
+outer boundary component and will be grouped during terminal normalization. -/
+def normalForm {n : ℕ}
+    (atoms : List (ProtectedAtom n)) : NormalForm :=
+  if crosscapCount atoms = 0 then
+    .orientable (handleCount atoms) (boundaryCount atoms)
+  else
+    .nonOrientable
+      (crosscapCount atoms + 2 * handleCount atoms)
+      (boundaryCount atoms)
+
+/-- Every protected atom is raw boundary data or belongs to exactly one completed block class. -/
+theorem raw_completed_count_sum_eq_length {n : ℕ}
+    (atoms : List (ProtectedAtom n)) :
+    rawBoundaryCount atoms + completedBoundaryCount atoms +
+        crosscapCount atoms +
+        handleCount atoms =
+      atoms.length := by
+  induction atoms with
+  | nil =>
+      rfl
+  | cons atom atoms ih =>
+      cases atom with
+      | boundary =>
+          simp only [rawBoundaryCount, completedBoundaryCount,
+            crosscapCount, handleCount, List.length_cons] at ih ⊢
+          omega
+      | completed block =>
+          cases block <;>
+            simp only [rawBoundaryCount, completedBoundaryCount,
+              crosscapCount, handleCount, List.length_cons] at ih ⊢ <;>
+            omega
+
+/-- A nonempty terminal protected-atom sequence selects an Eval-admissible normal form. -/
+theorem normalForm_isEvalAdmissible_of_ne_nil {n : ℕ}
+    (atoms : List (ProtectedAtom n))
+    (hne : atoms ≠ []) :
+    (normalForm atoms).IsEvalAdmissible := by
+  have hlength : 0 < atoms.length :=
+    List.length_pos_iff_ne_nil.mpr hne
+  have hsum := raw_completed_count_sum_eq_length atoms
+  simp only [normalForm]
+  split_ifs with hcrosscap
+  · change 1 ≤ handleCount atoms ∨
+      1 ≤ boundaryCount atoms
+    rw [hcrosscap] at hsum
+    by_cases hhandle : handleCount atoms = 0
+    · right
+      simp only [boundaryCount]
+      by_cases hraw : rawBoundaryCount atoms = 0
+      · rw [if_pos hraw]
+        omega
+      · rw [if_neg hraw]
+        omega
+    · left
+      omega
+  · change
+      1 ≤ crosscapCount atoms +
+        2 * handleCount atoms
+    omega
 
 end ProtectedAtom
 
@@ -4758,6 +4870,12 @@ theorem residualWord_ofProtectedAtom {n : ℕ}
 theorem extractedEdges_ofProtectedAtom {n : ℕ}
     (atom : ProtectedAtom n) :
     extractedEdges (ofProtectedAtom atom) = atom.edges := by
+  cases atom <;> rfl
+
+@[simp]
+theorem extractedNames_ofProtectedAtom {n : ℕ}
+    (atom : ProtectedAtom n) :
+    extractedNames (ofProtectedAtom atom) = atom.names := by
   cases atom <;> rfl
 
 theorem AllClassified.of_isRotated {n : ℕ}
@@ -5265,6 +5383,70 @@ theorem exists_eq_map_ofProtectedAtom_of_allClassified_of_residualDarts_eq_nil
           rcases ih tailClassified tailResidual with
             ⟨atoms, rfl⟩
           exact ⟨.completed block :: atoms, rfl⟩
+
+/-- Canonical atom-level view of a classified marked word whose residual contribution is empty. -/
+noncomputable def terminalAtoms {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (classified : AllClassified tokens)
+    (residual_nil : residualDarts tokens = []) :
+    List (ProtectedAtom n) :=
+  Classical.choose
+    (exists_eq_map_ofProtectedAtom_of_allClassified_of_residualDarts_eq_nil
+      tokens classified residual_nil)
+
+theorem eq_map_terminalAtoms {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (classified : AllClassified tokens)
+    (residual_nil : residualDarts tokens = []) :
+    tokens =
+      (terminalAtoms tokens classified residual_nil).map
+        ofProtectedAtom :=
+  Classical.choose_spec
+    (exists_eq_map_ofProtectedAtom_of_allClassified_of_residualDarts_eq_nil
+      tokens classified residual_nil)
+
+@[simp]
+theorem expand_eq_sequenceWord_terminalAtoms {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (classified : AllClassified tokens)
+    (residual_nil : residualDarts tokens = []) :
+    expand tokens =
+      ProtectedAtom.sequenceWord
+        (terminalAtoms tokens classified residual_nil) := by
+  calc
+    expand tokens =
+        expand
+          ((terminalAtoms tokens classified residual_nil).map
+            ofProtectedAtom) :=
+      congrArg expand
+        (eq_map_terminalAtoms tokens classified residual_nil)
+    _ = ProtectedAtom.sequenceWord
+          (terminalAtoms tokens classified residual_nil) :=
+      expand_map_ofProtectedAtom _
+
+theorem terminalAtoms_ne_nil_of_protectedNames_ne_nil {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (classified : AllClassified tokens)
+    (residual_nil : residualDarts tokens = [])
+    (protected_nonempty : protectedNames tokens ≠ []) :
+    terminalAtoms tokens classified residual_nil ≠ [] := by
+  intro hatoms
+  apply protected_nonempty
+  rw [eq_map_terminalAtoms tokens classified residual_nil,
+    hatoms]
+  rfl
+
+@[simp]
+theorem protectedNames_map_ofProtectedAtom {n : ℕ}
+    (atoms : List (ProtectedAtom n)) :
+    protectedNames (atoms.map ofProtectedAtom) =
+      ProtectedAtom.sequenceNames atoms := by
+  rw [protectedNames, ProtectedAtom.sequenceNames,
+    List.map_map]
+  congr 1
+  apply List.map_congr_left
+  intro atom _
+  exact extractedNames_ofProtectedAtom atom
 
 @[simp]
 theorem protectedEdges_nil {n : ℕ} :
@@ -13279,6 +13461,84 @@ noncomputable def normalizePairReducedMarked {n : ℕ}
 
 end MarkedExecutionState
 
+/-- Exact atom-level endpoint of the marked recursion.  Its name spine is duplicate-free, its
+word is surface-valid, and at least one protected atom remains. -/
+structure TerminalProtectedWord where
+  edgeCount : ℕ
+  atoms : List (ProtectedAtom edgeCount)
+  atomsNonempty : atoms ≠ []
+  namesNodup : (ProtectedAtom.sequenceNames atoms).Nodup
+  valid :
+    (Dyck.oneFace
+      (ProtectedAtom.sequenceWord atoms)).IsSurfaceValid
+
+namespace TerminalProtectedWord
+
+/-- Validity-bundled finite-cyclic presentation displayed by a terminal atom word. -/
+def validPresentation (terminal : TerminalProtectedWord) :
+    ValidPresentation :=
+  ⟨Dyck.oneFace
+      (ProtectedAtom.sequenceWord terminal.atoms),
+    terminal.valid⟩
+
+/-- Exact canonical normal form selected by a terminal atom word. -/
+def normalForm (terminal : TerminalProtectedWord) : NormalForm :=
+  ProtectedAtom.normalForm terminal.atoms
+
+/-- A terminal atom word always selects an Eval-admissible canonical presentation. -/
+theorem admissible (terminal : TerminalProtectedWord) :
+    terminal.normalForm.IsEvalAdmissible :=
+  ProtectedAtom.normalForm_isEvalAdmissible_of_ne_nil
+    terminal.atoms terminal.atomsNonempty
+
+end TerminalProtectedWord
+
+namespace MarkedExecutionState
+
+/-- Forget the marked-token implementation of a residual-empty state and retain its exact
+terminal protected-atom word. -/
+noncomputable def toTerminalProtectedWord {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (residualEmpty :
+      ReductionToken.residualDarts tokens = []) :
+    TerminalProtectedWord where
+  edgeCount := n
+  atoms :=
+    ReductionToken.terminalAtoms tokens state.classified
+      residualEmpty
+  atomsNonempty :=
+    ReductionToken.terminalAtoms_ne_nil_of_protectedNames_ne_nil
+      tokens state.classified residualEmpty protectedNonempty
+  namesNodup := by
+    rw [← ReductionToken.protectedNames_map_ofProtectedAtom,
+      ← ReductionToken.eq_map_terminalAtoms
+        tokens state.classified residualEmpty]
+    exact state.protectedNodup
+  valid := by
+    simpa only [
+      ReductionToken.expand_eq_sequenceWord_terminalAtoms
+        tokens state.classified residualEmpty] using
+      state.valid
+
+theorem expand_eq_toTerminalProtectedWord_sequenceWord {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (residualEmpty :
+      ReductionToken.residualDarts tokens = []) :
+    ReductionToken.expand tokens =
+      ProtectedAtom.sequenceWord
+        (state.toTerminalProtectedWord
+          protectedNonempty residualEmpty).atoms :=
+  ReductionToken.expand_eq_sequenceWord_terminalAtoms
+    tokens state.classified residualEmpty
+
+end MarkedExecutionState
+
 /-- The isolated terminal obligation after the terminating marked recursion: normalize a valid,
 classified marked word whose residual contribution is empty. -/
 structure TerminalMarkedNormalizer where
@@ -13291,6 +13551,50 @@ structure TerminalMarkedNormalizer where
       NormalizationResult
         ⟨Dyck.oneFace (ReductionToken.expand tokens),
           state.valid⟩
+
+/-- Narrow terminal obligation at the proof's stable seam: normalize a duplicate-free nonempty
+sequence of protected atoms to the exact canonical presentation selected by its block counts. -/
+structure TerminalProtectedNormalizer where
+  equivalent :
+    (terminal : TerminalProtectedWord) →
+      NormalizationEquivalent terminal.validPresentation
+        (canonicalValidPresentation terminal.normalForm
+          terminal.admissible)
+
+namespace TerminalProtectedNormalizer
+
+/-- Package a protected-word terminal equivalence as the standard exact normalization result. -/
+noncomputable def normalize
+    (normalizer : TerminalProtectedNormalizer)
+    (terminal : TerminalProtectedWord) :
+    NormalizationResult terminal.validPresentation where
+  normalForm := terminal.normalForm
+  admissible := terminal.admissible
+  equivalent := normalizer.equivalent terminal
+
+/-- A protected-word normalizer discharges the token-level terminal interface used by the marked
+extraction recursion. -/
+noncomputable def toTerminalMarkedNormalizer
+    (normalizer : TerminalProtectedNormalizer) :
+    TerminalMarkedNormalizer where
+  normalize state protectedNonempty residualEmpty := by
+    let terminal :=
+      state.toTerminalProtectedWord
+        protectedNonempty residualEmpty
+    have hsource :
+        (⟨Dyck.oneFace
+              (ReductionToken.expand _),
+            state.valid⟩ :
+          ValidPresentation) =
+          terminal.validPresentation := by
+      apply ValidPresentation.ext
+      exact congrArg Dyck.oneFace
+        (state.expand_eq_toTerminalProtectedWord_sequenceWord
+          protectedNonempty residualEmpty)
+    rw [hsource]
+    exact normalizer.normalize terminal
+
+end TerminalProtectedNormalizer
 
 /-- A terminal block normalizer supplies the remaining `PairReducedNormalizer` field after the
 now-complete marked extraction recursion. -/
