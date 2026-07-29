@@ -472,6 +472,19 @@ def target {n : ℕ} (a b : Fin n)
     FiniteCyclicPresentation :=
   Dyck.negativeTarget a (X ++ V ++ U) ([.neg b] ++ Y) [.pos b]
 
+/-- Handle extraction preserves the unoriented edge-occurrence multiset, hence ordinary
+validity. -/
+theorem target_isSurfaceValid {n : ℕ} (a b : Fin n)
+    (U V X Y : List (SignedDart (Fin n)))
+    (validSource : (source a b U V X Y).IsSurfaceValid) :
+    (target a b U V X Y).IsSurfaceValid := by
+  apply Dyck.oneFace_isSurfaceValid_of_edgePerm ?_ validSource
+  rw [List.perm_iff_count]
+  intro e
+  simp only [List.map_append, List.map_cons, List.map_nil, edgeOfDart,
+    List.count_append, List.count_cons, List.count_nil]
+  omega
+
 /-- The chosen target spelling is cyclically the handle
 `a b a⁻¹ b⁻¹`, followed by `Y X V U`. -/
 theorem target_boundary_isRotated_handle {n : ℕ} (a b : Fin n)
