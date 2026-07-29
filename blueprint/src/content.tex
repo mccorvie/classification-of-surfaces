@@ -639,12 +639,10 @@ triangulation is a geometric triangulation.
 This chapter is the downstream half: convert triangulations to finite surface
 cyclic presentations and reduce their exact boundary words to Gallier--Xu
 normal forms. The Eval quotient relations now faithfully match the vendored
-closed-disc benchmark. Nevertheless \ref{moise:thm:gx_normal_form} is
-\emph{not provable as currently stated in Lean}: the legacy cell-complex
-realization is arbitrary, and the faithful cyclic-presentation normalization
-and elementary-move realization theorems remain to be proved. The canonical
-polygonal comparison with all three Eval representative families is complete. See
-\texttt{docs/KNOWN\_WEAK.md} for the ledger.
+closed-disc benchmark. The faithful cyclic-presentation normalization,
+elementary-move realization theorems, geometric quotient bridge, and canonical
+polygonal comparison with all three Eval representative families are complete.
+The public proof does not use the arbitrary legacy cell-complex realization.
 
 \section{Cell complexes and the topological bridge}
 
@@ -684,22 +682,22 @@ signed dart, and retains the legacy stored realization.  It does not prove
 polygonal quotient realization.
 \end{definition}
 
-\begin{theorem}[Stored-realization handoff]
+\begin{theorem}[Faithful polygonal-realization handoff]
 \label{moise:thm:compact_surface_cellulable}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.compact_surface_homeomorphic_to_cell_complex}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.compact_eval_surface_polygonalRealization_homeomorphic_surface}
 \leanok
-\uses{moise:def:eval_surface,moise:thm:moise_triangulation,moise:def:triangulation_cell_complex}
-Every Eval surface is homeomorphic to the \emph{stored realization} of some raw
-finite cell presentation.  This deliberately does not yet assert that the
-presentation is a certified surface cellulation.
+\uses{moise:def:eval_surface,moise:thm:moise_triangulation}
+The valid finite-cyclic presentation enumerated from the Rad\'o triangulation
+has a faithful polygonal realization homeomorphic to the original Eval
+surface.
 \end{theorem}
 
 \begin{proof}
 \leanok
-Triangulate by \ref{moise:thm:moise_triangulation}, copy the raw incidence
-data, and compose the homeomorphisms to the stored realization.  The
-executable legacy countermodel in \texttt{Moise/Countermodels.lean} shows why
-validity and connectivity must remain separate obligations.
+Triangulate by \ref{moise:thm:moise_triangulation}, enumerate the cyclic signed
+face boundaries, identify each polygon cell with its barycentric triangle, and
+prove the quotient kernel using connected fixed-vertex stars. Compose with the
+geometric triangulation's homeomorphism to the surface.
 \end{proof}
 
 \section{Quotient realizations}
@@ -949,52 +947,53 @@ polygonal pairing.  Apply
 \texttt{eqvGenQuotientCongrRawOfGeneratorMaps} to the two generator maps.
 \end{proof}
 
-\begin{definition}[Named normal-form witnesses]
+\begin{definition}[Certified finite-cyclic normalization result]
 \label{moise:def:normal_form_witness}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.IsEvalAdmissible, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.RealizesNormalForm, LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.HasNormalForm}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.IsEvalAdmissible,
+  LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.NormalizationResult}
 \leanok
-\uses{moise:def:surface_cell_complex,moise:def:eval_quotient_representatives,
+\uses{moise:def:eval_quotient_representatives,
   moise:def:canonical_normal_form_complexes}
-A normal-form witness for $K$: an admissible normal-form name, a representative
-complex, an equivalence from $K$ to it, and a homeomorphism from its
-realization to the named Eval quotient.
+A normalization result records an admissible normal-form name and a
+validity-safe Gallier--Xu equivalence from the input finite-cyclic presentation
+to the single canonical presentation selected by that name.
 \end{definition}
 
-\begin{theorem}[Normal-form reduction]
+\begin{theorem}[Faithful finite-cyclic normal-form reduction]
 \label{moise:thm:gx_normal_form}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.surface_cell_complex_reduces_to_normal_form}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.exists_admissible_normalForm_polygonallyEquivalent}
 \leanok
 \uses{moise:def:normal_form_witness,moise:def:gx_elementary_moves,
   moise:lem:elementary_moves_preserve_realization,
   moise:lem:canonical_generator_comparison}
-Every finite connected surface cell complex has an admissible named normal-form
-witness. \emph{Warning (ledger): the current Lean statement is false because
-a cell complex may store an arbitrary realization unrelated to its certified
-incidence data. The sorry cannot be discharged until the faithful
-polygonal-realization cutover, finite cyclic normalization, elementary-move
-soundness, and final assembly are implemented. The comparison with
-\ref{moise:def:eval_quotient_representatives} is already complete.}
+Every valid connected finite-cyclic surface presentation is polygonally
+equivalent to the canonical presentation of an admissible normal form.
 \end{theorem}
 
 \begin{proof}
-\notready
-Gallier--Xu Ch.~6: remove inverse pairs, reduce vertices, merge faces,
-introduce crosscaps and handles, convert mixed words to all-crosscap form,
-group boundary loops.
+\leanok
+Following Gallier--Xu Ch.~6, remove inverse pairs, reduce vertices, merge
+faces, introduce crosscaps and handles, convert mixed words to all-crosscap
+form, and group boundary loops. Each elementary step preserves the faithful
+polygonal realization, and the terminal word is signed-isomorphic to the
+existing canonical presentation.
 \end{proof}
 
-\begin{lemma}[Normal-form witness gives an Eval branch]
+\begin{lemma}[Finite-cyclic presentation gives an Eval branch]
 \label{moise:lem:normal_form_witness_eval_branch}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.hasEvalRepresentative}
 \leanok
-\uses{moise:def:normal_form_witness}
-An admissible named normal-form witness gives the corresponding branch of the
-Eval classification disjunction.
+\uses{moise:def:normal_form_witness,moise:thm:gx_normal_form,
+  moise:lem:canonical_generator_comparison}
+A valid connected finite-cyclic presentation realizes the sphere, an
+admissible orientable Eval quotient, or an admissible nonorientable Eval
+quotient.
 \end{lemma}
 
 \begin{proof}
 \leanok
-Compose the equivalence with the representative's homeomorphism; admissibility
+Compose the normalization homeomorphism with the corresponding canonical
+sphere, orientable, or nonorientable realization homeomorphism; admissibility
 supplies the positivity side conditions.
 \end{proof}
 
@@ -1006,15 +1005,13 @@ supplies the positivity side conditions.
 \leanok
 \uses{moise:thm:compact_surface_cellulable,moise:thm:gx_normal_form,moise:lem:normal_form_witness_eval_branch}
 Every compact connected Hausdorff topological $2$-manifold with boundary in the
-Lean Eval sense, with the explicit C0 \ref{moise:def:chart_boundary_invariant}
-hypothesis, is homeomorphic to the sphere representative or to one of the
+Lean Eval sense is homeomorphic to the sphere representative or to one of the
 normal-form quotient spaces named in the Eval problem.
 \end{theorem}
 
 \begin{proof}
 \leanok
-Apply the topological bridge and the normal-form reduction, and compose.  (The
-Lean proof of this assembly contains no sorry of its own; the open content is
-on \ref{moise:thm:gx_normal_form} and the ledgered stored-realization handoff,
-as the dependency graph shows.)
+Apply the faithful geometric-to-polygonal bridge, normalize its finite-cyclic
+presentation, select the exact canonical Eval endpoint, and compose the
+homeomorphisms.
 \end{proof}

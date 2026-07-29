@@ -15,7 +15,7 @@ normal-form quotient.
 ## Main Split
 
 The completed topological route produces a faithful geometric triangulation. The classification
-tail should pass through exact finite cyclic boundary words, not through the arbitrary stored
+tail passes through exact finite cyclic boundary words, not through the arbitrary stored
 realization of the legacy cell-complex scaffold:
 
 ```text
@@ -27,7 +27,7 @@ GeometricTriangulation
 ```
 
 The combinatorial normalization and polygonal realization are separate proof layers. The final
-theorem should only assemble their homeomorphisms with the geometric-triangulation realization
+theorem assembles their homeomorphisms with the geometric-triangulation realization
 bridge.
 
 ## Current Baseline
@@ -46,9 +46,9 @@ gluing.  The former C0 chart-boundary hypothesis itself is discharged by planar 
 Brouwer's fixed-point theorem, and invariance of domain.  See `docs/MOISE_ROUTE.md` for the live
 status and `docs/RADO_AUDIT.md` for the definition-faithfulness audit.
 
-The legacy stored `SurfaceCellComplex.Realization`, its `Equivalent` relation, and the final
-Gallier--Xu reduction theorem are still placeholder scaffolding (see `docs/KNOWN_WEAK.md`).
-The faithful polygonal quotient layer and the bottom API are in place:
+The legacy stored `SurfaceCellComplex.Realization` and its `Equivalent` relation remain placeholder
+scaffolding pending structural cleanup (see `docs/KNOWN_WEAK.md`), but the public proof does not use
+them. The faithful polygonal quotient layer and the bottom API are complete:
 
 - `EvalSurface` packages the Lean Eval hypotheses.
 - `ChartBoundaryInvariant` is the low-level chart-extraction interface; its unconditional C0
@@ -111,6 +111,12 @@ The faithful polygonal quotient layer and the bottom API are in place:
   dual connectivity to the packed Gallier--Xu input. Consequently,
   `compact_eval_surface_has_valid_connected_finiteCyclicPresentation` connects the Eval surface
   hypotheses directly to the normal-form lane's finite combinatorial input.
+- `GeometricTriangulation.polygonalRealizationHomeomorph` identifies that finite-cyclic polygonal
+  quotient with the barycentric geometric realization. The compact Eval-surface specialization
+  discharges the strong vertex-star certificate from the manifold charts.
+- `FiniteCyclicPresentation.normalizeConnectedToCanonical` completes the validity-safe
+  Gallier–Xu recursion, and `exists_admissible_normalForm_polygonallyEquivalent` exposes its exact
+  canonical endpoint and polygonal-realization equivalence.
 - Boundary-word examples for the disk, annulus, torus, projective plane, and Mobius strip have
   incidence- and occurrence-validity witnesses. The annulus now uses the length-six, two-contour
   word.
@@ -128,9 +134,10 @@ The faithful polygonal quotient layer and the bottom API are in place:
   five explicit pairing families into the trusted closures, including the reversed boundary
   indexing. `CanonicalGeneratorMaps.lean` maps arbitrary polygon generators and every trusted
   relation constructor into the opposite equivalence closure, yielding homeomorphisms between both
-  canonical polygonal realizations and the exact Eval quotients. The legacy realization cutover
-  remains separate. `NormalForm.canonicalCellComplex` also includes the separate two-face sphere
-  presentation.
+  canonical polygonal realizations and the exact Eval quotients.
+- `FiniteCyclicPresentation.hasEvalRepresentative` composes normalization with the sphere,
+  orientable, and nonorientable canonical realization homeomorphisms. `classification_of_surfaces`
+  transports those endpoints across the geometric bridge to the input surface.
 
 Legacy aliases `CellComplex` and `FiniteTriangulation` remain for early scaffold
 compatibility. New code should use the preferred names above.
@@ -178,7 +185,7 @@ compatibility. New code should use the preferred names above.
   non-collapse checks for the vendored quotient representatives.
 - `ClassificationOfSurfaces/Representatives.lean`: project-owned sphere abbreviation and
   normal-form indices; it does not redeclare the challenge relations.
-- `ClassificationOfSurfaces/NormalForm.lean`: Gallier-Xu normal-form theorem boundaries.
+- `ClassificationOfSurfaces/NormalForm.lean`: faithful finite-cyclic normal-form classification.
 - `ClassificationOfSurfaces/EvalStatement.lean`: final Lean Eval theorem.
 - `ClassificationOfSurfaces/LeanEval/SpecAudit.lean`: compile-time check that the public theorem
   has the exact Lean-Eval conclusion over the vendored constants.
@@ -186,14 +193,6 @@ compatibility. New code should use the preferred names above.
 
 ## Next Tasks
 
-1. Replace the compatibility triangulation's arbitrary all-positive boundary lists with the cyclic
-   `IntrinsicTwoComplex.faceEdge` order and certify connected incident-face chains at every
-   vertex.
-2. Use the intrinsic face models to prove the geometric triangulation is homeomorphic to its
-   faithful polygonal quotient; route the Eval handoff through that quotient without relying on
-   the legacy arbitrary stored realization.
-3. Implement cancellation, vertex reduction, face merging, and the handle/boundary grouping
-   chains. Reuse the completed generic Dyck and cross-cap rewrite theorems for the repeated word
-   transformations.
-4. Compose the geometric and polygonal realization homeomorphisms in the final theorem, retiring
-   the false legacy `surface_cell_complex_reduces_to_normal_form` abstraction.
+The classification proof is complete. The remaining follow-up is structural cleanup: remove the
+unused legacy stored realization fields and compatibility aliases without changing the faithful
+finite-cyclic public theorem path.

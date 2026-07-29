@@ -26,41 +26,33 @@ quotient.
 lake build
 ```
 
-The current repository intentionally contains theorem-boundary `sorry`s while the project skeleton
-is being refined.
+The public classification proof is complete and contains no `sorry`.
 
 ## Architecture
 
-The project is organized around one shared handoff object:
+The proof is organized around the faithful finite-cyclic polygonal-realization handoff:
 
 ```lean
-SurfaceCellComplex
-SurfaceCellComplex.Realization
+GeometricTriangulation.toFiniteCyclicPresentation
+FiniteCyclicPresentation.PolygonalRealization
 ```
 
-The completed Moise–Radó topological route produces a faithful `GeometricTriangulation`, then
-passes through the ledgered compatibility records:
+The completed Moise–Radó route produces a faithful `GeometricTriangulation`. Its cyclic face
+presentation is homeomorphic to the geometric realization, Gallier–Xu normalization preserves the
+polygonal realization, and the three canonical endpoints realize the exact Lean-Eval
+representatives:
 
-```lean
-GeometricTriangulation S
-FiniteSurfaceTriangulation S
-FiniteSurfaceTriangulation.toCellComplex
-compact_surface_homeomorphic_to_cell_complex
-```
-
-The last handoff currently preserves raw data and a stored realization but does not yet certify
-`SurfaceCellComplex.IsSurfaceValid`, `.IsConnected`, or the polygonal quotient realization.
-
-The Gallier-Xu normal-form route should consume only `SurfaceCellComplex` and prove:
-
-```lean
-SurfaceCellComplex.hasEvalRepresentative
+```text
+GeometricTriangulation
+  → FiniteCyclicPresentation
+  → NormalForm.canonicalPresentation
+  → vendored Lean-Eval quotient
 ```
 
 The final theorem `classification_of_surfaces`, with blueprint-facing wrapper
-`topological_classification_of_surfaces`, should then be a short composition of these two bridges.
-Legacy aliases `CellComplex` and `FiniteTriangulation` still compile for
-compatibility, but new code should use the preferred names above.
+`topological_classification_of_surfaces`, is the composition of these faithful homeomorphisms.
+The legacy `SurfaceCellComplex.Realization`, `CellComplex`, and `FiniteTriangulation` scaffolding
+still compiles for compatibility but is not used by the public proof.
 
 ## Current Status
 
@@ -74,7 +66,10 @@ compatibility, but new code should use the preferred names above.
   theorem, hence invariance of domain and an unconditional `ChartBoundaryInvariant` instance.
 - The Moise/PL triangulation route is complete for compact connected Eval surfaces, including
   surfaces with manifold boundary, and uses only the hypotheses in the Lean Eval statement.
-- The triangulation-to-cell-presentation compatibility bridge remains deliberately weak as
-  recorded in `docs/KNOWN_WEAK.md`.
-- Quotient realizations and Gallier-Xu normal-form reductions are still theorem boundaries marked
-  by named `sorry`s.
+- The geometric triangulation is faithfully identified with its finite-cyclic polygonal quotient.
+- Gallier–Xu normalization reaches an admissible canonical presentation while preserving that
+  quotient.
+- The sphere, orientable, and nonorientable canonical presentations realize the exact vendored
+  Lean-Eval representatives.
+- `classification_of_surfaces` composes this chain without using the legacy arbitrary stored
+  realization.

@@ -3,113 +3,54 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
-import ClassificationOfSurfaces.CellComplex
-import ClassificationOfSurfaces.Representatives
+import ClassificationOfSurfaces.FiniteCyclicCanonicalRealization
+import ClassificationOfSurfaces.FiniteCyclicSphereRealization
+import ClassificationOfSurfaces.FiniteCyclicTerminalNormalization
 
 /-!
-# Normal-form reduction
+# Faithful normal-form classification
 
-This file owns the combinatorial part of the project: finite cell complexes reduce, via the allowed
-Gallier-Xu transformations, to one of the normal forms appearing in the eval theorem.
+This file composes the Gallier--Xu normalization of a valid connected finite-cyclic presentation
+with the exact realization homeomorphisms for the three canonical endpoints.  Every type in this
+chain is a faithful polygonal quotient; in particular, the argument does not pass through the
+legacy arbitrary `SurfaceCellComplex.Realization`.
 -/
 
 namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
 
-/-- A surface cell complex realizes the quotient space attached to a named normal form.
+/-- A valid connected finite-cyclic presentation has one of the exact Eval representatives.
 
-This is the local target for the Gallier--Xu canonical-complex construction. The quotient
-relations are the vendored Lean-Eval constants, so the predicate has the exact homeomorphism shape
-needed by the Eval theorem. -/
-def SurfaceCellComplex.RealizesNormalForm (K : SurfaceCellComplex) : NormalForm → Prop
-  | NormalForm.sphere => Nonempty (K.Realization ≃ₜ SphereRepresentative)
-  | NormalForm.orientable handles boundaryComponents =>
-      Nonempty (K.Realization ≃ₜ Quot (OrientableRel handles boundaryComponents))
-  | NormalForm.nonOrientable crosscaps boundaryComponents =>
-      Nonempty (K.Realization ≃ₜ Quot (NonOrientableRel crosscaps boundaryComponents))
-
-/-- Data that a surface cell complex has been reduced to a named normal form.
-
-The representative cell complex is still abstract until the Gallier--Xu canonical complexes are
-implemented, but the relation is no longer the proposition `True`: it carries a concrete
-cell-complex representative, a realization-preserving equivalence witness, and a witness that the
-representative realizes the named Eval quotient. -/
-def SurfaceCellComplex.HasNormalForm (K : SurfaceCellComplex) (N : NormalForm) : Prop :=
-  ∃ representative : SurfaceCellComplex,
-    K.Equivalent representative ∧ representative.RealizesNormalForm N
-
-/-- Compatibility spelling for the initial scaffold namespace. -/
-abbrev CellComplex.HasNormalForm (K : CellComplex) (N : NormalForm) : Prop :=
-  SurfaceCellComplex.HasNormalForm K N
-
-/-- Build normal-form data when the complex itself already realizes the named quotient. -/
-theorem SurfaceCellComplex.hasNormalFormOfRealizes (K : SurfaceCellComplex) (N : NormalForm)
-    (h : K.RealizesNormalForm N) :
-    K.HasNormalForm N :=
-  ⟨K, ⟨Homeomorph.refl K.Realization⟩, h⟩
-
-/-- Combinatorial bridge: every valid connected finite surface cell complex reduces to normal
-form.
-
-The explicit incidence hypotheses are supplied by the geometric-triangulation bridge.  The proof
-is intentionally unchanged in this specification checkpoint. Its current statement cannot follow
-from incidence data while `SurfaceCellComplex.Realization` remains an arbitrary stored type; the
-faithful polygonal-realization cutover is a separate refactor described in `docs/KNOWN_WEAK.md`. -/
-theorem surface_cell_complex_reduces_to_normal_form (K : SurfaceCellComplex)
-    (_hvalid : K.IsSurfaceValid) (_hconnected : K.IsConnected) :
-    ∃ N : NormalForm, N.IsEvalAdmissible ∧ K.HasNormalForm N := by
-  sorry
-
-/-- Compatibility spelling for the initial scaffold theorem name. -/
-theorem cell_complex_reduces_to_normal_form (K : CellComplex)
-    (hvalid : K.IsSurfaceValid) (hconnected : K.IsConnected) :
-    ∃ N : NormalForm, N.IsEvalAdmissible ∧ K.HasNormalForm N :=
-  surface_cell_complex_reduces_to_normal_form K hvalid hconnected
-
-/-- Convert a named normal-form witness to the disjunction shape used by the Eval statement. -/
-theorem SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm
-    {K : SurfaceCellComplex} {N : NormalForm}
-    (hN : N.IsEvalAdmissible) (h : K.HasNormalForm N) :
-    Nonempty (K.Realization ≃ₜ SphereRepresentative) ∨
+The proof first normalizes to `NormalForm.canonicalPresentation`, preserving the polygonal
+realization, and then uses the corresponding sphere, orientable, or nonorientable endpoint
+homeomorphism. -/
+theorem FiniteCyclicPresentation.hasEvalRepresentative
+    (P : FiniteCyclicPresentation)
+    (validP : P.IsSurfaceValid) (connectedP : P.IsConnected) :
+    Nonempty (P.PolygonalRealization validP ≃ₜ SphereRepresentative) ∨
       ∃ p n,
-        ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (K.Realization ≃ₜ Quot (OrientableRel p n))) ∨
-          (1 ≤ p ∧ Nonempty (K.Realization ≃ₜ Quot (NonOrientableRel p n))) := by
-  rcases h with ⟨_representative, hEquivalent, hRealizes⟩
-  rcases hEquivalent with ⟨hKR⟩
+        ((1 ≤ p ∨ 1 ≤ n) ∧
+            Nonempty (P.PolygonalRealization validP ≃ₜ Quot (OrientableRel p n))) ∨
+          (1 ≤ p ∧
+            Nonempty (P.PolygonalRealization validP ≃ₜ Quot (NonOrientableRel p n))) := by
+  obtain ⟨N, hN, hPN⟩ :=
+    P.exists_admissible_normalForm_polygonallyEquivalent validP connectedP
+  rcases hPN with ⟨hPN⟩
   cases N with
   | sphere =>
-      rcases hRealizes with ⟨hRS⟩
-      exact Or.inl ⟨hKR.trans hRS⟩
-  | orientable handles boundaryComponents =>
-      rcases hRealizes with ⟨hRQ⟩
+      exact Or.inl
+        ⟨hPN.trans NormalForm.canonicalSphereRealizationHomeomorph⟩
+  | orientable p n =>
       exact Or.inr
-        ⟨handles, boundaryComponents, Or.inl ⟨hN, ⟨hKR.trans hRQ⟩⟩⟩
-  | nonOrientable crosscaps boundaryComponents =>
-      rcases hRealizes with ⟨hRQ⟩
+        ⟨p, n, Or.inl
+          ⟨hN, ⟨hPN.trans
+            (NormalForm.canonicalOrientableRealizationHomeomorph hN)⟩⟩⟩
+  | nonOrientable p n =>
       exact Or.inr
-        ⟨crosscaps, boundaryComponents, Or.inr ⟨hN, ⟨hKR.trans hRQ⟩⟩⟩
-
-/-- Final combinatorial output in the shape needed by the eval theorem, before transporting across
-homeomorphisms from the triangulation step. -/
-theorem SurfaceCellComplex.hasEvalRepresentative (K : SurfaceCellComplex)
-    (hvalid : K.IsSurfaceValid) (hconnected : K.IsConnected) :
-    Nonempty (K.Realization ≃ₜ SphereRepresentative) ∨
-      ∃ p n,
-        ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (K.Realization ≃ₜ Quot (OrientableRel p n))) ∨
-          (1 ≤ p ∧ Nonempty (K.Realization ≃ₜ Quot (NonOrientableRel p n))) := by
-  rcases surface_cell_complex_reduces_to_normal_form K hvalid hconnected with
-    ⟨N, hN, hK⟩
-  exact SurfaceCellComplex.hasEvalRepresentative_of_hasNormalForm hN hK
-
-/-- Compatibility spelling for the initial scaffold theorem name. -/
-theorem cell_complex_has_eval_representative (K : CellComplex)
-    (hvalid : K.IsSurfaceValid) (hconnected : K.IsConnected) :
-    Nonempty (K.Realization ≃ₜ SphereRepresentative) ∨
-      ∃ p n,
-        ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (K.Realization ≃ₜ Quot (OrientableRel p n))) ∨
-          (1 ≤ p ∧ Nonempty (K.Realization ≃ₜ Quot (NonOrientableRel p n))) :=
-  SurfaceCellComplex.hasEvalRepresentative K hvalid hconnected
+        ⟨p, n, Or.inr
+          ⟨hN, ⟨hPN.trans
+            (NormalForm.canonicalNonOrientableRealizationHomeomorph hN)⟩⟩⟩
 
 end ClassificationOfSurfaces
 end Topology
