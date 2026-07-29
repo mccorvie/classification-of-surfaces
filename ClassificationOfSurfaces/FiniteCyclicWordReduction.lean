@@ -13279,6 +13279,53 @@ noncomputable def normalizePairReducedMarked {n : ℕ}
 
 end MarkedExecutionState
 
+/-- The isolated terminal obligation after the terminating marked recursion: normalize a valid,
+classified marked word whose residual contribution is empty. -/
+structure TerminalMarkedNormalizer where
+  normalize :
+    {n : ℕ} →
+      {tokens : List (ReductionToken n)} →
+      (state : MarkedExecutionState tokens) →
+      ReductionToken.protectedNames tokens ≠ [] →
+      ReductionToken.residualDarts tokens = [] →
+      NormalizationResult
+        ⟨Dyck.oneFace (ReductionToken.expand tokens),
+          state.valid⟩
+
+/-- A terminal block normalizer supplies the remaining `PairReducedNormalizer` field after the
+now-complete marked extraction recursion. -/
+noncomputable def pairReducedNormalizerOfTerminal
+    (terminal : TerminalMarkedNormalizer) :
+    PairReducedNormalizer where
+  normalize word valid reduced := by
+    let extraction :=
+      MarkedExecutionState.normalizePairReducedMarked
+        word valid reduced
+    have hExtraction :
+        NormalizationEquivalent
+          ⟨Dyck.oneFace word, valid⟩
+          ⟨Dyck.oneFace
+              (ReductionToken.expand extraction.targetTokens),
+            extraction.targetState.valid⟩ := by
+      simpa using extraction.equivalent
+    exact
+      (terminal.normalize extraction.targetState
+          extraction.targetProtectedNonempty
+          extraction.targetResidualEmpty).ofEquivalent
+        hExtraction
+
+/-- The universal connected normalization theorem is reduced to the explicit terminal block
+normalizer, with face merging, initial cancellation, marked extraction, and canonical-result
+composition already discharged. -/
+noncomputable def normalizeConnectedOfTerminal
+    (terminal : TerminalMarkedNormalizer)
+    (P : ValidPresentation)
+    (connectedP : P.presentation.IsConnected) :
+    NormalizationResult P :=
+  normalizeConnected
+    (pairReducedNormalizerOfTerminal terminal)
+    P connectedP
+
 end Pairing
 
 end WordReduction
