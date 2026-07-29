@@ -1337,6 +1337,43 @@ theorem hasValidUsedMultiplicities_residualWord {n : ℕ}
 
 end ActionablePairReductionFeature
 
+/-- The combinatorial block contributed by one actionable extraction.  Orientations on boundary
+and crosscap blocks are retained until the final signed relabeling; handle extraction has already
+normalized both distinguished edge orientations. -/
+inductive ExtractedBlock (n : ℕ)
+  | boundary (a : Fin n) (negative : Bool)
+  | crosscap (a : Fin n) (negative : Bool)
+  | handle (a b : Fin n)
+
+/-- Forget an actionable feature's occurrence decomposition while retaining its extracted block. -/
+def ActionablePairReductionFeature.block {n : ℕ}
+    {word : List (SignedDart (Fin n))} :
+    ActionablePairReductionFeature word → ExtractedBlock n
+  | .boundary a form => .boundary a form.negative
+  | .crosscap a form => .crosscap a form.negative
+  | .handle a b _ => .handle a b
+
+/-- A complete proof-relevant decomposition trace.  Each step extracts one certified block, then
+pair-reduces the strictly shorter residual before continuing. -/
+inductive ResidualDecomposition {n : ℕ} :
+    List (SignedDart (Fin n)) → Type
+  | done : ResidualDecomposition []
+  | step {word : List (SignedDart (Fin n))}
+      (feature : ActionablePairReductionFeature word)
+      (reduction : ResidualPairReduction feature.residualWord)
+      (tail : ResidualDecomposition reduction.reducedWord) :
+      ResidualDecomposition word
+
+namespace ResidualDecomposition
+
+/-- Extracted blocks, in recursive extraction order. -/
+def blocks {n : ℕ} {word : List (SignedDart (Fin n))} :
+    ResidualDecomposition word → List (ExtractedBlock n)
+  | .done => []
+  | .step feature _ tail => feature.block :: tail.blocks
+
+end ResidualDecomposition
+
 /-- One descent step from a directed opposite arc: either an immediately extractable feature,
 or a strictly shorter opposite arc nested inside it. -/
 inductive OppositeArcStep {n : ℕ}
@@ -2202,6 +2239,67 @@ theorem exists_actionablePairReductionFeature_of_usedMultiplicities {n : ℕ}
                 (d :: tail) a hpositive hnegative)
           exact ⟨form.toArc.findActionableOfUsedMultiplicities
             multiplicities reduced⟩
+
+/-- Fuel-bounded decomposition of a pair-reduced residual word into boundary, crosscap, and handle
+blocks.  Pair cancellation after each extraction restores the induction hypothesis. -/
+noncomputable def decomposeResidualFuel (fuel : ℕ) {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (multiplicities : HasValidUsedMultiplicities word)
+    (reduced : IsPairReduced word) :
+    word.length ≤ fuel → ResidualDecomposition word := by
+  classical
+  intro hbound
+  by_cases hnil : word = []
+  · subst word
+    exact .done
+  · let feature :=
+      Classical.choice
+        (exists_actionablePairReductionFeature_of_usedMultiplicities
+          word multiplicities reduced hnil)
+    let residualMultiplicities :=
+      feature.hasValidUsedMultiplicities_residualWord
+        multiplicities
+    let reduction :=
+      reduceResidualPairs feature.residualWord
+        residualMultiplicities
+    have hshort :
+        reduction.reducedWord.length < word.length :=
+      reduction.length_le.trans_lt feature.residualWord_length_lt
+    have hfuelPositive : 0 < fuel := by
+      omega
+    have htailBound :
+        reduction.reducedWord.length ≤ fuel - 1 := by
+      omega
+    exact .step feature reduction
+      (decomposeResidualFuel (fuel - 1)
+        reduction.reducedWord reduction.multiplicities
+        reduction.reduced htailBound)
+termination_by fuel
+decreasing_by
+  apply Nat.sub_lt
+  · exact hfuelPositive
+  · omega
+
+/-- Every pair-reduced residual word with valid used-edge multiplicities admits a terminating
+block decomposition. -/
+noncomputable def decomposeResidual {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (multiplicities : HasValidUsedMultiplicities word)
+    (reduced : IsPairReduced word) :
+    ResidualDecomposition word :=
+  decomposeResidualFuel word.length word multiplicities
+    reduced (le_refl _)
+
+/-- Surface-valid pair-reduced one-face words admit the residual block decomposition needed by the
+global Gallier--Xu normalization recursion. -/
+noncomputable def decomposePairReduced {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (reduced : IsPairReduced word) :
+    ResidualDecomposition word :=
+  decomposeResidual word
+    (hasValidUsedMultiplicities_of_isSurfaceValid word valid)
+    reduced
 
 /-- Find and execute one certified normalization step on any nonempty pair-reduced valid word. -/
 noncomputable def extractPairReductionFeature {n : ℕ}
