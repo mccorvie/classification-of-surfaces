@@ -1523,6 +1523,32 @@ theorem Cancellation.lowerTail_ne_nil_of_ne_nil {n : ℕ}
   apply hne
   simpa [Cancellation.renamedTail] using hrenamed
 
+/-- Re-embedding all names in a lowered word recovers the source edge-name list exactly. -/
+theorem Cancellation.restoreEdges_lowerTail {n : ℕ}
+    (a : Fin (n + 1))
+    (word : List (SignedDart (Fin (n + 1))))
+    (ha : a ∉ word.map edgeOfDart) :
+    ((Cancellation.lowerTail a word).map
+        edgeOfDart).map (Cancellation.restoreEdge a) =
+      word.map edgeOfDart := by
+  rw [← Cancellation.lowerWordAvoiding_eq_lowerTail
+    a word ha]
+  induction word with
+  | nil =>
+      rfl
+  | cons d word ih =>
+      have htail : a ∉ word.map edgeOfDart := by
+        intro hmem
+        apply ha
+        simp [hmem]
+      simp only [Cancellation.lowerWordAvoiding,
+        List.map_cons, List.cons.injEq]
+      constructor
+      · exact
+          Cancellation.restoreEdge_edgeOfDart_lowerDart
+            a d _
+      · exact ih htail
+
 /-- The combinatorial block contributed by one actionable extraction.  Orientations on boundary
 and crosscap blocks are retained until the final signed relabeling; handle extraction has already
 normalized both distinguished edge orientations. -/
@@ -1748,6 +1774,7 @@ reductions; extracted blocks are atomic tokens whose exact dart succession must 
 inductive ReductionToken (n : ℕ)
   | residual (dart : SignedDart (Fin n))
   | extracted (block : ExtractedBlock n)
+  | protectedWord (value : List (SignedDart (Fin n)))
 
 namespace ReductionToken
 
@@ -1756,17 +1783,20 @@ def word {n : ℕ} : ReductionToken n →
     List (SignedDart (Fin n))
   | .residual dart => [dart]
   | .extracted block => block.word
+  | .protectedWord value => value
 
 /-- Residual contribution of one marked token. -/
 def residualWord {n : ℕ} : ReductionToken n →
     List (SignedDart (Fin n))
   | .residual dart => [dart]
   | .extracted _ => []
+  | .protectedWord _ => []
 
 /-- Edge names protected inside one extracted-block token. -/
 def extractedEdges {n : ℕ} : ReductionToken n → List (Fin n)
   | .residual _ => []
   | .extracted block => block.edges
+  | .protectedWord value => value.map edgeOfDart
 
 @[simp]
 theorem word_residual {n : ℕ} (dart : SignedDart (Fin n)) :
@@ -1776,6 +1806,12 @@ theorem word_residual {n : ℕ} (dart : SignedDart (Fin n)) :
 @[simp]
 theorem word_extracted {n : ℕ} (block : ExtractedBlock n) :
     word (.extracted block) = block.word :=
+  rfl
+
+@[simp]
+theorem word_protectedWord {n : ℕ}
+    (value : List (SignedDart (Fin n))) :
+    word (.protectedWord value) = value :=
   rfl
 
 @[simp]
@@ -1791,6 +1827,12 @@ theorem residualWord_extracted {n : ℕ}
   rfl
 
 @[simp]
+theorem residualWord_protectedWord {n : ℕ}
+    (value : List (SignedDart (Fin n))) :
+    residualWord (.protectedWord value) = [] :=
+  rfl
+
+@[simp]
 theorem extractedEdges_residual {n : ℕ}
     (dart : SignedDart (Fin n)) :
     extractedEdges (.residual dart) = [] :=
@@ -1802,16 +1844,28 @@ theorem extractedEdges_extracted {n : ℕ}
     extractedEdges (.extracted block) = block.edges :=
   rfl
 
+@[simp]
+theorem extractedEdges_protectedWord {n : ℕ}
+    (value : List (SignedDart (Fin n))) :
+    extractedEdges (.protectedWord value) =
+      value.map edgeOfDart :=
+  rfl
+
 /-- Reverse a token while preserving an extracted block as one atomic token. -/
 def inverse {n : ℕ} : ReductionToken n → ReductionToken n
   | .residual dart => .residual dart.flip
   | .extracted block => .extracted block.inverse
+  | .protectedWord value =>
+      .protectedWord (inverseWord value)
 
 /-- Relabel every edge name represented by a marked token. -/
 def mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m) :
     ReductionToken n → ReductionToken m
   | .residual dart => .residual (SignedDart.mapEquiv e dart)
   | .extracted block => .extracted (block.mapEquiv e)
+  | .protectedWord value =>
+      .protectedWord
+        (value.map (SignedDart.mapEquiv e))
 
 @[simp]
 theorem word_inverse {n : ℕ} (token : ReductionToken n) :
@@ -1821,6 +1875,8 @@ theorem word_inverse {n : ℕ} (token : ReductionToken n) :
       cases dart <;> rfl
   | extracted block =>
       exact ExtractedBlock.word_inverse block
+  | protectedWord value =>
+      rfl
 
 @[simp]
 theorem residualWord_inverse {n : ℕ}
@@ -1831,6 +1887,8 @@ theorem residualWord_inverse {n : ℕ}
   | residual dart =>
       cases dart <;> rfl
   | extracted =>
+      rfl
+  | protectedWord =>
       rfl
 
 @[simp]
@@ -1843,6 +1901,9 @@ theorem extractedEdges_inverse {n : ℕ}
       rfl
   | extracted block =>
       exact ExtractedBlock.edges_inverse block
+  | protectedWord value =>
+      simp [inverse, extractedEdges,
+        map_edgeOfDart_inverseWord]
 
 @[simp]
 theorem inverse_inverse {n : ℕ} (token : ReductionToken n) :
@@ -1851,6 +1912,8 @@ theorem inverse_inverse {n : ℕ} (token : ReductionToken n) :
   | residual dart =>
       cases dart <;> rfl
   | extracted block =>
+      simp [inverse]
+  | protectedWord value =>
       simp [inverse]
 
 @[simp]
@@ -1863,6 +1926,8 @@ theorem word_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
       rfl
   | extracted block =>
       exact ExtractedBlock.word_mapEquiv e block
+  | protectedWord value =>
+      rfl
 
 @[simp]
 theorem residualWord_mapEquiv {n m : ℕ}
@@ -1881,6 +1946,9 @@ theorem inverse_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
       cases dart <;> rfl
   | extracted block =>
       simp [inverse, mapEquiv]
+  | protectedWord value =>
+      simp [inverse, mapEquiv,
+        inverseWord_map_mapEquiv]
 
 /-- Lower a marked token known not to use the removed ambient edge. -/
 def lowerAvoiding {n : ℕ} (a : Fin (n + 1))
@@ -1902,6 +1970,9 @@ def lowerAvoiding {n : ℕ} (a : Fin (n + 1))
           exact
             (ExtractedBlock.mem_map_edgeOfDart_word_iff
               block a).mpr hblock))
+  | .protectedWord value =>
+      .protectedWord
+        (Cancellation.lowerTail a value)
 
 /-- Lowering one marked token agrees with word-level cancellation lowering. -/
 theorem word_lowerAvoiding {n : ℕ}
@@ -1918,6 +1989,8 @@ theorem word_lowerAvoiding {n : ℕ}
           a [d] ha
   | extracted block =>
       exact ExtractedBlock.word_lowerAvoiding a block _
+  | protectedWord value =>
+      rfl
 
 /-- Re-embedding residual edge names after lowering one token recovers the old residual names. -/
 theorem residualEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
@@ -1937,6 +2010,8 @@ theorem residualEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
       rw [Cancellation.restoreEdge_edgeOfDart_lowerDart]
   | extracted =>
       rfl
+  | protectedWord =>
+      rfl
 
 /-- Re-embedding protected edge names after lowering one token recovers the old protected names. -/
 theorem extractedEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
@@ -1953,6 +2028,9 @@ theorem extractedEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
       exact
         ExtractedBlock.edges_lowerAvoiding_map_restoreEdge
           a block _
+  | protectedWord value =>
+      exact Cancellation.restoreEdges_lowerTail
+        a value ha
 
 /-- Expand a marked word to the exact signed word on which normalization moves act. -/
 def expand {n : ℕ} (tokens : List (ReductionToken n)) :
@@ -2210,6 +2288,14 @@ theorem mem_map_edgeOfDart_expand_iff {n : ℕ}
           rw [ExtractedBlock.mem_map_edgeOfDart_word_iff,
             ih]
           tauto
+      | protectedWord value =>
+          simp only [expand_cons, word_protectedWord,
+            residualDarts_cons, residualWord_protectedWord,
+            protectedEdges_cons, extractedEdges_protectedWord,
+            List.nil_append, List.map_append,
+            List.mem_append]
+          rw [ih]
+          tauto
 
 /-- Flattening preserves a cyclic rotation of a list of lists. -/
 theorem isRotated_flatten {α : Type*}
@@ -2360,6 +2446,21 @@ theorem exists_split_of_residualDarts_eq_append_cons {n : ℕ}
                   List.nil_append]
                 exact hleft,
               hright⟩
+      | protectedWord value =>
+          simp only [residualDarts_cons,
+            residualWord_protectedWord,
+            List.nil_append] at hresidual
+          rcases ih left hresidual with
+            ⟨tokenLeft, tokenRight, htokens, hleft, hright⟩
+          exact
+            ⟨.protectedWord value :: tokenLeft, tokenRight,
+              by simp [htokens],
+              by
+                simp only [residualDarts_cons,
+                  residualWord_protectedWord,
+                  List.nil_append]
+                exact hleft,
+              hright⟩
       | residual first =>
           cases left with
           | nil =>
@@ -2410,6 +2511,21 @@ theorem exists_split_of_residualDarts_eq_append {n : ℕ}
               by
                 simp only [residualDarts_cons,
                   residualWord_extracted, List.nil_append]
+                exact hleft,
+              hright⟩
+      | protectedWord value =>
+          simp only [residualDarts_cons,
+            residualWord_protectedWord,
+            List.nil_append] at hresidual
+          rcases ih left hresidual with
+            ⟨tokenLeft, tokenRight, htokens, hleft, hright⟩
+          exact
+            ⟨.protectedWord value :: tokenLeft, tokenRight,
+              by simp [htokens],
+              by
+                simp only [residualDarts_cons,
+                  residualWord_protectedWord,
+                  List.nil_append]
                 exact hleft,
               hright⟩
       | residual first =>
@@ -3359,6 +3475,273 @@ theorem tailTokens_isSeparated {n : ℕ}
       List.nil_append] using heProtected
 
 end MarkedCancellablePair
+
+/-- A cancellable pair of the erased residual word lifted to its exact marked-token interval.
+The intervening tokens have empty residual contribution but may contain protected blocks. -/
+structure MarkedResidualCancellablePair {n : ℕ}
+    (tokens : List (ReductionToken (n + 1))) where
+  edge : Fin (n + 1)
+  negativeFirst : Bool
+  betweenTokens : List (ReductionToken (n + 1))
+  tailTokens : List (ReductionToken (n + 1))
+  rotated :
+    tokens.IsRotated
+      (.residual (dart edge negativeFirst) ::
+        betweenTokens ++
+        .residual (dart edge (!negativeFirst)) ::
+        tailTokens)
+  residual_between :
+    ReductionToken.residualDarts betweenTokens = []
+
+namespace MarkedResidualCancellablePair
+
+/-- Lift an ordinary cancellable pair of the erased residual word to marked-token data. -/
+noncomputable def lift {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair :
+      CancellablePair
+        (ReductionToken.residualDarts tokens)) :
+    MarkedResidualCancellablePair tokens := by
+  have hresidual :
+      (ReductionToken.residualDarts tokens).IsRotated
+        (dart pair.edge pair.negativeFirst ::
+          dart pair.edge (!pair.negativeFirst) ::
+          pair.tail) := by
+    cases hnegative : pair.negativeFirst <;>
+      simpa [inversePair, dart, hnegative] using
+        pair.rotated
+  let headLift :=
+    ReductionToken.residualConsRotation
+      tokens (dart pair.edge pair.negativeFirst)
+      (dart pair.edge (!pair.negativeFirst) ::
+        pair.tail)
+      hresidual
+  let split :=
+    ReductionToken.residualDartSplit
+      headLift.tokenRemainder [] pair.tail
+      (dart pair.edge (!pair.negativeFirst))
+      (by simpa using headLift.residual_remainder)
+  have hrotated :
+      tokens.IsRotated
+        (.residual
+            (dart pair.edge pair.negativeFirst) ::
+          split.tokenLeft ++
+          .residual
+            (dart pair.edge (!pair.negativeFirst)) ::
+          split.tokenRight) := by
+    have h := headLift.rotated
+    rw [split.tokens_eq] at h
+    simpa only [List.cons_append,
+      List.append_assoc] using h
+  exact
+    { edge := pair.edge
+      negativeFirst := pair.negativeFirst
+      betweenTokens := split.tokenLeft
+      tailTokens := split.tokenRight
+      rotated := hrotated
+      residual_between := split.residual_left }
+
+/-- When no protected token intervenes, a lifted residual pair is directly cancellable. -/
+def toAdjacent {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (hempty : pair.betweenTokens = []) :
+    MarkedCancellablePair tokens where
+  edge := pair.edge
+  negativeFirst := pair.negativeFirst
+  tailTokens := pair.tailTokens
+  rotated := by
+    simpa [hempty] using pair.rotated
+
+end MarkedResidualCancellablePair
+
+/-- A residual inverse pair surrounding one extracted boundary singleton.  Reclassifying the
+three-token succession as one protected word closes the singleton into the canonical loop shape
+without changing the expanded cyclic presentation. -/
+structure MarkedBoundaryClosure {n : ℕ}
+    (tokens : List (ReductionToken n)) where
+  carrier : Fin n
+  hole : Fin n
+  carrierNegative : Bool
+  holeNegative : Bool
+  tailTokens : List (ReductionToken n)
+  rotated :
+    tokens.IsRotated
+      (.residual (dart carrier carrierNegative) ::
+        .extracted (.boundary hole holeNegative) ::
+        .residual (dart carrier (!carrierNegative)) ::
+        tailTokens)
+
+namespace MarkedBoundaryClosure
+
+/-- Exact three-dart spelling of the closed boundary loop. -/
+def boundaryWord {n : ℕ} {tokens : List (ReductionToken n)}
+    (closure : MarkedBoundaryClosure tokens) :
+    List (SignedDart (Fin n)) :=
+  [dart closure.carrier closure.carrierNegative,
+    dart closure.hole closure.holeNegative,
+    dart closure.carrier (!closure.carrierNegative)]
+
+/-- Marked target obtained by replacing the displayed succession with one atomic protected word. -/
+def targetTokens {n : ℕ} {tokens : List (ReductionToken n)}
+    (closure : MarkedBoundaryClosure tokens) :
+    List (ReductionToken n) :=
+  .protectedWord closure.boundaryWord ::
+    closure.tailTokens
+
+/-- The source expansion is a cyclic rotation of the exact boundary-closure target expansion. -/
+theorem expand_isRotated_target {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (closure : MarkedBoundaryClosure tokens) :
+    (ReductionToken.expand tokens).IsRotated
+      (ReductionToken.expand closure.targetTokens) := by
+  have hexpanded :=
+    ReductionToken.expand_isRotated closure.rotated
+  simpa [targetTokens, boundaryWord,
+    ExtractedBlock.word, dart] using hexpanded
+
+/-- Surface multiplicity forces the loop carrier to be absent from the remaining marked tail. -/
+theorem carrier_not_mem_tail {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (closure : MarkedBoundaryClosure tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    closure.carrier ∉
+      (ReductionToken.expand closure.tailTokens).map
+        edgeOfDart := by
+  have separatedDisplayed :=
+    separated.of_isRotated closure.rotated
+  have hcarrierResidual :
+      closure.carrier ∈
+        (ReductionToken.residualDarts
+          (.residual
+              (dart closure.carrier
+                closure.carrierNegative) ::
+            .extracted
+              (.boundary closure.hole
+                closure.holeNegative) ::
+            .residual
+              (dart closure.carrier
+                (!closure.carrierNegative)) ::
+            closure.tailTokens)).map edgeOfDart := by
+    simp
+  have hcarrierProtected :=
+    separatedDisplayed.not_mem_protected_of_mem_residual
+      closure.carrier hcarrierResidual
+  have hcarrierHole : closure.carrier ≠ closure.hole := by
+    intro heq
+    apply hcarrierProtected
+    simp [heq, ExtractedBlock.edges]
+  have hcount :=
+    (closure.expand_isRotated_target.map
+      edgeOfDart).perm.count_eq closure.carrier
+  have hmultiplicity := valid.2.2.2 closure.carrier
+  rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
+  simp only [ReductionToken.expand_cons,
+    ReductionToken.word_protectedWord,
+    List.map_append, List.map_cons, List.map_nil,
+    edgeOfDart_dart, List.count_append,
+    List.count_cons, List.count_nil,
+    beq_self_eq_true, if_true, boundaryWord,
+    targetTokens] at hcount
+  simp [hcarrierHole.symm] at hcount
+  intro htail
+  have hpositive :
+      0 <
+        ((ReductionToken.expand closure.tailTokens).map
+          edgeOfDart).count closure.carrier :=
+    List.count_pos_iff.mpr htail
+  omega
+
+/-- Closing a boundary singleton preserves separation of the remaining residual names from all
+protected loop and block names. -/
+theorem targetTokens_isSeparated {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (closure : MarkedBoundaryClosure tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    ReductionToken.IsSeparated closure.targetTokens := by
+  have separatedDisplayed :=
+    separated.of_isRotated closure.rotated
+  have hcarrierTail :=
+    closure.carrier_not_mem_tail separated valid
+  rw [ReductionToken.IsSeparated,
+    List.disjoint_left]
+  intro e heResidual heProtected
+  have heResidualTail :
+      e ∈
+        (ReductionToken.residualDarts
+          closure.tailTokens).map edgeOfDart := by
+    simpa [targetTokens] using heResidual
+  have heExpandedTail :
+      e ∈
+        (ReductionToken.expand
+          closure.tailTokens).map edgeOfDart :=
+    (ReductionToken.mem_map_edgeOfDart_expand_iff
+      closure.tailTokens e).mpr (Or.inl heResidualTail)
+  simp only [targetTokens,
+    ReductionToken.protectedEdges_cons,
+    ReductionToken.extractedEdges_protectedWord,
+    boundaryWord, List.map_cons, List.map_nil,
+    edgeOfDart_dart, List.mem_append,
+    List.mem_cons, List.not_mem_nil, or_false] at heProtected
+  rcases heProtected with heBoundary | heProtectedTail
+  rcases heBoundary with rfl | rfl | rfl
+  · exact hcarrierTail heExpandedTail
+  · apply (List.disjoint_left.mp separatedDisplayed)
+    · simp only [ReductionToken.residualDarts_cons,
+        ReductionToken.residualWord_residual,
+        ReductionToken.residualWord_extracted,
+        List.singleton_append, List.nil_append,
+        List.map_cons, edgeOfDart_dart,
+        List.mem_cons]
+      exact Or.inr (Or.inr heResidualTail)
+    · simp [ReductionToken.protectedEdges_cons,
+        ReductionToken.extractedEdges_residual,
+        ReductionToken.extractedEdges_extracted,
+        ExtractedBlock.edges]
+  · exact hcarrierTail heExpandedTail
+  · apply (List.disjoint_left.mp separatedDisplayed)
+    · simp only [ReductionToken.residualDarts_cons,
+        ReductionToken.residualWord_residual,
+        ReductionToken.residualWord_extracted,
+        List.singleton_append, List.nil_append,
+        List.map_cons, edgeOfDart_dart,
+        List.mem_cons]
+      exact Or.inr (Or.inr heResidualTail)
+    · simpa only [ReductionToken.protectedEdges_cons,
+        ReductionToken.extractedEdges_residual,
+        ReductionToken.extractedEdges_extracted,
+        ExtractedBlock.edges, List.nil_append,
+        List.singleton_append, List.mem_cons] using
+          Or.inr heProtectedTail
+
+end MarkedBoundaryClosure
+
+namespace MarkedResidualCancellablePair
+
+/-- A lifted residual pair surrounding exactly one boundary singleton is a boundary closure. -/
+def toBoundaryClosure {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (hole : Fin (n + 1)) (holeNegative : Bool)
+    (hbetween :
+      pair.betweenTokens =
+        [.extracted (.boundary hole holeNegative)]) :
+    MarkedBoundaryClosure tokens where
+  carrier := pair.edge
+  hole := hole
+  carrierNegative := pair.negativeFirst
+  holeNegative := holeNegative
+  tailTokens := pair.tailTokens
+  rotated := by
+    simpa [hbetween] using pair.rotated
+
+end MarkedResidualCancellablePair
 
 /-- A complete proof-relevant decomposition trace.  Each step extracts one certified block, then
 pair-reduces the strictly shorter residual before continuing. -/
@@ -4556,6 +4939,54 @@ noncomputable def cancel {n : ℕ}
     simpa only [htarget] using hequivalent
 
 end MarkedCancellablePair
+
+/-- Proof-producing reclassification of a residual inverse pair and boundary singleton as one
+atomic protected loop. -/
+structure MarkedBoundaryClosureResult {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (closure : MarkedBoundaryClosure tokens)
+    (valid :
+      (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    Type where
+  targetValid :
+    (Dyck.oneFace
+      (ReductionToken.expand closure.targetTokens)).IsSurfaceValid
+  targetSeparated :
+    ReductionToken.IsSeparated closure.targetTokens
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand closure.targetTokens),
+        targetValid⟩
+
+namespace MarkedBoundaryClosure
+
+/-- Close an extracted boundary singleton into an atomic loop.  The underlying signed word changes
+only by cyclic rotation, while the residual measure drops by the two carrier darts. -/
+noncomputable def close {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (closure : MarkedBoundaryClosure tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (valid :
+      (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    MarkedBoundaryClosureResult closure valid := by
+  let rotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      closure.expand_isRotated_target
+  let targetValid :
+      (Dyck.oneFace
+        (ReductionToken.expand
+          closure.targetTokens)).IsSurfaceValid :=
+    rotation.isSurfaceValid valid
+  exact
+    { targetValid := targetValid
+      targetSeparated :=
+        closure.targetTokens_isSeparated separated valid
+      equivalent :=
+        NormalizationEquivalent.ofSignedIso rotation }
+
+end MarkedBoundaryClosure
 
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
