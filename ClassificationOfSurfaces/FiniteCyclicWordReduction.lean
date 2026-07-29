@@ -808,6 +808,21 @@ noncomputable def reduceResidualPairs {n : ℕ}
     ResidualPairReduction word :=
   reduceResidualPairsFuel word.length word multiplicities (le_refl _)
 
+namespace ResidualPairReduction
+
+/-- Every name surviving residual cancellation occurred in the input residual word. -/
+theorem mem_source_of_mem {n : ℕ}
+    {sourceWord : List (SignedDart (Fin n))}
+    (result : ResidualPairReduction sourceWord)
+    (e : Fin n)
+    (he : e ∈ result.reducedWord.map edgeOfDart) :
+    e ∈ sourceWord.map edgeOfDart := by
+  apply List.count_pos_iff.mp
+  rw [result.count_eq_of_mem e he]
+  exact List.count_pos_iff.mpr he
+
+end ResidualPairReduction
+
 /-- A known surface multiplicity classifies the two signed counts of an edge. -/
 theorem exists_edgePattern_of_multiplicity {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n)
@@ -1345,6 +1360,16 @@ inductive ExtractedBlock (n : ℕ)
   | crosscap (a : Fin n) (negative : Bool)
   | handle (a b : Fin n)
 
+namespace ExtractedBlock
+
+/-- Ambient edge names consumed by an extracted block. -/
+def edges {n : ℕ} : ExtractedBlock n → List (Fin n)
+  | .boundary a _ => [a]
+  | .crosscap a _ => [a]
+  | .handle a b => [a, b]
+
+end ExtractedBlock
+
 /-- Forget an actionable feature's occurrence decomposition while retaining its extracted block. -/
 def ActionablePairReductionFeature.block {n : ℕ}
     {word : List (SignedDart (Fin n))} :
@@ -1352,6 +1377,82 @@ def ActionablePairReductionFeature.block {n : ℕ}
   | .boundary a form => .boundary a form.negative
   | .crosscap a form => .crosscap a form.negative
   | .handle a b _ => .handle a b
+
+namespace ActionablePairReductionFeature
+
+/-- The edge names consumed by an actionable extraction. -/
+def extractedEdges {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word) :
+    List (Fin n) :=
+  feature.block.edges
+
+/-- The edge names inside one extracted block are distinct. -/
+theorem extractedEdges_nodup {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word) :
+    feature.extractedEdges.Nodup := by
+  cases feature with
+  | boundary => simp [extractedEdges, block, ExtractedBlock.edges]
+  | crosscap => simp [extractedEdges, block, ExtractedBlock.edges]
+  | handle a b form =>
+      simp [extractedEdges, block, ExtractedBlock.edges,
+        form.edge_ne]
+
+/-- No edge consumed by a feature remains in its residual word. -/
+theorem extractedEdges_disjoint_residualWord {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word) :
+    feature.extractedEdges.Disjoint
+      (feature.residualWord.map edgeOfDart) := by
+  cases feature with
+  | boundary a form =>
+      simpa [extractedEdges, block, ExtractedBlock.edges,
+        residualWord] using form.edge_not_mem_remainder
+  | crosscap a form =>
+      simp [extractedEdges, block, ExtractedBlock.edges,
+        residualWord, map_edgeOfDart_inverseWord,
+        form.edge_not_mem_remainder,
+        form.edge_not_mem_between]
+  | handle a b form =>
+      simp [extractedEdges, block, ExtractedBlock.edges,
+        residualWord, form.a_not_mem_remainder,
+        form.a_not_mem_beforeOutsideB,
+        form.a_not_mem_beforeNegA,
+        form.a_not_mem_beforeB,
+        form.b_not_mem_remainder,
+        form.b_not_mem_beforeOutsideB,
+        form.b_not_mem_beforeNegA,
+        form.b_not_mem_beforeB]
+
+/-- Every name consumed by a feature occurs in its source word. -/
+theorem extractedEdges_subset_source {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word) :
+    ∀ e ∈ feature.extractedEdges, e ∈ word.map edgeOfDart := by
+  intro e he
+  cases feature with
+  | boundary a form =>
+      have hperm := (form.rotated.map edgeOfDart).perm
+      rw [hperm.mem_iff]
+      simp only [extractedEdges, block, ExtractedBlock.edges,
+        List.mem_singleton] at he
+      subst e
+      simp
+  | crosscap a form =>
+      have hperm := (form.rotated.map edgeOfDart).perm
+      rw [hperm.mem_iff]
+      simp only [extractedEdges, block, ExtractedBlock.edges,
+        List.mem_singleton] at he
+      subst e
+      simp
+  | handle a b form =>
+      have hperm := (form.rotated.map edgeOfDart).perm
+      rw [hperm.mem_iff]
+      simp [extractedEdges, block, ExtractedBlock.edges] at he
+      rcases he with rfl | rfl <;> simp
+
+end ActionablePairReductionFeature
 
 /-- A complete proof-relevant decomposition trace.  Each step extracts one certified block, then
 pair-reduces the strictly shorter residual before continuing. -/
@@ -1371,6 +1472,59 @@ def blocks {n : ℕ} {word : List (SignedDart (Fin n))} :
     ResidualDecomposition word → List (ExtractedBlock n)
   | .done => []
   | .step feature _ tail => feature.block :: tail.blocks
+
+/-- Edge names consumed by all blocks in extraction order. -/
+def extractedEdges {n : ℕ} {word : List (SignedDart (Fin n))} :
+    ResidualDecomposition word → List (Fin n)
+  | .done => []
+  | .step feature _ tail =>
+      feature.extractedEdges ++ tail.extractedEdges
+
+/-- Every edge recorded by a decomposition occurs in that decomposition's source word. -/
+theorem mem_source_of_mem_extractedEdges {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (decomposition : ResidualDecomposition word)
+    (e : Fin n)
+    (he : e ∈ decomposition.extractedEdges) :
+    e ∈ word.map edgeOfDart := by
+  induction decomposition with
+  | done =>
+      simp [extractedEdges] at he
+  | step feature reduction tail ih =>
+      simp only [extractedEdges, List.mem_append] at he
+      rcases he with hfeature | htail
+      · exact feature.extractedEdges_subset_source e hfeature
+      · have hReduced :
+            e ∈ reduction.reducedWord.map edgeOfDart :=
+          ih htail
+        have hResidual :=
+          reduction.mem_source_of_mem e hReduced
+        apply List.count_pos_iff.mp
+        rw [feature.count_residualWord_of_mem e hResidual]
+        exact List.count_pos_iff.mpr hResidual
+
+/-- Distinct extraction steps consume disjoint edge names. -/
+theorem extractedEdges_nodup {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (decomposition : ResidualDecomposition word) :
+    decomposition.extractedEdges.Nodup := by
+  induction decomposition with
+  | done =>
+      simp [extractedEdges]
+  | step feature reduction tail ih =>
+      rw [extractedEdges, List.nodup_append]
+      refine ⟨feature.extractedEdges_nodup, ih, ?_⟩
+      intro e hfeature e' htail heq
+      subst e'
+      have hReduced :
+          e ∈ reduction.reducedWord.map edgeOfDart :=
+        tail.mem_source_of_mem_extractedEdges e htail
+      have hResidual :=
+        reduction.mem_source_of_mem e hReduced
+      exact
+        (List.disjoint_left.mp
+          feature.extractedEdges_disjoint_residualWord)
+          hfeature hResidual
 
 end ResidualDecomposition
 
