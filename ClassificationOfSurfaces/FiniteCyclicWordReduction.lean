@@ -635,15 +635,30 @@ inductive EdgePattern {n : ℕ}
       (positive : word.count (.pos a) = 1)
       (negative : word.count (.neg a) = 1)
 
-/-- Surface validity classifies every edge as boundary, equally oriented, or oppositely
-oriented. -/
-theorem exists_edgePattern {n : ℕ}
+/-- Every edge name actually used by a residual word still has a surface multiplicity.  Unlike
+`IsSurfaceValid`, this predicate permits the ambient `Fin` type to contain already-grouped edge
+names which no longer occur in the residual word. -/
+def HasValidUsedMultiplicities {n : ℕ}
+    (word : List (SignedDart (Fin n))) : Prop :=
+  ∀ a, a ∈ word.map edgeOfDart →
+    (word.map edgeOfDart).count a = 1 ∨
+      (word.map edgeOfDart).count a = 2
+
+/-- Ordinary one-face validity implies valid multiplicity for every used edge. -/
+theorem hasValidUsedMultiplicities_of_isSurfaceValid {n : ℕ}
     (word : List (SignedDart (Fin n)))
-    (valid : (Dyck.oneFace word).IsSurfaceValid)
-    (a : Fin n) :
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    HasValidUsedMultiplicities word := by
+  intro a _ha
+  simpa only [Dyck.oneFace_edgeMultiplicity] using valid.2.2.2 a
+
+/-- A known surface multiplicity classifies the two signed counts of an edge. -/
+theorem exists_edgePattern_of_multiplicity {n : ℕ}
+    (word : List (SignedDart (Fin n))) (a : Fin n)
+    (hmultiplicity :
+      (word.map edgeOfDart).count a = 1 ∨
+        (word.map edgeOfDart).count a = 2) :
     Nonempty (EdgePattern word a) := by
-  have hmultiplicity := valid.2.2.2 a
-  rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
   rcases hmultiplicity with hone | htwo
   · exact ⟨.boundary hone⟩
   · have hsum :
@@ -655,6 +670,16 @@ theorem exists_edgePattern {n : ℕ}
     · by_cases hnegative : word.count (.neg a) = 2
       · exact ⟨.negativeCrosscap (by omega) hnegative⟩
       · exact ⟨.opposite (by omega) (by omega)⟩
+
+/-- Surface validity classifies every edge as boundary, equally oriented, or oppositely
+oriented. -/
+theorem exists_edgePattern {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (a : Fin n) :
+    Nonempty (EdgePattern word a) :=
+  exists_edgePattern_of_multiplicity word a (by
+    simpa only [Dyck.oneFace_edgeMultiplicity] using valid.2.2.2 a)
 
 /-- A list in which `a` occurs exactly once can be split at that occurrence, with certified
 absence on both sides. -/
@@ -1068,10 +1093,10 @@ theorem exists_boundaryOccurrenceForm {n : ℕ}
 /-- Inspect the first dart of a nonempty opposite arc.  A boundary or equal-orientation edge is
 immediately actionable.  An opposite edge either crosses the selected pair, yielding a handle,
 or closes inside it, yielding a strictly shorter directed arc. -/
-theorem OppositeArcForm.exists_step {n : ℕ}
+theorem OppositeArcForm.exists_step_of_usedMultiplicities {n : ℕ}
     {word : List (SignedDart (Fin n))} {a : Fin n}
     (form : OppositeArcForm word a)
-    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (multiplicities : HasValidUsedMultiplicities word)
     (reduced : IsPairReduced word) :
     Nonempty (OppositeArcStep word form) := by
   classical
@@ -1086,11 +1111,17 @@ theorem OppositeArcForm.exists_step {n : ℕ}
       have hbmem : b ∈ form.between.map edgeOfDart := by
         rw [hbetween]
         simp [b]
+      have hbword : b ∈ word.map edgeOfDart := by
+        apply (form.rotated.map edgeOfDart).mem_iff.mpr
+        simp [hbetween, b]
       have hba : b ≠ a := by
         intro h
         exact form.edge_not_mem_between (h ▸ hbmem)
       have hab : a ≠ b := hba.symm
-      let pattern := Classical.choice (exists_edgePattern word valid b)
+      let pattern :=
+        Classical.choice
+          (exists_edgePattern_of_multiplicity
+            word b (multiplicities b hbword))
       cases pattern with
       | boundary hcount =>
           let boundaryForm :=
@@ -1308,23 +1339,47 @@ theorem OppositeArcForm.exists_step {n : ℕ}
                   b_not_mem_remainder := hbTail }
               exact ⟨.actionable (.handle a b handleForm)⟩
 
+/-- Surface-valid words supply the residual multiplicity hypothesis required by one opposite-arc
+descent step. -/
+theorem OppositeArcForm.exists_step {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : OppositeArcForm word a)
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (reduced : IsPairReduced word) :
+    Nonempty (OppositeArcStep word form) :=
+  form.exists_step_of_usedMultiplicities
+    (hasValidUsedMultiplicities_of_isSurfaceValid word valid) reduced
+
 /-- Well-founded descent through nested opposite pairs terminates at a boundary, crosscap, or
 interleaved handle feature. -/
+noncomputable def OppositeArcForm.findActionableOfUsedMultiplicities {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : OppositeArcForm word a)
+    (multiplicities : HasValidUsedMultiplicities word)
+    (reduced : IsPairReduced word) :
+    ActionablePairReductionFeature word := by
+  let step :=
+    Classical.choice
+      (form.exists_step_of_usedMultiplicities
+        multiplicities reduced)
+  cases step with
+  | actionable feature =>
+      exact feature
+  | nested b inner shorter =>
+      exact inner.findActionableOfUsedMultiplicities
+        multiplicities reduced
+termination_by form.between.length
+decreasing_by exact shorter
+
+/-- Validity-specialized spelling of the residual opposite-arc descent. -/
 noncomputable def OppositeArcForm.findActionable {n : ℕ}
     {word : List (SignedDart (Fin n))} {a : Fin n}
     (form : OppositeArcForm word a)
     (valid : (Dyck.oneFace word).IsSurfaceValid)
     (reduced : IsPairReduced word) :
-    ActionablePairReductionFeature word := by
-  let step :=
-    Classical.choice (form.exists_step valid reduced)
-  cases step with
-  | actionable feature =>
-      exact feature
-  | nested b inner shorter =>
-      exact inner.findActionable valid reduced
-termination_by form.between.length
-decreasing_by exact shorter
+    ActionablePairReductionFeature word :=
+  form.findActionableOfUsedMultiplicities
+    (hasValidUsedMultiplicities_of_isSurfaceValid word valid) reduced
 
 /-- In a pair-reduced word, the two darts of an opposite form have a nonempty intervening
 word. -/
@@ -1821,6 +1876,52 @@ theorem exists_actionablePairReductionFeature {n : ℕ}
       exact ⟨.crosscap a form⟩
   | opposite a form _ =>
       exact ⟨form.toArc.findActionable valid reduced⟩
+
+/-- Residual form of actionable-feature existence.  It needs only a nonempty residual word,
+surface multiplicities for names still used there, and pair reduction; already-grouped ambient
+edge names may be absent. -/
+theorem exists_actionablePairReductionFeature_of_usedMultiplicities {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (multiplicities : HasValidUsedMultiplicities word)
+    (reduced : IsPairReduced word)
+    (hne : word ≠ []) :
+    Nonempty (ActionablePairReductionFeature word) := by
+  cases word with
+  | nil =>
+      exact (hne rfl).elim
+  | cons d tail =>
+      let a : Fin n := edgeOfDart d
+      have ha : a ∈ (d :: tail).map edgeOfDart := by
+        simp [a]
+      let pattern :=
+        Classical.choice
+          (exists_edgePattern_of_multiplicity
+            (d :: tail) a (multiplicities a ha))
+      cases pattern with
+      | boundary hcount =>
+          let form :=
+            Classical.choice
+              (exists_boundaryOccurrenceForm (d :: tail) a hcount)
+          exact ⟨.boundary a form⟩
+      | positiveCrosscap hpositive hnegative =>
+          let form :=
+            Classical.choice
+              (exists_positiveCrosscapOccurrenceForm
+                (d :: tail) a hpositive hnegative)
+          exact ⟨.crosscap a form⟩
+      | negativeCrosscap hpositive hnegative =>
+          let form :=
+            Classical.choice
+              (exists_negativeCrosscapOccurrenceForm
+                (d :: tail) a hpositive hnegative)
+          exact ⟨.crosscap a form⟩
+      | opposite hpositive hnegative =>
+          let form :=
+            Classical.choice
+              (exists_oppositeOccurrenceForm
+                (d :: tail) a hpositive hnegative)
+          exact ⟨form.toArc.findActionableOfUsedMultiplicities
+            multiplicities reduced⟩
 
 /-- Find and execute one certified normalization step on any nonempty pair-reduced valid word. -/
 noncomputable def extractPairReductionFeature {n : ℕ}
