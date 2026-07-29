@@ -654,6 +654,28 @@ def dartNegative {α : Type*} : SignedDart α → Bool
   | .pos _ => false
   | .neg _ => true
 
+/-- An edge equivalence equipped with an explicit source-orientation normalization function. -/
+def signedRelabeling {α β : Type*}
+    (edgeEquiv : α ≃ β) (reverse : α → Bool) :
+    EdgeRelabeling α β where
+  edgeEquiv := edgeEquiv
+  reverse := reverse
+
+@[simp]
+theorem signedRelabeling_edgeEquiv {α β : Type*}
+    (edgeEquiv : α ≃ β) (reverse : α → Bool) :
+    (signedRelabeling edgeEquiv reverse).edgeEquiv =
+      edgeEquiv :=
+  rfl
+
+@[simp]
+theorem signedRelabeling_reverse {α β : Type*}
+    (edgeEquiv : α ≃ β) (reverse : α → Bool)
+    (a : α) :
+    (signedRelabeling edgeEquiv reverse).reverse a =
+      reverse a :=
+  rfl
+
 @[simp]
 theorem edgeOfDart_dart {α : Type*} (a : α) (negative : Bool) :
     edgeOfDart (dart a negative) = a := by
@@ -672,6 +694,57 @@ theorem dart_edgeOfDart_dartNegative {α : Type*}
     (d : SignedDart α) :
     dart (edgeOfDart d) (dartNegative d) = d := by
   cases d <;> rfl
+
+/-- A signed relabeling whose reversal bit is the displayed dart orientation sends that dart to
+the positive orientation of its renamed edge. -/
+@[simp]
+theorem signedRelabeling_mapDart_dart_self {α β : Type*}
+    (edgeEquiv : α ≃ β) (reverse : α → Bool)
+    (a : α) :
+    (signedRelabeling edgeEquiv reverse).mapDart
+        (dart a (reverse a)) =
+      .pos (edgeEquiv a) := by
+  cases hnegative : reverse a <;>
+    simp [signedRelabeling, EdgeRelabeling.mapDart,
+      dart, hnegative]
+
+/-- The opposite displayed orientation is normalized to the negative renamed dart. -/
+@[simp]
+theorem signedRelabeling_mapDart_dart_not_self {α β : Type*}
+    (edgeEquiv : α ≃ β) (reverse : α → Bool)
+    (a : α) :
+    (signedRelabeling edgeEquiv reverse).mapDart
+        (dart a (!(reverse a))) =
+      .neg (edgeEquiv a) := by
+  cases hnegative : reverse a <;>
+    simp [signedRelabeling, EdgeRelabeling.mapDart,
+      dart, hnegative]
+
+/-- Exact signed spelling of one boundary loop before final edge-name and sign normalization. -/
+def boundaryLoopWord {α : Type*}
+    (carrier hole : α)
+    (carrierNegative holeNegative : Bool) :
+    List (SignedDart α) :=
+  [dart carrier carrierNegative,
+    dart hole holeNegative,
+    dart carrier (!carrierNegative)]
+
+/-- Independent sign normalization sends an arbitrary boundary-loop spelling to the positive
+carrier, positive hole, negative carrier convention used by the canonical representatives. -/
+theorem map_boundaryLoopWord_normalized {α β : Type*}
+    (edgeEquiv : α ≃ β) (reverse : α → Bool)
+    (carrier hole : α)
+    (carrierNegative holeNegative : Bool)
+    (hcarrier : reverse carrier = carrierNegative)
+    (hhole : reverse hole = holeNegative) :
+    (boundaryLoopWord carrier hole
+        carrierNegative holeNegative).map
+          (signedRelabeling edgeEquiv reverse).mapDart =
+      [.pos (edgeEquiv carrier), .pos (edgeEquiv hole),
+        .neg (edgeEquiv carrier)] := by
+  subst carrierNegative
+  subst holeNegative
+  simp [boundaryLoopWord]
 
 /-- Unoriented edge count is the sum of its positive and negative dart counts. -/
 theorem count_edgeOfDart_eq_pos_add_neg {n : ℕ}
@@ -1806,6 +1879,41 @@ theorem inverse_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
     (block.mapEquiv e).inverse =
       block.inverse.mapEquiv e := by
   cases block <;> rfl
+
+/-- A boundary singleton is positive after reversing precisely its recorded input orientation. -/
+theorem map_word_boundary_normalized {n : ℕ} {Edge : Type*}
+    (edgeEquiv : Fin n ≃ Edge) (reverse : Fin n → Bool)
+    (a : Fin n) (negative : Bool)
+    (horientation : reverse a = negative) :
+    ((boundary a negative).word.map
+        (signedRelabeling edgeEquiv reverse).mapDart) =
+      [.pos (edgeEquiv a)] := by
+  subst negative
+  simp [word]
+
+/-- A crosscap square is positive after reversing precisely its recorded input orientation. -/
+theorem map_word_crosscap_normalized {n : ℕ} {Edge : Type*}
+    (edgeEquiv : Fin n ≃ Edge) (reverse : Fin n → Bool)
+    (a : Fin n) (negative : Bool)
+    (horientation : reverse a = negative) :
+    ((crosscap a negative).word.map
+        (signedRelabeling edgeEquiv reverse).mapDart) =
+      [.pos (edgeEquiv a), .pos (edgeEquiv a)] := by
+  subst negative
+  simp [word]
+
+/-- An extracted handle already has the canonical commutator orientation whenever neither of its
+two edge names is reversed by the final signed relabeling. -/
+theorem map_word_handle_normalized {n : ℕ} {Edge : Type*}
+    (edgeEquiv : Fin n ≃ Edge) (reverse : Fin n → Bool)
+    (a b : Fin n)
+    (ha : reverse a = false) (hb : reverse b = false) :
+    ((handle a b).word.map
+        (signedRelabeling edgeEquiv reverse).mapDart) =
+      [.pos (edgeEquiv a), .pos (edgeEquiv b),
+        .neg (edgeEquiv a), .neg (edgeEquiv b)] := by
+  simp [word, signedRelabeling,
+    EdgeRelabeling.mapDart, ha, hb]
 
 /-- Expanding a lowered block agrees with renaming its old spelling and contracting the unused
 last edge. -/
