@@ -4496,6 +4496,318 @@ theorem exists_normalizationEquivalent {n : ℕ}
 
 end BoundaryPairContraction
 
+namespace BoundaryEnvelope
+
+/-- A one-face word before a fresh opposite carrier pair is introduced. -/
+@[reducible]
+def source {n : ℕ} (word : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Dyck.oneFace word
+
+/-- The fresh carrier name in the enlarged edge type. -/
+def carrier (n : ℕ) : Fin (n + 1) :=
+  P1.freshEdge n
+
+/-- Enclose a retained word in a fresh positively oriented carrier pair. -/
+def targetWord {n : ℕ} (word : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin (n + 1))) :=
+  [.pos (carrier n)] ++ P2.retainWord word ++
+    [.neg (carrier n)]
+
+@[reducible]
+def target {n : ℕ} (word : List (SignedDart (Fin n))) :
+    FiniteCyclicPresentation :=
+  Dyck.oneFace (targetWord word)
+
+/-- The one-sided source split creates the carrier as a face separator. -/
+def sourceCut {n : ℕ} (word : List (SignedDart (Fin n))) :
+    P2Cut (source word) where
+  face := .pos 0
+  left := []
+  right := word
+  boundary_rotated := List.IsRotated.refl _
+
+/-- Split the enveloped target between its two carrier occurrences. -/
+def targetCut {n : ℕ} (word : List (SignedDart (Fin n))) :
+    P2Cut (target word) where
+  face := .pos 0
+  left := [.neg (carrier n)]
+  right := [.pos (carrier n)] ++ P2.retainWord word
+  boundary_rotated := by
+    change
+      (targetWord word).IsRotated
+        ([.neg (carrier n)] ++
+          ([.pos (carrier n)] ++ P2.retainWord word))
+    convert
+      (List.isRotated_append
+        (l := [.pos (carrier n)] ++ P2.retainWord word)
+        (l' := [.neg (carrier n)])) using 1 <;>
+      simp [targetWord, List.cons_append]
+
+/-- The separator edge selected for P1 expansion in the source split. -/
+def expandedCarrier {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    (P2.split (source word) (sourceCut word)).Edge :=
+  P2.freshEdge (source word)
+
+/-- The retained half of the expanded source separator. -/
+def subdivisionCarrier {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    (P1.expand
+      (P2.split (source word) (sourceCut word))
+      (expandedCarrier word)).Edge :=
+  (expandedCarrier word).castSucc
+
+/-- Reverse the retained separator when identifying the two common subdivisions. -/
+def subdivisionRelabeling {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    EdgeRelabeling
+      (P1.expand
+        (P2.split (source word) (sourceCut word))
+        (expandedCarrier word)).Edge
+      (P2.split (target word) (targetCut word)).Edge :=
+  Dyck.reverseEdgeRelabeling (subdivisionCarrier word)
+
+def subdivisionFaceEquiv {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    (P1.expand
+      (P2.split (source word) (sourceCut word))
+      (expandedCarrier word)).Face ≃
+      (P2.split (target word) (targetCut word)).Face :=
+  (P1.faceEquiv
+      (P2.split (source word) (sourceCut word))
+      (expandedCarrier word)).symm |>.trans
+    ((P2.faceEquiv (source word) (sourceCut word)).symm.trans
+      (P2.faceEquiv (target word) (targetCut word)))
+
+/-- Expanding the source separator and splitting the enveloped target give signed-isomorphic
+two-face presentations. -/
+def subdivisionSignedIso {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    SignedPresentationIso
+      (P1.expand
+        (P2.split (source word) (sourceCut word))
+        (expandedCarrier word))
+      (P2.split (target word) (targetCut word)) where
+  edgeRelabeling := subdivisionRelabeling word
+  faceEquiv := subdivisionFaceEquiv word
+  boundary_rotated := by
+    intro f
+    let sourceSplit :=
+      P2.split (source word) (sourceCut word)
+    let a := expandedCarrier word
+    obtain ⟨sf, rfl⟩ :=
+      (P1.faceEquiv sourceSplit a).surjective f
+    obtain ⟨i, rfl⟩ :=
+      (P2.faceEquiv (source word)
+        (sourceCut word)).surjective sf
+    rw [P1.expand_boundary]
+    induction i using Fin.lastCases with
+    | last =>
+      change
+        ((P1.expandWord a
+            ((P2.split (source word) (sourceCut word)).boundary
+              (P2.rightFace (source word) (sourceCut word)))).map
+          (subdivisionRelabeling word).mapDart).IsRotated
+          ((P2.split (target word) (targetCut word)).boundary
+            (P2.rightFace (target word) (targetCut word)))
+      rw [P2.split_boundary_right,
+        P2.split_boundary_right]
+      change
+        ((P1.expandWord (Fin.last n)
+            (.neg (Fin.last n) ::
+              P2.retainWord word)).map
+          (Dyck.reverseEdgeRelabeling
+            (Fin.last n).castSucc).mapDart).IsRotated
+          (.neg (Fin.last (n + 1)) ::
+            .pos (Fin.last n).castSucc ::
+              P2.retainWord (P2.retainWord word))
+      rw [P1.expandWord_cons,
+        P1.expandDart_neg_self]
+      have hexpand :=
+        Cancellation.expandWord_retainWord_fresh word
+      change
+        P1.expandWord (Fin.last n)
+            (P2.retainWord word) =
+          P2.retainWord (P2.retainWord word) at hexpand
+      rw [hexpand]
+      simp only [P1.firstSubedge, P1.freshEdge,
+        List.map_append, List.map_cons, List.map_nil]
+      have hfresh :
+          Fin.last (n + 1) ≠ (Fin.last n).castSucc :=
+        (Fin.castSucc_ne_last (Fin.last n)).symm
+      have hfreshNeg :
+          (Dyck.reverseEdgeRelabeling
+              (Fin.last n).castSucc).mapDart
+              (.neg (Fin.last (n + 1))) =
+            .neg (Fin.last (n + 1)) := by
+        simpa using
+          (Dyck.reverseEdgeRelabeling_of_ne
+            (Fin.last n).castSucc (Fin.last (n + 1))
+            hfresh true)
+      rw [hfreshNeg, Dyck.reverseEdgeRelabeling_neg]
+      have hcarrierTail :
+          (Fin.last n).castSucc ∉
+            (P2.retainWord
+              (P2.retainWord word)).map edgeOfDart := by
+        simp [P2.retainWord]
+      rw [Dyck.reverseEdgeRelabeling_word
+        (Fin.last n).castSucc
+        (P2.retainWord (P2.retainWord word))
+        hcarrierTail]
+      exact List.IsRotated.refl _
+    | cast i =>
+      have hi : i = 0 := Fin.eq_zero i
+      subst i
+      change
+        ((P1.expandWord a
+            ((P2.split (source word) (sourceCut word)).boundary
+              (P2.oldFace (source word) (sourceCut word)
+                (sourceCut word).face.face))).map
+          (subdivisionRelabeling word).mapDart).IsRotated
+          ((P2.split (target word) (targetCut word)).boundary
+            (P2.oldFace (target word) (targetCut word)
+              (targetCut word).face.face))
+      rw [P2.split_boundary_selected,
+        P2.split_boundary_selected]
+      change
+        ((P1.expandWord (Fin.last n)
+            [.pos (Fin.last n)]).map
+          (Dyck.reverseEdgeRelabeling
+            (Fin.last n).castSucc).mapDart).IsRotated
+          [.neg (Fin.last n).castSucc,
+            .pos (Fin.last (n + 1))]
+      rw [P1.expandWord_cons,
+        P1.expandDart_pos_self]
+      simp only [P1.expandWord_nil,
+        List.append_nil, List.map_cons, List.map_nil,
+        P1.firstSubedge, P1.freshEdge]
+      have hfresh :
+          Fin.last (n + 1) ≠ (Fin.last n).castSucc :=
+        (Fin.castSucc_ne_last (Fin.last n)).symm
+      have hfreshPos :
+          (Dyck.reverseEdgeRelabeling
+              (Fin.last n).castSucc).mapDart
+              (.pos (Fin.last (n + 1))) =
+            .pos (Fin.last (n + 1)) := by
+        simpa using
+          (Dyck.reverseEdgeRelabeling_of_ne
+            (Fin.last n).castSucc (Fin.last (n + 1))
+            hfresh false)
+      rw [Dyck.reverseEdgeRelabeling_pos,
+        hfreshPos]
+
+/-- The enveloping carrier adds one twice-used name and retains all old multiplicities. -/
+theorem target_isSurfaceValid {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (validSource : (source word).IsSurfaceValid) :
+    (target word).IsSurfaceValid := by
+  refine ⟨⟨0⟩, ?_, ?_, ?_⟩
+  · intro f
+    simp [target, targetWord]
+  · intro f g _
+    rw [Dyck.oneFace_face_eq_zero (targetWord word) f,
+      Dyck.oneFace_face_eq_zero (targetWord word) g]
+  · intro e
+    induction e using Fin.lastCases with
+    | last =>
+      rw [Dyck.oneFace_edgeMultiplicity]
+      simp [targetWord, carrier, P2.retainWord,
+        P1.freshEdge, List.map_map, Function.comp_def]
+      apply List.count_eq_zero.mpr
+      intro hmem
+      rcases List.mem_map.mp hmem with
+        ⟨d, _, hd⟩
+      exact Fin.castSucc_ne_last (edgeOfDart d)
+        hd
+    | cast e =>
+      have hmultiplicity := validSource.2.2.2 e
+      rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity ⊢
+      simp only [targetWord, List.map_append,
+        List.map_cons, List.map_nil, edgeOfDart,
+        List.count_cons, List.count_append,
+        List.count_nil]
+      rw [P2.count_retainWord_castSucc]
+      have hne :
+          e.castSucc ≠ carrier n := by
+        exact P1.firstSubedge_ne_freshEdge e
+      simp [hne.symm]
+      exact hmultiplicity
+
+theorem sourceCut_isOneSided {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (hne : word ≠ []) :
+    ((sourceCut word).left = [] ∧
+        0 < (sourceCut word).right.length) ∨
+      (0 < (sourceCut word).left.length ∧
+        (sourceCut word).right = []) :=
+  Or.inl ⟨rfl, List.length_pos_iff_ne_nil.mpr hne⟩
+
+theorem targetCut_isNondegenerate {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    (targetCut word).IsNondegenerate := by
+  constructor <;> simp [targetCut]
+
+/-- Add a fresh opposite carrier pair around a nonempty one-face word.  A one-sided P2 split
+followed by P1 has the same subdivision as a genuine split of the enveloped target. -/
+theorem normalizationEquivalent {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (hne : word ≠ [])
+    (validSource : (source word).IsSurfaceValid) :
+    NormalizationEquivalent
+      ⟨source word, validSource⟩
+      ⟨target word,
+        target_isSurfaceValid word validSource⟩ := by
+  let sourceSplit :=
+    P2.split (source word) (sourceCut word)
+  let validSourceSplit : sourceSplit.IsSurfaceValid :=
+    P2.split_isSurfaceValid
+      (source word) (sourceCut word) validSource
+  let sourceExpanded :=
+    P1.expand sourceSplit (expandedCarrier word)
+  let validSourceExpanded :
+      sourceExpanded.IsSurfaceValid :=
+    P1.expand_isSurfaceValid sourceSplit
+      (expandedCarrier word) validSourceSplit
+  let validTarget :=
+    target_isSurfaceValid word validSource
+  let targetSplit :=
+    P2.split (target word) (targetCut word)
+  let validTargetSplit : targetSplit.IsSurfaceValid :=
+    P2.split_isSurfaceValid
+      (target word) (targetCut word) validTarget
+  have hSourceSplit :
+      NormalizationEquivalent
+        ⟨source word, validSource⟩
+        ⟨sourceSplit, validSourceSplit⟩ :=
+    NormalizationEquivalent.ofOneSidedP2
+      (P := ⟨source word, validSource⟩)
+      (sourceCut word) (sourceCut_isOneSided word hne)
+  have hExpand :
+      NormalizationEquivalent
+        ⟨sourceSplit, validSourceSplit⟩
+        ⟨sourceExpanded, validSourceExpanded⟩ :=
+    NormalizationEquivalent.ofP1
+      (P1Subdivision.canonical
+        sourceSplit (expandedCarrier word))
+  have hIso :
+      NormalizationEquivalent
+        ⟨sourceExpanded, validSourceExpanded⟩
+        ⟨targetSplit, validTargetSplit⟩ :=
+    NormalizationEquivalent.ofSignedIso
+      (subdivisionSignedIso word)
+  have hMerge :
+      NormalizationEquivalent
+        ⟨targetSplit, validTargetSplit⟩
+        ⟨target word, validTarget⟩ :=
+    P2.mergeNormalizationEquivalent
+      (target word) (targetCut word)
+      (targetCut_isNondegenerate word) validTarget
+  exact hSourceSplit.trans
+    (hExpand.trans (hIso.trans hMerge))
+
+end BoundaryEnvelope
+
 /-- One non-residual atom allowed in a classified marked execution state. -/
 inductive ProtectedAtom (n : ℕ)
   | boundary (hole : Fin n) (negative : Bool)
@@ -4521,6 +4833,25 @@ def names {n : ℕ} : ProtectedAtom n → List (Fin n)
   | .boundary hole _ => [hole]
   | .completed block => block.names
 
+/-- Retain a completed block when one fresh ambient carrier name is added. -/
+def retainCompleted {n : ℕ} :
+    CompletedBlock n → CompletedBlock (n + 1)
+  | .crosscap a negative =>
+      .crosscap a.castSucc negative
+  | .handle a b =>
+      .handle a.castSucc b.castSucc
+  | .boundary carrier hole carrierNegative holeNegative =>
+      .boundary carrier.castSucc hole.castSucc
+        carrierNegative holeNegative
+
+/-- Retain a protected atom when one fresh ambient carrier name is added. -/
+def retain {n : ℕ} :
+    ProtectedAtom n → ProtectedAtom (n + 1)
+  | .boundary hole negative =>
+      .boundary hole.castSucc negative
+  | .completed block =>
+      .completed (retainCompleted block)
+
 /-- Reverse one protected atom. -/
 def inverse {n : ℕ} : ProtectedAtom n → ProtectedAtom n
   | .boundary hole negative =>
@@ -4537,6 +4868,14 @@ def sequenceWord {n : ℕ} (atoms : List (ProtectedAtom n)) :
 def sequenceNames {n : ℕ} (atoms : List (ProtectedAtom n)) :
     List (Fin n) :=
   (atoms.map names).flatten
+
+@[simp]
+theorem sequenceNames_cons {n : ℕ}
+    (head : ProtectedAtom n)
+    (tail : List (ProtectedAtom n)) :
+    sequenceNames (head :: tail) =
+      head.names ++ sequenceNames tail :=
+  rfl
 
 /-- Reverse a protected atom sequence at atom granularity. -/
 def inverseSequence {n : ℕ}
@@ -4587,6 +4926,77 @@ theorem sequenceWord_inverseSequence {n : ℕ}
         simp [inverseSequence]]
       rw [sequenceWord_append, ih]
       simp [inverseWord_append]
+
+@[simp]
+theorem word_retainCompleted {n : ℕ}
+    (block : CompletedBlock n) :
+    (retainCompleted block).word =
+      P2.retainWord block.word := by
+  cases block with
+  | crosscap a negative =>
+      cases negative <;>
+        simp [retainCompleted, CompletedBlock.word,
+          P2.retainWord, dart]
+  | handle =>
+      simp [retainCompleted, CompletedBlock.word,
+        P2.retainWord]
+  | boundary carrier hole carrierNegative holeNegative =>
+      cases carrierNegative <;>
+        cases holeNegative <;>
+          simp [retainCompleted, CompletedBlock.word,
+            boundaryLoopWord, P2.retainWord, dart]
+
+@[simp]
+theorem names_retainCompleted {n : ℕ}
+    (block : CompletedBlock n) :
+    (retainCompleted block).names =
+      block.names.map Fin.castSucc := by
+  cases block <;> rfl
+
+@[simp]
+theorem word_retain {n : ℕ}
+    (atom : ProtectedAtom n) :
+    atom.retain.word =
+      P2.retainWord atom.word := by
+  cases atom with
+  | boundary hole negative =>
+      cases negative <;>
+        simp [retain, word, P2.retainWord, dart]
+  | completed block =>
+      exact word_retainCompleted block
+
+@[simp]
+theorem names_retain {n : ℕ}
+    (atom : ProtectedAtom n) :
+    atom.retain.names =
+      atom.names.map Fin.castSucc := by
+  cases atom with
+  | boundary => rfl
+  | completed block =>
+      exact names_retainCompleted block
+
+@[simp]
+theorem sequenceWord_map_retain {n : ℕ}
+    (atoms : List (ProtectedAtom n)) :
+    sequenceWord (atoms.map retain) =
+      P2.retainWord (sequenceWord atoms) := by
+  induction atoms with
+  | nil =>
+      rfl
+  | cons head tail ih =>
+      simp [ih]
+
+@[simp]
+theorem sequenceNames_map_retain {n : ℕ}
+    (atoms : List (ProtectedAtom n)) :
+    sequenceNames (atoms.map retain) =
+      (sequenceNames atoms).map Fin.castSucc := by
+  induction atoms with
+  | nil =>
+      rfl
+  | cons head tail ih =>
+      simp only [List.map_cons, sequenceNames_cons,
+        names_retain, ih, List.map_append]
 
 /-- Number of raw once-used boundary darts.  Terminal normalization groups and contracts every
 such dart to one representative of the remaining outer boundary component. -/
@@ -13490,6 +13900,240 @@ theorem admissible (terminal : TerminalProtectedWord) :
     terminal.normalForm.IsEvalAdmissible :=
   ProtectedAtom.normalForm_isEvalAdmissible_of_ne_nil
     terminal.atoms terminal.atomsNonempty
+
+/-- Retain the terminal atom sequence after adding the fresh boundary-envelope carrier. -/
+def retainedAtoms (terminal : TerminalProtectedWord) :
+    List (ProtectedAtom (terminal.edgeCount + 1)) :=
+  terminal.atoms.map ProtectedAtom.retain
+
+/-- Represent every retained terminal atom as one protected marked token. -/
+def retainedTokens (terminal : TerminalProtectedWord) :
+    List (ReductionToken (terminal.edgeCount + 1)) :=
+  terminal.retainedAtoms.map ReductionToken.ofProtectedAtom
+
+/-- Marked target of the boundary envelope: the fresh opposite carrier pair surrounds all
+retained terminal atoms. -/
+def envelopedTokens (terminal : TerminalProtectedWord) :
+    List (ReductionToken (terminal.edgeCount + 1)) :=
+  .residual (.pos (BoundaryEnvelope.carrier terminal.edgeCount)) ::
+    terminal.retainedTokens ++
+      [.residual
+        (.neg (BoundaryEnvelope.carrier terminal.edgeCount))]
+
+@[simp]
+theorem expand_retainedTokens
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.expand terminal.retainedTokens =
+      P2.retainWord
+        (ProtectedAtom.sequenceWord terminal.atoms) := by
+  rw [retainedTokens,
+    ReductionToken.expand_map_ofProtectedAtom,
+    retainedAtoms,
+    ProtectedAtom.sequenceWord_map_retain]
+
+@[simp]
+theorem expand_envelopedTokens
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.expand terminal.envelopedTokens =
+      BoundaryEnvelope.targetWord
+        (ProtectedAtom.sequenceWord terminal.atoms) := by
+  simp [envelopedTokens, BoundaryEnvelope.targetWord]
+
+@[simp]
+theorem residualDarts_retainedTokens
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.residualDarts terminal.retainedTokens = [] := by
+  rw [retainedTokens]
+  induction terminal.retainedAtoms with
+  | nil =>
+      rfl
+  | cons atom atoms ih =>
+      simp [ih]
+
+@[simp]
+theorem residualDarts_envelopedTokens
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.residualDarts terminal.envelopedTokens =
+      [.pos (BoundaryEnvelope.carrier terminal.edgeCount),
+        .neg (BoundaryEnvelope.carrier terminal.edgeCount)] := by
+  simp [envelopedTokens]
+
+@[simp]
+theorem protectedNames_retainedTokens
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.protectedNames terminal.retainedTokens =
+      (ProtectedAtom.sequenceNames terminal.atoms).map
+        Fin.castSucc := by
+  rw [retainedTokens,
+    ReductionToken.protectedNames_map_ofProtectedAtom,
+    retainedAtoms,
+    ProtectedAtom.sequenceNames_map_retain]
+
+@[simp]
+theorem protectedNames_envelopedTokens
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.protectedNames terminal.envelopedTokens =
+      (ProtectedAtom.sequenceNames terminal.atoms).map
+        Fin.castSucc := by
+  simp [envelopedTokens]
+
+theorem sequenceNames_ne_nil
+    (terminal : TerminalProtectedWord) :
+    ProtectedAtom.sequenceNames terminal.atoms ≠ [] := by
+  cases hatoms : terminal.atoms with
+  | nil =>
+      exact (terminal.atomsNonempty hatoms).elim
+  | cons atom atoms =>
+      rw [ProtectedAtom.sequenceNames_cons]
+      cases atom with
+      | boundary =>
+          simp [ProtectedAtom.names]
+      | completed block =>
+          cases block <;>
+            simp [ProtectedAtom.names, CompletedBlock.names]
+
+theorem protectedNames_envelopedTokens_ne_nil
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.protectedNames terminal.envelopedTokens ≠ [] := by
+  rw [protectedNames_envelopedTokens]
+  intro hnil
+  rw [List.map_eq_nil_iff] at hnil
+  exact terminal.sequenceNames_ne_nil hnil
+
+theorem envelopedSeparated
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.IsSeparated terminal.envelopedTokens := by
+  rw [ReductionToken.IsSeparated, List.disjoint_left]
+  intro edge hresidual hprotected
+  have hprotectedName :
+      edge ∈
+        ReductionToken.protectedNames terminal.envelopedTokens :=
+    (ReductionToken.mem_protectedNames_iff_mem_protectedEdges
+      terminal.envelopedTokens edge).mpr hprotected
+  rw [protectedNames_envelopedTokens] at hprotectedName
+  rcases List.mem_map.mp hprotectedName with
+    ⟨oldEdge, _, hold⟩
+  rw [residualDarts_envelopedTokens] at hresidual
+  simp only [List.map_cons, List.map_nil, edgeOfDart,
+    List.mem_cons, List.not_mem_nil, or_false] at hresidual
+  rcases hresidual with hcarrier | hcarrier
+  · exact Fin.castSucc_ne_last oldEdge
+      (hold.trans hcarrier)
+  · exact Fin.castSucc_ne_last oldEdge
+      (hold.trans hcarrier)
+
+theorem envelopedClassified
+    (terminal : TerminalProtectedWord) :
+    ReductionToken.AllClassified terminal.envelopedTokens := by
+  unfold envelopedTokens
+  apply
+    (ReductionToken.allClassified_cons _ _).mpr
+  refine ⟨trivial, ?_⟩
+  apply ReductionToken.AllClassified.append
+  · intro token htoken
+    rw [retainedTokens] at htoken
+    rcases List.mem_map.mp htoken with
+      ⟨atom, _, rfl⟩
+    exact ReductionToken.isClassified_ofProtectedAtom atom
+  · intro token htoken
+    simp only [List.mem_singleton] at htoken
+    subst token
+    trivial
+
+theorem envelopedProtectedNodup
+    (terminal : TerminalProtectedWord) :
+    (ReductionToken.protectedNames
+      terminal.envelopedTokens).Nodup := by
+  rw [protectedNames_envelopedTokens]
+  exact terminal.namesNodup.map
+    (Fin.castSucc_injective terminal.edgeCount)
+
+/-- Valid marked execution state carried by the fresh boundary envelope. -/
+def envelopedState
+    (terminal : TerminalProtectedWord) :
+    MarkedExecutionState terminal.envelopedTokens where
+  valid := by
+    rw [expand_envelopedTokens]
+    exact BoundaryEnvelope.target_isSurfaceValid
+      (ProtectedAtom.sequenceWord terminal.atoms)
+      terminal.valid
+  separated := terminal.envelopedSeparated
+  classified := terminal.envelopedClassified
+  protectedNodup := terminal.envelopedProtectedNodup
+
+/-- The fresh boundary-envelope carrier as an actionable marked residual pair. -/
+def envelopedPair
+    (terminal : TerminalProtectedWord) :
+    MarkedResidualCancellablePair terminal.envelopedTokens where
+  edge := BoundaryEnvelope.carrier terminal.edgeCount
+  negativeFirst := false
+  betweenTokens := terminal.retainedTokens
+  tailTokens := []
+  rotated := by
+    exact List.IsRotated.refl _
+  residual_between := terminal.residualDarts_retainedTokens
+
+/-- Execute the existing protected-interval resolver on the fresh boundary envelope. -/
+noncomputable def resolveEnvelope
+    (terminal : TerminalProtectedWord) :
+    MarkedResidualPairResolution terminal.envelopedPair
+      terminal.envelopedState :=
+  terminal.envelopedPair.resolve terminal.envelopedState
+    terminal.protectedNames_envelopedTokens_ne_nil
+
+theorem resolveEnvelope_residualLength_lt_two
+    (terminal : TerminalProtectedWord) :
+    (ReductionToken.residualDarts
+      terminal.resolveEnvelope.targetTokens).length < 2 := by
+  have h :=
+    terminal.resolveEnvelope.residualLengthLt
+  simpa using h
+
+/-- Boundary enveloping followed by the existing marked resolver preserves the realization of
+the original terminal protected word. -/
+theorem normalizationEquivalent_resolveEnvelope
+    (terminal : TerminalProtectedWord) :
+    NormalizationEquivalent terminal.validPresentation
+      ⟨Dyck.oneFace
+          (ReductionToken.expand
+            terminal.resolveEnvelope.targetTokens),
+        terminal.resolveEnvelope.targetState.valid⟩ := by
+  have henvelope :=
+    BoundaryEnvelope.normalizationEquivalent
+      (ProtectedAtom.sequenceWord terminal.atoms)
+      (by
+        cases hatoms : terminal.atoms with
+        | nil =>
+            exact (terminal.atomsNonempty hatoms).elim
+        | cons atom atoms =>
+            rw [ProtectedAtom.sequenceWord_cons]
+            cases atom with
+            | boundary =>
+                simp [ProtectedAtom.word]
+            | completed block =>
+                cases block <;>
+                  simp [ProtectedAtom.word,
+                    CompletedBlock.word, boundaryLoopWord])
+      terminal.valid
+  have htarget :
+      (⟨BoundaryEnvelope.target
+            (ProtectedAtom.sequenceWord terminal.atoms),
+          BoundaryEnvelope.target_isSurfaceValid
+            (ProtectedAtom.sequenceWord terminal.atoms)
+            terminal.valid⟩ :
+        ValidPresentation) =
+        ⟨Dyck.oneFace
+            (ReductionToken.expand terminal.envelopedTokens),
+          terminal.envelopedState.valid⟩ := by
+    apply ValidPresentation.ext
+    change
+      BoundaryEnvelope.target
+          (ProtectedAtom.sequenceWord terminal.atoms) =
+        Dyck.oneFace
+          (ReductionToken.expand terminal.envelopedTokens)
+    rw [expand_envelopedTokens]
+  exact henvelope.trans
+    (htarget ▸ terminal.resolveEnvelope.equivalent)
 
 end TerminalProtectedWord
 
