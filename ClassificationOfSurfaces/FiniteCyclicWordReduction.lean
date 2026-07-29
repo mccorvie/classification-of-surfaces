@@ -519,10 +519,21 @@ def dart {α : Type*} (a : α) : Bool → SignedDart α
   | false => .pos a
   | true => .neg a
 
+/-- Boolean orientation of a signed dart. -/
+def dartNegative {α : Type*} : SignedDart α → Bool
+  | .pos _ => false
+  | .neg _ => true
+
 @[simp]
 theorem edgeOfDart_dart {α : Type*} (a : α) (negative : Bool) :
     edgeOfDart (dart a negative) = a := by
   cases negative <;> rfl
+
+@[simp]
+theorem dart_edgeOfDart_dartNegative {α : Type*}
+    (d : SignedDart α) :
+    dart (edgeOfDart d) (dartNegative d) = d := by
+  cases d <;> rfl
 
 /-- Unoriented edge count is the sum of its positive and negative dart counts. -/
 theorem count_edgeOfDart_eq_pos_add_neg {n : ℕ}
@@ -765,6 +776,59 @@ structure OppositeOccurrenceForm {n : ℕ}
   edge_not_mem_between : a ∉ between.map edgeOfDart
   edge_not_mem_remainder : a ∉ remainder.map edgeOfDart
 
+/-- An orientation-symmetric directed arc between the two opposite occurrences of an edge.
+Unlike `OppositeOccurrenceForm`, this form permits either sign at the beginning, which is the
+right induction invariant when descending to a shorter nested pair. -/
+structure OppositeArcForm {n : ℕ}
+    (word : List (SignedDart (Fin n))) (a : Fin n) where
+  firstNegative : Bool
+  between : List (SignedDart (Fin n))
+  remainder : List (SignedDart (Fin n))
+  rotated :
+    word.IsRotated
+      (dart a firstNegative :: between ++
+        dart a (!firstNegative) :: remainder)
+  edge_not_mem_between : a ∉ between.map edgeOfDart
+  edge_not_mem_remainder : a ∉ remainder.map edgeOfDart
+
+/-- Forget the positive-first convention of an opposite occurrence form. -/
+def OppositeOccurrenceForm.toArc {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : OppositeOccurrenceForm word a) :
+    OppositeArcForm word a where
+  firstNegative := false
+  between := form.between
+  remainder := form.remainder
+  rotated := by
+    simpa [dart] using form.rotated
+  edge_not_mem_between := form.edge_not_mem_between
+  edge_not_mem_remainder := form.edge_not_mem_remainder
+
+/-- Pair reduction makes the directed interval of every opposite arc nonempty. -/
+theorem OppositeArcForm.between_ne_nil {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : OppositeArcForm word a)
+    (reduced : IsPairReduced word) :
+    form.between ≠ [] := by
+  intro hbetween
+  rcases reduced with ⟨hreduced⟩
+  apply hreduced
+  cases horientation : form.firstNegative
+  · exact
+      { edge := a
+        tail := form.remainder
+        negativeFirst := false
+        rotated := by
+          simpa [inversePair, dart, horientation,
+            hbetween] using form.rotated }
+  · exact
+      { edge := a
+        tail := form.remainder
+        negativeFirst := true
+        rotated := by
+          simpa [inversePair, dart, horientation,
+            hbetween] using form.rotated }
+
 /-- Two oppositely oriented edge pairs whose endpoints interleave cyclically.  The first
 distinguished pair is displayed positive then negative.  The Boolean records whether the
 occurrence of `b` inside that pair is negative; a signed relabeling will reverse `b` when
@@ -898,6 +962,22 @@ structure BoundaryOccurrenceForm {n : ℕ}
   rotated : word.IsRotated (dart a negative :: remainder)
   edge_not_mem_remainder : a ∉ remainder.map edgeOfDart
 
+/-- A pairing feature on which the normalization recursion can immediately act. -/
+inductive ActionablePairReductionFeature {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+  | boundary (a : Fin n) (form : BoundaryOccurrenceForm word a)
+  | crosscap (a : Fin n) (form : CrosscapOccurrenceForm word a)
+  | handle (a b : Fin n) (form : InterleavedOccurrenceForm word a b)
+
+/-- One descent step from a directed opposite arc: either an immediately extractable feature,
+or a strictly shorter opposite arc nested inside it. -/
+inductive OppositeArcStep {n : ℕ}
+    (word : List (SignedDart (Fin n))) {a : Fin n}
+    (form : OppositeArcForm word a)
+  | actionable (feature : ActionablePairReductionFeature word)
+  | nested (b : Fin n) (inner : OppositeArcForm word b)
+      (shorter : inner.between.length < form.between.length)
+
 /-- Every once-used edge can be displayed at the cyclic head. -/
 theorem exists_boundaryOccurrenceForm {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n)
@@ -921,6 +1001,267 @@ theorem exists_boundaryOccurrenceForm {n : ℕ}
         simp only [remainder, List.map_append,
           List.mem_append, not_or]
         exact ⟨hright, hleft⟩ }⟩
+
+/-- Inspect the first dart of a nonempty opposite arc.  A boundary or equal-orientation edge is
+immediately actionable.  An opposite edge either crosses the selected pair, yielding a handle,
+or closes inside it, yielding a strictly shorter directed arc. -/
+theorem OppositeArcForm.exists_step {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : OppositeArcForm word a)
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (reduced : IsPairReduced word) :
+    Nonempty (OppositeArcStep word form) := by
+  classical
+  cases hbetween : form.between with
+  | nil =>
+      exact (form.between_ne_nil reduced hbetween).elim
+  | cons d tail =>
+      let b : Fin n := edgeOfDart d
+      let bNegative : Bool := dartNegative d
+      have hd : d = dart b bNegative := by
+        exact (dart_edgeOfDart_dartNegative d).symm
+      have hbmem : b ∈ form.between.map edgeOfDart := by
+        rw [hbetween]
+        simp [b]
+      have hba : b ≠ a := by
+        intro h
+        exact form.edge_not_mem_between (h ▸ hbmem)
+      have hab : a ≠ b := hba.symm
+      let pattern := Classical.choice (exists_edgePattern word valid b)
+      cases pattern with
+      | boundary hcount =>
+          let boundaryForm :=
+            Classical.choice
+              (exists_boundaryOccurrenceForm word b hcount)
+          exact ⟨.actionable (.boundary b boundaryForm)⟩
+      | positiveCrosscap hpositive hnegative =>
+          let crosscapForm :=
+            Classical.choice
+              (exists_positiveCrosscapOccurrenceForm
+                word b hpositive hnegative)
+          exact ⟨.actionable (.crosscap b crosscapForm)⟩
+      | negativeCrosscap hpositive hnegative =>
+          let crosscapForm :=
+            Classical.choice
+              (exists_negativeCrosscapOccurrenceForm
+                word b hpositive hnegative)
+          exact ⟨.actionable (.crosscap b crosscapForm)⟩
+      | opposite hpositive hnegative =>
+          have htotal :
+              (word.map edgeOfDart).count b = 2 := by
+            rw [count_edgeOfDart_eq_pos_add_neg,
+              hpositive, hnegative]
+          have hrotatedCount :=
+            (form.rotated.map edgeOfDart).perm.count_eq b
+          have hsum :
+              (tail.map edgeOfDart).count b +
+                  (form.remainder.map edgeOfDart).count b = 1 := by
+            rw [htotal] at hrotatedCount
+            simp only [hbetween, List.map_cons, List.map_append,
+              List.count_cons, List.count_append] at hrotatedCount
+            rw [hd, edgeOfDart_dart, edgeOfDart_dart] at hrotatedCount
+            simp [hab] at hrotatedCount
+            omega
+          by_cases hbTail : b ∈ tail.map edgeOfDart
+          · have htailPositive :
+                0 < (tail.map edgeOfDart).count b :=
+              List.count_pos_iff.mpr hbTail
+            have htailCount :
+                (tail.map edgeOfDart).count b = 1 := by
+              omega
+            have hremainderCount :
+                (form.remainder.map edgeOfDart).count b = 0 := by
+              omega
+            have hbRemainder :
+                b ∉ form.remainder.map edgeOfDart :=
+              List.count_eq_zero.mp hremainderCount
+            rcases exists_decomposition_of_count_eq_one
+                tail b htailCount with
+              ⟨secondNegative, left, right, htail,
+                hbLeft, hbRight⟩
+            have hpositiveCount :=
+              form.rotated.perm.count_eq (.pos b)
+            have hnegativeCount :=
+              form.rotated.perm.count_eq (.neg b)
+            rw [hpositive] at hpositiveCount
+            rw [hnegative] at hnegativeCount
+            have hopposite :
+                secondNegative = !bNegative := by
+              cases hfirst : bNegative <;>
+                cases hsecond : secondNegative
+              · simp only [Bool.not_false]
+                exfalso
+                cases haorientation : form.firstNegative <;>
+                  simp [hbetween, hd, htail, dart, hfirst, hsecond,
+                    haorientation, hab] at hpositiveCount
+              · rfl
+              · rfl
+              · simp only [Bool.not_true]
+                exfalso
+                cases haorientation : form.firstNegative <;>
+                  simp [hbetween, hd, htail, dart, hfirst, hsecond,
+                    haorientation, hab] at hnegativeCount
+            let innerRemainder :=
+              right ++
+                dart a (!form.firstNegative) ::
+                  form.remainder ++ [dart a form.firstNegative]
+            have hrotateInner :
+                word.IsRotated
+                  (dart b bNegative :: left ++
+                    dart b (!bNegative) :: innerRemainder) := by
+              have hmoveA :=
+                List.isRotated_append
+                  (l := [dart a form.firstNegative])
+                  (l' := dart b bNegative :: left ++
+                    dart b (!bNegative) ::
+                      (right ++
+                        dart a (!form.firstNegative) ::
+                          form.remainder))
+              apply form.rotated.trans
+              rw [hbetween, hd, htail, hopposite]
+              simpa only [innerRemainder, List.nil_append,
+                List.cons_append, List.append_assoc] using hmoveA
+            let inner : OppositeArcForm word b :=
+              { firstNegative := bNegative
+                between := left
+                remainder := innerRemainder
+                rotated := hrotateInner
+                edge_not_mem_between := hbLeft
+                edge_not_mem_remainder := by
+                  simp [innerRemainder, hba, hbRight, hbRemainder] }
+            have hlength := congrArg List.length htail
+            have hshorter :
+                inner.between.length < form.between.length := by
+              simp only [inner, hbetween, List.length_cons]
+              simp only [List.length_append, List.length_cons] at hlength
+              omega
+            exact ⟨.nested b inner hshorter⟩
+          · have htailCount :
+                (tail.map edgeOfDart).count b = 0 :=
+              List.count_eq_zero.mpr hbTail
+            have hremainderCount :
+                (form.remainder.map edgeOfDart).count b = 1 := by
+              omega
+            rcases exists_decomposition_of_count_eq_one
+                form.remainder b hremainderCount with
+              ⟨outsideNegative, left, right, hremainder,
+                hbLeft, hbRight⟩
+            have hpositiveCount :=
+              form.rotated.perm.count_eq (.pos b)
+            have hnegativeCount :=
+              form.rotated.perm.count_eq (.neg b)
+            rw [hpositive] at hpositiveCount
+            rw [hnegative] at hnegativeCount
+            have hopposite :
+                outsideNegative = !bNegative := by
+              cases hfirst : bNegative <;>
+                cases hsecond : outsideNegative
+              · simp only [Bool.not_false]
+                exfalso
+                cases haorientation : form.firstNegative <;>
+                  simp [hbetween, hd, hremainder, dart, hfirst, hsecond,
+                    haorientation, hab] at hpositiveCount
+              · rfl
+              · rfl
+              · simp only [Bool.not_true]
+                exfalso
+                cases haorientation : form.firstNegative <;>
+                  simp [hbetween, hd, hremainder, dart, hfirst, hsecond,
+                    haorientation, hab] at hnegativeCount
+            cases horientation : form.firstNegative
+            · let handleForm : InterleavedOccurrenceForm word a b :=
+                { bNegativeInside := bNegative
+                  beforeB := []
+                  beforeNegA := tail
+                  beforeOutsideB := left
+                  remainder := right
+                  rotated := by
+                    have hrotated := form.rotated
+                    rw [hbetween, hd, hremainder, hopposite,
+                      horientation] at hrotated
+                    simpa [dart, List.cons_append,
+                      List.append_assoc] using hrotated
+                  edge_ne := hba.symm
+                  a_not_mem_beforeB := by simp
+                  a_not_mem_beforeNegA := by
+                    intro haTail
+                    apply form.edge_not_mem_between
+                    rw [hbetween]
+                    simp [haTail]
+                  a_not_mem_beforeOutsideB := by
+                    intro haLeft
+                    apply form.edge_not_mem_remainder
+                    rw [hremainder]
+                    simp [haLeft]
+                  a_not_mem_remainder := by
+                    intro haRight
+                    apply form.edge_not_mem_remainder
+                    rw [hremainder]
+                    simp [haRight]
+                  b_not_mem_beforeB := by simp
+                  b_not_mem_beforeNegA := hbTail
+                  b_not_mem_beforeOutsideB := hbLeft
+                  b_not_mem_remainder := hbRight }
+              exact ⟨.actionable (.handle a b handleForm)⟩
+            · let handleForm : InterleavedOccurrenceForm word a b :=
+                { bNegativeInside := outsideNegative
+                  beforeB := left
+                  beforeNegA := right
+                  beforeOutsideB := []
+                  remainder := tail
+                  rotated := by
+                    have hrotate :=
+                      List.isRotated_append
+                        (l := dart a form.firstNegative ::
+                          dart b bNegative :: tail)
+                        (l' := dart a (!form.firstNegative) ::
+                          left ++ dart b outsideNegative :: right)
+                    have hrotated := form.rotated
+                    rw [hbetween, hd, hremainder] at hrotated
+                    apply hrotated.trans
+                    simpa [
+                      dart, horientation, hopposite,
+                      List.cons_append, List.append_assoc] using hrotate
+                  edge_ne := hba.symm
+                  a_not_mem_beforeB := by
+                    intro haLeft
+                    apply form.edge_not_mem_remainder
+                    rw [hremainder]
+                    simp [haLeft]
+                  a_not_mem_beforeNegA := by
+                    intro haRight
+                    apply form.edge_not_mem_remainder
+                    rw [hremainder]
+                    simp [haRight]
+                  a_not_mem_beforeOutsideB := by simp
+                  a_not_mem_remainder := by
+                    intro haTail
+                    apply form.edge_not_mem_between
+                    rw [hbetween]
+                    simp [haTail]
+                  b_not_mem_beforeB := hbLeft
+                  b_not_mem_beforeNegA := hbRight
+                  b_not_mem_beforeOutsideB := by simp
+                  b_not_mem_remainder := hbTail }
+              exact ⟨.actionable (.handle a b handleForm)⟩
+
+/-- Well-founded descent through nested opposite pairs terminates at a boundary, crosscap, or
+interleaved handle feature. -/
+noncomputable def OppositeArcForm.findActionable {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : OppositeArcForm word a)
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (reduced : IsPairReduced word) :
+    ActionablePairReductionFeature word := by
+  let step :=
+    Classical.choice (form.exists_step valid reduced)
+  cases step with
+  | actionable feature =>
+      exact feature
+  | nested b inner shorter =>
+      exact inner.findActionable valid reduced
+termination_by form.between.length
+decreasing_by exact shorter
 
 /-- In a pair-reduced word, the two darts of an opposite form have a nonempty intervening
 word. -/
@@ -1320,6 +1661,25 @@ theorem exists_pairReductionFeature {n : ℕ}
           (exists_oppositeOccurrenceForm
             word a hpositive hnegative)
       exact ⟨.opposite a form (form.between_ne_nil reduced)⟩
+
+/-- Every nonempty pair-reduced valid word exposes a feature with a complete local normalization
+chain: a boundary edge, a crosscap pair, or an interleaved pair ready for handle extraction. -/
+theorem exists_actionablePairReductionFeature {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (reduced : IsPairReduced word)
+    (hn : 0 < n) :
+    Nonempty (ActionablePairReductionFeature word) := by
+  let feature :=
+    Classical.choice
+      (exists_pairReductionFeature word valid reduced hn)
+  cases feature with
+  | boundary a form =>
+      exact ⟨.boundary a form⟩
+  | crosscap a form =>
+      exact ⟨.crosscap a form⟩
+  | opposite a form _ =>
+      exact ⟨form.toArc.findActionable valid reduced⟩
 
 end Pairing
 
