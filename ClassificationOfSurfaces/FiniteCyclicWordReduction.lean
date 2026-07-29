@@ -5704,6 +5704,269 @@ theorem targetTokens_allClassified {n : ℕ}
 
 end MarkedBoundaryBlockCommute
 
+/-- A completed crosscap at the head of a protected residual-pair interval.  Commuting it through
+the pair exchanges the residual and completed carriers and shortens that protected interval. -/
+structure MarkedCrosscapBlockCommute {n : ℕ}
+    (tokens : List (ReductionToken n)) where
+  outer : Fin n
+  carrier : Fin n
+  outerNegative : Bool
+  carrierNegative : Bool
+  insideTokens : List (ReductionToken n)
+  outsideTokens : List (ReductionToken n)
+  rotated :
+    tokens.IsRotated
+      (.residual (dart outer outerNegative) ::
+        .completed (.crosscap carrier carrierNegative) ::
+        insideTokens ++
+        .residual (dart outer (!outerNegative)) ::
+        outsideTokens)
+  carrier_ne_outer : carrier ≠ outer
+  carrier_not_mem_inside :
+    carrier ∉
+      (ReductionToken.expand insideTokens).map edgeOfDart
+  carrier_not_mem_outside :
+    carrier ∉
+      (ReductionToken.expand outsideTokens).map edgeOfDart
+  outer_not_mem_inside :
+    outer ∉
+      (ReductionToken.expand insideTokens).map edgeOfDart
+  outer_not_mem_outside :
+    outer ∉
+      (ReductionToken.expand outsideTokens).map edgeOfDart
+
+namespace MarkedCrosscapBlockCommute
+
+/-- Exact marked target of contextual crosscap commuting. -/
+def targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedCrosscapBlockCommute tokens) :
+    List (ReductionToken n) :=
+  .completed (.crosscap commute.outer
+      commute.outerNegative) ::
+    .residual
+      (dart commute.carrier
+        (!commute.carrierNegative)) ::
+    commute.insideTokens ++
+    .residual
+      (dart commute.carrier
+        commute.carrierNegative) ::
+    ReductionToken.inverseSequence
+      commute.outsideTokens
+
+/-- Expansion of the marked source is the generic contextual crosscap source spelling. -/
+theorem expand_isRotated_sourceWord {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedCrosscapBlockCommute tokens) :
+    (ReductionToken.expand tokens).IsRotated
+      (CrosscapBlockCommute.sourceWord
+        commute.outer commute.carrier
+        commute.outerNegative commute.carrierNegative
+        (ReductionToken.expand commute.insideTokens)
+        (ReductionToken.expand
+          commute.outsideTokens)) := by
+  have hexpanded :=
+    ReductionToken.expand_isRotated commute.rotated
+  simpa [CrosscapBlockCommute.sourceWord,
+    ReductionToken.expand_cons,
+    ReductionToken.expand_append,
+    ReductionToken.word_residual,
+    ReductionToken.word_completed,
+    CompletedBlock.word, List.append_assoc] using
+    hexpanded
+
+/-- Expansion of the exact marked target is the generic contextual crosscap target spelling. -/
+theorem expand_targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedCrosscapBlockCommute tokens) :
+    ReductionToken.expand commute.targetTokens =
+      CrosscapBlockCommute.targetWord
+        commute.outer commute.carrier
+        commute.outerNegative commute.carrierNegative
+        (ReductionToken.expand commute.insideTokens)
+        (ReductionToken.expand
+          commute.outsideTokens) := by
+  simp [targetTokens, CrosscapBlockCommute.targetWord,
+    ReductionToken.expand_cons,
+    ReductionToken.expand_append,
+    ReductionToken.word_residual,
+    ReductionToken.word_completed,
+    CompletedBlock.word]
+
+/-- Contextual crosscap commuting preserves the classified-token grammar. -/
+theorem targetTokens_allClassified {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedCrosscapBlockCommute tokens)
+    (classified : ReductionToken.AllClassified tokens) :
+    ReductionToken.AllClassified commute.targetTokens := by
+  have displayed :=
+    classified.of_isRotated commute.rotated
+  have insideClassified :
+      ReductionToken.AllClassified
+        commute.insideTokens := by
+    intro token htoken
+    exact displayed token (by simp [htoken])
+  have outsideClassified :
+      ReductionToken.AllClassified
+        commute.outsideTokens := by
+    intro token htoken
+    exact displayed token (by simp [htoken])
+  intro token htoken
+  simp only [targetTokens, List.mem_cons,
+    List.mem_append] at htoken
+  rcases htoken with (rfl | rfl | hinside) |
+      rfl | houtside
+  · trivial
+  · trivial
+  · exact insideClassified token hinside
+  · trivial
+  · exact outsideClassified.inverseSequence
+      token houtside
+
+/-- Contextual crosscap commuting preserves separation of residual and protected edge names. -/
+theorem targetTokens_isSeparated {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedCrosscapBlockCommute tokens)
+    (separated : ReductionToken.IsSeparated tokens) :
+    ReductionToken.IsSeparated commute.targetTokens := by
+  let displayedTokens :=
+    .residual
+        (dart commute.outer commute.outerNegative) ::
+      .completed
+        (.crosscap commute.carrier
+          commute.carrierNegative) ::
+      commute.insideTokens ++
+      .residual
+        (dart commute.outer
+          (!commute.outerNegative)) ::
+      commute.outsideTokens
+  have separatedDisplayed :
+      ReductionToken.IsSeparated displayedTokens := by
+    exact separated.of_isRotated commute.rotated
+  rw [ReductionToken.IsSeparated,
+    List.disjoint_left]
+  intro edge heResidual heProtected
+  have hresidual :
+      edge = commute.carrier ∨
+        edge ∈
+          (ReductionToken.residualDarts
+            commute.insideTokens).map edgeOfDart ∨
+        edge ∈
+          (ReductionToken.residualDarts
+            commute.outsideTokens).map edgeOfDart := by
+    have hraw := heResidual
+    simp [targetTokens, map_edgeOfDart_inverseWord] at hraw
+    rcases hraw with hcarrier | hinside |
+        hcarrier | houtside
+    · exact Or.inl hcarrier
+    · rcases hinside with ⟨dart, hdart, rfl⟩
+      exact Or.inr (Or.inl
+        (List.mem_map.mpr ⟨dart, hdart, rfl⟩))
+    · exact Or.inl hcarrier
+    · rcases houtside with ⟨dart, hdart, rfl⟩
+      exact Or.inr (Or.inr
+        (List.mem_map.mpr ⟨dart, hdart, rfl⟩))
+  have hprotected :
+      edge = commute.outer ∨
+        edge ∈
+          ReductionToken.protectedEdges
+            commute.insideTokens ∨
+        edge ∈
+          ReductionToken.protectedEdges
+            commute.outsideTokens := by
+    simpa [targetTokens, CompletedBlock.edges] using
+      heProtected
+  have sourceDisjoint
+      (hresidual :
+        edge ∈
+            (ReductionToken.residualDarts
+              commute.insideTokens).map edgeOfDart ∨
+          edge ∈
+            (ReductionToken.residualDarts
+              commute.outsideTokens).map edgeOfDart)
+      (hprotected :
+        edge ∈
+            ReductionToken.protectedEdges
+              commute.insideTokens ∨
+          edge ∈
+            ReductionToken.protectedEdges
+              commute.outsideTokens) :
+      False := by
+    have heDisplayedResidual :
+        edge ∈
+          (ReductionToken.residualDarts
+            displayedTokens).map edgeOfDart := by
+      simp only [displayedTokens,
+        ReductionToken.residualDarts_cons,
+        ReductionToken.residualDarts_append,
+        ReductionToken.residualWord_residual,
+        ReductionToken.residualWord_completed,
+        List.singleton_append, List.nil_append,
+        List.map_cons, List.map_append,
+        List.mem_cons, List.mem_append,
+        edgeOfDart_dart]
+      tauto
+    have heDisplayedProtected :
+        edge ∈
+          ReductionToken.protectedEdges
+            displayedTokens := by
+      simp only [displayedTokens,
+        ReductionToken.protectedEdges_cons,
+        ReductionToken.protectedEdges_append,
+        ReductionToken.extractedEdges_residual,
+        ReductionToken.extractedEdges_completed,
+        CompletedBlock.edges,
+        List.nil_append, List.singleton_append,
+        List.mem_cons, List.mem_append]
+      tauto
+    exact (List.disjoint_left.mp separatedDisplayed)
+      heDisplayedResidual heDisplayedProtected
+  rcases hresidual with rfl | hresidual
+  · rcases hprotected with hcarrierOuter |
+        hcarrierProtected
+    · exact commute.carrier_ne_outer hcarrierOuter
+    · rcases hcarrierProtected with hinside | houtside
+      · exact commute.carrier_not_mem_inside
+          ((ReductionToken.mem_map_edgeOfDart_expand_iff
+            commute.insideTokens commute.carrier).mpr
+            (Or.inr hinside))
+      · exact commute.carrier_not_mem_outside
+          ((ReductionToken.mem_map_edgeOfDart_expand_iff
+            commute.outsideTokens commute.carrier).mpr
+            (Or.inr houtside))
+  · rcases hresidual with hinsideResidual |
+        houtsideResidual
+    · rcases hprotected with houter | hprotected
+      · subst edge
+        exact commute.outer_not_mem_inside
+          ((ReductionToken.mem_map_edgeOfDart_expand_iff
+            commute.insideTokens commute.outer).mpr
+            (Or.inl hinsideResidual))
+      · rcases hprotected with hinsideProtected |
+          houtsideProtected
+        · exact sourceDisjoint
+            (Or.inl hinsideResidual)
+            (Or.inl hinsideProtected)
+        · exact sourceDisjoint
+            (Or.inl hinsideResidual)
+            (Or.inr houtsideProtected)
+    · rcases hprotected with houter | hprotected
+      · subst edge
+        exact commute.outer_not_mem_outside
+          ((ReductionToken.mem_map_edgeOfDart_expand_iff
+            commute.outsideTokens commute.outer).mpr
+            (Or.inl houtsideResidual))
+      · rcases hprotected with hinsideProtected |
+          houtsideProtected
+        · exact sourceDisjoint
+            (Or.inr houtsideResidual)
+            (Or.inl hinsideProtected)
+        · exact sourceDisjoint
+            (Or.inr houtsideResidual)
+            (Or.inr houtsideProtected)
+
+end MarkedCrosscapBlockCommute
+
 namespace MarkedResidualCancellablePair
 
 /-- Under the classified-state invariant, the interval crossed by a lifted residual cancellation
