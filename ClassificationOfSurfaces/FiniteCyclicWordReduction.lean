@@ -1480,6 +1480,98 @@ def extractedEdges {n : ℕ} {word : List (SignedDart (Fin n))} :
   | .step feature _ tail =>
       feature.extractedEdges ++ tail.extractedEdges
 
+/-- Number of boundary singleton blocks in a decomposition. -/
+def boundaryCount {n : ℕ} {word : List (SignedDart (Fin n))} :
+    ResidualDecomposition word → ℕ
+  | .done => 0
+  | .step feature _ tail =>
+      (match feature.block with
+        | .boundary _ _ => 1
+        | _ => 0) + tail.boundaryCount
+
+/-- Number of crosscap square blocks in a decomposition. -/
+def crosscapCount {n : ℕ} {word : List (SignedDart (Fin n))} :
+    ResidualDecomposition word → ℕ
+  | .done => 0
+  | .step feature _ tail =>
+      (match feature.block with
+        | .crosscap _ _ => 1
+        | _ => 0) + tail.crosscapCount
+
+/-- Number of handle blocks in a decomposition. -/
+def handleCount {n : ℕ} {word : List (SignedDart (Fin n))} :
+    ResidualDecomposition word → ℕ
+  | .done => 0
+  | .step feature _ tail =>
+      (match feature.block with
+        | .handle _ _ => 1
+        | _ => 0) + tail.handleCount
+
+/-- The normal-form parameters selected by a complete block decomposition.  In the presence of
+any crosscap, each handle contributes two additional crosscaps via Gallier--Xu Step 5. -/
+def normalForm {n : ℕ} {word : List (SignedDart (Fin n))}
+    (decomposition : ResidualDecomposition word) : NormalForm :=
+  if decomposition.crosscapCount = 0 then
+    .orientable decomposition.handleCount
+      decomposition.boundaryCount
+  else
+    .nonOrientable
+      (decomposition.crosscapCount +
+        2 * decomposition.handleCount)
+      decomposition.boundaryCount
+
+/-- Every extracted block belongs to exactly one of the three block classes. -/
+theorem count_sum_eq_blocks_length {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (decomposition : ResidualDecomposition word) :
+    decomposition.boundaryCount +
+        decomposition.crosscapCount +
+        decomposition.handleCount =
+      decomposition.blocks.length := by
+  induction decomposition with
+  | done =>
+      rfl
+  | step feature reduction tail ih =>
+      cases feature <;>
+        simp only [boundaryCount, crosscapCount, handleCount,
+          blocks, ActionablePairReductionFeature.block,
+          List.length_cons] at ih ⊢ <;>
+        omega
+
+/-- A decomposition of a nonempty word extracts at least one block. -/
+theorem blocks_ne_nil_of_word_ne_nil {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (decomposition : ResidualDecomposition word)
+    (hne : word ≠ []) :
+    decomposition.blocks ≠ [] := by
+  cases decomposition with
+  | done =>
+      exact (hne rfl).elim
+  | step =>
+      simp [blocks]
+
+/-- The normal form selected from a nonempty decomposition is Eval-admissible. -/
+theorem normalForm_isEvalAdmissible_of_word_ne_nil {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (decomposition : ResidualDecomposition word)
+    (hne : word ≠ []) :
+    decomposition.normalForm.IsEvalAdmissible := by
+  have hblocks :
+      0 < decomposition.blocks.length :=
+    List.length_pos_iff_ne_nil.mpr
+      (decomposition.blocks_ne_nil_of_word_ne_nil hne)
+  have hsum := decomposition.count_sum_eq_blocks_length
+  simp only [normalForm]
+  split_ifs with hcrosscap
+  · change 1 ≤ decomposition.handleCount ∨
+      1 ≤ decomposition.boundaryCount
+    rw [hcrosscap] at hsum
+    omega
+  · change
+      1 ≤ decomposition.crosscapCount +
+        2 * decomposition.handleCount
+    omega
+
 /-- Every edge recorded by a decomposition occurs in that decomposition's source word. -/
 theorem mem_source_of_mem_extractedEdges {n : ℕ}
     {word : List (SignedDart (Fin n))}
@@ -2454,6 +2546,26 @@ noncomputable def decomposePairReduced {n : ℕ}
   decomposeResidual word
     (hasValidUsedMultiplicities_of_isSurfaceValid word valid)
     reduced
+
+/-- Normal-form parameters computed from the certified decomposition of a pair-reduced valid
+one-face word. -/
+noncomputable def pairReducedNormalForm {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (reduced : IsPairReduced word) : NormalForm :=
+  (decomposePairReduced word valid reduced).normalForm
+
+/-- The normal-form parameters selected from a pair-reduced valid word satisfy the exact
+Lean-Eval admissibility predicate. -/
+theorem pairReducedNormalForm_isEvalAdmissible {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (reduced : IsPairReduced word) :
+    (pairReducedNormalForm word valid reduced).IsEvalAdmissible := by
+  apply
+    (decomposePairReduced word valid reduced).normalForm_isEvalAdmissible_of_word_ne_nil
+  simpa only [Dyck.oneFace_boundary] using
+    valid.2.1 (0 : (Dyck.oneFace word).Face)
 
 /-- Find and execute one certified normalization step on any nonempty pair-reduced valid word. -/
 noncomputable def extractPairReductionFeature {n : ℕ}
