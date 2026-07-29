@@ -2001,12 +2001,292 @@ theorem sequenceWord_inverseSequence {n : ℕ}
 
 end ExtractedBlock
 
+/-- A completed normalization block.  Boundary singletons are absent: a boundary block enters
+this type only after a residual carrier pair has closed it into the three-dart loop required by
+the canonical representatives. -/
+inductive CompletedBlock (n : ℕ)
+  | crosscap (a : Fin n) (negative : Bool)
+  | handle (a b : Fin n)
+  | boundary (carrier hole : Fin n)
+      (carrierNegative holeNegative : Bool)
+
+namespace CompletedBlock
+
+/-- Exact signed word represented by a completed block. -/
+def word {n : ℕ} : CompletedBlock n →
+    List (SignedDart (Fin n))
+  | .crosscap a negative =>
+      [dart a negative, dart a negative]
+  | .handle a b =>
+      [.pos a, .pos b, .neg a, .neg b]
+  | .boundary carrier hole carrierNegative holeNegative =>
+      boundaryLoopWord carrier hole
+        carrierNegative holeNegative
+
+/-- Ambient edge names used by a completed block. -/
+def edges {n : ℕ} : CompletedBlock n → List (Fin n)
+  | .crosscap a _ => [a]
+  | .handle a b => [a, b]
+  | .boundary carrier hole _ _ => [carrier, hole, carrier]
+
+/-- Reverse a completed block as one atomic cyclic-word segment. -/
+def inverse {n : ℕ} : CompletedBlock n → CompletedBlock n
+  | .crosscap a negative => .crosscap a (!negative)
+  | .handle a b => .handle b a
+  | .boundary carrier hole carrierNegative holeNegative =>
+      .boundary carrier hole carrierNegative (!holeNegative)
+
+/-- Relabel every edge of a completed block. -/
+def mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m) :
+    CompletedBlock n → CompletedBlock m
+  | .crosscap a negative => .crosscap (e a) negative
+  | .handle a b => .handle (e a) (e b)
+  | .boundary carrier hole carrierNegative holeNegative =>
+      .boundary (e carrier) (e hole)
+        carrierNegative holeNegative
+
+/-- Remove an ambient edge name known not to occur in a completed block. -/
+def lowerAvoiding {n : ℕ} (a : Fin (n + 1))
+    (block : CompletedBlock (n + 1))
+    (ha : a ∉ block.edges) : CompletedBlock n :=
+  match block with
+  | .crosscap e negative =>
+      .crosscap
+        (Cancellation.lowerEdge a e (by
+          intro hea
+          subst e
+          exact ha (by simp [edges])))
+        negative
+  | .handle e f =>
+      .handle
+        (Cancellation.lowerEdge a e (by
+          intro hea
+          subst e
+          exact ha (by simp [edges])))
+        (Cancellation.lowerEdge a f (by
+          intro hfa
+          subst f
+          exact ha (by simp [edges])))
+  | .boundary carrier hole carrierNegative holeNegative =>
+      .boundary
+        (Cancellation.lowerEdge a carrier (by
+          intro hca
+          subst carrier
+          exact ha (by simp [edges])))
+        (Cancellation.lowerEdge a hole (by
+          intro hha
+          subst hole
+          exact ha (by simp [edges])))
+        carrierNegative holeNegative
+
+@[simp]
+theorem word_inverse {n : ℕ} (block : CompletedBlock n) :
+    block.inverse.word = inverseWord block.word := by
+  cases block with
+  | crosscap a negative =>
+      cases negative <;> rfl
+  | handle a b =>
+      rfl
+  | boundary carrier hole carrierNegative holeNegative =>
+      cases carrierNegative <;>
+        cases holeNegative <;> rfl
+
+@[simp]
+theorem inverse_inverse {n : ℕ} (block : CompletedBlock n) :
+    block.inverse.inverse = block := by
+  cases block with
+  | crosscap a negative =>
+      cases negative <;> rfl
+  | handle =>
+      rfl
+  | boundary carrier hole carrierNegative holeNegative =>
+      cases holeNegative <;> rfl
+
+@[simp]
+theorem edges_inverse {n : ℕ} (block : CompletedBlock n) :
+    block.inverse.edges = block.edges.reverse := by
+  cases block <;> rfl
+
+@[simp]
+theorem word_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
+    (block : CompletedBlock n) :
+    (block.mapEquiv e).word =
+      block.word.map (SignedDart.mapEquiv e) := by
+  cases block with
+  | crosscap a negative =>
+      cases negative <;> rfl
+  | handle =>
+      rfl
+  | boundary carrier hole carrierNegative holeNegative =>
+      cases carrierNegative <;>
+        cases holeNegative <;> rfl
+
+@[simp]
+theorem edges_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
+    (block : CompletedBlock n) :
+    (block.mapEquiv e).edges = block.edges.map e := by
+  cases block <;> rfl
+
+@[simp]
+theorem inverse_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
+    (block : CompletedBlock n) :
+    (block.mapEquiv e).inverse =
+      block.inverse.mapEquiv e := by
+  cases block <;> rfl
+
+@[simp]
+theorem mem_map_edgeOfDart_word_iff {n : ℕ}
+    (block : CompletedBlock n) (a : Fin n) :
+    a ∈ block.word.map edgeOfDart ↔ a ∈ block.edges := by
+  cases block with
+  | crosscap edge negative =>
+      cases negative <;> simp [word, edges]
+  | handle first second =>
+      simp [word, edges]
+      tauto
+  | boundary carrier hole carrierNegative holeNegative =>
+      cases carrierNegative <;>
+        cases holeNegative <;>
+          simp [word, edges, boundaryLoopWord]
+
+/-- Expanding a lowered completed block agrees with word-level cancellation lowering. -/
+theorem word_lowerAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (block : CompletedBlock (n + 1))
+    (ha : a ∉ block.edges) :
+    (block.lowerAvoiding a ha).word =
+      Cancellation.lowerTail a block.word := by
+  have haWord : a ∉ block.word.map edgeOfDart := by
+    simpa only [mem_map_edgeOfDart_word_iff] using ha
+  rw [← Cancellation.lowerWordAvoiding_eq_lowerTail
+    a block.word haWord]
+  cases block with
+  | crosscap e negative =>
+      cases negative <;>
+        simp [lowerAvoiding, word,
+          Cancellation.lowerWordAvoiding,
+          Cancellation.lowerDart, dart]
+  | handle e f =>
+      simp [lowerAvoiding, word,
+        Cancellation.lowerWordAvoiding,
+        Cancellation.lowerDart]
+  | boundary carrier hole carrierNegative holeNegative =>
+      cases carrierNegative <;>
+        cases holeNegative <;>
+          simp [lowerAvoiding, word, boundaryLoopWord,
+            Cancellation.lowerWordAvoiding,
+            Cancellation.lowerDart, dart]
+
+/-- Re-embedding the edge names of a lowered completed block recovers the old edge list. -/
+theorem edges_lowerAvoiding_map_restoreEdge {n : ℕ}
+    (a : Fin (n + 1))
+    (block : CompletedBlock (n + 1))
+    (ha : a ∉ block.edges) :
+    (block.lowerAvoiding a ha).edges.map
+        (Cancellation.restoreEdge a) =
+      block.edges := by
+  cases block <;>
+    simp [lowerAvoiding, edges]
+
+/-- Concatenate a completed block sequence into its exact signed one-face word. -/
+def sequenceWord {n : ℕ} (blocks : List (CompletedBlock n)) :
+    List (SignedDart (Fin n)) :=
+  (blocks.map word).flatten
+
+@[simp]
+theorem sequenceWord_nil {n : ℕ} :
+    sequenceWord ([] : List (CompletedBlock n)) = [] :=
+  rfl
+
+@[simp]
+theorem sequenceWord_cons {n : ℕ}
+    (block : CompletedBlock n)
+    (blocks : List (CompletedBlock n)) :
+    sequenceWord (block :: blocks) =
+      block.word ++ sequenceWord blocks := by
+  simp [sequenceWord]
+
+@[simp]
+theorem sequenceWord_append {n : ℕ}
+    (left right : List (CompletedBlock n)) :
+    sequenceWord (left ++ right) =
+      sequenceWord left ++ sequenceWord right := by
+  simp [sequenceWord]
+
+/-- Number of completed crosscap blocks. -/
+def crosscapCount {n : ℕ} :
+    List (CompletedBlock n) → ℕ
+  | [] => 0
+  | .crosscap _ _ :: blocks => 1 + crosscapCount blocks
+  | _ :: blocks => crosscapCount blocks
+
+/-- Number of completed handle blocks. -/
+def handleCount {n : ℕ} :
+    List (CompletedBlock n) → ℕ
+  | [] => 0
+  | .handle _ _ :: blocks => 1 + handleCount blocks
+  | _ :: blocks => handleCount blocks
+
+/-- Number of completed boundary-loop blocks. -/
+def boundaryCount {n : ℕ} :
+    List (CompletedBlock n) → ℕ
+  | [] => 0
+  | .boundary _ _ _ _ :: blocks =>
+      1 + boundaryCount blocks
+  | _ :: blocks => boundaryCount blocks
+
+/-- Normal-form parameters selected by a completed block sequence. -/
+def normalForm {n : ℕ}
+    (blocks : List (CompletedBlock n)) : NormalForm :=
+  if crosscapCount blocks = 0 then
+    .orientable (handleCount blocks) (boundaryCount blocks)
+  else
+    .nonOrientable
+      (crosscapCount blocks + 2 * handleCount blocks)
+      (boundaryCount blocks)
+
+/-- Every completed block belongs to exactly one normal-form block class. -/
+theorem count_sum_eq_length {n : ℕ}
+    (blocks : List (CompletedBlock n)) :
+    boundaryCount blocks + crosscapCount blocks +
+        handleCount blocks =
+      blocks.length := by
+  induction blocks with
+  | nil =>
+      rfl
+  | cons block blocks ih =>
+      cases block <;>
+        simp only [boundaryCount, crosscapCount,
+          handleCount, List.length_cons] at ih ⊢ <;>
+        omega
+
+/-- A nonempty completed block sequence selects an Eval-admissible normal form. -/
+theorem normalForm_isEvalAdmissible_of_ne_nil {n : ℕ}
+    (blocks : List (CompletedBlock n))
+    (hne : blocks ≠ []) :
+    (normalForm blocks).IsEvalAdmissible := by
+  have hlength : 0 < blocks.length :=
+    List.length_pos_iff_ne_nil.mpr hne
+  have hsum := count_sum_eq_length blocks
+  simp only [normalForm]
+  split_ifs with hcrosscap
+  · change 1 ≤ handleCount blocks ∨
+      1 ≤ boundaryCount blocks
+    rw [hcrosscap] at hsum
+    omega
+  · change
+      1 ≤ crosscapCount blocks +
+        2 * handleCount blocks
+    omega
+
+end CompletedBlock
+
 /-- A marked normalization word.  Residual darts are still available to subsequent pairing
 reductions; extracted blocks are atomic tokens whose exact dart succession must be preserved. -/
 inductive ReductionToken (n : ℕ)
   | residual (dart : SignedDart (Fin n))
   | extracted (block : ExtractedBlock n)
-  | protectedWord (value : List (SignedDart (Fin n)))
+  | completed (block : CompletedBlock n)
 
 namespace ReductionToken
 
@@ -2015,20 +2295,20 @@ def word {n : ℕ} : ReductionToken n →
     List (SignedDart (Fin n))
   | .residual dart => [dart]
   | .extracted block => block.word
-  | .protectedWord value => value
+  | .completed block => block.word
 
 /-- Residual contribution of one marked token. -/
 def residualWord {n : ℕ} : ReductionToken n →
     List (SignedDart (Fin n))
   | .residual dart => [dart]
   | .extracted _ => []
-  | .protectedWord _ => []
+  | .completed _ => []
 
 /-- Edge names protected inside one extracted-block token. -/
 def extractedEdges {n : ℕ} : ReductionToken n → List (Fin n)
   | .residual _ => []
   | .extracted block => block.edges
-  | .protectedWord value => value.map edgeOfDart
+  | .completed block => block.edges
 
 @[simp]
 theorem word_residual {n : ℕ} (dart : SignedDart (Fin n)) :
@@ -2041,9 +2321,9 @@ theorem word_extracted {n : ℕ} (block : ExtractedBlock n) :
   rfl
 
 @[simp]
-theorem word_protectedWord {n : ℕ}
-    (value : List (SignedDart (Fin n))) :
-    word (.protectedWord value) = value :=
+theorem word_completed {n : ℕ}
+    (block : CompletedBlock n) :
+    word (.completed block) = block.word :=
   rfl
 
 @[simp]
@@ -2059,9 +2339,9 @@ theorem residualWord_extracted {n : ℕ}
   rfl
 
 @[simp]
-theorem residualWord_protectedWord {n : ℕ}
-    (value : List (SignedDart (Fin n))) :
-    residualWord (.protectedWord value) = [] :=
+theorem residualWord_completed {n : ℕ}
+    (block : CompletedBlock n) :
+    residualWord (.completed block) = [] :=
   rfl
 
 @[simp]
@@ -2077,27 +2357,136 @@ theorem extractedEdges_extracted {n : ℕ}
   rfl
 
 @[simp]
-theorem extractedEdges_protectedWord {n : ℕ}
-    (value : List (SignedDart (Fin n))) :
-    extractedEdges (.protectedWord value) =
-      value.map edgeOfDart :=
+theorem extractedEdges_completed {n : ℕ}
+    (block : CompletedBlock n) :
+    extractedEdges (.completed block) =
+      block.edges :=
   rfl
+
+/-- Structural grammar of marked execution states.  Extracted crosscaps and handles are promoted
+immediately to completed blocks; only a boundary singleton may remain in the intermediate
+`extracted` constructor. -/
+def IsClassified {n : ℕ} : ReductionToken n → Prop
+  | .residual _ => True
+  | .extracted (.boundary _ _) => True
+  | .extracted _ => False
+  | .completed _ => True
+
+/-- Every token in a marked execution state obeys the classified-token grammar. -/
+def AllClassified {n : ℕ}
+    (tokens : List (ReductionToken n)) : Prop :=
+  ∀ token ∈ tokens, token.IsClassified
+
+@[simp]
+theorem isClassified_residual {n : ℕ}
+    (d : SignedDart (Fin n)) :
+    IsClassified (.residual d) :=
+  trivial
+
+@[simp]
+theorem isClassified_boundary {n : ℕ}
+    (a : Fin n) (negative : Bool) :
+    IsClassified (.extracted (.boundary a negative)) :=
+  trivial
+
+@[simp]
+theorem isClassified_completed {n : ℕ}
+    (block : CompletedBlock n) :
+    IsClassified (.completed block) :=
+  trivial
+
+theorem AllClassified.of_isRotated {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (classified : AllClassified tokens)
+    (rotated : tokens.IsRotated target) :
+    AllClassified target := by
+  intro token htoken
+  exact classified token
+    (rotated.perm.mem_iff.mpr htoken)
+
+theorem AllClassified.of_append_left {n : ℕ}
+    {left right : List (ReductionToken n)}
+    (classified : AllClassified (left ++ right)) :
+    AllClassified left := by
+  intro token htoken
+  exact classified token (by simp [htoken])
+
+theorem AllClassified.of_append_right {n : ℕ}
+    {left right : List (ReductionToken n)}
+    (classified : AllClassified (left ++ right)) :
+    AllClassified right := by
+  intro token htoken
+  exact classified token (by simp [htoken])
+
+theorem AllClassified.append {n : ℕ}
+    {left right : List (ReductionToken n)}
+    (leftClassified : AllClassified left)
+    (rightClassified : AllClassified right) :
+    AllClassified (left ++ right) := by
+  intro token htoken
+  rcases List.mem_append.mp htoken with hleft | hright
+  · exact leftClassified token hleft
+  · exact rightClassified token hright
+
+@[simp]
+theorem allClassified_cons {n : ℕ}
+    (token : ReductionToken n)
+    (tokens : List (ReductionToken n)) :
+    AllClassified (token :: tokens) ↔
+      token.IsClassified ∧ AllClassified tokens := by
+  simp [AllClassified]
 
 /-- Reverse a token while preserving an extracted block as one atomic token. -/
 def inverse {n : ℕ} : ReductionToken n → ReductionToken n
   | .residual dart => .residual dart.flip
   | .extracted block => .extracted block.inverse
-  | .protectedWord value =>
-      .protectedWord (inverseWord value)
+  | .completed block =>
+      .completed block.inverse
 
 /-- Relabel every edge name represented by a marked token. -/
 def mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m) :
     ReductionToken n → ReductionToken m
   | .residual dart => .residual (SignedDart.mapEquiv e dart)
   | .extracted block => .extracted (block.mapEquiv e)
-  | .protectedWord value =>
-      .protectedWord
-        (value.map (SignedDart.mapEquiv e))
+  | .completed block =>
+      .completed (block.mapEquiv e)
+
+theorem IsClassified.inverse {n : ℕ}
+    {token : ReductionToken n}
+    (classified : token.IsClassified) :
+    token.inverse.IsClassified := by
+  cases token with
+  | residual =>
+      trivial
+  | extracted block =>
+      cases block with
+      | boundary =>
+          trivial
+      | crosscap =>
+          exact classified.elim
+      | handle =>
+          exact classified.elim
+  | completed =>
+      trivial
+
+theorem IsClassified.mapEquiv {n m : ℕ}
+    {token : ReductionToken n}
+    (classified : token.IsClassified)
+    (e : Fin n ≃ Fin m) :
+    (token.mapEquiv e).IsClassified := by
+  cases token with
+  | residual =>
+      trivial
+  | extracted block =>
+      cases block with
+      | boundary =>
+          trivial
+      | crosscap =>
+          exact classified.elim
+      | handle =>
+          exact classified.elim
+  | completed =>
+      trivial
 
 @[simp]
 theorem word_inverse {n : ℕ} (token : ReductionToken n) :
@@ -2107,8 +2496,8 @@ theorem word_inverse {n : ℕ} (token : ReductionToken n) :
       cases dart <;> rfl
   | extracted block =>
       exact ExtractedBlock.word_inverse block
-  | protectedWord value =>
-      rfl
+  | completed block =>
+      exact CompletedBlock.word_inverse block
 
 @[simp]
 theorem residualWord_inverse {n : ℕ}
@@ -2120,7 +2509,7 @@ theorem residualWord_inverse {n : ℕ}
       cases dart <;> rfl
   | extracted =>
       rfl
-  | protectedWord =>
+  | completed =>
       rfl
 
 @[simp]
@@ -2133,9 +2522,8 @@ theorem extractedEdges_inverse {n : ℕ}
       rfl
   | extracted block =>
       exact ExtractedBlock.edges_inverse block
-  | protectedWord value =>
-      simp [inverse, extractedEdges,
-        map_edgeOfDart_inverseWord]
+  | completed block =>
+      exact CompletedBlock.edges_inverse block
 
 @[simp]
 theorem inverse_inverse {n : ℕ} (token : ReductionToken n) :
@@ -2145,7 +2533,7 @@ theorem inverse_inverse {n : ℕ} (token : ReductionToken n) :
       cases dart <;> rfl
   | extracted block =>
       simp [inverse]
-  | protectedWord value =>
+  | completed block =>
       simp [inverse]
 
 @[simp]
@@ -2158,8 +2546,8 @@ theorem word_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
       rfl
   | extracted block =>
       exact ExtractedBlock.word_mapEquiv e block
-  | protectedWord value =>
-      rfl
+  | completed block =>
+      exact CompletedBlock.word_mapEquiv e block
 
 @[simp]
 theorem residualWord_mapEquiv {n m : ℕ}
@@ -2178,9 +2566,8 @@ theorem inverse_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
       cases dart <;> rfl
   | extracted block =>
       simp [inverse, mapEquiv]
-  | protectedWord value =>
-      simp [inverse, mapEquiv,
-        inverseWord_map_mapEquiv]
+  | completed block =>
+      simp [inverse, mapEquiv]
 
 /-- Lower a marked token known not to use the removed ambient edge. -/
 def lowerAvoiding {n : ℕ} (a : Fin (n + 1))
@@ -2202,9 +2589,14 @@ def lowerAvoiding {n : ℕ} (a : Fin (n + 1))
           exact
             (ExtractedBlock.mem_map_edgeOfDart_word_iff
               block a).mpr hblock))
-  | .protectedWord value =>
-      .protectedWord
-        (Cancellation.lowerTail a value)
+  | .completed block =>
+      .completed
+        (block.lowerAvoiding a (by
+          intro hblock
+          apply ha
+          exact
+            (CompletedBlock.mem_map_edgeOfDart_word_iff
+              block a).mpr hblock))
 
 /-- Lowering one marked token agrees with word-level cancellation lowering. -/
 theorem word_lowerAvoiding {n : ℕ}
@@ -2221,8 +2613,28 @@ theorem word_lowerAvoiding {n : ℕ}
           a [d] ha
   | extracted block =>
       exact ExtractedBlock.word_lowerAvoiding a block _
-  | protectedWord value =>
-      rfl
+  | completed block =>
+      exact CompletedBlock.word_lowerAvoiding a block _
+
+theorem IsClassified.lowerAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    {token : ReductionToken (n + 1)}
+    (classified : token.IsClassified)
+    (ha : a ∉ token.word.map edgeOfDart) :
+    (token.lowerAvoiding a ha).IsClassified := by
+  cases token with
+  | residual =>
+      trivial
+  | extracted block =>
+      cases block with
+      | boundary =>
+          trivial
+      | crosscap =>
+          exact classified.elim
+      | handle =>
+          exact classified.elim
+  | completed =>
+      trivial
 
 /-- Re-embedding residual edge names after lowering one token recovers the old residual names. -/
 theorem residualEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
@@ -2242,7 +2654,7 @@ theorem residualEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
       rw [Cancellation.restoreEdge_edgeOfDart_lowerDart]
   | extracted =>
       rfl
-  | protectedWord =>
+  | completed =>
       rfl
 
 /-- Re-embedding protected edge names after lowering one token recovers the old protected names. -/
@@ -2260,9 +2672,10 @@ theorem extractedEdges_lowerAvoiding_map_restoreEdge {n : ℕ}
       exact
         ExtractedBlock.edges_lowerAvoiding_map_restoreEdge
           a block _
-  | protectedWord value =>
-      exact Cancellation.restoreEdges_lowerTail
-        a value ha
+  | completed block =>
+      exact
+        CompletedBlock.edges_lowerAvoiding_map_restoreEdge
+          a block _
 
 /-- Expand a marked word to the exact signed word on which normalization moves act. -/
 def expand {n : ℕ} (tokens : List (ReductionToken n)) :
@@ -2298,6 +2711,24 @@ def ofWord {n : ℕ} (word : List (SignedDart (Fin n))) :
 def ofBlocks {n : ℕ} (blocks : List (ExtractedBlock n)) :
     List (ReductionToken n) :=
   blocks.map .extracted
+
+theorem allClassified_ofWord {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    AllClassified (ofWord word) := by
+  intro token htoken
+  rcases List.mem_map.mp htoken with ⟨dart, _, rfl⟩
+  trivial
+
+theorem AllClassified.inverseSequence {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (classified : AllClassified tokens) :
+    AllClassified (ReductionToken.inverseSequence tokens) := by
+  intro token htoken
+  rw [ReductionToken.inverseSequence,
+    List.mem_reverse] at htoken
+  rcases List.mem_map.mp htoken with
+    ⟨sourceToken, hsource, rfl⟩
+  exact (classified sourceToken hsource).inverse
 
 @[simp]
 theorem expand_nil {n : ℕ} :
@@ -2380,6 +2811,28 @@ def lowerTokensAvoiding {n : ℕ} (a : Fin (n + 1)) :
           intro htokens
           apply ha
           simp [htokens])
+
+theorem AllClassified.lowerTokensAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (classified : AllClassified tokens)
+    (ha : a ∉ (expand tokens).map edgeOfDart) :
+    AllClassified
+      (ReductionToken.lowerTokensAvoiding a tokens ha) := by
+  induction tokens with
+  | nil =>
+      intro token htoken
+      simp [ReductionToken.lowerTokensAvoiding] at htoken
+  | cons token tokens ih =>
+      change AllClassified
+        (token.lowerAvoiding a _ ::
+          ReductionToken.lowerTokensAvoiding a tokens _)
+      rw [allClassified_cons]
+      refine ⟨?_, ?_⟩
+      · apply (classified token (by simp)).lowerAvoiding
+      · apply ih
+        intro sourceToken hsource
+        exact classified sourceToken (by simp [hsource])
 
 /-- Expanding a lowered marked word gives exactly the ordinary cancellation target word. -/
 theorem expand_lowerTokensAvoiding {n : ℕ}
@@ -2520,13 +2973,14 @@ theorem mem_map_edgeOfDart_expand_iff {n : ℕ}
           rw [ExtractedBlock.mem_map_edgeOfDart_word_iff,
             ih]
           tauto
-      | protectedWord value =>
-          simp only [expand_cons, word_protectedWord,
-            residualDarts_cons, residualWord_protectedWord,
-            protectedEdges_cons, extractedEdges_protectedWord,
+      | completed block =>
+          simp only [expand_cons, word_completed,
+            residualDarts_cons, residualWord_completed,
+            protectedEdges_cons, extractedEdges_completed,
             List.nil_append, List.map_append,
             List.mem_append]
-          rw [ih]
+          rw [CompletedBlock.mem_map_edgeOfDart_word_iff,
+            ih]
           tauto
 
 /-- Flattening preserves a cyclic rotation of a list of lists. -/
@@ -2678,18 +3132,18 @@ theorem exists_split_of_residualDarts_eq_append_cons {n : ℕ}
                   List.nil_append]
                 exact hleft,
               hright⟩
-      | protectedWord value =>
+      | completed block =>
           simp only [residualDarts_cons,
-            residualWord_protectedWord,
+            residualWord_completed,
             List.nil_append] at hresidual
           rcases ih left hresidual with
             ⟨tokenLeft, tokenRight, htokens, hleft, hright⟩
           exact
-            ⟨.protectedWord value :: tokenLeft, tokenRight,
+            ⟨.completed block :: tokenLeft, tokenRight,
               by simp [htokens],
               by
                 simp only [residualDarts_cons,
-                  residualWord_protectedWord,
+                  residualWord_completed,
                   List.nil_append]
                 exact hleft,
               hright⟩
@@ -2745,18 +3199,18 @@ theorem exists_split_of_residualDarts_eq_append {n : ℕ}
                   residualWord_extracted, List.nil_append]
                 exact hleft,
               hright⟩
-      | protectedWord value =>
+      | completed block =>
           simp only [residualDarts_cons,
-            residualWord_protectedWord,
+            residualWord_completed,
             List.nil_append] at hresidual
           rcases ih left hresidual with
             ⟨tokenLeft, tokenRight, htokens, hleft, hright⟩
           exact
-            ⟨.protectedWord value :: tokenLeft, tokenRight,
+            ⟨.completed block :: tokenLeft, tokenRight,
               by simp [htokens],
               by
                 simp only [residualDarts_cons,
-                  residualWord_protectedWord,
+                  residualWord_completed,
                   List.nil_append]
                 exact hleft,
               hright⟩
@@ -3173,15 +3627,15 @@ def targetTokens {n : ℕ}
   | marked@(.boundary _ _ remainderTokens _ _) =>
       .extracted marked.residualFeature.block ::
         remainderTokens
-  | marked@(.crosscap _ _ betweenTokens
-      remainderTokens _ _ _) =>
-      .extracted marked.residualFeature.block ::
+  | .crosscap a form betweenTokens
+      remainderTokens _ _ _ =>
+      .completed (.crosscap a form.negative) ::
         ReductionToken.inverseSequence remainderTokens ++
         betweenTokens
-  | marked@(.handle _ _ _ beforeBTokens
+  | .handle a b _ beforeBTokens
       beforeNegATokens beforeOutsideBTokens
-      remainderTokens _ _ _ _ _) =>
-      .extracted marked.residualFeature.block ::
+      remainderTokens _ _ _ _ _ =>
+      .completed (.handle a b) ::
         remainderTokens ++ beforeOutsideBTokens ++
         beforeNegATokens ++ beforeBTokens
 
@@ -3332,6 +3786,81 @@ theorem residualDarts_targetTokens {n : ℕ}
         hbeforeB, hbeforeNegA, hbeforeOutsideB,
         hremainder, List.append_assoc]
 
+/-- Marked extraction preserves the classified-token grammar. -/
+theorem targetTokens_allClassified {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens)
+    (classified : ReductionToken.AllClassified tokens) :
+    ReductionToken.AllClassified marked.targetTokens := by
+  cases marked with
+  | boundary a form remainderTokens rotated _ =>
+      have displayed :=
+        classified.of_isRotated rotated
+      have remainderClassified :
+          ReductionToken.AllClassified remainderTokens := by
+        intro token htoken
+        exact displayed token (by simp [htoken])
+      rw [targetTokens,
+        ReductionToken.allClassified_cons]
+      exact ⟨trivial, remainderClassified⟩
+  | crosscap a form betweenTokens remainderTokens
+      rotated _ _ =>
+      have displayed :=
+        classified.of_isRotated rotated
+      have betweenClassified :
+          ReductionToken.AllClassified betweenTokens := by
+        intro token htoken
+        exact displayed token (by simp [htoken])
+      have remainderClassified :
+          ReductionToken.AllClassified remainderTokens := by
+        intro token htoken
+        exact displayed token (by simp [htoken])
+      change ReductionToken.AllClassified
+        ((.completed (.crosscap a form.negative) ::
+            ReductionToken.inverseSequence remainderTokens) ++
+          betweenTokens)
+      apply ReductionToken.AllClassified.append
+      · rw [ReductionToken.allClassified_cons]
+        exact
+          ⟨trivial,
+            remainderClassified.inverseSequence⟩
+      · exact betweenClassified
+  | handle a b form beforeBTokens beforeNegATokens
+      beforeOutsideBTokens remainderTokens rotated _ _ _ _ =>
+      have displayed :=
+        classified.of_isRotated rotated
+      have beforeBClassified :
+          ReductionToken.AllClassified beforeBTokens := by
+        intro token htoken
+        exact displayed token (by simp [htoken])
+      have beforeNegAClassified :
+          ReductionToken.AllClassified beforeNegATokens := by
+        intro token htoken
+        exact displayed token (by simp [htoken])
+      have beforeOutsideBClassified :
+          ReductionToken.AllClassified beforeOutsideBTokens := by
+        intro token htoken
+        exact displayed token (by simp [htoken])
+      have remainderClassified :
+          ReductionToken.AllClassified remainderTokens := by
+        intro token htoken
+        exact displayed token (by simp [htoken])
+      change ReductionToken.AllClassified
+        (((((.completed (.handle a b) ::
+            remainderTokens) ++ beforeOutsideBTokens) ++
+            beforeNegATokens) ++ beforeBTokens))
+      exact
+        (((by
+              rw [ReductionToken.allClassified_cons]
+              exact
+                ⟨trivial, remainderClassified⟩ :
+            ReductionToken.AllClassified
+              (.completed (.handle a b) ::
+                remainderTokens)).append
+            beforeOutsideBClassified).append
+          beforeNegAClassified).append
+        beforeBClassified
+
 /-- The protected names after one marked extraction are precisely the newly extracted names
 together with the previously protected names. -/
 theorem mem_protectedEdges_targetTokens_iff {n : ℕ}
@@ -3356,7 +3885,7 @@ theorem mem_protectedEdges_targetTokens_iff {n : ℕ}
       simp [targetTokens, residualFeature,
         ActionablePairReductionFeature.extractedEdges,
         ActionablePairReductionFeature.block,
-        ExtractedBlock.edges]
+        ExtractedBlock.edges, CompletedBlock.edges]
       tauto
   | handle a b form beforeBTokens beforeNegATokens
       beforeOutsideBTokens remainderTokens rotated
@@ -3366,7 +3895,7 @@ theorem mem_protectedEdges_targetTokens_iff {n : ℕ}
       simp [targetTokens, residualFeature,
         ActionablePairReductionFeature.extractedEdges,
         ActionablePairReductionFeature.block,
-        ExtractedBlock.edges]
+        ExtractedBlock.edges, CompletedBlock.edges]
       tauto
 
 /-- Marked extraction preserves separation of residual and protected edge namespaces. -/
@@ -3630,16 +4159,15 @@ theorem expandedFeature_block_word_append_residualWord {n : ℕ}
         ExtractedBlock.word]
   | crosscap =>
       simp [expandedFeature, targetTokens,
-        residualFeature,
         ActionablePairReductionFeature.block,
         ActionablePairReductionFeature.residualWord,
-        ExtractedBlock.word]
+        ExtractedBlock.word, CompletedBlock.word]
   | handle =>
       simp [expandedFeature, targetTokens,
-        residualFeature,
         ActionablePairReductionFeature.block,
         ActionablePairReductionFeature.residualWord,
-        ExtractedBlock.word, List.append_assoc]
+        ExtractedBlock.word, CompletedBlock.word,
+        List.append_assoc]
 
 end MarkedActionablePairReductionFeature
 
@@ -3788,8 +4316,8 @@ def toAdjacent {n : ℕ}
 end MarkedResidualCancellablePair
 
 /-- A residual inverse pair surrounding one extracted boundary singleton.  Reclassifying the
-three-token succession as one protected word closes the singleton into the canonical loop shape
-without changing the expanded cyclic presentation. -/
+three-token succession as one completed boundary block closes the singleton into the canonical
+loop shape without changing the expanded cyclic presentation. -/
 structure MarkedBoundaryClosure {n : ℕ}
     (tokens : List (ReductionToken n)) where
   carrier : Fin n
@@ -3818,7 +4346,8 @@ def boundaryWord {n : ℕ} {tokens : List (ReductionToken n)}
 def targetTokens {n : ℕ} {tokens : List (ReductionToken n)}
     (closure : MarkedBoundaryClosure tokens) :
     List (ReductionToken n) :=
-  .protectedWord closure.boundaryWord ::
+  .completed (.boundary closure.carrier closure.hole
+    closure.carrierNegative closure.holeNegative) ::
     closure.tailTokens
 
 /-- The source expansion is a cyclic rotation of the exact boundary-closure target expansion. -/
@@ -3830,7 +4359,24 @@ theorem expand_isRotated_target {n : ℕ}
   have hexpanded :=
     ReductionToken.expand_isRotated closure.rotated
   simpa [targetTokens, boundaryWord,
+    CompletedBlock.word, boundaryLoopWord,
     ExtractedBlock.word, dart] using hexpanded
+
+/-- Boundary closure preserves the classified-token grammar. -/
+theorem targetTokens_allClassified {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (closure : MarkedBoundaryClosure tokens)
+    (classified : ReductionToken.AllClassified tokens) :
+    ReductionToken.AllClassified closure.targetTokens := by
+  have displayed :=
+    classified.of_isRotated closure.rotated
+  have tailClassified :
+      ReductionToken.AllClassified closure.tailTokens := by
+    intro token htoken
+    exact displayed token (by simp [htoken])
+  rw [targetTokens,
+    ReductionToken.allClassified_cons]
+  exact ⟨trivial, tailClassified⟩
 
 /-- Surface multiplicity forces the loop carrier to be absent from the remaining marked tail. -/
 theorem carrier_not_mem_tail {n : ℕ}
@@ -3872,11 +4418,12 @@ theorem carrier_not_mem_tail {n : ℕ}
   have hmultiplicity := valid.2.2.2 closure.carrier
   rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
   simp only [ReductionToken.expand_cons,
-    ReductionToken.word_protectedWord,
+    ReductionToken.word_completed,
+    CompletedBlock.word, boundaryLoopWord,
     List.map_append, List.map_cons, List.map_nil,
     edgeOfDart_dart, List.count_append,
     List.count_cons, List.count_nil,
-    beq_self_eq_true, if_true, boundaryWord,
+    beq_self_eq_true, if_true,
     targetTokens] at hcount
   simp [hcarrierHole.symm] at hcount
   intro htail
@@ -3917,9 +4464,9 @@ theorem targetTokens_isSeparated {n : ℕ}
       closure.tailTokens e).mpr (Or.inl heResidualTail)
   simp only [targetTokens,
     ReductionToken.protectedEdges_cons,
-    ReductionToken.extractedEdges_protectedWord,
-    boundaryWord, List.map_cons, List.map_nil,
-    edgeOfDart_dart, List.mem_append,
+    ReductionToken.extractedEdges_completed,
+    CompletedBlock.edges,
+    List.mem_append,
     List.mem_cons, List.not_mem_nil, or_false] at heProtected
   rcases heProtected with heBoundary | heProtectedTail
   rcases heBoundary with rfl | rfl | rfl
@@ -5043,6 +5590,10 @@ structure MarkedActionablePairReductionResult {n : ℕ}
   targetValid :
     (Dyck.oneFace
       (ReductionToken.expand marked.targetTokens)).IsSurfaceValid
+  targetSeparated :
+    ReductionToken.IsSeparated marked.targetTokens
+  targetClassified :
+    ReductionToken.AllClassified marked.targetTokens
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -5058,6 +5609,7 @@ noncomputable def extract {n : ℕ}
     {tokens : List (ReductionToken n)}
     (marked : MarkedActionablePairReductionFeature tokens)
     (separated : ReductionToken.IsSeparated tokens)
+    (classified : ReductionToken.AllClassified tokens)
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
     MarkedActionablePairReductionResult marked valid := by
@@ -5077,6 +5629,10 @@ noncomputable def extract {n : ℕ}
     exact result.targetWordValid
   refine
     { targetValid := targetValid
+      targetSeparated :=
+        marked.targetTokens_isSeparated separated
+      targetClassified :=
+        marked.targetTokens_allClassified classified
       equivalent := ?_ }
   have hequivalent := result.equivalent_to_targetWord
   simpa only [htarget] using hequivalent
@@ -5097,6 +5653,8 @@ structure MarkedCancellationResult {n : ℕ}
       (ReductionToken.expand targetTokens)).IsSurfaceValid
   targetSeparated :
     ReductionToken.IsSeparated targetTokens
+  targetClassified :
+    ReductionToken.AllClassified targetTokens
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -5112,6 +5670,7 @@ noncomputable def cancel {n : ℕ}
     {tokens : List (ReductionToken (n + 1))}
     (pair : MarkedCancellablePair tokens)
     (separated : ReductionToken.IsSeparated tokens)
+    (classified : ReductionToken.AllClassified tokens)
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid)
     (tail_nonempty :
@@ -5120,6 +5679,16 @@ noncomputable def cancel {n : ℕ}
   let ha := pair.edge_not_mem_tailTokens valid
   let targetTokens :=
     ReductionToken.lowerTokensAvoiding
+      pair.edge pair.tailTokens ha
+  have tailClassified :
+      ReductionToken.AllClassified pair.tailTokens := by
+    have displayed :=
+      classified.of_isRotated pair.rotated
+    intro token htoken
+    exact displayed token (by simp [htoken])
+  have targetClassified :
+      ReductionToken.AllClassified targetTokens :=
+    tailClassified.lowerTokensAvoiding
       pair.edge pair.tailTokens ha
   have targetSeparated :
       ReductionToken.IsSeparated targetTokens :=
@@ -5167,6 +5736,7 @@ noncomputable def cancel {n : ℕ}
       { targetTokens := targetTokens
         targetValid := targetValid
         targetSeparated := targetSeparated
+        targetClassified := targetClassified
         equivalent := ?_ }
     have hequivalent :=
       Cancellation.normalizationEquivalentOfIsRotated
@@ -5206,6 +5776,7 @@ noncomputable def cancel {n : ℕ}
       { targetTokens := targetTokens
         targetValid := targetValid
         targetSeparated := targetSeparated
+        targetClassified := targetClassified
         equivalent := ?_ }
     have hequivalent :=
       Cancellation.negativeNormalizationEquivalentOfIsRotated
@@ -5229,6 +5800,8 @@ structure MarkedBoundaryClosureResult {n : ℕ}
       (ReductionToken.expand closure.targetTokens)).IsSurfaceValid
   targetSeparated :
     ReductionToken.IsSeparated closure.targetTokens
+  targetClassified :
+    ReductionToken.AllClassified closure.targetTokens
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -5244,6 +5817,7 @@ noncomputable def close {n : ℕ}
     {tokens : List (ReductionToken n)}
     (closure : MarkedBoundaryClosure tokens)
     (separated : ReductionToken.IsSeparated tokens)
+    (classified : ReductionToken.AllClassified tokens)
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
     MarkedBoundaryClosureResult closure valid := by
@@ -5259,6 +5833,8 @@ noncomputable def close {n : ℕ}
     { targetValid := targetValid
       targetSeparated :=
         closure.targetTokens_isSeparated separated valid
+      targetClassified :=
+        closure.targetTokens_allClassified classified
       equivalent :=
         NormalizationEquivalent.ofSignedIso rotation }
 
