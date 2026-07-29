@@ -1336,6 +1336,17 @@ theorem count_residualWord_of_mem {n : ℕ}
       simp [hae, hbe] at hcount
       omega
 
+/-- Every edge name retained by an actionable feature occurred in its source word. -/
+theorem mem_source_of_mem_residualWord {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word)
+    (e : Fin n)
+    (he : e ∈ feature.residualWord.map edgeOfDart) :
+    e ∈ word.map edgeOfDart := by
+  apply List.count_pos_iff.mp
+  rw [feature.count_residualWord_of_mem e he]
+  exact List.count_pos_iff.mpr he
+
 /-- Used-edge surface multiplicities survive deletion of an extracted block. -/
 theorem hasValidUsedMultiplicities_residualWord {n : ℕ}
     {word : List (SignedDart (Fin n))}
@@ -1594,6 +1605,17 @@ theorem residualWord_inverse {n : ℕ}
       rfl
 
 @[simp]
+theorem extractedEdges_inverse {n : ℕ}
+    (token : ReductionToken n) :
+    token.inverse.extractedEdges =
+      token.extractedEdges.reverse := by
+  cases token with
+  | residual =>
+      rfl
+  | extracted block =>
+      exact ExtractedBlock.edges_inverse block
+
+@[simp]
 theorem inverse_inverse {n : ℕ} (token : ReductionToken n) :
     token.inverse.inverse = token := by
   cases token with
@@ -1645,6 +1667,11 @@ def residualDarts {n : ℕ} (tokens : List (ReductionToken n)) :
 def protectedEdges {n : ℕ} (tokens : List (ReductionToken n)) :
     List (Fin n) :=
   (tokens.map extractedEdges).flatten
+
+/-- Residual darts and already-extracted blocks use disjoint ambient edge names. -/
+def IsSeparated {n : ℕ} (tokens : List (ReductionToken n)) : Prop :=
+  ((residualDarts tokens).map edgeOfDart).Disjoint
+    (protectedEdges tokens)
 
 /-- Reverse a marked word at token granularity. -/
 def inverseSequence {n : ℕ} (tokens : List (ReductionToken n)) :
@@ -1780,6 +1807,38 @@ theorem protectedEdges_isRotated {n : ℕ}
     (protectedEdges tokens).IsRotated
       (protectedEdges target) := by
   exact isRotated_flatten (hrotated.map extractedEdges)
+
+/-- Residual edge names rotate with their atomic marked tokens. -/
+theorem residualEdges_isRotated {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (hrotated : tokens.IsRotated target) :
+    ((residualDarts tokens).map edgeOfDart).IsRotated
+      ((residualDarts target).map edgeOfDart) := by
+  exact (isRotated_flatten (hrotated.map residualWord)).map edgeOfDart
+
+/-- Separation of residual and protected edge names is invariant under cyclic rotation. -/
+theorem IsSeparated.of_isRotated {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (separated : IsSeparated tokens)
+    (hrotated : tokens.IsRotated target) :
+    IsSeparated target := by
+  rw [IsSeparated, List.disjoint_left]
+  intro a haResidual haProtected
+  exact
+    (List.disjoint_left.mp separated)
+      ((residualEdges_isRotated hrotated).perm.mem_iff.mpr
+        haResidual)
+      ((protectedEdges_isRotated hrotated).perm.mem_iff.mpr
+        haProtected)
+
+/-- A separated marked word cannot protect an edge that still occurs residually. -/
+theorem IsSeparated.not_mem_protected_of_mem_residual {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (separated : IsSeparated tokens) (a : Fin n)
+    (ha : a ∈ (residualDarts tokens).map edgeOfDart) :
+    a ∉ protectedEdges tokens := by
+  intro haProtected
+  exact (List.disjoint_left.mp separated) ha haProtected
 
 @[simp]
 theorem expand_ofWord {n : ℕ}
@@ -2119,6 +2178,21 @@ theorem residualDarts_inverseSequence {n : ℕ}
             inverseWord (residualDarts tokens) := by
         simpa only [inverseSequence] using ih
       simp [inverseSequence, inverseWord_append, ih']
+
+@[simp]
+theorem protectedEdges_inverseSequence {n : ℕ}
+    (tokens : List (ReductionToken n)) :
+    protectedEdges (inverseSequence tokens) =
+      (protectedEdges tokens).reverse := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      have ih' :
+          protectedEdges ((tokens.map inverse).reverse) =
+            (protectedEdges tokens).reverse := by
+        simpa only [inverseSequence] using ih
+      simp [inverseSequence, ih', List.reverse_append]
 
 @[simp]
 theorem expand_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
@@ -2474,6 +2548,315 @@ theorem residualDarts_targetTokens {n : ℕ}
         ActionablePairReductionFeature.residualWord,
         hbeforeB, hbeforeNegA, hbeforeOutsideB,
         hremainder, List.append_assoc]
+
+/-- The protected names after one marked extraction are precisely the newly extracted names
+together with the previously protected names. -/
+theorem mem_protectedEdges_targetTokens_iff {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens)
+    (e : Fin n) :
+    e ∈ ReductionToken.protectedEdges marked.targetTokens ↔
+      e ∈ marked.residualFeature.extractedEdges ∨
+        e ∈ ReductionToken.protectedEdges tokens := by
+  cases marked with
+  | boundary a form remainderTokens rotated hremainder =>
+      rw [(ReductionToken.protectedEdges_isRotated
+        rotated).perm.mem_iff]
+      simp [targetTokens, residualFeature,
+        ActionablePairReductionFeature.extractedEdges,
+        ActionablePairReductionFeature.block,
+        ExtractedBlock.edges]
+  | crosscap a form betweenTokens remainderTokens
+      rotated hbetween hremainder =>
+      rw [(ReductionToken.protectedEdges_isRotated
+        rotated).perm.mem_iff]
+      simp [targetTokens, residualFeature,
+        ActionablePairReductionFeature.extractedEdges,
+        ActionablePairReductionFeature.block,
+        ExtractedBlock.edges]
+      tauto
+  | handle a b form beforeBTokens beforeNegATokens
+      beforeOutsideBTokens remainderTokens rotated
+      hbeforeB hbeforeNegA hbeforeOutsideB hremainder =>
+      rw [(ReductionToken.protectedEdges_isRotated
+        rotated).perm.mem_iff]
+      simp [targetTokens, residualFeature,
+        ActionablePairReductionFeature.extractedEdges,
+        ActionablePairReductionFeature.block,
+        ExtractedBlock.edges]
+      tauto
+
+/-- Marked extraction preserves separation of residual and protected edge namespaces. -/
+theorem targetTokens_isSeparated {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens)
+    (separated : ReductionToken.IsSeparated tokens) :
+    ReductionToken.IsSeparated marked.targetTokens := by
+  rw [ReductionToken.IsSeparated, List.disjoint_left]
+  intro e heResidual heProtected
+  have heFeatureResidual :
+      e ∈ marked.residualFeature.residualWord.map edgeOfDart := by
+    simpa only [marked.residualDarts_targetTokens] using
+      heResidual
+  rw [marked.mem_protectedEdges_targetTokens_iff] at heProtected
+  rcases heProtected with heNew | heOld
+  · exact
+      (List.disjoint_left.mp
+        marked.residualFeature.extractedEdges_disjoint_residualWord)
+        heNew heFeatureResidual
+  · have heSourceResidual :
+        e ∈
+          (ReductionToken.residualDarts tokens).map
+            edgeOfDart :=
+      marked.residualFeature.mem_source_of_mem_residualWord
+        e heFeatureResidual
+    exact (List.disjoint_left.mp separated)
+      heSourceResidual heOld
+
+/-- Expanding a separated marked feature gives the genuine feature on the full signed word.
+The separation invariant is exactly what rules out a selected residual edge from every protected
+block lying in an intervening token segment. -/
+def expandedFeature {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens)
+    (separated : ReductionToken.IsSeparated tokens) :
+    ActionablePairReductionFeature
+      (ReductionToken.expand tokens) := by
+  cases marked with
+  | boundary a form remainderTokens rotated hremainder =>
+      have separatedDisplayed :=
+        separated.of_isRotated rotated
+      have haResidual :
+          a ∈
+            (ReductionToken.residualDarts
+              (.residual (dart a form.negative) ::
+                remainderTokens)).map edgeOfDart := by
+        simp
+      have haProtected :=
+        separatedDisplayed.not_mem_protected_of_mem_residual
+          a haResidual
+      refine .boundary a
+        { negative := form.negative
+          remainder := ReductionToken.expand remainderTokens
+          rotated := ?_
+          edge_not_mem_remainder := ?_ }
+      · simpa only [ReductionToken.expand_cons,
+          ReductionToken.word_residual,
+          List.singleton_append] using
+          ReductionToken.expand_isRotated rotated
+      · rw [ReductionToken.mem_map_edgeOfDart_expand_iff]
+        simp only [not_or]
+        refine ⟨?_, ?_⟩
+        · simpa only [hremainder] using
+            form.edge_not_mem_remainder
+        · intro ha
+          apply haProtected
+          simpa using ha
+  | crosscap a form betweenTokens remainderTokens
+      rotated hbetween hremainder =>
+      have separatedDisplayed :=
+        separated.of_isRotated rotated
+      have haResidual :
+          a ∈
+            (ReductionToken.residualDarts
+              (.residual (dart a form.negative) ::
+                betweenTokens ++
+                .residual (dart a form.negative) ::
+                remainderTokens)).map edgeOfDart := by
+        simp
+      have haProtected :=
+        separatedDisplayed.not_mem_protected_of_mem_residual
+          a haResidual
+      refine .crosscap a
+        { negative := form.negative
+          between := ReductionToken.expand betweenTokens
+          remainder := ReductionToken.expand remainderTokens
+          rotated := ?_
+          edge_not_mem_between := ?_
+          edge_not_mem_remainder := ?_ }
+      · simpa only [ReductionToken.expand_cons,
+          ReductionToken.word_residual,
+          ReductionToken.expand_append,
+          List.singleton_append, List.nil_append,
+          List.cons_append,
+          List.append_assoc] using
+          ReductionToken.expand_isRotated rotated
+      · rw [ReductionToken.mem_map_edgeOfDart_expand_iff]
+        simp only [not_or]
+        refine ⟨?_, ?_⟩
+        · simpa only [hbetween] using
+            form.edge_not_mem_between
+        · intro ha
+          apply haProtected
+          simp only [ReductionToken.protectedEdges_cons,
+            ReductionToken.extractedEdges_residual,
+            List.nil_append,
+            ReductionToken.protectedEdges_append,
+            List.mem_append]
+          exact Or.inl ha
+      · rw [ReductionToken.mem_map_edgeOfDart_expand_iff]
+        simp only [not_or]
+        refine ⟨?_, ?_⟩
+        · simpa only [hremainder] using
+            form.edge_not_mem_remainder
+        · intro ha
+          apply haProtected
+          simp only [ReductionToken.protectedEdges_cons,
+            ReductionToken.extractedEdges_residual,
+            List.nil_append,
+            ReductionToken.protectedEdges_append,
+            List.mem_append]
+          exact Or.inr ha
+  | handle a b form beforeBTokens beforeNegATokens
+      beforeOutsideBTokens remainderTokens rotated
+      hbeforeB hbeforeNegA hbeforeOutsideB hremainder =>
+      have separatedDisplayed :=
+        separated.of_isRotated rotated
+      have haResidual :
+          a ∈
+            (ReductionToken.residualDarts
+              (.residual (.pos a) ::
+                beforeBTokens ++
+                .residual (dart b form.bNegativeInside) ::
+                beforeNegATokens ++
+                .residual (.neg a) ::
+                beforeOutsideBTokens ++
+                .residual (dart b (!form.bNegativeInside)) ::
+                remainderTokens)).map edgeOfDart := by
+        simp
+      have hbResidual :
+          b ∈
+            (ReductionToken.residualDarts
+              (.residual (.pos a) ::
+                beforeBTokens ++
+                .residual (dart b form.bNegativeInside) ::
+                beforeNegATokens ++
+                .residual (.neg a) ::
+                beforeOutsideBTokens ++
+                .residual (dart b (!form.bNegativeInside)) ::
+                remainderTokens)).map edgeOfDart := by
+        simp
+      have haProtected :=
+        separatedDisplayed.not_mem_protected_of_mem_residual
+          a haResidual
+      have hbProtected :=
+        separatedDisplayed.not_mem_protected_of_mem_residual
+          b hbResidual
+      have haBeforeB :
+          a ∉ ReductionToken.protectedEdges beforeBTokens := by
+        intro ha
+        apply haProtected
+        simp [ha]
+      have haBeforeNegA :
+          a ∉ ReductionToken.protectedEdges beforeNegATokens := by
+        intro ha
+        apply haProtected
+        simp [ha]
+      have haBeforeOutsideB :
+          a ∉
+            ReductionToken.protectedEdges
+              beforeOutsideBTokens := by
+        intro ha
+        apply haProtected
+        simp [ha]
+      have haRemainder :
+          a ∉ ReductionToken.protectedEdges remainderTokens := by
+        intro ha
+        apply haProtected
+        simp [ha]
+      have hbBeforeB :
+          b ∉ ReductionToken.protectedEdges beforeBTokens := by
+        intro hb
+        apply hbProtected
+        simp [hb]
+      have hbBeforeNegA :
+          b ∉ ReductionToken.protectedEdges beforeNegATokens := by
+        intro hb
+        apply hbProtected
+        simp [hb]
+      have hbBeforeOutsideB :
+          b ∉
+            ReductionToken.protectedEdges
+              beforeOutsideBTokens := by
+        intro hb
+        apply hbProtected
+        simp [hb]
+      have hbRemainder :
+          b ∉ ReductionToken.protectedEdges remainderTokens := by
+        intro hb
+        apply hbProtected
+        simp [hb]
+      refine .handle a b
+        { bNegativeInside := form.bNegativeInside
+          beforeB := ReductionToken.expand beforeBTokens
+          beforeNegA := ReductionToken.expand beforeNegATokens
+          beforeOutsideB :=
+            ReductionToken.expand beforeOutsideBTokens
+          remainder := ReductionToken.expand remainderTokens
+          rotated := ?_
+          edge_ne := form.edge_ne
+          a_not_mem_beforeB := ?_
+          a_not_mem_beforeNegA := ?_
+          a_not_mem_beforeOutsideB := ?_
+          a_not_mem_remainder := ?_
+          b_not_mem_beforeB := ?_
+          b_not_mem_beforeNegA := ?_
+          b_not_mem_beforeOutsideB := ?_
+          b_not_mem_remainder := ?_ }
+      · simpa only [ReductionToken.expand_cons,
+          ReductionToken.word_residual,
+          ReductionToken.expand_append,
+          List.singleton_append, List.nil_append,
+          List.cons_append,
+          List.append_assoc] using
+          ReductionToken.expand_isRotated rotated
+      all_goals
+        rw [ReductionToken.mem_map_edgeOfDart_expand_iff]
+        simp only [not_or]
+      · exact ⟨by simpa only [hbeforeB] using
+          form.a_not_mem_beforeB, haBeforeB⟩
+      · exact ⟨by simpa only [hbeforeNegA] using
+          form.a_not_mem_beforeNegA, haBeforeNegA⟩
+      · exact ⟨by simpa only [hbeforeOutsideB] using
+          form.a_not_mem_beforeOutsideB, haBeforeOutsideB⟩
+      · exact ⟨by simpa only [hremainder] using
+          form.a_not_mem_remainder, haRemainder⟩
+      · exact ⟨by simpa only [hbeforeB] using
+          form.b_not_mem_beforeB, hbBeforeB⟩
+      · exact ⟨by simpa only [hbeforeNegA] using
+          form.b_not_mem_beforeNegA, hbBeforeNegA⟩
+      · exact ⟨by simpa only [hbeforeOutsideB] using
+          form.b_not_mem_beforeOutsideB, hbBeforeOutsideB⟩
+      · exact ⟨by simpa only [hremainder] using
+          form.b_not_mem_remainder, hbRemainder⟩
+
+/-- The full-word extraction target is exactly the expansion of the marked target. -/
+theorem expandedFeature_block_word_append_residualWord {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens)
+    (separated : ReductionToken.IsSeparated tokens) :
+    (marked.expandedFeature separated).block.word ++
+        (marked.expandedFeature separated).residualWord =
+      ReductionToken.expand marked.targetTokens := by
+  cases marked with
+  | boundary =>
+      simp [expandedFeature, targetTokens,
+        residualFeature,
+        ActionablePairReductionFeature.block,
+        ActionablePairReductionFeature.residualWord,
+        ExtractedBlock.word]
+  | crosscap =>
+      simp [expandedFeature, targetTokens,
+        residualFeature,
+        ActionablePairReductionFeature.block,
+        ActionablePairReductionFeature.residualWord,
+        ExtractedBlock.word]
+  | handle =>
+      simp [expandedFeature, targetTokens,
+        residualFeature,
+        ActionablePairReductionFeature.block,
+        ActionablePairReductionFeature.residualWord,
+        ExtractedBlock.word, List.append_assoc]
 
 end MarkedActionablePairReductionFeature
 
@@ -3470,6 +3853,76 @@ noncomputable def ActionablePairReductionFeature.extract {n : ℕ}
       let validGrouped := Classical.choose witness
       let equivalent := Classical.choose_spec witness
       exact .handle a b form validGrouped equivalent
+
+@[simp]
+theorem ActionablePairReductionFeature.feature_extract {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word)
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    (feature.extract valid).feature = feature := by
+  cases feature <;>
+    simp [ActionablePairReductionFeature.extract,
+      ActionablePairReductionResult.feature]
+
+@[simp]
+theorem ActionablePairReductionFeature.targetWord_extract {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word)
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    (feature.extract valid).targetWord =
+      feature.block.word ++ feature.residualWord := by
+  simp [ActionablePairReductionResult.targetWord]
+
+/-- Proof-producing execution of an extraction on a marked word, with the exact marked target
+retained as its public endpoint. -/
+structure MarkedActionablePairReductionResult {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens)
+    (valid :
+      (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    Type where
+  targetValid :
+    (Dyck.oneFace
+      (ReductionToken.expand marked.targetTokens)).IsSurfaceValid
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand marked.targetTokens),
+        targetValid⟩
+
+namespace MarkedActionablePairReductionFeature
+
+/-- Execute a marked feature by expanding it, applying the corresponding Gallier--Xu move, and
+transporting the result back to the exact marked target spelling. -/
+noncomputable def extract {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (valid :
+      (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    MarkedActionablePairReductionResult marked valid := by
+  let result :=
+    (marked.expandedFeature separated).extract valid
+  have htarget :
+      result.targetWord =
+        ReductionToken.expand marked.targetTokens := by
+    rw [ActionablePairReductionFeature.targetWord_extract]
+    exact
+      marked.expandedFeature_block_word_append_residualWord
+        separated
+  have targetValid :
+      (Dyck.oneFace
+        (ReductionToken.expand marked.targetTokens)).IsSurfaceValid := by
+    rw [← htarget]
+    exact result.targetWordValid
+  refine
+    { targetValid := targetValid
+      equivalent := ?_ }
+  have hequivalent := result.equivalent_to_targetWord
+  simpa only [htarget] using hequivalent
+
+end MarkedActionablePairReductionFeature
 
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
