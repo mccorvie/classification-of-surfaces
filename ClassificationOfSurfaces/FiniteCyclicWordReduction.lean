@@ -746,6 +746,35 @@ theorem map_boundaryLoopWord_normalized {α β : Type*}
   subst holeNegative
   simp [boundaryLoopWord]
 
+/-- Ordinary surface validity reflects through a P1 expansion. -/
+theorem isSurfaceValid_of_p1Expand
+    (P : FiniteCyclicPresentation) (a : P.Edge)
+    (validExpand : (P1.expand P a).IsSurfaceValid) :
+    P.IsSurfaceValid := by
+  refine
+    ⟨(P1.faceEquiv P a).nonempty_congr.mpr
+        validExpand.1,
+      ?_, ?_, ?_⟩
+  · intro face hboundary
+    apply validExpand.2.1
+      (P1.faceEquiv P a face)
+    rw [P1.expand_boundary, hboundary]
+    rfl
+  · intro firstFace secondFace hrotated
+    apply (P1.faceEquiv P a).injective
+    apply validExpand.2.2.1
+    rw [P1.expand_boundary, P1.expand_boundary]
+    exact
+      (P1.expandWord_isRotated_iff a
+        (P.boundary firstFace)
+        (P.boundary secondFace)).mpr hrotated
+  · intro edge
+    have hmultiplicity :=
+      validExpand.2.2.2 edge.castSucc
+    rw [← P1.edgeMultiplicity_expand_castSucc
+      P a edge] at hmultiplicity
+    exact hmultiplicity
+
 /-- Unoriented edge count is the sum of its positive and negative dart counts. -/
 theorem count_edgeOfDart_eq_pos_add_neg {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n) :
