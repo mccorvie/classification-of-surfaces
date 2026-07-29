@@ -724,12 +724,29 @@ theorem cancellablePair_hasValidUsedMultiplicities_tail {n : ℕ}
         pair multiplicities e he]
       exact List.count_pos_iff.mpr he)
 
+/-- Proof-relevant trace of the residual inverse-pair recursion.  Keeping the selected pair at
+each step is essential when the same reduction is later lifted through an ambient marked word:
+the erased residual endpoint alone does not say which protected token interval the pair crossed. -/
+inductive ResidualPairReductionTrace {n : ℕ} :
+    List (SignedDart (Fin n)) →
+      List (SignedDart (Fin n)) → Type
+  | done {word : List (SignedDart (Fin n))}
+      (reduced : IsPairReduced word) :
+      ResidualPairReductionTrace word word
+  | cancel {word target : List (SignedDart (Fin n))}
+      (pair : CancellablePair word)
+      (tail : ResidualPairReductionTrace pair.tail target) :
+      ResidualPairReductionTrace word target
+
 /-- Certified result of repeatedly deleting adjacent inverse pairs from a residual word.  The
 ambient edge type is intentionally retained: names belonging to already-extracted blocks may be
-absent from both the input and output residual words. -/
+absent from both the input and output residual words.  Its trace records the exact recursion
+choices for subsequent marked execution. -/
 structure ResidualPairReduction {n : ℕ}
     (sourceWord : List (SignedDart (Fin n))) where
   reducedWord : List (SignedDart (Fin n))
+  trace :
+    ResidualPairReductionTrace sourceWord reducedWord
   multiplicities : HasValidUsedMultiplicities reducedWord
   reduced : IsPairReduced reducedWord
   count_eq_of_mem :
@@ -737,6 +754,44 @@ structure ResidualPairReduction {n : ℕ}
       (sourceWord.map edgeOfDart).count e =
         (reducedWord.map edgeOfDart).count e
   length_le : reducedWord.length ≤ sourceWord.length
+
+namespace ResidualPairReductionTrace
+
+/-- The endpoint recorded by a residual cancellation trace is pair-reduced. -/
+theorem target_isPairReduced {n : ℕ}
+    {source target : List (SignedDart (Fin n))}
+    (trace : ResidualPairReductionTrace source target) :
+    IsPairReduced target := by
+  induction trace with
+  | done reduced =>
+      exact reduced
+  | cancel _ _ ih =>
+      exact ih
+
+/-- Residual cancellation never increases word length. -/
+theorem target_length_le {n : ℕ}
+    {source target : List (SignedDart (Fin n))}
+    (trace : ResidualPairReductionTrace source target) :
+    target.length ≤ source.length := by
+  induction trace with
+  | done =>
+      exact le_rfl
+  | @cancel word target pair tail ih =>
+      have hlength := pair.rotated.perm.length_eq
+      have hsource :
+          word.length = 2 + pair.tail.length := by
+        cases hnegative : pair.negativeFirst
+        · have hsource' :
+              word.length = pair.tail.length + 1 + 1 := by
+            simpa [inversePair, hnegative] using hlength
+          omega
+        · have hsource' :
+              word.length = pair.tail.length + 1 + 1 := by
+            simpa [inversePair, hnegative] using hlength
+          omega
+      omega
+
+end ResidualPairReductionTrace
 
 /-- Fuel-bounded residual inverse-pair cancellation. -/
 noncomputable def reduceResidualPairsFuel (fuel : ℕ) {n : ℕ}
@@ -771,6 +826,7 @@ noncomputable def reduceResidualPairsFuel (fuel : ℕ) {n : ℕ}
         pair.tail tailMultiplicities htailBound
     exact
       { reducedWord := result.reducedWord
+        trace := .cancel pair result.trace
         multiplicities := result.multiplicities
         reduced := result.reduced
         count_eq_of_mem := by
@@ -788,6 +844,7 @@ noncomputable def reduceResidualPairsFuel (fuel : ℕ) {n : ℕ}
           exact result.length_le.trans (by omega) }
   · exact
       { reducedWord := word
+        trace := .done ⟨fun pair ↦ hpairs ⟨pair⟩⟩
         multiplicities := multiplicities
         reduced := ⟨fun pair ↦ hpairs ⟨pair⟩⟩
         count_eq_of_mem := by
@@ -3740,6 +3797,50 @@ def toBoundaryClosure {n : ℕ}
   tailTokens := pair.tailTokens
   rotated := by
     simpa [hbetween] using pair.rotated
+
+/-- Exhaustive local disposition of a lifted residual inverse pair.  The first two constructors
+are already executable.  The final constructor isolates the remaining contextual move: commuting
+a nontrivial protected interval out of the inverse pair before cancellation. -/
+inductive Disposition {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens) : Type
+  | adjacent
+      (between_eq : pair.betweenTokens = []) :
+      Disposition pair
+  | boundary
+      (hole : Fin (n + 1)) (holeNegative : Bool)
+      (between_eq :
+        pair.betweenTokens =
+          [.extracted (.boundary hole holeNegative)]) :
+      Disposition pair
+  | contextual
+      (between_ne : pair.betweenTokens ≠ [])
+      (not_boundary :
+        ∀ (hole : Fin (n + 1)) (holeNegative : Bool),
+          pair.betweenTokens ≠
+            [.extracted (.boundary hole holeNegative)]) :
+      Disposition pair
+
+/-- Classify every lifted residual pair into the two completed executable cases or the exact
+remaining contextual case. -/
+noncomputable def disposition {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens) :
+    Disposition pair := by
+  by_cases hempty : pair.betweenTokens = []
+  · exact .adjacent hempty
+  · by_cases hboundary :
+      ∃ (hole : Fin (n + 1)) (holeNegative : Bool),
+        pair.betweenTokens =
+          [.extracted (.boundary hole holeNegative)]
+    · let hole := Classical.choose hboundary
+      let orientationWitness := Classical.choose_spec hboundary
+      let holeNegative := Classical.choose orientationWitness
+      exact .boundary hole holeNegative
+        (Classical.choose_spec orientationWitness)
+    · exact .contextual hempty (by
+        intro hole holeNegative hbetween
+        exact hboundary ⟨hole, holeNegative, hbetween⟩)
 
 end MarkedResidualCancellablePair
 
