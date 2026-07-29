@@ -4732,6 +4732,51 @@ def lowerTokensAvoiding {n : ℕ} (a : Fin (n + 1)) :
           apply ha
           simp [htokens])
 
+/-- Marked cancellation lowering distributes over token concatenation. -/
+theorem lowerTokensAvoiding_append {n : ℕ}
+    (a : Fin (n + 1))
+    (left right : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand (left ++ right)).map edgeOfDart) :
+    lowerTokensAvoiding a (left ++ right) ha =
+      lowerTokensAvoiding a left (by
+        intro hleft
+        apply ha
+        simp [hleft]) ++
+      lowerTokensAvoiding a right (by
+        intro hright
+        apply ha
+        simp [hright]) := by
+  induction left with
+  | nil =>
+      rfl
+  | cons token left ih =>
+      change
+        token.lowerAvoiding a _ ::
+            lowerTokensAvoiding a (left ++ right) _ =
+          token.lowerAvoiding a _ ::
+            (lowerTokensAvoiding a left _ ++
+              lowerTokensAvoiding a right _)
+      congr 1
+      exact ih _
+
+@[simp]
+theorem length_lowerTokensAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand tokens).map edgeOfDart) :
+    (lowerTokensAvoiding a tokens ha).length =
+      tokens.length := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      change
+        (token.lowerAvoiding a _ ::
+          lowerTokensAvoiding a tokens _).length =
+            (token :: tokens).length
+      simp only [List.length_cons, Nat.add_left_cancel_iff]
+      exact ih _
+
 theorem AllClassified.lowerTokensAvoiding {n : ℕ}
     (a : Fin (n + 1))
     (tokens : List (ReductionToken (n + 1)))
@@ -6220,11 +6265,11 @@ end MarkedCancellablePair
 /-- A cancellable pair of the erased residual word lifted to its exact marked-token interval.
 The intervening tokens have empty residual contribution but may contain protected blocks. -/
 structure MarkedResidualCancellablePair {n : ℕ}
-    (tokens : List (ReductionToken (n + 1))) where
-  edge : Fin (n + 1)
+    (tokens : List (ReductionToken n)) where
+  edge : Fin n
   negativeFirst : Bool
-  betweenTokens : List (ReductionToken (n + 1))
-  tailTokens : List (ReductionToken (n + 1))
+  betweenTokens : List (ReductionToken n)
+  tailTokens : List (ReductionToken n)
   rotated :
     tokens.IsRotated
       (.residual (dart edge negativeFirst) ::
@@ -7074,8 +7119,14 @@ def ofRotatedOfProtectedNodup {n : ℕ}
       first ≠ second ∧
         first ∉ ReductionToken.protectedEdges tailTokens ∧
         second ∉ ReductionToken.protectedEdges tailTokens := by
-    simpa [displayedTokens, ExtractedBlock.edges] using
-      protectedNodupDisplayed
+    have facts :
+        (first ≠ second ∧
+          first ∉ ReductionToken.protectedEdges tailTokens) ∧
+        second ∉ ReductionToken.protectedEdges tailTokens ∧
+          (ReductionToken.protectedEdges tailTokens).Nodup := by
+      simpa [displayedTokens, ExtractedBlock.edges] using
+        protectedNodupDisplayed
+    exact ⟨facts.1.1, facts.1.2, facts.2.1⟩
   have not_mem_tail (edge : Fin (n + 1))
       (headProtected :
         edge ∈
@@ -7088,13 +7139,13 @@ def ofRotatedOfProtectedNodup {n : ℕ}
       not_or]
     refine ⟨?_, tailProtected⟩
     intro residualTail
-    apply (List.disjoint_left.mp separatedDisplayed)
-      (b := edge)
-    · change edge ∈
+    exact (List.disjoint_left.mp separatedDisplayed)
+      (by
+        change edge ∈
         (ReductionToken.residualDarts
           tailTokens).map edgeOfDart
-      exact residualTail
-    · exact headProtected
+        exact residualTail)
+      headProtected
   exact
     { first := first
       second := second
@@ -7335,8 +7386,21 @@ theorem targetTokens_protectedEdges_nodup {n : ℕ}
               contraction.tailTokens ∧
           (ReductionToken.protectedEdges
             contraction.tailTokens).Nodup := by
-      simpa [displayedTokens,
-        ExtractedBlock.edges] using displayedNodup
+      have facts :
+          (contraction.first ≠ contraction.second ∧
+            contraction.first ∉
+              ReductionToken.protectedEdges
+                contraction.tailTokens) ∧
+          contraction.second ∉
+              ReductionToken.protectedEdges
+                contraction.tailTokens ∧
+            (ReductionToken.protectedEdges
+              contraction.tailTokens).Nodup := by
+        simpa [displayedTokens,
+          ExtractedBlock.edges] using displayedNodup
+      exact
+        ⟨facts.1.1, facts.1.2,
+          facts.2.1, facts.2.2⟩
     exact ⟨allFacts.2.1, allFacts.2.2.2⟩
   let loweredTail :=
     ReductionToken.lowerTokensAvoiding
@@ -7513,6 +7577,206 @@ theorem exists_betweenAtoms {n : ℕ}
     ReductionToken.exists_eq_map_ofProtectedAtom_of_allClassified_of_residualDarts_eq_nil
       pair.betweenTokens betweenClassified
       pair.residual_between
+
+/-- Two raw boundary atoms at the head of a protected residual-pair interval expose an adjacent
+P1 contraction after one cyclic token rotation. -/
+def toBoundaryPairContraction {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (first second : Fin (n + 1))
+    (firstNegative secondNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        [.extracted (.boundary first firstNegative),
+          .extracted (.boundary second secondNegative)] ++
+          insideTokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (protectedNodup :
+      (ReductionToken.protectedEdges tokens).Nodup) :
+    MarkedBoundaryPairContraction tokens := by
+  let contractionTail :=
+    insideTokens ++
+      .residual
+          (dart pair.edge (!pair.negativeFirst)) ::
+        pair.tailTokens ++
+          [.residual
+            (dart pair.edge pair.negativeFirst)]
+  have hrotated :
+      tokens.IsRotated
+        ([.extracted (.boundary first firstNegative),
+          .extracted (.boundary second secondNegative)] ++
+          contractionTail) := by
+    apply pair.rotated.trans
+    rw [hbetween]
+    have hcycle :=
+      List.isRotated_append
+        (l :=
+          [.residual
+            (dart pair.edge pair.negativeFirst)])
+        (l' :=
+          [.extracted (.boundary first firstNegative),
+            .extracted (.boundary second secondNegative)] ++
+            insideTokens ++
+              .residual
+                  (dart pair.edge (!pair.negativeFirst)) ::
+                pair.tailTokens)
+    simpa [contractionTail,
+      List.append_assoc] using hcycle
+  exact
+    MarkedBoundaryPairContraction.ofRotatedOfProtectedNodup
+      first second firstNegative secondNegative
+      contractionTail hrotated separated protectedNodup
+
+/-- After contracting the first two raw boundary atoms, the same residual inverse pair surrounds
+their merged singleton followed by the strict tail of the old protected interval. -/
+noncomputable def boundaryContractionTargetPair {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (first second : Fin (n + 1))
+    (firstNegative secondNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        [.extracted (.boundary first firstNegative),
+          .extracted (.boundary second secondNegative)] ++
+          insideTokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (protectedNodup :
+      (ReductionToken.protectedEdges tokens).Nodup) :
+    MarkedResidualCancellablePair
+      (pair.toBoundaryPairContraction first second
+        firstNegative secondNegative insideTokens hbetween
+        separated protectedNodup).targetTokens := by
+  let step :=
+    pair.toBoundaryPairContraction first second
+      firstNegative secondNegative insideTokens hbetween
+      separated protectedNodup
+  have hsecondInside :
+      second ∉
+        (ReductionToken.expand insideTokens).map
+          edgeOfDart := by
+    intro hmem
+    apply step.second_not_mem_tail
+    change second ∈
+      (ReductionToken.expand
+        (insideTokens ++
+          .residual
+              (dart pair.edge (!pair.negativeFirst)) ::
+            pair.tailTokens ++
+              [.residual
+                (dart pair.edge pair.negativeFirst)])).map
+        edgeOfDart
+    simp [hmem]
+  have hsecondOutside :
+      second ∉
+        (ReductionToken.expand pair.tailTokens).map
+          edgeOfDart := by
+    intro hmem
+    apply step.second_not_mem_tail
+    change second ∈
+      (ReductionToken.expand
+        (insideTokens ++
+          .residual
+              (dart pair.edge (!pair.negativeFirst)) ::
+            pair.tailTokens ++
+              [.residual
+                (dart pair.edge pair.negativeFirst)])).map
+        edgeOfDart
+    simp [hmem]
+  have houterSecond : pair.edge ≠ second := by
+    intro heq
+    apply step.second_not_mem_tail
+    change second ∈
+      (ReductionToken.expand
+        (insideTokens ++
+          .residual
+              (dart pair.edge (!pair.negativeFirst)) ::
+            pair.tailTokens ++
+              [.residual
+                (dart pair.edge pair.negativeFirst)])).map
+        edgeOfDart
+    simp [heq]
+  let loweredInside :=
+    ReductionToken.lowerTokensAvoiding
+      second insideTokens hsecondInside
+  let loweredOutside :=
+    ReductionToken.lowerTokensAvoiding
+      second pair.tailTokens hsecondOutside
+  let loweredOuter :=
+    Cancellation.lowerEdge second pair.edge
+      houterSecond
+  refine
+    { edge := loweredOuter
+      negativeFirst := pair.negativeFirst
+      betweenTokens :=
+        .extracted
+            (.boundary
+              (Cancellation.lowerEdge second first
+                step.first_ne_second)
+              false) ::
+          loweredInside
+      tailTokens := loweredOutside
+      rotated := ?_
+      residual_between := ?_ }
+  · have hcycle :=
+      List.isRotated_append
+        (l :=
+          [.extracted
+              (.boundary
+                (Cancellation.lowerEdge second first
+                  step.first_ne_second)
+                false)] ++
+            loweredInside ++
+              .residual
+                  (dart loweredOuter
+                    (!pair.negativeFirst)) ::
+                loweredOutside)
+        (l' :=
+          [.residual
+            (dart loweredOuter pair.negativeFirst)])
+    change step.targetTokens.IsRotated _
+    simpa [step, toBoundaryPairContraction,
+      MarkedBoundaryPairContraction.ofRotatedOfProtectedNodup,
+      MarkedBoundaryPairContraction.targetTokens,
+      ReductionToken.lowerTokensAvoiding_append,
+      ReductionToken.lowerTokensAvoiding,
+      ReductionToken.lowerAvoiding,
+      Cancellation.lowerDart, loweredInside,
+      loweredOutside, loweredOuter, dart,
+      List.append_assoc] using hcycle
+  · have hinsideResidual :
+        ReductionToken.residualDarts insideTokens = [] := by
+      have h := pair.residual_between
+      rw [hbetween] at h
+      simpa using h
+    have hlowered :=
+      ReductionToken.residualEdges_lowerTokensAvoiding_map_restoreEdge
+        second insideTokens hsecondInside
+    change ReductionToken.residualDarts loweredInside = []
+    simpa [loweredInside, hinsideResidual] using hlowered
+
+/-- A boundary contraction removes one protected atom from the selected residual-pair interval. -/
+theorem boundaryContractionTargetPair_between_length_lt {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (first second : Fin (n + 1))
+    (firstNegative secondNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        [.extracted (.boundary first firstNegative),
+          .extracted (.boundary second secondNegative)] ++
+          insideTokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (protectedNodup :
+      (ReductionToken.protectedEdges tokens).Nodup) :
+    (pair.boundaryContractionTargetPair first second
+        firstNegative secondNegative insideTokens hbetween
+        separated protectedNodup).betweenTokens.length <
+      pair.betweenTokens.length := by
+  rw [hbetween]
+  simp [boundaryContractionTargetPair]
 
 /-- A lifted residual pair surrounding exactly one boundary singleton is a boundary closure. -/
 def toBoundaryClosure {n : ℕ}
