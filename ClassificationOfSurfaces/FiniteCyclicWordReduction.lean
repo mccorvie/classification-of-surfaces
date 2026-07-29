@@ -1383,6 +1383,13 @@ def inverse {n : ℕ} : ExtractedBlock n → ExtractedBlock n
   | .crosscap a negative => .crosscap a (!negative)
   | .handle a b => .handle b a
 
+/-- Relabel every ambient edge name in an extracted block. -/
+def mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m) :
+    ExtractedBlock n → ExtractedBlock m
+  | .boundary a negative => .boundary (e a) negative
+  | .crosscap a negative => .crosscap (e a) negative
+  | .handle a b => .handle (e a) (e b)
+
 @[simp]
 theorem word_inverse {n : ℕ} (block : ExtractedBlock n) :
     block.inverse.word = inverseWord block.word := by
@@ -1408,6 +1415,45 @@ theorem inverse_inverse {n : ℕ} (block : ExtractedBlock n) :
 @[simp]
 theorem edges_inverse {n : ℕ} (block : ExtractedBlock n) :
     block.inverse.edges = block.edges.reverse := by
+  cases block <;> rfl
+
+@[simp]
+theorem word_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
+    (block : ExtractedBlock n) :
+    (block.mapEquiv e).word =
+      block.word.map (SignedDart.mapEquiv e) := by
+  cases block with
+  | boundary a negative =>
+      cases negative <;> rfl
+  | crosscap a negative =>
+      cases negative <;> rfl
+  | handle =>
+      rfl
+
+@[simp]
+theorem edges_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
+    (block : ExtractedBlock n) :
+    (block.mapEquiv e).edges = block.edges.map e := by
+  cases block <;> rfl
+
+@[simp]
+theorem mem_map_edgeOfDart_word_iff {n : ℕ}
+    (block : ExtractedBlock n) (a : Fin n) :
+    a ∈ block.word.map edgeOfDart ↔ a ∈ block.edges := by
+  cases block with
+  | boundary edge negative =>
+      cases negative <;> simp [word, edges]
+  | crosscap edge negative =>
+      cases negative <;> simp [word, edges]
+  | handle first second =>
+      simp [word, edges]
+      tauto
+
+@[simp]
+theorem inverse_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
+    (block : ExtractedBlock n) :
+    (block.mapEquiv e).inverse =
+      block.inverse.mapEquiv e := by
   cases block <;> rfl
 
 /-- Concatenate a sequence of extracted blocks into its exact signed boundary word. -/
@@ -1456,6 +1502,648 @@ theorem sequenceWord_inverseSequence {n : ℕ}
       simp [inverseSequence, inverseWord_append, ih']
 
 end ExtractedBlock
+
+/-- A marked normalization word.  Residual darts are still available to subsequent pairing
+reductions; extracted blocks are atomic tokens whose exact dart succession must be preserved. -/
+inductive ReductionToken (n : ℕ)
+  | residual (dart : SignedDart (Fin n))
+  | extracted (block : ExtractedBlock n)
+
+namespace ReductionToken
+
+/-- Exact signed word represented by one marked token. -/
+def word {n : ℕ} : ReductionToken n →
+    List (SignedDart (Fin n))
+  | .residual dart => [dart]
+  | .extracted block => block.word
+
+/-- Residual contribution of one marked token. -/
+def residualWord {n : ℕ} : ReductionToken n →
+    List (SignedDart (Fin n))
+  | .residual dart => [dart]
+  | .extracted _ => []
+
+/-- Edge names protected inside one extracted-block token. -/
+def extractedEdges {n : ℕ} : ReductionToken n → List (Fin n)
+  | .residual _ => []
+  | .extracted block => block.edges
+
+@[simp]
+theorem word_residual {n : ℕ} (dart : SignedDart (Fin n)) :
+    word (.residual dart) = [dart] :=
+  rfl
+
+@[simp]
+theorem word_extracted {n : ℕ} (block : ExtractedBlock n) :
+    word (.extracted block) = block.word :=
+  rfl
+
+@[simp]
+theorem residualWord_residual {n : ℕ}
+    (dart : SignedDart (Fin n)) :
+    residualWord (.residual dart) = [dart] :=
+  rfl
+
+@[simp]
+theorem residualWord_extracted {n : ℕ}
+    (block : ExtractedBlock n) :
+    residualWord (.extracted block) = [] :=
+  rfl
+
+@[simp]
+theorem extractedEdges_residual {n : ℕ}
+    (dart : SignedDart (Fin n)) :
+    extractedEdges (.residual dart) = [] :=
+  rfl
+
+@[simp]
+theorem extractedEdges_extracted {n : ℕ}
+    (block : ExtractedBlock n) :
+    extractedEdges (.extracted block) = block.edges :=
+  rfl
+
+/-- Reverse a token while preserving an extracted block as one atomic token. -/
+def inverse {n : ℕ} : ReductionToken n → ReductionToken n
+  | .residual dart => .residual dart.flip
+  | .extracted block => .extracted block.inverse
+
+/-- Relabel every edge name represented by a marked token. -/
+def mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m) :
+    ReductionToken n → ReductionToken m
+  | .residual dart => .residual (SignedDart.mapEquiv e dart)
+  | .extracted block => .extracted (block.mapEquiv e)
+
+@[simp]
+theorem word_inverse {n : ℕ} (token : ReductionToken n) :
+    token.inverse.word = inverseWord token.word := by
+  cases token with
+  | residual dart =>
+      cases dart <;> rfl
+  | extracted block =>
+      exact ExtractedBlock.word_inverse block
+
+@[simp]
+theorem residualWord_inverse {n : ℕ}
+    (token : ReductionToken n) :
+    token.inverse.residualWord =
+      inverseWord token.residualWord := by
+  cases token with
+  | residual dart =>
+      cases dart <;> rfl
+  | extracted =>
+      rfl
+
+@[simp]
+theorem inverse_inverse {n : ℕ} (token : ReductionToken n) :
+    token.inverse.inverse = token := by
+  cases token with
+  | residual dart =>
+      cases dart <;> rfl
+  | extracted block =>
+      simp [inverse]
+
+@[simp]
+theorem word_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
+    (token : ReductionToken n) :
+    (token.mapEquiv e).word =
+      token.word.map (SignedDart.mapEquiv e) := by
+  cases token with
+  | residual =>
+      rfl
+  | extracted block =>
+      exact ExtractedBlock.word_mapEquiv e block
+
+@[simp]
+theorem residualWord_mapEquiv {n m : ℕ}
+    (e : Fin n ≃ Fin m) (token : ReductionToken n) :
+    (token.mapEquiv e).residualWord =
+      token.residualWord.map (SignedDart.mapEquiv e) := by
+  cases token <;> rfl
+
+@[simp]
+theorem inverse_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
+    (token : ReductionToken n) :
+    (token.mapEquiv e).inverse =
+      token.inverse.mapEquiv e := by
+  cases token with
+  | residual dart =>
+      cases dart <;> rfl
+  | extracted block =>
+      simp [inverse, mapEquiv]
+
+/-- Expand a marked word to the exact signed word on which normalization moves act. -/
+def expand {n : ℕ} (tokens : List (ReductionToken n)) :
+    List (SignedDart (Fin n)) :=
+  (tokens.map word).flatten
+
+/-- Erase extracted blocks and retain only the darts still available to pairing reduction. -/
+def residualDarts {n : ℕ} (tokens : List (ReductionToken n)) :
+    List (SignedDart (Fin n)) :=
+  (tokens.map residualWord).flatten
+
+/-- All edge names protected inside extracted block tokens. -/
+def protectedEdges {n : ℕ} (tokens : List (ReductionToken n)) :
+    List (Fin n) :=
+  (tokens.map extractedEdges).flatten
+
+/-- Reverse a marked word at token granularity. -/
+def inverseSequence {n : ℕ} (tokens : List (ReductionToken n)) :
+    List (ReductionToken n) :=
+  (tokens.map inverse).reverse
+
+/-- Initially every dart is still residual. -/
+def ofWord {n : ℕ} (word : List (SignedDart (Fin n))) :
+    List (ReductionToken n) :=
+  word.map .residual
+
+/-- A finished marked word contains only extracted block tokens. -/
+def ofBlocks {n : ℕ} (blocks : List (ExtractedBlock n)) :
+    List (ReductionToken n) :=
+  blocks.map .extracted
+
+@[simp]
+theorem expand_nil {n : ℕ} :
+    expand ([] : List (ReductionToken n)) = [] :=
+  rfl
+
+@[simp]
+theorem expand_cons {n : ℕ} (token : ReductionToken n)
+    (tokens : List (ReductionToken n)) :
+    expand (token :: tokens) =
+      token.word ++ expand tokens := by
+  simp [expand]
+
+@[simp]
+theorem expand_append {n : ℕ}
+    (left right : List (ReductionToken n)) :
+    expand (left ++ right) = expand left ++ expand right := by
+  simp [expand]
+
+@[simp]
+theorem residualDarts_nil {n : ℕ} :
+    residualDarts ([] : List (ReductionToken n)) = [] :=
+  rfl
+
+@[simp]
+theorem residualDarts_cons {n : ℕ} (token : ReductionToken n)
+    (tokens : List (ReductionToken n)) :
+    residualDarts (token :: tokens) =
+      token.residualWord ++ residualDarts tokens := by
+  simp [residualDarts]
+
+@[simp]
+theorem residualDarts_append {n : ℕ}
+    (left right : List (ReductionToken n)) :
+    residualDarts (left ++ right) =
+      residualDarts left ++ residualDarts right := by
+  simp [residualDarts]
+
+@[simp]
+theorem protectedEdges_nil {n : ℕ} :
+    protectedEdges ([] : List (ReductionToken n)) = [] :=
+  rfl
+
+@[simp]
+theorem protectedEdges_cons {n : ℕ}
+    (token : ReductionToken n)
+    (tokens : List (ReductionToken n)) :
+    protectedEdges (token :: tokens) =
+      token.extractedEdges ++ protectedEdges tokens := by
+  simp [protectedEdges]
+
+@[simp]
+theorem protectedEdges_append {n : ℕ}
+    (left right : List (ReductionToken n)) :
+    protectedEdges (left ++ right) =
+      protectedEdges left ++ protectedEdges right := by
+  simp [protectedEdges]
+
+/-- An edge occurs in the expanded word exactly when it is residual or protected in an extracted
+block token. -/
+theorem mem_map_edgeOfDart_expand_iff {n : ℕ}
+    (tokens : List (ReductionToken n)) (a : Fin n) :
+    a ∈ (expand tokens).map edgeOfDart ↔
+      a ∈ (residualDarts tokens).map edgeOfDart ∨
+        a ∈ protectedEdges tokens := by
+  induction tokens with
+  | nil =>
+      simp
+  | cons token tokens ih =>
+      cases token with
+      | residual dart =>
+          simp only [expand_cons, word_residual,
+            residualDarts_cons, residualWord_residual,
+            protectedEdges_cons, extractedEdges_residual,
+            List.nil_append, List.map_append, List.map_cons,
+            List.map_nil, List.mem_append, List.mem_cons,
+            List.not_mem_nil, or_false]
+          rw [ih]
+          tauto
+      | extracted block =>
+          simp only [expand_cons, word_extracted,
+            residualDarts_cons, residualWord_extracted,
+            protectedEdges_cons, extractedEdges_extracted,
+            List.nil_append, List.map_append,
+            List.mem_append]
+          rw [ExtractedBlock.mem_map_edgeOfDart_word_iff,
+            ih]
+          tauto
+
+/-- Flattening preserves a cyclic rotation of a list of lists. -/
+theorem isRotated_flatten {α : Type*}
+    {lists target : List (List α)}
+    (hrotated : lists.IsRotated target) :
+    lists.flatten.IsRotated target.flatten := by
+  rcases hrotated with ⟨steps, hsteps⟩
+  let cut := steps % lists.length
+  let left := lists.take cut
+  let right := lists.drop cut
+  have hlists : lists = left ++ right :=
+    (List.take_append_drop cut lists).symm
+  have htarget : target = right ++ left := by
+    rw [← hsteps, List.rotate_eq_drop_append_take_mod]
+  rw [hlists, htarget, List.flatten_append,
+    List.flatten_append]
+  exact List.isRotated_append
+
+/-- Expanding atomic marked tokens preserves cyclic rotation. -/
+theorem expand_isRotated {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (hrotated : tokens.IsRotated target) :
+    (expand tokens).IsRotated (expand target) := by
+  exact isRotated_flatten (hrotated.map word)
+
+/-- Protected edge names rotate with their atomic marked tokens. -/
+theorem protectedEdges_isRotated {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (hrotated : tokens.IsRotated target) :
+    (protectedEdges tokens).IsRotated
+      (protectedEdges target) := by
+  exact isRotated_flatten (hrotated.map extractedEdges)
+
+@[simp]
+theorem expand_ofWord {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    expand (ofWord word) = word := by
+  induction word with
+  | nil =>
+      rfl
+  | cons dart word ih =>
+      change
+        expand (.residual dart :: ofWord word) =
+          dart :: word
+      rw [expand_cons, word_residual, ih]
+      rfl
+
+@[simp]
+theorem residualDarts_ofWord {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    residualDarts (ofWord word) = word := by
+  induction word with
+  | nil =>
+      rfl
+  | cons dart word ih =>
+      change
+        residualDarts (.residual dart :: ofWord word) =
+          dart :: word
+      rw [residualDarts_cons, residualWord_residual, ih]
+      rfl
+
+@[simp]
+theorem expand_ofBlocks {n : ℕ}
+    (blocks : List (ExtractedBlock n)) :
+    expand (ofBlocks blocks) =
+      ExtractedBlock.sequenceWord blocks := by
+  induction blocks with
+  | nil =>
+      rfl
+  | cons block blocks ih =>
+      change
+        expand (.extracted block :: ofBlocks blocks) =
+          ExtractedBlock.sequenceWord (block :: blocks)
+      rw [expand_cons, word_extracted, ih,
+        ExtractedBlock.sequenceWord_cons]
+
+@[simp]
+theorem residualDarts_ofBlocks {n : ℕ}
+    (blocks : List (ExtractedBlock n)) :
+    residualDarts (ofBlocks blocks) = [] := by
+  induction blocks with
+  | nil =>
+      rfl
+  | cons block blocks ih =>
+      change
+        residualDarts (.extracted block :: ofBlocks blocks) = []
+      rw [residualDarts_cons, residualWord_extracted, ih,
+        List.nil_append]
+
+/-- Lift a displayed residual dart occurrence to an exact split of the marked token list. -/
+theorem exists_split_of_residualDarts_eq_append_cons {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (left right : List (SignedDart (Fin n)))
+    (dart : SignedDart (Fin n))
+    (hresidual :
+      residualDarts tokens = left ++ dart :: right) :
+    ∃ tokenLeft tokenRight,
+      tokens = tokenLeft ++ .residual dart :: tokenRight ∧
+        residualDarts tokenLeft = left ∧
+        residualDarts tokenRight = right := by
+  induction tokens generalizing left with
+  | nil =>
+      simp at hresidual
+  | cons token tokens ih =>
+      cases token with
+      | extracted block =>
+          simp only [residualDarts_cons, residualWord,
+            List.nil_append] at hresidual
+          rcases ih left hresidual with
+            ⟨tokenLeft, tokenRight, htokens, hleft, hright⟩
+          exact
+            ⟨.extracted block :: tokenLeft, tokenRight,
+              by simp [htokens],
+              by
+                simp only [residualDarts_cons, residualWord,
+                  List.nil_append]
+                exact hleft,
+              hright⟩
+      | residual first =>
+          cases left with
+          | nil =>
+              simp only [residualDarts_cons, residualWord,
+                List.singleton_append, List.nil_append,
+                List.cons.injEq] at hresidual
+              rcases hresidual with ⟨rfl, htail⟩
+              exact ⟨[], tokens, rfl, rfl, htail⟩
+          | cons head left =>
+              simp only [residualDarts_cons, residualWord,
+                List.cons_append, List.cons.injEq,
+                List.nil_append] at hresidual
+              rcases hresidual with ⟨rfl, htail⟩
+              rcases ih left htail with
+                ⟨tokenLeft, tokenRight, htokens, hleft, hright⟩
+              exact
+                ⟨.residual first :: tokenLeft, tokenRight,
+                  by simp [htokens], by simp [hleft], hright⟩
+
+/-- Lift an arbitrary residual-word cut to a cut of the marked token list. -/
+theorem exists_split_of_residualDarts_eq_append {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (left right : List (SignedDart (Fin n)))
+    (hresidual : residualDarts tokens = left ++ right) :
+    ∃ tokenLeft tokenRight,
+      tokens = tokenLeft ++ tokenRight ∧
+        residualDarts tokenLeft = left ∧
+        residualDarts tokenRight = right := by
+  induction tokens generalizing left with
+  | nil =>
+      have happend : left ++ right = [] := hresidual.symm
+      have hparts : left = [] ∧ right = [] := by
+        simpa using happend
+      rcases hparts with ⟨hleft, hright⟩
+      subst left
+      subst right
+      exact ⟨[], [], rfl, rfl, rfl⟩
+  | cons token tokens ih =>
+      cases token with
+      | extracted block =>
+          simp only [residualDarts_cons,
+            residualWord_extracted, List.nil_append] at hresidual
+          rcases ih left hresidual with
+            ⟨tokenLeft, tokenRight, htokens, hleft, hright⟩
+          exact
+            ⟨.extracted block :: tokenLeft, tokenRight,
+              by simp [htokens],
+              by
+                simp only [residualDarts_cons,
+                  residualWord_extracted, List.nil_append]
+                exact hleft,
+              hright⟩
+      | residual first =>
+          cases left with
+          | nil =>
+              exact
+                ⟨[], .residual first :: tokens, rfl, rfl,
+                  by simpa using hresidual⟩
+          | cons head left =>
+              simp only [residualDarts_cons,
+                residualWord_residual,
+                List.cons_append, List.cons.injEq] at hresidual
+              rcases hresidual with ⟨rfl, htail⟩
+              rcases ih left htail with
+                ⟨tokenLeft, tokenRight, htokens, hleft, hright⟩
+              exact
+                ⟨.residual first :: tokenLeft, tokenRight,
+                  by simp [htokens],
+                  by simp [hleft],
+                  hright⟩
+
+/-- Every cyclic rotation of the residual darts is induced by a cyclic rotation of the marked
+tokens. -/
+theorem exists_isRotated_of_residualDarts_isRotated {n : ℕ}
+    (tokens : List (ReductionToken n))
+    {target : List (SignedDart (Fin n))}
+    (hrotated : (residualDarts tokens).IsRotated target) :
+    ∃ rotatedTokens,
+      tokens.IsRotated rotatedTokens ∧
+        residualDarts rotatedTokens = target := by
+  rcases hrotated with ⟨steps, hsteps⟩
+  let cut := steps % (residualDarts tokens).length
+  let left := (residualDarts tokens).take cut
+  let right := (residualDarts tokens).drop cut
+  have hsource :
+      residualDarts tokens = left ++ right := by
+    exact (List.take_append_drop cut
+      (residualDarts tokens)).symm
+  have htarget :
+      target = right ++ left := by
+    rw [← hsteps, List.rotate_eq_drop_append_take_mod]
+  rcases exists_split_of_residualDarts_eq_append
+      tokens left right hsource with
+    ⟨tokenLeft, tokenRight, htokens, hleft, hright⟩
+  refine ⟨tokenRight ++ tokenLeft, ?_, ?_⟩
+  · rw [htokens]
+    exact List.isRotated_append
+  · rw [residualDarts_append, hright, hleft, ← htarget]
+
+/-- Lift a residual rotation which displays one dart at its head to a marked-token rotation with
+that exact residual token at its head. -/
+theorem exists_isRotated_residual_cons {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (dart : SignedDart (Fin n))
+    (remainder : List (SignedDart (Fin n)))
+    (hrotated :
+      (residualDarts tokens).IsRotated (dart :: remainder)) :
+    ∃ tokenRemainder,
+      tokens.IsRotated
+        (.residual dart :: tokenRemainder) ∧
+      residualDarts tokenRemainder = remainder := by
+  rcases exists_isRotated_of_residualDarts_isRotated
+      tokens hrotated with
+    ⟨rotatedTokens, htokens, hresidual⟩
+  have hdisplay :
+      residualDarts rotatedTokens =
+        [] ++ dart :: remainder := by
+    simpa using hresidual
+  rcases exists_split_of_residualDarts_eq_append_cons
+      rotatedTokens [] remainder dart hdisplay with
+    ⟨tokenLeft, tokenRight, hsplit, hleft, hright⟩
+  refine ⟨tokenRight ++ tokenLeft, ?_, ?_⟩
+  · apply htokens.trans
+    rw [hsplit]
+    simpa only [List.nil_append, List.cons_append] using
+      (List.isRotated_append
+        (l := tokenLeft)
+        (l' := .residual dart :: tokenRight))
+  · rw [residualDarts_append, hright, hleft]
+    simp
+
+/-- Type-valued packaging of a marked split, suitable for recursive normalization data. -/
+structure ResidualSplit {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (left right : List (SignedDart (Fin n))) where
+  tokenLeft : List (ReductionToken n)
+  tokenRight : List (ReductionToken n)
+  tokens_eq : tokens = tokenLeft ++ tokenRight
+  residual_left : residualDarts tokenLeft = left
+  residual_right : residualDarts tokenRight = right
+
+/-- Type-valued packaging of a marked split at one displayed residual dart. -/
+structure ResidualDartSplit {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (left right : List (SignedDart (Fin n)))
+    (dart : SignedDart (Fin n)) where
+  tokenLeft : List (ReductionToken n)
+  tokenRight : List (ReductionToken n)
+  tokens_eq :
+    tokens = tokenLeft ++ .residual dart :: tokenRight
+  residual_left : residualDarts tokenLeft = left
+  residual_right : residualDarts tokenRight = right
+
+/-- Choose a marked split above a displayed residual-word split. -/
+noncomputable def residualSplit {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (left right : List (SignedDart (Fin n)))
+    (hresidual : residualDarts tokens = left ++ right) :
+    ResidualSplit tokens left right := by
+  let witness :=
+    exists_split_of_residualDarts_eq_append
+      tokens left right hresidual
+  let tokenLeft := Classical.choose witness
+  let rightWitness := Classical.choose_spec witness
+  let tokenRight := Classical.choose rightWitness
+  let properties := Classical.choose_spec rightWitness
+  exact
+    { tokenLeft := tokenLeft
+      tokenRight := tokenRight
+      tokens_eq := properties.1
+      residual_left := properties.2.1
+      residual_right := properties.2.2 }
+
+/-- Choose a marked split at a displayed residual dart. -/
+noncomputable def residualDartSplit {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (left right : List (SignedDart (Fin n)))
+    (dart : SignedDart (Fin n))
+    (hresidual :
+      residualDarts tokens = left ++ dart :: right) :
+    ResidualDartSplit tokens left right dart := by
+  let witness :=
+    exists_split_of_residualDarts_eq_append_cons
+      tokens left right dart hresidual
+  let tokenLeft := Classical.choose witness
+  let rightWitness := Classical.choose_spec witness
+  let tokenRight := Classical.choose rightWitness
+  let properties := Classical.choose_spec rightWitness
+  exact
+    { tokenLeft := tokenLeft
+      tokenRight := tokenRight
+      tokens_eq := properties.1
+      residual_left := properties.2.1
+      residual_right := properties.2.2 }
+
+/-- Type-valued packaging of a marked rotation with one residual dart at its head. -/
+structure ResidualConsRotation {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (dart : SignedDart (Fin n))
+    (remainder : List (SignedDart (Fin n))) where
+  tokenRemainder : List (ReductionToken n)
+  rotated :
+    tokens.IsRotated (.residual dart :: tokenRemainder)
+  residual_remainder :
+    residualDarts tokenRemainder = remainder
+
+/-- Choose the marked rotation above a residual rotation with one displayed head dart. -/
+noncomputable def residualConsRotation {n : ℕ}
+    (tokens : List (ReductionToken n))
+    (dart : SignedDart (Fin n))
+    (remainder : List (SignedDart (Fin n)))
+    (hrotated :
+      (residualDarts tokens).IsRotated (dart :: remainder)) :
+    ResidualConsRotation tokens dart remainder := by
+  let witness :=
+    exists_isRotated_residual_cons
+      tokens dart remainder hrotated
+  let tokenRemainder := Classical.choose witness
+  let properties := Classical.choose_spec witness
+  exact
+    { tokenRemainder := tokenRemainder
+      rotated := properties.1
+      residual_remainder := properties.2 }
+
+@[simp]
+theorem expand_inverseSequence {n : ℕ}
+    (tokens : List (ReductionToken n)) :
+    expand (inverseSequence tokens) =
+      inverseWord (expand tokens) := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      have ih' :
+          expand ((tokens.map inverse).reverse) =
+            inverseWord (expand tokens) := by
+        simpa only [inverseSequence] using ih
+      simp [inverseSequence, inverseWord_append, ih']
+
+@[simp]
+theorem residualDarts_inverseSequence {n : ℕ}
+    (tokens : List (ReductionToken n)) :
+    residualDarts (inverseSequence tokens) =
+      inverseWord (residualDarts tokens) := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      have ih' :
+          residualDarts ((tokens.map inverse).reverse) =
+            inverseWord (residualDarts tokens) := by
+        simpa only [inverseSequence] using ih
+      simp [inverseSequence, inverseWord_append, ih']
+
+@[simp]
+theorem expand_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
+    (tokens : List (ReductionToken n)) :
+    expand (tokens.map (mapEquiv e)) =
+      (expand tokens).map (SignedDart.mapEquiv e) := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      simp [ih]
+
+@[simp]
+theorem residualDarts_mapEquiv {n m : ℕ}
+    (e : Fin n ≃ Fin m)
+    (tokens : List (ReductionToken n)) :
+    residualDarts (tokens.map (mapEquiv e)) =
+      (residualDarts tokens).map (SignedDart.mapEquiv e) := by
+  induction tokens with
+  | nil =>
+      rfl
+  | cons token tokens ih =>
+      simp [ih]
+
+end ReductionToken
 
 /-- Forget an actionable feature's occurrence decomposition while retaining its extracted block. -/
 def ActionablePairReductionFeature.block {n : ℕ}
@@ -1540,6 +2228,254 @@ theorem extractedEdges_subset_source {n : ℕ}
       rcases he with rfl | rfl <;> simp
 
 end ActionablePairReductionFeature
+
+/-- An actionable residual feature lifted to a marked word.  Extracted blocks occupy whole token
+segments between the distinguished residual darts, so later rewrites can reorder or reverse those
+segments without splitting a protected block. -/
+inductive MarkedActionablePairReductionFeature {n : ℕ}
+    (tokens : List (ReductionToken n))
+  | boundary (a : Fin n)
+      (form :
+        BoundaryOccurrenceForm
+          (ReductionToken.residualDarts tokens) a)
+      (remainderTokens : List (ReductionToken n))
+      (rotated :
+        tokens.IsRotated
+          (.residual (dart a form.negative) ::
+            remainderTokens))
+      (residual_remainder :
+        ReductionToken.residualDarts remainderTokens =
+          form.remainder)
+  | crosscap (a : Fin n)
+      (form :
+        CrosscapOccurrenceForm
+          (ReductionToken.residualDarts tokens) a)
+      (betweenTokens remainderTokens :
+        List (ReductionToken n))
+      (rotated :
+        tokens.IsRotated
+          (.residual (dart a form.negative) ::
+            betweenTokens ++
+            .residual (dart a form.negative) ::
+            remainderTokens))
+      (residual_between :
+        ReductionToken.residualDarts betweenTokens =
+          form.between)
+      (residual_remainder :
+        ReductionToken.residualDarts remainderTokens =
+          form.remainder)
+  | handle (a b : Fin n)
+      (form :
+        InterleavedOccurrenceForm
+          (ReductionToken.residualDarts tokens) a b)
+      (beforeBTokens beforeNegATokens
+        beforeOutsideBTokens remainderTokens :
+        List (ReductionToken n))
+      (rotated :
+        tokens.IsRotated
+          (.residual (.pos a) ::
+            beforeBTokens ++
+            .residual (dart b form.bNegativeInside) ::
+            beforeNegATokens ++
+            .residual (.neg a) ::
+            beforeOutsideBTokens ++
+            .residual (dart b (!form.bNegativeInside)) ::
+            remainderTokens))
+      (residual_beforeB :
+        ReductionToken.residualDarts beforeBTokens =
+          form.beforeB)
+      (residual_beforeNegA :
+        ReductionToken.residualDarts beforeNegATokens =
+          form.beforeNegA)
+      (residual_beforeOutsideB :
+        ReductionToken.residualDarts beforeOutsideBTokens =
+          form.beforeOutsideB)
+      (residual_remainder :
+        ReductionToken.residualDarts remainderTokens =
+          form.remainder)
+
+namespace MarkedActionablePairReductionFeature
+
+/-- Residual feature underlying a marked feature. -/
+def residualFeature {n : ℕ}
+    {tokens : List (ReductionToken n)} :
+    MarkedActionablePairReductionFeature tokens →
+      ActionablePairReductionFeature
+        (ReductionToken.residualDarts tokens)
+  | .boundary a form _ _ _ => .boundary a form
+  | .crosscap a form _ _ _ _ _ => .crosscap a form
+  | .handle a b form _ _ _ _ _ _ _ _ _ =>
+      .handle a b form
+
+/-- Marked target: replace the distinguished residual darts by one atomic extracted block while
+performing the same segment reversal/reordering as the local Gallier--Xu rewrite. -/
+def targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)} :
+    MarkedActionablePairReductionFeature tokens →
+      List (ReductionToken n)
+  | marked@(.boundary _ _ remainderTokens _ _) =>
+      .extracted marked.residualFeature.block ::
+        remainderTokens
+  | marked@(.crosscap _ _ betweenTokens
+      remainderTokens _ _ _) =>
+      .extracted marked.residualFeature.block ::
+        ReductionToken.inverseSequence remainderTokens ++
+        betweenTokens
+  | marked@(.handle _ _ _ beforeBTokens
+      beforeNegATokens beforeOutsideBTokens
+      remainderTokens _ _ _ _ _) =>
+      .extracted marked.residualFeature.block ::
+        remainderTokens ++ beforeOutsideBTokens ++
+        beforeNegATokens ++ beforeBTokens
+
+/-- Lift an actionable feature of the erased residual word to the marked token word. -/
+noncomputable def lift {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (feature :
+      ActionablePairReductionFeature
+        (ReductionToken.residualDarts tokens)) :
+    MarkedActionablePairReductionFeature tokens := by
+  cases feature with
+  | boundary a form =>
+      let lifted :=
+        ReductionToken.residualConsRotation
+          tokens (dart a form.negative) form.remainder
+          form.rotated
+      exact .boundary a form lifted.tokenRemainder
+        lifted.rotated lifted.residual_remainder
+  | crosscap a form =>
+      have hhead :
+          (ReductionToken.residualDarts tokens).IsRotated
+            (dart a form.negative ::
+              (form.between ++
+                dart a form.negative :: form.remainder)) := by
+        simpa only [List.cons_append,
+          List.append_assoc] using form.rotated
+      let headLift :=
+        ReductionToken.residualConsRotation
+          tokens (dart a form.negative)
+          (form.between ++
+            dart a form.negative :: form.remainder)
+          hhead
+      let split :=
+        ReductionToken.residualDartSplit
+          headLift.tokenRemainder form.between
+          form.remainder (dart a form.negative)
+          headLift.residual_remainder
+      have hrotated' :
+          tokens.IsRotated
+            (.residual (dart a form.negative) ::
+              split.tokenLeft ++
+              .residual (dart a form.negative) ::
+              split.tokenRight) := by
+        have hrotated := headLift.rotated
+        rw [split.tokens_eq] at hrotated
+        simpa only [List.cons_append,
+          List.append_assoc] using hrotated
+      exact .crosscap a form split.tokenLeft
+        split.tokenRight hrotated'
+        split.residual_left split.residual_right
+  | handle a b form =>
+      have hhead :
+          (ReductionToken.residualDarts tokens).IsRotated
+            (.pos a ::
+              (form.beforeB ++
+                dart b form.bNegativeInside ::
+                form.beforeNegA ++
+                .neg a ::
+                form.beforeOutsideB ++
+                dart b (!form.bNegativeInside) ::
+                form.remainder)) := by
+        simpa only [List.cons_append,
+          List.append_assoc] using form.rotated
+      let headLift :=
+        ReductionToken.residualConsRotation
+          tokens (.pos a)
+          (form.beforeB ++
+            dart b form.bNegativeInside ::
+            form.beforeNegA ++
+            .neg a ::
+            form.beforeOutsideB ++
+            dart b (!form.bNegativeInside) ::
+            form.remainder)
+          hhead
+      let splitB :=
+        ReductionToken.residualDartSplit
+          headLift.tokenRemainder form.beforeB
+          (form.beforeNegA ++
+            .neg a ::
+            form.beforeOutsideB ++
+            dart b (!form.bNegativeInside) ::
+            form.remainder)
+          (dart b form.bNegativeInside)
+          (by
+            simpa only [List.cons_append,
+              List.append_assoc] using
+              headLift.residual_remainder)
+      let splitNegA :=
+        ReductionToken.residualDartSplit
+          splitB.tokenRight form.beforeNegA
+          (form.beforeOutsideB ++
+            dart b (!form.bNegativeInside) ::
+            form.remainder)
+          (.neg a)
+          (by
+            simpa only [List.cons_append,
+              List.append_assoc] using
+              splitB.residual_right)
+      let splitOutsideB :=
+        ReductionToken.residualDartSplit
+          splitNegA.tokenRight form.beforeOutsideB
+          form.remainder
+          (dart b (!form.bNegativeInside))
+          splitNegA.residual_right
+      have hrotated' :
+          tokens.IsRotated
+            (.residual (.pos a) ::
+              splitB.tokenLeft ++
+              .residual (dart b form.bNegativeInside) ::
+              splitNegA.tokenLeft ++
+              .residual (.neg a) ::
+              splitOutsideB.tokenLeft ++
+              .residual (dart b (!form.bNegativeInside)) ::
+              splitOutsideB.tokenRight) := by
+        have hrotated := headLift.rotated
+        rw [splitB.tokens_eq, splitNegA.tokens_eq,
+          splitOutsideB.tokens_eq] at hrotated
+        simpa only [List.cons_append,
+          List.append_assoc] using hrotated
+      exact .handle a b form splitB.tokenLeft
+        splitNegA.tokenLeft splitOutsideB.tokenLeft
+        splitOutsideB.tokenRight hrotated'
+        splitB.residual_left splitNegA.residual_left
+        splitOutsideB.residual_left
+        splitOutsideB.residual_right
+
+/-- Erasing the marked target recovers exactly the residual word of the underlying feature. -/
+theorem residualDarts_targetTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens) :
+    ReductionToken.residualDarts marked.targetTokens =
+      marked.residualFeature.residualWord := by
+  cases marked with
+  | boundary a form remainderTokens _ hremainder =>
+      simp [targetTokens, residualFeature,
+        ActionablePairReductionFeature.residualWord,
+        hremainder]
+  | crosscap a form betweenTokens remainderTokens
+      _ hbetween hremainder =>
+      simp [targetTokens, residualFeature,
+        ActionablePairReductionFeature.residualWord,
+        hbetween, hremainder]
+  | handle a b form beforeBTokens beforeNegATokens
+      beforeOutsideBTokens remainderTokens _
+      hbeforeB hbeforeNegA hbeforeOutsideB hremainder =>
+      simp [targetTokens, residualFeature,
+        ActionablePairReductionFeature.residualWord,
+        hbeforeB, hbeforeNegA, hbeforeOutsideB,
+        hremainder, List.append_assoc]
+
+end MarkedActionablePairReductionFeature
 
 /-- A complete proof-relevant decomposition trace.  Each step extracts one certified block, then
 pair-reduces the strictly shorter residual before continuing. -/
