@@ -35,6 +35,7 @@ import ClassificationOfSurfaces.FiniteCyclicTerminalNormalization
 import ClassificationOfSurfaces.FiniteCyclicTriangulation
 import ClassificationOfSurfaces.FiniteCyclicUnorientedRealization
 import ClassificationOfSurfaces.FiniteCyclicWordReduction
+import ClassificationOfSurfaces.GeometricTriangulationRealization
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
 import ClassificationOfSurfaces.LeanEval.SpecAudit
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
@@ -53,6 +54,8 @@ import ClassificationOfSurfaces.SignedPresentation
 import ClassificationOfSurfaces.SphereCarrierGeometry
 import ClassificationOfSurfaces.SphereHemisphere
 import ClassificationOfSurfaces.SphereQuotientHomeomorph
+import ClassificationOfSurfaces.StrongVertexStar
+import ClassificationOfSurfaces.TriangleCell
 
 /-!
 # Public API map
@@ -117,6 +120,10 @@ for the quarry, in particular the concrete closed-triangle geometry.
 * `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isConnected`
 * `compact_eval_surface_finiteCyclicPresentation`
 * `compact_eval_surface_has_valid_connected_finiteCyclicPresentation`
+* `GeometricTriangulation.polygonalRealizationHomeomorph`
+* `GeometricTriangulation.polygonalRealization_homeomorphic_of_surface`
+* `compact_eval_surface_polygonalRealization_certificates`
+* `compact_eval_surface_polygonalRealization_homeomorphic_surface`
 * `finite_triangulation_to_cell_complex`
 * `compact_surface_homeomorphic_to_cell_complex`
 
