@@ -6982,6 +6982,217 @@ theorem targetTokens_allClassified {n : ℕ}
 
 end MarkedHandleBlockCommute
 
+/-- Two adjacent extracted boundary singletons which form a P1-subdivided boundary segment. -/
+structure MarkedBoundaryPairContraction {n : ℕ}
+    (tokens : List (ReductionToken (n + 1))) where
+  first : Fin (n + 1)
+  second : Fin (n + 1)
+  firstNegative : Bool
+  secondNegative : Bool
+  tailTokens : List (ReductionToken (n + 1))
+  rotated :
+    tokens.IsRotated
+      ([.extracted
+          (.boundary first firstNegative),
+        .extracted
+          (.boundary second secondNegative)] ++
+        tailTokens)
+  first_ne_second : first ≠ second
+  first_not_mem_tail :
+    first ∉
+      (ReductionToken.expand tailTokens).map edgeOfDart
+  second_not_mem_tail :
+    second ∉
+      (ReductionToken.expand tailTokens).map edgeOfDart
+
+namespace MarkedBoundaryPairContraction
+
+/-- Exact marked target after contracting the second boundary subdivision edge. -/
+def targetTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (contraction : MarkedBoundaryPairContraction tokens) :
+    List (ReductionToken n) :=
+  .extracted
+      (.boundary
+        (Cancellation.lowerEdge
+          contraction.second contraction.first
+          contraction.first_ne_second)
+        false) ::
+    ReductionToken.lowerTokensAvoiding
+      contraction.second contraction.tailTokens
+      contraction.second_not_mem_tail
+
+/-- Expansion of the marked source is the adjacent-boundary contraction source spelling. -/
+theorem expand_isRotated_sourceWord {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (contraction : MarkedBoundaryPairContraction tokens) :
+    (ReductionToken.expand tokens).IsRotated
+      (BoundaryPairContraction.sourceWord
+        contraction.first contraction.second
+        contraction.firstNegative
+        contraction.secondNegative
+        (ReductionToken.expand
+          contraction.tailTokens)) := by
+  have hexpanded :=
+    ReductionToken.expand_isRotated
+      contraction.rotated
+  simpa [BoundaryPairContraction.sourceWord,
+    ReductionToken.expand_cons,
+    ReductionToken.expand_append,
+    ReductionToken.word_extracted,
+    ExtractedBlock.word, List.append_assoc] using
+    hexpanded
+
+/-- Expansion of the marked target is the word-level P1 contraction target. -/
+theorem expand_targetTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (contraction : MarkedBoundaryPairContraction tokens) :
+    ReductionToken.expand contraction.targetTokens =
+      BoundaryPairContraction.targetWord
+        contraction.first contraction.second
+        contraction.first_ne_second
+        (ReductionToken.expand
+          contraction.tailTokens) := by
+  simp [targetTokens,
+    BoundaryPairContraction.targetWord,
+    ReductionToken.expand_cons,
+    ReductionToken.word_extracted,
+    ExtractedBlock.word,
+    ReductionToken.expand_lowerTokensAvoiding,
+    dart]
+
+/-- Boundary-subdivision contraction preserves the classified-token grammar. -/
+theorem targetTokens_allClassified {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (contraction : MarkedBoundaryPairContraction tokens)
+    (classified : ReductionToken.AllClassified tokens) :
+    ReductionToken.AllClassified
+      contraction.targetTokens := by
+  have displayed :=
+    classified.of_isRotated contraction.rotated
+  have tailClassified :
+      ReductionToken.AllClassified
+        contraction.tailTokens := by
+    intro token htoken
+    exact displayed token (by simp [htoken])
+  rw [targetTokens,
+    ReductionToken.allClassified_cons]
+  exact
+    ⟨trivial,
+      tailClassified.lowerTokensAvoiding
+        contraction.second contraction.tailTokens
+        contraction.second_not_mem_tail⟩
+
+/-- Boundary-subdivision contraction preserves separation of residual and protected names. -/
+theorem targetTokens_isSeparated {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (contraction : MarkedBoundaryPairContraction tokens)
+    (separated : ReductionToken.IsSeparated tokens) :
+    ReductionToken.IsSeparated
+      contraction.targetTokens := by
+  let displayedTokens :=
+    [.extracted
+        (.boundary contraction.first
+          contraction.firstNegative),
+      .extracted
+        (.boundary contraction.second
+          contraction.secondNegative)] ++
+      contraction.tailTokens
+  have separatedDisplayed :
+      ReductionToken.IsSeparated displayedTokens :=
+    separated.of_isRotated contraction.rotated
+  have tailSeparated :
+      ReductionToken.IsSeparated
+        contraction.tailTokens := by
+    rw [ReductionToken.IsSeparated,
+      List.disjoint_left]
+    intro edge heResidual heProtected
+    have heDisplayedResidual :
+        edge ∈
+          (ReductionToken.residualDarts
+            displayedTokens).map edgeOfDart := by
+      change edge ∈
+        (ReductionToken.residualDarts
+          contraction.tailTokens).map edgeOfDart
+      exact heResidual
+    have heDisplayedProtected :
+        edge ∈
+          ReductionToken.protectedEdges
+            displayedTokens := by
+      change edge ∈
+        [contraction.first, contraction.second] ++
+          ReductionToken.protectedEdges
+            contraction.tailTokens
+      exact List.mem_append_right _ heProtected
+    exact (List.disjoint_left.mp separatedDisplayed)
+      heDisplayedResidual heDisplayedProtected
+  let loweredTail :=
+    ReductionToken.lowerTokensAvoiding
+      contraction.second contraction.tailTokens
+      contraction.second_not_mem_tail
+  have loweredTailSeparated :
+      ReductionToken.IsSeparated loweredTail :=
+    tailSeparated.lowerTokensAvoiding
+      contraction.second contraction.tailTokens
+      contraction.second_not_mem_tail
+  rw [ReductionToken.IsSeparated,
+    List.disjoint_left]
+  intro edge heResidual heProtected
+  have heTailResidual :
+      edge ∈
+        (ReductionToken.residualDarts
+          loweredTail).map edgeOfDart := by
+    simpa [targetTokens, loweredTail] using heResidual
+  have heProtectedCases :
+      edge =
+          Cancellation.lowerEdge
+            contraction.second contraction.first
+            contraction.first_ne_second ∨
+        edge ∈
+          ReductionToken.protectedEdges
+            loweredTail := by
+    simpa [targetTokens, loweredTail,
+      ExtractedBlock.edges] using heProtected
+  rcases heProtectedCases with rfl | heTailProtected
+  · have hfirstResidual :
+        contraction.first ∈
+          (ReductionToken.residualDarts
+            contraction.tailTokens).map edgeOfDart := by
+      rw [←
+        ReductionToken.residualEdges_lowerTokensAvoiding_map_restoreEdge
+          contraction.second contraction.tailTokens
+          contraction.second_not_mem_tail]
+      exact List.mem_map.mpr
+        ⟨Cancellation.lowerEdge
+            contraction.second contraction.first
+            contraction.first_ne_second,
+          heTailResidual,
+          Cancellation.restoreEdge_lowerEdge
+            contraction.second contraction.first
+            contraction.first_ne_second⟩
+    have hfirstDisplayedResidual :
+        contraction.first ∈
+          (ReductionToken.residualDarts
+            displayedTokens).map edgeOfDart := by
+      change contraction.first ∈
+        (ReductionToken.residualDarts
+          contraction.tailTokens).map edgeOfDart
+      exact hfirstResidual
+    have hfirstDisplayedProtected :
+        contraction.first ∈
+          ReductionToken.protectedEdges
+            displayedTokens := by
+      simp [displayedTokens,
+        ExtractedBlock.edges]
+    exact (List.disjoint_left.mp separatedDisplayed)
+      hfirstDisplayedResidual
+      hfirstDisplayedProtected
+  · exact
+      (List.disjoint_left.mp loweredTailSeparated)
+        heTailResidual heTailProtected
+
+end MarkedBoundaryPairContraction
+
 namespace MarkedBoundaryBlockCommute
 
 /-- After commuting a completed boundary loop, the same residual pair surrounds exactly the
@@ -9463,6 +9674,100 @@ noncomputable def commute {n : ℕ}
   simpa only [htarget] using hchain
 
 end MarkedHandleBlockCommute
+
+/-- Proof-producing contraction of two adjacent extracted boundary subdivisions. -/
+structure MarkedBoundaryPairContractionResult {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (contraction : MarkedBoundaryPairContraction tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    Type where
+  targetValid :
+    (Dyck.oneFace
+      (ReductionToken.expand
+        contraction.targetTokens)).IsSurfaceValid
+  targetSeparated :
+    ReductionToken.IsSeparated contraction.targetTokens
+  targetClassified :
+    ReductionToken.AllClassified contraction.targetTokens
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand contraction.targetTokens),
+        targetValid⟩
+
+namespace MarkedBoundaryPairContraction
+
+/-- Execute one adjacent-boundary P1 contraction, lowering the ambient edge type by one. -/
+noncomputable def contract {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (step : MarkedBoundaryPairContraction tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (classified : ReductionToken.AllClassified tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    MarkedBoundaryPairContractionResult step valid := by
+  let sourceRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      step.expand_isRotated_sourceWord
+  let validSourceWord :
+      (Dyck.oneFace
+        (BoundaryPairContraction.sourceWord
+          step.first step.second
+          step.firstNegative step.secondNegative
+          (ReductionToken.expand
+            step.tailTokens))).IsSurfaceValid :=
+    sourceRotation.isSurfaceValid valid
+  let witness :=
+    BoundaryPairContraction.exists_normalizationEquivalent
+      step.first step.second
+      step.firstNegative step.secondNegative
+      (ReductionToken.expand step.tailTokens)
+      step.first_ne_second
+      step.first_not_mem_tail
+      step.second_not_mem_tail
+      validSourceWord
+  let validTargetWord := Classical.choose witness
+  have hequivalentWord :=
+    Classical.choose_spec witness
+  have htarget :
+      ReductionToken.expand step.targetTokens =
+        BoundaryPairContraction.targetWord
+          step.first step.second
+          step.first_ne_second
+          (ReductionToken.expand step.tailTokens) :=
+    step.expand_targetTokens
+  have targetValid :
+      (Dyck.oneFace
+        (ReductionToken.expand
+          step.targetTokens)).IsSurfaceValid := by
+    rw [htarget]
+    exact validTargetWord
+  refine
+    { targetValid := targetValid
+      targetSeparated :=
+        step.targetTokens_isSeparated separated
+      targetClassified :=
+        step.targetTokens_allClassified classified
+      equivalent := ?_ }
+  have hrotation :
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (ReductionToken.expand tokens), valid⟩
+        ⟨Dyck.oneFace
+          (BoundaryPairContraction.sourceWord
+            step.first step.second
+            step.firstNegative step.secondNegative
+            (ReductionToken.expand step.tailTokens)),
+          validSourceWord⟩ :=
+    NormalizationEquivalent.ofSignedIso sourceRotation
+  have hchain := hrotation.trans hequivalentWord
+  simpa only [htarget] using hchain
+
+end MarkedBoundaryPairContraction
 
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
