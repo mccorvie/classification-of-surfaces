@@ -1368,6 +1368,93 @@ def edges {n : ℕ} : ExtractedBlock n → List (Fin n)
   | .crosscap a _ => [a]
   | .handle a b => [a, b]
 
+/-- Exact signed word contributed by an extracted block. -/
+def word {n : ℕ} : ExtractedBlock n →
+    List (SignedDart (Fin n))
+  | .boundary a negative => [dart a negative]
+  | .crosscap a negative =>
+      [dart a negative, dart a negative]
+  | .handle a b =>
+      [.pos a, .pos b, .neg a, .neg b]
+
+/-- Block obtained by reading an extracted block backwards with every dart reversed. -/
+def inverse {n : ℕ} : ExtractedBlock n → ExtractedBlock n
+  | .boundary a negative => .boundary a (!negative)
+  | .crosscap a negative => .crosscap a (!negative)
+  | .handle a b => .handle b a
+
+@[simp]
+theorem word_inverse {n : ℕ} (block : ExtractedBlock n) :
+    block.inverse.word = inverseWord block.word := by
+  cases block with
+  | boundary a negative =>
+      cases negative <;> rfl
+  | crosscap a negative =>
+      cases negative <;> rfl
+  | handle a b =>
+      rfl
+
+@[simp]
+theorem inverse_inverse {n : ℕ} (block : ExtractedBlock n) :
+    block.inverse.inverse = block := by
+  cases block with
+  | boundary a negative =>
+      cases negative <;> rfl
+  | crosscap a negative =>
+      cases negative <;> rfl
+  | handle a b =>
+      rfl
+
+@[simp]
+theorem edges_inverse {n : ℕ} (block : ExtractedBlock n) :
+    block.inverse.edges = block.edges.reverse := by
+  cases block <;> rfl
+
+/-- Concatenate a sequence of extracted blocks into its exact signed boundary word. -/
+def sequenceWord {n : ℕ} (blocks : List (ExtractedBlock n)) :
+    List (SignedDart (Fin n)) :=
+  (blocks.map word).flatten
+
+/-- Reverse a block sequence in the order induced by reversing its full signed word. -/
+def inverseSequence {n : ℕ} (blocks : List (ExtractedBlock n)) :
+    List (ExtractedBlock n) :=
+  (blocks.map inverse).reverse
+
+@[simp]
+theorem sequenceWord_nil {n : ℕ} :
+    sequenceWord ([] : List (ExtractedBlock n)) = [] :=
+  rfl
+
+@[simp]
+theorem sequenceWord_cons {n : ℕ}
+    (block : ExtractedBlock n)
+    (blocks : List (ExtractedBlock n)) :
+    sequenceWord (block :: blocks) =
+      block.word ++ sequenceWord blocks := by
+  simp [sequenceWord]
+
+@[simp]
+theorem sequenceWord_append {n : ℕ}
+    (left right : List (ExtractedBlock n)) :
+    sequenceWord (left ++ right) =
+      sequenceWord left ++ sequenceWord right := by
+  simp [sequenceWord]
+
+@[simp]
+theorem sequenceWord_inverseSequence {n : ℕ}
+    (blocks : List (ExtractedBlock n)) :
+    sequenceWord (inverseSequence blocks) =
+      inverseWord (sequenceWord blocks) := by
+  induction blocks with
+  | nil =>
+      rfl
+  | cons block blocks ih =>
+      have ih' :
+          sequenceWord ((blocks.map inverse).reverse) =
+            inverseWord (sequenceWord blocks) := by
+        simpa only [inverseSequence] using ih
+      simp [inverseSequence, inverseWord_append, ih']
+
 end ExtractedBlock
 
 /-- Forget an actionable feature's occurrence decomposition while retaining its extracted block. -/
@@ -2300,6 +2387,25 @@ theorem CrosscapOccurrenceForm.exists_normalizationEquivalent_grouped {n : ℕ}
         (hCrosscap.trans
           (NormalizationEquivalent.ofSignedIso targetRotation))⟩
 
+/-- Each local extraction target is definitionally its extracted block followed by the residual
+word used by the global recursion. -/
+theorem ActionablePairReductionFeature.block_word_append_residualWord {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word) :
+    feature.block.word ++ feature.residualWord =
+      match feature with
+      | .boundary _ form => form.headWord
+      | .crosscap _ form => form.groupedWord
+      | .handle _ _ form => form.groupedWord := by
+  cases feature <;>
+    simp [ActionablePairReductionFeature.block,
+      ExtractedBlock.word,
+      ActionablePairReductionFeature.residualWord,
+      BoundaryOccurrenceForm.headWord,
+      CrosscapOccurrenceForm.groupedWord,
+      InterleavedOccurrenceForm.groupedWord,
+      List.append_assoc]
+
 /-- A proof-producing result of acting on one certified pairing feature.  The constructor records
 the exact extracted spelling, its transported validity, and the normalization chain from the
 original word. -/
@@ -2327,6 +2433,22 @@ inductive ActionablePairReductionResult {n : ℕ}
 
 namespace ActionablePairReductionResult
 
+/-- Feature whose local normalization chain was executed. -/
+def feature {n : ℕ} {word : List (SignedDart (Fin n))}
+    {valid : (Dyck.oneFace word).IsSurfaceValid} :
+    ActionablePairReductionResult word valid →
+      ActionablePairReductionFeature word
+  | .boundary a form _ _ => .boundary a form
+  | .crosscap a form _ _ => .crosscap a form
+  | .handle a b form _ _ => .handle a b form
+
+/-- Exact block-plus-residual word reached by an executed extraction. -/
+def targetWord {n : ℕ} {word : List (SignedDart (Fin n))}
+    {valid : (Dyck.oneFace word).IsSurfaceValid}
+    (result : ActionablePairReductionResult word valid) :
+    List (SignedDart (Fin n)) :=
+  result.feature.block.word ++ result.feature.residualWord
+
 /-- Valid presentation reached by one actionable extraction. -/
 def target {n : ℕ} {word : List (SignedDart (Fin n))}
     {valid : (Dyck.oneFace word).IsSurfaceValid} :
@@ -2338,6 +2460,24 @@ def target {n : ℕ} {word : List (SignedDart (Fin n))}
   | .handle _ _ form validGrouped _ =>
       ⟨Dyck.oneFace form.groupedWord, validGrouped⟩
 
+/-- The stored target presentation is the one-face presentation on `targetWord`. -/
+theorem target_presentation_eq_oneFace_targetWord {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    {valid : (Dyck.oneFace word).IsSurfaceValid}
+    (result : ActionablePairReductionResult word valid) :
+    result.target.presentation = Dyck.oneFace result.targetWord := by
+  cases result <;>
+    simp [target, targetWord, feature,
+      ActionablePairReductionFeature.block_word_append_residualWord]
+
+/-- Validity witness for the exact block-plus-residual target word. -/
+theorem targetWordValid {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    {valid : (Dyck.oneFace word).IsSurfaceValid}
+    (result : ActionablePairReductionResult word valid) :
+    (Dyck.oneFace result.targetWord).IsSurfaceValid :=
+  result.target_presentation_eq_oneFace_targetWord ▸ result.target.valid
+
 /-- Normalization equivalence certified by one actionable extraction. -/
 theorem equivalent {n : ℕ} {word : List (SignedDart (Fin n))}
     {valid : (Dyck.oneFace word).IsSurfaceValid}
@@ -2348,6 +2488,23 @@ theorem equivalent {n : ℕ} {word : List (SignedDart (Fin n))}
   | boundary _ _ _ equivalent => exact equivalent
   | crosscap _ _ _ equivalent => exact equivalent
   | handle _ _ _ _ equivalent => exact equivalent
+
+/-- Normalization equivalence to the stable exact block-plus-residual spelling. -/
+theorem equivalent_to_targetWord {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    {valid : (Dyck.oneFace word).IsSurfaceValid}
+    (result : ActionablePairReductionResult word valid) :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace word, valid⟩
+      ⟨Dyck.oneFace result.targetWord, result.targetWordValid⟩ := by
+  have hnode :
+      result.target =
+        ⟨Dyck.oneFace result.targetWord,
+          result.targetWordValid⟩ := by
+    apply ValidPresentation.ext
+    exact result.target_presentation_eq_oneFace_targetWord
+  rw [← hnode]
+  exact result.equivalent
 
 end ActionablePairReductionResult
 
