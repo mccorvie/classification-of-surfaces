@@ -34,7 +34,7 @@ triangle/homothety fitting lemmas (4685–5320), `euclideanHalfSpace` polygonal-
 theorems (8077–8460), and the historical `ChartBoundaryInvariant` isolation (now discharged in
 `Moise/BoundaryInvariant.lean`).
 
-## Cell-complex / normal-form side (owned separately; listed so nobody extends them)
+## Legacy cell-complex scaffolding
 
 The former `SurfaceCellComplex.surfaceValid` and `.connected` entries were removed: they are now
 incidence-derived predicates `SurfaceCellComplex.IsSurfaceValid` and `.IsConnected`, with positive
@@ -46,16 +46,18 @@ as explicit hypotheses.
 
 | Declaration | File | Status | Problem | Intended meaning |
 |---|---|---|---|---|
-| `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | generic disks and quotients live in `PolygonalQuotient.lean`; the occurrence adapter lives in `CellComplexQuotient.lean`; remaining work is the atomic realization cutover and its triangulation bridge |
-| `surface_cell_complex_reduces_to_normal_form` | NormalForm.lean | false at the current abstraction boundary | the signature requires explicit `IsSurfaceValid` and `IsConnected`, but `SurfaceCellComplex.realization` is still an arbitrary stored type unrelated to the incidence data; it therefore need not be homeomorphic to any Eval representative | first perform the faithful polygonal-realization cutover, then prove the Gallier--Xu reduction against the vendored relations |
+| `SurfaceCellComplex.realization` / `gluingRel` | CellComplex.lean | placeholder, unused by the public proof | arbitrary stored type; `gluingRel = ⊥`; `Equivalent` = homeomorphic stored types, not Gallier–Xu moves | remove these legacy fields after migrating any remaining compatibility examples; the classification theorem already uses `FiniteCyclicPresentation.PolygonalRealization` |
 
-The canonical normal-form generator comparison has graduated from this ledger:
+The false `surface_cell_complex_reduces_to_normal_form` abstraction has been deleted. Its faithful
+replacement, `FiniteCyclicPresentation.hasEvalRepresentative`, composes the completed
+Gallier–Xu normalization with the exact canonical polygonal realizations. The canonical
+normal-form generator comparison has likewise graduated from this ledger:
 `CanonicalGeneratorMaps.lean` proves homeomorphisms from both admissible canonical polygonal
 realizations to the exact vendored Eval quotients.
 
-Dependents of the remaining weak entries: `NormalForm.lean`, `EvalStatement.lean`, and
-`Examples.lean`. `CanonicalWords.lean`, `CanonicalPairings.lean`, and
-`CanonicalCoordinates.lean` consume only the faithful incidence, occurrence-pairing, and
+Neither `NormalForm.lean` nor `EvalStatement.lean` depends on the remaining weak entry.
+`Examples.lean`, `CanonicalWords.lean`, `CanonicalPairings.lean`, and
+`CanonicalCoordinates.lean` consume the faithful incidence, occurrence-pairing, or
 polygonal-realization interfaces.
 `RepresentativeCarrier.lean` consumes the faithful `PolygonalPreRealization`, not the placeholder
 stored `SurfaceCellComplex.Realization` or `gluingRel`. The former project-owned

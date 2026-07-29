@@ -155,9 +155,9 @@ families into the corresponding trusted `EqvGen` closures. `CanonicalGeneratorMa
 the exhaustive forward maps, maps every trusted constructor back to its named polygon pairing,
 and descends both comparisons to the exact Eval quotients.
 
-Status: open for the stored-realization cutover and triangulation bridge. The canonical
-Eval-quotient comparison is implemented for every admissible orientable and nonorientable
-parameter pair.
+Status: resolved. The public proof uses the faithful finite-cyclic polygonal realization; the
+legacy stored realization remains only as structural cleanup. The canonical Eval-quotient
+comparison is implemented for every admissible orientable and nonorientable parameter pair.
 
 ### O4. Topological Bridge Target
 
@@ -167,7 +167,8 @@ Options:
 - mathlib classical CW complexes;
 - theorem-boundary triangulation directly to `SurfaceCellComplex`.
 
-Current leaning: keep the public bridge as `SurfaceCellComplex`; investigate CW and finite triangulations
-behind that boundary.
+Decision: use `GeometricTriangulation.toFiniteCyclicPresentation` and
+`FiniteCyclicPresentation.PolygonalRealization` as the public bridge. The legacy
+`SurfaceCellComplex.Realization` is not part of the classification proof.
 
-Status: open.
+Status: resolved.

@@ -108,8 +108,9 @@ line counts between files.
 The last item is a warning about arbitrary legacy records, not the Radó-produced one.  A completed
 geometric triangulation now supplies nonempty faces, edge valence at most two, and global
 dual-face connectivity.  The compatibility bridge translates that certificate to
-`SurfaceCellComplex.IsSurfaceValid` and `SurfaceCellComplex.IsConnected`.  Agreement of the stored
-realization with the polygonal quotient remains a separate obligation.
+`SurfaceCellComplex.IsSurfaceValid` and `SurfaceCellComplex.IsConnected`. The faithful
+finite-cyclic bridge now identifies the polygonal quotient directly with the geometric
+realization. The unrelated stored legacy realization remains only as cleanup debt.
 
 ## Verification
 
@@ -128,6 +129,6 @@ layer; `Countermodels.lean` and `RADO_AUDIT.md` audit the meanings of the defini
 
 New triangulation work should consume `GeometricTriangulation`.  The legacy
 `FiniteSurfaceTriangulation` and `SurfaceCellComplex.realization` remain in `KNOWN_WEAK.md`.
-Incidence and connectivity are certified for the Radó output.  The next project-level task is to
-replace the stored realization with the polygonal quotient before the Gallier–Xu normal-form
-chain relies on it.
+Incidence, connectivity, strong vertex stars, and the faithful polygonal realization are certified
+for the Radó output. The public classification theorem consumes that direct finite-cyclic route;
+the stored realization can be removed independently.

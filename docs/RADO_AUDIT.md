@@ -173,10 +173,9 @@ reports exactly:
 [propext, Classical.choice, Quot.sound]
 ```
 
-The forbidden-token sweep finds one actual `sorry`, the pre-existing
-`ClassificationOfSurfaces/NormalForm.lean:70`; it is outside the Radó import dependency of the
-audited declarations.  No `axiom`, `admit`, `native_decide`, or `implemented_by` occurs in the
-proof chain.
+The later faithful normal-form cutover removed the one pre-existing `sorry` from
+`ClassificationOfSurfaces/NormalForm.lean`. No `sorry`, project `axiom`, `admit`,
+`native_decide`, or `implemented_by` occurs in the completed public proof chain.
 
 ## Simplification report
 

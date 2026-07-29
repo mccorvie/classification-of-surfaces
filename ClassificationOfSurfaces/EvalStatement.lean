@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
 import ClassificationOfSurfaces.NormalForm
+import ClassificationOfSurfaces.GeometricTriangulationRealization
 
 /-!
 # Lean Eval target theorem
@@ -27,24 +28,27 @@ theorem classification_of_surfaces (S : Type*) [TopologicalSpace S]
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (S ≃ₜ Quot (OrientableRel p n))) ∨
           (1 ≤ p ∧ Nonempty (S ≃ₜ Quot (NonOrientableRel p n))) := by
-  obtain ⟨K, hSK, hvalid, hconnected⟩ :=
-    compact_surface_homeomorphic_to_valid_connected_cell_complex S
-  rcases hSK with ⟨hSK⟩
-  rcases SurfaceCellComplex.hasEvalRepresentative K hvalid hconnected with hK | hK
-  · rcases hK with ⟨hKR⟩
-    exact Or.inl ⟨hSK.trans hKR⟩
-  · rcases hK with ⟨p, n, hK⟩
+  let P := compact_eval_surface_finiteCyclicPresentation S
+  let validP := compact_eval_surface_finiteCyclicPresentation_isSurfaceValid S
+  have connectedP : P.IsConnected :=
+    compact_eval_surface_finiteCyclicPresentation_isConnected S
+  rcases compact_eval_surface_polygonalRealization_homeomorphic_surface S with
+    ⟨hPS⟩
+  rcases P.hasEvalRepresentative validP connectedP with hP | hP
+  · rcases hP with ⟨hPR⟩
+    exact Or.inl ⟨hPS.symm.trans hPR⟩
+  · rcases hP with ⟨p, n, hP⟩
     right
     refine ⟨p, n, ?_⟩
-    rcases hK with hK | hK
+    rcases hP with hP | hP
     · left
-      rcases hK with ⟨hpn, hKR⟩
-      rcases hKR with ⟨hKR⟩
-      exact ⟨hpn, ⟨hSK.trans hKR⟩⟩
+      rcases hP with ⟨hpn, hPR⟩
+      rcases hPR with ⟨hPR⟩
+      exact ⟨hpn, ⟨hPS.symm.trans hPR⟩⟩
     · right
-      rcases hK with ⟨hp, hKR⟩
-      rcases hKR with ⟨hKR⟩
-      exact ⟨hp, ⟨hSK.trans hKR⟩⟩
+      rcases hP with ⟨hp, hPR⟩
+      rcases hPR with ⟨hPR⟩
+      exact ⟨hp, ⟨hPS.symm.trans hPR⟩⟩
 
 /-- Blueprint-facing spelling of `classification_of_surfaces`. -/
 theorem topological_classification_of_surfaces (S : Type*) [TopologicalSpace S]

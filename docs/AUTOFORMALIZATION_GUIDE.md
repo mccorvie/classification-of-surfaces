@@ -19,7 +19,8 @@ autonomous sessions useful without confusing scaffold movement for mathematical 
 - Aim at risky interfaces early. If a definition will fail downstream, it is better to learn that
   before proving many small lemmas around it.
 - Connect upstream to downstream. Avoid isolated kernels that do not feed
-  `compact_surface_homeomorphic_to_cell_complex` or `SurfaceCellComplex.hasEvalRepresentative`.
+  `compact_eval_surface_polygonalRealization_homeomorphic_surface` or
+  `FiniteCyclicPresentation.hasEvalRepresentative`.
 
 ## Definition Faithfulness
 
