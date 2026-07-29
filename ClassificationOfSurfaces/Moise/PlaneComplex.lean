@@ -18,12 +18,11 @@ The shared geometric foundation for the Moise route (Moise, *Geometric Topology 
 2 and 3*, Ch. 0 and Ch. 7 conventions): finite complexes of genuine affine simplexes in the
 Euclidean plane.
 
-Unlike the retiring `EuclideanComplex` of `PL.lean` (see `docs/KNOWN_WEAK.md`), the support of a
-`PlaneComplex` is *defined* as the union of the convex hulls of its faces, vertex positions are
-actual points, faces are affinely independent, and distinct faces meet in the hull of their
-shared vertex set.  None of these fields is satisfiable by bookkeeping alone: `face_inter` is a
-genuine geometric constraint (it fails, for example, for two triangles that overlap in an open
-region).
+The support of a `PlaneComplex` is *defined* as the union of the convex hulls of its faces, vertex
+positions are actual points, faces are affinely independent, and distinct faces meet in the hull
+of their shared vertex set. None of these fields is satisfiable by bookkeeping alone:
+`face_inter` is a genuine geometric constraint (it fails, for example, for two triangles that
+overlap in an open region).
 
 `IsAffineOn`/`IsPLOn` give the honest piecewise-linear predicates: a map is PL on a complex when
 it is affine on every face of some subdivision.  A generic continuous map is *not* PL on any

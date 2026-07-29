@@ -51,8 +51,8 @@ noncomputable def twoMonogonFaceHomeomorph (f : twoMonogonSphere.Face) :
         (twoMonogonFaceEquiv f)) where
   toFun z := ⟨z.val, z.property⟩
   invFun z := ⟨z.val, z.property⟩
-  left_inv := fun z => PolygonCell.ext rfl
-  right_inv := fun z => PolygonCell.ext rfl
+  left_inv := fun _ => PolygonCell.ext rfl
+  right_inv := fun _ => PolygonCell.ext rfl
   continuous_toFun :=
     continuous_induced_rng.2 PolygonCell.continuous_val
   continuous_invFun :=

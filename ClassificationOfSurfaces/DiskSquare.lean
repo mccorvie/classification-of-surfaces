@@ -209,14 +209,14 @@ theorem frontier_square :
     frontier square = boundary := by
   rw [frontier, isClosed_square.closure_eq, interior_square]
   ext z
-  simp only [square, boundary, Set.mem_diff, Set.mem_setOf_eq, not_lt]
+  simp only [square, boundary, Set.mem_sdiff, Set.mem_setOf_eq, not_lt]
   constructor
   · exact fun h ↦ le_antisymm h.1 h.2
   · intro h
     exact ⟨h.le, h.ge⟩
 
 /-- Radial projection of a nonzero point to the square boundary. -/
-noncomputable def radialToBoundary (z : ℂ) (hz : z ≠ 0) : ℂ :=
+noncomputable def radialToBoundary (z : ℂ) (_hz : z ≠ 0) : ℂ :=
   z / maxAbs z
 
 theorem radialToBoundary_maxAbs (z : ℂ) (hz : z ≠ 0) :
@@ -371,7 +371,7 @@ noncomputable def boundaryCircleHomeomorph :
           squareAmbientHomeomorph (squareAmbientHomeomorph.symm z) ∈
             squareAmbientHomeomorph '' boundary := by
         rw [squareAmbientHomeomorph_image_boundary]
-        simpa [Submonoid.unitSphere] using z.property
+        simp [Submonoid.unitSphere]
       rcases hz with ⟨w, hw, heq⟩
       exact squareAmbientHomeomorph.injective heq.symm ▸ hw⟩
   left_inv := by
@@ -466,12 +466,12 @@ theorem firstSideWeights_positive {r : ℕ} (hr : 0 < r) :
   simp only [firstSideWeights, List.mem_cons, List.mem_replicate] at hw
   rcases hw with rfl | ⟨_hr, rfl⟩ <;> omega
 
-theorem finalSideWeights_ne_nil {l : ℕ} (hl : 0 < l) :
+theorem finalSideWeights_ne_nil {l : ℕ} (_hl : 0 < l) :
     finalSideWeights l ≠ [] := by
   simpa only [List.ne_nil_iff_length_pos, finalSideWeights_length] using
     Nat.succ_pos l
 
-theorem firstSideWeights_ne_nil {r : ℕ} (hr : 0 < r) :
+theorem firstSideWeights_ne_nil {r : ℕ} (_hr : 0 < r) :
     firstSideWeights r ≠ [] := by
   simp [firstSideWeights]
 
@@ -603,7 +603,7 @@ theorem finalSideWeightedCircle_apply
   rw [h]
   congr 1
   simp only [finalSideWeights_sum, finalSideWeights_get_last,
-    i, Fin.getElem_fin, finalSideWeights_take_last, List.sum_replicate,
+    i, finalSideWeights_take_last, List.sum_replicate,
     nsmul_eq_mul]
   push_cast
   ring
@@ -633,7 +633,7 @@ theorem firstSideWeightedCircle_apply
   rw [h]
   congr 1
   simp only [firstSideWeights_sum, firstSideWeights_get_zero,
-    i, Fin.getElem_fin, List.take_zero, List.sum_nil, Nat.cast_zero,
+    i, List.take_zero, List.sum_nil, Nat.cast_zero,
     zero_add]
   push_cast
   ring
@@ -698,7 +698,6 @@ theorem firstSideBoundaryHomeomorph_apply
   rw [← Circle.exp_neg, ← Circle.exp_add]
   congr 1
   have hrReal : (r : ℝ) ≠ 0 := by exact_mod_cast hr.ne'
-  push_cast
   field_simp [hrReal]
   ring
 
@@ -836,12 +835,11 @@ theorem finalSideBoundaryHomeomorph_one_im
       _).im = 1
   unfold radialToBoundary
   rw [Complex.div_ofReal_im]
-  simp only [mul_one, Circle.coe_exp, Complex.exp_ofReal_mul_I_im,
-    Complex.exp_ofReal_mul_I_re]
+  simp only [mul_one, Circle.coe_exp, Complex.exp_ofReal_mul_I_im]
   have hangle :
       -(Real.pi / 4) + Real.pi / 2 = Real.pi / 4 := by ring
   rw [hangle, Real.sin_pi_div_four]
-  simp only [maxAbs, Circle.coe_exp, Complex.exp_ofReal_mul_I_re,
+  simp only [maxAbs, Complex.exp_ofReal_mul_I_re,
     Complex.exp_ofReal_mul_I_im, Real.cos_pi_div_four,
     Real.sin_pi_div_four]
   have hsqrt : 0 < Real.sqrt 2 := Real.sqrt_pos.2 (by norm_num)
@@ -1027,7 +1025,7 @@ theorem exists_leftPlacement_of_re_nonpos
     · exact abs_le.mpr him
   refine ⟨⟨w, hw⟩, ?_⟩
   apply Subtype.ext
-  apply Complex.ext <;> simp [w] <;> ring
+  apply Complex.ext <;> simp [w]
 
 theorem exists_rightPlacement_of_re_nonneg
     (z : square) (hz : 0 ≤ z.1.re) :
@@ -1044,7 +1042,7 @@ theorem exists_rightPlacement_of_re_nonneg
     · exact abs_le.mpr him
   refine ⟨⟨w, hw⟩, ?_⟩
   apply Subtype.ext
-  apply Complex.ext <;> simp [w] <;> ring
+  apply Complex.ext <;> simp [w]
 
 theorem leftPlacement_or_rightPlacement (z : square) :
     (∃ w : square, leftPlacement w = z) ∨
@@ -1650,9 +1648,6 @@ theorem finalOldArcLocal_zero_im
     (finalOldArcLocal l hl ⟨0, by constructor <;> positivity⟩).1.im = 1 := by
   rw [finalOldArcLocal_apply]
   norm_num
-  change
-    (finalSideCellHomeomorph l hl
-      (PolygonCell.ofCircle (l + 1) 1)).1.im = 1
   have hcell :
       PolygonCell.ofCircle (l + 1) 1 =
         PolygonCell.side (Fin.last l) 1 := by
@@ -1673,7 +1668,7 @@ theorem finalOldArcLocal_zero_im
 @[simp]
 theorem finalOldArcLocal_last_im
     (l : ℕ) (hl : 0 < l) :
-    (finalOldArcLocal l hl ⟨l, by simp [hl.le]⟩).1.im = -1 := by
+    (finalOldArcLocal l hl ⟨l, by simp⟩).1.im = -1 := by
   rw [finalOldArcLocal_apply]
   change
     (finalSideCellHomeomorph l hl
@@ -1707,7 +1702,7 @@ theorem finalOldArcLocal_abs_im_eq_one_of_re_eq_one
     subst s
     rw [finalOldArcLocal_zero_im]
     norm_num
-  · have hsl : s = ⟨l, by simp [hl.le]⟩ := Subtype.ext h
+  · have hsl : s = ⟨l, by simp⟩ := Subtype.ext h
     subst s
     rw [finalOldArcLocal_last_im]
     norm_num
@@ -1818,10 +1813,6 @@ theorem firstOldArcLocal_zero_im
     (firstOldArcLocal r hr ⟨0, by constructor <;> positivity⟩).1.im = -1 := by
   rw [firstOldArcLocal_apply]
   norm_num
-  change
-    (firstSideCellHomeomorph r hr
-      (PolygonCell.ofCircle (r + 1)
-        (Circle.exp (2 * Real.pi / (r + 1))))).1.im = -1
   have hcell :
       PolygonCell.ofCircle (r + 1)
           (Circle.exp (2 * Real.pi / (r + 1))) =
@@ -1853,7 +1844,7 @@ theorem firstOldArcLocal_zero_im
 @[simp]
 theorem firstOldArcLocal_last_im
     (r : ℕ) (hr : 0 < r) :
-    (firstOldArcLocal r hr ⟨r, by simp [hr.le]⟩).1.im = 1 := by
+    (firstOldArcLocal r hr ⟨r, by simp⟩).1.im = 1 := by
   rw [firstOldArcLocal_apply]
   change
     (firstSideCellHomeomorph r hr
@@ -1900,7 +1891,7 @@ theorem firstOldArcLocal_abs_im_eq_one_of_re_eq_one
     subst s
     rw [firstOldArcLocal_zero_im]
     norm_num
-  · have hsr : s = ⟨r, by simp [hr.le]⟩ := Subtype.ext h
+  · have hsr : s = ⟨r, by simp⟩ := Subtype.ext h
     subst s
     rw [firstOldArcLocal_last_im]
     norm_num
@@ -2501,7 +2492,6 @@ def firstArcParameter (l r : ℕ) :
         max_le
           (by
             have hx := x.2.2
-            push_cast at hx ⊢
             linarith)
           (Nat.cast_nonneg r)⟩⟩
 
@@ -2580,7 +2570,6 @@ theorem outerArc_apply_of_not_le
           ⟨by linarith,
             by
               have hxUpper := x.2.2
-              push_cast at hxUpper ⊢
               linarith⟩⟩ := by
   change
     (if x.1 ≤ l then
@@ -2609,8 +2598,7 @@ theorem outerArc_split
         ⟨l, by
           constructor
           · exact Nat.cast_nonneg l
-          · have hrNonneg : (0 : ℝ) ≤ r := Nat.cast_nonneg r
-            push_cast
+          · have _hrNonneg : (0 : ℝ) ≤ r := Nat.cast_nonneg r
             linarith⟩ =
       finalOldArc l hl ⟨l, by simp⟩ := by
   apply outerArc_apply_of_le
@@ -2659,8 +2647,7 @@ theorem outerArc_surjective
   · obtain ⟨s, hs⟩ := exists_finalOldArc_of_re_nonpos l hl z hzLeft
     let x : Set.Icc (0 : ℝ) (l + r) :=
       ⟨s.1, ⟨s.2.1, s.2.2.trans (by
-        have hrNonneg : (0 : ℝ) ≤ r := Nat.cast_nonneg r
-        push_cast
+        have _hrNonneg : (0 : ℝ) ≤ r := Nat.cast_nonneg r
         linarith)⟩⟩
     refine ⟨x, ?_⟩
     rw [outerArc_apply_of_le l r hl hr x s.2.2]
@@ -2670,8 +2657,7 @@ theorem outerArc_surjective
       ⟨l + s.1, by
         constructor
         · exact add_nonneg (Nat.cast_nonneg l) s.2.1
-        · push_cast
-          linarith [s.2.2]⟩
+        · linarith [s.2.2]⟩
     refine ⟨x, ?_⟩
     by_cases hsZero : s.1 = 0
     · have hxValue : x.1 = l := by
@@ -2681,8 +2667,7 @@ theorem outerArc_surjective
           x = (⟨l, by
             constructor
             · exact Nat.cast_nonneg l
-            · have hrNonneg : (0 : ℝ) ≤ r := Nat.cast_nonneg r
-              push_cast
+            · have _hrNonneg : (0 : ℝ) ≤ r := Nat.cast_nonneg r
               linarith⟩ :
             Set.Icc (0 : ℝ) (l + r)) :=
         Subtype.ext hxValue
@@ -2697,7 +2682,6 @@ theorem outerArc_surjective
     · have hxNot : ¬x.1 ≤ l := by
         dsimp [x]
         have hsPos : 0 < s.1 := lt_of_le_of_ne s.2.1 (Ne.symm hsZero)
-        push_cast
         linarith
       rw [outerArc_apply_of_not_le l r hl hr x hxNot]
       simpa only [x, add_sub_cancel_left] using hs
@@ -2715,7 +2699,6 @@ theorem outerArc_cross_endpoints
       ⟨by linarith,
         by
           have hyUpper := y.2.2
-          push_cast at hyUpper ⊢
           linarith⟩⟩
   have harc :
       finalOldArc l hl sx = firstOldArc r hr ty := by
@@ -2760,7 +2743,6 @@ theorem outerArc_cross_endpoints
   constructor
   · exact hsFirst
   · dsimp [ty] at htLast
-    push_cast at htLast ⊢
     linarith
 
 theorem outerArc_eq_imp_endpointIdent
@@ -2816,6 +2798,7 @@ noncomputable def outerEndpointArc :
     C(Set.Icc (0 : ℝ) (0 + (l + r)), boundary) :=
   (outerArc l r hl hr).comp (outerEndpointParameter l r)
 
+omit [Fact (0 < (l + r : ℝ))] in
 @[simp]
 theorem outerEndpointArc_apply
     (x : Set.Icc (0 : ℝ) (0 + (l + r))) :
@@ -3166,7 +3149,7 @@ theorem outerArc_source_right_side
   by_cases hsZero : s.1 = 0
   · have hxLe : x.1 ≤ l := by
       dsimp [x, sourceSideParameter, s, polygonSideParameter] at hsZero ⊢
-      simp only [Fin.val_natAdd, Nat.cast_add]
+      simp only [Nat.cast_add]
       linarith
     rw [outerArc_apply_of_le l r hl hr x hxLe]
     have hxLast :
@@ -3174,7 +3157,7 @@ theorem outerArc_source_right_side
           ⟨l, by simp⟩ := by
       apply Subtype.ext
       dsimp [x, sourceSideParameter, s, polygonSideParameter] at hsZero ⊢
-      simp only [Fin.val_natAdd, Nat.cast_add]
+      simp only [Nat.cast_add]
       linarith
     rw [hxLast, finalOldArc_last_eq_firstOldArc_zero l r hl hr]
     apply congrArg (firstOldArc r hr)
@@ -3184,13 +3167,13 @@ theorem outerArc_source_right_side
       lt_of_le_of_ne s.2.1 (Ne.symm hsZero)
     have hxNot : ¬x.1 ≤ l := by
       dsimp [x, sourceSideParameter, s, polygonSideParameter] at hsPos ⊢
-      simp only [Fin.val_natAdd, Nat.cast_add]
+      simp only [Nat.cast_add]
       linarith
     rw [outerArc_apply_of_not_le l r hl hr x hxNot]
     apply congrArg (firstOldArc r hr)
     apply Subtype.ext
     dsimp [x, sourceSideParameter, s, polygonSideParameter]
-    simp only [Fin.val_natAdd, Nat.cast_add]
+    simp only [Nat.cast_add]
     ring
 
 /-- On every old left side, the unsplit source polygon map agrees exactly with the

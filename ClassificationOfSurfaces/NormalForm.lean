@@ -12,8 +12,7 @@ import ClassificationOfSurfaces.FiniteCyclicTerminalNormalization
 
 This file composes the Gallier--Xu normalization of a valid connected finite-cyclic presentation
 with the exact realization homeomorphisms for the three canonical endpoints.  Every type in this
-chain is a faithful polygonal quotient; in particular, the argument does not pass through the
-legacy arbitrary `SurfaceCellComplex.Realization`.
+chain is a faithful polygonal quotient.
 -/
 
 namespace LeanEval

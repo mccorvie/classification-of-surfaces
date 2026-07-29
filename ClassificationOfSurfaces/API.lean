@@ -60,8 +60,8 @@ import ClassificationOfSurfaces.TriangleCell
 /-!
 # Public API map
 
-This file is the preferred first Lean file for collaborators to read. It re-exports the current
-project skeleton and documents the intended handoff points between teams.
+This file is the preferred first Lean file to read. It re-exports the completed proof and
+documents its main interfaces.
 
 ## Eval input
 
@@ -72,7 +72,7 @@ project skeleton and documents the intended handoff points between teams.
 * `eval_surface_hypotheses`
 * the typeclass hypothesis block used by `classification_of_surfaces`
 
-## Moise route (current; see `docs/MOISE_ROUTE.md` for status and handoff map)
+## Moise--Radó triangulation route
 
 * `GeometricTriangulation` and `GeometricRealization` (`Moise/GeometricTriangulation.lean`)
 * `TriangleFamily.FaceAdjacentAtVertex`, `TriangleFamily.IsStrongVertexStarConnected`, and
@@ -103,10 +103,9 @@ project skeleton and documents the intended handoff points between teams.
   `moise_triangulation_explicit` (`Moise/GeometricTriangulation.lean`, `Triangulation.lean`)
 * anchors and countermodels: `Moise/Anchors.lean`, `Moise/Countermodels.lean`
 
-The legacy `PL.lean` layer (`EuclideanComplex`, `PLMap`, `PLComplexInSpace`, `MoiseTwoManifold`,
-the `mathlib_bordered_surface_*` chain) was deleted after the definition-faithfulness audit — see
-`docs/KNOWN_WEAK.md` for the record and git history (`git log -- ClassificationOfSurfaces/PL.lean`)
-for the quarry, in particular the concrete closed-triangle geometry.
+The triangulation route uses the faithful geometric and intrinsic-complex APIs above. Superseded
+experimental APIs are not part of the public surface; git history remains available for historical
+implementations.
 
 ## Shared triangulation and cell-complex boundary
 
@@ -114,7 +113,6 @@ for the quarry, in particular the concrete closed-triangle geometry.
 * `FiniteSurfaceTriangulation` (ledgered; fed by the `GeometricTriangulation` bridge)
 * `compact_eval_surface_finitely_triangulable`
 * `FiniteSurfaceTriangulation.toCellComplex`
-* `FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic`
 * `FiniteSurfaceTriangulation.toFiniteCyclicPresentation`
 * `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isSurfaceValid`
 * `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isConnected`
@@ -124,12 +122,10 @@ for the quarry, in particular the concrete closed-triangle geometry.
 * `GeometricTriangulation.polygonalRealization_homeomorphic_of_surface`
 * `compact_eval_surface_polygonalRealization_certificates`
 * `compact_eval_surface_polygonalRealization_homeomorphic_surface`
-* `finite_triangulation_to_cell_complex`
-* `compact_surface_homeomorphic_to_cell_complex`
 
-The cell-complex handoff now has a certified variant carrying `SurfaceCellComplex.IsSurfaceValid`
-and `.IsConnected`. The finite-cyclic handoff enumerates the same certified triangle-boundary
-incidence directly, without depending on the cell complex's legacy stored realization.
+The cell-complex adapter preserves the certified triangle-boundary incidence. The faithful
+finite-cyclic handoff enumerates that incidence directly and identifies its polygonal quotient
+with the geometric triangulation.
 
 ## Shared finite surface cell complexes
 
@@ -141,19 +137,14 @@ incidence directly, without depending on the cell complex's legacy stored realiz
 * `SurfaceCellComplex.IsConnected`
 * `SurfaceCellComplex.SignedDart`
 * `SurfaceCellComplex.oneFacePresentation`
-* `SurfaceCellComplex.PreRealization`
-* `SurfaceCellComplex.gluingRel`
-* `SurfaceCellComplex.Realization`
-* `SurfaceCellComplex.realizationCongr`
-* `SurfaceCellComplex.realizationCongrRight`
 * `SurfaceCellComplex.EdgeOrbit`
 * `SurfaceCellComplex.edgeOrbit`
 * `SurfaceCellComplex.signedDartEquiv`
 * `SurfaceCellComplex.finSignedDartEquiv`
 * `SurfaceCellComplex.normalizedBoundary`
 
-The legacy names `CellComplex` and `FiniteTriangulation` remain as compatibility aliases.  New
-code should prefer `SurfaceCellComplex` and, for triangulations, `GeometricTriangulation`.
+`SurfaceCellComplex` contains only finite incidence data. Its topology is the faithful
+occurrence-indexed `PolygonalRealization` described below.
 
 ## Finite cyclic presentation layer
 
@@ -299,8 +290,7 @@ preserves ordinary validity, connectivity, and `IsGallierValid`; these hypothese
 bundled into the syntactic `P1Subdivision` relation. The positive orientation is canonical, while
 the relation's signed target isomorphism supports renamed and reoriented target edges.
 The finite cyclic quotient adapter realizes those face words directly as a disjoint union of
-standard polygonal disks modulo occurrence-level side pairings. It does not use the legacy
-`SurfaceCellComplex.realization` field.
+standard polygonal disks modulo occurrence-level side pairings.
 
 `P2.split` implements Gallier--Xu's cyclic oriented face-cut formula. Its raw cut pieces may be
 empty so the same construction expresses the exceptional empty-word-sphere conversion.
@@ -402,13 +392,10 @@ This generic layer supports disk cells with any number of marked sides and gener
 identifications. The additive cell-complex adapter now maps boundary occurrences to polygon sides
 and, given incidence validity plus nonempty face boundaries, generates all compatible internal
 pairings. Edge-orbit counts and inverse-invariance of boundary status are derived from
-`IsSurfaceValid`, not repeated as adapter assumptions. `SurfaceCellComplex.Realization` does not
-use the quotient yet; the atomic cutover still depends on a certified
-triangulation-to-quotient bridge. The standard one-face examples now have incidence- and
-occurrence-validity witnesses, including the corrected length-six annulus word. The marked sides
-are circular arcs; issue #6's straight-edged convex representatives still require a separate PL
-bridge or a different concrete carrier. The representative-carrier bridge identifies each indexed
-disk, and hence every one-face pre-realization, with the exact vendored closed unit disk. It
+`IsSurfaceValid`, not repeated as adapter assumptions. The standard one-face examples have
+incidence- and occurrence-validity witnesses, including the corrected length-six annulus word.
+The representative-carrier bridge identifies each indexed disk, and hence every one-face
+pre-realization, with the exact vendored closed unit disk. It
 records the side-coordinate formula, integral-period boundary invariance, and closure-aware
 quotient congruence from the polygonal generated setoid to a raw relation quotient. The one-face
 membership theorem characterizes compatible ordered pairings by two distinct boundary-word
@@ -421,8 +408,7 @@ therefore identify both generated relations, and the carrier descends to homeomo
 canonical polygonal realizations to the exact trusted Eval quotients.
 For the sphere branch, the compatible upper/lower hemisphere map descends from the two monogons;
 its kernel is exactly the generated side-gluing relation, and compact-to-Hausdorff upgrades the
-resulting bijection to a homeomorphism with `SphereRepresentative`. The legacy stored realization
-is still unrelated to these polygonal quotients.
+resulting bijection to a homeomorphism with `SphereRepresentative`.
 
 ## Gallier-Xu tail
 
@@ -491,7 +477,7 @@ is still unrelated to these polygonal quotients.
 
 The canonical word families match the exact commutator, crosscap, and boundary-block patterns in
 the vendored relations. Their lengths, edge multiplicities, incidence validity, connectivity, and
-Eval-admissible occurrence pairings are certified without using the stored realization. Forward
+Eval-admissible occurrence pairings are certified combinatorially. Forward
 block-position maps and exact `List.get` lemmas locate every signed entry of each named handle,
 crosscap, and boundary block. Polygonal identifications in both families are classified
 exhaustively as the two directed forms of the expected handle, crosscap, or boundary-seam

@@ -7,6 +7,28 @@ import Mathlib.Analysis.Convex.StdSimplex
 import Mathlib.Topology.Homeomorph.Lemmas
 import Mathlib.Topology.Separation.Hausdorff
 
+/-!
+# Geometric triangulations
+
+The faithful statement of "the space `S` admits a finite triangulation": `S` is homeomorphic to
+the geometric realization of a finite two-dimensional simplicial complex.
+
+The realization is concrete: for a finite vertex type `V` and a finite family `F` of faces
+(3-element vertex sets), `GeometricRealization V F` is the subset of the standard simplex
+`stdSimplex ℝ V` consisting of points supported on some face.  This is the classical geometric
+realization by barycentric coordinates; it is a compact Hausdorff polyhedron by construction, so
+the definition cannot be satisfied by junk witnesses (`Empty` face types, arbitrary `realization`
+fields, and so on): the homeomorphism type pins `S` to an actual finite union of geometric
+2-simplexes.
+
+Semantic anchors (see `Moise/Countermodels.lean` and the Definition Faithfulness section of
+`docs/AUTOFORMALIZATION_GUIDE.md`):
+
+* must-imply: `GeometricTriangulation.compactSpace`, `GeometricTriangulation.t2Space`;
+* positive example: the standard 2-simplex triangulates itself;
+* non-example: `ℝ` and `ℚ` admit no geometric triangulation (they are not compact).
+-/
+
 /-- A finite closed cover of a preconnected set has a connected intersection graph.
 
 This is the closed-cover counterpart of `IsPreconnected.transGen_of_iUnion`, whose open-cover
@@ -56,28 +78,6 @@ theorem IsPreconnected.transGen_of_finite_iUnion
   · exact hxU hxU'
   · exact hxV hxV'
 
-/-!
-# Geometric triangulations
-
-The faithful statement of "the space `S` admits a finite triangulation": `S` is homeomorphic to
-the geometric realization of a finite two-dimensional simplicial complex.
-
-The realization is concrete: for a finite vertex type `V` and a finite family `F` of faces
-(3-element vertex sets), `GeometricRealization V F` is the subset of the standard simplex
-`stdSimplex ℝ V` consisting of points supported on some face.  This is the classical geometric
-realization by barycentric coordinates; it is a compact Hausdorff polyhedron by construction, so
-the definition cannot be satisfied by junk witnesses (`Empty` face types, arbitrary `realization`
-fields, and so on): the homeomorphism type pins `S` to an actual finite union of geometric
-2-simplexes.
-
-Semantic anchors (see `Moise/Countermodels.lean` and the Definition Faithfulness section of
-`docs/AUTOFORMALIZATION_GUIDE.md`):
-
-* must-imply: `GeometricTriangulation.compactSpace`, `GeometricTriangulation.t2Space`;
-* positive example: the standard 2-simplex triangulates itself;
-* non-example: `ℝ` and `ℚ` admit no geometric triangulation (they are not compact).
--/
-
 namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
@@ -116,9 +116,11 @@ theorem inter (t u : Finset V) :
     · intro v hv
       exact htu v (fun hmem => hv (Finset.mem_inter.mp hmem).2)
 
+omit [DecidableEq V] in
 /-- A barycentric face is nonempty exactly when it has a vertex. -/
 theorem nonempty_iff (t : Finset V) :
     (GeometricFace V t).Nonempty ↔ t.Nonempty := by
+  classical
   constructor
   · rintro ⟨x, hxstd, hxsupp⟩
     by_contra ht

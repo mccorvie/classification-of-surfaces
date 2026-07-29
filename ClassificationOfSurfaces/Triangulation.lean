@@ -12,15 +12,14 @@ import Mathlib.Data.List.Rotate
 /-!
 # Finite surface triangulations
 
-The legacy triangulation package consumed by the cell-complex conversion, now fed exclusively by
-the faithful `GeometricTriangulation` object through the compatibility bridge
-(`GeometricTriangulation.toFiniteSurfaceTriangulation`).  Radó's theorem enters as
-`moise_triangulation`, proved from the Moise-route boundaries in
-`ClassificationOfSurfaces/Moise/` (see `docs/MOISE_ROUTE.md`).
+This finite incidence package is consumed by the cell-complex conversion and fed by the faithful
+`GeometricTriangulation` object through
+`GeometricTriangulation.toFiniteSurfaceTriangulation`. Radó's theorem enters as
+`moise_triangulation`, proved in `ClassificationOfSurfaces/Moise/`.
 
-`FiniteSurfaceTriangulation` itself is in the weakness ledger (`docs/KNOWN_WEAK.md`): its
-combinatorial data is not linked to its realization, so build new work on
-`GeometricTriangulation` instead.
+An arbitrary `FiniteSurfaceTriangulation` record does not certify that its incidence data describe
+its stored realization. The classification proof therefore starts from `GeometricTriangulation`
+and uses the incidence certificate constructed by its bridge.
 -/
 
 namespace LeanEval
@@ -516,11 +515,6 @@ theorem incidenceCertificate_of_surfaceIncidence
     exact h.dual_connected f g
 
 end GeometricTriangulation
-
-/-- Compatibility alias for the initial scaffold name. -/
-abbrev FiniteTriangulation (S : Type*) [TopologicalSpace S] :=
-  FiniteSurfaceTriangulation S
-
 
 section EvalHypotheses
 

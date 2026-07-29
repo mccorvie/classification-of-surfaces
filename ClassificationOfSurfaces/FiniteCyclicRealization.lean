@@ -15,10 +15,10 @@ This file gives `FiniteCyclicPresentation` a quotient-space semantics directly f
 face words. A boundary occurrence is a face together with an index in that face's word, so
 repeated signed darts remain distinct polygon sides.
 
-No definition here uses `SurfaceCellComplex.realization`. The pre-realization is the disjoint
-union of the standard polygonal disks indexed by the presentation's faces. Internal sides are
-paired exactly when their signed darts have the same underlying edge; equal signs use the same
-interval parameter and opposite signs use the reversed parameter.
+The pre-realization is the disjoint union of the standard polygonal disks indexed by the
+presentation's faces. Internal sides are paired exactly when their signed darts have the same
+underlying edge; equal signs use the same interval parameter and opposite signs use the reversed
+parameter.
 
 `FiniteCyclicPresentation.IsSurfaceValid` already includes nonempty face boundaries, unlike the
 legacy cell-complex predicate. It therefore supplies the complete occurrence-pairing certificate

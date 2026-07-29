@@ -1,15 +1,14 @@
 ---
-# Feel free to add content and custom Front Matter to this file.
-# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
-
-# layout: home
+layout: home
 usemathjax: true
 ---
 
-Useful links:
+# Classification of Compact Surfaces
 
-* [Zulip chat for Lean](https://leanprover.zulipchat.com/) for coordination
-* [Blueprint]({{ site.url }}/blueprint/)
-* [Blueprint as pdf]({{ site.url }}/blueprint.pdf)
-* [Dependency graph]({{ site.url }}/blueprint/dep_graph_document.html)
-* [Doc pages for this repository]({{ site.url }}/docs/)
+This project proves the Lean Eval classification theorem for compact connected Hausdorff
+topological 2-manifolds with boundary.
+
+- [Interactive blueprint]({{ site.url }}/blueprint/)
+- [Blueprint PDF]({{ site.url }}/blueprint.pdf)
+- [Proof dependency graph]({{ site.url }}/blueprint/dep_graph_document.html)
+- [Generated Lean documentation]({{ site.url }}/docs/)

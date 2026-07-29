@@ -6756,8 +6756,9 @@ chart overlap by the locally finite controlled polygonal replacement over
 `adaptiveOverlapGraphRealization` with tolerance vanishing at the overlap frontier
 (`replaceOnOpen`/`frontierGlue`), refine the straightened trace and the fixed patch complex to
 a common plane subdivision (`CommonSubdivision`, Moise's conditions (e)-(h)), and read off the
-welded presentation.  Per `docs/MOISE_ROUTE.md`, the finite compact-collar theorem must not be
-silently substituted for the vanishing-tolerance construction. -/
+welded presentation. The finite compact-collar theorem cannot replace this vanishing-tolerance
+construction, because continuity across the overlap frontier depends on the error tending to
+zero there. -/
 theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     (c : MoiseChart S) (hc : c.BoundaryFaithful)
     {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)

@@ -839,7 +839,7 @@ theorem faceHomeomorph_side
   apply congrArg (PolygonCell.ofCircle
     ((expand P a).boundary (faceEquiv P a f)).length)
   simpa only [faceCircleHomeomorph, faceWeights_length,
-      faceWeights_sum, Fin.coe_cast] using
+      faceWeights_sum, Fin.val_cast] using
     WeightedCircle.circleHomeomorph_exp_index_add'
       (faceWeights P a f) (faceWeights_positive P a f)
       (faceWeights_ne_nil P a f validP)
@@ -1486,12 +1486,12 @@ theorem exists_eq_expandedPairing
     (validP : P.IsSurfaceValid)
     (q : (expand P a).BoundaryPairing) :
     (∃ (r : P.BoundaryPairing)
-        (hdirection : r.direction = .same)
+        (_hdirection : r.direction = .same)
         (hcompatible : r.target.dart = r.source.dart)
         (k : Fin (dartWeight a r.source.dart)),
         q = expandedPairingSame P a r hcompatible k) ∨
       (∃ (r : P.BoundaryPairing)
-        (hdirection : r.direction = .opposite)
+        (_hdirection : r.direction = .opposite)
         (hcompatible : r.target.dart = r.source.dart.flip)
         (k : Fin (dartWeight a r.source.dart)),
         q = expandedPairingOpposite P a r hcompatible k) := by
@@ -1744,7 +1744,7 @@ theorem unexpandParameter_flip_reverse {n : ℕ} (a : Fin n)
         (unitInterval.symm u) =
       unitInterval.symm (unexpandParameter a d k u) := by
   apply Subtype.ext
-  simp only [unexpandParameter_val, oppositePairedOffset_val,
+  simp only [unexpandParameter_val,
     reverseOffset, Fin.val_cast, Fin.val_rev, dartWeight_flip,
     unitInterval.coe_symm_eq]
   have hk : k.val + 1 ≤ dartWeight a d :=

@@ -22,17 +22,15 @@ namespace ClassificationOfSurfaces
 /-- The raw finite incidence data underlying a Gallier-Xu surface cell complex.
 
 Validity and connectedness are derived from this data by `IsSurfaceValid` and `IsConnected`, rather
-than stored as unconstrained propositions. The realization is still a placeholder until the
-polygon-quotient construction is implemented. -/
+than stored as unconstrained propositions. Its faithful polygonal realization is constructed
+separately from the boundary occurrences. -/
 structure SurfaceCellComplex where
   Face : Type
   Dart : Type
   Vertex : Type
-  realization : Type
   faceFintype : Fintype Face
   dartFintype : Fintype Dart
   vertexFintype : Fintype Vertex
-  realizationTop : TopologicalSpace realization
   inv : Dart ≃ Dart
   source : Dart → Vertex
   target : Dart → Vertex
@@ -44,7 +42,6 @@ structure SurfaceCellComplex where
 attribute [instance] SurfaceCellComplex.faceFintype
 attribute [instance] SurfaceCellComplex.dartFintype
 attribute [instance] SurfaceCellComplex.vertexFintype
-attribute [instance] SurfaceCellComplex.realizationTop
 
 namespace SurfaceCellComplex
 
@@ -96,11 +93,6 @@ def OccursExactlyTwice (K : SurfaceCellComplex) (d : K.Dart) : Prop :=
 def IsBoundaryDart (K : SurfaceCellComplex) (d : K.Dart) : Prop :=
   K.OccursExactlyOnce d
 
-/-- Deprecated accessor spelling for the former stored boundary-dart label. -/
-@[deprecated IsBoundaryDart (since := "2026-07-15")]
-abbrev isBoundaryDart (K : SurfaceCellComplex) (d : K.Dart) : Prop :=
-  K.IsBoundaryDart d
-
 /-- Incidence validity for the stored face-boundary system.
 
 There is at least one face, different faces have different cyclic boundary words, inverse darts are
@@ -131,15 +123,7 @@ theorem occurs_inv_iff (K : SurfaceCellComplex) (d : K.Dart) (o : K.BoundaryOccu
 @[simp]
 theorem isBoundaryDart_inv_iff (K : SurfaceCellComplex) (d : K.Dart) :
     K.IsBoundaryDart (K.inv d) ↔ K.IsBoundaryDart d := by
-  constructor
-  · rintro ⟨o, ho, hunique⟩
-    refine ⟨o, (K.occurs_inv_iff d o).mp ho, ?_⟩
-    intro o' ho'
-    exact hunique o' ((K.occurs_inv_iff d o').mpr ho')
-  · rintro ⟨o, ho, hunique⟩
-    refine ⟨o, (K.occurs_inv_iff d o).mpr ho, ?_⟩
-    intro o' ho'
-    exact hunique o' ((K.occurs_inv_iff d o').mp ho')
+  simp only [IsBoundaryDart, OccursExactlyOnce, K.occurs_inv_iff]
 
 namespace IsSurfaceValid
 
@@ -150,10 +134,8 @@ theorem inv_ne {K : SurfaceCellComplex} (h : K.IsSurfaceValid) (d : K.Dart) :
 
 /-- A non-boundary edge in a valid incidence system occurs exactly twice. -/
 theorem occurs_twice_of_not_boundary {K : SurfaceCellComplex} (h : K.IsSurfaceValid)
-    {d : K.Dart} (hd : ¬K.IsBoundaryDart d) : K.OccursExactlyTwice d := by
-  rcases h.2.2.2 d with hone | htwo
-  · exact False.elim (hd hone)
-  · exact htwo
+    {d : K.Dart} (hd : ¬K.IsBoundaryDart d) : K.OccursExactlyTwice d :=
+  (h.2.2.2 d).resolve_left hd
 
 end IsSurfaceValid
 
@@ -204,19 +186,17 @@ end SignedDart
 
 /-- A single-face polygonal presentation with all edge names based at one vertex.
 
-This constructor is intentionally simple. It is useful for normal-form examples and for testing the
-Gallier-Xu boundary-word API before the full realization/gluing semantics are implemented. -/
+This constructor is intentionally simple. It is useful for normal-form examples and for the
+Gallier-Xu boundary-word API. -/
 def oneFacePresentation (Edge : Type) [Fintype Edge]
     (word : List (SignedDart Edge)) :
     SurfaceCellComplex where
   Face := PUnit
   Dart := SignedDart Edge
   Vertex := PUnit
-  realization := PUnit
   faceFintype := inferInstance
   dartFintype := inferInstance
   vertexFintype := inferInstance
-  realizationTop := inferInstance
   inv := SignedDart.flipEquiv Edge
   source := fun _ => PUnit.unit
   target := fun _ => PUnit.unit
@@ -256,40 +236,17 @@ theorem signedDartOfOrientedEdge_edge {Edge : Type*} (d : OrientedEdge Edge) :
     (signedDartOfOrientedEdge d).edge = d.edge := by
   cases d <;> rfl
 
-/-- Polygonal pre-realization carrier.
-
-This is currently the same carrier as `Realization`; the future quotient model should replace this
-with the finite disjoint union of standard polygons. -/
-abbrev PreRealization (K : SurfaceCellComplex) : Type := K.realization
-
-/-- Placeholder gluing relation on the polygonal pre-realization. -/
-def gluingRel (K : SurfaceCellComplex) : Setoid K.PreRealization :=
-  ⊥
-
-/-- Blueprint spelling for the placeholder gluing relation. -/
-abbrev GluingRel (K : SurfaceCellComplex) : Setoid K.PreRealization :=
-  K.gluingRel
-
-/-- Realization of a surface cell complex as a topological space. -/
-abbrev Realization (K : SurfaceCellComplex) : Type := K.realization
-
-instance (K : SurfaceCellComplex) : TopologicalSpace K.Realization :=
-  K.realizationTop
-
 /-- The sphere presented as two monogons with oppositely oriented copies of one edge.
 
-The stored realization remains a placeholder until the polygonal quotient cutover. The nonempty
-boundary presentation is equivalent to Gallier--Xu's empty-word sphere and is directly compatible
-with the polygonal occurrence adapter. -/
+The nonempty boundary presentation is equivalent to Gallier--Xu's empty-word sphere and is
+directly compatible with the polygonal occurrence adapter. -/
 def sphere : SurfaceCellComplex where
   Face := Bool
   Dart := SignedDart PUnit
   Vertex := PUnit
-  realization := PUnit
   faceFintype := inferInstance
   dartFintype := inferInstance
   vertexFintype := inferInstance
-  realizationTop := inferInstance
   inv := SignedDart.flipEquiv PUnit
   source := fun _ => PUnit.unit
   target := fun _ => PUnit.unit
@@ -364,47 +321,7 @@ theorem sphere_isConnected : sphere.IsConnected := by
       SignedDart.pos PUnit.unit, List.mem_cons_self, Or.inr rfl⟩
   · exact Relation.ReflTransGen.refl
 
-/-- Equivalence generated by the allowed Gallier-Xu cut/glue transformations. -/
-def Equivalent (K L : SurfaceCellComplex) : Prop :=
-  Nonempty (K.Realization ≃ₜ L.Realization)
-
-/-- Quotient congruence for surface-cell realizations.
-
-The implementation is currently hidden behind the placeholder realization. The final proof should
-descend `e` through the two quotient relations using mathlib's quotient-topology API. -/
-noncomputable def realizationCongr {K L : SurfaceCellComplex}
-    (e : K.PreRealization ≃ₜ L.PreRealization)
-    (_hrel : ∀ x y, K.gluingRel x y ↔ L.gluingRel (e x) (e y)) :
-    K.Realization ≃ₜ L.Realization :=
-  e
-
-/-- Relation-only quotient congruence on a fixed pre-space. -/
-noncomputable def realizationCongrRight {X : Type*} [TopologicalSpace X]
-    {r s : Setoid X} (_h : ∀ x y, r x y ↔ s x y) :
-    Quotient r ≃ₜ Quotient s := by
-  exact Homeomorph.Quotient.congrRight _h
-
 end SurfaceCellComplex
-
-/-- Compatibility alias for the initial scaffold name. -/
-abbrev CellComplex :=
-  SurfaceCellComplex
-
-namespace CellComplex
-
-/-- Compatibility spelling for the initial scaffold namespace. -/
-abbrev Realization (K : CellComplex) : Type :=
-  SurfaceCellComplex.Realization K
-
-/-- Compatibility spelling for the initial scaffold sphere complex. -/
-abbrev sphere : CellComplex :=
-  SurfaceCellComplex.sphere
-
-/-- Compatibility spelling for the initial scaffold equivalence relation. -/
-abbrev Equivalent (K L : CellComplex) : Prop :=
-  SurfaceCellComplex.Equivalent K L
-
-end CellComplex
 
 /-- Raw compatibility bridge from the ledgered triangulation record to stored cell-presentation
 data.
@@ -418,11 +335,9 @@ def FiniteSurfaceTriangulation.toCellComplex {S : Type*} [TopologicalSpace S]
   Face := T.Triangle
   Dart := SurfaceCellComplex.SignedDart T.Edge
   Vertex := T.Vertex
-  realization := T.realization
   faceFintype := inferInstance
   dartFintype := inferInstance
   vertexFintype := inferInstance
-  realizationTop := T.realizationTop
   inv := SurfaceCellComplex.SignedDart.flipEquiv T.Edge
   source := fun
     | SurfaceCellComplex.SignedDart.pos e => T.edgeSource e
@@ -455,12 +370,6 @@ theorem FiniteSurfaceTriangulation.toCellComplex_sameEdge_iff
       injection h
     · rintro rfl
       rfl
-
-/-- The realization of the associated cell complex agrees with the triangulation realization. -/
-theorem FiniteSurfaceTriangulation.toCellComplex_realization_homeomorphic
-    {S : Type*} [TopologicalSpace S] (T : FiniteSurfaceTriangulation S) :
-    Nonempty (T.realization ≃ₜ T.toCellComplex.Realization) := by
-  exact ⟨Homeomorph.refl T.realization⟩
 
 namespace FiniteSurfaceTriangulation
 
@@ -601,62 +510,6 @@ theorem toCellComplex_isConnected_of_incidenceCertificate
   exact h.dual_connected f g
 
 end FiniteSurfaceTriangulation
-
-/-- Compatibility spelling for the initial scaffold namespace. -/
-abbrev FiniteTriangulation.toCellComplex {S : Type*} [TopologicalSpace S]
-    (T : FiniteTriangulation S) : CellComplex :=
-  FiniteSurfaceTriangulation.toCellComplex T
-
-/-- A legacy finite-triangulation record produces raw finite cell-presentation data with the same
-stored realization.  No incidence validity or face-edge connectivity is asserted. -/
-theorem finite_triangulation_to_cell_complex
-    {S : Type*} [TopologicalSpace S] (T : FiniteSurfaceTriangulation S) :
-    ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
-  refine ⟨T.toCellComplex, ?_⟩
-  rcases T.homeomorphSurface with ⟨hTS⟩
-  rcases T.toCellComplex_realization_homeomorphic with ⟨hTR⟩
-  exact ⟨hTS.symm.trans hTR⟩
-
-/-- A certified finite triangulation produces a valid, connected cell complex realizing the same
-space. -/
-theorem finite_triangulation_to_valid_connected_cell_complex
-    {S : Type*} [TopologicalSpace S] (T : FiniteSurfaceTriangulation S)
-    (h : T.IncidenceCertificate) :
-    ∃ K : SurfaceCellComplex,
-      Nonempty (S ≃ₜ K.Realization) ∧ K.IsSurfaceValid ∧ K.IsConnected := by
-  refine ⟨T.toCellComplex, ?_,
-    T.toCellComplex_isSurfaceValid_of_incidenceCertificate h,
-    T.toCellComplex_isConnected_of_incidenceCertificate h⟩
-  rcases T.homeomorphSurface with ⟨hTS⟩
-  rcases T.toCellComplex_realization_homeomorphic with ⟨hTR⟩
-  exact ⟨hTS.symm.trans hTR⟩
-
-section EvalHypotheses
-
-open scoped Manifold
-
-variable (S : Type*) [TopologicalSpace S]
-variable [T2Space S] [ConnectedSpace S] [CompactSpace S]
-variable [ChartedSpace (EuclideanHalfSpace 2) S]
-variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
-
-/-- An Eval surface has a finite cell presentation whose incidence data are valid and whose face
-adjacency graph is connected. -/
-theorem compact_surface_homeomorphic_to_valid_connected_cell_complex :
-    ∃ K : SurfaceCellComplex,
-      Nonempty (S ≃ₜ K.Realization) ∧ K.IsSurfaceValid ∧ K.IsConnected :=
-  finite_triangulation_to_valid_connected_cell_complex
-    (compact_eval_surface_finiteSurfaceTriangulation S)
-    (compact_eval_surface_finiteSurfaceTriangulation_incidenceCertificate S)
-
-/-- Compatibility projection of the certified cell-complex handoff. -/
-theorem compact_surface_homeomorphic_to_cell_complex :
-    ∃ K : SurfaceCellComplex, Nonempty (S ≃ₜ K.Realization) := by
-  obtain ⟨K, hK, _hvalid, _hconnected⟩ :=
-    compact_surface_homeomorphic_to_valid_connected_cell_complex S
-  exact ⟨K, hK⟩
-
-end EvalHypotheses
 
 end ClassificationOfSurfaces
 end Topology
