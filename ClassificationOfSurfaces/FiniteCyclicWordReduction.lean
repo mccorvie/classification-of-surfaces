@@ -1619,6 +1619,84 @@ theorem CrosscapOccurrenceForm.exists_normalizationEquivalent_grouped {n : ℕ}
         (hCrosscap.trans
           (NormalizationEquivalent.ofSignedIso targetRotation))⟩
 
+/-- A proof-producing result of acting on one certified pairing feature.  The constructor records
+the exact extracted spelling, its transported validity, and the normalization chain from the
+original word. -/
+inductive ActionablePairReductionResult {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+  | boundary (a : Fin n) (form : BoundaryOccurrenceForm word a)
+      (validHead : (Dyck.oneFace form.headWord).IsSurfaceValid)
+      (equivalent :
+        NormalizationEquivalent
+          ⟨Dyck.oneFace word, valid⟩
+          ⟨Dyck.oneFace form.headWord, validHead⟩)
+  | crosscap (a : Fin n) (form : CrosscapOccurrenceForm word a)
+      (validGrouped : (Dyck.oneFace form.groupedWord).IsSurfaceValid)
+      (equivalent :
+        NormalizationEquivalent
+          ⟨Dyck.oneFace word, valid⟩
+          ⟨Dyck.oneFace form.groupedWord, validGrouped⟩)
+  | handle (a b : Fin n) (form : InterleavedOccurrenceForm word a b)
+      (validGrouped : (Dyck.oneFace form.groupedWord).IsSurfaceValid)
+      (equivalent :
+        NormalizationEquivalent
+          ⟨Dyck.oneFace word, valid⟩
+          ⟨Dyck.oneFace form.groupedWord, validGrouped⟩)
+
+namespace ActionablePairReductionResult
+
+/-- Valid presentation reached by one actionable extraction. -/
+def target {n : ℕ} {word : List (SignedDart (Fin n))}
+    {valid : (Dyck.oneFace word).IsSurfaceValid} :
+    ActionablePairReductionResult word valid → ValidPresentation
+  | .boundary _ form validHead _ =>
+      ⟨Dyck.oneFace form.headWord, validHead⟩
+  | .crosscap _ form validGrouped _ =>
+      ⟨Dyck.oneFace form.groupedWord, validGrouped⟩
+  | .handle _ _ form validGrouped _ =>
+      ⟨Dyck.oneFace form.groupedWord, validGrouped⟩
+
+/-- Normalization equivalence certified by one actionable extraction. -/
+theorem equivalent {n : ℕ} {word : List (SignedDart (Fin n))}
+    {valid : (Dyck.oneFace word).IsSurfaceValid}
+    (result : ActionablePairReductionResult word valid) :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace word, valid⟩ result.target := by
+  cases result with
+  | boundary _ _ _ equivalent => exact equivalent
+  | crosscap _ _ _ equivalent => exact equivalent
+  | handle _ _ _ _ equivalent => exact equivalent
+
+end ActionablePairReductionResult
+
+/-- Execute an actionable pairing feature using the corresponding proof-producing rewrite
+endpoint. -/
+noncomputable def ActionablePairReductionFeature.extract {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (feature : ActionablePairReductionFeature word)
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    ActionablePairReductionResult word valid := by
+  cases feature with
+  | boundary a form =>
+      let witness :=
+        form.exists_normalizationEquivalent_head valid
+      let validHead := Classical.choose witness
+      let equivalent := Classical.choose_spec witness
+      exact .boundary a form validHead equivalent
+  | crosscap a form =>
+      let witness :=
+        form.exists_normalizationEquivalent_grouped valid
+      let validGrouped := Classical.choose witness
+      let equivalent := Classical.choose_spec witness
+      exact .crosscap a form validGrouped equivalent
+  | handle a b form =>
+      let witness :=
+        form.exists_normalizationEquivalent_grouped valid
+      let validGrouped := Classical.choose witness
+      let equivalent := Classical.choose_spec witness
+      exact .handle a b form validGrouped equivalent
+
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
     (word : List (SignedDart (Fin n)))
@@ -1680,6 +1758,16 @@ theorem exists_actionablePairReductionFeature {n : ℕ}
       exact ⟨.crosscap a form⟩
   | opposite a form _ =>
       exact ⟨form.toArc.findActionable valid reduced⟩
+
+/-- Find and execute one certified normalization step on any nonempty pair-reduced valid word. -/
+noncomputable def extractPairReductionFeature {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (valid : (Dyck.oneFace word).IsSurfaceValid)
+    (reduced : IsPairReduced word)
+    (hn : 0 < n) :
+    ActionablePairReductionResult word valid :=
+  (Classical.choice
+    (exists_actionablePairReductionFeature word valid reduced hn)).extract valid
 
 end Pairing
 
