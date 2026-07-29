@@ -660,6 +660,154 @@ theorem hasValidUsedMultiplicities_of_isSurfaceValid {n : ℕ}
   intro a _ha
   simpa only [Dyck.oneFace_edgeMultiplicity] using valid.2.2.2 a
 
+/-- Residual surface multiplicities force the edge of a displayed inverse pair to occur nowhere
+else in its tail. -/
+theorem cancellablePair_edge_not_mem_tail_of_usedMultiplicities {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (pair : CancellablePair word)
+    (multiplicities : HasValidUsedMultiplicities word) :
+    pair.edge ∉ pair.tail.map edgeOfDart := by
+  have hcount :
+      (word.map edgeOfDart).count pair.edge =
+        2 + (pair.tail.map edgeOfDart).count pair.edge := by
+    have hrotatedCount :=
+      (pair.rotated.map edgeOfDart).perm.count_eq pair.edge
+    rw [hrotatedCount]
+    cases pair.negativeFirst <;>
+      simp [inversePair, edgeOfDart] <;>
+      omega
+  have hedge : pair.edge ∈ word.map edgeOfDart :=
+    List.count_pos_iff.mp (by rw [hcount]; omega)
+  have hmultiplicity := multiplicities pair.edge hedge
+  intro htail
+  have hpositive :
+      0 < (pair.tail.map edgeOfDart).count pair.edge :=
+    List.count_pos_iff.mpr htail
+  omega
+
+/-- Deleting a displayed inverse pair preserves the count of every edge which remains in the
+tail. -/
+theorem cancellablePair_count_tail_of_mem {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (pair : CancellablePair word)
+    (multiplicities : HasValidUsedMultiplicities word)
+    (e : Fin n)
+    (he : e ∈ pair.tail.map edgeOfDart) :
+    (word.map edgeOfDart).count e =
+      (pair.tail.map edgeOfDart).count e := by
+  have hpairAbsent :=
+    cancellablePair_edge_not_mem_tail_of_usedMultiplicities
+      pair multiplicities
+  have hne : pair.edge ≠ e := by
+    intro h
+    subst e
+    exact hpairAbsent he
+  have hcount :=
+    (pair.rotated.map edgeOfDart).perm.count_eq e
+  cases hnegative : pair.negativeFirst <;>
+    simp [inversePair, hnegative, hne] at hcount <;>
+    exact hcount
+
+/-- Residual surface multiplicities survive deletion of a displayed inverse pair. -/
+theorem cancellablePair_hasValidUsedMultiplicities_tail {n : ℕ}
+    {word : List (SignedDart (Fin n))}
+    (pair : CancellablePair word)
+    (multiplicities : HasValidUsedMultiplicities word) :
+    HasValidUsedMultiplicities pair.tail := by
+  intro e he
+  rw [← cancellablePair_count_tail_of_mem
+    pair multiplicities e he]
+  apply multiplicities e
+  exact List.count_pos_iff.mp
+    (by
+      rw [cancellablePair_count_tail_of_mem
+        pair multiplicities e he]
+      exact List.count_pos_iff.mpr he)
+
+/-- Certified result of repeatedly deleting adjacent inverse pairs from a residual word.  The
+ambient edge type is intentionally retained: names belonging to already-extracted blocks may be
+absent from both the input and output residual words. -/
+structure ResidualPairReduction {n : ℕ}
+    (sourceWord : List (SignedDart (Fin n))) where
+  reducedWord : List (SignedDart (Fin n))
+  multiplicities : HasValidUsedMultiplicities reducedWord
+  reduced : IsPairReduced reducedWord
+  count_eq_of_mem :
+    ∀ e, e ∈ reducedWord.map edgeOfDart →
+      (sourceWord.map edgeOfDart).count e =
+        (reducedWord.map edgeOfDart).count e
+  length_le : reducedWord.length ≤ sourceWord.length
+
+/-- Fuel-bounded residual inverse-pair cancellation. -/
+noncomputable def reduceResidualPairsFuel (fuel : ℕ) {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (multiplicities : HasValidUsedMultiplicities word) :
+    word.length ≤ fuel → ResidualPairReduction word := by
+  classical
+  intro hbound
+  by_cases hpairs : Nonempty (CancellablePair word)
+  · let pair := Classical.choice hpairs
+    have hlength :
+        word.length = 2 + pair.tail.length := by
+      have hrotatedLength := pair.rotated.perm.length_eq
+      cases hnegative : pair.negativeFirst
+      · have hrotatedLength' :
+            word.length = pair.tail.length + 1 + 1 := by
+          simpa [inversePair, hnegative] using hrotatedLength
+        omega
+      · have hrotatedLength' :
+            word.length = pair.tail.length + 1 + 1 := by
+          simpa [inversePair, hnegative] using hrotatedLength
+        omega
+    have hfuelPositive : 0 < fuel := by
+      omega
+    have htailBound : pair.tail.length ≤ fuel - 1 := by
+      omega
+    let tailMultiplicities :=
+      cancellablePair_hasValidUsedMultiplicities_tail
+        pair multiplicities
+    let result :=
+      reduceResidualPairsFuel (fuel - 1)
+        pair.tail tailMultiplicities htailBound
+    exact
+      { reducedWord := result.reducedWord
+        multiplicities := result.multiplicities
+        reduced := result.reduced
+        count_eq_of_mem := by
+          intro e he
+          have htail :
+              e ∈ pair.tail.map edgeOfDart := by
+            apply List.count_pos_iff.mp
+            rw [result.count_eq_of_mem e he]
+            exact List.count_pos_iff.mpr he
+          exact
+            (cancellablePair_count_tail_of_mem
+              pair multiplicities e htail).trans
+              (result.count_eq_of_mem e he)
+        length_le := by
+          exact result.length_le.trans (by omega) }
+  · exact
+      { reducedWord := word
+        multiplicities := multiplicities
+        reduced := ⟨fun pair ↦ hpairs ⟨pair⟩⟩
+        count_eq_of_mem := by
+          intro _ _
+          rfl
+        length_le := le_refl _ }
+termination_by fuel
+decreasing_by
+  apply Nat.sub_lt
+  · exact hfuelPositive
+  · omega
+
+/-- Repeatedly delete every adjacent inverse pair from a residual word while retaining its ambient
+edge namespace and the surface multiplicities of all surviving names. -/
+noncomputable def reduceResidualPairs {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (multiplicities : HasValidUsedMultiplicities word) :
+    ResidualPairReduction word :=
+  reduceResidualPairsFuel word.length word multiplicities (le_refl _)
+
 /-- A known surface multiplicity classifies the two signed counts of an edge. -/
 theorem exists_edgePattern_of_multiplicity {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n)
