@@ -5466,6 +5466,20 @@ theorem residualEdges_lowerTokensAvoiding_map_restoreEdge
       rw [token.residualEdges_lowerAvoiding_map_restoreEdge,
         ih]
 
+/-- Lowering an absent ambient edge preserves the number of residual darts. -/
+theorem residualDarts_length_lowerTokensAvoiding {n : ℕ}
+    (a : Fin (n + 1))
+    (tokens : List (ReductionToken (n + 1)))
+    (ha : a ∉ (expand tokens).map edgeOfDart) :
+    (residualDarts
+      (lowerTokensAvoiding a tokens ha)).length =
+        (residualDarts tokens).length := by
+  have hrestore :=
+    residualEdges_lowerTokensAvoiding_map_restoreEdge
+      a tokens ha
+  have hlength := congrArg List.length hrestore
+  simpa using hlength
+
 /-- Re-embedding all protected edge names after lowering a marked word recovers the source
 protected namespace exactly. -/
 theorem protectedEdges_lowerTokensAvoiding_map_restoreEdge
@@ -5694,6 +5708,35 @@ theorem protectedNames_nodup_of_perm {n : ℕ}
     (permuted : tokens.Perm target) :
     (protectedNames target).Nodup :=
   (protectedNames_perm permuted).nodup_iff.mp nodup
+
+/-- Permuting marked tokens preserves nonemptiness of the protected-name spine. -/
+theorem protectedNames_ne_nil_of_perm {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (hne : protectedNames tokens ≠ [])
+    (permuted : tokens.Perm target) :
+    protectedNames target ≠ [] := by
+  intro htarget
+  apply hne
+  have hlength :=
+    (protectedNames_perm permuted).length_eq
+  apply List.length_eq_zero_iff.mp
+  rw [hlength, htarget]
+  rfl
+
+/-- Permuting atomic marked tokens preserves the number of residual darts. -/
+theorem residualDarts_length_of_perm {n : ℕ}
+    {tokens target : List (ReductionToken n)}
+    (permuted : tokens.Perm target) :
+    (residualDarts target).length =
+      (residualDarts tokens).length := by
+  have hperm :
+      (residualDarts tokens).Perm
+        (residualDarts target) := by
+    simpa [residualDarts, List.flatMap] using
+      (List.Perm.flatMap permuted
+        (f := residualWord) (g := residualWord)
+        (fun _ _ => List.Perm.refl _))
+  exact hperm.length_eq.symm
 
 /-- Lowering an absent ambient edge preserves duplicate-freeness of all protected names. -/
 theorem protectedNames_nodup_lowerTokensAvoiding {n : ℕ}
@@ -7273,6 +7316,20 @@ theorem edge_not_mem_between_and_tail {n : ℕ}
       List.count_pos_iff.mpr hmem
     omega
 
+/-- A lifted inverse pair contributes exactly two residual darts beyond its marked tail. -/
+theorem residualDarts_length_eq {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens) :
+    (ReductionToken.residualDarts tokens).length =
+      2 +
+        (ReductionToken.residualDarts
+          pair.tailTokens).length := by
+  have hlength :=
+    (ReductionToken.residualEdges_isRotated
+      pair.rotated).perm.length_eq
+  simp [pair.residual_between] at hlength
+  omega
+
 end MarkedResidualCancellablePair
 
 /-- A residual inverse pair surrounding one extracted boundary singleton.  Reclassifying the
@@ -8686,8 +8743,33 @@ theorem targetTokens_protectedNames_nodup {n : ℕ}
         contraction.first_ne_second,
       hlowered,
       Cancellation.restoreEdge_lowerEdge
-        contraction.second contraction.first
+      contraction.second contraction.first
         contraction.first_ne_second⟩
+
+/-- Boundary-subdivision contraction preserves the number of residual darts. -/
+theorem residualDarts_targetTokens_length_eq {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (contraction : MarkedBoundaryPairContraction tokens) :
+    (ReductionToken.residualDarts
+      contraction.targetTokens).length =
+        (ReductionToken.residualDarts tokens).length := by
+  have hsource :=
+    (ReductionToken.residualEdges_isRotated
+      contraction.rotated).perm.length_eq
+  have hsource' :
+      (ReductionToken.residualDarts tokens).length =
+        (ReductionToken.residualDarts
+          contraction.tailTokens).length := by
+    simpa using hsource
+  have hlower :=
+    ReductionToken.residualDarts_length_lowerTokensAvoiding
+      contraction.second contraction.tailTokens
+      contraction.second_not_mem_tail
+  rw [targetTokens]
+  simp only [ReductionToken.residualDarts_cons,
+    ReductionToken.residualWord_extracted,
+    List.nil_append]
+  exact hlower.trans hsource'.symm
 
 end MarkedBoundaryPairContraction
 
@@ -10854,6 +10936,21 @@ noncomputable def extract {n : ℕ}
 
 end MarkedActionablePairReductionFeature
 
+namespace MarkedCancellablePair
+
+/-- Exact lowered marked endpoint of an adjacent inverse-pair cancellation. -/
+noncomputable def cancellationTargetTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedCancellablePair tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    List (ReductionToken n) :=
+  ReductionToken.lowerTokensAvoiding pair.edge
+    pair.tailTokens (pair.edge_not_mem_tailTokens valid)
+
+end MarkedCancellablePair
+
 /-- Proof-producing cancellation of a token-adjacent inverse pair, retaining the lowered marked
 target rather than flattening previously extracted blocks. -/
 structure MarkedCancellationResult {n : ℕ}
@@ -10862,20 +10959,25 @@ structure MarkedCancellationResult {n : ℕ}
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
     Type where
-  targetTokens : List (ReductionToken n)
   targetValid :
     (Dyck.oneFace
-      (ReductionToken.expand targetTokens)).IsSurfaceValid
+      (ReductionToken.expand
+        (pair.cancellationTargetTokens valid))).IsSurfaceValid
   targetSeparated :
-    ReductionToken.IsSeparated targetTokens
+    ReductionToken.IsSeparated
+      (pair.cancellationTargetTokens valid)
   targetClassified :
-    ReductionToken.AllClassified targetTokens
+    ReductionToken.AllClassified
+      (pair.cancellationTargetTokens valid)
   targetProtectedNodup :
-    (ReductionToken.protectedNames targetTokens).Nodup
+    (ReductionToken.protectedNames
+      (pair.cancellationTargetTokens valid)).Nodup
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
-      ⟨Dyck.oneFace (ReductionToken.expand targetTokens),
+      ⟨Dyck.oneFace
+        (ReductionToken.expand
+          (pair.cancellationTargetTokens valid)),
         targetValid⟩
 
 namespace MarkedCancellablePair
@@ -10896,9 +10998,7 @@ noncomputable def cancel {n : ℕ}
       ReductionToken.expand pair.tailTokens ≠ []) :
     MarkedCancellationResult pair valid := by
   let ha := pair.edge_not_mem_tailTokens valid
-  let targetTokens :=
-    ReductionToken.lowerTokensAvoiding
-      pair.edge pair.tailTokens ha
+  let targetTokens := pair.cancellationTargetTokens valid
   have tailClassified :
       ReductionToken.AllClassified pair.tailTokens := by
     have displayed :=
@@ -10907,17 +11007,29 @@ noncomputable def cancel {n : ℕ}
     exact displayed token (by simp [htoken])
   have targetClassified :
       ReductionToken.AllClassified targetTokens :=
-    tailClassified.lowerTokensAvoiding
-      pair.edge pair.tailTokens ha
+    by
+      dsimp [targetTokens,
+        MarkedCancellablePair.cancellationTargetTokens]
+      exact
+        tailClassified.lowerTokensAvoiding
+          pair.edge pair.tailTokens ha
   have targetSeparated :
       ReductionToken.IsSeparated targetTokens :=
-    (pair.tailTokens_isSeparated separated).lowerTokensAvoiding
-      pair.edge pair.tailTokens ha
+    by
+      dsimp [targetTokens,
+        MarkedCancellablePair.cancellationTargetTokens]
+      exact
+        (pair.tailTokens_isSeparated separated).lowerTokensAvoiding
+          pair.edge pair.tailTokens ha
   have targetProtectedNodup :
       (ReductionToken.protectedNames targetTokens).Nodup :=
-    ReductionToken.protectedNames_nodup_lowerTokensAvoiding
-      pair.edge pair.tailTokens ha
-      (pair.tailTokens_protectedNames_nodup protectedNodup)
+    by
+      dsimp [targetTokens,
+        MarkedCancellablePair.cancellationTargetTokens]
+      exact
+        ReductionToken.protectedNames_nodup_lowerTokensAvoiding
+          pair.edge pair.tailTokens ha
+          (pair.tailTokens_protectedNames_nodup protectedNodup)
   have htarget :
       ReductionToken.expand targetTokens =
         Cancellation.lowerTail pair.edge
@@ -10957,8 +11069,8 @@ noncomputable def cancel {n : ℕ}
       rw [htarget]
       exact validTarget
     refine
-      { targetTokens := targetTokens
-        targetValid := targetValid
+      { targetValid := by
+          simpa [targetTokens] using targetValid
         targetSeparated := targetSeparated
         targetClassified := targetClassified
         targetProtectedNodup := targetProtectedNodup
@@ -10968,7 +11080,10 @@ noncomputable def cancel {n : ℕ}
         (ReductionToken.expand tokens) pair.edge
         (ReductionToken.expand pair.tailTokens)
         hrotated ha hlower valid
-    simpa only [htarget] using hequivalent
+    have htargetTokens :
+        pair.cancellationTargetTokens valid =
+          targetTokens := rfl
+    simpa only [htargetTokens, htarget] using hequivalent
   · have hrotated :
         (ReductionToken.expand tokens).IsRotated
           ([.neg pair.edge, .pos pair.edge] ++
@@ -10998,8 +11113,8 @@ noncomputable def cancel {n : ℕ}
       rw [htarget]
       exact validTarget
     refine
-      { targetTokens := targetTokens
-        targetValid := targetValid
+      { targetValid := by
+          simpa [targetTokens] using targetValid
         targetSeparated := targetSeparated
         targetClassified := targetClassified
         targetProtectedNodup := targetProtectedNodup
@@ -11009,7 +11124,10 @@ noncomputable def cancel {n : ℕ}
         (ReductionToken.expand tokens) pair.edge
         (ReductionToken.expand pair.tailTokens)
         hrotated ha hlower valid
-    simpa only [htarget] using hequivalent
+    have htargetTokens :
+        pair.cancellationTargetTokens valid =
+          targetTokens := rfl
+    simpa only [htargetTokens, htarget] using hequivalent
 
 end MarkedCancellablePair
 
@@ -11680,6 +11798,902 @@ noncomputable def contract {n : ℕ}
   simpa only [htarget] using hchain
 
 end MarkedBoundaryPairContraction
+
+/-- One certified transition which strictly shortens the protected interval of a lifted residual
+pair while preserving the total number of residual darts. -/
+structure MarkedResidualPairShortening {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens) where
+  targetEdgeCount : ℕ
+  targetTokens : List (ReductionToken targetEdgeCount)
+  targetPair :
+    MarkedResidualCancellablePair targetTokens
+  targetState : MarkedExecutionState targetTokens
+  targetProtectedNonempty :
+    ReductionToken.protectedNames targetTokens ≠ []
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens),
+        state.valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand targetTokens),
+        targetState.valid⟩
+  residualLengthEq :
+    (ReductionToken.residualDarts targetTokens).length =
+      (ReductionToken.residualDarts tokens).length
+  betweenLengthLt :
+    targetPair.betweenTokens.length <
+      pair.betweenTokens.length
+
+namespace MarkedResidualPairShortening
+
+/-- Prepend a residual- and interval-length-preserving marked transition to a strict shortening. -/
+def prepend {n m : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    {middleTokens : List (ReductionToken m)}
+    (middlePair :
+      MarkedResidualCancellablePair middleTokens)
+    (middleState : MarkedExecutionState middleTokens)
+    (stepEquivalent :
+      NormalizationEquivalent
+        ⟨Dyck.oneFace (ReductionToken.expand tokens),
+          state.valid⟩
+        ⟨Dyck.oneFace
+          (ReductionToken.expand middleTokens),
+          middleState.valid⟩)
+    (residualLengthEq :
+      (ReductionToken.residualDarts middleTokens).length =
+        (ReductionToken.residualDarts tokens).length)
+    (betweenLengthEq :
+      middlePair.betweenTokens.length =
+        pair.betweenTokens.length)
+    (tail :
+      MarkedResidualPairShortening middlePair middleState) :
+    MarkedResidualPairShortening pair state where
+  targetEdgeCount := tail.targetEdgeCount
+  targetTokens := tail.targetTokens
+  targetPair := tail.targetPair
+  targetState := tail.targetState
+  targetProtectedNonempty :=
+    tail.targetProtectedNonempty
+  equivalent := stepEquivalent.trans tail.equivalent
+  residualLengthEq :=
+    tail.residualLengthEq.trans residualLengthEq
+  betweenLengthLt := by
+    rw [← betweenLengthEq]
+    exact tail.betweenLengthLt
+
+end MarkedResidualPairShortening
+
+/-- One certified transition which preserves both residual length and protected-interval length. -/
+structure MarkedResidualPairRotation {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens) where
+  targetTokens : List (ReductionToken n)
+  targetPair :
+    MarkedResidualCancellablePair targetTokens
+  targetState : MarkedExecutionState targetTokens
+  targetProtectedNonempty :
+    ReductionToken.protectedNames targetTokens ≠ []
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens),
+        state.valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand targetTokens),
+        targetState.valid⟩
+  residualLengthEq :
+    (ReductionToken.residualDarts targetTokens).length =
+      (ReductionToken.residualDarts tokens).length
+  betweenLengthEq :
+    targetPair.betweenTokens.length =
+      pair.betweenTokens.length
+
+namespace MarkedResidualCancellablePair
+
+/-- Move a leading raw boundary atom behind a nonempty protected suffix without changing either
+the residual or protected-interval measure. -/
+noncomputable def rotateBoundaryAtom {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (hole : Fin n) (holeNegative : Bool)
+    (insideTokens : List (ReductionToken n))
+    (hbetween :
+      pair.betweenTokens =
+        .extracted (.boundary hole holeNegative) ::
+          insideTokens) :
+    MarkedResidualPairRotation pair state := by
+  cases n with
+  | zero =>
+      exact Fin.elim0 hole
+  | succ k =>
+      let step :=
+        pair.toBoundaryAtomRotateOfValid hole holeNegative
+          insideTokens hbetween state.valid
+      have stepInside : step.insideTokens = insideTokens := rfl
+      let execution :=
+        step.rotate state.separated state.classified
+          state.protectedNodup state.valid
+      let targetPair := step.targetPair
+      refine
+        { targetTokens := step.targetTokens
+          targetPair := targetPair
+          targetState :=
+            { valid := execution.targetValid
+              separated := execution.targetSeparated
+              classified := execution.targetClassified
+              protectedNodup :=
+                execution.targetProtectedNodup }
+          targetProtectedNonempty :=
+            ReductionToken.protectedNames_ne_nil_of_perm
+              protectedNonempty step.perm_targetTokens
+          equivalent := execution.equivalent
+          residualLengthEq :=
+            ReductionToken.residualDarts_length_of_perm
+              step.perm_targetTokens
+          betweenLengthEq := by
+            rw [hbetween]
+            dsimp [targetPair,
+              MarkedBoundaryAtomRotate.targetPair]
+            simp [stepInside] }
+
+@[simp]
+theorem rotateBoundaryAtom_targetPair_betweenTokens {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (hole : Fin n) (holeNegative : Bool)
+    (insideTokens : List (ReductionToken n))
+    (hbetween :
+      pair.betweenTokens =
+        .extracted (.boundary hole holeNegative) ::
+          insideTokens) :
+    (pair.rotateBoundaryAtom state protectedNonempty
+        hole holeNegative insideTokens hbetween).targetPair.betweenTokens =
+      insideTokens ++
+        [.extracted (.boundary hole holeNegative)] := by
+  cases n with
+  | zero =>
+      exact Fin.elim0 hole
+  | succ k =>
+      rfl
+
+/-- Commute a completed boundary loop out of a lifted pair, producing a strict interval
+shortening. -/
+noncomputable def shortenBoundaryBlock {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (carrier hole : Fin (n + 1))
+    (carrierNegative holeNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.boundary carrier hole
+          carrierNegative holeNegative) ::
+          insideTokens) :
+    MarkedResidualPairShortening pair state := by
+  have residualInside :
+      ReductionToken.residualDarts insideTokens = [] := by
+    have h := pair.residual_between
+    rw [hbetween] at h
+    simpa using h
+  let step :=
+    pair.toBoundaryBlockCommuteOfValid carrier hole
+      carrierNegative holeNegative insideTokens
+      hbetween state.valid
+  have stepInside : step.insideTokens = insideTokens := rfl
+  have stepOutside :
+      step.outsideTokens = pair.tailTokens := rfl
+  let execution :=
+    step.commute state.separated state.classified
+      state.protectedNodup state.valid
+  let targetPair := step.targetPair residualInside
+  refine
+    { targetEdgeCount := n + 1
+      targetTokens := step.targetTokens
+      targetPair := targetPair
+      targetState :=
+        { valid := execution.targetValid
+          separated := execution.targetSeparated
+          classified := execution.targetClassified
+          protectedNodup :=
+            execution.targetProtectedNodup }
+      targetProtectedNonempty :=
+        ReductionToken.protectedNames_ne_nil_of_perm
+          protectedNonempty step.perm_targetTokens
+      equivalent := execution.equivalent
+      residualLengthEq := ?_
+      betweenLengthLt := ?_ }
+  · rw [targetPair.residualDarts_length_eq,
+      pair.residualDarts_length_eq]
+    dsimp [targetPair,
+      MarkedBoundaryBlockCommute.targetPair]
+    simp [stepOutside]
+  · rw [hbetween]
+    dsimp [targetPair,
+      MarkedBoundaryBlockCommute.targetPair]
+    simp [stepInside]
+
+/-- Commute a completed crosscap out of a lifted pair, producing a strict interval shortening. -/
+noncomputable def shortenCrosscapBlock {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (carrier : Fin (n + 1))
+    (carrierNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.crosscap carrier
+          carrierNegative) ::
+          insideTokens) :
+    MarkedResidualPairShortening pair state := by
+  have residualInside :
+      ReductionToken.residualDarts insideTokens = [] := by
+    have h := pair.residual_between
+    rw [hbetween] at h
+    simpa using h
+  let step :=
+    pair.toCrosscapBlockCommuteOfValid carrier
+      carrierNegative insideTokens hbetween state.valid
+  have stepInside : step.insideTokens = insideTokens := rfl
+  have stepOutside :
+      step.outsideTokens = pair.tailTokens := rfl
+  let execution :=
+    step.commute state.separated state.classified
+      state.protectedNodup state.valid
+  let targetPair := step.targetPair residualInside
+  refine
+    { targetEdgeCount := n + 1
+      targetTokens := step.targetTokens
+      targetPair := targetPair
+      targetState :=
+        { valid := execution.targetValid
+          separated := execution.targetSeparated
+          classified := execution.targetClassified
+          protectedNodup :=
+            execution.targetProtectedNodup }
+      targetProtectedNonempty := by
+        simp [step, MarkedCrosscapBlockCommute.targetTokens,
+          CompletedBlock.names]
+      equivalent := execution.equivalent
+      residualLengthEq := ?_
+      betweenLengthLt := ?_ }
+  · rw [targetPair.residualDarts_length_eq,
+      pair.residualDarts_length_eq]
+    dsimp [targetPair,
+      MarkedCrosscapBlockCommute.targetPair]
+    simp [stepOutside, inverseWord_length]
+  · rw [hbetween]
+    dsimp [targetPair,
+      MarkedCrosscapBlockCommute.targetPair]
+    simp [stepInside]
+
+/-- Commute a completed handle out of a lifted pair, producing a strict interval shortening. -/
+noncomputable def shortenHandleBlock {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (first second : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.handle first second) ::
+          insideTokens) :
+    MarkedResidualPairShortening pair state := by
+  have residualInside :
+      ReductionToken.residualDarts insideTokens = [] := by
+    have h := pair.residual_between
+    rw [hbetween] at h
+    simpa using h
+  let step :=
+    pair.toHandleBlockCommuteOfValid first second
+      insideTokens hbetween state.valid
+  have stepInside : step.insideTokens = insideTokens := rfl
+  have stepOutside :
+      step.outsideTokens = pair.tailTokens := rfl
+  let execution :=
+    step.commute state.separated state.classified
+      state.protectedNodup state.valid
+  let targetPair := step.targetPair residualInside
+  refine
+    { targetEdgeCount := n + 1
+      targetTokens := step.targetTokens
+      targetPair := targetPair
+      targetState :=
+        { valid := execution.targetValid
+          separated := execution.targetSeparated
+          classified := execution.targetClassified
+          protectedNodup :=
+            execution.targetProtectedNodup }
+      targetProtectedNonempty :=
+        ReductionToken.protectedNames_ne_nil_of_perm
+          protectedNonempty step.perm_targetTokens
+      equivalent := execution.equivalent
+      residualLengthEq := ?_
+      betweenLengthLt := ?_ }
+  · rw [targetPair.residualDarts_length_eq,
+      pair.residualDarts_length_eq]
+    dsimp [targetPair,
+      MarkedHandleBlockCommute.targetPair]
+    simp [stepOutside]
+  · rw [hbetween]
+    dsimp [targetPair,
+      MarkedHandleBlockCommute.targetPair]
+    simp [stepInside]
+
+/-- Contract two adjacent raw boundary atoms, producing a strict interval shortening in the
+lowered ambient edge type. -/
+noncomputable def shortenBoundaryPair {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (first second : Fin (n + 1))
+    (firstNegative secondNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        [.extracted (.boundary first firstNegative),
+          .extracted (.boundary second secondNegative)] ++
+          insideTokens) :
+    MarkedResidualPairShortening pair state := by
+  let step :=
+    pair.toBoundaryPairContraction first second
+      firstNegative secondNegative insideTokens hbetween
+      state.separated state.protectedNodup
+  let execution :=
+    step.contract state.separated state.classified
+      state.protectedNodup state.valid
+  let targetPair :=
+    pair.boundaryContractionTargetPair first second
+      firstNegative secondNegative insideTokens hbetween
+      state.separated state.protectedNodup
+  refine
+    { targetEdgeCount := n
+      targetTokens := step.targetTokens
+      targetPair := targetPair
+      targetState :=
+        { valid := execution.targetValid
+          separated := execution.targetSeparated
+          classified := execution.targetClassified
+          protectedNodup :=
+            execution.targetProtectedNodup }
+      targetProtectedNonempty := by
+        simp [step,
+          MarkedBoundaryPairContraction.targetTokens,
+          ExtractedBlock.edges]
+      equivalent := execution.equivalent
+      residualLengthEq :=
+        step.residualDarts_targetTokens_length_eq
+      betweenLengthLt :=
+        pair.boundaryContractionTargetPair_between_length_lt
+          first second firstNegative secondNegative
+          insideTokens hbetween state.separated
+          state.protectedNodup }
+
+end MarkedResidualCancellablePair
+
+/-- Certified elimination of one lifted residual inverse pair.  The target may have a smaller
+ambient edge type after P1 cancellation or boundary contraction, but always has strictly fewer
+residual darts and retains at least one protected name. -/
+structure MarkedResidualPairResolution {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens) where
+  targetEdgeCount : ℕ
+  targetTokens : List (ReductionToken targetEdgeCount)
+  targetState : MarkedExecutionState targetTokens
+  targetProtectedNonempty :
+    ReductionToken.protectedNames targetTokens ≠ []
+  equivalent :
+    NormalizationEquivalent
+      ⟨Dyck.oneFace (ReductionToken.expand tokens),
+        state.valid⟩
+      ⟨Dyck.oneFace
+        (ReductionToken.expand targetTokens),
+        targetState.valid⟩
+  residualLengthLt :
+    (ReductionToken.residualDarts targetTokens).length <
+      (ReductionToken.residualDarts tokens).length
+
+namespace MarkedResidualPairResolution
+
+/-- Prepend a residual-length-preserving marked transition to a completed pair resolution. -/
+def prepend {n m : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    {middleTokens : List (ReductionToken m)}
+    (middlePair :
+      MarkedResidualCancellablePair middleTokens)
+    (middleState : MarkedExecutionState middleTokens)
+    (stepEquivalent :
+      NormalizationEquivalent
+        ⟨Dyck.oneFace (ReductionToken.expand tokens),
+          state.valid⟩
+        ⟨Dyck.oneFace
+          (ReductionToken.expand middleTokens),
+          middleState.valid⟩)
+    (residualLengthEq :
+      (ReductionToken.residualDarts middleTokens).length =
+        (ReductionToken.residualDarts tokens).length)
+    (tail :
+      MarkedResidualPairResolution middlePair middleState) :
+    MarkedResidualPairResolution pair state where
+  targetEdgeCount := tail.targetEdgeCount
+  targetTokens := tail.targetTokens
+  targetState := tail.targetState
+  targetProtectedNonempty :=
+    tail.targetProtectedNonempty
+  equivalent := stepEquivalent.trans tail.equivalent
+  residualLengthLt := by
+    rw [← residualLengthEq]
+    exact tail.residualLengthLt
+
+end MarkedResidualPairResolution
+
+namespace MarkedResidualCancellablePair
+
+/-- Eliminate an adjacent lifted pair by ordinary cancellation.  A protected-name witness rules
+out the exceptional empty-tail sphere endpoint. -/
+noncomputable def resolveAdjacent {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (hempty : pair.betweenTokens = []) :
+    MarkedResidualPairResolution pair state := by
+  cases n with
+  | zero =>
+      exact Fin.elim0 pair.edge
+  | succ k =>
+      let adjacent := pair.toAdjacent hempty
+      have tailProtectedNonempty :
+          ReductionToken.protectedNames
+              adjacent.tailTokens ≠ [] := by
+        have hlength :=
+          (ReductionToken.protectedNames_isRotated
+            adjacent.rotated).perm.length_eq
+        have hlength' :
+            (ReductionToken.protectedNames tokens).length =
+              (ReductionToken.protectedNames
+                adjacent.tailTokens).length := by
+          simpa using hlength
+        intro htail
+        apply protectedNonempty
+        apply List.length_eq_zero_iff.mp
+        rw [hlength', htail]
+        rfl
+      have tail_nonempty :
+          ReductionToken.expand adjacent.tailTokens ≠ [] := by
+        intro hexpand
+        cases hnames :
+            ReductionToken.protectedNames
+              adjacent.tailTokens with
+        | nil =>
+            exact tailProtectedNonempty hnames
+        | cons edge edges =>
+            have hedgeNames :
+                edge ∈
+                  ReductionToken.protectedNames
+                    adjacent.tailTokens := by
+              simp [hnames]
+            have hedgeProtected :
+                edge ∈
+                  ReductionToken.protectedEdges
+                    adjacent.tailTokens :=
+              (ReductionToken.mem_protectedNames_iff_mem_protectedEdges
+                adjacent.tailTokens edge).mp hedgeNames
+            have hedgeExpand :
+                edge ∈
+                  (ReductionToken.expand
+                    adjacent.tailTokens).map edgeOfDart :=
+              (ReductionToken.mem_map_edgeOfDart_expand_iff
+                adjacent.tailTokens edge).mpr
+                  (Or.inr hedgeProtected)
+            simpa [hexpand] using hedgeExpand
+      let execution :=
+        adjacent.cancel state.separated state.classified
+          state.protectedNodup state.valid tail_nonempty
+      let targetTokens :=
+        adjacent.cancellationTargetTokens state.valid
+      have targetProtectedNonempty :
+          ReductionToken.protectedNames targetTokens ≠ [] := by
+        intro htarget
+        have hrestore :=
+          ReductionToken.protectedNames_lowerTokensAvoiding_map_restoreEdge
+            adjacent.edge adjacent.tailTokens
+              (adjacent.edge_not_mem_tailTokens state.valid)
+        change
+          (ReductionToken.protectedNames targetTokens).map
+              (Cancellation.restoreEdge adjacent.edge) =
+            ReductionToken.protectedNames
+              adjacent.tailTokens at hrestore
+        rw [htarget] at hrestore
+        exact tailProtectedNonempty (by simpa using hrestore.symm)
+      refine
+        { targetEdgeCount := k
+          targetTokens := targetTokens
+          targetState :=
+            { valid := execution.targetValid
+              separated := execution.targetSeparated
+              classified := execution.targetClassified
+              protectedNodup :=
+                execution.targetProtectedNodup }
+          targetProtectedNonempty := targetProtectedNonempty
+          equivalent := execution.equivalent
+          residualLengthLt := ?_ }
+      have hrestore :=
+        ReductionToken.residualEdges_lowerTokensAvoiding_map_restoreEdge
+          adjacent.edge adjacent.tailTokens
+            (adjacent.edge_not_mem_tailTokens state.valid)
+      have htargetLength :
+          (ReductionToken.residualDarts targetTokens).length =
+            (ReductionToken.residualDarts
+              adjacent.tailTokens).length := by
+        have hlength := congrArg List.length hrestore
+        simpa [targetTokens,
+          MarkedCancellablePair.cancellationTargetTokens] using
+            hlength
+      have hadjacentTail :
+          adjacent.tailTokens = pair.tailTokens := rfl
+      rw [hadjacentTail] at htargetLength
+      rw [htargetLength, pair.residualDarts_length_eq]
+      omega
+
+/-- Eliminate a lifted pair surrounding one raw boundary atom by reclassifying the three displayed
+tokens as one completed boundary loop. -/
+noncomputable def resolveBoundary {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (hole : Fin (n + 1)) (holeNegative : Bool)
+    (hbetween :
+      pair.betweenTokens =
+        [.extracted (.boundary hole holeNegative)]) :
+    MarkedResidualPairResolution pair state := by
+  let closure :=
+    pair.toBoundaryClosure hole holeNegative hbetween
+  let execution :=
+    closure.close state.separated state.classified
+      state.protectedNodup state.valid
+  refine
+    { targetEdgeCount := n + 1
+      targetTokens := closure.targetTokens
+      targetState :=
+        { valid := execution.targetValid
+          separated := execution.targetSeparated
+          classified := execution.targetClassified
+          protectedNodup :=
+            execution.targetProtectedNodup }
+      targetProtectedNonempty := by
+        simp [closure, MarkedBoundaryClosure.targetTokens,
+          CompletedBlock.names]
+      equivalent := execution.equivalent
+      residualLengthLt := ?_ }
+  rw [pair.residualDarts_length_eq]
+  simp [closure, MarkedBoundaryClosure.targetTokens,
+    MarkedResidualCancellablePair.toBoundaryClosure]
+
+/-- Resolve one lifted residual inverse pair.  The fuel measures the protected interval: every
+contextual step strictly shortens it, while the terminal cases eliminate the residual pair. -/
+noncomputable def resolveFuel {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (fuel : ℕ)
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ [])
+    (hbound : pair.betweenTokens.length ≤ fuel) :
+    MarkedResidualPairResolution pair state := by
+  cases n with
+  | zero =>
+      exact Fin.elim0 pair.edge
+  | succ k =>
+      cases pair.classifiedDisposition state.classified with
+      | adjacent hempty =>
+          exact pair.resolveAdjacent state protectedNonempty hempty
+      | boundary hole holeNegative hbetween =>
+          exact pair.resolveBoundary state hole holeNegative hbetween
+      | structured first rest hbetween =>
+          cases first with
+          | completed block =>
+              let insideTokens :=
+                rest.map ReductionToken.ofProtectedAtom
+              cases block with
+              | boundary carrier hole carrierNegative holeNegative =>
+                  have hbetween' :
+                      pair.betweenTokens =
+                        .completed (.boundary carrier hole
+                          carrierNegative holeNegative) ::
+                          insideTokens := by
+                    simpa [insideTokens,
+                      ReductionToken.ofProtectedAtom] using hbetween
+                  let shortening :=
+                    pair.shortenBoundaryBlock state protectedNonempty
+                      carrier hole carrierNegative holeNegative
+                      insideTokens hbetween'
+                  have hfuelPositive : 0 < fuel := by
+                    have := shortening.betweenLengthLt
+                    omega
+                  have htargetBound :
+                      shortening.targetPair.betweenTokens.length ≤
+                        fuel - 1 := by
+                    have := shortening.betweenLengthLt
+                    omega
+                  let tail :=
+                    resolveFuel (fuel - 1) shortening.targetPair
+                      shortening.targetState
+                      shortening.targetProtectedNonempty htargetBound
+                  exact
+                    MarkedResidualPairResolution.prepend pair state
+                      shortening.targetPair shortening.targetState
+                      shortening.equivalent
+                      shortening.residualLengthEq tail
+              | crosscap carrier carrierNegative =>
+                  have hbetween' :
+                      pair.betweenTokens =
+                        .completed (.crosscap carrier
+                          carrierNegative) :: insideTokens := by
+                    simpa [insideTokens,
+                      ReductionToken.ofProtectedAtom] using hbetween
+                  let shortening :=
+                    pair.shortenCrosscapBlock state carrier
+                      carrierNegative insideTokens hbetween'
+                  have hfuelPositive : 0 < fuel := by
+                    have := shortening.betweenLengthLt
+                    omega
+                  have htargetBound :
+                      shortening.targetPair.betweenTokens.length ≤
+                        fuel - 1 := by
+                    have := shortening.betweenLengthLt
+                    omega
+                  let tail :=
+                    resolveFuel (fuel - 1) shortening.targetPair
+                      shortening.targetState
+                      shortening.targetProtectedNonempty htargetBound
+                  exact
+                    MarkedResidualPairResolution.prepend pair state
+                      shortening.targetPair shortening.targetState
+                      shortening.equivalent
+                      shortening.residualLengthEq tail
+              | handle first second =>
+                  have hbetween' :
+                      pair.betweenTokens =
+                        .completed (.handle first second) ::
+                          insideTokens := by
+                    simpa [insideTokens,
+                      ReductionToken.ofProtectedAtom] using hbetween
+                  let shortening :=
+                    pair.shortenHandleBlock state protectedNonempty
+                      first second insideTokens hbetween'
+                  have hfuelPositive : 0 < fuel := by
+                    have := shortening.betweenLengthLt
+                    omega
+                  have htargetBound :
+                      shortening.targetPair.betweenTokens.length ≤
+                        fuel - 1 := by
+                    have := shortening.betweenLengthLt
+                    omega
+                  let tail :=
+                    resolveFuel (fuel - 1) shortening.targetPair
+                      shortening.targetState
+                      shortening.targetProtectedNonempty htargetBound
+                  exact
+                    MarkedResidualPairResolution.prepend pair state
+                      shortening.targetPair shortening.targetState
+                      shortening.equivalent
+                      shortening.residualLengthEq tail
+          | boundary hole holeNegative =>
+              cases rest with
+              | nil =>
+                  exact pair.resolveBoundary state hole holeNegative
+                    (by simpa [ReductionToken.ofProtectedAtom] using
+                      hbetween)
+              | cons second restTail =>
+                  let remainingTokens :=
+                    restTail.map ReductionToken.ofProtectedAtom
+                  cases second with
+                  | boundary secondHole secondNegative =>
+                      have hbetween' :
+                          pair.betweenTokens =
+                            [.extracted
+                                (.boundary hole holeNegative),
+                              .extracted
+                                (.boundary secondHole
+                                  secondNegative)] ++
+                              remainingTokens := by
+                        simpa [remainingTokens,
+                          ReductionToken.ofProtectedAtom] using hbetween
+                      let shortening :=
+                        pair.shortenBoundaryPair state hole secondHole
+                          holeNegative secondNegative remainingTokens
+                          hbetween'
+                      have hfuelPositive : 0 < fuel := by
+                        have := shortening.betweenLengthLt
+                        omega
+                      have htargetBound :
+                          shortening.targetPair.betweenTokens.length ≤
+                            fuel - 1 := by
+                        have := shortening.betweenLengthLt
+                        omega
+                      let tail :=
+                        resolveFuel (fuel - 1) shortening.targetPair
+                          shortening.targetState
+                          shortening.targetProtectedNonempty htargetBound
+                      exact
+                        MarkedResidualPairResolution.prepend pair state
+                          shortening.targetPair shortening.targetState
+                          shortening.equivalent
+                          shortening.residualLengthEq tail
+                  | completed block =>
+                      let insideTokens :=
+                        .completed block :: remainingTokens
+                      have hrotate :
+                          pair.betweenTokens =
+                            .extracted
+                                (.boundary hole holeNegative) ::
+                              insideTokens := by
+                        simpa [insideTokens, remainingTokens,
+                          ReductionToken.ofProtectedAtom] using hbetween
+                      let rotation :=
+                        pair.rotateBoundaryAtom state protectedNonempty
+                          hole holeNegative insideTokens hrotate
+                      have hrotationBetween :
+                          rotation.targetPair.betweenTokens =
+                            .completed block ::
+                              (remainingTokens ++
+                                [.extracted
+                                  (.boundary hole holeNegative)]) := by
+                        have h :=
+                          rotateBoundaryAtom_targetPair_betweenTokens
+                            pair state protectedNonempty hole
+                            holeNegative insideTokens hrotate
+                        simpa [rotation, insideTokens] using h
+                      cases block with
+                      | boundary carrier blockHole
+                          carrierNegative blockHoleNegative =>
+                          let shorteningAfter :=
+                            rotation.targetPair.shortenBoundaryBlock
+                              rotation.targetState
+                              rotation.targetProtectedNonempty
+                              carrier blockHole carrierNegative
+                              blockHoleNegative
+                              (remainingTokens ++
+                                [.extracted
+                                  (.boundary hole holeNegative)])
+                              hrotationBetween
+                          let shortening :=
+                            MarkedResidualPairShortening.prepend pair
+                              state rotation.targetPair
+                              rotation.targetState rotation.equivalent
+                              rotation.residualLengthEq
+                              rotation.betweenLengthEq shorteningAfter
+                          have hfuelPositive : 0 < fuel := by
+                            have := shortening.betweenLengthLt
+                            omega
+                          have htargetBound :
+                              shortening.targetPair.betweenTokens.length ≤
+                                fuel - 1 := by
+                            have := shortening.betweenLengthLt
+                            omega
+                          let tail :=
+                            resolveFuel (fuel - 1)
+                              shortening.targetPair
+                              shortening.targetState
+                              shortening.targetProtectedNonempty
+                              htargetBound
+                          exact
+                            MarkedResidualPairResolution.prepend pair
+                              state shortening.targetPair
+                              shortening.targetState
+                              shortening.equivalent
+                              shortening.residualLengthEq tail
+                      | crosscap carrier carrierNegative =>
+                          let shorteningAfter :=
+                            rotation.targetPair.shortenCrosscapBlock
+                              rotation.targetState carrier
+                              carrierNegative
+                              (remainingTokens ++
+                                [.extracted
+                                  (.boundary hole holeNegative)])
+                              hrotationBetween
+                          let shortening :=
+                            MarkedResidualPairShortening.prepend pair
+                              state rotation.targetPair
+                              rotation.targetState rotation.equivalent
+                              rotation.residualLengthEq
+                              rotation.betweenLengthEq shorteningAfter
+                          have hfuelPositive : 0 < fuel := by
+                            have := shortening.betweenLengthLt
+                            omega
+                          have htargetBound :
+                              shortening.targetPair.betweenTokens.length ≤
+                                fuel - 1 := by
+                            have := shortening.betweenLengthLt
+                            omega
+                          let tail :=
+                            resolveFuel (fuel - 1)
+                              shortening.targetPair
+                              shortening.targetState
+                              shortening.targetProtectedNonempty
+                              htargetBound
+                          exact
+                            MarkedResidualPairResolution.prepend pair
+                              state shortening.targetPair
+                              shortening.targetState
+                              shortening.equivalent
+                              shortening.residualLengthEq tail
+                      | handle first second =>
+                          let shorteningAfter :=
+                            rotation.targetPair.shortenHandleBlock
+                              rotation.targetState
+                              rotation.targetProtectedNonempty first
+                              second
+                              (remainingTokens ++
+                                [.extracted
+                                  (.boundary hole holeNegative)])
+                              hrotationBetween
+                          let shortening :=
+                            MarkedResidualPairShortening.prepend pair
+                              state rotation.targetPair
+                              rotation.targetState rotation.equivalent
+                              rotation.residualLengthEq
+                              rotation.betweenLengthEq shorteningAfter
+                          have hfuelPositive : 0 < fuel := by
+                            have := shortening.betweenLengthLt
+                            omega
+                          have htargetBound :
+                              shortening.targetPair.betweenTokens.length ≤
+                                fuel - 1 := by
+                            have := shortening.betweenLengthLt
+                            omega
+                          let tail :=
+                            resolveFuel (fuel - 1)
+                              shortening.targetPair
+                              shortening.targetState
+                              shortening.targetProtectedNonempty
+                              htargetBound
+                          exact
+                            MarkedResidualPairResolution.prepend pair
+                              state shortening.targetPair
+                              shortening.targetState
+                              shortening.equivalent
+                              shortening.residualLengthEq tail
+termination_by fuel
+decreasing_by
+  all_goals
+    apply Nat.sub_lt
+    · assumption
+    · omega
+
+/-- Eliminate one lifted residual inverse pair by the terminating protected-interval resolver. -/
+noncomputable def resolve {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty :
+      ReductionToken.protectedNames tokens ≠ []) :
+    MarkedResidualPairResolution pair state :=
+  resolveFuel pair.betweenTokens.length pair state
+    protectedNonempty (le_refl _)
+
+end MarkedResidualCancellablePair
 
 /-- The local feature exposed at a selected edge of a pair-reduced valid word. -/
 inductive PairReductionFeature {n : ℕ}
