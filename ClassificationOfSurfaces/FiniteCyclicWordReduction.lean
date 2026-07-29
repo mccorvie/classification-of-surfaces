@@ -2145,7 +2145,13 @@ theorem edges_inverse {n : ℕ} (block : CompletedBlock n) :
 
 theorem names_inverse_perm {n : ℕ} (block : CompletedBlock n) :
     block.inverse.names.Perm block.names := by
-  cases block <;> simp [inverse, names]
+  cases block with
+  | crosscap =>
+      exact List.Perm.refl _
+  | handle a b =>
+      exact List.Perm.swap a b []
+  | boundary =>
+      exact List.Perm.refl _
 
 @[simp]
 theorem word_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
@@ -4452,7 +4458,7 @@ theorem extractedNames_inverse_perm {n : ℕ}
       token.extractedNames := by
   cases token with
   | residual =>
-      simp
+      simp [inverse, extractedNames]
   | extracted block =>
       simpa [inverse, extractedNames,
         ExtractedBlock.edges_inverse] using
@@ -4532,6 +4538,23 @@ def lowerAvoiding {n : ℕ} (a : Fin (n + 1))
           exact
             (CompletedBlock.mem_map_edgeOfDart_word_iff
               block a).mpr hblock))
+
+theorem lowerAvoiding_residual_dart {n : ℕ}
+    (a e : Fin (n + 1)) (negative : Bool)
+    (ha :
+      a ∉
+        (ReductionToken.word
+          (.residual (dart e negative))).map edgeOfDart) :
+    ReductionToken.lowerAvoiding a
+        (.residual (dart e negative)) ha =
+      .residual
+        (dart
+          (Cancellation.lowerEdge a e (by
+            intro heq
+            apply ha
+            simp [heq]))
+          negative) := by
+  cases negative <;> rfl
 
 /-- Lowering one marked token agrees with word-level cancellation lowering. -/
 theorem word_lowerAvoiding {n : ℕ}
@@ -5272,6 +5295,30 @@ theorem residualDarts_ofWord {n : ℕ}
       rfl
 
 @[simp]
+theorem protectedEdges_ofWord {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    protectedEdges (ofWord word) = [] := by
+  induction word with
+  | nil =>
+      rfl
+  | cons dart word ih =>
+      change
+        protectedEdges (.residual dart :: ofWord word) = []
+      simp [ih]
+
+@[simp]
+theorem protectedNames_ofWord {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    protectedNames (ofWord word) = [] := by
+  induction word with
+  | nil =>
+      rfl
+  | cons dart word ih =>
+      change
+        protectedNames (.residual dart :: ofWord word) = []
+      simp [ih]
+
+@[simp]
 theorem expand_ofBlocks {n : ℕ}
     (blocks : List (ExtractedBlock n)) :
     expand (ofBlocks blocks) =
@@ -5627,6 +5674,30 @@ theorem protectedEdges_inverseSequence {n : ℕ}
         simpa only [inverseSequence] using ih
       simp [inverseSequence, ih', List.reverse_append]
 
+/-- Reversing a marked token sequence preserves its multiset of distinct protected names. -/
+theorem protectedNames_inverseSequence_perm {n : ℕ}
+    (tokens : List (ReductionToken n)) :
+    (protectedNames (inverseSequence tokens)).Perm
+      (protectedNames tokens) := by
+  induction tokens with
+  | nil =>
+      exact List.Perm.refl []
+  | cons token tokens ih =>
+      have hcombined :
+          (protectedNames (inverseSequence tokens) ++
+              token.inverse.extractedNames).Perm
+            (protectedNames tokens ++
+              token.extractedNames) :=
+        List.Perm.append ih token.extractedNames_inverse_perm
+      have hreordered :
+          (protectedNames tokens ++
+              token.extractedNames).Perm
+            (token.extractedNames ++
+              protectedNames tokens) :=
+        List.perm_append_comm
+      simpa [inverseSequence, protectedNames,
+        List.flatMap] using hcombined.trans hreordered
+
 @[simp]
 theorem expand_mapEquiv {n m : ℕ} (e : Fin n ≃ Fin m)
     (tokens : List (ReductionToken n)) :
@@ -5651,6 +5722,36 @@ theorem residualDarts_mapEquiv {n m : ℕ}
       simp [ih]
 
 end ReductionToken
+
+/-- Invariants carried by every marked normalization state.  Protected-name uniqueness is stated
+on name spines rather than dart-occurrence lists, so completed boundary carriers are counted once. -/
+structure MarkedExecutionState {n : ℕ}
+    (tokens : List (ReductionToken n)) where
+  valid :
+    (Dyck.oneFace
+      (ReductionToken.expand tokens)).IsSurfaceValid
+  separated : ReductionToken.IsSeparated tokens
+  classified : ReductionToken.AllClassified tokens
+  protectedNodup :
+    (ReductionToken.protectedNames tokens).Nodup
+
+namespace MarkedExecutionState
+
+/-- The all-residual marking of a valid word satisfies every execution invariant. -/
+def ofWord {n : ℕ}
+    (word : List (SignedDart (Fin n)))
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    MarkedExecutionState (ReductionToken.ofWord word) where
+  valid := by simpa using valid
+  separated := by
+    rw [ReductionToken.IsSeparated]
+    simp
+  classified :=
+    ReductionToken.allClassified_ofWord word
+  protectedNodup := by
+    simp
+
+end MarkedExecutionState
 
 /-- Forget an actionable feature's occurrence decomposition while retaining its extracted block. -/
 def ActionablePairReductionFeature.block {n : ℕ}
@@ -6094,6 +6195,135 @@ theorem mem_protectedEdges_targetTokens_iff {n : ℕ}
         ExtractedBlock.edges, CompletedBlock.edges]
       tauto
 
+/-- A marked extraction prepends exactly its newly consumed names and otherwise only permutes the
+existing protected-name spine. -/
+theorem protectedNames_targetTokens_perm {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens) :
+    (ReductionToken.protectedNames
+      marked.targetTokens).Perm
+        (marked.residualFeature.extractedEdges ++
+          ReductionToken.protectedNames tokens) := by
+  cases marked with
+  | boundary a form remainderTokens rotated _ =>
+      have hsource :
+          (ReductionToken.protectedNames tokens).Perm
+            (ReductionToken.protectedNames remainderTokens) := by
+        simpa using
+          (ReductionToken.protectedNames_isRotated
+            rotated).perm
+      simpa [targetTokens, residualFeature,
+        ActionablePairReductionFeature.extractedEdges,
+        ActionablePairReductionFeature.block,
+        ExtractedBlock.edges] using
+          List.Perm.cons a hsource.symm
+  | crosscap a form betweenTokens remainderTokens
+      rotated _ _ =>
+      have hsource :
+          (ReductionToken.protectedNames tokens).Perm
+            (ReductionToken.protectedNames betweenTokens ++
+              ReductionToken.protectedNames remainderTokens) := by
+        simpa using
+          (ReductionToken.protectedNames_isRotated
+            rotated).perm
+      have hinverse :=
+        ReductionToken.protectedNames_inverseSequence_perm
+          remainderTokens
+      have hreorder :
+          (ReductionToken.protectedNames
+                (ReductionToken.inverseSequence remainderTokens) ++
+              ReductionToken.protectedNames betweenTokens).Perm
+            (ReductionToken.protectedNames tokens) :=
+        (List.Perm.append hinverse
+            (List.Perm.refl _)).trans
+          (List.perm_append_comm.trans hsource.symm)
+      simpa [targetTokens, residualFeature,
+        ActionablePairReductionFeature.extractedEdges,
+        ActionablePairReductionFeature.block,
+        ExtractedBlock.edges, CompletedBlock.names,
+        List.append_assoc] using
+          List.Perm.cons a hreorder
+  | handle a b form beforeBTokens beforeNegATokens
+      beforeOutsideBTokens remainderTokens rotated _ _ _ _ =>
+      have hsource :
+          (ReductionToken.protectedNames tokens).Perm
+            (ReductionToken.protectedNames beforeBTokens ++
+              ReductionToken.protectedNames beforeNegATokens ++
+              ReductionToken.protectedNames beforeOutsideBTokens ++
+              ReductionToken.protectedNames remainderTokens) := by
+        simpa [List.append_assoc] using
+          (ReductionToken.protectedNames_isRotated
+            rotated).perm
+      let segments :=
+        [ReductionToken.protectedNames beforeBTokens,
+          ReductionToken.protectedNames beforeNegATokens,
+          ReductionToken.protectedNames beforeOutsideBTokens,
+          ReductionToken.protectedNames remainderTokens]
+      have hsegments :
+          ([ReductionToken.protectedNames remainderTokens,
+              ReductionToken.protectedNames beforeOutsideBTokens,
+              ReductionToken.protectedNames beforeNegATokens,
+              ReductionToken.protectedNames beforeBTokens] :
+            List (List (Fin n))).Perm segments := by
+        simpa [segments] using List.reverse_perm segments
+      have hreorder :
+          (ReductionToken.protectedNames remainderTokens ++
+              ReductionToken.protectedNames beforeOutsideBTokens ++
+              ReductionToken.protectedNames beforeNegATokens ++
+              ReductionToken.protectedNames beforeBTokens).Perm
+            (ReductionToken.protectedNames tokens) := by
+        have hflatten :=
+          List.Perm.flatMap hsegments
+            (f := id) (g := id)
+            (fun _ _ => List.Perm.refl _)
+        have hflatten' :
+            (ReductionToken.protectedNames remainderTokens ++
+                ReductionToken.protectedNames beforeOutsideBTokens ++
+                ReductionToken.protectedNames beforeNegATokens ++
+                ReductionToken.protectedNames beforeBTokens).Perm
+              (ReductionToken.protectedNames beforeBTokens ++
+                ReductionToken.protectedNames beforeNegATokens ++
+                ReductionToken.protectedNames beforeOutsideBTokens ++
+                ReductionToken.protectedNames remainderTokens) := by
+          simpa [segments, List.flatMap,
+            List.append_assoc] using hflatten
+        exact hflatten'.trans hsource.symm
+      simpa [targetTokens, residualFeature,
+        ActionablePairReductionFeature.extractedEdges,
+        ActionablePairReductionFeature.block,
+        ExtractedBlock.edges, CompletedBlock.names,
+        List.append_assoc] using
+          (List.Perm.cons a (List.Perm.cons b hreorder))
+
+/-- Extraction preserves global ownership uniqueness of protected names. -/
+theorem targetTokens_protectedNames_nodup {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (nodup :
+      (ReductionToken.protectedNames tokens).Nodup) :
+    (ReductionToken.protectedNames
+      marked.targetTokens).Nodup := by
+  apply marked.protectedNames_targetTokens_perm.nodup_iff.mpr
+  rw [List.nodup_append]
+  refine
+    ⟨marked.residualFeature.extractedEdges_nodup,
+      nodup, ?_⟩
+  intro edge hnew oldEdge hold heq
+  subst oldEdge
+  have hresidual :
+      edge ∈
+        (ReductionToken.residualDarts tokens).map
+          edgeOfDart :=
+    marked.residualFeature.extractedEdges_subset_source
+      edge hnew
+  have hprotected :
+      edge ∈ ReductionToken.protectedEdges tokens :=
+    (ReductionToken.mem_protectedNames_iff_mem_protectedEdges
+      tokens edge).mp hold
+  exact (List.disjoint_left.mp separated)
+    hresidual hprotected
+
 /-- Marked extraction preserves separation of residual and protected edge namespaces. -/
 theorem targetTokens_isSeparated {n : ℕ}
     {tokens : List (ReductionToken n)}
@@ -6430,6 +6660,18 @@ theorem tailTokens_isSeparated {n : ℕ}
       ReductionToken.extractedEdges_residual,
       List.nil_append] using heProtected
 
+/-- Removing a displayed residual pair leaves the protected-name spine unchanged up to rotation. -/
+theorem tailTokens_protectedNames_nodup {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedCancellablePair tokens)
+    (nodup :
+      (ReductionToken.protectedNames tokens).Nodup) :
+    (ReductionToken.protectedNames pair.tailTokens).Nodup := by
+  have displayedNodup :=
+    (ReductionToken.protectedNames_isRotated
+      pair.rotated).nodup_iff.mp nodup
+  simpa using displayedNodup
+
 end MarkedCancellablePair
 
 /-- A cancellable pair of the erased residual word lifted to its exact marked-token interval.
@@ -6695,6 +6937,62 @@ theorem targetTokens_isSeparated {n : ℕ}
         List.singleton_append, List.mem_cons] using
           Or.inr heProtectedTail
 
+/-- Closing a raw boundary singleton transfers its residual carrier into protected ownership
+without duplicating any protected name. -/
+theorem targetTokens_protectedNames_nodup {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (closure : MarkedBoundaryClosure tokens)
+    (separated : ReductionToken.IsSeparated tokens)
+    (valid :
+      (Dyck.oneFace
+        (ReductionToken.expand tokens)).IsSurfaceValid)
+    (nodup :
+      (ReductionToken.protectedNames tokens).Nodup) :
+    (ReductionToken.protectedNames
+      closure.targetTokens).Nodup := by
+  have displayedNodup :
+      (ReductionToken.protectedNames
+        (.residual
+            (dart closure.carrier closure.carrierNegative) ::
+          .extracted
+              (.boundary closure.hole closure.holeNegative) ::
+          .residual
+              (dart closure.carrier
+                (!closure.carrierNegative)) ::
+          closure.tailTokens)).Nodup :=
+    (ReductionToken.protectedNames_isRotated
+      closure.rotated).nodup_iff.mp nodup
+  have sourceFacts :
+      closure.hole ∉
+          ReductionToken.protectedNames closure.tailTokens ∧
+        (ReductionToken.protectedNames
+          closure.tailTokens).Nodup := by
+    simpa [ExtractedBlock.edges] using displayedNodup
+  have hcarrierHole : closure.carrier ≠ closure.hole := by
+    intro heq
+    have separatedDisplayed :=
+      separated.of_isRotated closure.rotated
+    exact
+      (List.disjoint_left.mp separatedDisplayed)
+        (a := closure.carrier)
+        (by simp)
+        (by simp [heq, ExtractedBlock.edges])
+  have hcarrierTail :
+      closure.carrier ∉
+        ReductionToken.protectedNames
+          closure.tailTokens := by
+    intro hmem
+    apply closure.carrier_not_mem_tail separated valid
+    apply
+      (ReductionToken.mem_map_edgeOfDart_expand_iff
+        closure.tailTokens closure.carrier).mpr
+    exact Or.inr
+      ((ReductionToken.mem_protectedNames_iff_mem_protectedEdges
+        closure.tailTokens closure.carrier).mp hmem)
+  simpa [targetTokens, CompletedBlock.names,
+    List.nodup_cons, hcarrierHole, hcarrierTail] using
+      sourceFacts
+
 end MarkedBoundaryClosure
 
 /-- A completed boundary-loop atom at the head of a protected residual-pair interval.  One
@@ -6831,6 +7129,17 @@ theorem targetTokens_allClassified {n : ℕ}
     (classified : ReductionToken.AllClassified tokens) :
     ReductionToken.AllClassified commute.targetTokens :=
   classified.of_perm commute.perm_targetTokens
+
+/-- Boundary-loop commuting preserves unique ownership of protected names. -/
+theorem targetTokens_protectedNames_nodup {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedBoundaryBlockCommute tokens)
+    (nodup :
+      (ReductionToken.protectedNames tokens).Nodup) :
+    (ReductionToken.protectedNames
+      commute.targetTokens).Nodup :=
+  ReductionToken.protectedNames_nodup_of_perm
+    nodup commute.perm_targetTokens
 
 end MarkedBoundaryBlockCommute
 
@@ -7095,6 +7404,98 @@ theorem targetTokens_isSeparated {n : ℕ}
             (Or.inr houtsideResidual)
             (Or.inr houtsideProtected)
 
+/-- Crosscap commuting exchanges a protected carrier with a fresh residual carrier while
+preserving unique protected-name ownership. -/
+theorem targetTokens_protectedNames_nodup {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedCrosscapBlockCommute tokens)
+    (nodup :
+      (ReductionToken.protectedNames tokens).Nodup) :
+    (ReductionToken.protectedNames
+      commute.targetTokens).Nodup := by
+  let displayedTokens :=
+    .residual
+        (dart commute.outer commute.outerNegative) ::
+      .completed
+        (.crosscap commute.carrier
+          commute.carrierNegative) ::
+      commute.insideTokens ++
+      .residual
+        (dart commute.outer
+          (!commute.outerNegative)) ::
+      commute.outsideTokens
+  have displayedNodup :
+      (ReductionToken.protectedNames
+        displayedTokens).Nodup :=
+    (ReductionToken.protectedNames_isRotated
+      commute.rotated).nodup_iff.mp nodup
+  have oldTailNodup :
+      (ReductionToken.protectedNames
+          commute.insideTokens ++
+        ReductionToken.protectedNames
+          commute.outsideTokens).Nodup := by
+    have sourceFacts :
+        (commute.carrier ::
+          (ReductionToken.protectedNames
+              commute.insideTokens ++
+            ReductionToken.protectedNames
+              commute.outsideTokens)).Nodup := by
+      simpa [displayedTokens,
+        CompletedBlock.names, List.append_assoc] using
+          displayedNodup
+    exact sourceFacts.tail
+  have suffixPerm :
+      (ReductionToken.protectedNames
+          commute.insideTokens ++
+        ReductionToken.protectedNames
+          (ReductionToken.inverseSequence
+            commute.outsideTokens)).Perm
+      (ReductionToken.protectedNames
+          commute.insideTokens ++
+        ReductionToken.protectedNames
+          commute.outsideTokens) :=
+    List.Perm.append (List.Perm.refl _)
+      (ReductionToken.protectedNames_inverseSequence_perm
+        commute.outsideTokens)
+  have suffixNodup :=
+    suffixPerm.nodup_iff.mpr oldTailNodup
+  have houterSuffix :
+      commute.outer ∉
+        ReductionToken.protectedNames
+            commute.insideTokens ++
+          ReductionToken.protectedNames
+            (ReductionToken.inverseSequence
+              commute.outsideTokens) := by
+    rw [List.mem_append, not_or]
+    refine ⟨?_, ?_⟩
+    · intro hmem
+      apply commute.outer_not_mem_inside
+      apply
+        (ReductionToken.mem_map_edgeOfDart_expand_iff
+          commute.insideTokens commute.outer).mpr
+      exact Or.inr
+        ((ReductionToken.mem_protectedNames_iff_mem_protectedEdges
+          commute.insideTokens commute.outer).mp hmem)
+    · intro hmem
+      have houtsideNames :
+          commute.outer ∈
+            ReductionToken.protectedNames
+              commute.outsideTokens :=
+        (ReductionToken.protectedNames_inverseSequence_perm
+          commute.outsideTokens).mem_iff.mp hmem
+      apply commute.outer_not_mem_outside
+      apply
+        (ReductionToken.mem_map_edgeOfDart_expand_iff
+          commute.outsideTokens commute.outer).mpr
+      exact Or.inr
+        ((ReductionToken.mem_protectedNames_iff_mem_protectedEdges
+          commute.outsideTokens commute.outer).mp
+            houtsideNames)
+  simpa [targetTokens, CompletedBlock.names,
+    List.append_assoc] using
+      (List.nodup_cons.mpr
+        ⟨houterSuffix, suffixNodup⟩)
+
 end MarkedCrosscapBlockCommute
 
 /-- A completed handle at the head of a protected residual-pair interval. -/
@@ -7229,6 +7630,17 @@ theorem targetTokens_allClassified {n : ℕ}
     (classified : ReductionToken.AllClassified tokens) :
     ReductionToken.AllClassified commute.targetTokens :=
   classified.of_perm commute.perm_targetTokens
+
+/-- Handle commuting preserves unique ownership of protected names. -/
+theorem targetTokens_protectedNames_nodup {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (commute : MarkedHandleBlockCommute tokens)
+    (nodup :
+      (ReductionToken.protectedNames tokens).Nodup) :
+    (ReductionToken.protectedNames
+      commute.targetTokens).Nodup :=
+  ReductionToken.protectedNames_nodup_of_perm
+    nodup commute.perm_targetTokens
 
 end MarkedHandleBlockCommute
 
@@ -7916,9 +8328,8 @@ noncomputable def boundaryContractionTargetPair {n : ℕ}
       MarkedBoundaryPairContraction.targetTokens,
       ReductionToken.lowerTokensAvoiding_append,
       ReductionToken.lowerTokensAvoiding,
-      ReductionToken.lowerAvoiding,
-      Cancellation.lowerDart, loweredInside,
-      loweredOutside, loweredOuter, dart,
+      ReductionToken.lowerAvoiding_residual_dart,
+      loweredInside, loweredOutside, loweredOuter,
       List.append_assoc] using hcycle
   · have hinsideResidual :
         ReductionToken.residualDarts insideTokens = [] := by
@@ -9671,6 +10082,9 @@ structure MarkedActionablePairReductionResult {n : ℕ}
     ReductionToken.IsSeparated marked.targetTokens
   targetClassified :
     ReductionToken.AllClassified marked.targetTokens
+  targetProtectedNodup :
+    (ReductionToken.protectedNames
+      marked.targetTokens).Nodup
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -9687,6 +10101,8 @@ noncomputable def extract {n : ℕ}
     (marked : MarkedActionablePairReductionFeature tokens)
     (separated : ReductionToken.IsSeparated tokens)
     (classified : ReductionToken.AllClassified tokens)
+    (protectedNodup :
+      (ReductionToken.protectedNames tokens).Nodup)
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
     MarkedActionablePairReductionResult marked valid := by
@@ -9710,6 +10126,9 @@ noncomputable def extract {n : ℕ}
         marked.targetTokens_isSeparated separated
       targetClassified :=
         marked.targetTokens_allClassified classified
+      targetProtectedNodup :=
+        marked.targetTokens_protectedNames_nodup
+          separated protectedNodup
       equivalent := ?_ }
   have hequivalent := result.equivalent_to_targetWord
   simpa only [htarget] using hequivalent
@@ -9732,6 +10151,8 @@ structure MarkedCancellationResult {n : ℕ}
     ReductionToken.IsSeparated targetTokens
   targetClassified :
     ReductionToken.AllClassified targetTokens
+  targetProtectedNodup :
+    (ReductionToken.protectedNames targetTokens).Nodup
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -9748,6 +10169,8 @@ noncomputable def cancel {n : ℕ}
     (pair : MarkedCancellablePair tokens)
     (separated : ReductionToken.IsSeparated tokens)
     (classified : ReductionToken.AllClassified tokens)
+    (protectedNodup :
+      (ReductionToken.protectedNames tokens).Nodup)
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid)
     (tail_nonempty :
@@ -9771,6 +10194,11 @@ noncomputable def cancel {n : ℕ}
       ReductionToken.IsSeparated targetTokens :=
     (pair.tailTokens_isSeparated separated).lowerTokensAvoiding
       pair.edge pair.tailTokens ha
+  have targetProtectedNodup :
+      (ReductionToken.protectedNames targetTokens).Nodup :=
+    ReductionToken.protectedNames_nodup_lowerTokensAvoiding
+      pair.edge pair.tailTokens ha
+      (pair.tailTokens_protectedNames_nodup protectedNodup)
   have htarget :
       ReductionToken.expand targetTokens =
         Cancellation.lowerTail pair.edge
@@ -9814,6 +10242,7 @@ noncomputable def cancel {n : ℕ}
         targetValid := targetValid
         targetSeparated := targetSeparated
         targetClassified := targetClassified
+        targetProtectedNodup := targetProtectedNodup
         equivalent := ?_ }
     have hequivalent :=
       Cancellation.normalizationEquivalentOfIsRotated
@@ -9854,6 +10283,7 @@ noncomputable def cancel {n : ℕ}
         targetValid := targetValid
         targetSeparated := targetSeparated
         targetClassified := targetClassified
+        targetProtectedNodup := targetProtectedNodup
         equivalent := ?_ }
     have hequivalent :=
       Cancellation.negativeNormalizationEquivalentOfIsRotated
@@ -9879,6 +10309,9 @@ structure MarkedBoundaryClosureResult {n : ℕ}
     ReductionToken.IsSeparated closure.targetTokens
   targetClassified :
     ReductionToken.AllClassified closure.targetTokens
+  targetProtectedNodup :
+    (ReductionToken.protectedNames
+      closure.targetTokens).Nodup
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -9895,6 +10328,8 @@ noncomputable def close {n : ℕ}
     (closure : MarkedBoundaryClosure tokens)
     (separated : ReductionToken.IsSeparated tokens)
     (classified : ReductionToken.AllClassified tokens)
+    (protectedNodup :
+      (ReductionToken.protectedNames tokens).Nodup)
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
     MarkedBoundaryClosureResult closure valid := by
@@ -9912,6 +10347,9 @@ noncomputable def close {n : ℕ}
         closure.targetTokens_isSeparated separated valid
       targetClassified :=
         closure.targetTokens_allClassified classified
+      targetProtectedNodup :=
+        closure.targetTokens_protectedNames_nodup
+          separated valid protectedNodup
       equivalent :=
         NormalizationEquivalent.ofSignedIso rotation }
 
@@ -9932,6 +10370,9 @@ structure MarkedBoundaryBlockCommuteResult {n : ℕ}
     ReductionToken.IsSeparated commute.targetTokens
   targetClassified :
     ReductionToken.AllClassified commute.targetTokens
+  targetProtectedNodup :
+    (ReductionToken.protectedNames
+      commute.targetTokens).Nodup
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -9948,6 +10389,8 @@ noncomputable def commute {n : ℕ}
     (step : MarkedBoundaryBlockCommute tokens)
     (separated : ReductionToken.IsSeparated tokens)
     (classified : ReductionToken.AllClassified tokens)
+    (protectedNodup :
+      (ReductionToken.protectedNames tokens).Nodup)
     (valid :
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
@@ -10003,6 +10446,9 @@ noncomputable def commute {n : ℕ}
           step.targetTokens_isSeparated separated
         targetClassified :=
           step.targetTokens_allClassified classified
+        targetProtectedNodup :=
+          step.targetTokens_protectedNames_nodup
+            protectedNodup
         equivalent := ?_ }
     have hrotation :
         NormalizationEquivalent
@@ -10068,6 +10514,9 @@ noncomputable def commute {n : ℕ}
           step.targetTokens_isSeparated separated
         targetClassified :=
           step.targetTokens_allClassified classified
+        targetProtectedNodup :=
+          step.targetTokens_protectedNames_nodup
+            protectedNodup
         equivalent := ?_ }
     have hrotation :
         NormalizationEquivalent
@@ -10101,6 +10550,9 @@ structure MarkedCrosscapBlockCommuteResult {n : ℕ}
     ReductionToken.IsSeparated commute.targetTokens
   targetClassified :
     ReductionToken.AllClassified commute.targetTokens
+  targetProtectedNodup :
+    (ReductionToken.protectedNames
+      commute.targetTokens).Nodup
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -10116,6 +10568,8 @@ noncomputable def commute {n : ℕ}
     (step : MarkedCrosscapBlockCommute tokens)
     (separated : ReductionToken.IsSeparated tokens)
     (classified : ReductionToken.AllClassified tokens)
+    (protectedNodup :
+      (ReductionToken.protectedNames tokens).Nodup)
     (valid :
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
@@ -10168,6 +10622,9 @@ noncomputable def commute {n : ℕ}
         step.targetTokens_isSeparated separated
       targetClassified :=
         step.targetTokens_allClassified classified
+      targetProtectedNodup :=
+        step.targetTokens_protectedNames_nodup
+          protectedNodup
       equivalent := ?_ }
   have hrotation :
       NormalizationEquivalent
@@ -10202,6 +10659,9 @@ structure MarkedHandleBlockCommuteResult {n : ℕ}
     ReductionToken.IsSeparated commute.targetTokens
   targetClassified :
     ReductionToken.AllClassified commute.targetTokens
+  targetProtectedNodup :
+    (ReductionToken.protectedNames
+      commute.targetTokens).Nodup
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -10217,6 +10677,8 @@ noncomputable def commute {n : ℕ}
     (step : MarkedHandleBlockCommute tokens)
     (separated : ReductionToken.IsSeparated tokens)
     (classified : ReductionToken.AllClassified tokens)
+    (protectedNodup :
+      (ReductionToken.protectedNames tokens).Nodup)
     (valid :
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
@@ -10272,6 +10734,9 @@ noncomputable def commute {n : ℕ}
         step.targetTokens_isSeparated separated
       targetClassified :=
         step.targetTokens_allClassified classified
+      targetProtectedNodup :=
+        step.targetTokens_protectedNames_nodup
+          protectedNodup
       equivalent := ?_ }
   have hrotation :
       NormalizationEquivalent
@@ -10307,6 +10772,9 @@ structure MarkedBoundaryPairContractionResult {n : ℕ}
     ReductionToken.IsSeparated contraction.targetTokens
   targetClassified :
     ReductionToken.AllClassified contraction.targetTokens
+  targetProtectedNodup :
+    (ReductionToken.protectedNames
+      contraction.targetTokens).Nodup
   equivalent :
     NormalizationEquivalent
       ⟨Dyck.oneFace (ReductionToken.expand tokens), valid⟩
@@ -10322,6 +10790,8 @@ noncomputable def contract {n : ℕ}
     (step : MarkedBoundaryPairContraction tokens)
     (separated : ReductionToken.IsSeparated tokens)
     (classified : ReductionToken.AllClassified tokens)
+    (protectedNodup :
+      (ReductionToken.protectedNames tokens).Nodup)
     (valid :
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
@@ -10368,6 +10838,9 @@ noncomputable def contract {n : ℕ}
         step.targetTokens_isSeparated separated
       targetClassified :=
         step.targetTokens_allClassified classified
+      targetProtectedNodup :=
+        step.targetTokens_protectedNames_nodup
+          protectedNodup
       equivalent := ?_ }
   have hrotation :
       NormalizationEquivalent
