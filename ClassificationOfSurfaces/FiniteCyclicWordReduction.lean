@@ -765,6 +765,33 @@ structure OppositeOccurrenceForm {n : ℕ}
   edge_not_mem_between : a ∉ between.map edgeOfDart
   edge_not_mem_remainder : a ∉ remainder.map edgeOfDart
 
+/-- Two oppositely oriented edge pairs whose endpoints interleave cyclically.  The first
+distinguished pair is displayed positive then negative.  The Boolean records whether the
+occurrence of `b` inside that pair is negative; a signed relabeling will reverse `b` when
+necessary before applying handle extraction. -/
+structure InterleavedOccurrenceForm {n : ℕ}
+    (word : List (SignedDart (Fin n))) (a b : Fin n) where
+  bNegativeInside : Bool
+  beforeB : List (SignedDart (Fin n))
+  beforeNegA : List (SignedDart (Fin n))
+  beforeOutsideB : List (SignedDart (Fin n))
+  remainder : List (SignedDart (Fin n))
+  rotated :
+    word.IsRotated
+      (.pos a :: beforeB ++
+        dart b bNegativeInside :: beforeNegA ++
+        .neg a :: beforeOutsideB ++
+        dart b (!bNegativeInside) :: remainder)
+  edge_ne : a ≠ b
+  a_not_mem_beforeB : a ∉ beforeB.map edgeOfDart
+  a_not_mem_beforeNegA : a ∉ beforeNegA.map edgeOfDart
+  a_not_mem_beforeOutsideB : a ∉ beforeOutsideB.map edgeOfDart
+  a_not_mem_remainder : a ∉ remainder.map edgeOfDart
+  b_not_mem_beforeB : b ∉ beforeB.map edgeOfDart
+  b_not_mem_beforeNegA : b ∉ beforeNegA.map edgeOfDart
+  b_not_mem_beforeOutsideB : b ∉ beforeOutsideB.map edgeOfDart
+  b_not_mem_remainder : b ∉ remainder.map edgeOfDart
+
 /-- A positive crosscap edge has an equally oriented occurrence form. -/
 theorem exists_positiveCrosscapOccurrenceForm {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n)
@@ -912,6 +939,174 @@ theorem OppositeOccurrenceForm.between_ne_nil {n : ℕ}
         simpa [inversePair, hbetween] using form.rotated }
 
 /-! ### Proof-producing extraction of the easy pairing features -/
+
+/-- The displayed cyclic word carried by an interleaved-pair certificate. -/
+def InterleavedOccurrenceForm.displayedWord {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a b : Fin n}
+    (form : InterleavedOccurrenceForm word a b) :
+    List (SignedDart (Fin n)) :=
+  .pos a :: form.beforeB ++
+    dart b form.bNegativeInside :: form.beforeNegA ++
+    .neg a :: form.beforeOutsideB ++
+    dart b (!form.bNegativeInside) :: form.remainder
+
+/-- The adjacent handle block produced by the three-Dyck extraction chain. -/
+def InterleavedOccurrenceForm.groupedWord {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a b : Fin n}
+    (form : InterleavedOccurrenceForm word a b) :
+    List (SignedDart (Fin n)) :=
+  [.pos a, .pos b, .neg a, .neg b] ++
+    form.remainder ++ form.beforeOutsideB ++
+    form.beforeNegA ++ form.beforeB
+
+/-- When `b` is encountered negative inside the `a`-pair, reverse that edge to obtain the
+positive-first source spelling required by handle extraction. -/
+def InterleavedOccurrenceForm.negativeInsideSignedIso {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a b : Fin n}
+    (form : InterleavedOccurrenceForm word a b)
+    (hnegative : form.bNegativeInside = true) :
+    SignedPresentationIso
+      (Dyck.oneFace form.displayedWord)
+      (Handle.source a b form.beforeB form.beforeNegA
+        form.beforeOutsideB form.remainder) where
+  edgeRelabeling := Dyck.reverseEdgeRelabeling b
+  faceEquiv := Equiv.refl _
+  boundary_rotated := by
+    intro f
+    rw [Dyck.oneFace_boundary, Dyck.oneFace_boundary]
+    have hposA :
+        (Dyck.reverseEdgeRelabeling b).mapDart (.pos a) = .pos a :=
+      Dyck.reverseEdgeRelabeling_of_ne b a form.edge_ne false
+    have hnegA :
+        (Dyck.reverseEdgeRelabeling b).mapDart (.neg a) = .neg a :=
+      Dyck.reverseEdgeRelabeling_of_ne b a form.edge_ne true
+    simp only [InterleavedOccurrenceForm.displayedWord,
+      List.map_cons, List.map_append, hposA, hnegA,
+      hnegative, Bool.not_true, dart,
+      Dyck.reverseEdgeRelabeling_neg,
+      Dyck.reverseEdgeRelabeling_pos]
+    rw [Dyck.reverseEdgeRelabeling_word b form.beforeB
+        form.b_not_mem_beforeB,
+      Dyck.reverseEdgeRelabeling_word b form.beforeNegA
+        form.b_not_mem_beforeNegA,
+      Dyck.reverseEdgeRelabeling_word b form.beforeOutsideB
+        form.b_not_mem_beforeOutsideB,
+      Dyck.reverseEdgeRelabeling_word b form.remainder
+        form.b_not_mem_remainder]
+    convert List.IsRotated.refl _ using 1
+    all_goals
+      simp only [List.nil_append, List.cons_append, List.append_assoc]
+
+/-- A certified interleaved pair produces an adjacent handle block through the existing
+three-Dyck normalization chain.  If the inner occurrence of `b` is negative, the chain begins by
+reversing the orientation assigned to `b`. -/
+theorem InterleavedOccurrenceForm.exists_normalizationEquivalent_grouped {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a b : Fin n}
+    (form : InterleavedOccurrenceForm word a b)
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    ∃ validGrouped : (Dyck.oneFace form.groupedWord).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩
+        ⟨Dyck.oneFace form.groupedWord, validGrouped⟩ := by
+  let sourceRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated form.rotated
+  let validDisplayed :
+      (Dyck.oneFace form.displayedWord).IsSurfaceValid :=
+    sourceRotation.isSurfaceValid valid
+  have hToDisplayed :
+      NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩
+        ⟨Dyck.oneFace form.displayedWord, validDisplayed⟩ :=
+    NormalizationEquivalent.ofSignedIso sourceRotation
+  cases horientation : form.bNegativeInside
+  · have hsource :
+        Dyck.oneFace form.displayedWord =
+          Handle.source a b form.beforeB form.beforeNegA
+            form.beforeOutsideB form.remainder := by
+      simp [InterleavedOccurrenceForm.displayedWord,
+        Handle.source, Dyck.source, dart, horientation,
+        List.cons_append, List.append_assoc]
+    let validSource :
+        (Handle.source a b form.beforeB form.beforeNegA
+          form.beforeOutsideB form.remainder).IsSurfaceValid :=
+      hsource ▸ validDisplayed
+    let validTarget :
+        (Handle.target a b form.beforeB form.beforeNegA
+          form.beforeOutsideB form.remainder).IsSurfaceValid :=
+      Handle.target_isSurfaceValid a b form.beforeB form.beforeNegA
+        form.beforeOutsideB form.remainder validSource
+    have hHandle :
+        NormalizationEquivalent
+          ⟨Handle.source a b form.beforeB form.beforeNegA
+            form.beforeOutsideB form.remainder, validSource⟩
+          ⟨Handle.target a b form.beforeB form.beforeNegA
+            form.beforeOutsideB form.remainder, validTarget⟩ :=
+      Handle.normalizationEquivalent a b
+        form.beforeB form.beforeNegA
+        form.beforeOutsideB form.remainder
+        form.edge_ne
+        form.a_not_mem_beforeB form.a_not_mem_beforeNegA
+        form.a_not_mem_beforeOutsideB form.a_not_mem_remainder
+        form.b_not_mem_beforeB form.b_not_mem_beforeNegA
+        form.b_not_mem_beforeOutsideB form.b_not_mem_remainder
+        validSource validTarget
+    let targetRotation :=
+      Dyck.oneFaceSignedIsoOfIsRotated
+        (Handle.target_boundary_isRotated_handle a b
+          form.beforeB form.beforeNegA
+          form.beforeOutsideB form.remainder)
+    let validGrouped :
+        (Dyck.oneFace form.groupedWord).IsSurfaceValid :=
+      targetRotation.isSurfaceValid validTarget
+    have hDisplayed :
+        (⟨Dyck.oneFace form.displayedWord, validDisplayed⟩ :
+          ValidPresentation) =
+          ⟨Handle.source a b form.beforeB form.beforeNegA
+            form.beforeOutsideB form.remainder, validSource⟩ :=
+      ValidPresentation.ext hsource
+    rw [hDisplayed] at hToDisplayed
+    exact ⟨validGrouped,
+      hToDisplayed.trans
+        (hHandle.trans
+          (NormalizationEquivalent.ofSignedIso targetRotation))⟩
+  · let signIso := form.negativeInsideSignedIso horientation
+    let validSource :
+        (Handle.source a b form.beforeB form.beforeNegA
+          form.beforeOutsideB form.remainder).IsSurfaceValid :=
+      signIso.isSurfaceValid validDisplayed
+    let validTarget :
+        (Handle.target a b form.beforeB form.beforeNegA
+          form.beforeOutsideB form.remainder).IsSurfaceValid :=
+      Handle.target_isSurfaceValid a b form.beforeB form.beforeNegA
+        form.beforeOutsideB form.remainder validSource
+    have hHandle :
+        NormalizationEquivalent
+          ⟨Handle.source a b form.beforeB form.beforeNegA
+            form.beforeOutsideB form.remainder, validSource⟩
+          ⟨Handle.target a b form.beforeB form.beforeNegA
+            form.beforeOutsideB form.remainder, validTarget⟩ :=
+      Handle.normalizationEquivalent a b
+        form.beforeB form.beforeNegA
+        form.beforeOutsideB form.remainder
+        form.edge_ne
+        form.a_not_mem_beforeB form.a_not_mem_beforeNegA
+        form.a_not_mem_beforeOutsideB form.a_not_mem_remainder
+        form.b_not_mem_beforeB form.b_not_mem_beforeNegA
+        form.b_not_mem_beforeOutsideB form.b_not_mem_remainder
+        validSource validTarget
+    let targetRotation :=
+      Dyck.oneFaceSignedIsoOfIsRotated
+        (Handle.target_boundary_isRotated_handle a b
+          form.beforeB form.beforeNegA
+          form.beforeOutsideB form.remainder)
+    let validGrouped :
+        (Dyck.oneFace form.groupedWord).IsSurfaceValid :=
+      targetRotation.isSurfaceValid validTarget
+    exact ⟨validGrouped,
+      hToDisplayed.trans
+        ((NormalizationEquivalent.ofSignedIso signIso).trans
+          (hHandle.trans
+            (NormalizationEquivalent.ofSignedIso targetRotation)))⟩
 
 /-- The cyclic spelling obtained by displaying a boundary edge at the head of its word. -/
 def BoundaryOccurrenceForm.headWord {n : ℕ}
