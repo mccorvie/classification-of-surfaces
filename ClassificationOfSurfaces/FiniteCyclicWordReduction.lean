@@ -3128,6 +3128,313 @@ theorem exists_normalizationEquivalent {n : ℕ}
 
 end CrosscapBlockCommute
 
+namespace HandleBlockCommute
+
+/-- A completed handle at the head of a positive/negative residual pair. -/
+def positiveSourceWord {n : ℕ}
+    (outer first second : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  [.pos outer, .pos first, .pos second,
+    .neg first, .neg second] ++
+    insideTail ++ .neg outer :: outsideTail
+
+/-- The same completed handle commuted outside the residual pair. -/
+def positiveTargetWord {n : ℕ}
+    (outer first second : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    List (SignedDart (Fin n)) :=
+  [.pos first, .pos second, .neg first,
+    .neg second, .pos outer] ++
+    insideTail ++ .neg outer :: outsideTail
+
+/-- Commuting a completed handle through a residual pair is a four-Dyck chain. -/
+theorem exists_positiveNormalizationEquivalent {n : ℕ}
+    (outer first second : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hfirstSecond : first ≠ second)
+    (hfirstOuter : first ≠ outer)
+    (hsecondOuter : second ≠ outer)
+    (hfirstInside :
+      first ∉ insideTail.map edgeOfDart)
+    (hfirstOutside :
+      first ∉ outsideTail.map edgeOfDart)
+    (hsecondInside :
+      second ∉ insideTail.map edgeOfDart)
+    (hsecondOutside :
+      second ∉ outsideTail.map edgeOfDart)
+    (validSource :
+      (Dyck.oneFace
+        (positiveSourceWord outer first second
+          insideTail outsideTail)).IsSurfaceValid) :
+    ∃ validTarget :
+        (Dyck.oneFace
+          (positiveTargetWord outer first second
+            insideTail outsideTail)).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.oneFace
+          (positiveSourceWord outer first second
+            insideTail outsideTail),
+          validSource⟩
+        ⟨Dyck.oneFace
+          (positiveTargetWord outer first second
+            insideTail outsideTail),
+          validTarget⟩ := by
+  let firstU :=
+    SignedDart.neg second ::
+      insideTail ++
+      SignedDart.neg outer :: outsideTail
+  let firstV : List (SignedDart (Fin n)) :=
+    [.pos outer]
+  let firstX : List (SignedDart (Fin n)) :=
+    [.pos second]
+  have hsourceRotated :
+      (positiveSourceWord outer first second
+        insideTail outsideTail).IsRotated
+        ((Dyck.negativeSource first
+          firstU firstV firstX).boundary 0) := by
+    simpa [positiveSourceWord, firstU, firstV, firstX,
+      Dyck.negativeSource, Dyck.oneFace_boundary_zero,
+      List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l :=
+          [SignedDart.pos outer,
+            SignedDart.pos first,
+            SignedDart.pos second])
+        (l' :=
+          [SignedDart.neg first,
+            SignedDart.neg second] ++
+          insideTail ++
+          SignedDart.neg outer :: outsideTail))
+  let sourceRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated hsourceRotated
+  let validFirstSource :
+      (Dyck.negativeSource first
+        firstU firstV firstX).IsSurfaceValid :=
+    sourceRotation.isSurfaceValid validSource
+  have hfirstU :
+      first ∉ firstU.map edgeOfDart := by
+    simp [firstU, hfirstSecond,
+      hfirstInside, hfirstOuter, hfirstOutside]
+  have hfirstV :
+      first ∉ firstV.map edgeOfDart := by
+    simp [firstV, hfirstOuter]
+  have hfirstX :
+      first ∉ firstX.map edgeOfDart := by
+    simp [firstX, hfirstSecond]
+  let validFirstTarget :=
+    Dyck.negativeTarget_isSurfaceValid first
+      firstU firstV firstX validFirstSource
+  have hfirst :=
+    Dyck.negativeNormalizationEquivalent first
+      firstU firstV firstX
+      hfirstU hfirstV hfirstX
+      validFirstSource validFirstTarget
+
+  let secondU : List (SignedDart (Fin n)) :=
+    [.neg first]
+  let secondV : List (SignedDart (Fin n)) :=
+    [.pos outer]
+  let secondX :=
+    insideTail ++
+      SignedDart.neg outer ::
+      outsideTail ++ [SignedDart.pos first]
+  have hfirstTargetRotated :
+      (Dyck.negativeTarget first
+        firstU firstV firstX).boundary 0 |>.IsRotated
+        ((Dyck.source second
+          secondU secondV secondX).boundary 0) := by
+    simpa [firstU, firstV, firstX,
+      secondU, secondV, secondX,
+      Dyck.negativeTarget, Dyck.source,
+      Dyck.oneFace_boundary_zero,
+      List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l :=
+          firstU ++ [SignedDart.pos first])
+        (l' :=
+          [SignedDart.pos second,
+            SignedDart.neg first,
+            SignedDart.pos outer]))
+  let firstTargetRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      hfirstTargetRotated
+  let validSecondSource :
+      (Dyck.source second
+        secondU secondV secondX).IsSurfaceValid :=
+    firstTargetRotation.isSurfaceValid validFirstTarget
+  have hsecondU :
+      second ∉ secondU.map edgeOfDart := by
+    simp [secondU, hfirstSecond.symm]
+  have hsecondV :
+      second ∉ secondV.map edgeOfDart := by
+    simp [secondV, hsecondOuter]
+  have hsecondX :
+      second ∉ secondX.map edgeOfDart := by
+    simp [secondX, hsecondInside, hsecondOuter,
+      hsecondOutside, hfirstSecond.symm]
+  let validSecondTarget :=
+    Dyck.target_isSurfaceValid second
+      secondU secondV secondX validSecondSource
+  have hsecond :=
+    Dyck.normalizationEquivalent second
+      secondU secondV secondX
+      hsecondU hsecondV hsecondX
+      validSecondSource validSecondTarget
+
+  let thirdU : List (SignedDart (Fin n)) :=
+    [.pos second]
+  let thirdV : List (SignedDart (Fin n)) :=
+    [.pos outer]
+  let thirdX :=
+    SignedDart.neg second ::
+      insideTail ++
+      SignedDart.neg outer :: outsideTail
+  have hsecondTargetRotated :
+      (Dyck.target second
+        secondU secondV secondX).boundary 0 |>.IsRotated
+        ((Dyck.source first
+          thirdU thirdV thirdX).boundary 0) := by
+    simpa [secondU, secondV, secondX,
+      thirdU, thirdV, thirdX,
+      Dyck.target, Dyck.source,
+      Dyck.oneFace_boundary_zero,
+      List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l :=
+          [SignedDart.neg first,
+            SignedDart.neg second] ++
+          insideTail ++
+          SignedDart.neg outer :: outsideTail)
+        (l' :=
+          [SignedDart.pos first,
+            SignedDart.pos second,
+            SignedDart.pos outer]))
+  let secondTargetRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      hsecondTargetRotated
+  let validThirdSource :
+      (Dyck.source first
+        thirdU thirdV thirdX).IsSurfaceValid :=
+    secondTargetRotation.isSurfaceValid validSecondTarget
+  have hthirdU :
+      first ∉ thirdU.map edgeOfDart := by
+    simp [thirdU, hfirstSecond]
+  have hthirdV :
+      first ∉ thirdV.map edgeOfDart := by
+    simp [thirdV, hfirstOuter]
+  have hthirdX :
+      first ∉ thirdX.map edgeOfDart := by
+    simp [thirdX, hfirstSecond, hfirstInside,
+      hfirstOuter, hfirstOutside]
+  let validThirdTarget :=
+    Dyck.target_isSurfaceValid first
+      thirdU thirdV thirdX validThirdSource
+  have hthird :=
+    Dyck.normalizationEquivalent first
+      thirdU thirdV thirdX
+      hthirdU hthirdV hthirdX
+      validThirdSource validThirdTarget
+
+  let fourthU :=
+    insideTail ++
+      SignedDart.neg outer ::
+      outsideTail ++ [SignedDart.pos first]
+  let fourthV : List (SignedDart (Fin n)) :=
+    [.pos outer]
+  let fourthX : List (SignedDart (Fin n)) :=
+    [.neg first]
+  have hthirdTargetRotated :
+      (Dyck.target first
+        thirdU thirdV thirdX).boundary 0 |>.IsRotated
+        ((Dyck.negativeSource second
+          fourthU fourthV fourthX).boundary 0) := by
+    simpa [thirdU, thirdV, thirdX,
+      fourthU, fourthV, fourthX,
+      Dyck.target, Dyck.negativeSource,
+      Dyck.oneFace_boundary_zero,
+      List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l :=
+          [SignedDart.pos second,
+            SignedDart.neg first])
+        (l' :=
+          [SignedDart.neg second] ++
+          insideTail ++
+          [SignedDart.neg outer] ++
+          outsideTail ++
+          [SignedDart.pos first,
+            SignedDart.pos outer]))
+  let thirdTargetRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      hthirdTargetRotated
+  let validFourthSource :
+      (Dyck.negativeSource second
+        fourthU fourthV fourthX).IsSurfaceValid :=
+    thirdTargetRotation.isSurfaceValid validThirdTarget
+  have hfourthU :
+      second ∉ fourthU.map edgeOfDart := by
+    simp [fourthU, hsecondInside, hsecondOuter,
+      hsecondOutside, hfirstSecond.symm]
+  have hfourthV :
+      second ∉ fourthV.map edgeOfDart := by
+    simp [fourthV, hsecondOuter]
+  have hfourthX :
+      second ∉ fourthX.map edgeOfDart := by
+    simp [fourthX, hfirstSecond.symm]
+  let validFourthTarget :=
+    Dyck.negativeTarget_isSurfaceValid second
+      fourthU fourthV fourthX validFourthSource
+  have hfourth :=
+    Dyck.negativeNormalizationEquivalent second
+      fourthU fourthV fourthX
+      hfourthU hfourthV hfourthX
+      validFourthSource validFourthTarget
+  have htargetRotated :
+      (Dyck.negativeTarget second
+        fourthU fourthV fourthX).boundary 0 |>.IsRotated
+        (positiveTargetWord outer first second
+          insideTail outsideTail) := by
+    simpa [fourthU, fourthV, fourthX,
+      positiveTargetWord,
+      Dyck.negativeTarget,
+      Dyck.oneFace_boundary_zero,
+      List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l :=
+          insideTail ++
+            SignedDart.neg outer :: outsideTail)
+        (l' :=
+          [SignedDart.pos first,
+            SignedDart.pos second,
+            SignedDart.neg first,
+            SignedDart.neg second,
+            SignedDart.pos outer]))
+  let targetRotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated htargetRotated
+  let validTarget :
+      (Dyck.oneFace
+        (positiveTargetWord outer first second
+          insideTail outsideTail)).IsSurfaceValid :=
+    targetRotation.isSurfaceValid validFourthTarget
+  exact
+    ⟨validTarget,
+      (NormalizationEquivalent.ofSignedIso sourceRotation).trans
+        (hfirst.trans
+          ((NormalizationEquivalent.ofSignedIso
+              firstTargetRotation).trans
+            (hsecond.trans
+              ((NormalizationEquivalent.ofSignedIso
+                  secondTargetRotation).trans
+                (hthird.trans
+                  ((NormalizationEquivalent.ofSignedIso
+                      thirdTargetRotation).trans
+                    (hfourth.trans
+                      (NormalizationEquivalent.ofSignedIso
+                        targetRotation))))))))⟩
+
+end HandleBlockCommute
+
 /-- One non-residual atom allowed in a classified marked execution state. -/
 inductive ProtectedAtom (n : ℕ)
   | boundary (hole : Fin n) (negative : Bool)
