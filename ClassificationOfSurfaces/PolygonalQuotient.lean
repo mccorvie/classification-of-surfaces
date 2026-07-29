@@ -55,6 +55,19 @@ noncomputable instance (n : ℕ) : TopologicalSpace (PolygonCell n) :=
 theorem continuous_val {n : ℕ} : Continuous (fun x : PolygonCell n => x.val) :=
   continuous_induced_dom
 
+/-- The side count is marking data only: changing it does not change the underlying closed
+disk. -/
+noncomputable def castHomeomorph {m n : ℕ} (h : m = n) :
+    PolygonCell m ≃ₜ PolygonCell n := by
+  subst n
+  exact Homeomorph.refl _
+
+@[simp]
+theorem castHomeomorph_val {m n : ℕ} (h : m = n) (x : PolygonCell m) :
+    (castHomeomorph h x).val = x.val := by
+  subst n
+  rfl
+
 /-- The unit circle included in a polygonal cell. -/
 def ofCircle (n : ℕ) : C(Circle, PolygonCell n) where
   toFun z := ⟨z, by
@@ -84,6 +97,13 @@ noncomputable def reversedSide {n : ℕ} (i : Fin n) : C(unitInterval, PolygonCe
 @[simp]
 theorem reversedSide_apply {n : ℕ} (i : Fin n) (t : unitInterval) :
     reversedSide i t = side i (unitInterval.symm t) :=
+  rfl
+
+@[simp]
+theorem castHomeomorph_side {m n : ℕ} (h : m = n) (i : Fin m)
+    (t : unitInterval) :
+    castHomeomorph h (side i t) = side (Fin.cast h i) t := by
+  subst n
   rfl
 
 @[simp]

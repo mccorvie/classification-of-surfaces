@@ -148,6 +148,44 @@ theorem toFiniteCyclicPresentation_boundary_faceEquiv_get
   simp [FiniteCyclicPresentation.boundary, toFiniteCyclicPresentation,
     finiteCyclicFaceEquiv]
 
+/-- Original triangle-boundary positions are canonically the boundary occurrences of the
+enumerated cyclic presentation. -/
+noncomputable def finiteCyclicOccurrenceEquiv (T : FiniteSurfaceTriangulation S) :
+    T.BoundaryPosition ≃
+      (Σ f : T.toFiniteCyclicPresentation.Face,
+        Fin (T.toFiniteCyclicPresentation.boundary f).length) :=
+  Equiv.sigmaCongr T.finiteCyclicFaceEquiv fun f =>
+    (Fin.castOrderIso
+      (T.toFiniteCyclicPresentation_boundary_faceEquiv_length f).symm).toEquiv
+
+@[simp]
+theorem finiteCyclicOccurrenceEquiv_apply_fst
+    (T : FiniteSurfaceTriangulation S) (o : T.BoundaryPosition) :
+    (T.finiteCyclicOccurrenceEquiv o).1 = T.finiteCyclicFaceEquiv o.1 :=
+  rfl
+
+@[simp]
+theorem finiteCyclicOccurrenceEquiv_apply_val
+    (T : FiniteSurfaceTriangulation S) (o : T.BoundaryPosition) :
+    (T.finiteCyclicOccurrenceEquiv o).2.val = o.2.val :=
+  rfl
+
+@[simp]
+theorem finiteCyclicOccurrenceEquiv_dart
+    (T : FiniteSurfaceTriangulation S) (o : T.BoundaryPosition) :
+    (T.toFiniteCyclicPresentation.boundary
+      (T.finiteCyclicOccurrenceEquiv o).1).get
+        (T.finiteCyclicOccurrenceEquiv o).2 =
+      T.finiteCyclicDartEquiv o.orientedEdge := by
+  rcases o with ⟨f, i⟩
+  change (T.toFiniteCyclicPresentation.boundary
+      (T.finiteCyclicFaceEquiv f)).get
+        (Fin.cast
+          (T.toFiniteCyclicPresentation_boundary_faceEquiv_length f).symm i) =
+    T.finiteCyclicDartEquiv ((T.triangleBoundary f).get i)
+  rw [T.toFiniteCyclicPresentation_boundary_faceEquiv_get]
+  congr
+
 /-- Number of occurrences of an original unoriented edge in one stored triangle boundary. -/
 noncomputable def boundaryEdgeCount
     (T : FiniteSurfaceTriangulation S) (f : T.Triangle) (e : T.Edge) : ℕ := by
@@ -373,7 +411,7 @@ namespace GeometricTriangulation
 variable {S : Type*} [TopologicalSpace S]
 
 /-- The finite cyclic presentation underlying a geometric triangulation. -/
-noncomputable def toFiniteCyclicPresentation (T : GeometricTriangulation S) :
+@[reducible] noncomputable def toFiniteCyclicPresentation (T : GeometricTriangulation S) :
     FiniteCyclicPresentation :=
   T.toFiniteSurfaceTriangulation.toFiniteCyclicPresentation
 

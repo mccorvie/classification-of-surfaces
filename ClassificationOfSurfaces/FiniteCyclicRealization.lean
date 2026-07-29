@@ -147,6 +147,21 @@ theorem card_edgeOccurrences (P : FiniteCyclicPresentation) (e : P.Edge) :
     (P.edgeOccurrences e).card = P.edgeMultiplicity e :=
   (P.edgeMultiplicity_eq_card_edgeOccurrences e).symm
 
+/-- Two distinct occurrences of the same edge certify that the edge is internal. -/
+theorem not_isBoundaryEdge_of_ne_of_edge_eq
+    {P : FiniteCyclicPresentation} {o p : P.BoundaryOccurrence}
+    (hop : o ≠ p) (hedge : p.edge = o.edge) :
+    ¬P.IsBoundaryEdge o.edge := by
+  intro hboundary
+  have ho : o ∈ P.edgeOccurrences o.edge :=
+    (P.mem_edgeOccurrences o.edge o).mpr rfl
+  have hp : p ∈ P.edgeOccurrences o.edge :=
+    (P.mem_edgeOccurrences o.edge p).mpr hedge
+  have hcard : 1 < (P.edgeOccurrences o.edge).card :=
+    Finset.one_lt_card.mpr ⟨o, ho, p, hp, hop⟩
+  rw [P.card_edgeOccurrences, hboundary] at hcard
+  omega
+
 private theorem dart_eq_or_eq_flip_iff_edge_eq
     {P : FiniteCyclicPresentation} (x d : P.Dart) :
     x = d ∨ x = d.flip ↔ edgeOfDart x = edgeOfDart d := by
