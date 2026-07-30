@@ -1,11 +1,20 @@
 # Classification of Compact Surfaces
 
+![Classification of Surfaces](images/tcos-hero.png)
+
 This repository contains a Lean proof of the Lean Eval challenge
 `topological_classification_of_surfaces`.  [Link](https://lean-lang.org/eval/problems/topological_classification_of_surfaces/)
 
 It proves that every compact connected Hausdorff topological 2-manifold with boundary is
 homeomorphic to the sphere, an orientable normal-form quotient, or a non-orientable normal-form
 quotient.
+
+## Authorship
+
+This is a collaborative work of the SF LEAN meetup, undertaken as an exercise in autoformalization.  Most of the autoformalization work was done via ChatGPT Sol, with contributions from Claude Fable and other models.
+
+If you are in the bay area, come to the [weekly meetup](https://luma.com/yi9idc15) at the SF Mox coworking space.
+
 
 ## Documents
 
