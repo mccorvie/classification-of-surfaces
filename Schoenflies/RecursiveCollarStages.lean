@@ -1,5 +1,5 @@
 import Schoenflies.AvoidingLevelCollars
-import Schoenflies.SynchronizedCollarCells
+import Schoenflies.ExactSynchronizedCollarCells
 
 /-!
 # Recursive synchronized collar stages
@@ -35,7 +35,7 @@ structure RecursiveInsideCollarStep (I : J.InitialAngularArcs)
   cell_disjoint : ∀ a : LevelAddress level,
     Disjoint P.closedRegion
       (closure
-        (family.forgetObstacle.synchronizedAuxiliaryJordanCircle a).inside)
+        (family.forgetObstacle.exactSynchronizedAuxiliaryJordanCircle a).inside)
 
 namespace RecursiveInsideCollarStep
 
@@ -77,7 +77,7 @@ theorem nonempty_recursiveInsideCollarStep
   obtain ⟨Ncarrier, hNcarrierPos, hNcarrier⟩ :=
     I.eventually_carrier_synchronizedPolygonalCircle_subset_thickening hhalf
   obtain ⟨Ncell, hNcell⟩ :=
-    LevelAvoidingJoinFamily.eventually_closure_inside_synchronizedAuxiliary_subset_ball
+    LevelAvoidingJoinFamily.eventually_closure_inside_exactSynchronizedAuxiliary_subset_ball
       I hhalf
   let N := max Ncarrier Ncell
   have hNpos : 1 ≤ N := hNcarrierPos.trans (le_max_left _ _)
@@ -97,7 +97,7 @@ theorem nonempty_recursiveInsideCollarStep
     hseparated.mono_right hcarrierNear
   have hcellDisjoint : ∀ a : LevelAddress N,
       Disjoint P.closedRegion
-        (closure (F.synchronizedAuxiliaryJordanCircle a).inside) := by
+        (closure (F.exactSynchronizedAuxiliaryJordanCircle a).inside) := by
     intro a
     apply hseparated.mono_right
     exact (hNcell N (le_max_right _ _) F a).trans <| by

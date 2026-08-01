@@ -1,0 +1,359 @@
+import Schoenflies.JordanRegionBounds
+import Schoenflies.SynchronizedPolygonalCircle
+import ClassificationOfSurfaces.Moise.GraphPolygonalization
+
+/-!
+# Exact synchronized collar cells
+
+The first auxiliary-cell wrapper loop-erased the complete return independently
+of the middle synchronized crosscut.  This file instead concatenates two
+straight boundary-side hair segments with that *same* middle path.  Hence the
+auxiliary-cell boundary literally contains the polygonal-circle crosscut used
+by the global collar.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+namespace JordanCircle
+namespace InitialAngularArcs
+namespace LevelAvoidingJoinFamily
+
+variable {J : JordanCircle} {I : J.InitialAngularArcs}
+  {n : ℕ} {epsilon : ℝ}
+  (F : I.LevelAvoidingJoinFamily n epsilon)
+
+theorem rightBaseSegment_inter_range_synchronizedCrosscutPath
+    (a : LevelAddress n) :
+    segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) =
+      {F.rightSynchronizedPoint a} := by
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxBase, hxRange⟩
+    have hxSet := F.range_synchronizedCrosscutPath_subset a hxRange
+    have hxBaseHair : x ∈ (I.levelRightHair a).carrier :=
+      (convex_segment
+        (J.curvePoint (I.levelArc a).right : Plane)
+        (I.levelRightHair a).tip).segment_subset
+          (left_mem_segment ℝ _ _)
+          (F.rightSynchronizedPoint_mem_rightHair a) hxBase
+    rcases hxSet with (hxLeft | hxMiddle) | hxRight
+    · exact False.elim <| Set.disjoint_left.mp
+        (I.disjoint_levelEndpointHairs a)
+        (F.leftExtension_subset_levelLeftHair a hxLeft) hxBaseHair
+    · have hxTrim : x =
+          F.trimmedRightPoint (levelIndexOf n a) := by
+        apply mem_singleton_iff.mp
+        rw [← F.range_trimmedPath_inter_rightHair (levelIndexOf n a)]
+        refine ⟨hxMiddle, ?_⟩
+        rw [levelAddressAt_levelIndexOf]
+        exact hxBaseHair
+      have htrimBase : F.trimmedRightPoint (levelIndexOf n a) ∈
+          segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+            (F.rightSynchronizedPoint a) := hxTrim ▸ hxBase
+      have htrimInter : F.trimmedRightPoint (levelIndexOf n a) ∈
+          segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+                (F.rightSynchronizedPoint a) ∩
+            segment ℝ (F.rightSynchronizedPoint a)
+              (F.trimmedRightPoint (levelIndexOf n a)) :=
+        ⟨htrimBase, right_mem_segment ℝ _ _⟩
+      have htrimSync : F.trimmedRightPoint (levelIndexOf n a) =
+          F.rightSynchronizedPoint a := by
+        rw [F.rightBaseSegment_inter_rightExtension a] at htrimInter
+        exact mem_singleton_iff.mp htrimInter
+      exact mem_singleton_iff.mpr (hxTrim.trans htrimSync)
+    · rw [← F.rightBaseSegment_inter_rightExtension a]
+      exact ⟨hxBase, by simpa [segment_symm] using hxRight⟩
+  · intro x hx
+    have hxEq : x = F.rightSynchronizedPoint a := mem_singleton_iff.mp hx
+    subst x
+    exact ⟨right_mem_segment ℝ _ _,
+      Path.target_mem_range (F.synchronizedCrosscutPath a)⟩
+
+theorem leftBaseSegment_inter_range_synchronizedCrosscutPath
+    (a : LevelAddress n) :
+    segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+          (F.leftSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) =
+      {F.leftSynchronizedPoint a} := by
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxBase, hxRange⟩
+    have hxSet := F.range_synchronizedCrosscutPath_subset a hxRange
+    have hxBaseHair : x ∈ (I.levelLeftHair a).carrier :=
+      (convex_segment
+        (J.curvePoint (I.levelArc a).left : Plane)
+        (I.levelLeftHair a).tip).segment_subset
+          (left_mem_segment ℝ _ _)
+          (F.leftSynchronizedPoint_mem_leftHair a) hxBase
+    rcases hxSet with (hxLeft | hxMiddle) | hxRight
+    · rw [← F.leftBaseSegment_inter_leftExtension a]
+      exact ⟨hxBase, hxLeft⟩
+    · have hxTrim : x = F.trimmedLeftPoint (levelIndexOf n a) := by
+        apply mem_singleton_iff.mp
+        rw [← F.range_trimmedPath_inter_leftHair (levelIndexOf n a)]
+        refine ⟨hxMiddle, ?_⟩
+        rw [levelAddressAt_levelIndexOf]
+        exact hxBaseHair
+      have htrimBase : F.trimmedLeftPoint (levelIndexOf n a) ∈
+          segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+            (F.leftSynchronizedPoint a) := hxTrim ▸ hxBase
+      have htrimInter : F.trimmedLeftPoint (levelIndexOf n a) ∈
+          segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+                (F.leftSynchronizedPoint a) ∩
+            segment ℝ (F.leftSynchronizedPoint a)
+              (F.trimmedLeftPoint (levelIndexOf n a)) :=
+        ⟨htrimBase, right_mem_segment ℝ _ _⟩
+      have htrimSync : F.trimmedLeftPoint (levelIndexOf n a) =
+          F.leftSynchronizedPoint a := by
+        rw [F.leftBaseSegment_inter_leftExtension a] at htrimInter
+        exact mem_singleton_iff.mp htrimInter
+      exact mem_singleton_iff.mpr (hxTrim.trans htrimSync)
+    · exact False.elim <| Set.disjoint_left.mp
+        (I.disjoint_levelEndpointHairs a)
+        hxBaseHair (F.rightExtension_subset_levelRightHair a hxRight)
+  · intro x hx
+    have hxEq : x = F.leftSynchronizedPoint a := mem_singleton_iff.mp hx
+    subst x
+    exact ⟨right_mem_segment ℝ _ _,
+      Path.source_mem_range (F.synchronizedCrosscutPath a)⟩
+
+theorem disjoint_rightBaseSegment_leftBaseSegment (a : LevelAddress n) :
+    Disjoint
+      (segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (F.rightSynchronizedPoint a))
+      (segment ℝ (F.leftSynchronizedPoint a)
+        (J.curvePoint (I.levelArc a).left : Plane)) := by
+  apply (I.disjoint_levelEndpointHairs a).symm.mono
+  · exact (convex_segment
+      (J.curvePoint (I.levelArc a).right : Plane)
+      (I.levelRightHair a).tip).segment_subset
+        (left_mem_segment ℝ _ _)
+        (F.rightSynchronizedPoint_mem_rightHair a)
+  · rw [segment_symm]
+    exact (convex_segment
+      (J.curvePoint (I.levelArc a).left : Plane)
+      (I.levelLeftHair a).tip).segment_subset
+        (left_mem_segment ℝ _ _)
+        (F.leftSynchronizedPoint_mem_leftHair a)
+
+/-- The exact return from the right boundary endpoint to the left endpoint,
+using the very same synchronized crosscut path as the polygonal collar. -/
+noncomputable def exactSynchronizedReturnPath (a : LevelAddress n) :
+    Path (J.curvePoint (I.levelArc a).right : Plane)
+      (J.curvePoint (I.levelArc a).left : Plane) :=
+  (Path.segment (J.curvePoint (I.levelArc a).right : Plane)
+      (F.rightSynchronizedPoint a)).trans
+    ((F.synchronizedCrosscutPath a).symm.trans
+      (Path.segment (F.leftSynchronizedPoint a)
+        (J.curvePoint (I.levelArc a).left : Plane)))
+
+theorem range_exactSynchronizedReturnPath (a : LevelAddress n) :
+    range (F.exactSynchronizedReturnPath a) =
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) ∪
+        range (F.synchronizedCrosscutPath a) ∪
+        segment ℝ (F.leftSynchronizedPoint a)
+          (J.curvePoint (I.levelArc a).left : Plane) := by
+  simp [exactSynchronizedReturnPath, Path.trans_range,
+    Path.symm_range, Path.range_segment, union_assoc]
+
+theorem range_exactSynchronizedReturnPath_subset_returnSet
+    (a : LevelAddress n) :
+    range (F.exactSynchronizedReturnPath a) ⊆
+      F.synchronizedReturnSet a := by
+  rw [F.range_exactSynchronizedReturnPath a]
+  rintro x ((hxRight | hxMiddle) | hxLeft)
+  · exact Or.inr (by simpa [segment_symm] using hxRight)
+  · exact Or.inl (Or.inr
+      (F.range_synchronizedCrosscutPath_subset a hxMiddle))
+  · exact Or.inl (Or.inl (by simpa [segment_symm] using hxLeft))
+
+theorem exactSynchronizedReturnPath_injective (a : LevelAddress n) :
+    Function.Injective (F.exactSynchronizedReturnPath a) := by
+  let first := Path.segment
+    (J.curvePoint (I.levelArc a).right : Plane)
+    (F.rightSynchronizedPoint a)
+  let middle := (F.synchronizedCrosscutPath a).symm
+  let last := Path.segment (F.leftSynchronizedPoint a)
+    (J.curvePoint (I.levelArc a).left : Plane)
+  have hfirstNe : (J.curvePoint (I.levelArc a).right : Plane) ≠
+      F.rightSynchronizedPoint a := by
+    intro h
+    exact J.inside_subset_compl (F.rightSynchronizedPoint_inside a)
+      (by rw [← h]; exact (J.curvePoint (I.levelArc a).right).2)
+  have hlastNe : F.leftSynchronizedPoint a ≠
+      (J.curvePoint (I.levelArc a).left : Plane) := by
+    intro h
+    exact J.inside_subset_compl (F.leftSynchronizedPoint_inside a)
+      (by rw [h]; exact (J.curvePoint (I.levelArc a).left).2)
+  have hfirstInj : Function.Injective first :=
+    Path.segment_injective_of_ne hfirstNe
+  have hmiddleInj : Function.Injective middle := by
+    intro s t hst
+    apply unitInterval.symm_bijective.injective
+    exact F.synchronizedCrosscutPath_injective a hst
+  have hlastInj : Function.Injective last :=
+    Path.segment_injective_of_ne hlastNe
+  have hmiddleLastInter : range middle ∩ range last =
+      {F.leftSynchronizedPoint a} := by
+    simpa [middle, last, Path.symm_range, Path.range_segment,
+      inter_comm, segment_symm] using
+        F.leftBaseSegment_inter_range_synchronizedCrosscutPath a
+  have htailInj : Function.Injective (middle.trans last) :=
+    Path.trans_injective_of_range_inter middle last hmiddleInj hlastInj
+      hmiddleLastInter
+  have hfirstMiddleInter : range first ∩ range middle =
+      {F.rightSynchronizedPoint a} := by
+    simpa [first, middle, Path.symm_range, Path.range_segment] using
+      F.rightBaseSegment_inter_range_synchronizedCrosscutPath a
+  have hfirstLast : Disjoint (range first) (range last) := by
+    simpa [first, last, Path.range_segment] using
+      F.disjoint_rightBaseSegment_leftBaseSegment a
+  have hfirstTailInter : range first ∩ range (middle.trans last) =
+      {F.rightSynchronizedPoint a} := by
+    rw [Path.trans_range, inter_union_distrib_left, hfirstMiddleInter,
+      Set.disjoint_iff_inter_eq_empty.mp hfirstLast, union_empty]
+  exact Path.trans_injective_of_range_inter first (middle.trans last)
+    hfirstInj htailInj hfirstTailInter
+
+theorem range_levelArcPath_inter_exactSynchronizedReturnPath
+    (a : LevelAddress n) :
+    range (I.levelArc a).toPath ∩
+        range (F.exactSynchronizedReturnPath a) =
+      {(J.curvePoint (I.levelArc a).left : Plane),
+        (J.curvePoint (I.levelArc a).right : Plane)} := by
+  ext x
+  constructor
+  · rintro ⟨hxArcPath, hxReturn⟩
+    have hxArc : x ∈ (I.levelArc a).curveArcPlane :=
+      (I.levelArc a).range_toPath.le hxArcPath
+    have hxCarrier : x ∈ J.carrier :=
+      (I.levelArc a).curveArcPlane_subset_carrier J hxArc
+    rcases F.synchronizedReturnSet_subset_insideCrosscutSet a
+        (F.range_exactSynchronizedReturnPath_subset_returnSet a hxReturn) with
+      hxInside | hxEndpoints
+    · exact False.elim (J.inside_subset_compl hxInside hxCarrier)
+    · exact hxEndpoints
+  · intro hx
+    rcases hx with hleft | hright
+    · have hxEq : x = (J.curvePoint (I.levelArc a).left : Plane) := hleft
+      subst x
+      exact ⟨Path.source_mem_range (I.levelArc a).toPath,
+        Path.target_mem_range (F.exactSynchronizedReturnPath a)⟩
+    · have hxEq : x = (J.curvePoint (I.levelArc a).right : Plane) :=
+        mem_singleton_iff.mp hright
+      subst x
+      exact ⟨Path.target_mem_range (I.levelArc a).toPath,
+        Path.source_mem_range (F.exactSynchronizedReturnPath a)⟩
+
+/-- The exact auxiliary Jordan cell whose polygonal side contains the global
+collar's synchronized crosscut literally. -/
+noncomputable def exactSynchronizedAuxiliaryJordanCircle
+    (a : LevelAddress n) : JordanCircle :=
+  TwoArcJordan.toJordanCircle (I.levelArc a).toPath
+    (F.exactSynchronizedReturnPath a)
+    (I.levelArc a).toPath_injective
+    (F.exactSynchronizedReturnPath_injective a)
+    (F.range_levelArcPath_inter_exactSynchronizedReturnPath a)
+
+@[simp] theorem carrier_exactSynchronizedAuxiliaryJordanCircle
+    (a : LevelAddress n) :
+    (F.exactSynchronizedAuxiliaryJordanCircle a).carrier =
+      (I.levelArc a).curveArcPlane ∪
+        range (F.exactSynchronizedReturnPath a) := by
+  rw [exactSynchronizedAuxiliaryJordanCircle,
+    TwoArcJordan.carrier_toJordanCircle, (I.levelArc a).range_toPath]
+
+theorem carrier_exactSynchronizedAuxiliaryJordanCircle_subset
+    (a : LevelAddress n) :
+    (F.exactSynchronizedAuxiliaryJordanCircle a).carrier ⊆
+      J.inside ∪ J.carrier := by
+  rw [F.carrier_exactSynchronizedAuxiliaryJordanCircle a]
+  apply union_subset
+  · exact fun x hx => Or.inr
+      ((I.levelArc a).curveArcPlane_subset_carrier J hx)
+  · intro x hx
+    rcases F.synchronizedReturnSet_subset_insideCrosscutSet a
+        (F.range_exactSynchronizedReturnPath_subset_returnSet a hx) with
+      hxInside | hxEndpoints
+    · exact Or.inl hxInside
+    · rcases hxEndpoints with hleft | hright
+      · subst x
+        exact Or.inr (J.curvePoint (I.levelArc a).left).2
+      · have hxEq : x =
+            (J.curvePoint (I.levelArc a).right : Plane) :=
+          mem_singleton_iff.mp hright
+        subst x
+        exact Or.inr (J.curvePoint (I.levelArc a).right).2
+
+theorem inside_exactSynchronizedAuxiliaryJordanCircle_subset
+    (a : LevelAddress n) :
+    (F.exactSynchronizedAuxiliaryJordanCircle a).inside ⊆ J.inside :=
+  J.inside_subset_inside_of_carrier_subset
+    (F.exactSynchronizedAuxiliaryJordanCircle a)
+    (F.carrier_exactSynchronizedAuxiliaryJordanCircle_subset a)
+
+theorem range_synchronizedCrosscutPath_subset_exactAuxiliaryCarrier
+    (a : LevelAddress n) :
+    range (F.synchronizedCrosscutPath a) ⊆
+      (F.exactSynchronizedAuxiliaryJordanCircle a).carrier := by
+  rw [F.carrier_exactSynchronizedAuxiliaryJordanCircle a,
+    F.range_exactSynchronizedReturnPath a]
+  exact fun x hx => Or.inr (Or.inl (Or.inr hx))
+
+/-- Every edge of the global polygonal collar is literally part of the
+boundary of its corresponding exact auxiliary cell. -/
+theorem carrier_synchronizedPolygonalCircle_subset_iUnion_exactAuxiliaryCarrier
+    (hn : 1 ≤ n) :
+    (F.synchronizedPolygonalCircle hn).carrier ⊆
+      ⋃ a : LevelAddress n,
+        (F.exactSynchronizedAuxiliaryJordanCircle a).carrier := by
+  rw [F.carrier_synchronizedPolygonalCircle hn]
+  intro x hx
+  obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx
+  exact Set.mem_iUnion.mpr
+    ⟨a, F.range_synchronizedCrosscutPath_subset_exactAuxiliaryCarrier a hxa⟩
+
+theorem closure_inside_exactSynchronizedAuxiliary_subset_closedBall
+    (a : LevelAddress n) {c : Plane} {rho : ℝ}
+    (hArc : (I.levelArc a).curveArcPlane ⊆ closedBall c rho)
+    (hReturn : F.synchronizedReturnSet a ⊆ closedBall c rho) :
+    closure (F.exactSynchronizedAuxiliaryJordanCircle a).inside ⊆
+      closedBall c rho := by
+  apply closure_inside_subset_closedBall_of_carrier_subset
+    (F.exactSynchronizedAuxiliaryJordanCircle a)
+  rw [F.carrier_exactSynchronizedAuxiliaryJordanCircle a]
+  exact union_subset hArc
+    ((F.range_exactSynchronizedReturnPath_subset_returnSet a).trans hReturn)
+
+/-- The exact closed cells shrink uniformly with the synchronized levels. -/
+theorem eventually_closure_inside_exactSynchronizedAuxiliary_subset_ball
+    (I : J.InitialAngularArcs) {rho : ℝ} (hrho : 0 < rho) :
+    ∃ N : ℕ, ∀ n : ℕ, N ≤ n →
+      ∀ (F : I.LevelAvoidingJoinFamily n (rho / 4))
+        (a : LevelAddress n),
+        closure (F.exactSynchronizedAuxiliaryJordanCircle a).inside ⊆
+          closedBall (J.curvePoint (I.levelArc a).left : Plane) rho := by
+  obtain ⟨Narc, hArc⟩ := I.eventually_levelArc_curvePoint_dist_lt hrho
+  obtain ⟨Nreturn, hReturn⟩ :=
+    LevelAvoidingJoinFamily.eventually_synchronizedReturnSet_subset_ball
+      I hrho
+  refine ⟨max Narc Nreturn, ?_⟩
+  intro n hn F a
+  have hnArc : Narc ≤ n := (le_max_left Narc Nreturn).trans hn
+  have hnReturn : Nreturn ≤ n := (le_max_right Narc Nreturn).trans hn
+  apply F.closure_inside_exactSynchronizedAuxiliary_subset_closedBall
+  · rintro x ⟨y, ⟨t, ht, rfl⟩, rfl⟩
+    rw [mem_closedBall]
+    exact (hArc n hnArc a t ht (I.levelArc a).left
+      (left_mem_Icc.mpr (I.levelArc a).left_lt_right.le)).le
+  · exact (hReturn n hnReturn F a).trans ball_subset_closedBall
+
+end LevelAvoidingJoinFamily
+end InitialAngularArcs
+end JordanCircle
+
+end Schoenflies

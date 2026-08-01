@@ -43,6 +43,7 @@ import Schoenflies.CyclicLevelEdges
 import Schoenflies.SynchronizedPolygonalCircle
 import Schoenflies.AvoidingLevelCollars
 import Schoenflies.SynchronizedCollarCells
+import Schoenflies.ExactSynchronizedCollarCells
 import Schoenflies.RecursiveCollarStages
 import Schoenflies.TrimmedCollarCells
 import Schoenflies.LevelHairSynchronization
