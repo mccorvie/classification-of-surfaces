@@ -1,5 +1,6 @@
 import Schoenflies.AvoidingLevelCollars
 import Schoenflies.ExactSynchronizedCollarCells
+import Schoenflies.SideConstancy
 
 /-!
 # Recursive synchronized collar stages
@@ -54,6 +55,29 @@ theorem circle_closedRegion_subset_inside :
     S.circle.closedRegion ⊆ J.inside :=
   LevelAvoidingJoinFamily.closedRegion_synchronizedPolygonalCircle_subset_inside
     S.family.forgetObstacle S.one_le_level
+
+/-- Since the old polygonal disk is connected and avoids the new collar, it
+lies wholly on one side of that collar.  The remaining nesting argument only
+has to rule out the exterior alternative. -/
+theorem old_closedRegion_side_dichotomy :
+    P.closedRegion ⊆ S.circle.interiorRegion ∨
+      P.closedRegion ⊆ S.circle.exteriorRegion := by
+  have hcomplement : P.closedRegion ⊆ S.circle.toJordanCircle.carrierᶜ := by
+    rw [S.circle.carrier_toJordanCircle]
+    intro x hxClosed hxCarrier
+    exact Set.disjoint_left.mp S.circle_carrier_disjoint
+      hxClosed hxCarrier
+  rcases P.isConnected_closedRegion.isPreconnected.subset_or_subset
+      S.circle.toJordanCircle.inside_isOpen
+      S.circle.toJordanCircle.outside_isOpen
+      S.circle.toJordanCircle.inside_disjoint_outside
+      (by
+        rw [S.circle.toJordanCircle.inside_union_outside]
+        exact hcomplement) with hinside | houtside
+  · left
+    simpa only [S.circle.inside_toJordanCircle] using hinside
+  · right
+    simpa only [S.circle.outside_toJordanCircle] using houtside
 
 theorem original_path_disjoint (i : Fin (levelAddressCount S.level)) :
     Disjoint (range (S.family.forgetObstacle.path i)) P.closedRegion :=

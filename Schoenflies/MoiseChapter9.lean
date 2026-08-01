@@ -36,6 +36,7 @@ import Schoenflies.FiniteAvoidingCrosscuts
 import Schoenflies.FiniteLevelCrosscuts
 import Schoenflies.FiniteLevelHairSynchronization
 import Schoenflies.CyclicLevelAddresses
+import Schoenflies.LevelArcCover
 import Schoenflies.LevelEndpointIncidence
 import Schoenflies.SynchronizedLevelReturns
 import Schoenflies.ResolvedPolygonalArcs
@@ -44,6 +45,7 @@ import Schoenflies.SynchronizedPolygonalCircle
 import Schoenflies.AvoidingLevelCollars
 import Schoenflies.SynchronizedCollarCells
 import Schoenflies.ExactSynchronizedCollarCells
+import Schoenflies.JordanRegionRecognition
 import Schoenflies.RecursiveCollarStages
 import Schoenflies.TrimmedCollarCells
 import Schoenflies.LevelHairSynchronization

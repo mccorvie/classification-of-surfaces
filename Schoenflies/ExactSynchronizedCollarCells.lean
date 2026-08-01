@@ -1,4 +1,5 @@
 import Schoenflies.JordanRegionBounds
+import Schoenflies.LevelArcCover
 import Schoenflies.SynchronizedPolygonalCircle
 import ClassificationOfSurfaces.Moise.GraphPolygonalization
 
@@ -316,6 +317,20 @@ theorem carrier_synchronizedPolygonalCircle_subset_iUnion_exactAuxiliaryCarrier
   obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx
   exact Set.mem_iUnion.mpr
     ⟨a, F.range_synchronizedCrosscutPath_subset_exactAuxiliaryCarrier a hxa⟩
+
+/-- The exact auxiliary-cell boundaries also cover the whole original Jordan
+carrier through their wild boundary arcs. -/
+theorem carrier_subset_iUnion_exactAuxiliaryCarrier :
+    J.carrier ⊆
+      ⋃ a : LevelAddress n,
+        (F.exactSynchronizedAuxiliaryJordanCircle a).carrier := by
+  rw [← I.iUnion_levelArc_curveArcPlane n]
+  intro x hx
+  obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx
+  apply Set.mem_iUnion.mpr
+  refine ⟨a, ?_⟩
+  rw [F.carrier_exactSynchronizedAuxiliaryJordanCircle a]
+  exact Or.inl hxa
 
 theorem closure_inside_exactSynchronizedAuxiliary_subset_closedBall
     (a : LevelAddress n) {c : Plane} {rho : ℝ}
