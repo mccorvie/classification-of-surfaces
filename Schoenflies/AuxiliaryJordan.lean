@@ -47,6 +47,21 @@ noncomputable def returnPath (A : J.AccessibleAngularArc) :
     Path (J.curvePoint A.right : Plane) (J.curvePoint A.left : Plane) :=
   (A.returnBrokenLine.toPath A.endpoint_ne).symm
 
+/-- The loop-erased polygonal chain whose listed segment carrier is exactly
+the image of `returnPath`. -/
+noncomputable def returnCarrierBrokenLine (A : J.AccessibleAngularArc) :
+    SimpleBrokenLine
+      (J.insideCrosscutSet (J.curvePoint A.left) (J.curvePoint A.right))
+      (J.curvePoint A.left) (J.curvePoint A.right) :=
+  A.returnBrokenLine.carrierBrokenLine A.endpoint_ne
+
+theorem segmentCarrier_returnCarrierBrokenLine
+    (A : J.AccessibleAngularArc) :
+    A.returnCarrierBrokenLine.data.segmentCarrier = range A.returnPath := by
+  rw [returnCarrierBrokenLine,
+    A.returnBrokenLine.segmentCarrier_carrierBrokenLine A.endpoint_ne,
+    returnPath, Path.symm_range]
+
 theorem returnPath_injective (A : J.AccessibleAngularArc) :
     Injective A.returnPath := by
   intro s t hst

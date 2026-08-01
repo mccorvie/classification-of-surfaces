@@ -12,7 +12,7 @@ orientation or winding-number calculation.
 
 namespace Schoenflies
 
-open Set Function Bornology
+open Metric Set Function Bornology
 open LeanEval.Topology.ClassificationOfSurfaces.Moise
 
 namespace PolygonalTransport
@@ -168,6 +168,52 @@ theorem exists_translation (P : PolygonalCircle) (v : Plane) :
   exact ⟨Q, hQcarrier,
     image_interiorRegion P Q h hcarrier,
     image_exteriorRegion P Q h hcarrier⟩
+
+/-- Compact subsets strictly on the two sides of a polygon remain on their
+respective sides after every sufficiently small translation. -/
+theorem exists_translation_stabilityRadius
+    (P : PolygonalCircle) {C D : Set Plane}
+    (hCcompact : IsCompact C) (hDcompact : IsCompact D)
+    (hC : C ⊆ P.interiorRegion) (hD : D ⊆ P.exteriorRegion) :
+    ∃ eta : ℝ, 0 < eta ∧
+      ∀ (v : Plane) (Q : PolygonalCircle), ‖v‖ < eta →
+        Q.carrier = (Homeomorph.addLeft v : Plane ≃ₜ Plane) '' P.carrier →
+        C ⊆ Q.interiorRegion ∧ D ⊆ Q.exteriorRegion := by
+  obtain ⟨deltaC, hdeltaC, hCthick⟩ :=
+    hCcompact.exists_cthickening_subset_open P.isOpen_interiorRegion hC
+  obtain ⟨deltaD, hdeltaD, hDthick⟩ :=
+    hDcompact.exists_cthickening_subset_open P.isOpen_exteriorRegion hD
+  let eta : ℝ := min deltaC deltaD
+  have heta : 0 < eta := lt_min hdeltaC hdeltaD
+  refine ⟨eta, heta, ?_⟩
+  intro v Q hv hQcarrier
+  let h : Plane ≃ₜ Plane := Homeomorph.addLeft v
+  have hcarrier : h '' P.carrier = Q.carrier := hQcarrier.symm
+  have hvC : ‖v‖ < deltaC := hv.trans_le (min_le_left _ _)
+  have hvD : ‖v‖ < deltaD := hv.trans_le (min_le_right _ _)
+  constructor
+  · intro x hxC
+    have hxBall : x - v ∈ closedBall x deltaC := by
+      rw [mem_closedBall]
+      simpa [dist_eq_norm, norm_neg] using hvC.le
+    have hxPre : x - v ∈ P.interiorRegion :=
+      hCthick (closedBall_subset_cthickening hxC deltaC hxBall)
+    have hxImage : x ∈ h '' P.interiorRegion := by
+      refine ⟨x - v, hxPre, ?_⟩
+      simp [h]
+    rw [image_interiorRegion P Q h hcarrier] at hxImage
+    exact hxImage
+  · intro x hxD
+    have hxBall : x - v ∈ closedBall x deltaD := by
+      rw [mem_closedBall]
+      simpa [dist_eq_norm, norm_neg] using hvD.le
+    have hxPre : x - v ∈ P.exteriorRegion :=
+      hDthick (closedBall_subset_cthickening hxD deltaD hxBall)
+    have hxImage : x ∈ h '' P.exteriorRegion := by
+      refine ⟨x - v, hxPre, ?_⟩
+      simp [h]
+    rw [image_exteriorRegion P Q h hcarrier] at hxImage
+    exact hxImage
 
 end PolygonalTransport
 

@@ -10,6 +10,8 @@ import Schoenflies.TwoArcJordan
 import Schoenflies.AuxiliaryJordan
 import Schoenflies.SeparatorFrame
 import Schoenflies.PolygonalTransport
+import Schoenflies.GenericPolygonalFrame
+import Schoenflies.FiniteSeparatorSetup
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.RegionalExtensions
 import ClassificationOfSurfaces.Moise.BrokenLine
