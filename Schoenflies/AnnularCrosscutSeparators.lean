@@ -30,6 +30,7 @@ structure AnnularCrosscut (P Q : PolygonalCircle) where
   innerPoint_mem : innerPoint ∈ P.carrier
   range_inter_outer : range path ∩ Q.carrier = {outerPoint}
   range_inter_inner : range path ∩ P.carrier = {innerPoint}
+  range_subset_closedShell : range path ⊆ PolygonalCircle.closedShell P Q
 
 namespace AnnularCrosscut
 
@@ -167,6 +168,7 @@ theorem exists_jordanSeparator
           Injective innerArc ∧ Injective outerArc ∧
           range innerArc ⊆ P.carrier ∧
           range outerArc ⊆ Q.carrier ∧
+          K.carrier ⊆ PolygonalCircle.closedShell P Q ∧
           K.carrier = range A.path ∪ range innerArc ∪
             range B.path ∪ range outerArc := by
   let innerSplit := Classical.choice <|
@@ -199,7 +201,17 @@ theorem exists_jordanSeparator
       outerSplit.second_injective hBridgeOuter
   refine ⟨innerArc, outerArc, K,
     innerSplit.first_injective, outerSplit.second_injective,
-    hInnerRange, hOuterRange, ?_⟩
+    hInnerRange, hOuterRange, ?_, ?_⟩
+  · dsimp only [K]
+    rw [TwoArcJordan.carrier_toJordanCircle, range_bridgePath]
+    apply Set.union_subset
+    · apply Set.union_subset
+      · exact Set.union_subset A.range_subset_closedShell
+          (hInnerRange.trans
+            (PolygonalCircle.innerCarrier_subset_closedShell P Q hPQ))
+      · exact B.range_subset_closedShell
+    · exact hOuterRange.trans
+        (PolygonalCircle.outerCarrier_subset_closedShell P Q hPQ)
   dsimp only [K]
   rw [TwoArcJordan.carrier_toJordanCircle,
     range_bridgePath, union_assoc]

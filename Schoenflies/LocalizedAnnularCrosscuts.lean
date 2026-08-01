@@ -43,6 +43,9 @@ noncomputable def levelLocalizedAnnularCrosscut (k : ℕ)
   range_inter_inner := by
     rw [I.range_levelLocalizedShellCutPath]
     exact I.levelLocalizedShellCut_inter_innerCarrier k a
+  range_subset_closedShell := by
+    rw [I.range_levelLocalizedShellCutPath]
+    exact I.levelLocalizedShellCut_subset_closedShell k a
 
 theorem pairwise_disjoint_levelLocalizedAnnularCrosscut (k : ℕ) :
     Pairwise fun a b : LevelAddress k =>
@@ -65,6 +68,8 @@ theorem exists_levelLocalized_jordanSeparator (k : ℕ)
           Injective innerArc ∧ Injective outerArc ∧
           range innerArc ⊆ (I.innerDisk k).carrier ∧
           range outerArc ⊆ (I.outerDisk k).carrier ∧
+          K.carrier ⊆
+            PolygonalCircle.closedShell (I.innerDisk k) (I.outerDisk k) ∧
           K.carrier =
             range (I.levelLocalizedAnnularCrosscut k a).path ∪
               range innerArc ∪

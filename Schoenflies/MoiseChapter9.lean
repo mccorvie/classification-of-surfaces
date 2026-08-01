@@ -41,6 +41,7 @@ import Schoenflies.LocalizedShellCutPaths
 import Schoenflies.JordanArcPaths
 import Schoenflies.AnnularCrosscutSeparators
 import Schoenflies.LocalizedAnnularCrosscuts
+import Schoenflies.AnnularSeparatorSides
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
