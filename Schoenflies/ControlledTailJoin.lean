@@ -72,37 +72,22 @@ namespace AccessibleAngularArc
 
 variable {J : JordanCircle}
 
-/-- Every non-endpoint parameter of the polygonal return path lies in the
-open inside of the original Jordan circle. -/
-theorem returnPath_mem_inside_of_pos_of_lt_one
-    (A : J.AccessibleAngularArc) {u : unitInterval}
-    (hu0 : (⊥ : unitInterval) < u) (hu1 : u < (⊤ : unitInterval)) :
-    A.returnPath u ∈ J.inside := by
-  rcases A.range_returnPath_subset_insideCrosscutSet ⟨u, rfl⟩ with huI | huEnds
-  · exact huI
-  · rcases huEnds with huLeft | huRight
-    · have huOne : u = (⊤ : unitInterval) :=
-        A.returnPath_injective (huLeft.trans A.returnPath.target.symm)
-      exact False.elim (hu1.ne huOne)
-    · have huRight' : A.returnPath u = (J.curvePoint A.right : Plane) :=
-        mem_singleton_iff.mp huRight
-      have huZero : u = (⊥ : unitInterval) :=
-        A.returnPath_injective (huRight'.trans A.returnPath.source.symm)
-      exact False.elim (hu0.ne' huZero)
+namespace InsideReturnArc
 
-/-- At every scale, the two short endpoint tails of the polygonal return path
+/-- At every scale, the two short endpoint tails of an explicit return arc
 can be joined through the original Jordan inside while remaining in that
 scale's neighborhood of the selected boundary arc. -/
-theorem exists_controlled_inside_join_between_returnTails
-    (A : J.AccessibleAngularArc) {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+theorem exists_controlled_inside_join_between_tails
+    {A : J.AccessibleAngularArc} (R : A.InsideReturnArc)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
     ∃ (s t : unitInterval) (p q : Plane),
       (0 : ℝ) < s ∧ (s : ℝ) < t ∧ (t : ℝ) < 1 ∧
-        A.returnPath '' Icc (0 : unitInterval) s ⊆
+        R.path '' Icc (0 : unitInterval) s ⊆
           thickening epsilon A.curveArcPlane ∧
-        A.returnPath '' Icc t (1 : unitInterval) ⊆
+        R.path '' Icc t (1 : unitInterval) ⊆
           thickening epsilon A.curveArcPlane ∧
-        p ∈ A.returnPath '' Icc (0 : unitInterval) s ∧
-        q ∈ A.returnPath '' Icc t (1 : unitInterval) ∧
+        p ∈ R.path '' Icc (0 : unitInterval) s ∧
+        q ∈ R.path '' Icc t (1 : unitInterval) ∧
         p ∈ J.inside ∧ q ∈ J.inside ∧
         JoinedByBrokenLine
           (J.inside ∩ thickening epsilon A.curveArcPlane) p q := by
@@ -110,35 +95,36 @@ theorem exists_controlled_inside_join_between_returnTails
       hQsmall, hArcInside, hMiddleExterior, _hMiddleCompact,
       _hMiddlePreconnected, _hMiddleDisjoint, hfinite, hfirstMeet,
       _hlastMeet, hintersections, hpolygonVertices, hbrokenVertices⟩ :=
-    A.exists_finiteSeparatorFrame hepsilon
+    R.exists_finiteSeparatorFrame hepsilon
   obtain ⟨K, hcarrier, _hinterior, _hexterior, hvertices⟩ :=
-    A.exists_intersectionVertexRefinement Q hfinite
-  have hmeets : (Q.carrier ∩ range A.returnPath).Nonempty := by
+    R.exists_intersectionVertexRefinement Q hfinite
+  have hmeets : (Q.carrier ∩ range R.path).Nonempty := by
     obtain ⟨x, hxQ, u, _hu, hux⟩ := hfirstMeet
     exact ⟨x, hxQ, ⟨u, hux⟩⟩
   obtain ⟨start, hstartPrev, hstart⟩ :=
-    A.insideReturnArc.exists_refined_false_true_transition Q K hArcInside hcarrier
+    R.exists_refined_false_true_transition Q K hArcInside hcarrier
       hvertices hpolygonVertices hbrokenVertices hmeets
-  obtain ⟨T, hT, _hordered, hodd⟩ :=
-    A.exists_ordered_crossingTimes_odd_firstTail Q hspos hst
-      hArcInside hMiddleExterior hfinite hpolygonVertices hbrokenVertices
+  obtain ⟨T, hT, hordered⟩ :=
+    R.exists_ordered_path_crossingTimes Q hArcInside hfinite
+      hpolygonVertices hbrokenVertices
+  have hodd := R.odd_firstTail_crossingTimes Q hspos hst hArcInside
+    hMiddleExterior T hT hordered
   let n := K.n - 1
   have hsize : n + 1 = K.n := by
     dsimp [n]
     have hnpos : 0 < K.n := lt_of_lt_of_le (by omega : 0 < 3) K.three_le
     omega
   obtain ⟨p, q, hpFirst, hqLast, hpK, hqK, hjoin⟩ :=
-    A.insideReturnArc.exists_inside_brokenLine_between_returnTails
-      (n := n) Q K hsize
+    R.exists_inside_brokenLine_between_returnTails (n := n) Q K hsize
       hArcInside hcarrier hvertices hpolygonVertices hbrokenVertices
       start hstartPrev hstart T hst hMiddleExterior hT hodd hintersections
   have hpQ : p ∈ Q.carrier := by rwa [← hcarrier]
   have hqQ : q ∈ Q.carrier := by rwa [← hcarrier]
   have hpInside : p ∈ J.inside := by
-    have hpRange : p ∈ range A.returnPath := by
+    have hpRange : p ∈ range R.path := by
       obtain ⟨u, _hu, hup⟩ := hpFirst
       exact ⟨u, hup⟩
-    rcases A.range_returnPath_subset_insideCrosscutSet hpRange with hpI | hpEnds
+    rcases R.range_subset_insideCrosscutSet hpRange with hpI | hpEnds
     · exact hpI
     · exfalso
       have hpArc : p ∈ A.curveArcPlane := by
@@ -152,10 +138,10 @@ theorem exists_controlled_inside_join_between_returnTails
         exact Or.inl (hArcInside hpArc)
       exact hpCompl hpQ
   have hqInside : q ∈ J.inside := by
-    have hqRange : q ∈ range A.returnPath := by
+    have hqRange : q ∈ range R.path := by
       obtain ⟨u, _hu, huq⟩ := hqLast
       exact ⟨u, huq⟩
-    rcases A.range_returnPath_subset_insideCrosscutSet hqRange with hqI | hqEnds
+    rcases R.range_subset_insideCrosscutSet hqRange with hqI | hqEnds
     · exact hqI
     · exfalso
       have hqArc : q ∈ A.curveArcPlane := by
@@ -175,7 +161,7 @@ theorem exists_controlled_inside_join_between_returnTails
     · have hxQ : x ∈ Q.carrier := by
         rw [← hcarrier]
         exact hxK
-      exact ⟨A.inside_auxiliaryJordanCircle_subset hxAuxInside,
+      exact ⟨R.inside_auxiliaryJordanCircle_subset hxAuxInside,
         hQsmall hxQ⟩
     · rcases hxEndpoint with hxP | hxQ
       · have hxP' : x = p := hxP
@@ -186,6 +172,36 @@ theorem exists_controlled_inside_join_between_returnTails
         exact ⟨hqInside, hlastSmall hqLast⟩
   exact ⟨s, t, p, q, hspos, hst, htone, hfirstSmall, hlastSmall,
     hpFirst, hqLast, hpInside, hqInside, hjoinControlled⟩
+
+end InsideReturnArc
+
+/-- Every non-endpoint parameter of the polygonal return path lies in the
+open inside of the original Jordan circle. -/
+theorem returnPath_mem_inside_of_pos_of_lt_one
+    (A : J.AccessibleAngularArc) {u : unitInterval}
+    (hu0 : (⊥ : unitInterval) < u) (hu1 : u < (⊤ : unitInterval)) :
+    A.returnPath u ∈ J.inside := by
+  simpa only [insideReturnArc_path] using
+    A.insideReturnArc.path_mem_inside_of_pos_of_lt_one hu0 hu1
+
+/-- At every scale, the two short endpoint tails of the polygonal return path
+can be joined through the original Jordan inside while remaining in that
+scale's neighborhood of the selected boundary arc. -/
+theorem exists_controlled_inside_join_between_returnTails
+    (A : J.AccessibleAngularArc) {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    ∃ (s t : unitInterval) (p q : Plane),
+      (0 : ℝ) < s ∧ (s : ℝ) < t ∧ (t : ℝ) < 1 ∧
+        A.returnPath '' Icc (0 : unitInterval) s ⊆
+          thickening epsilon A.curveArcPlane ∧
+        A.returnPath '' Icc t (1 : unitInterval) ⊆
+          thickening epsilon A.curveArcPlane ∧
+        p ∈ A.returnPath '' Icc (0 : unitInterval) s ∧
+        q ∈ A.returnPath '' Icc t (1 : unitInterval) ∧
+        p ∈ J.inside ∧ q ∈ J.inside ∧
+        JoinedByBrokenLine
+          (J.inside ∩ thickening epsilon A.curveArcPlane) p q := by
+  simpa only [insideReturnArc_path] using
+    A.insideReturnArc.exists_controlled_inside_join_between_tails hepsilon
 
 /-- A point on the first short return tail can be joined to the right
 boundary endpoint through the controlled inside-crosscut set. -/
