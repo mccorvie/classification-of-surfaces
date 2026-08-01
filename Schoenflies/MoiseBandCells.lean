@@ -399,11 +399,11 @@ theorem moiseBandSegments_isChain (a : LevelAddress n) :
   have hx' := List.getLast_of_mem_getLast? hx
   have hxlast : (L.parentMoiseSegments a ++
       [MoiseBandSegmentAddress.leftSide L] ++
-      L.childMoiseSegments (L.addresses a)).getLast (by simp
-        [L.childMoiseSegments_addresses_nonempty a]) =
+      L.childMoiseSegments (L.addresses a)).getLast (by simp) =
       (L.childMoiseSegments (L.addresses a)).getLast
         (L.childMoiseSegments_addresses_nonempty a) := by
-    simp
+    exact List.getLast_append_of_right_ne_nil _ _
+      (L.childMoiseSegments_addresses_nonempty a)
   rw [hxlast] at hx'
   have hy' := List.head_of_mem_head? hy
   change MoiseBandSegmentAddress.rightSide L = y at hy'
@@ -478,6 +478,50 @@ theorem trimmedRightPoint_ne_trimmedLeftPoint_of_levelAdjacent
       rw [hpoints]
       exact Path.target_mem_range (G.trimmedPath (L.childIndex c)))
 
+theorem child_or_junction_of_mem_childMoiseSegments
+    {l : List (LevelAddress L.next.level)}
+    (hl : l.IsChain I.LevelAdjacent)
+    {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.childMoiseSegments l) :
+    (∃ e : L.next.family.forgetObstacle.TrimmedEdgeAddress,
+        j = MoiseBandSegmentAddress.child L e) ∨
+      ∃ b c : LevelAddress L.next.level,
+        I.LevelAdjacent b c ∧
+          j = MoiseBandSegmentAddress.junction L b c := by
+  induction l with
+  | nil => simp [childMoiseSegments] at hj
+  | cons b tail ih =>
+      cases tail with
+      | nil =>
+          left
+          rw [childMoiseSegments, reversedTrimmedBlock,
+            List.mem_map] at hj
+          obtain ⟨e, _he, rfl⟩ := hj
+          exact ⟨e, rfl⟩
+      | cons c tail =>
+          rw [childMoiseSegments, List.mem_append] at hj
+          rcases hj with hj | hj
+          · rw [List.mem_append] at hj
+            rcases hj with hj | hj
+            · left
+              rw [reversedTrimmedBlock, List.mem_map] at hj
+              obtain ⟨e, _he, rfl⟩ := hj
+              exact ⟨e, rfl⟩
+            · right
+              have hj' : j = MoiseBandSegmentAddress.junction L b c := by
+                simpa only [List.mem_singleton] using hj
+              exact ⟨b, c, hl.rel, hj'⟩
+          · exact ih hl.tail hj
+
+theorem parent_of_mem_parentMoiseSegments
+    {a : LevelAddress n} {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.parentMoiseSegments a) :
+    ∃ e : F.LevelEdgeAddress,
+      j = MoiseBandSegmentAddress.parent L e := by
+  rw [parentMoiseSegments, List.mem_map] at hj
+  obtain ⟨e, _he, rfl⟩ := hj
+  exact ⟨e, rfl⟩
+
 /-- Every raw trimmed edge is nondegenerate. -/
 theorem childSegment_left_ne_right
     (a : LevelAddress n)
@@ -520,6 +564,109 @@ theorem rightSide_left_ne_right (a : LevelAddress n) :
         F.rightSynchronizedPoint a at h
   rw [h] at hlt
   exact (lt_irrefl _ hlt)
+
+/-- Every segment which actually occurs in the corrected Moise route is
+nondegenerate. -/
+theorem moiseBandSegment_left_ne_right_of_mem
+    (a : LevelAddress n) {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.moiseBandSegments a) :
+    MoiseBandSegmentAddress.left L a j ≠
+      MoiseBandSegmentAddress.right L a j := by
+  rw [moiseBandSegments, List.mem_append] at hj
+  rcases hj with hj | hj
+  · rw [List.mem_append] at hj
+    rcases hj with hj | hj
+    · rw [List.mem_append] at hj
+      rcases hj with hj | hj
+      · obtain ⟨e, rfl⟩ := L.parent_of_mem_parentMoiseSegments hj
+        change F.edgeFinish e ≠ F.edgeStart e
+        exact (edgeStart_ne_edgeFinish (F := F) e).symm
+      · have hj' : j = MoiseBandSegmentAddress.leftSide L := by
+          simpa only [List.mem_singleton] using hj
+        subst j
+        exact L.leftSide_left_ne_right a
+    · rcases L.child_or_junction_of_mem_childMoiseSegments
+          (L.addresses_isChain a) hj with hchild | hjunction
+      · obtain ⟨e, rfl⟩ := hchild
+        exact L.childSegment_left_ne_right a e
+      · obtain ⟨b, c, hbc, rfl⟩ := hjunction
+        exact L.trimmedRightPoint_ne_trimmedLeftPoint_of_levelAdjacent hbc
+  · have hj' : j = MoiseBandSegmentAddress.rightSide L := by
+      simpa only [List.mem_singleton] using hj
+    subst j
+    exact L.rightSide_left_ne_right a
+
+/-- Canonical first label and remaining labels of the corrected route. -/
+noncomputable def moiseBandFirst (a : LevelAddress n) :
+    L.MoiseBandSegmentAddress :=
+  (L.moiseBandSegments a).head (L.moiseBandSegments_nonempty a)
+
+noncomputable def moiseBandTail (a : LevelAddress n) :
+    List L.MoiseBandSegmentAddress :=
+  (L.moiseBandSegments a).tail
+
+theorem moiseBandFirst_cons_tail (a : LevelAddress n) :
+    L.moiseBandFirst a :: L.moiseBandTail a =
+      L.moiseBandSegments a :=
+  List.cons_head_tail (L.moiseBandSegments_nonempty a)
+
+theorem moiseBandRoute_isChain (a : LevelAddress n) :
+    (L.moiseBandFirst a :: L.moiseBandTail a).IsChain
+      (MoiseBandSegmentAddress.Adjacent L a) := by
+  rw [L.moiseBandFirst_cons_tail a]
+  exact L.moiseBandSegments_isChain a
+
+theorem moiseBandRoute_closes (a : LevelAddress n) :
+    MoiseBandSegmentAddress.right L a
+        ((L.moiseBandFirst a :: L.moiseBandTail a).getLast (by simp)) =
+      MoiseBandSegmentAddress.left L a (L.moiseBandFirst a) := by
+  have hlist := L.moiseBandFirst_cons_tail a
+  have hlast : (L.moiseBandFirst a :: L.moiseBandTail a).getLast
+      (by simp) =
+      (L.moiseBandSegments a).getLast
+        (L.moiseBandSegments_nonempty a) := by
+    apply List.getLast_congr
+    exact hlist
+  rw [hlast]
+  change MoiseBandSegmentAddress.right L a
+      ((L.moiseBandSegments a).getLast
+        (L.moiseBandSegments_nonempty a)) =
+    MoiseBandSegmentAddress.left L a
+      ((L.moiseBandSegments a).head
+        (L.moiseBandSegments_nonempty a))
+  exact L.moiseBandSegments_closes a
+
+/-- The common-arrangement closed walk of the corrected Moise boundary. -/
+noncomputable def moiseBandClosedWalk (a : LevelAddress n) :=
+  BrokenLineData.segmentFamilyClosedWalk
+    (MoiseBandSegmentAddress.left L a)
+    (MoiseBandSegmentAddress.right L a)
+    (L.moiseBandFirst a) (L.moiseBandTail a)
+    (L.moiseBandRoute_isChain a) (L.moiseBandRoute_closes a)
+
+/-- Point-set union of the non-retracing source segments. -/
+noncomputable def moiseBandCarrier (a : LevelAddress n) : Set Plane :=
+  ⋃ j ∈ L.moiseBandSegments a,
+    segment ℝ (MoiseBandSegmentAddress.left L a j)
+      (MoiseBandSegmentAddress.right L a j)
+
+/-- The canonical common-arrangement walk traces exactly the corrected
+Moise cell boundary. -/
+theorem range_moiseBandClosedWalk (a : LevelAddress n) :
+    range ((BrokenLineData.segmentFamilyComplex
+        (MoiseBandSegmentAddress.left L a)
+        (MoiseBandSegmentAddress.right L a)).walkGeometricPath
+      (L.moiseBandClosedWalk a)) = L.moiseBandCarrier a := by
+  have h := BrokenLineData.range_segmentFamilyClosedWalk
+    (MoiseBandSegmentAddress.left L a)
+    (MoiseBandSegmentAddress.right L a)
+    (L.moiseBandFirst a) (L.moiseBandTail a)
+    (L.moiseBandRoute_isChain a) (L.moiseBandRoute_closes a)
+    (fun j hj => L.moiseBandSegment_left_ne_right_of_mem a (by
+      rw [← L.moiseBandFirst_cons_tail a]
+      exact hj))
+  rw [L.moiseBandFirst_cons_tail a] at h
+  exact h
 
 end RecursiveInsideCollarStep.Later
 end InitialAngularArcs
