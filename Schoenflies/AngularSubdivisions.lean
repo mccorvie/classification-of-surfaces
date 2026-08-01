@@ -238,6 +238,79 @@ theorem AccessibleAngularArc.curveArcPlane_subset_carrier
   rintro x ⟨y, -, rfl⟩
   exact y.2
 
+/-- The selected boundary subarc with its angular orientation, as an
+ordinary path in the plane. -/
+noncomputable def AccessibleAngularArc.toPath
+    (A : J.AccessibleAngularArc) :
+    Path (J.curvePoint A.left : Plane) (J.curvePoint A.right : Plane) where
+  toFun := fun t =>
+    (J.curvePoint (A.left + (t : ℝ) * A.width) : Plane)
+  continuous_toFun :=
+    continuous_subtype_val.comp <|
+      J.continuous_curvePoint.comp <|
+        continuous_const.add (continuous_subtype_val.mul continuous_const)
+  source' := by
+    simp [AccessibleAngularArc.width]
+  target' := by
+    simp [AccessibleAngularArc.width]
+
+theorem AccessibleAngularArc.toPath_injective
+    (A : J.AccessibleAngularArc) : Function.Injective A.toPath := by
+  intro s t hst
+  have hsI : A.left + (s : ℝ) * A.width ∈ Icc A.left A.right := by
+    constructor
+    · exact le_add_of_nonneg_right (mul_nonneg s.2.1 A.width_pos.le)
+    · dsimp [AccessibleAngularArc.width]
+      have hw : 0 < A.right - A.left := sub_pos.mpr A.left_lt_right
+      nlinarith [s.2.2]
+  have htI : A.left + (t : ℝ) * A.width ∈ Icc A.left A.right := by
+    constructor
+    · exact le_add_of_nonneg_right (mul_nonneg t.2.1 A.width_pos.le)
+    · dsimp [AccessibleAngularArc.width]
+      have hw : 0 < A.right - A.left := sub_pos.mpr A.left_lt_right
+      nlinarith [t.2.2]
+  have hcurve :
+      J.curvePoint (A.left + (s : ℝ) * A.width) =
+        J.curvePoint (A.left + (t : ℝ) * A.width) :=
+    Subtype.ext hst
+  have hparam :
+      JordanCurve.Arcs.param (A.left + (s : ℝ) * A.width) =
+        JordanCurve.Arcs.param (A.left + (t : ℝ) * A.width) :=
+    J.carrierHomeomorph.injective hcurve
+  have hangle :=
+    JordanCurve.Arcs.param_injOn A.width_lt_turn hsI htI hparam
+  apply Subtype.ext
+  nlinarith [A.width_pos]
+
+theorem AccessibleAngularArc.range_toPath
+    (A : J.AccessibleAngularArc) :
+    range A.toPath = A.curveArcPlane := by
+  ext x
+  constructor
+  · rintro ⟨t, rfl⟩
+    have htI : A.left + (t : ℝ) * A.width ∈ Icc A.left A.right := by
+      constructor
+      · exact le_add_of_nonneg_right (mul_nonneg t.2.1 A.width_pos.le)
+      · dsimp [AccessibleAngularArc.width]
+        have hw : 0 < A.right - A.left := sub_pos.mpr A.left_lt_right
+        nlinarith [t.2.2]
+    exact ⟨J.curvePoint (A.left + (t : ℝ) * A.width),
+      ⟨A.left + (t : ℝ) * A.width, htI, rfl⟩, rfl⟩
+  · rintro ⟨y, ⟨theta, htheta, rfl⟩, rfl⟩
+    let t : unitInterval :=
+      ⟨(theta - A.left) / A.width,
+        ⟨div_nonneg (sub_nonneg.mpr htheta.1) A.width_pos.le,
+          (div_le_one A.width_pos).mpr (by
+            dsimp [AccessibleAngularArc.width]
+            linarith [htheta.2])⟩⟩
+    refine ⟨t, ?_⟩
+    change (J.curvePoint (A.left + (t : ℝ) * A.width) : Plane) =
+      J.curvePoint theta
+    congr 2
+    dsimp [t]
+    field_simp [A.width_pos.ne']
+    ring
+
 /-- Each lifted boundary subarc is genuinely an arc, first intrinsically in
 the Jordan curve and then in the ambient plane. -/
 noncomputable def AccessibleAngularArc.curveArcHomeomorph
