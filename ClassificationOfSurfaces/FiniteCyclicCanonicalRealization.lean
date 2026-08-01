@@ -503,22 +503,14 @@ theorem ofOneFaceWordPreHomeomorph_related
     (oneFacePresentation Edge word).PolygonalGluingRel validTyped
       (ofOneFaceWordPreHomeomorph word x)
       (ofOneFaceWordPreHomeomorph word y) := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      ((ofOneFaceWord word).polygonalIdentifications validFinite)) x y at hxy
-  induction hxy with
-  | rel x y hgenerator =>
-      cases hgenerator with
-      | glue identification hmem t =>
-          rcases hmem with ⟨pairing, rfl⟩
-          exact ofOneFaceWordPreHomeomorph_generator_related
-            word validFinite validTyped pairing t
-  | refl =>
-      exact Relation.EqvGen.refl _
-  | symm _ _ _ ih =>
-      exact Relation.EqvGen.symm _ _ ih
-  | trans _ _ _ _ _ ih₁ ih₂ =>
-      exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  apply eqvGen_map_of_generator_to_eqvGen
+    (ofOneFaceWordPreHomeomorph word) ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hmem t =>
+      rcases hmem with ⟨pairing, rfl⟩
+      exact ofOneFaceWordPreHomeomorph_generator_related
+        word validFinite validTyped pairing t
 
 theorem ofOneFaceWordPreHomeomorph_symm_occurrenceSide_point
     (word : List (SignedDart Edge))
@@ -601,22 +593,14 @@ theorem ofOneFaceWordPreHomeomorph_symm_related
     (ofOneFaceWord word).PolygonalGluingRel validFinite
       ((ofOneFaceWordPreHomeomorph word).symm x)
       ((ofOneFaceWordPreHomeomorph word).symm y) := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      ((oneFacePresentation Edge word).polygonalIdentifications validTyped)) x y at hxy
-  induction hxy with
-  | rel x y hgenerator =>
-      cases hgenerator with
-      | glue identification hmem t =>
-          rcases hmem with ⟨pairing, rfl⟩
-          exact ofOneFaceWordPreHomeomorph_symm_generator_related
-            word validFinite validTyped pairing t
-  | refl =>
-      exact Relation.EqvGen.refl _
-  | symm _ _ _ ih =>
-      exact Relation.EqvGen.symm _ _ ih
-  | trans _ _ _ _ _ ih₁ ih₂ =>
-      exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  apply eqvGen_map_of_generator_to_eqvGen
+    (ofOneFaceWordPreHomeomorph word).symm ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hmem t =>
+      rcases hmem with ⟨pairing, rfl⟩
+      exact ofOneFaceWordPreHomeomorph_symm_generator_related
+        word validFinite validTyped pairing t
 
 theorem ofOneFaceWordPreHomeomorph_related_iff
     (word : List (SignedDart Edge))
@@ -645,9 +629,12 @@ noncomputable def ofOneFaceWordRealizationHomeomorph
       (oneFacePresentation Edge word).OccurrencePairingValid) :
     (ofOneFaceWord word).PolygonalRealization validFinite ≃ₜ
       (oneFacePresentation Edge word).PolygonalRealization validTyped :=
-  PolygonGluing.realizationCongr (ofOneFaceWordPreHomeomorph word)
-    (ofOneFaceWordPreHomeomorph_related_iff
-      word validFinite validTyped)
+  PolygonGluing.realizationCongrOfMaps
+    (ofOneFaceWordPreHomeomorph word)
+    (fun _ _ hxy ↦ ofOneFaceWordPreHomeomorph_related
+      word validFinite validTyped hxy)
+    (fun _ _ hxy ↦ ofOneFaceWordPreHomeomorph_symm_related
+      word validFinite validTyped hxy)
 
 end FiniteCyclicPresentation
 
