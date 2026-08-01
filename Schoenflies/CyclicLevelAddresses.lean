@@ -299,12 +299,114 @@ theorem cyclicSuccIndex_ne {α : Type*} (l : List α) (hne : l ≠ [])
       simpa using congrArg Fin.val heq.symm
     omega
 
+theorem cyclicSuccIndex_sq_ne {α : Type*} (l : List α) (hne : l ≠ [])
+    (hlen : 2 < l.length) (i : Fin l.length) :
+    cyclicSuccIndex l hne (cyclicSuccIndex l hne i) ≠ i := by
+  by_cases hfirst : i.val + 1 < l.length
+  · have hsFirst : cyclicSuccIndex l hne i =
+        ⟨i.val + 1, hfirst⟩ := by
+      simp [cyclicSuccIndex, hfirst]
+    rw [hsFirst]
+    by_cases hsecond : i.val + 1 + 1 < l.length
+    · rw [cyclicSuccIndex, dif_pos hsecond]
+      intro h
+      have hval := congrArg Fin.val h
+      change i.val + 1 + 1 = i.val at hval
+      omega
+    · rw [cyclicSuccIndex, dif_neg hsecond]
+      intro h
+      have hval := congrArg Fin.val h
+      have hiZero : i.val = 0 := by simpa using hval.symm
+      omega
+  · have hsFirst : cyclicSuccIndex l hne i =
+        ⟨0, List.length_pos_iff_ne_nil.mpr hne⟩ := by
+      simp [cyclicSuccIndex, hfirst]
+    rw [hsFirst]
+    have hzeroNext : (0 : ℕ) + 1 < l.length := by omega
+    rw [cyclicSuccIndex, dif_pos hzeroNext]
+    intro h
+    have hval := congrArg Fin.val h
+    have hiOne : i.val = 1 := by simpa using hval.symm
+    omega
+
+/-- Predecessor modulo the length of a nonempty list. -/
+def cyclicPredIndex {α : Type*} (l : List α) (hne : l ≠ [])
+    (i : Fin l.length) : Fin l.length :=
+  if h : i.val = 0 then
+    ⟨l.length - 1, by
+      have hpos := List.length_pos_iff_ne_nil.mpr hne
+      omega⟩
+  else
+    ⟨i.val - 1, by omega⟩
+
+@[simp] theorem cyclicSuccIndex_cyclicPredIndex {α : Type*}
+    (l : List α) (hne : l ≠ []) (i : Fin l.length) :
+    cyclicSuccIndex l hne (cyclicPredIndex l hne i) = i := by
+  by_cases hi : i.val = 0
+  · rw [cyclicPredIndex, dif_pos hi]
+    have hlast : ¬l.length - 1 + 1 < l.length := by omega
+    rw [cyclicSuccIndex, dif_neg hlast]
+    exact Fin.ext hi.symm
+  · rw [cyclicPredIndex, dif_neg hi]
+    have hnext : i.val - 1 + 1 < l.length := by omega
+    rw [cyclicSuccIndex, dif_pos hnext]
+    apply Fin.ext
+    change i.val - 1 + 1 = i.val
+    omega
+
+@[simp] theorem cyclicPredIndex_cyclicSuccIndex {α : Type*}
+    (l : List α) (hne : l ≠ []) (i : Fin l.length) :
+    cyclicPredIndex l hne (cyclicSuccIndex l hne i) = i := by
+  by_cases hnext : i.val + 1 < l.length
+  · rw [cyclicSuccIndex, dif_pos hnext]
+    have hneZero : (⟨i.val + 1, hnext⟩ : Fin l.length).val ≠ 0 := by
+      simp
+    rw [cyclicPredIndex, dif_neg hneZero]
+    apply Fin.ext
+    simp
+  · rw [cyclicSuccIndex, dif_neg hnext]
+    rw [cyclicPredIndex, dif_pos rfl]
+    apply Fin.ext
+    have hi := i.isLt
+    have hle := Nat.le_of_not_gt hnext
+    change l.length - 1 = i.val
+    omega
+
 /-- The next address in positive cyclic boundary order. -/
 noncomputable def nextLevelAddress (n : ℕ) (a : LevelAddress n) :
     LevelAddress n :=
   let e := orderedLevelAddressEquiv n
   e (cyclicSuccIndex (orderedLevelAddresses n)
     (orderedLevelAddresses_nonempty n) (e.symm a))
+
+/-- The previous address in positive cyclic boundary order. -/
+noncomputable def prevLevelAddress (n : ℕ) (a : LevelAddress n) :
+    LevelAddress n :=
+  let e := orderedLevelAddressEquiv n
+  e (cyclicPredIndex (orderedLevelAddresses n)
+    (orderedLevelAddresses_nonempty n) (e.symm a))
+
+@[simp] theorem nextLevelAddress_prevLevelAddress
+    (n : ℕ) (a : LevelAddress n) :
+    nextLevelAddress n (prevLevelAddress n a) = a := by
+  let l := orderedLevelAddresses n
+  let e := orderedLevelAddressEquiv n
+  change e (cyclicSuccIndex l (orderedLevelAddresses_nonempty n)
+    (e.symm (e (cyclicPredIndex l (orderedLevelAddresses_nonempty n)
+      (e.symm a))))) = a
+  rw [e.symm_apply_apply, cyclicSuccIndex_cyclicPredIndex,
+    e.apply_symm_apply]
+
+@[simp] theorem prevLevelAddress_nextLevelAddress
+    (n : ℕ) (a : LevelAddress n) :
+    prevLevelAddress n (nextLevelAddress n a) = a := by
+  let l := orderedLevelAddresses n
+  let e := orderedLevelAddressEquiv n
+  change e (cyclicPredIndex l (orderedLevelAddresses_nonempty n)
+    (e.symm (e (cyclicSuccIndex l (orderedLevelAddresses_nonempty n)
+      (e.symm a))))) = a
+  rw [e.symm_apply_apply, cyclicPredIndex_cyclicSuccIndex,
+    e.apply_symm_apply]
 
 theorem nextLevelAddress_ne (n : ℕ) (a : LevelAddress n) :
     nextLevelAddress n a ≠ a := by
@@ -320,6 +422,40 @@ theorem nextLevelAddress_ne (n : ℕ) (a : LevelAddress n) :
     exact one_lt_pow₀ (by norm_num) (Nat.succ_ne_zero n)
   exact (cyclicSuccIndex_ne (orderedLevelAddresses n)
     (orderedLevelAddresses_nonempty n) hlen i) (e.injective heq)
+
+theorem nextLevelAddress_next_ne (n : ℕ) (hn : 1 ≤ n)
+    (a : LevelAddress n) :
+    nextLevelAddress n (nextLevelAddress n a) ≠ a := by
+  let l := orderedLevelAddresses n
+  let e := orderedLevelAddressEquiv n
+  let i : Fin l.length := e.symm a
+  have hi : e i = a := e.apply_symm_apply a
+  have hlen : 2 < l.length := by
+    rw [orderedLevelAddresses_length]
+    have hpow : 4 ≤ 2 ^ (n + 1) := by
+      calc
+        4 = 2 ^ (1 + 1) := by norm_num
+        _ ≤ 2 ^ (n + 1) :=
+          pow_le_pow_right' (by norm_num) (by omega)
+    omega
+  intro hnext
+  change e (cyclicSuccIndex l (orderedLevelAddresses_nonempty n)
+    (e.symm (e (cyclicSuccIndex l (orderedLevelAddresses_nonempty n) i)))) =
+      a at hnext
+  rw [e.symm_apply_apply] at hnext
+  have heq :
+      e (cyclicSuccIndex l (orderedLevelAddresses_nonempty n)
+        (cyclicSuccIndex l (orderedLevelAddresses_nonempty n) i)) = e i :=
+    hnext.trans hi.symm
+  exact (cyclicSuccIndex_sq_ne l (orderedLevelAddresses_nonempty n)
+    hlen i) (e.injective heq)
+
+theorem prevLevelAddress_ne (n : ℕ) (a : LevelAddress n) :
+    prevLevelAddress n a ≠ a := by
+  intro hprev
+  have hnext := congrArg (nextLevelAddress n) hprev
+  rw [nextLevelAddress_prevLevelAddress] at hnext
+  exact nextLevelAddress_ne n a hnext.symm
 
 /-- Successive addresses in the ordered list, including the wraparound
 pair, have matching boundary endpoints. -/
@@ -357,6 +493,14 @@ theorem levelAdjacent_nextLevelAddress (I : J.InitialAngularArcs)
       rw [hlastGet, hnextGet]
       exact hclose
   simpa [nextLevelAddress, e, i, hi] using hrel
+
+/-- The previous cyclic address meets the given address at its left
+endpoint. -/
+theorem levelAdjacent_prevLevelAddress (I : J.InitialAngularArcs)
+    (n : ℕ) (a : LevelAddress n) :
+    I.LevelAdjacent (prevLevelAddress n a) a := by
+  have h := I.levelAdjacent_nextLevelAddress n (prevLevelAddress n a)
+  simpa using h
 
 end InitialAngularArcs
 end JordanCircle
