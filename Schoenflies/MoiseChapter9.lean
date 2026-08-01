@@ -26,6 +26,7 @@ import Schoenflies.OddWalkEdgeGraph
 import Schoenflies.CommonSegmentArrangement
 import Schoenflies.SegmentChainWalk
 import Schoenflies.CollarBandSegments
+import Schoenflies.MoiseBandCells
 import Schoenflies.NestedCollarStages
 import Schoenflies.PolyhedralDiskNeighborhoods
 import Schoenflies.PolygonalDiskExhaustion

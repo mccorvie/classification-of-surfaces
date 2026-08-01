@@ -210,6 +210,17 @@ theorem trimmedEndpoints_ne (i : Fin (levelAddressCount n)) :
   exact (F.sourceLine i).hairTrimmedEndpoints_ne
     (F.endpoint_ne i) (F.hairTrimData i)
 
+/-- The loop-erased finite line extracted from an already injective trimmed
+path still covers that whole path. -/
+theorem range_trimmedLine_toPath (i : Fin (levelAddressCount n)) :
+    range ((F.trimmedLine i).toPath (F.trimmedEndpoints_ne i)) =
+      range (F.trimmedPath i) := by
+  exact Path.range_eq_of_subset_of_injective
+    (F.trimmedPath i)
+    ((F.trimmedLine i).toPath (F.trimmedEndpoints_ne i))
+    (F.trimmedPath_injective i)
+    ((F.trimmedLine i).range_toPath_subset (F.trimmedEndpoints_ne i))
+
 end LevelAvoidingJoinFamily
 
 end InitialAngularArcs
