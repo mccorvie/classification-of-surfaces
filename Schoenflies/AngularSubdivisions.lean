@@ -185,6 +185,9 @@ noncomputable def curvePoint (t : ℝ) : J.carrier :=
 theorem continuous_curvePoint : Continuous J.curvePoint :=
   J.carrierHomeomorph.continuous.comp JordanCurve.Arcs.continuous_param
 
+theorem curvePoint_surjective : Function.Surjective J.curvePoint :=
+  J.carrierHomeomorph.surjective.comp JordanCurve.Arcs.param_surjective
+
 /-- The closed Jordan subarc represented by an accessible angular lift. -/
 def AccessibleAngularArc.curveArc (A : J.AccessibleAngularArc) : Set J.carrier :=
   J.curvePoint '' Icc A.left A.right
@@ -295,6 +298,85 @@ theorem AccessibleAngularArc.leftChild_inter_rightChild_curveArcPlane
     subst x
     exact ⟨A.leftChild.right_mem_curveArcPlane,
       A.rightChild.left_mem_curveArcPlane⟩
+
+/-- All accessible marks occurring through a fixed binary subdivision depth.
+The sets are cumulative: old marks are retained when the next generation is
+inserted. -/
+noncomputable def AccessibleAngularArc.generationMarks
+    {J : JordanCircle} (A : J.AccessibleAngularArc) : ℕ → Finset Plane
+  | 0 => {(J.curvePoint A.left : Plane), (J.curvePoint A.right : Plane)}
+  | n + 1 => A.leftChild.generationMarks n ∪ A.rightChild.generationMarks n
+
+theorem AccessibleAngularArc.left_mem_generationMarks
+    {J : JordanCircle} (A : J.AccessibleAngularArc) (n : ℕ) :
+    (J.curvePoint A.left : Plane) ∈ A.generationMarks n := by
+  induction n generalizing A with
+  | zero => simp [generationMarks]
+  | succ n ih =>
+      rw [generationMarks, Finset.mem_union]
+      left
+      simpa using ih A.leftChild
+
+theorem AccessibleAngularArc.right_mem_generationMarks
+    {J : JordanCircle} (A : J.AccessibleAngularArc) (n : ℕ) :
+    (J.curvePoint A.right : Plane) ∈ A.generationMarks n := by
+  induction n generalizing A with
+  | zero => simp [generationMarks]
+  | succ n ih =>
+      rw [generationMarks, Finset.mem_union]
+      right
+      simpa using ih A.rightChild
+
+/-- Every mark retained at a finite generation lies on the Jordan curve and
+is linearly accessible from its inside. -/
+theorem AccessibleAngularArc.generationMarks_mem_carrier_accessible
+    {J : JordanCircle} (A : J.AccessibleAngularArc) (n : ℕ) {x : Plane}
+    (hx : x ∈ A.generationMarks n) :
+    x ∈ J.carrier ∧ x ∈ J.insideLinearlyAccessiblePoints := by
+  induction n generalizing A with
+  | zero =>
+      simp only [generationMarks, Finset.mem_insert, Finset.mem_singleton] at hx
+      rcases hx with rfl | rfl
+      · exact ⟨(J.curvePoint A.left).2, A.left_accessible⟩
+      · exact ⟨(J.curvePoint A.right).2, A.right_accessible⟩
+  | succ n ih =>
+      rw [generationMarks, Finset.mem_union] at hx
+      rcases hx with hx | hx
+      · exact ih A.leftChild hx
+      · exact ih A.rightChild hx
+
+/-- Passing to the next binary generation never discards an old accessible
+mark.  This is the finite-index bookkeeping needed to retain old access hairs
+in Moise's recursive construction. -/
+theorem AccessibleAngularArc.generationMarks_mono
+    {J : JordanCircle} (A : J.AccessibleAngularArc) (n : ℕ) :
+    A.generationMarks n ⊆ A.generationMarks (n + 1) := by
+  induction n generalizing A with
+  | zero =>
+      intro x hx
+      simp only [generationMarks, Finset.mem_insert, Finset.mem_singleton] at hx
+      rw [generationMarks, Finset.mem_union]
+      rcases hx with rfl | rfl
+      · left
+        simpa using A.leftChild.left_mem_generationMarks 0
+      · right
+        simpa using A.rightChild.right_mem_generationMarks 0
+  | succ n ih =>
+      intro x hx
+      rw [generationMarks, Finset.mem_union] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (ih A.leftChild hx)
+      · exact Or.inr (ih A.rightChild hx)
+
+/-- At every finite binary level all retained marks admit pairwise-disjoint
+straight access hairs. -/
+theorem AccessibleAngularArc.exists_generation_insideHairFamily
+    {J : JordanCircle} (A : J.AccessibleAngularArc) (n : ℕ) :
+    Nonempty (J.InsideHairFamily
+      {x : Plane // x ∈ A.generationMarks n} (fun x => x.1)) := by
+  apply J.exists_pairwiseDisjoint_insideHairFamily Subtype.val_injective
+  intro x
+  exact (A.generationMarks_mem_carrier_accessible n x.2).2
 
 theorem AccessibleAngularArc.curveArcPlane_subset_carrier
     (A : J.AccessibleAngularArc) : A.curveArcPlane ⊆ J.carrier := by
@@ -494,6 +576,196 @@ structure InitialAngularArcs where
   second : J.AccessibleAngularArc
   adjacent : first.right = second.left
   closes : second.right = first.left + 2 * π
+
+namespace InitialAngularArcs
+
+variable {J : JordanCircle}
+
+/-- The two initial angular arcs cover the entire Jordan carrier. -/
+theorem curveArcPlane_union (I : J.InitialAngularArcs) :
+    I.first.curveArcPlane ∪ I.second.curveArcPlane = J.carrier := by
+  apply Set.Subset.antisymm
+  · exact union_subset I.first.curveArcPlane_subset_carrier
+      I.second.curveArcPlane_subset_carrier
+  · intro x hx
+    let xc : J.carrier := ⟨x, hx⟩
+    obtain ⟨t0, ht0⟩ := J.curvePoint_surjective xc
+    have hp : (0 : ℝ) < 2 * π := by positivity
+    let t := toIcoMod hp I.first.left t0
+    have ht : t ∈ Ico I.first.left (I.first.left + 2 * π) :=
+      toIcoMod_mem_Ico hp I.first.left t0
+    have hdiff : t0 - t =
+        (toIcoDiv hp I.first.left t0 : ℤ) • (2 * π) :=
+      self_sub_toIcoMod hp I.first.left t0
+    have hparam : JordanCurve.Arcs.param t = JordanCurve.Arcs.param t0 := by
+      rw [JordanCurve.Arcs.param_eq_iff]
+      refine ⟨-(toIcoDiv hp I.first.left t0), ?_⟩
+      rw [zsmul_eq_mul] at hdiff
+      push_cast
+      linarith
+    have hcurve : J.curvePoint t = xc := by
+      rw [show J.curvePoint t = J.carrierHomeomorph
+          (JordanCurve.Arcs.param t) from rfl,
+        hparam]
+      exact ht0
+    rcases le_total t I.first.right with htle | hge
+    · left
+      exact ⟨J.curvePoint t, ⟨t, ⟨ht.1, htle⟩, rfl⟩,
+        congrArg Subtype.val hcurve⟩
+    · right
+      exact ⟨J.curvePoint t,
+        ⟨t, ⟨I.adjacent ▸ hge, by rw [I.closes]; exact ht.2.le⟩, rfl⟩,
+        congrArg Subtype.val hcurve⟩
+
+/-- All accessible marks retained through depth `n` in both initial arcs. -/
+noncomputable def generationMarks (I : J.InitialAngularArcs) (n : ℕ) : Finset Plane :=
+  I.first.generationMarks n ∪ I.second.generationMarks n
+
+theorem generationMarks_mem_carrier_accessible
+    (I : J.InitialAngularArcs) (n : ℕ) {x : Plane}
+    (hx : x ∈ I.generationMarks n) :
+    x ∈ J.carrier ∧ x ∈ J.insideLinearlyAccessiblePoints := by
+  rw [generationMarks, Finset.mem_union] at hx
+  rcases hx with hx | hx
+  · exact I.first.generationMarks_mem_carrier_accessible n hx
+  · exact I.second.generationMarks_mem_carrier_accessible n hx
+
+theorem generationMarks_mono (I : J.InitialAngularArcs) (n : ℕ) :
+    I.generationMarks n ⊆ I.generationMarks (n + 1) := by
+  intro x hx
+  rw [generationMarks, Finset.mem_union] at hx ⊢
+  rcases hx with hx | hx
+  · exact Or.inl (I.first.generationMarks_mono n hx)
+  · exact Or.inr (I.second.generationMarks_mono n hx)
+
+/-- Boundary marks retained at a fixed generation, as a finite index type. -/
+noncomputable def GenerationMark (I : J.InitialAngularArcs) (n : ℕ) :=
+  ↥(I.generationMarks n)
+
+noncomputable instance generationMarkFintype
+    (I : J.InitialAngularArcs) (n : ℕ) : Fintype (I.GenerationMark n) :=
+  (I.generationMarks n).fintypeCoeSort
+
+/-- Moise 9.4 at a complete finite cyclic level: every retained boundary
+mark has a straight inside hair, and all those hairs are pairwise disjoint. -/
+theorem exists_generation_insideHairFamily
+    (I : J.InitialAngularArcs) (n : ℕ) :
+    Nonempty (J.InsideHairFamily
+      (I.GenerationMark n) (fun x => x.1)) := by
+  apply J.exists_pairwiseDisjoint_insideHairFamily Subtype.val_injective
+  intro x
+  exact (I.generationMarks_mem_carrier_accessible n x.2).2
+
+/-- The genuinely new marks inserted between two consecutive generations. -/
+noncomputable def NewGenerationMark (I : J.InitialAngularArcs) (n : ℕ) :=
+  ↥(I.generationMarks (n + 1) \ I.generationMarks n)
+
+noncomputable instance newGenerationMarkFintype
+    (I : J.InitialAngularArcs) (n : ℕ) : Fintype (I.NewGenerationMark n) :=
+  (I.generationMarks (n + 1) \ I.generationMarks n).fintypeCoeSort
+
+/-- Retain every old access hair while adding pairwise-disjoint hairs at the
+new marks of the next cyclic generation.  This is the recursive compatibility
+form of Moise 9.4, rather than merely an independent family at each level. -/
+theorem exists_generation_insideHairExtension
+    (I : J.InitialAngularArcs) (n : ℕ)
+    (old : J.InsideHairFamily
+      (I.GenerationMark n) (fun x => x.1)) :
+    Nonempty (J.InsideHairExtension
+      (I.GenerationMark n)
+      (I.NewGenerationMark n)
+      (fun x => x.1) (fun x => x.1) old) := by
+  apply J.exists_insideHairExtension
+  · intro i
+    exact (I.generationMarks_mem_carrier_accessible n i.2).1
+  · intro j
+    exact (I.generationMarks_mem_carrier_accessible (n + 1)
+      (Finset.mem_sdiff.mp j.2).1).1
+  · exact Subtype.val_injective
+  · intro i j hij
+    exact (Finset.mem_sdiff.mp j.2).2 (hij ▸ i.2)
+  · intro j
+    exact (I.generationMarks_mem_carrier_accessible (n + 1)
+      (Finset.mem_sdiff.mp j.2).1).2
+
+/-- Assemble a retained old family and its extension into the full family at
+the next generation. -/
+noncomputable def nextInsideHairFamily
+    (I : J.InitialAngularArcs) (n : ℕ)
+    (old : J.InsideHairFamily
+      (I.GenerationMark n) (fun x => x.1))
+    (E : J.InsideHairExtension
+      (I.GenerationMark n)
+      (I.NewGenerationMark n)
+      (fun x => x.1) (fun x => x.1) old) :
+    J.InsideHairFamily
+      (I.GenerationMark (n + 1)) (fun x => x.1) where
+  hair i := if hi : i.1 ∈ I.generationMarks n then
+      old.hair ⟨i.1, hi⟩
+    else
+      E.newHair ⟨i.1, Finset.mem_sdiff.mpr ⟨i.2, hi⟩⟩
+  pairwise_disjoint := by
+    intro i j hij
+    by_cases hi : i.1 ∈ I.generationMarks n
+    · by_cases hj : j.1 ∈ I.generationMarks n
+      · simp only [hi, hj, dite_true]
+        apply old.pairwise_disjoint
+        intro hijOld
+        apply hij
+        apply Subtype.ext
+        exact congrArg (fun x => (x.1 : Plane)) hijOld
+      · simp only [hi, hj, dite_true, dite_false]
+        exact E.old_new_disjoint ⟨i.1, hi⟩
+          ⟨j.1, Finset.mem_sdiff.mpr ⟨j.2, hj⟩⟩
+    · by_cases hj : j.1 ∈ I.generationMarks n
+      · simp only [hi, hj, dite_true, dite_false]
+        exact (E.old_new_disjoint ⟨j.1, hj⟩
+          ⟨i.1, Finset.mem_sdiff.mpr ⟨i.2, hi⟩⟩).symm
+      · simp only [hi, hj, dite_false]
+        apply E.new_pairwise_disjoint
+        intro hijNew
+        apply hij
+        apply Subtype.ext
+        exact congrArg (fun x => (x.1 : Plane)) hijNew
+
+@[simp] theorem nextInsideHairFamily_hair_of_mem
+    (I : J.InitialAngularArcs) (n : ℕ)
+    (old : J.InsideHairFamily
+      (I.GenerationMark n) (fun x => x.1))
+    (E : J.InsideHairExtension
+      (I.GenerationMark n) (I.NewGenerationMark n)
+      (fun x => x.1) (fun x => x.1) old)
+    (i : I.GenerationMark n) :
+    (I.nextInsideHairFamily n old E).hair
+        ⟨i.1, I.generationMarks_mono n i.2⟩ = old.hair i := by
+  simp [nextInsideHairFamily, i.2]
+
+/-- A canonical recursively compatible family of inside access hairs at every
+finite cyclic subdivision level. -/
+noncomputable def generationInsideHairFamily
+    (I : J.InitialAngularArcs) : (n : ℕ) →
+      J.InsideHairFamily
+        (I.GenerationMark n) (fun x => x.1)
+  | 0 => Classical.choice (I.exists_generation_insideHairFamily 0)
+  | n + 1 =>
+      let old := I.generationInsideHairFamily n
+      let E := Classical.choice (I.exists_generation_insideHairExtension n old)
+      I.nextInsideHairFamily n old E
+
+/-- The canonical recursive family literally retains the hair attached to
+every old marked point. -/
+theorem generationInsideHairFamily_succ_hair
+    (I : J.InitialAngularArcs) (n : ℕ) (i : I.GenerationMark n) :
+    (I.generationInsideHairFamily (n + 1)).hair
+        ⟨i.1, I.generationMarks_mono n i.2⟩ =
+      (I.generationInsideHairFamily n).hair i := by
+  rw [generationInsideHairFamily]
+  exact I.nextInsideHairFamily_hair_of_mem n
+    (I.generationInsideHairFamily n)
+    (Classical.choice (I.exists_generation_insideHairExtension n
+      (I.generationInsideHairFamily n))) i
+
+end InitialAngularArcs
 
 /-- The contracting subdivision can be initialized by choosing one accessible
 mark in each open semicircle. -/
