@@ -44,6 +44,100 @@ theorem isCompact_carrier (H : J.InsideAccessHair q) : IsCompact H.carrier := by
 theorem isClosed_carrier (H : J.InsideAccessHair q) : IsClosed H.carrier :=
   H.isCompact_carrier.isClosed
 
+/-- Shorten an access hair along its own ray.  Retained hairs in Moise 9.4
+are never replaced at later stages; only shorter initial subsegments are
+used. -/
+noncomputable def shorten (H : J.InsideAccessHair q) {c : ℝ}
+    (hc0 : 0 < c) (hc1 : c < 1) : J.InsideAccessHair q where
+  tip := lineMap q H.tip c
+  tip_ne_base := by
+    intro htip
+    have hdist : dist (lineMap q H.tip c) q = 0 := by rw [htip, dist_self]
+    rw [dist_lineMap_left, Real.norm_eq_abs, abs_of_pos hc0] at hdist
+    have hqtip : 0 < dist q H.tip := dist_pos.mpr H.tip_ne_base.symm
+    nlinarith
+  carrier_subset := by
+    exact ((convex_segment q H.tip).segment_subset
+      (left_mem_segment ℝ q H.tip)
+      (lineMap_mem_segment ℝ q H.tip ⟨hc0.le, hc1.le⟩)).trans
+        H.carrier_subset
+  open_carrier_subset := by
+    intro x hx
+    rw [openSegment_eq_image_lineMap] at hx
+    obtain ⟨t, ht, rfl⟩ := hx
+    have htc : t * c ∈ Ioo (0 : ℝ) 1 := by
+      constructor
+      · exact mul_pos ht.1 hc0
+      · calc
+          t * c < 1 * c := mul_lt_mul_of_pos_right ht.2 hc0
+          _ = c := one_mul c
+          _ < 1 := hc1
+    have hcompose : lineMap q (lineMap q H.tip c) t =
+        lineMap q H.tip (t * c) := by
+      simp only [lineMap_apply_module]
+      module
+    rw [hcompose]
+    exact H.open_carrier_subset
+      (lineMap_mem_openSegment ℝ q H.tip htc)
+
+theorem shorten_carrier_subset (H : J.InsideAccessHair q) {c : ℝ}
+    (hc0 : 0 < c) (hc1 : c < 1) :
+    (H.shorten hc0 hc1).carrier ⊆ H.carrier := by
+  apply (convex_segment q H.tip).segment_subset
+  · exact left_mem_segment ℝ q H.tip
+  · exact lineMap_mem_segment ℝ q H.tip ⟨hc0.le, hc1.le⟩
+
+theorem shorten_tip_mem_open_carrier (H : J.InsideAccessHair q) {c : ℝ}
+    (hc0 : 0 < c) (hc1 : c < 1) :
+    (H.shorten hc0 hc1).tip ∈ openSegment ℝ q H.tip :=
+  lineMap_mem_openSegment ℝ q H.tip ⟨hc0, hc1⟩
+
+/-- A retained hair has an initial subhair in every prescribed neighborhood
+of its base point. -/
+theorem exists_shorten_carrier_subset_open
+    (H : J.InsideAccessHair q) {U : Set Plane}
+    (hU : IsOpen U) (hqU : q ∈ U) :
+    ∃ c : Ioo (0 : ℝ) 1,
+      (H.shorten c.2.1 c.2.2).carrier ⊆ U := by
+  obtain ⟨r, hr, hball⟩ := Metric.isOpen_iff.mp hU q hqU
+  have hd : 0 < dist q H.tip := dist_pos.mpr H.tip_ne_base.symm
+  let c : ℝ := min (1 / 2) (r / (2 * dist q H.tip))
+  have hc0 : 0 < c := by
+    dsimp [c]
+    exact lt_min (by norm_num) (div_pos hr (mul_pos two_pos hd))
+  have hc1 : c < 1 :=
+    (min_le_left _ _).trans_lt (by norm_num)
+  have htipBall : lineMap q H.tip c ∈ ball q r := by
+    rw [mem_ball, dist_lineMap_left, Real.norm_eq_abs, abs_of_pos hc0]
+    have hcle : c ≤ r / (2 * dist q H.tip) := min_le_right _ _
+    calc
+      c * dist q H.tip ≤ (r / (2 * dist q H.tip)) * dist q H.tip :=
+        mul_le_mul_of_nonneg_right hcle dist_nonneg
+      _ = r / 2 := by field_simp [hd.ne']
+      _ < r := by linarith
+  refine ⟨⟨c, hc0, hc1⟩, ?_⟩
+  exact ((convex_ball q r).segment_subset (mem_ball_self hr) htipBall).trans hball
+
+/-- A canonical retained subhair selected inside an open neighborhood. -/
+noncomputable def shortenToOpen
+    (H : J.InsideAccessHair q) {U : Set Plane}
+    (hU : IsOpen U) (hqU : q ∈ U) : J.InsideAccessHair q :=
+  let c := Classical.choose (H.exists_shorten_carrier_subset_open hU hqU)
+  H.shorten c.2.1 c.2.2
+
+theorem shortenToOpen_carrier_subset_open
+    (H : J.InsideAccessHair q) {U : Set Plane}
+    (hU : IsOpen U) (hqU : q ∈ U) :
+    (H.shortenToOpen hU hqU).carrier ⊆ U :=
+  Classical.choose_spec (H.exists_shorten_carrier_subset_open hU hqU)
+
+theorem shortenToOpen_carrier_subset
+    (H : J.InsideAccessHair q) {U : Set Plane}
+    (hU : IsOpen U) (hqU : q ∈ U) :
+    (H.shortenToOpen hU hqU).carrier ⊆ H.carrier := by
+  let c := Classical.choose (H.exists_shorten_carrier_subset_open hU hqU)
+  exact H.shorten_carrier_subset c.2.1 c.2.2
+
 /-- An inside hair meets the Jordan curve only at its base point. -/
 theorem carrier_inter_curve (H : J.InsideAccessHair q) (hq : q ∈ J.carrier) :
     H.carrier ∩ J.carrier = {q} := by

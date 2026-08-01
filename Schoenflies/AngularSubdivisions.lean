@@ -368,6 +368,32 @@ theorem AccessibleAngularArc.generationMarks_mono
       · exact Or.inl (ih A.leftChild hx)
       · exact Or.inr (ih A.rightChild hx)
 
+theorem AccessibleAngularArc.descendant_left_mem_generationMarks
+    {J : JordanCircle} (A : J.AccessibleAngularArc) (bs : List Bool) :
+    (J.curvePoint (A.descendant bs).left : Plane) ∈
+      A.generationMarks bs.length := by
+  induction bs generalizing A with
+  | nil => exact A.left_mem_generationMarks 0
+  | cons b bs ih =>
+      cases b
+      · simp only [List.length_cons, generationMarks, Finset.mem_union]
+        exact Or.inl (ih A.leftChild)
+      · simp only [List.length_cons, generationMarks, Finset.mem_union]
+        exact Or.inr (ih A.rightChild)
+
+theorem AccessibleAngularArc.descendant_right_mem_generationMarks
+    {J : JordanCircle} (A : J.AccessibleAngularArc) (bs : List Bool) :
+    (J.curvePoint (A.descendant bs).right : Plane) ∈
+      A.generationMarks bs.length := by
+  induction bs generalizing A with
+  | nil => exact A.right_mem_generationMarks 0
+  | cons b bs ih =>
+      cases b
+      · simp only [List.length_cons, generationMarks, Finset.mem_union]
+        exact Or.inl (ih A.leftChild)
+      · simp only [List.length_cons, generationMarks, Finset.mem_union]
+        exact Or.inr (ih A.rightChild)
+
 /-- At every finite binary level all retained marks admit pairwise-disjoint
 straight access hairs. -/
 theorem AccessibleAngularArc.exists_generation_insideHairFamily
@@ -621,6 +647,43 @@ theorem curveArcPlane_union (I : J.InitialAngularArcs) :
 noncomputable def generationMarks (I : J.InitialAngularArcs) (n : ℕ) : Finset Plane :=
   I.first.generationMarks n ∪ I.second.generationMarks n
 
+/-- Choose one of the two initial arcs. -/
+def rootArc (I : J.InitialAngularArcs) : Bool → J.AccessibleAngularArc
+  | false => I.first
+  | true => I.second
+
+/-- A finite address for one arc at binary depth `n`: first choose one of the
+two initial arcs, then follow `n` left/right choices. -/
+abbrev LevelAddress (n : ℕ) := Bool × (Fin n → Bool)
+
+noncomputable def levelArc (I : J.InitialAngularArcs) {n : ℕ}
+    (a : LevelAddress n) : J.AccessibleAngularArc :=
+  (I.rootArc a.1).descendant (List.ofFn a.2)
+
+theorem levelArc_left_mem_generationMarks
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n) :
+    (J.curvePoint (I.levelArc a).left : Plane) ∈ I.generationMarks n := by
+  rw [generationMarks, Finset.mem_union]
+  cases hroot : a.1
+  · left
+    have h := I.first.descendant_left_mem_generationMarks (List.ofFn a.2)
+    simpa [levelArc, rootArc, hroot] using h
+  · right
+    have h := I.second.descendant_left_mem_generationMarks (List.ofFn a.2)
+    simpa [levelArc, rootArc, hroot] using h
+
+theorem levelArc_right_mem_generationMarks
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n) :
+    (J.curvePoint (I.levelArc a).right : Plane) ∈ I.generationMarks n := by
+  rw [generationMarks, Finset.mem_union]
+  cases hroot : a.1
+  · left
+    have h := I.first.descendant_right_mem_generationMarks (List.ofFn a.2)
+    simpa [levelArc, rootArc, hroot] using h
+  · right
+    have h := I.second.descendant_right_mem_generationMarks (List.ofFn a.2)
+    simpa [levelArc, rootArc, hroot] using h
+
 theorem generationMarks_mem_carrier_accessible
     (I : J.InitialAngularArcs) (n : ℕ) {x : Plane}
     (hx : x ∈ I.generationMarks n) :
@@ -764,6 +827,92 @@ theorem generationInsideHairFamily_succ_hair
     (I.generationInsideHairFamily n)
     (Classical.choice (I.exists_generation_insideHairExtension n
       (I.generationInsideHairFamily n))) i
+
+/-- The retained access hair at the left endpoint of a level arc. -/
+noncomputable def levelLeftHair
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n) :
+    J.InsideAccessHair (J.curvePoint (I.levelArc a).left : Plane) :=
+  (I.generationInsideHairFamily n).hair
+    ⟨(J.curvePoint (I.levelArc a).left : Plane),
+      I.levelArc_left_mem_generationMarks a⟩
+
+/-- The retained access hair at the right endpoint of a level arc. -/
+noncomputable def levelRightHair
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n) :
+    J.InsideAccessHair (J.curvePoint (I.levelArc a).right : Plane) :=
+  (I.generationInsideHairFamily n).hair
+    ⟨(J.curvePoint (I.levelArc a).right : Plane),
+      I.levelArc_right_mem_generationMarks a⟩
+
+/-- The two retained endpoint hairs of a level arc are disjoint. -/
+theorem disjoint_levelEndpointHairs
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n) :
+    Disjoint (I.levelLeftHair a).carrier (I.levelRightHair a).carrier := by
+  apply (I.generationInsideHairFamily n).pairwise_disjoint
+  intro heq
+  have hpoints :
+      (J.curvePoint (I.levelArc a).left : Plane) =
+        (J.curvePoint (I.levelArc a).right : Plane) :=
+    congrArg (fun x => (x.1 : Plane)) heq
+  have hcurve : J.curvePoint (I.levelArc a).left =
+      J.curvePoint (I.levelArc a).right := Subtype.ext hpoints
+  have hparam : JordanCurve.Arcs.param (I.levelArc a).left =
+      JordanCurve.Arcs.param (I.levelArc a).right :=
+    J.carrierHomeomorph.injective hcurve
+  have hangle := JordanCurve.Arcs.param_injOn
+    (I.levelArc a).width_lt_turn
+    (left_mem_Icc.mpr (I.levelArc a).left_lt_right.le)
+    (right_mem_Icc.mpr (I.levelArc a).left_lt_right.le) hparam
+  exact (I.levelArc a).left_lt_right.ne hangle
+
+/-- A retained left endpoint hair shortened into the prescribed neighborhood
+of its level arc. -/
+noncomputable def levelLeftHairNear
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    J.InsideAccessHair (J.curvePoint (I.levelArc a).left : Plane) :=
+  (I.levelLeftHair a).shortenToOpen Metric.isOpen_thickening
+    (self_subset_thickening hepsilon _ (I.levelArc a).left_mem_curveArcPlane)
+
+/-- A retained right endpoint hair shortened into the prescribed
+neighborhood of its level arc. -/
+noncomputable def levelRightHairNear
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    J.InsideAccessHair (J.curvePoint (I.levelArc a).right : Plane) :=
+  (I.levelRightHair a).shortenToOpen Metric.isOpen_thickening
+    (self_subset_thickening hepsilon _ (I.levelArc a).right_mem_curveArcPlane)
+
+theorem levelLeftHairNear_carrier_subset_thickening
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    (I.levelLeftHairNear a hepsilon).carrier ⊆
+      thickening epsilon (I.levelArc a).curveArcPlane :=
+  (I.levelLeftHair a).shortenToOpen_carrier_subset_open
+    Metric.isOpen_thickening
+    (self_subset_thickening hepsilon _ (I.levelArc a).left_mem_curveArcPlane)
+
+theorem levelRightHairNear_carrier_subset_thickening
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    (I.levelRightHairNear a hepsilon).carrier ⊆
+      thickening epsilon (I.levelArc a).curveArcPlane :=
+  (I.levelRightHair a).shortenToOpen_carrier_subset_open
+    Metric.isOpen_thickening
+    (self_subset_thickening hepsilon _ (I.levelArc a).right_mem_curveArcPlane)
+
+theorem disjoint_levelEndpointHairsNear
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    Disjoint (I.levelLeftHairNear a hepsilon).carrier
+      (I.levelRightHairNear a hepsilon).carrier :=
+  (I.disjoint_levelEndpointHairs a).mono
+    ((I.levelLeftHair a).shortenToOpen_carrier_subset
+      Metric.isOpen_thickening
+      (self_subset_thickening hepsilon _ (I.levelArc a).left_mem_curveArcPlane))
+    ((I.levelRightHair a).shortenToOpen_carrier_subset
+      Metric.isOpen_thickening
+      (self_subset_thickening hepsilon _ (I.levelArc a).right_mem_curveArcPlane))
 
 end InitialAngularArcs
 
