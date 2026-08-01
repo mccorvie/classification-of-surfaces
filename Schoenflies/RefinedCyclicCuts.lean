@@ -649,6 +649,7 @@ theorem exists_inside_brokenLine_between_returnTails {n : ℕ}
     ∃ p q : Plane,
       p ∈ A.returnPath '' Icc (⊥ : unitInterval) s ∧
         q ∈ A.returnPath '' Icc t (⊤ : unitInterval) ∧
+        p ∈ K.carrier ∧ q ∈ K.carrier ∧
         JoinedByBrokenLine
           ((A.auxiliaryJordanCircle.inside ∩ K.carrier) ∪ {p, q}) p q := by
   obtain ⟨a, b, hab, haAux, hbAux, hmark, _haTrue, _hbFalse, hrun⟩ :=
@@ -663,9 +664,13 @@ theorem exists_inside_brokenLine_between_returnTails {n : ℕ}
     hvertices hpolygonVertices hbrokenVertices start hstartPrev hab hrun
   rcases hopposite with ⟨haFirst, hbLast⟩ | ⟨haLast, hbFirst⟩
   · exact ⟨cutVertex K start a, cutVertex K start b,
-      haFirst, hbLast, hjoin⟩
+      haFirst, hbLast,
+      K.vertex_mem_carrier (cutEdgeIndex K start a),
+      K.vertex_mem_carrier (cutEdgeIndex K start b), hjoin⟩
   · refine ⟨cutVertex K start b, cutVertex K start a,
-      hbFirst, haLast, ?_⟩
+      hbFirst, haLast,
+      K.vertex_mem_carrier (cutEdgeIndex K start b),
+      K.vertex_mem_carrier (cutEdgeIndex K start a), ?_⟩
     simpa only [Set.pair_comm] using hjoin.symm
 
 /-- A generic refined separator that meets the return path has a cyclic
