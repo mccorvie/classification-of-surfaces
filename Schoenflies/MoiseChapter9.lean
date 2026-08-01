@@ -36,6 +36,7 @@ import Schoenflies.FiniteAvoidingCrosscuts
 import Schoenflies.FiniteLevelCrosscuts
 import Schoenflies.FiniteLevelHairSynchronization
 import Schoenflies.CyclicLevelAddresses
+import Schoenflies.HierarchicalLevelHairs
 import Schoenflies.LevelArcCover
 import Schoenflies.LevelEndpointIncidence
 import Schoenflies.SynchronizedLevelReturns
