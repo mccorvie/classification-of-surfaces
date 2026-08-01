@@ -7,6 +7,7 @@ import Schoenflies.ArcNeighborhoods
 import Schoenflies.Crosscuts
 import Schoenflies.PolygonalPaths
 import Schoenflies.TwoArcJordan
+import Schoenflies.AuxiliaryJordan
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.RegionalExtensions
 import ClassificationOfSurfaces.Moise.BrokenLine

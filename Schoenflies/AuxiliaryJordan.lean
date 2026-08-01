@@ -1,0 +1,233 @@
+import Schoenflies.PolygonalPaths
+import Schoenflies.TwoArcJordan
+
+/-!
+# Auxiliary Jordan circles for the Chapter 9 separator
+
+For a selected boundary subarc `A`, choose any simple polygonal crosscut on
+the inside side of the original Jordan curve.  The boundary arc and the
+reversed crosscut meet exactly at their endpoints, hence form the auxiliary
+Jordan circle used in Moise 9.1 and 9.5.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+
+namespace JordanCircle
+namespace AccessibleAngularArc
+
+variable {J : JordanCircle}
+
+/-- The two endpoints of a nondegenerate angular subarc are distinct in the
+plane. -/
+theorem endpoint_ne (A : J.AccessibleAngularArc) :
+    (J.curvePoint A.left : Plane) ≠ J.curvePoint A.right := by
+  intro h
+  have hcurve : J.curvePoint A.left = J.curvePoint A.right :=
+    Subtype.ext h
+  have hparam :
+      JordanCurve.Arcs.param A.left = JordanCurve.Arcs.param A.right :=
+    J.carrierHomeomorph.injective hcurve
+  have hangle := JordanCurve.Arcs.param_injOn A.width_lt_turn
+    (left_mem_Icc.mpr A.left_lt_right.le)
+    (right_mem_Icc.mpr A.left_lt_right.le) hparam
+  exact A.left_lt_right.ne hangle
+
+/-- A chosen simple polygonal return arc through the inside of `J`. -/
+noncomputable def returnBrokenLine (A : J.AccessibleAngularArc) :
+    SimpleBrokenLine
+      (J.insideCrosscutSet (J.curvePoint A.left) (J.curvePoint A.right))
+      (J.curvePoint A.left) (J.curvePoint A.right) :=
+  J.simpleInsideCrosscut A.left_accessible A.right_accessible
+
+/-- Orient the inside return arc from the right endpoint back to the left
+endpoint, so it closes the oriented boundary path `A.toPath`. -/
+noncomputable def returnPath (A : J.AccessibleAngularArc) :
+    Path (J.curvePoint A.right : Plane) (J.curvePoint A.left : Plane) :=
+  (A.returnBrokenLine.toPath A.endpoint_ne).symm
+
+theorem returnPath_injective (A : J.AccessibleAngularArc) :
+    Injective A.returnPath := by
+  intro s t hst
+  apply unitInterval.symm_bijective.injective
+  exact A.returnBrokenLine.toPath_injective A.endpoint_ne hst
+
+theorem range_returnPath_subset_insideCrosscutSet
+    (A : J.AccessibleAngularArc) :
+    range A.returnPath ⊆
+      J.insideCrosscutSet (J.curvePoint A.left) (J.curvePoint A.right) := by
+  rw [returnPath, Path.symm_range]
+  exact A.returnBrokenLine.range_toPath_subset A.endpoint_ne
+
+/-- The wild boundary subarc and the polygonal return arc have no accidental
+intersection in their interiors. -/
+theorem range_toPath_inter_range_returnPath
+    (A : J.AccessibleAngularArc) :
+    range A.toPath ∩ range A.returnPath =
+      {(J.curvePoint A.left : Plane), (J.curvePoint A.right : Plane)} := by
+  ext x
+  constructor
+  · rintro ⟨hxA, hxReturn⟩
+    have hxArc : x ∈ A.curveArcPlane := A.range_toPath.le hxA
+    have hxCarrier : x ∈ J.carrier :=
+      A.curveArcPlane_subset_carrier J hxArc
+    have hxAllowed := A.range_returnPath_subset_insideCrosscutSet hxReturn
+    rcases hxAllowed with hxInside | hxEndpoints
+    · exact False.elim (J.inside_subset_compl hxInside hxCarrier)
+    · exact hxEndpoints
+  · intro hx
+    rcases hx with hleft | hright
+    · have hx : x = (J.curvePoint A.left : Plane) := hleft
+      subst x
+      exact ⟨Path.source_mem_range A.toPath,
+        Path.target_mem_range A.returnPath⟩
+    · have hx : x = (J.curvePoint A.right : Plane) :=
+        mem_singleton_iff.mp hright
+      subst x
+      exact ⟨Path.target_mem_range A.toPath,
+        Path.source_mem_range A.returnPath⟩
+
+/-- The auxiliary circle bounded by the selected wild arc and an arbitrary
+simple polygonal return arc in the inside of the original curve. -/
+noncomputable def auxiliaryJordanCircle (A : J.AccessibleAngularArc) :
+    JordanCircle :=
+  TwoArcJordan.toJordanCircle A.toPath A.returnPath
+    A.toPath_injective A.returnPath_injective
+    A.range_toPath_inter_range_returnPath
+
+@[simp] theorem carrier_auxiliaryJordanCircle
+    (A : J.AccessibleAngularArc) :
+    A.auxiliaryJordanCircle.carrier =
+      A.curveArcPlane ∪ range A.returnPath := by
+  rw [auxiliaryJordanCircle, TwoArcJordan.carrier_toJordanCircle,
+    A.range_toPath]
+
+/-- Cut the polygonal return path into two short endpoint tails and a compact
+middle.  The tails lie in the prescribed neighborhood of the wild boundary
+arc, while the middle lies strictly inside the original Jordan curve and is
+disjoint from that arc.  This is the precise input used before choosing the
+fine brick frame in Moise 9.5. -/
+theorem exists_returnPath_cuts (A : J.AccessibleAngularArc)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    ∃ s t : unitInterval,
+      (0 : ℝ) < s ∧ (s : ℝ) < t ∧ (t : ℝ) < 1 ∧
+      A.returnPath '' Icc (0 : unitInterval) s ⊆
+        thickening epsilon A.curveArcPlane ∧
+      A.returnPath '' Icc t (1 : unitInterval) ⊆
+        thickening epsilon A.curveArcPlane ∧
+      IsCompact (A.returnPath '' Icc s t) ∧
+      IsPreconnected (A.returnPath '' Icc s t) ∧
+      A.returnPath '' Icc s t ⊆ J.inside ∧
+      Disjoint (A.returnPath '' Icc s t) A.curveArcPlane := by
+  have huniform : UniformContinuous A.returnPath :=
+    CompactSpace.uniformContinuous_of_continuous A.returnPath.continuous
+  obtain ⟨delta, hdelta, hmod⟩ :=
+    (Metric.uniformContinuous_iff.mp huniform) epsilon hepsilon
+  let eta : ℝ := min (delta / 2) (1 / 4)
+  have hetaPos : 0 < eta := by
+    dsimp [eta]
+    exact lt_min (half_pos hdelta) (by norm_num)
+  have hetaDelta : eta < delta := by
+    calc
+      eta ≤ delta / 2 := min_le_left _ _
+      _ < delta := half_lt_self hdelta
+  have hetaHalf : eta < 1 / 2 := by
+    calc
+      eta ≤ 1 / 4 := min_le_right _ _
+      _ < 1 / 2 := by norm_num
+  let s : unitInterval :=
+    ⟨eta, ⟨hetaPos.le, by linarith [hetaHalf]⟩⟩
+  let t : unitInterval :=
+    ⟨1 - eta, ⟨by linarith [hetaHalf], by linarith [hetaPos]⟩⟩
+  let middle : Set Plane := A.returnPath '' Icc s t
+  have hfirst : A.returnPath '' Icc (0 : unitInterval) s ⊆
+      thickening epsilon A.curveArcPlane := by
+    rintro x ⟨u, hu, rfl⟩
+    have hdistDomain : dist u (0 : unitInterval) < delta := by
+      change |(u : ℝ) - 0| < delta
+      rw [sub_zero, abs_of_nonneg u.2.1]
+      have huS : (u : ℝ) ≤ (s : ℝ) := hu.2
+      have huEta : (u : ℝ) ≤ eta := by simpa [s] using huS
+      exact huEta.trans_lt hetaDelta
+    have hdistImage :
+        dist (A.returnPath u) (J.curvePoint A.right : Plane) < epsilon := by
+      simpa only [A.returnPath.source] using hmod hdistDomain
+    apply ball_subset_thickening A.right_mem_curveArcPlane epsilon
+    exact hdistImage
+  have hlast : A.returnPath '' Icc t (1 : unitInterval) ⊆
+      thickening epsilon A.curveArcPlane := by
+    rintro x ⟨u, hu, rfl⟩
+    have hdistDomain : dist u (1 : unitInterval) < delta := by
+      change |(u : ℝ) - 1| < delta
+      rw [abs_of_nonpos (sub_nonpos.mpr u.2.2)]
+      have htU : (t : ℝ) ≤ (u : ℝ) := hu.1
+      have huEta : 1 - eta ≤ (u : ℝ) := by simpa [t] using htU
+      linarith [huEta, hetaDelta]
+    have hdistImage :
+        dist (A.returnPath u) (J.curvePoint A.left : Plane) < epsilon := by
+      simpa only [A.returnPath.target] using hmod hdistDomain
+    apply ball_subset_thickening A.left_mem_curveArcPlane epsilon
+    exact hdistImage
+  have hmiddleCompact : IsCompact middle := by
+    exact isCompact_Icc.image A.returnPath.continuous
+  have hmiddlePreconnected : IsPreconnected middle := by
+    exact ordConnected_Icc.isPreconnected.image A.returnPath
+      A.returnPath.continuous.continuousOn
+  have hmiddleDisjoint : Disjoint middle A.curveArcPlane := by
+    rw [Set.disjoint_left]
+    rintro x ⟨u, hu, rfl⟩ hxArc
+    have hxReturn : A.returnPath u ∈ range A.returnPath := ⟨u, rfl⟩
+    have hxBoundary : A.returnPath u ∈ range A.toPath :=
+      A.range_toPath.ge hxArc
+    have hxEndpoints : A.returnPath u ∈
+        ({(J.curvePoint A.left : Plane),
+          (J.curvePoint A.right : Plane)} : Set Plane) := by
+      rw [← A.range_toPath_inter_range_returnPath]
+      exact ⟨hxBoundary, hxReturn⟩
+    rcases hxEndpoints with hleft | hright
+    · have huOne : u = (1 : unitInterval) :=
+        A.returnPath_injective (hleft.trans A.returnPath.target.symm)
+      have huVal : (u : ℝ) = 1 := by
+        exact congrArg Subtype.val huOne
+      have huT : (u : ℝ) ≤ (t : ℝ) := hu.2
+      have huUpper : (u : ℝ) ≤ 1 - eta := by simpa [t] using huT
+      linarith [huUpper, hetaPos]
+    · have hright' :
+          A.returnPath u = (J.curvePoint A.right : Plane) :=
+        mem_singleton_iff.mp hright
+      have huZero : u = (0 : unitInterval) :=
+        A.returnPath_injective (hright'.trans A.returnPath.source.symm)
+      have huVal : (u : ℝ) = 0 := by
+        exact congrArg Subtype.val huZero
+      have hsU : (s : ℝ) ≤ (u : ℝ) := hu.1
+      have huLower : eta ≤ (u : ℝ) := by simpa [s] using hsU
+      linarith [huLower, hetaPos]
+  have hmiddleInside : middle ⊆ J.inside := by
+    intro x hxMiddle
+    have hxRange : x ∈ range A.returnPath := by
+      rcases hxMiddle with ⟨u, -, hux⟩
+      exact ⟨u, hux⟩
+    have hxAllowed := A.range_returnPath_subset_insideCrosscutSet
+      hxRange
+    rcases hxAllowed with hxInside | hxEndpoints
+    · exact hxInside
+    · exfalso
+      apply Set.disjoint_left.mp hmiddleDisjoint hxMiddle
+      rcases hxEndpoints with hleft | hright
+      · simpa [hleft] using A.left_mem_curveArcPlane
+      · have hright' : x = (J.curvePoint A.right : Plane) :=
+          mem_singleton_iff.mp hright
+        simpa [hright'] using A.right_mem_curveArcPlane
+  refine ⟨s, t, by simpa [s], by simp [s, t]; linarith,
+    by simpa [t],
+    hfirst, hlast, ?_, ?_, ?_, ?_⟩
+  · exact hmiddleCompact
+  · exact hmiddlePreconnected
+  · exact hmiddleInside
+  · exact hmiddleDisjoint
+
+end AccessibleAngularArc
+end JordanCircle
+
+end Schoenflies

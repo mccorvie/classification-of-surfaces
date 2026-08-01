@@ -170,6 +170,84 @@ theorem circleMap_injective (p : Path a b) (q : Path b a)
   apply Subtype.ext
   simpa [s, t, representative] using hst
 
+/-- The carrier of the additive-circle parametrization is exactly the union
+of the two paths. -/
+theorem range_circleMap (p : Path a b) (q : Path b a) :
+    range (circleMap p q) = range p ∪ range q := by
+  ext x
+  constructor
+  · rintro ⟨z, rfl⟩
+    let s := representative z
+    have hs0 : 0 ≤ (s : ℝ) := s.2.1
+    have hs2 : (s : ℝ) < 2 := by simpa using s.2.2
+    rw [circleMap_eq_loop_representative]
+    by_cases hs1 : (s : ℝ) ≤ 1
+    · left
+      have hsI : (s : ℝ) ∈ Icc (0 : ℝ) 1 := ⟨hs0, hs1⟩
+      rw [loop_eq_first p q hsI]
+      exact ⟨⟨(s : ℝ), hsI⟩, rfl⟩
+    · right
+      have hsI : (s : ℝ) ∈ Ioc (1 : ℝ) 2 :=
+        ⟨lt_of_not_ge hs1, hs2.le⟩
+      rw [loop_eq_second p q hsI]
+      exact
+        ⟨⟨(s : ℝ) - 1,
+          ⟨by linarith [hsI.1], by linarith [hsI.2]⟩⟩, rfl⟩
+  · rintro (hx | hx)
+    · rcases hx with ⟨u, rfl⟩
+      let v : Ico (0 : ℝ) ((0 : ℝ) + 2) :=
+        ⟨(u : ℝ), ⟨u.2.1, by norm_num; linarith [u.2.2]⟩⟩
+      let z : AddCircle (2 : ℝ) :=
+        (AddCircle.equivIco (2 : ℝ) (0 : ℝ)).symm v
+      refine ⟨z, ?_⟩
+      rw [circleMap_eq_loop_representative]
+      have hz : representative z = v := by
+        simp [z, representative, v]
+      rw [hz]
+      exact loop_eq_first p q u.2
+    · rcases hx with ⟨u, rfl⟩
+      by_cases hu0 : (u : ℝ) = 0
+      · refine ⟨(AddCircle.equivIco (2 : ℝ) (0 : ℝ)).symm
+            ⟨(1 : ℝ), by norm_num⟩, ?_⟩
+        rw [circleMap_eq_loop_representative]
+        have hz : representative
+            ((AddCircle.equivIco (2 : ℝ) (0 : ℝ)).symm
+              ⟨(1 : ℝ), by norm_num⟩) = ⟨(1 : ℝ), by norm_num⟩ := by
+          simp [representative]
+        rw [hz, loop_eq_first p q (by norm_num)]
+        rw [show u = 0 from Subtype.ext hu0]
+        exact p.target.trans q.source.symm
+      · by_cases hu1 : (u : ℝ) = 1
+        · refine ⟨(AddCircle.equivIco (2 : ℝ) (0 : ℝ)).symm
+              ⟨(0 : ℝ), by norm_num⟩, ?_⟩
+          rw [circleMap_eq_loop_representative]
+          have hz : representative
+              ((AddCircle.equivIco (2 : ℝ) (0 : ℝ)).symm
+                ⟨(0 : ℝ), by norm_num⟩) = ⟨(0 : ℝ), by norm_num⟩ := by
+            simp [representative]
+          rw [hz, loop_eq_first p q (by norm_num)]
+          rw [show u = 1 from Subtype.ext hu1]
+          exact p.source.trans q.target.symm
+        · have hu0' : 0 < (u : ℝ) := lt_of_le_of_ne u.2.1 (Ne.symm hu0)
+          have hu1' : (u : ℝ) < 1 := lt_of_le_of_ne u.2.2 hu1
+          let v : Ico (0 : ℝ) ((0 : ℝ) + 2) :=
+            ⟨(u : ℝ) + 1, by constructor <;> norm_num <;> linarith⟩
+          let z : AddCircle (2 : ℝ) :=
+            (AddCircle.equivIco (2 : ℝ) (0 : ℝ)).symm v
+          refine ⟨z, ?_⟩
+          rw [circleMap_eq_loop_representative]
+          have hz : representative z = v := by
+            simp [z, representative, v]
+          rw [hz]
+          have hvI : (v : ℝ) ∈ Ioc (1 : ℝ) 2 := by
+            dsimp [v]
+            constructor <;> linarith
+          rw [loop_eq_second p q hvI]
+          apply congrArg q
+          apply Subtype.ext
+          dsimp [v]
+          linarith
+
 /-- The standard homeomorphism from `AddCircle 2` to the geometric unit
 circle. -/
 noncomputable def circleHomeomorph :
@@ -186,6 +264,14 @@ theorem continuous_sphereMap (p : Path a b) (q : Path b a) :
     Continuous (sphereMap p q) :=
   (continuous_circleMap p q).comp circleHomeomorph.symm.continuous
 
+/-- The geometric-circle parametrization has the same carrier as its two
+constituent paths. -/
+theorem range_sphereMap (p : Path a b) (q : Path b a) :
+    range (sphereMap p q) = range p ∪ range q := by
+  rw [sphereMap, Set.range_comp]
+  rw [circleHomeomorph.symm.surjective.range_eq, image_univ]
+  exact range_circleMap p q
+
 theorem sphereMap_injective (p : Path a b) (q : Path b a)
     (hp : Injective p) (hq : Injective q)
     (hinter : range p ∩ range q = {a, b}) :
@@ -201,6 +287,12 @@ noncomputable def toJordanCircle (p : Path a b) (q : Path b a)
   parametrization := sphereMap p q
   continuous := continuous_sphereMap p q
   injective := sphereMap_injective p q hp hq hinter
+
+@[simp] theorem carrier_toJordanCircle (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b}) :
+    (toJordanCircle p q hp hq hinter).carrier = range p ∪ range q :=
+  range_sphereMap p q
 
 end TwoArcJordan
 
