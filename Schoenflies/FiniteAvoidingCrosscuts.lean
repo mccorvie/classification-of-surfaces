@@ -33,8 +33,16 @@ structure FiniteAvoidingJoinFamily (N : ℕ)
   rightPoint_inside : ∀ i, rightPoint i ∈ J.inside
   leftPoint_inside : ∀ i, leftPoint i ∈ J.inside
   endpoint_ne : ∀ i, rightPoint i ≠ leftPoint i
+  /-- The open set in which the original line for index `i` was selected.
+  Retaining this set lets later trimming reuse that very line rather than
+  recomputing a canonical path in a larger ambient set. -/
+  sourceAmbient : Fin N → Set Plane
+  sourceLine : ∀ i,
+    SimpleBrokenLine (sourceAmbient i) (rightPoint i) (leftPoint i)
   path : ∀ i, Path (rightPoint i) (leftPoint i)
+  path_eq_sourceLine : ∀ i, path i = (sourceLine i).toPath (endpoint_ne i)
   path_injective : ∀ i, Injective (path i)
+  sourceAmbient_subset : ∀ i, sourceAmbient i ⊆ J.inside ∩ V i
   carrierLine : ∀ i,
     SimpleBrokenLine J.inside (rightPoint i) (leftPoint i)
   segmentCarrier_carrierLine_eq_range : ∀ i,
@@ -69,8 +77,12 @@ theorem nonempty_finiteAvoidingJoinFamily :
         rightPoint_inside := fun i => Fin.elim0 i
         leftPoint_inside := fun i => Fin.elim0 i
         endpoint_ne := fun i => Fin.elim0 i
+        sourceAmbient := fun i => Fin.elim0 i
+        sourceLine := fun i => Fin.elim0 i
         path := fun i => Fin.elim0 i
+        path_eq_sourceLine := fun i => Fin.elim0 i
         path_injective := fun i => Fin.elim0 i
+        sourceAmbient_subset := fun i => Fin.elim0 i
         carrierLine := fun i => Fin.elim0 i
         segmentCarrier_carrierLine_eq_range := fun i => Fin.elim0 i
         controlled := fun i => Fin.elim0 i
@@ -122,6 +134,11 @@ theorem nonempty_finiteAvoidingJoinFamily :
         Fin.cases q R.leftPoint
       let endpoint_ne : ∀ i, rightPoint i ≠ leftPoint i :=
         Fin.cases hpq R.endpoint_ne
+      let sourceAmbient : Fin (N + 1) → Set Plane :=
+        Fin.cases (J.inside ∩ (V 0 ∩ Kᶜ)) R.sourceAmbient
+      let sourceLine : ∀ i, SimpleBrokenLine (sourceAmbient i)
+          (rightPoint i) (leftPoint i) :=
+        Fin.cases B0 R.sourceLine
       let path : ∀ i, Path (rightPoint i) (leftPoint i) :=
         Fin.cases gamma R.path
       let carrierLine : ∀ i, SimpleBrokenLine J.inside
@@ -135,8 +152,12 @@ theorem nonempty_finiteAvoidingJoinFamily :
         rightPoint_inside := ?_
         leftPoint_inside := ?_
         endpoint_ne := endpoint_ne
+        sourceAmbient := sourceAmbient
+        sourceLine := sourceLine
         path := path
+        path_eq_sourceLine := ?_
         path_injective := ?_
+        sourceAmbient_subset := ?_
         carrierLine := carrierLine
         segmentCarrier_carrierLine_eq_range := ?_
         controlled := ?_
@@ -160,8 +181,18 @@ theorem nonempty_finiteAvoidingJoinFamily :
         · exact R.leftPoint_inside j
       · intro i
         refine Fin.cases ?_ (fun j => ?_) i
+        · rfl
+        · exact R.path_eq_sourceLine j
+      · intro i
+        refine Fin.cases ?_ (fun j => ?_) i
         · exact hgammaInjective
         · exact R.path_injective j
+      · intro i
+        refine Fin.cases ?_ (fun j => ?_) i
+        · intro x hx
+          exact ⟨hx.1, hx.2.1⟩
+        · intro x hx
+          exact R.sourceAmbient_subset _ hx
       · intro i
         refine Fin.cases ?_ (fun j => ?_) i
         · exact hBcarrier

@@ -33,6 +33,8 @@ import Schoenflies.PolygonalSubpathExtraction
 import Schoenflies.OpenControlledCrosscuts
 import Schoenflies.AvoidingControlledCrosscuts
 import Schoenflies.FiniteAvoidingCrosscuts
+import Schoenflies.FiniteLevelCrosscuts
+import Schoenflies.FiniteLevelHairSynchronization
 import Schoenflies.TrimmedCollarCells
 import Schoenflies.LevelHairSynchronization
 import Schoenflies.PolygonalSubarcs
