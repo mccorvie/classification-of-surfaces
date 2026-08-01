@@ -25,34 +25,6 @@ namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
 
-namespace SurfaceCellComplex
-
-/-- Oriented triangulation edges and signed cell-complex darts carry the same data. -/
-private def orientedEdgeSignedDartEquiv {Edge : Type*} :
-    OrientedEdge Edge ≃ SignedDart Edge where
-  toFun := signedDartOfOrientedEdge
-  invFun
-    | .pos e => .pos e
-    | .neg e => .neg e
-  left_inv := by
-    intro d
-    cases d <;> rfl
-  right_inv := by
-    intro d
-    cases d <;> rfl
-
-@[simp]
-private theorem orientedEdgeSignedDartEquiv_apply {Edge : Type*} (d : OrientedEdge Edge) :
-    orientedEdgeSignedDartEquiv d = signedDartOfOrientedEdge d :=
-  rfl
-
-@[simp]
-private theorem orientedEdgeSignedDartEquiv_edge {Edge : Type*} (d : OrientedEdge Edge) :
-    (orientedEdgeSignedDartEquiv d).edge = d.edge :=
-  signedDartOfOrientedEdge_edge d
-
-end SurfaceCellComplex
-
 namespace FiniteSurfaceTriangulation
 
 open SurfaceCellComplex

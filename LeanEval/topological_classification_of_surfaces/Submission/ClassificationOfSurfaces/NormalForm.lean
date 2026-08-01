@@ -23,11 +23,55 @@ namespace LeanEval
 namespace Topology
 namespace ClassificationOfSurfaces
 
+namespace NormalForm
+
+/-- The canonical presentation of an admissible normal form realizes its selected topological
+representative. -/
+noncomputable def canonicalRealizationHomeomorph
+    (N : NormalForm) (hN : N.IsEvalAdmissible) :
+    N.canonicalPresentation.PolygonalRealization
+        (N.canonicalPresentation_isSurfaceValid hN) ≃ₜ
+      N.Representative := by
+  cases N with
+  | sphere => exact canonicalSphereRealizationHomeomorph
+  | orientable p n => exact canonicalOrientableRealizationHomeomorph hN
+  | nonOrientable p n => exact canonicalNonOrientableRealizationHomeomorph hN
+
+end NormalForm
+
+namespace FiniteCyclicPresentation.NormalizationResult
+
+/-- A normalization result identifies the input realization with the concrete representative
+selected by its normal-form index. -/
+noncomputable def representativeHomeomorph
+    {P : FiniteCyclicPresentation.ValidPresentation}
+    (result : FiniteCyclicPresentation.NormalizationResult P) :
+    P.presentation.PolygonalRealization P.valid ≃ₜ
+      result.normalForm.Representative :=
+  result.realizationHomeomorph.trans
+    (result.normalForm.canonicalRealizationHomeomorph result.admissible)
+
+end FiniteCyclicPresentation.NormalizationResult
+
+/-- A valid connected finite-cyclic presentation has an admissible normal form whose concrete
+representative is homeomorphic to its faithful polygonal realization. -/
+theorem FiniteCyclicPresentation.exists_homeomorphic_normalForm
+    (P : FiniteCyclicPresentation)
+    (validP : P.IsSurfaceValid) (connectedP : P.IsConnected) :
+    ∃ N : NormalForm,
+      N.IsEvalAdmissible ∧
+        Nonempty (P.PolygonalRealization validP ≃ₜ N.Representative) := by
+  let result :=
+    FiniteCyclicPresentation.normalizeConnectedToCanonical
+      ⟨P, validP⟩ connectedP
+  exact
+    ⟨result.normalForm, result.admissible,
+      ⟨result.representativeHomeomorph⟩⟩
+
 /-- A valid connected finite-cyclic presentation has one of the exact Eval representatives.
 
-The proof first normalizes to `NormalForm.canonicalPresentation`, preserving the polygonal
-realization, and then uses the corresponding sphere, orientable, or nonorientable endpoint
-homeomorphism. -/
+This is the compatibility form of `FiniteCyclicPresentation.exists_homeomorphic_normalForm`,
+with the indexed representative expanded into the nested disjunction required by Lean-Eval. -/
 theorem FiniteCyclicPresentation.hasEvalRepresentative
     (P : FiniteCyclicPresentation)
     (validP : P.IsSurfaceValid) (connectedP : P.IsConnected) :
@@ -38,22 +82,11 @@ theorem FiniteCyclicPresentation.hasEvalRepresentative
           (1 ≤ p ∧
             Nonempty (P.PolygonalRealization validP ≃ₜ Quot (NonOrientableRel p n))) := by
   obtain ⟨N, hN, hPN⟩ :=
-    P.exists_admissible_normalForm_polygonallyEquivalent validP connectedP
-  rcases hPN with ⟨hPN⟩
+    P.exists_homeomorphic_normalForm validP connectedP
   cases N with
-  | sphere =>
-      exact Or.inl
-        ⟨hPN.trans NormalForm.canonicalSphereRealizationHomeomorph⟩
-  | orientable p n =>
-      exact Or.inr
-        ⟨p, n, Or.inl
-          ⟨hN, ⟨hPN.trans
-            (NormalForm.canonicalOrientableRealizationHomeomorph hN)⟩⟩⟩
-  | nonOrientable p n =>
-      exact Or.inr
-        ⟨p, n, Or.inr
-          ⟨hN, ⟨hPN.trans
-            (NormalForm.canonicalNonOrientableRealizationHomeomorph hN)⟩⟩⟩
+  | sphere => exact Or.inl hPN
+  | orientable p n => exact Or.inr ⟨p, n, Or.inl ⟨hN, hPN⟩⟩
+  | nonOrientable p n => exact Or.inr ⟨p, n, Or.inr ⟨hN, hPN⟩⟩
 
 end ClassificationOfSurfaces
 end Topology

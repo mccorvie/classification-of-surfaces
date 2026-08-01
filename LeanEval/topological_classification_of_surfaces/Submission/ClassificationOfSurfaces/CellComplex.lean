@@ -229,15 +229,43 @@ def signedDartOfOrientedEdge {Edge : Type*} :
   | OrientedEdge.pos e => SignedDart.pos e
   | OrientedEdge.neg e => SignedDart.neg e
 
+/-- Oriented triangulation edges and signed cell-complex darts carry the same data. -/
+def orientedEdgeSignedDartEquiv {Edge : Type*} :
+    OrientedEdge Edge ≃ SignedDart Edge where
+  toFun := signedDartOfOrientedEdge
+  invFun
+    | .pos e => .pos e
+    | .neg e => .neg e
+  left_inv := by
+    intro d
+    cases d <;> rfl
+  right_inv := by
+    intro d
+    cases d <;> rfl
+
+@[simp]
+theorem orientedEdgeSignedDartEquiv_apply {Edge : Type*} (d : OrientedEdge Edge) :
+    orientedEdgeSignedDartEquiv d = signedDartOfOrientedEdge d :=
+  rfl
+
 theorem signedDartOfOrientedEdge_injective {Edge : Type*} :
     Function.Injective
-      (signedDartOfOrientedEdge : OrientedEdge Edge → SignedDart Edge) := by
-  intro d e h
-  cases d <;> cases e <;> simp_all [signedDartOfOrientedEdge]
+      (signedDartOfOrientedEdge : OrientedEdge Edge → SignedDart Edge) :=
+  orientedEdgeSignedDartEquiv.injective
 
 @[simp]
 theorem signedDartOfOrientedEdge_edge {Edge : Type*} (d : OrientedEdge Edge) :
     (signedDartOfOrientedEdge d).edge = d.edge := by
+  cases d <;> rfl
+
+@[simp]
+theorem orientedEdgeSignedDartEquiv_edge {Edge : Type*} (d : OrientedEdge Edge) :
+    (orientedEdgeSignedDartEquiv d).edge = d.edge :=
+  signedDartOfOrientedEdge_edge d
+
+@[simp high]
+theorem orientedEdgeSignedDartEquiv_flip {Edge : Type*} (d : OrientedEdge Edge) :
+    orientedEdgeSignedDartEquiv d.flip = (orientedEdgeSignedDartEquiv d).flip := by
   cases d <;> rfl
 
 /-- The sphere presented as two monogons with oppositely oriented copies of one edge.
