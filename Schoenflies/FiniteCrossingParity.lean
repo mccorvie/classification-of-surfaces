@@ -85,4 +85,201 @@ theorem odd_of_alternating_end_ne {n : ℕ}
     c 0 = toggleN (c 0) n := htoggle.symm
     _ = c (Fin.last n) := by simpa using hlast.symm
 
+/-- If an odd number of points in a `2`-element block decomposition carry
+the label `true`, one of the blocks has two different labels.  In the
+Chapter 9 application the blocks are the auxiliary-inside gaps between
+successive polygon/return-path crossings. -/
+theorem exists_mixed_pair_of_odd_true_count {m : ℕ}
+    (label : Fin (m * 2) → Bool)
+    (hodd : Odd (Fintype.card {i : Fin (m * 2) // label i = true})) :
+    ∃ j : Fin m,
+      label (finProdFinEquiv (j, (0 : Fin 2))) ≠
+        label (finProdFinEquiv (j, (1 : Fin 2))) := by
+  classical
+  by_contra hmixed
+  push Not at hmixed
+  let S := {j : Fin m // label (finProdFinEquiv (j, (0 : Fin 2))) = true}
+  let Eblock : S × Fin 2 ≃
+      {jr : Fin m × Fin 2 // label (finProdFinEquiv jr) = true} :=
+    { toFun := fun jr => ⟨(jr.1.1, jr.2), by
+          have hr : jr.2 = 0 ∨ jr.2 = 1 := by omega
+          rcases hr with hr | hr
+          · simpa only [hr] using jr.1.2
+          · rw [hr, ← hmixed jr.1]
+            exact jr.1.2⟩
+      invFun := fun jr =>
+        (⟨jr.1.1, by
+            have hr : jr.1.2 = 0 ∨ jr.1.2 = 1 := by omega
+            rcases hr with hr | hr
+            · have hjr : jr.1 = (jr.1.1, (0 : Fin 2)) := Prod.ext rfl hr
+              simpa only [← hjr] using jr.2
+            · rw [hmixed jr.1.1]
+              have hjr : jr.1 = (jr.1.1, (1 : Fin 2)) := Prod.ext rfl hr
+              simpa only [← hjr] using jr.2⟩, jr.1.2)
+      left_inv := by
+        intro jr
+        rfl
+      right_inv := by
+        intro jr
+        apply Subtype.ext
+        rfl }
+  let E : S × Fin 2 ≃ {i : Fin (m * 2) // label i = true} :=
+    Eblock.trans (Equiv.subtypeEquivOfSubtype
+      (p := fun i : Fin (m * 2) => label i = true) finProdFinEquiv)
+  have heven : Even (Fintype.card {i : Fin (m * 2) // label i = true}) := by
+    rw [← Fintype.card_congr E, Fintype.card_prod, Fintype.card_fin]
+    exact ⟨Fintype.card S, by omega⟩
+  exact (Nat.not_even_iff_odd.mpr hodd) heven
+
+/-- A finite ordered set of genuine local side changes has odd cardinality
+when the two endpoints have different side labels.  `hconstant` is the only
+global input: labels agree across every closed interval containing no point
+of `T`.  The local hypothesis is deliberately quantified over arbitrary
+neighboring bounds, matching the transverse-crossing theorem. -/
+theorem odd_card_of_ordered_local_side_changes
+    {α : Type*} [LinearOrder α] [DenselyOrdered α]
+    (T : Finset α) {a b : α} (side : α → Bool)
+    (hab : a ≤ b)
+    (hbounds : ∀ t ∈ T, a < t ∧ t < b)
+    (hconstant : ∀ {x y : α}, a ≤ x → x ≤ y → y ≤ b →
+      (∀ t ∈ T, t ∉ Set.Icc x y) → side x = side y)
+    (hchange : ∀ t ∈ T, ∀ x y : α, x < t → t < y →
+      ∃ l u : α, x < l ∧ l < t ∧ t < u ∧ u < y ∧ side l ≠ side u)
+    (hend : side a ≠ side b) :
+    Odd T.card := by
+  classical
+  cases hn : T.card with
+  | zero =>
+      have hTempty : T = ∅ := Finset.card_eq_zero.mp hn
+      have hsides : side a = side b :=
+        hconstant le_rfl hab le_rfl (by simp [hTempty])
+      exact False.elim (hend hsides)
+  | succ m =>
+      let c : Fin (m + 1) ↪o α := T.orderEmbOfFin hn
+      have hcMem (i : Fin (m + 1)) : c i ∈ T := by
+        exact T.orderEmbOfFin_mem hn i
+      have hcutExists (i : Fin m) :
+          ∃ d : α, c i.castSucc < d ∧ d < c i.succ :=
+        exists_between (c.strictMono (show i.castSucc < i.succ from Fin.castSucc_lt_succ))
+      choose cut hCutLeft hCutRight using hcutExists
+      let lower : Fin (m + 1) → α := fun i =>
+        if hi : i.val = 0 then a else cut ⟨i.val - 1, by omega⟩
+      let upper : Fin (m + 1) → α := fun i =>
+        if hi : i.val + 1 = m + 1 then b else cut ⟨i.val, by omega⟩
+      have hlower (i : Fin (m + 1)) : lower i < c i := by
+        simp only [lower]
+        split_ifs with hi
+        · exact (hbounds (c i) (hcMem i)).1
+        · let j : Fin m := ⟨i.val - 1, by omega⟩
+          have hjsucc : j.succ = i := by
+            ext
+            simp only [j, Fin.val_succ]
+            omega
+          calc
+            cut ⟨i.val - 1, by omega⟩ = cut j := rfl
+            _ < c j.succ := hCutRight j
+            _ = c i := congrArg c hjsucc
+      have hupper (i : Fin (m + 1)) : c i < upper i := by
+        simp only [upper]
+        split_ifs with hi
+        · exact (hbounds (c i) (hcMem i)).2
+        · let j : Fin m := ⟨i.val, by omega⟩
+          have hjcast : j.castSucc = i := by rfl
+          calc
+            c i = c j.castSucc := congrArg c hjcast.symm
+            _ < cut j := hCutLeft j
+            _ = cut ⟨i.val, by omega⟩ := rfl
+      have hwitness (i : Fin (m + 1)) :
+          ∃ l u : α, lower i < l ∧ l < c i ∧ c i < u ∧ u < upper i ∧
+            side l ≠ side u :=
+        hchange (c i) (hcMem i) (lower i) (upper i) (hlower i) (hupper i)
+      choose before after hLowerBefore hBeforeCross hCrossAfter hAfterUpper hSideChange
+        using hwitness
+      have hfirst : side a = side (before 0) := by
+        apply hconstant le_rfl
+        · have hlowerZero : lower 0 = a := by simp [lower]
+          rw [← hlowerZero]
+          exact (hLowerBefore 0).le
+        · exact ((hBeforeCross 0).trans (hbounds (c 0) (hcMem 0)).2).le
+        · intro t htT htInterval
+          have htRange : t ∈ Set.range c := by
+            rw [T.range_orderEmbOfFin hn]
+            exact htT
+          obtain ⟨j, rfl⟩ := htRange
+          have hc0le : c 0 ≤ c j := c.monotone (Fin.zero_le j)
+          exact (not_lt_of_ge (hc0le.trans htInterval.2)) (hBeforeCross 0)
+      have hbetween (i : Fin m) :
+          side (after i.castSucc) = side (before i.succ) := by
+        have hupperEq : upper i.castSucc = cut i := by
+          simp only [upper, Fin.val_castSucc]
+          rw [dif_neg (by omega : i.val + 1 ≠ m + 1)]
+        have hlowerEq : lower i.succ = cut i := by
+          simp only [lower, Fin.val_succ]
+          rw [dif_neg (by omega : i.val + 1 ≠ 0)]
+          have hcutEq : (⟨i.val + 1 - 1, by omega⟩ : Fin m) = i := by
+            ext
+            simp only
+            omega
+          rw [hcutEq]
+        apply hconstant
+        · exact (hbounds (c i.castSucc) (hcMem i.castSucc)).1.le.trans
+            (hCrossAfter i.castSucc).le
+        · exact (hAfterUpper i.castSucc).le.trans <| by
+            rw [hupperEq, ← hlowerEq]
+            exact (hLowerBefore i.succ).le
+        · exact ((hBeforeCross i.succ).trans
+            (hbounds (c i.succ) (hcMem i.succ)).2).le
+        · intro t htT htInterval
+          have htRange : t ∈ Set.range c := by
+            rw [T.range_orderEmbOfFin hn]
+            exact htT
+          obtain ⟨q, rfl⟩ := htRange
+          have hiq : i.castSucc < q := by
+            rw [← c.lt_iff_lt]
+            exact (hCrossAfter i.castSucc).trans_le htInterval.1
+          have hqj : q < i.succ := by
+            rw [← c.lt_iff_lt]
+            exact htInterval.2.trans_lt (hBeforeCross i.succ)
+          change i.val < q.val at hiq
+          change q.val < i.val + 1 at hqj
+          omega
+      have hlast : side (after (Fin.last m)) = side b := by
+        apply hconstant
+        · exact (hbounds (c (Fin.last m)) (hcMem (Fin.last m))).1.le.trans
+            (hCrossAfter (Fin.last m)).le
+        · have hupperLast : upper (Fin.last m) = b := by simp [upper]
+          rw [← hupperLast]
+          exact (hAfterUpper (Fin.last m)).le
+        · exact le_rfl
+        · intro t htT htInterval
+          have htRange : t ∈ Set.range c := by
+            rw [T.range_orderEmbOfFin hn]
+            exact htT
+          obtain ⟨q, rfl⟩ := htRange
+          have hqLast : c q ≤ c (Fin.last m) :=
+            c.monotone (Fin.le_last q)
+          exact (not_lt_of_ge htInterval.1)
+            (hqLast.trans_lt (hCrossAfter (Fin.last m)))
+      let gap : Fin (m + 2) → Bool :=
+        Fin.cases (side a) (fun i => side (after i))
+      have hgapChange : ∀ i : Fin (m + 1),
+          gap i.castSucc ≠ gap i.succ := by
+        intro i
+        refine Fin.cases ?_ (fun j => ?_) i
+        · change side a ≠ side (after 0)
+          rw [hfirst]
+          exact hSideChange 0
+        · have hne : side (after j.castSucc) ≠ side (after j.succ) := by
+            rw [hbetween j]
+            exact hSideChange j.succ
+          change side (after j.castSucc) ≠ side (after j.succ)
+          exact hne
+      have hgapEnd : gap 0 ≠ gap (Fin.last (m + 1)) := by
+        change side a ≠ side (after (Fin.last m))
+        rw [hlast]
+        exact hend
+      have hodd : Odd (m + 1) :=
+        odd_of_alternating_end_ne gap hgapChange hgapEnd
+      simpa only [hn] using hodd
+
 end Schoenflies

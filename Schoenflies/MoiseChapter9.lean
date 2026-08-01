@@ -19,6 +19,7 @@ import Schoenflies.FiniteSeparatorSetup
 import Schoenflies.ReturnPathCrossings
 import Schoenflies.SideConstancy
 import Schoenflies.FiniteCrossingParity
+import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
