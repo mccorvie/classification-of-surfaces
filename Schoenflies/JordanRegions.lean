@@ -140,6 +140,49 @@ theorem closure_inside : closure J.inside = J.inside ∪ J.carrier := by
 theorem closure_outside : closure J.outside = J.outside ∪ J.carrier := by
   rw [closure_eq_self_union_frontier, J.frontier_outside]
 
+/-- Jordan disks are monotone under inclusion of one carrier in the other's
+closed inside.  This elementary nesting principle is useful when a boundary
+subarc is closed by a crosscut lying inside the original Jordan circle. -/
+theorem inside_subset_inside_of_carrier_subset
+    (K : JordanCircle)
+    (hcarrier : K.carrier ⊆ J.inside ∪ J.carrier) :
+    K.inside ⊆ J.inside := by
+  have houtsideCarrier : Disjoint J.outside K.carrier := by
+    rw [Set.disjoint_left]
+    intro x hxOutside hxK
+    rcases hcarrier hxK with hxInside | hxCarrier
+    · exact Set.disjoint_left.mp J.inside_disjoint_outside
+        hxInside hxOutside
+    · exact J.outside_subset_compl hxOutside hxCarrier
+  have houtsideRegions : J.outside ⊆ K.inside ∪ K.outside := by
+    rw [K.inside_union_outside]
+    intro x hxOutside hxCarrier
+    exact Set.disjoint_left.mp houtsideCarrier hxOutside hxCarrier
+  have houtsideSubset : J.outside ⊆ K.outside := by
+    rcases J.outside_isConnected.isPreconnected.subset_or_subset
+        K.inside_isOpen K.outside_isOpen K.inside_disjoint_outside
+        houtsideRegions with hInside | hOutside
+    · exact False.elim
+        (J.outside_unbounded (K.inside_bounded.subset hInside))
+    · exact hOutside
+  intro x hxKInside
+  have hxNotCarrier : x ∉ J.carrier := by
+    intro hxCarrier
+    have hxClosure : x ∈ closure J.outside := by
+      apply frontier_subset_closure
+      rw [J.frontier_outside]
+      exact hxCarrier
+    have hxInterClosure : x ∈ closure (K.inside ∩ J.outside) :=
+      K.inside_isOpen.inter_closure ⟨hxKInside, hxClosure⟩
+    obtain ⟨y, hyKInside, hyJOutside⟩ :=
+      Set.Nonempty.of_closure ⟨x, hxInterClosure⟩
+    exact Set.disjoint_left.mp K.inside_disjoint_outside
+      hyKInside (houtsideSubset hyJOutside)
+  rcases J.mem_inside_or_outside hxNotCarrier with hxInside | hxOutside
+  · exact hxInside
+  · exact False.elim <| Set.disjoint_left.mp K.inside_disjoint_outside
+      hxKInside (houtsideSubset hxOutside)
+
 end JordanCircle
 
 end Schoenflies
