@@ -38,6 +38,8 @@ import Schoenflies.FiniteLevelHairSynchronization
 import Schoenflies.CyclicLevelAddresses
 import Schoenflies.LevelEndpointIncidence
 import Schoenflies.SynchronizedLevelReturns
+import Schoenflies.ResolvedPolygonalArcs
+import Schoenflies.CyclicLevelEdges
 import Schoenflies.TrimmedCollarCells
 import Schoenflies.LevelHairSynchronization
 import Schoenflies.PolygonalSubarcs
