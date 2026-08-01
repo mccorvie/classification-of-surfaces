@@ -13,6 +13,7 @@ import Schoenflies.SeparatorFrame
 import Schoenflies.PolygonalTransport
 import Schoenflies.PolygonalJordanCircle
 import Schoenflies.PolygonalJordanNesting
+import Schoenflies.PolygonalDiskBoundaryExtension
 import Schoenflies.GenericPolygonalFrame
 import Schoenflies.LocalStraightCrossing
 import Schoenflies.TransverseIntersections
