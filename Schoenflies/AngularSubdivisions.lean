@@ -233,6 +233,69 @@ theorem AccessibleAngularArc.right_mem_curveArcPlane
     (J.curvePoint A.right : Plane) ∈ A.curveArcPlane :=
   ⟨J.curvePoint A.right, A.right_mem_curveArc, rfl⟩
 
+@[simp] theorem AccessibleAngularArc.leftChild_left
+    (A : J.AccessibleAngularArc) : A.leftChild.left = A.left := rfl
+
+@[simp] theorem AccessibleAngularArc.leftChild_right
+    (A : J.AccessibleAngularArc) : A.leftChild.right = A.splitAngle := rfl
+
+@[simp] theorem AccessibleAngularArc.rightChild_left
+    (A : J.AccessibleAngularArc) : A.rightChild.left = A.splitAngle := rfl
+
+@[simp] theorem AccessibleAngularArc.rightChild_right
+    (A : J.AccessibleAngularArc) : A.rightChild.right = A.right := rfl
+
+/-- The two children are an exact subdivision of their parent boundary arc. -/
+theorem AccessibleAngularArc.leftChild_union_rightChild_curveArcPlane
+    (A : J.AccessibleAngularArc) :
+    A.leftChild.curveArcPlane ∪ A.rightChild.curveArcPlane = A.curveArcPlane := by
+  have hsleft : A.left ≤ A.splitAngle := A.leftChild.left_lt_right.le
+  have hsright : A.splitAngle ≤ A.right := A.rightChild.left_lt_right.le
+  have hinterval : Icc A.left A.splitAngle ∪ Icc A.splitAngle A.right =
+      Icc A.left A.right := by
+    ext t
+    simp only [mem_union, mem_Icc]
+    constructor
+    · rintro (h | h)
+      · exact ⟨h.1, h.2.trans hsright⟩
+      · exact ⟨hsleft.trans h.1, h.2⟩
+    · intro h
+      rcases le_total t A.splitAngle with ht | ht
+      · exact Or.inl ⟨h.1, ht⟩
+      · exact Or.inr ⟨ht, h.2⟩
+  simp only [AccessibleAngularArc.curveArcPlane,
+    AccessibleAngularArc.curveArc, image_image, leftChild_left,
+    leftChild_right, rightChild_left, rightChild_right, ← image_union,
+    hinterval]
+
+/-- Sibling boundary arcs overlap only at their common accessible mark. -/
+theorem AccessibleAngularArc.leftChild_inter_rightChild_curveArcPlane
+    (A : J.AccessibleAngularArc) :
+    A.leftChild.curveArcPlane ∩ A.rightChild.curveArcPlane =
+      {(J.curvePoint A.splitAngle : Plane)} := by
+  ext x
+  constructor
+  · rintro ⟨⟨ys, ⟨s, hs, rfl⟩, hxs⟩, ⟨yt, ⟨t, ht, rfl⟩, hxt⟩⟩
+    have hcurve : J.curvePoint s = J.curvePoint t := by
+      apply Subtype.ext
+      exact hxs.trans hxt.symm
+    have hparam : JordanCurve.Arcs.param s = JordanCurve.Arcs.param t :=
+      J.carrierHomeomorph.injective hcurve
+    have hsroot : s ∈ Icc A.left A.right :=
+      ⟨by simpa using hs.1, hs.2.trans A.rightChild.left_lt_right.le⟩
+    have htroot : t ∈ Icc A.left A.right :=
+      ⟨A.leftChild.left_lt_right.le.trans ht.1, by simpa using ht.2⟩
+    have hst : s = t :=
+      JordanCurve.Arcs.param_injOn A.width_lt_turn hsroot htroot hparam
+    have hsSplit : s = A.splitAngle := by
+      exact le_antisymm hs.2 (hst ▸ ht.1)
+    rw [mem_singleton_iff, ← hxs, hsSplit]
+  · intro hx
+    rw [mem_singleton_iff] at hx
+    subst x
+    exact ⟨A.leftChild.right_mem_curveArcPlane,
+      A.rightChild.left_mem_curveArcPlane⟩
+
 theorem AccessibleAngularArc.curveArcPlane_subset_carrier
     (A : J.AccessibleAngularArc) : A.curveArcPlane ⊆ J.carrier := by
   rintro x ⟨y, -, rfl⟩
