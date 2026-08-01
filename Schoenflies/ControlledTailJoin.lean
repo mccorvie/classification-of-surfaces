@@ -117,7 +117,7 @@ theorem exists_controlled_inside_join_between_returnTails
     obtain ⟨x, hxQ, u, _hu, hux⟩ := hfirstMeet
     exact ⟨x, hxQ, ⟨u, hux⟩⟩
   obtain ⟨start, hstartPrev, hstart⟩ :=
-    A.exists_refined_false_true_transition Q K hArcInside hcarrier
+    A.insideReturnArc.exists_refined_false_true_transition Q K hArcInside hcarrier
       hvertices hpolygonVertices hbrokenVertices hmeets
   obtain ⟨T, hT, _hordered, hodd⟩ :=
     A.exists_ordered_crossingTimes_odd_firstTail Q hspos hst
@@ -128,7 +128,8 @@ theorem exists_controlled_inside_join_between_returnTails
     have hnpos : 0 < K.n := lt_of_lt_of_le (by omega : 0 < 3) K.three_le
     omega
   obtain ⟨p, q, hpFirst, hqLast, hpK, hqK, hjoin⟩ :=
-    A.exists_inside_brokenLine_between_returnTails (n := n) Q K hsize
+    A.insideReturnArc.exists_inside_brokenLine_between_returnTails
+      (n := n) Q K hsize
       hArcInside hcarrier hvertices hpolygonVertices hbrokenVertices
       start hstartPrev hstart T hst hMiddleExterior hT hodd hintersections
   have hpQ : p ∈ Q.carrier := by rwa [← hcarrier]
