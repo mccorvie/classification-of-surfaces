@@ -1,4 +1,5 @@
 import Schoenflies.FiniteAvoidingCrosscuts
+import Schoenflies.LevelGenerationMarks
 import Schoenflies.PolygonalSubpathExtraction
 
 /-!
@@ -66,7 +67,8 @@ noncomputable abbrev LevelAvoidingJoinFamily
     (fun i => I.levelLeftHair (levelAddressAt n i))
     (fun i => I.levelRightHair (levelAddressAt n i))
     (fun i => thickening epsilon
-      (I.levelArc (levelAddressAt n i)).curveArcPlane)
+        (I.levelArc (levelAddressAt n i)).curveArcPlane ∩
+      (I.nonEndpointHairCarrier (levelAddressAt n i))ᶜ)
     ∅
 
 /-- All arcs at a fixed level admit simultaneously chosen, pairwise-disjoint
@@ -79,9 +81,14 @@ theorem nonempty_levelAvoidingJoinFamily
   · intro i
     exact I.disjoint_levelEndpointHairs (levelAddressAt n i)
   · intro i
-    exact Metric.isOpen_thickening
+    exact Metric.isOpen_thickening.inter
+      (I.isClosed_nonEndpointHairCarrier
+        (levelAddressAt n i)).isOpen_compl
   · intro i
-    exact self_subset_thickening hepsilon _
+    intro x hx
+    exact ⟨self_subset_thickening hepsilon _ hx,
+      I.curveArcPlane_subset_compl_nonEndpointHairCarrier
+        (levelAddressAt n i) hx⟩
   · exact isClosed_empty
   · intro i
     exact empty_disjoint _
@@ -149,7 +156,24 @@ theorem range_trimmedPath_subset_controlled
     exact hxPath
   exact ⟨JordanCircle.BrokenLineData.segmentCarrier_subset
       (F.carrierLine i).data hxCarrier,
-    F.controlled i hxPath⟩
+    (F.controlled i hxPath).1⟩
+
+/-- Every selected path avoids every retained generation hair not incident
+to its own level arc. -/
+theorem range_path_disjoint_nonEndpointHairCarrier
+    (i : Fin (levelAddressCount n)) :
+    Disjoint (range (F.path i))
+      (I.nonEndpointHairCarrier (levelAddressAt n i)) := by
+  rw [Set.disjoint_left]
+  intro x hxPath hxHair
+  exact (F.controlled i hxPath).2 hxHair
+
+theorem range_trimmedPath_disjoint_nonEndpointHairCarrier
+    (i : Fin (levelAddressCount n)) :
+    Disjoint (range (F.trimmedPath i))
+      (I.nonEndpointHairCarrier (levelAddressAt n i)) :=
+  (F.range_path_disjoint_nonEndpointHairCarrier i).mono_left
+    (F.range_trimmedPath_subset_path i)
 
 /-- Trimming preserves the pairwise disjointness obtained by the greedy
 construction. -/
