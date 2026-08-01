@@ -158,6 +158,37 @@ theorem range_walkGeometricPath_segmentFamilyPath_subset
   unfold segmentFamilyPath at hx
   exact hx
 
+/-- For a nondegenerate labelled segment, the graph path in the common
+arrangement draws the whole source segment. -/
+theorem range_walkGeometricPath_segmentFamilyPath
+    {I : Type*} [Fintype I] (left right : I → Plane) (i : I)
+    (hne : left i ≠ right i) :
+    range ((segmentFamilyChain left right).arrangementMesh.toPlaneComplex
+      |>.walkGeometricPath
+        (segmentFamilyPath left right i :
+          (segmentFamilyChain left right).arrangementMesh.toPlaneComplex
+            |>.vertexGraph.Walk
+              (segmentFamilyLeftVertex left right i)
+              (segmentFamilyRightVertex left right i))) =
+      segment ℝ (left i) (right i) := by
+  let B := segmentFamilyChain left right
+  let j := segmentFamilyIndex left right i
+  have hleft : B.vertex j.castSucc = left i :=
+    segmentFamilyChain_vertex_even left right i
+  have hright : B.vertex j.succ = right i :=
+    segmentFamilyChain_vertex_odd left right i
+  have hne' : B.vertex j.castSucc ≠ B.vertex j.succ := by
+    simpa [hleft, hright] using hne
+  have h := range_arrangementSegmentGeometricPath B j hne'
+  rw [arrangementSegmentGeometricPath, Path.copy_range] at h
+  change range (B.arrangementMesh.toPlaneComplex.walkGeometricPath
+      (arrangementSegmentPath B j :
+        B.arrangementMesh.toPlaneComplex.vertexGraph.Walk
+          (B.arrangementVertex j.castSucc)
+          (B.arrangementVertex j.succ))) =
+    segment ℝ (left i) (right i)
+  rw [h, hleft, hright]
+
 /-- Two labelled source segments whose intersection has at most one point
 cannot contribute a common nondegenerate arrangement edge. -/
 theorem segmentFamilyPath_edge_not_mem_of_inter_subsingleton

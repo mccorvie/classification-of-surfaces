@@ -398,6 +398,41 @@ theorem edgeStart_ne_edgeFinish (e : F.LevelEdgeAddress) :
   have hval := congrArg Fin.val hv
   simp at hval
 
+/-- Every source segment in a collar-band family is nondegenerate.  For the
+two retained-hair sides this is exactly the strict shallowness built into a
+recursive collar step. -/
+theorem bandSegment_left_ne_right (a : LevelAddress n)
+    (j : L.BandSegmentAddress) :
+    BandSegmentAddress.left L a j ≠
+      BandSegmentAddress.right L a j := by
+  rcases j with e | j
+  · simpa [BandSegmentAddress.left, BandSegmentAddress.right] using
+      (edgeStart_ne_edgeFinish (F := F) e).symm
+  · rcases j with u | j
+    · cases u
+      have hlt := L.next.dist_child_left_lt_parent_left F hn a
+        (L.leftmostAddress a) (by
+          simp [L.levelArc_leftmostAddress_left a])
+      intro h
+      change F.leftSynchronizedPoint a =
+        L.next.family.forgetObstacle.leftSynchronizedPoint
+          (L.leftmostAddress a) at h
+      rw [← h] at hlt
+      exact (lt_irrefl _ hlt)
+    · rcases j with e | u
+      · simpa [BandSegmentAddress.left, BandSegmentAddress.right] using
+          (edgeStart_ne_edgeFinish
+            (F := L.next.family.forgetObstacle) e)
+      · cases u
+        have hlt := L.next.dist_child_right_lt_parent_right F hn a
+          (L.rightmostAddress a) (by
+            simp [L.levelArc_rightmostAddress_right a])
+        intro h
+        change L.next.family.forgetObstacle.rightSynchronizedPoint
+            (L.rightmostAddress a) = F.rightSynchronizedPoint a at h
+        rw [h] at hlt
+        exact (lt_irrefl _ hlt)
+
 theorem parentSegments_isChain (a : LevelAddress n) :
     (L.parentSegments a).IsChain
       (BandSegmentAddress.Adjacent L a) := by
@@ -830,6 +865,23 @@ noncomputable def bandCarrier (a : LevelAddress n) : Set Plane :=
   ⋃ j ∈ L.bandSegments a,
     segment ℝ (BandSegmentAddress.left L a j)
       (BandSegmentAddress.right L a j)
+
+/-- The canonical closed walk traces the complete collar-band route.  This
+upgrades the earlier edge-bookkeeping statement to an exact point-set
+identity; the remaining local task is to prove that this walk is simple. -/
+theorem range_bandClosedWalk (a : LevelAddress n) :
+    range ((BrokenLineData.segmentFamilyComplex
+        (BandSegmentAddress.left L a)
+        (BandSegmentAddress.right L a)).walkGeometricPath
+      (L.bandClosedWalk a)) = L.bandCarrier a := by
+  have h := BrokenLineData.range_segmentFamilyClosedWalk
+    (BandSegmentAddress.left L a)
+    (BandSegmentAddress.right L a)
+    (L.bandFirst a) (L.bandTail a)
+    (L.bandRoute_isChain a) (L.bandRoute_closes a)
+    (fun i _hi => L.bandSegment_left_ne_right a i)
+  rw [L.bandFirst_cons_bandTail a] at h
+  exact h
 
 /-- The common-arrangement cycle gives an honest polygonal circle carried
 by the parent crosscut, its retained side hairs, and the child crosscuts. -/

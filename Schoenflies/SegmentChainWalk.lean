@@ -192,6 +192,101 @@ theorem segmentFamilyClosedWalk_edges_covered
   apply D.edges_covered e
   simpa [segmentFamilyClosedWalk, SimpleGraph.Walk.edges_copy] using he
 
+/-- If every edge of a nonconstant walk also occurs in a second walk, its
+geometric trace is contained in the trace of the second walk. -/
+theorem range_walkGeometricPath_mono_edges_of_not_nil
+    (K : PlaneComplex) {u v u' v' : K.Vertex}
+    (p : K.vertexGraph.Walk u v) (q : K.vertexGraph.Walk u' v')
+    (hp : ¬p.Nil)
+    (hedges : ∀ e, e ∈ p.edges → e ∈ q.edges) :
+    range (K.walkGeometricPath p) ⊆ range (K.walkGeometricPath q) := by
+  induction p with
+  | nil => exact (hp SimpleGraph.Walk.Nil.nil).elim
+  | @cons u w v huw p ih =>
+      rw [K.walkGeometricPath_cons, Path.trans_range]
+      apply Set.union_subset
+      · rw [Path.range_segment]
+        exact
+          Schoenflies.TriangleMesh.PlaneComplex.segment_subset_range_walkGeometricPath_of_mem_edges
+            K q (hedges s(u, w) (by simp))
+      · by_cases htail : p.Nil
+        · cases htail
+          rw [K.walkGeometricPath_nil, Path.refl_range]
+          apply Set.singleton_subset_iff.mpr
+          apply
+            Schoenflies.TriangleMesh.PlaneComplex.segment_subset_range_walkGeometricPath_of_mem_edges
+              K q (hedges s(u, w) (by simp))
+          exact right_mem_segment ℝ _ _
+        · apply ih htail
+          intro e he
+          exact hedges e (by simp [he])
+
+/-- The canonical closed walk of a nondegenerate chained segment family has
+exactly the union of the source segments as its geometric range.  No
+simplicity assumption is needed here; crossings are resolved in the common
+arrangement. -/
+theorem range_segmentFamilyClosedWalk
+    {I : Type*} [Fintype I] (left right : I → Plane)
+    (a : I) (tail : List I)
+    (hchain : (a :: tail).IsChain fun i j => right i = left j)
+    (hclose : right ((a :: tail).getLast (by simp)) = left a)
+    (hne : ∀ i ∈ a :: tail, left i ≠ right i) :
+    range ((segmentFamilyComplex left right).walkGeometricPath
+      (segmentFamilyClosedWalk left right a tail hchain hclose)) =
+      ⋃ i ∈ a :: tail, segment ℝ (left i) (right i) := by
+  let K := segmentFamilyComplex left right
+  let c := segmentFamilyClosedWalk left right a tail hchain hclose
+  apply Set.Subset.antisymm
+  · apply range_walkGeometricPath_subset_of_start_of_edges
+    · rw [segmentFamilyLeftVertex_position]
+      exact Set.mem_iUnion.mpr ⟨a, Set.mem_iUnion.mpr
+        ⟨by simp, left_mem_segment ℝ _ _⟩⟩
+    · intro v w he
+      obtain ⟨i, hi, hei⟩ := segmentFamilyClosedWalk_edges_covered
+        left right a tail hchain hclose s(v, w) he
+      let p : K.vertexGraph.Walk
+          (segmentFamilyLeftVertex left right i)
+          (segmentFamilyRightVertex left right i) :=
+        segmentFamilyPath left right i
+      have hsource : range (K.walkGeometricPath p) ⊆
+          segment ℝ (left i) (right i) := by
+        simpa [K, p] using
+          (range_walkGeometricPath_segmentFamilyPath_subset left right i)
+      have hsegment : segment ℝ (K.position v) (K.position w) ⊆
+          segment ℝ (left i) (right i) := by
+        exact
+          (Schoenflies.TriangleMesh.PlaneComplex.segment_subset_range_walkGeometricPath_of_mem_edges
+            K p hei).trans hsource
+      exact hsegment.trans <| Set.subset_iUnion_of_subset i <|
+        Set.subset_iUnion_of_subset hi Set.Subset.rfl
+  · intro x hx
+    obtain ⟨i, hxi⟩ := Set.mem_iUnion.mp hx
+    obtain ⟨hi, hxseg⟩ := Set.mem_iUnion.mp hxi
+    let p : K.vertexGraph.Walk
+        (segmentFamilyLeftVertex left right i)
+        (segmentFamilyRightVertex left right i) :=
+      segmentFamilyPath left right i
+    have hpRange : range (K.walkGeometricPath p) =
+        segment ℝ (left i) (right i) :=
+      range_walkGeometricPath_segmentFamilyPath left right i (hne i hi)
+    have hpNotNil : ¬p.Nil := by
+      intro hpNil
+      apply hne i hi
+      have hv : segmentFamilyLeftVertex left right i =
+          segmentFamilyRightVertex left right i :=
+        SimpleGraph.Walk.eq_of_length_eq_zero hpNil.length_eq_zero
+      calc
+        left i = K.position (segmentFamilyLeftVertex left right i) :=
+          (segmentFamilyLeftVertex_position left right i).symm
+        _ = K.position (segmentFamilyRightVertex left right i) :=
+          congrArg K.position hv
+        _ = right i := segmentFamilyRightVertex_position left right i
+    apply range_walkGeometricPath_mono_edges_of_not_nil K p c hpNotNil
+      (fun e he => segmentEdges_subset_segmentFamilyClosedWalk
+        left right a tail hchain hclose i hi e he)
+    rw [hpRange]
+    exact hxseg
+
 theorem segmentFamilyClosedWalk_edgeCount_eq_sum
     {I : Type*} [Fintype I] (left right : I → Plane)
     (a : I) (tail : List I)
