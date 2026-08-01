@@ -149,8 +149,10 @@ The faithful polygonal quotient layer and the bottom API are complete:
   canonical-pairing-to-trusted-closure inclusions.
 - `ClassificationOfSurfaces/CanonicalGeneratorMaps.lean`: bidirectional generator maps and
   canonical polygonal-realization homeomorphisms to the Eval quotients.
+- `ClassificationOfSurfaces/EqvGenQuotient.lean`: generic generated-equivalence and quotient
+  transport helpers.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: the exact one-face disk carrier,
-  side-coordinate formulas, and raw/generated quotient bridges.
+  side-coordinate formulas, and bridges to the Eval quotient carriers.
 - `ClassificationOfSurfaces/SphereCarrierGeometry.lean`: compact disk carriers and the
   conjugation boundary identity used by the two-monogon sphere realization.
 - `ClassificationOfSurfaces/SphereHemisphere.lean`: continuous upper/lower hemisphere maps,

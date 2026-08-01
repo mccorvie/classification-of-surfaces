@@ -3,10 +3,9 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
+import ClassificationOfSurfaces.EqvGenQuotient
 import Mathlib.Analysis.Complex.Circle
 import Mathlib.Analysis.SpecialFunctions.Complex.Circle
-import Mathlib.Data.Setoid.Basic
-import Mathlib.Topology.Homeomorph.Quotient
 import Mathlib.Topology.UnitInterval
 
 /-!
