@@ -221,6 +221,408 @@ theorem range_walkGeometricPath_mono_edges_of_not_nil
           intro e he
           exact hedges e (by simp [he])
 
+/-- The position of every vertex visited by a graph walk occurs in the
+geometric realization of that walk. -/
+theorem position_mem_range_walkGeometricPath_of_mem_support
+    (K : PlaneComplex) {u v x : K.Vertex}
+    (p : K.vertexGraph.Walk u v) (hx : x ∈ p.support) :
+    K.position x ∈ range (K.walkGeometricPath p) := by
+  induction p with
+  | nil =>
+      simp only [SimpleGraph.Walk.support_nil, List.mem_singleton] at hx
+      subst x
+      exact Path.source_mem_range _
+  | @cons u w v huw p ih =>
+      simp only [SimpleGraph.Walk.support_cons, List.mem_cons] at hx
+      rw [K.walkGeometricPath_cons, Path.trans_range]
+      rcases hx with rfl | hx
+      · left
+        rw [Path.range_segment]
+        exact left_mem_segment ℝ _ _
+      · exact Or.inr (ih hx)
+
+/-- Two simple arrangement paths concatenate to a simple path when their
+geometric traces meet only at the common endpoint. -/
+theorem isPath_append_of_range_inter_subset_singleton
+    (K : PlaneComplex) {u v w : K.Vertex}
+    (p : K.vertexGraph.Path u v) (q : K.vertexGraph.Path v w)
+    (hinter : range (K.walkGeometricPath (p : K.vertexGraph.Walk u v)) ∩
+        range (K.walkGeometricPath (q : K.vertexGraph.Walk v w)) ⊆
+      {K.position v}) :
+    ((p : K.vertexGraph.Walk u v).append
+      (q : K.vertexGraph.Walk v w)).IsPath := by
+  rw [SimpleGraph.Walk.isPath_def, SimpleGraph.Walk.support_append,
+    List.nodup_append']
+  refine ⟨p.property.support_nodup, q.property.support_nodup.tail, ?_⟩
+  rw [List.disjoint_left]
+  intro x hxp hxq
+  have hxqSupport : x ∈ (q : K.vertexGraph.Walk v w).support :=
+    List.mem_of_mem_tail hxq
+  have hxInter : K.position x ∈
+      range (K.walkGeometricPath (p : K.vertexGraph.Walk u v)) ∩
+        range (K.walkGeometricPath (q : K.vertexGraph.Walk v w)) :=
+    ⟨position_mem_range_walkGeometricPath_of_mem_support K
+        (p : K.vertexGraph.Walk u v) hxp,
+      position_mem_range_walkGeometricPath_of_mem_support K
+        (q : K.vertexGraph.Walk v w) hxqSupport⟩
+  have hxv : K.position x = K.position v :=
+    mem_singleton_iff.mp (hinter hxInter)
+  have hxEq : x = v := K.position_injective hxv
+  subst x
+  have hqNodup := q.property.support_nodup
+  rw [← (q : K.vertexGraph.Walk v w).cons_tail_support,
+    List.nodup_cons] at hqNodup
+  exact hqNodup.1 hxq
+
+/-- Two oppositely directed simple arrangement paths form a graph cycle
+when their traces meet only at their two common endpoints. -/
+theorem isCycle_append_of_range_inter_subset_endpoints
+    (K : PlaneComplex) {u v : K.Vertex}
+    (p : K.vertexGraph.Path u v) (q : K.vertexGraph.Path v u)
+    (hinter : range (K.walkGeometricPath (p : K.vertexGraph.Walk u v)) ∩
+        range (K.walkGeometricPath (q : K.vertexGraph.Walk v u)) ⊆
+      {K.position u, K.position v})
+    (hlength : 1 < (p : K.vertexGraph.Walk u v).length ∨
+      1 < (q : K.vertexGraph.Walk v u).length) :
+    ((p : K.vertexGraph.Walk u v).append
+      (q : K.vertexGraph.Walk v u)).IsCycle := by
+  apply p.property.isCycle_append q.property
+  · rw [List.disjoint_left]
+    intro x hxp hxq
+    have hxpSupport : x ∈ (p : K.vertexGraph.Walk u v).support :=
+      List.mem_of_mem_tail hxp
+    have hxqSupport : x ∈ (q : K.vertexGraph.Walk v u).support :=
+      List.mem_of_mem_tail hxq
+    have hxInter : K.position x ∈
+        range (K.walkGeometricPath (p : K.vertexGraph.Walk u v)) ∩
+          range (K.walkGeometricPath (q : K.vertexGraph.Walk v u)) :=
+      ⟨position_mem_range_walkGeometricPath_of_mem_support K
+          (p : K.vertexGraph.Walk u v) hxpSupport,
+        position_mem_range_walkGeometricPath_of_mem_support K
+          (q : K.vertexGraph.Walk v u) hxqSupport⟩
+    have hxEnds := hinter hxInter
+    simp only [Set.mem_insert_iff, mem_singleton_iff] at hxEnds
+    rcases hxEnds with hxu | hxv
+    · have hxEq : x = u := K.position_injective hxu
+      subst x
+      have hpNodup := p.property.support_nodup
+      rw [← (p : K.vertexGraph.Walk u v).cons_tail_support,
+        List.nodup_cons] at hpNodup
+      exact hpNodup.1 hxp
+    · have hxEq : x = v := K.position_injective hxv
+      subst x
+      have hqNodup := q.property.support_nodup
+      rw [← (q : K.vertexGraph.Walk v u).cons_tail_support,
+        List.nodup_cons] at hqNodup
+      exact hqNodup.1 hxq
+  · exact hlength
+
+/-- A simple open path obtained by concatenating an ordered family of
+nondegenerate segments.  Besides simplicity, the package records its exact
+geometric range and a lower bound on its number of arrangement edges. -/
+structure SimpleSegmentFamilyChainWalkData
+    {I : Type*} [Fintype I] (left right : I → Plane)
+    (a : I) (tail : List I) where
+  path : (segmentFamilyComplex left right).vertexGraph.Path
+    (segmentFamilyLeftVertex left right a)
+    (segmentFamilyRightVertex left right
+      ((a :: tail).getLast (by simp)))
+  range_eq :
+    range ((segmentFamilyComplex left right).walkGeometricPath
+      path.1) =
+      ⋃ i ∈ a :: tail, segment ℝ (left i) (right i)
+  labelCount_le_length : (a :: tail).length ≤
+    path.1.length
+
+/-- Earlier source segments may meet later source segments only at the
+earlier segment's final endpoint.  Under that hypothesis the canonical
+arrangement paths concatenate without repeating a vertex. -/
+theorem nonempty_simpleSegmentFamilyChainWalkData
+    {I : Type*} [Fintype I] (left right : I → Plane)
+    (a : I) (tail : List I)
+    (hchain : (a :: tail).IsChain fun i j => right i = left j)
+    (hne : ∀ i ∈ a :: tail, left i ≠ right i)
+    (hpair : (a :: tail).Pairwise fun i j =>
+      segment ℝ (left i) (right i) ∩ segment ℝ (left j) (right j) ⊆
+        {right i}) :
+    Nonempty (SimpleSegmentFamilyChainWalkData left right a tail) := by
+  classical
+  induction tail generalizing a with
+  | nil =>
+      let K := segmentFamilyComplex left right
+      let p : K.vertexGraph.Path
+          (segmentFamilyLeftVertex left right a)
+          (segmentFamilyRightVertex left right a) :=
+        segmentFamilyPath left right a
+      have hpRange : range (K.walkGeometricPath p.1) =
+          segment ℝ (left a) (right a) :=
+        by simpa [K, p] using
+          range_walkGeometricPath_segmentFamilyPath left right a
+            (hne a (by simp))
+      have hvne : segmentFamilyLeftVertex left right a ≠
+          segmentFamilyRightVertex left right a := by
+        intro hv
+        apply hne a (by simp)
+        calc
+          left a = K.position (segmentFamilyLeftVertex left right a) :=
+            (segmentFamilyLeftVertex_position left right a).symm
+          _ = K.position (segmentFamilyRightVertex left right a) :=
+            congrArg K.position hv
+          _ = right a := segmentFamilyRightVertex_position left right a
+      have hpPos : 0 < p.1.length :=
+        SimpleGraph.Walk.not_nil_iff_lt_length.mp
+          (SimpleGraph.Walk.not_nil_of_ne hvne)
+      refine ⟨{
+        path := p
+        range_eq := ?_
+        labelCount_le_length := ?_ }⟩
+      · change range (K.walkGeometricPath p.1) =
+          ⋃ i ∈ [a], segment ℝ (left i) (right i)
+        rw [hpRange]
+        simp
+      · change 1 ≤ p.1.length
+        omega
+  | cons b tail ih =>
+      have hpairParts := List.pairwise_cons.mp hpair
+      have hpairA : ∀ j ∈ b :: tail,
+          segment ℝ (left a) (right a) ∩
+              segment ℝ (left j) (right j) ⊆ {right a} :=
+        hpairParts.1
+      have hpairTail : (b :: tail).Pairwise fun i j =>
+          segment ℝ (left i) (right i) ∩
+              segment ℝ (left j) (right j) ⊆ {right i} :=
+        hpairParts.2
+      have hneTail : ∀ i ∈ b :: tail, left i ≠ right i := by
+        intro i hi
+        exact hne i (by simp [hi])
+      obtain ⟨Q⟩ := ih b hchain.tail hneTail hpairTail
+      let K := segmentFamilyComplex left right
+      let p : K.vertexGraph.Path
+          (segmentFamilyLeftVertex left right a)
+          (segmentFamilyRightVertex left right a) :=
+        segmentFamilyPath left right a
+      have hab : segmentFamilyRightVertex left right a =
+          segmentFamilyLeftVertex left right b :=
+        segmentFamilyRightVertex_eq_leftVertex_of_eq
+          left right hchain.rel
+      have hlast :
+          (a :: b :: tail).getLast (by simp) =
+            (b :: tail).getLast (by simp) := by
+        simp
+      let qWalk : K.vertexGraph.Walk
+          (segmentFamilyRightVertex left right a)
+          (segmentFamilyRightVertex left right
+            ((a :: b :: tail).getLast (by simp))) :=
+        Q.path.1.copy hab.symm
+          (congrArg (segmentFamilyRightVertex left right) hlast.symm)
+      have hqPath : qWalk.IsPath := by
+        exact (SimpleGraph.Walk.isPath_copy Q.path.1 hab.symm
+            (congrArg (segmentFamilyRightVertex left right) hlast.symm)).mpr
+          Q.path.property
+      let q : K.vertexGraph.Path
+          (segmentFamilyRightVertex left right a)
+          (segmentFamilyRightVertex left right
+            ((a :: b :: tail).getLast (by simp))) :=
+        ⟨qWalk, hqPath⟩
+      have hpRange : range (K.walkGeometricPath p.1) =
+          segment ℝ (left a) (right a) :=
+        by simpa [K, p] using
+          range_walkGeometricPath_segmentFamilyPath left right a
+            (hne a (by simp))
+      have hqRange : range (K.walkGeometricPath q.1) =
+          ⋃ i ∈ b :: tail, segment ℝ (left i) (right i) := by
+        change range (K.walkGeometricPath
+          (Q.path.1.copy hab.symm
+            (congrArg (segmentFamilyRightVertex left right) hlast.symm))) = _
+        rw [K.range_walkGeometricPath_copy, Q.range_eq]
+      have hinter : range (K.walkGeometricPath p.1) ∩
+          range (K.walkGeometricPath q.1) ⊆
+          {K.position (segmentFamilyRightVertex left right a)} := by
+        rw [hpRange, hqRange,
+          segmentFamilyRightVertex_position left right a]
+        intro x hx
+        obtain ⟨j, hxj⟩ := Set.mem_iUnion.mp hx.2
+        obtain ⟨hj, hxseg⟩ := Set.mem_iUnion.mp hxj
+        exact hpairA j hj ⟨hx.1, hxseg⟩
+      have happendPath : (p.1.append q.1).IsPath :=
+        isPath_append_of_range_inter_subset_singleton K p q hinter
+      let r : K.vertexGraph.Path
+          (segmentFamilyLeftVertex left right a)
+          (segmentFamilyRightVertex left right
+            ((a :: b :: tail).getLast (by simp))) :=
+        ⟨p.1.append q.1, happendPath⟩
+      refine ⟨{
+        path := r
+        range_eq := ?_
+        labelCount_le_length := ?_ }⟩
+      · change range (K.walkGeometricPath (p.1.append q.1)) = _
+        rw [K.range_walkGeometricPath_append, hpRange, hqRange]
+        ext x
+        simp
+      · change (a :: b :: tail).length ≤ (p.1.append q.1).length
+        rw [SimpleGraph.Walk.length_append]
+        have hpPos : 0 < p.1.length := by
+          apply SimpleGraph.Walk.not_nil_iff_lt_length.mp
+          apply SimpleGraph.Walk.not_nil_of_ne
+          intro hv
+          apply hne a (by simp)
+          calc
+            left a = K.position
+                (segmentFamilyLeftVertex left right a) :=
+              (segmentFamilyLeftVertex_position left right a).symm
+            _ = K.position
+                (segmentFamilyRightVertex left right a) :=
+              congrArg K.position hv
+            _ = right a :=
+              segmentFamilyRightVertex_position left right a
+        have hqLength : q.1.length = Q.path.1.length := by
+          simp [q, qWalk, SimpleGraph.Walk.length_copy]
+        rw [hqLength]
+        have hQ := Q.labelCount_le_length
+        simp only [List.length_cons] at hQ ⊢
+        omega
+
+/-- A chosen simple open path for a segment list satisfying the ordered
+intersection hypothesis. -/
+noncomputable def simpleSegmentFamilyChainWalkData
+    {I : Type*} [Fintype I] (left right : I → Plane)
+    (a : I) (tail : List I)
+    (hchain : (a :: tail).IsChain fun i j => right i = left j)
+    (hne : ∀ i ∈ a :: tail, left i ≠ right i)
+    (hpair : (a :: tail).Pairwise fun i j =>
+      segment ℝ (left i) (right i) ∩ segment ℝ (left j) (right j) ⊆
+        {right i}) :
+    SimpleSegmentFamilyChainWalkData left right a tail :=
+  Classical.choice <|
+    nonempty_simpleSegmentFamilyChainWalkData
+      left right a tail hchain hne hpair
+
+/-- A simple cycle assembled from a simple open segment chain and one
+closing segment. -/
+structure SimpleSegmentFamilyCycleData
+    {I : Type*} [Fintype I] (left right : I → Plane)
+    (a : I) (tail : List I) (last : I) where
+  cycle : (segmentFamilyComplex left right).vertexGraph.Walk
+    (segmentFamilyLeftVertex left right a)
+    (segmentFamilyLeftVertex left right a)
+  isCycle : cycle.IsCycle
+  range_eq :
+    range ((segmentFamilyComplex left right).walkGeometricPath cycle) =
+      (⋃ i ∈ a :: tail, segment ℝ (left i) (right i)) ∪
+        segment ℝ (left last) (right last)
+
+/-- Closing a simple open chain by a final segment produces a simple cycle
+provided that the closing segment meets the open chain only at its two
+endpoints. -/
+theorem nonempty_simpleSegmentFamilyCycleData
+    {I : Type*} [Fintype I] (left right : I → Plane)
+    (a : I) (tail : List I) (last : I)
+    (htail : tail ≠ [])
+    (hchain : (a :: tail).IsChain fun i j => right i = left j)
+    (hjoin : right ((a :: tail).getLast (by simp)) = left last)
+    (hclose : right last = left a)
+    (hne : ∀ i ∈ a :: tail, left i ≠ right i)
+    (hneLast : left last ≠ right last)
+    (hpair : (a :: tail).Pairwise fun i j =>
+      segment ℝ (left i) (right i) ∩ segment ℝ (left j) (right j) ⊆
+        {right i})
+    (hclosingInter :
+      ((⋃ i ∈ a :: tail, segment ℝ (left i) (right i)) ∩
+          segment ℝ (left last) (right last)) ⊆
+        {left a, left last}) :
+    Nonempty (SimpleSegmentFamilyCycleData left right a tail last) := by
+  classical
+  let D := simpleSegmentFamilyChainWalkData
+    left right a tail hchain hne hpair
+  let K := segmentFamilyComplex left right
+  let p : K.vertexGraph.Path
+      (segmentFamilyLeftVertex left right a)
+      (segmentFamilyRightVertex left right
+        ((a :: tail).getLast (by simp))) := D.path
+  let q₀ : K.vertexGraph.Path
+      (segmentFamilyLeftVertex left right last)
+      (segmentFamilyRightVertex left right last) :=
+    segmentFamilyPath left right last
+  have hjoinV : segmentFamilyRightVertex left right
+        ((a :: tail).getLast (by simp)) =
+      segmentFamilyLeftVertex left right last :=
+    segmentFamilyRightVertex_eq_leftVertex_of_eq left right hjoin
+  have hcloseV : segmentFamilyRightVertex left right last =
+      segmentFamilyLeftVertex left right a :=
+    segmentFamilyRightVertex_eq_leftVertex_of_eq left right hclose
+  let qWalk : K.vertexGraph.Walk
+      (segmentFamilyRightVertex left right
+        ((a :: tail).getLast (by simp)))
+      (segmentFamilyLeftVertex left right a) :=
+    q₀.1.copy hjoinV.symm hcloseV
+  have hqPath : qWalk.IsPath :=
+    (SimpleGraph.Walk.isPath_copy q₀.1 hjoinV.symm hcloseV).mpr
+      q₀.property
+  let q : K.vertexGraph.Path
+      (segmentFamilyRightVertex left right
+        ((a :: tail).getLast (by simp)))
+      (segmentFamilyLeftVertex left right a) :=
+    ⟨qWalk, hqPath⟩
+  have hpRange : range (K.walkGeometricPath p.1) =
+      ⋃ i ∈ a :: tail, segment ℝ (left i) (right i) := by
+    simpa [p, K] using D.range_eq
+  have hqRange : range (K.walkGeometricPath q.1) =
+      segment ℝ (left last) (right last) := by
+    change range (K.walkGeometricPath
+      (q₀.1.copy hjoinV.symm hcloseV)) = _
+    rw [K.range_walkGeometricPath_copy]
+    simpa [K, q₀] using
+      range_walkGeometricPath_segmentFamilyPath
+        left right last hneLast
+  have hinter : range (K.walkGeometricPath p.1) ∩
+        range (K.walkGeometricPath q.1) ⊆
+      {K.position (segmentFamilyLeftVertex left right a),
+        K.position (segmentFamilyRightVertex left right
+          ((a :: tail).getLast (by simp)))} := by
+    rw [hpRange, hqRange,
+      segmentFamilyLeftVertex_position left right a,
+      segmentFamilyRightVertex_position left right]
+    simpa only [hjoin] using hclosingInter
+  have hpLong : 1 < p.1.length := by
+    have hcount : 2 ≤ (a :: tail).length := by
+      cases tail with
+      | nil => exact (htail rfl).elim
+      | cons b tail => simp
+    have hD := D.labelCount_le_length
+    change (a :: tail).length ≤ p.1.length at hD
+    omega
+  have hcycle : (p.1.append q.1).IsCycle :=
+    isCycle_append_of_range_inter_subset_endpoints K p q hinter
+      (Or.inl hpLong)
+  refine ⟨{
+    cycle := p.1.append q.1
+    isCycle := hcycle
+    range_eq := ?_ }⟩
+  rw [K.range_walkGeometricPath_append, hpRange, hqRange]
+
+/-- A chosen common-arrangement cycle for an open chain and its controlled
+closing segment. -/
+noncomputable def simpleSegmentFamilyCycleData
+    {I : Type*} [Fintype I] (left right : I → Plane)
+    (a : I) (tail : List I) (last : I)
+    (htail : tail ≠ [])
+    (hchain : (a :: tail).IsChain fun i j => right i = left j)
+    (hjoin : right ((a :: tail).getLast (by simp)) = left last)
+    (hclose : right last = left a)
+    (hne : ∀ i ∈ a :: tail, left i ≠ right i)
+    (hneLast : left last ≠ right last)
+    (hpair : (a :: tail).Pairwise fun i j =>
+      segment ℝ (left i) (right i) ∩ segment ℝ (left j) (right j) ⊆
+        {right i})
+    (hclosingInter :
+      ((⋃ i ∈ a :: tail, segment ℝ (left i) (right i)) ∩
+          segment ℝ (left last) (right last)) ⊆
+        {left a, left last}) :
+    SimpleSegmentFamilyCycleData left right a tail last :=
+  Classical.choice <| nonempty_simpleSegmentFamilyCycleData
+    left right a tail last htail hchain hjoin hclose hne hneLast
+      hpair hclosingInter
+
 /-- The canonical closed walk of a nondegenerate chained segment family has
 exactly the union of the source segments as its geometric range.  No
 simplicity assumption is needed here; crossings are resolved in the common

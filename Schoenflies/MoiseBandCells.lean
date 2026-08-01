@@ -565,6 +565,233 @@ theorem rightSide_left_ne_right (a : LevelAddress n) :
   rw [h] at hlt
   exact (lt_irrefl _ hlt)
 
+/-- The corrected extreme left side, ending at the raw trimmed endpoint,
+lies in the old retained-hair base segment. -/
+theorem rawLeftSide_subset_parentBaseSegment (a : LevelAddress n) :
+    segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.trimmedLeftPoint
+          (L.childIndex (L.leftmostAddress a))) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (F.leftSynchronizedPoint a) := by
+  let H := I.levelLeftHair a
+  let child : H.carrier :=
+    ⟨L.next.family.forgetObstacle.trimmedLeftPoint
+        (L.childIndex (L.leftmostAddress a)), by
+      rw [← L.leftmostAddress_leftHair_carrier a]
+      exact (L.next.family.forgetObstacle.leftHairPoint
+        (L.leftmostAddress a)).2⟩
+  let parent : H.carrier :=
+    ⟨F.leftSynchronizedPoint a,
+      F.leftSynchronizedPoint_mem_leftHair a⟩
+  have hparameter : H.carrierParameter child ≤
+      H.carrierParameter parent :=
+    (L.leftmost_trimmed_carrierParameter_lt_parent a).le
+  have hbase : segment ℝ
+      (J.curvePoint (I.levelArc a).left : Plane) (child : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (parent : Plane) :=
+    H.baseSegment_subset_of_parameter_le child parent hparameter
+  have hchild : (child : Plane) ∈
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (parent : Plane) :=
+    hbase (right_mem_segment ℝ _ _)
+  have hsegment : segment ℝ (parent : Plane) (child : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (parent : Plane) :=
+    (convex_segment _ _).segment_subset
+      (right_mem_segment ℝ _ _) hchild
+  simpa [H, child, parent] using hsegment
+
+/-- The corrected raw right side has the analogous containment. -/
+theorem rawRightSide_subset_parentBaseSegment (a : LevelAddress n) :
+    segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint
+          (L.childIndex (L.rightmostAddress a)))
+        (F.rightSynchronizedPoint a) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (F.rightSynchronizedPoint a) := by
+  let H := I.levelRightHair a
+  let child : H.carrier :=
+    ⟨L.next.family.forgetObstacle.trimmedRightPoint
+        (L.childIndex (L.rightmostAddress a)), by
+      rw [← L.rightmostAddress_rightHair_carrier a]
+      exact (L.next.family.forgetObstacle.rightHairPoint
+        (L.rightmostAddress a)).2⟩
+  let parent : H.carrier :=
+    ⟨F.rightSynchronizedPoint a,
+      F.rightSynchronizedPoint_mem_rightHair a⟩
+  have hparameter : H.carrierParameter child ≤
+      H.carrierParameter parent :=
+    (L.rightmost_trimmed_carrierParameter_lt_parent a).le
+  have hbase : segment ℝ
+      (J.curvePoint (I.levelArc a).right : Plane) (child : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (parent : Plane) :=
+    H.baseSegment_subset_of_parameter_le child parent hparameter
+  have hchild : (child : Plane) ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (parent : Plane) :=
+    hbase (right_mem_segment ℝ _ _)
+  have hsegment : segment ℝ (child : Plane) (parent : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (parent : Plane) :=
+    (convex_segment _ _).segment_subset hchild
+      (right_mem_segment ℝ _ _)
+  simpa [H, child, parent] using hsegment
+
+/-- An old parent edge and a raw child-crosscut edge are disjoint. -/
+theorem parentEdge_disjoint_rawChildEdge
+    (e : F.LevelEdgeAddress)
+    (f : L.next.family.forgetObstacle.TrimmedEdgeAddress) :
+    Disjoint (F.edgeSegment e)
+      (L.next.family.forgetObstacle.trimmedEdgeSegment f) := by
+  apply (L.next.trimmed_path_disjoint (L.childIndex f.1)).symm.mono
+  · intro x hx
+    rw [(F.synchronizedPolygonalCircle hn).closedRegion_eq_union]
+    apply Or.inr
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr
+      ⟨e.1, F.edgeSegment_subset_crosscutRange e hx⟩
+  · exact L.next.family.forgetObstacle
+      |>.trimmedEdgeSegment_subset_trimmedPathRange f
+
+/-- Every internal raw-hair junction remains in the separating neighborhood
+of the original Jordan curve. -/
+theorem junctionSegment_subset_thickening
+    {b c : LevelAddress L.next.level} (hbc : I.LevelAdjacent b c) :
+    segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)) ⊆
+      thickening L.next.buffer J.carrier := by
+  let G := L.next.family.forgetObstacle
+  let q : Plane := J.curvePoint (I.levelArc c).left
+  have hqCarrier : q ∈ J.carrier :=
+    (J.curvePoint (I.levelArc c).left).2
+  have hrightReturn : G.trimmedRightPoint (L.childIndex b) ∈
+      G.synchronizedReturnSet b := by
+    apply Or.inl
+    apply Or.inr
+    apply Or.inl
+    exact Or.inr (Path.source_mem_range
+      (G.trimmedPath (L.childIndex b)))
+  have hleftReturn : G.trimmedLeftPoint (L.childIndex c) ∈
+      G.synchronizedReturnSet c := by
+    apply Or.inl
+    apply Or.inr
+    apply Or.inl
+    exact Or.inr (Path.target_mem_range
+      (G.trimmedPath (L.childIndex c)))
+  have hrightNearLeft := L.next.return_near b hrightReturn
+  have hleftNear : G.trimmedLeftPoint (L.childIndex c) ∈
+      ball q (L.next.buffer / 4) := by
+    simpa [q] using L.next.return_near c hleftReturn
+  have hboundary := L.next.rightBoundaryPoint_mem_cellClosedBall b
+  have hboundary' : dist
+      (J.curvePoint (I.levelArc b).left : Plane)
+      (J.curvePoint (I.levelArc b).right : Plane) ≤
+        L.next.buffer / 4 := by
+    simpa [mem_closedBall, dist_comm] using hboundary
+  have hrightNear : G.trimmedRightPoint (L.childIndex b) ∈
+      ball q (L.next.buffer / 2) := by
+    rw [mem_ball] at hrightNearLeft ⊢
+    have hq : q = (J.curvePoint (I.levelArc b).right : Plane) :=
+      hbc.symm
+    rw [hq]
+    calc
+      dist (G.trimmedRightPoint (L.childIndex b))
+          (J.curvePoint (I.levelArc b).right : Plane) ≤
+          dist (G.trimmedRightPoint (L.childIndex b))
+              (J.curvePoint (I.levelArc b).left : Plane) +
+            dist (J.curvePoint (I.levelArc b).left : Plane)
+              (J.curvePoint (I.levelArc b).right : Plane) :=
+        dist_triangle _ _ _
+      _ < L.next.buffer / 2 := by
+        nlinarith [L.next.buffer_pos, hboundary']
+  have hleftNearHalf : G.trimmedLeftPoint (L.childIndex c) ∈
+      ball q (L.next.buffer / 2) := by
+    exact (Metric.ball_subset_ball (by linarith [L.next.buffer_pos] :
+      L.next.buffer / 4 ≤ L.next.buffer / 2)) hleftNear
+  have hsegment : segment ℝ
+      (G.trimmedRightPoint (L.childIndex b))
+      (G.trimmedLeftPoint (L.childIndex c)) ⊆
+      ball q (L.next.buffer / 2) :=
+    (convex_ball q (L.next.buffer / 2)).segment_subset
+      hrightNear hleftNearHalf
+  exact hsegment.trans <|
+    (Metric.ball_subset_ball (by linarith [L.next.buffer_pos] :
+      L.next.buffer / 2 ≤ L.next.buffer)).trans
+        (ball_subset_thickening hqCarrier L.next.buffer)
+
+/-- An old parent edge is disjoint from every internal raw-hair junction. -/
+theorem parentEdge_disjoint_junction
+    (e : F.LevelEdgeAddress)
+    {b c : LevelAddress L.next.level} (hbc : I.LevelAdjacent b c) :
+    Disjoint (F.edgeSegment e)
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c))) := by
+  apply L.next.buffer_separation.mono
+  · intro x hx
+    rw [(F.synchronizedPolygonalCircle hn).closedRegion_eq_union]
+    apply Or.inr
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr
+      ⟨e.1, F.edgeSegment_subset_crosscutRange e hx⟩
+  · exact L.junctionSegment_subset_thickening hbc
+
+/-- An old parent edge meets the corrected left side in at most its old
+left endpoint. -/
+theorem parentEdge_inter_rawLeftSide_subsingleton
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n) :
+    (F.edgeSegment ⟨a, i⟩ ∩
+      segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.trimmedLeftPoint
+          (L.childIndex (L.leftmostAddress a)))).Subsingleton := by
+  intro x hx y hy
+  have hx' : x ∈
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+          (F.leftSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rawLeftSide_subset_parentBaseSegment a hx.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hx.1⟩
+  have hy' : y ∈
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+          (F.leftSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rawLeftSide_subset_parentBaseSegment a hy.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hy.1⟩
+  rw [F.leftBaseSegment_inter_range_synchronizedCrosscutPath a] at hx' hy'
+  exact (mem_singleton_iff.mp hx').trans
+    (mem_singleton_iff.mp hy').symm
+
+/-- An old parent edge meets the corrected right side in at most its old
+right endpoint. -/
+theorem parentEdge_inter_rawRightSide_subsingleton
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n) :
+    (F.edgeSegment ⟨a, i⟩ ∩
+      segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint
+          (L.childIndex (L.rightmostAddress a)))
+        (F.rightSynchronizedPoint a)).Subsingleton := by
+  intro x hx y hy
+  have hx' : x ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rawRightSide_subset_parentBaseSegment a hx.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hx.1⟩
+  have hy' : y ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rawRightSide_subset_parentBaseSegment a hy.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hy.1⟩
+  rw [F.rightBaseSegment_inter_range_synchronizedCrosscutPath a] at hx' hy'
+  exact (mem_singleton_iff.mp hx').trans
+    (mem_singleton_iff.mp hy').symm
+
 /-- Every segment which actually occurs in the corrected Moise route is
 nondegenerate. -/
 theorem moiseBandSegment_left_ne_right_of_mem
