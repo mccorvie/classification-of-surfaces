@@ -227,6 +227,91 @@ theorem dist_child_right_lt_parent_right
   have hparent := T.buffer_le_dist_parent_rightSynchronizedPoint F hn a
   nlinarith [T.buffer_pos]
 
+/-- The original trimmed left endpoint used in an individual Moise band
+cell is also strictly shallower than the parent collar endpoint.  The
+synchronized endpoint is not used here: its extension can overlap the
+retained side hair. -/
+theorem dist_child_trimmedLeft_lt_parent_left
+    {n : ℕ} {epsilon : ℝ}
+    (F : I.LevelAvoidingJoinFamily n epsilon) (hn : 1 ≤ n)
+    (T : I.RecursiveInsideCollarStep
+      (F.synchronizedPolygonalCircle hn))
+    (a : LevelAddress n) (b : LevelAddress T.level)
+    (hbase :
+      (J.curvePoint (I.levelArc b).left : Plane) =
+        (J.curvePoint (I.levelArc a).left : Plane)) :
+    dist (J.curvePoint (I.levelArc a).left : Plane)
+        (T.family.forgetObstacle.trimmedLeftPoint
+          (levelIndexOf T.level b)) <
+      dist (J.curvePoint (I.levelArc a).left : Plane)
+        (F.leftSynchronizedPoint a) := by
+  let G := T.family.forgetObstacle
+  have htrimReturn : G.trimmedLeftPoint (levelIndexOf T.level b) ∈
+      G.synchronizedReturnSet b := by
+    apply Or.inl
+    apply Or.inr
+    apply Or.inl
+    exact Or.inr (Path.target_mem_range
+      (G.trimmedPath (levelIndexOf T.level b)))
+  have htrim := T.return_near b htrimReturn
+  rw [mem_ball, hbase] at htrim
+  have htrim' : dist (J.curvePoint (I.levelArc a).left : Plane)
+      (G.trimmedLeftPoint (levelIndexOf T.level b)) < T.buffer / 4 := by
+    simpa [dist_comm] using htrim
+  have hparent := T.buffer_le_dist_parent_leftSynchronizedPoint F hn a
+  nlinarith [T.buffer_pos, htrim']
+
+/-- The original trimmed right endpoint used in an individual Moise band
+cell is strictly shallower than the corresponding parent endpoint. -/
+theorem dist_child_trimmedRight_lt_parent_right
+    {n : ℕ} {epsilon : ℝ}
+    (F : I.LevelAvoidingJoinFamily n epsilon) (hn : 1 ≤ n)
+    (T : I.RecursiveInsideCollarStep
+      (F.synchronizedPolygonalCircle hn))
+    (a : LevelAddress n) (b : LevelAddress T.level)
+    (hbase :
+      (J.curvePoint (I.levelArc b).right : Plane) =
+        (J.curvePoint (I.levelArc a).right : Plane)) :
+    dist (J.curvePoint (I.levelArc a).right : Plane)
+        (T.family.forgetObstacle.trimmedRightPoint
+          (levelIndexOf T.level b)) <
+      dist (J.curvePoint (I.levelArc a).right : Plane)
+        (F.rightSynchronizedPoint a) := by
+  let G := T.family.forgetObstacle
+  have htrimReturn : G.trimmedRightPoint (levelIndexOf T.level b) ∈
+      G.synchronizedReturnSet b := by
+    apply Or.inl
+    apply Or.inr
+    apply Or.inl
+    exact Or.inr (Path.source_mem_range
+      (G.trimmedPath (levelIndexOf T.level b)))
+  have htrim := T.return_near b htrimReturn
+  rw [mem_ball] at htrim
+  have hboundary := T.rightBoundaryPoint_mem_cellClosedBall b
+  rw [mem_closedBall] at hboundary
+  have hboundary' : dist
+      (J.curvePoint (I.levelArc b).left : Plane)
+      (J.curvePoint (I.levelArc b).right : Plane) ≤ T.buffer / 4 := by
+    simpa [dist_comm] using hboundary
+  have hchild : dist
+      (G.trimmedRightPoint (levelIndexOf T.level b))
+      (J.curvePoint (I.levelArc b).right : Plane) < T.buffer / 2 := by
+    calc
+      dist (G.trimmedRightPoint (levelIndexOf T.level b))
+          (J.curvePoint (I.levelArc b).right : Plane) ≤
+          dist (G.trimmedRightPoint (levelIndexOf T.level b))
+              (J.curvePoint (I.levelArc b).left : Plane) +
+            dist (J.curvePoint (I.levelArc b).left : Plane)
+              (J.curvePoint (I.levelArc b).right : Plane) :=
+        dist_triangle _ _ _
+      _ < T.buffer / 2 := by nlinarith [T.buffer_pos, hboundary']
+  rw [hbase] at hchild
+  have hchild' : dist (J.curvePoint (I.levelArc a).right : Plane)
+      (G.trimmedRightPoint (levelIndexOf T.level b)) < T.buffer / 2 := by
+    simpa [dist_comm] using hchild
+  have hparent := T.buffer_le_dist_parent_rightSynchronizedPoint F hn a
+  nlinarith [T.buffer_pos, hchild']
+
 /-- Metric shallowness becomes strict affine order on the common retained
 left hair. -/
 theorem child_left_carrierParameter_lt_parent
@@ -396,6 +481,48 @@ theorem rightmost_carrierParameter_lt_parent (a : LevelAddress n) :
     (L.rightmostAddress a)
     (by simp [L.levelArc_rightmostAddress_right a])
     (L.rightmostAddress_rightHair_carrier a)
+
+/-- The raw trimmed endpoint of the extreme left descendant precedes the
+parent synchronized endpoint on their common retained hair. -/
+theorem leftmost_trimmed_carrierParameter_lt_parent
+    (a : LevelAddress n) :
+    let child : (I.levelLeftHair a).carrier :=
+      ⟨L.next.family.forgetObstacle.trimmedLeftPoint
+          (levelIndexOf L.next.level (L.leftmostAddress a)), by
+        rw [← L.leftmostAddress_leftHair_carrier a]
+        exact (L.next.family.forgetObstacle.leftHairPoint
+          (L.leftmostAddress a)).2⟩
+    let parent : (I.levelLeftHair a).carrier :=
+      ⟨F.leftSynchronizedPoint a,
+        F.leftSynchronizedPoint_mem_leftHair a⟩
+    (I.levelLeftHair a).carrierParameter child <
+      (I.levelLeftHair a).carrierParameter parent := by
+  dsimp only
+  apply (I.levelLeftHair a).carrierParameter_lt_of_dist_base_lt
+  exact L.next.dist_child_trimmedLeft_lt_parent_left F hn a
+    (L.leftmostAddress a)
+    (by simp [L.levelArc_leftmostAddress_left a])
+
+/-- The raw trimmed endpoint of the extreme right descendant precedes the
+parent synchronized endpoint on their common retained hair. -/
+theorem rightmost_trimmed_carrierParameter_lt_parent
+    (a : LevelAddress n) :
+    let child : (I.levelRightHair a).carrier :=
+      ⟨L.next.family.forgetObstacle.trimmedRightPoint
+          (levelIndexOf L.next.level (L.rightmostAddress a)), by
+        rw [← L.rightmostAddress_rightHair_carrier a]
+        exact (L.next.family.forgetObstacle.rightHairPoint
+          (L.rightmostAddress a)).2⟩
+    let parent : (I.levelRightHair a).carrier :=
+      ⟨F.rightSynchronizedPoint a,
+        F.rightSynchronizedPoint_mem_rightHair a⟩
+    (I.levelRightHair a).carrierParameter child <
+      (I.levelRightHair a).carrierParameter parent := by
+  dsimp only
+  apply (I.levelRightHair a).carrierParameter_lt_of_dist_base_lt
+  exact L.next.dist_child_trimmedRight_lt_parent_right F hn a
+    (L.rightmostAddress a)
+    (by simp [L.levelArc_rightmostAddress_right a])
 
 end Later
 

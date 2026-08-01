@@ -35,6 +35,13 @@ structure RecursiveInsideCollarStep (I : J.InitialAngularArcs)
     ((buffer / 4) / 4) P.closedRegion
   carrier_disjoint : Disjoint P.closedRegion
     (family.forgetObstacle.synchronizedPolygonalCircle one_le_level).carrier
+  /-- The complete raw return data, before loop erasure, is uniformly small.
+  This is the form needed for Moise's individual band cells: their extreme
+  sides end at the original trimmed crosscut endpoints rather than at the
+  synchronized level endpoints. -/
+  return_near : ∀ a : LevelAddress level,
+    family.forgetObstacle.synchronizedReturnSet a ⊆
+      ball (J.curvePoint (I.levelArc a).left : Plane) (buffer / 4)
   cell_near : ∀ a : LevelAddress level,
     closure
         (family.forgetObstacle.exactSynchronizedAuxiliaryJordanCircle a).inside ⊆
@@ -145,12 +152,19 @@ theorem exists_recursiveInsideCollarStep_atLeast_with_buffer_le
   obtain ⟨Ncell, hNcell⟩ :=
     LevelAvoidingJoinFamily.eventually_closure_inside_exactSynchronizedAuxiliary_subset_ball
       I hquarter
-  let N := max lower (max Ncarrier Ncell)
+  obtain ⟨Nreturn, hNreturn⟩ :=
+    LevelAvoidingJoinFamily.eventually_synchronizedReturnSet_subset_ball
+      I hquarter
+  let N := max lower (max Ncarrier (max Ncell Nreturn))
   have hlower : lower ≤ N := le_max_left _ _
   have hcarrierLevel : Ncarrier ≤ N :=
-    (le_max_left Ncarrier Ncell).trans (le_max_right _ _)
+    (le_max_left Ncarrier (max Ncell Nreturn)).trans (le_max_right _ _)
   have hcellLevel : Ncell ≤ N :=
-    (le_max_right Ncarrier Ncell).trans (le_max_right _ _)
+    (le_max_left Ncell Nreturn).trans
+      ((le_max_right Ncarrier (max Ncell Nreturn)).trans (le_max_right _ _))
+  have hreturnLevel : Nreturn ≤ N :=
+    (le_max_right Ncell Nreturn).trans
+      ((le_max_right Ncarrier (max Ncell Nreturn)).trans (le_max_right _ _))
   have hNpos : 1 ≤ N := hNcarrierPos.trans hcarrierLevel
   let G : I.LevelAvoidingJoinFamilyOver N
       ((buffer / 4) / 4) P.closedRegion :=
@@ -184,6 +198,7 @@ theorem exists_recursiveInsideCollarStep_atLeast_with_buffer_le
     one_le_level := hNpos
     family := G
     carrier_disjoint := hcarrierDisjoint
+    return_near := hNreturn N hreturnLevel F
     cell_near := hNcell N hcellLevel F
     cell_disjoint := hcellDisjoint }, hlower, ?_⟩
   exact hbufferUpper
