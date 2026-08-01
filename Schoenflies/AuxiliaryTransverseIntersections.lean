@@ -26,14 +26,17 @@ namespace AccessibleAngularArc
 variable {J : JordanCircle}
 
 /-- At a generic frame/return-path intersection, moving along the polygon
-edge crosses the two sides of the auxiliary Jordan circle. -/
-theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliarySides
+edge crosses the two sides of the auxiliary Jordan circle inside any
+prescribed positive ball. -/
+theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliarySides_in_ball
     (A : J.AccessibleAngularArc) (Q : PolygonalCircle)
     (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
     {p : Plane}
-    (X : A.returnCarrierBrokenLine.TransverseIntersection Q p) :
+    (X : A.returnCarrierBrokenLine.TransverseIntersection Q p)
+    {R : ℝ} (hR : 0 < R) :
     ∃ delta : ℝ, 0 < delta ∧
       let e := Q.vertex (X.polygonEdge + 1) - Q.vertex X.polygonEdge
+      (p + delta • e) ∈ ball p R ∧ (p - delta • e) ∈ ball p R ∧
       (p + delta • e) ∈ Q.edgeSegment X.polygonEdge ∧
       (p - delta • e) ∈ Q.edgeSegment X.polygonEdge ∧
       (((p + delta • e) ∈ A.auxiliaryJordanCircle.inside ∧
@@ -64,11 +67,15 @@ theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliary
   obtain ⟨rEdge, hrEdge, hlineSegment⟩ :=
     exists_ball_inter_determinantLine_subset_segment
       (Q.adjacent_ne X.polygonEdge) X.mem_open_polygonEdge
-  let r : ℝ := min (min rArc rReturn) rEdge
-  have hr : 0 < r := lt_min (lt_min hrArc hrReturn) hrEdge
-  have hrArcLe : r ≤ rArc := (min_le_left _ _).trans (min_le_left _ _)
-  have hrReturnLe : r ≤ rReturn := (min_le_left _ _).trans (min_le_right _ _)
-  have hrEdgeLe : r ≤ rEdge := min_le_right _ _
+  let r : ℝ := min (min (min rArc rReturn) rEdge) R
+  have hr : 0 < r := lt_min (lt_min (lt_min hrArc hrReturn) hrEdge) hR
+  have hrArcLe : r ≤ rArc :=
+    (min_le_left _ _).trans <| (min_le_left _ _).trans (min_le_left _ _)
+  have hrReturnLe : r ≤ rReturn :=
+    (min_le_left _ _).trans <| (min_le_left _ _).trans (min_le_right _ _)
+  have hrEdgeLe : r ≤ rEdge :=
+    (min_le_left _ _).trans (min_le_right _ _)
+  have hrRLe : r ≤ R := min_le_right _ _
   have hlocalAux : ball p r ∩ A.auxiliaryJordanCircle.carrier =
       ball p r ∩ determinantLine p bdir := by
     apply Set.Subset.antisymm
@@ -125,6 +132,28 @@ theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliary
     hlineSegment ⟨ball_subset_ball hrEdgeLe hplusBall, hplusLine⟩
   have hminusEdge : p - delta • e ∈ Q.edgeSegment X.polygonEdge :=
     hlineSegment ⟨ball_subset_ball hrEdgeLe hminusBall, hminusLine⟩
+  exact ⟨delta, hdelta, ball_subset_ball hrRLe hplusBall,
+    ball_subset_ball hrRLe hminusBall, hplusEdge, hminusEdge, hsides⟩
+
+/-- At a generic frame/return-path intersection, moving along the polygon
+edge crosses the two sides of the auxiliary Jordan circle. -/
+theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliarySides
+    (A : J.AccessibleAngularArc) (Q : PolygonalCircle)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    {p : Plane}
+    (X : A.returnCarrierBrokenLine.TransverseIntersection Q p) :
+    ∃ delta : ℝ, 0 < delta ∧
+      let e := Q.vertex (X.polygonEdge + 1) - Q.vertex X.polygonEdge
+      (p + delta • e) ∈ Q.edgeSegment X.polygonEdge ∧
+      (p - delta • e) ∈ Q.edgeSegment X.polygonEdge ∧
+      (((p + delta • e) ∈ A.auxiliaryJordanCircle.inside ∧
+          (p - delta • e) ∈ A.auxiliaryJordanCircle.outside) ∨
+        ((p + delta • e) ∈ A.auxiliaryJordanCircle.outside ∧
+          (p - delta • e) ∈ A.auxiliaryJordanCircle.inside)) := by
+  obtain ⟨delta, hdelta, _hplusBall, _hminusBall,
+      hplusEdge, hminusEdge, hsides⟩ :=
+    Schoenflies.JordanCircle.AccessibleAngularArc.SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliarySides_in_ball
+      A Q hArcInside X (show (0 : ℝ) < 1 by norm_num)
   exact ⟨delta, hdelta, hplusEdge, hminusEdge, hsides⟩
 
 /-- A transverse intersection changes polygonal side inside every prescribed
