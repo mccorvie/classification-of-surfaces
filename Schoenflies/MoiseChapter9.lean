@@ -25,6 +25,8 @@ import Schoenflies.CommonSegmentArrangement
 import Schoenflies.SegmentChainWalk
 import Schoenflies.CollarBandSegments
 import Schoenflies.NestedCollarStages
+import Schoenflies.PolyhedralDiskNeighborhoods
+import Schoenflies.PolygonalDiskExhaustion
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
