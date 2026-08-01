@@ -25,6 +25,7 @@ import Schoenflies.RefinedEdgeSides
 import Schoenflies.CyclicCrossingParity
 import Schoenflies.RefinedCyclicCuts
 import Schoenflies.ControlledTailJoin
+import Schoenflies.PrescribedHairCrosscuts
 import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.HairReturns
