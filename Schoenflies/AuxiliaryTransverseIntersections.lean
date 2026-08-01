@@ -34,6 +34,8 @@ theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliary
     (X : A.returnCarrierBrokenLine.TransverseIntersection Q p) :
     ∃ delta : ℝ, 0 < delta ∧
       let e := Q.vertex (X.polygonEdge + 1) - Q.vertex X.polygonEdge
+      (p + delta • e) ∈ Q.edgeSegment X.polygonEdge ∧
+      (p - delta • e) ∈ Q.edgeSegment X.polygonEdge ∧
       (((p + delta • e) ∈ A.auxiliaryJordanCircle.inside ∧
           (p - delta • e) ∈ A.auxiliaryJordanCircle.outside) ∨
         ((p + delta • e) ∈ A.auxiliaryJordanCircle.outside ∧
@@ -59,8 +61,14 @@ theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliary
   obtain ⟨rReturn, hrReturn, hlocalReturn⟩ := hlocalReturnRaw
   change ball p rReturn ∩ A.returnCarrierBrokenLine.data.segmentCarrier =
     ball p rReturn ∩ determinantLine p bdir at hlocalReturn
-  let r : ℝ := min rArc rReturn
-  have hr : 0 < r := lt_min hrArc hrReturn
+  obtain ⟨rEdge, hrEdge, hlineSegment⟩ :=
+    exists_ball_inter_determinantLine_subset_segment
+      (Q.adjacent_ne X.polygonEdge) X.mem_open_polygonEdge
+  let r : ℝ := min (min rArc rReturn) rEdge
+  have hr : 0 < r := lt_min (lt_min hrArc hrReturn) hrEdge
+  have hrArcLe : r ≤ rArc := (min_le_left _ _).trans (min_le_left _ _)
+  have hrReturnLe : r ≤ rReturn := (min_le_left _ _).trans (min_le_right _ _)
+  have hrEdgeLe : r ≤ rEdge := min_le_right _ _
   have hlocalAux : ball p r ∩ A.auxiliaryJordanCircle.carrier =
       ball p r ∩ determinantLine p bdir := by
     apply Set.Subset.antisymm
@@ -68,21 +76,21 @@ theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliary
       rw [A.carrier_auxiliaryJordanCircle] at hxAux
       rcases hxAux with hxArc | hxReturn
       · exact False.elim <|
-          hballArc (ball_subset_ball (min_le_left _ _) hxBall) hxArc
+          hballArc (ball_subset_ball hrArcLe hxBall) hxArc
       · have hxCarrier : x ∈
             A.returnCarrierBrokenLine.data.segmentCarrier := by
           rw [A.segmentCarrier_returnCarrierBrokenLine]
           exact hxReturn
         have hxLocal : x ∈ ball p rReturn ∩
             A.returnCarrierBrokenLine.data.segmentCarrier :=
-          ⟨ball_subset_ball (min_le_right _ _) hxBall, hxCarrier⟩
+          ⟨ball_subset_ball hrReturnLe hxBall, hxCarrier⟩
         have hxLine : x ∈ determinantLine p bdir := by
           rw [hlocalReturn] at hxLocal
           exact hxLocal.2
         exact ⟨hxBall, hxLine⟩
     · rintro x ⟨hxBall, hxLine⟩
       have hxLocal : x ∈ ball p rReturn ∩ determinantLine p bdir :=
-        ⟨ball_subset_ball (min_le_right _ _) hxBall, hxLine⟩
+        ⟨ball_subset_ball hrReturnLe hxBall, hxLine⟩
       have hxCarrier : x ∈
           A.returnCarrierBrokenLine.data.segmentCarrier :=
         by
@@ -98,15 +106,26 @@ theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliary
     intro hzero
     apply X.transverse
     rw [planeDet_swap, hzero, neg_zero]
-  obtain ⟨delta, hdelta, hsides⟩ :=
-    A.auxiliaryJordanCircle.local_transverse_points_opposite hr
+  obtain ⟨delta, hdelta, hplusBall, hminusBall, hsides⟩ :=
+    A.auxiliaryJordanCircle.local_transverse_points_opposite_in_ball hr
       (by
         rw [A.carrier_auxiliaryJordanCircle]
         exact Or.inr <| by
           rw [← A.segmentCarrier_returnCarrierBrokenLine]
           exact Set.mem_iUnion.mpr ⟨X.brokenEdge, X.mem_brokenEdge⟩)
       hlocalAux htransverse
-  exact ⟨delta, hdelta, hsides⟩
+  let e := Q.vertex (X.polygonEdge + 1) - Q.vertex X.polygonEdge
+  have hplusLine : p + delta • e ∈ determinantLine p e := by
+    simp [determinantLine, planeDet]
+    ring
+  have hminusLine : p - delta • e ∈ determinantLine p e := by
+    simp [determinantLine, planeDet]
+    ring
+  have hplusEdge : p + delta • e ∈ Q.edgeSegment X.polygonEdge :=
+    hlineSegment ⟨ball_subset_ball hrEdgeLe hplusBall, hplusLine⟩
+  have hminusEdge : p - delta • e ∈ Q.edgeSegment X.polygonEdge :=
+    hlineSegment ⟨ball_subset_ball hrEdgeLe hminusBall, hminusLine⟩
+  exact ⟨delta, hdelta, hplusEdge, hminusEdge, hsides⟩
 
 /-- A transverse intersection changes polygonal side inside every prescribed
 parameter interval around its return-path parameter. -/

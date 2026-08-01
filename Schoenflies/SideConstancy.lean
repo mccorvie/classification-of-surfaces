@@ -14,6 +14,36 @@ open Metric Set Function
 
 namespace JordanCircle
 
+/-- Any two points of a preconnected subset of a Jordan-circle complement
+lie on the same side. -/
+theorem preconnected_subset_same_side (J : JordanCircle)
+    {S : Set Plane} (hpreconnected : IsPreconnected S)
+    (hsubset : S ⊆ J.carrierᶜ) {x y : Plane}
+    (hx : x ∈ S) (hy : y ∈ S) :
+    ((x ∈ J.inside ∧ y ∈ J.inside) ∨
+      (x ∈ J.outside ∧ y ∈ J.outside)) := by
+  rcases J.mem_inside_or_outside (hsubset hx) with hxInside | hxOutside
+  · left
+    refine ⟨hxInside, ?_⟩
+    have hcomponent :=
+      hpreconnected.subset_connectedComponentIn hx hsubset hy
+    have hcomponentEq :
+        connectedComponentIn J.carrierᶜ x = J.inside := by
+      change connectedComponentIn J.carrierᶜ x =
+        connectedComponentIn J.carrierᶜ J.insidePoint
+      exact (connectedComponentIn_eq hxInside).symm
+    rwa [hcomponentEq] at hcomponent
+  · right
+    refine ⟨hxOutside, ?_⟩
+    have hcomponent :=
+      hpreconnected.subset_connectedComponentIn hx hsubset hy
+    have hcomponentEq :
+        connectedComponentIn J.carrierᶜ x = J.outside := by
+      change connectedComponentIn J.carrierᶜ x =
+        connectedComponentIn J.carrierᶜ J.outsidePoint
+      exact (connectedComponentIn_eq hxOutside).symm
+    rwa [hcomponentEq] at hcomponent
+
 /-- The endpoints of a continuous, carrier-avoiding interval lie on the same
 side of a Jordan circle. -/
 theorem interval_image_same_side (J : JordanCircle)
@@ -30,27 +60,7 @@ theorem interval_image_same_side (J : JordanCircle)
     exact havoid t ht
   have haS : f a ∈ S := ⟨a, ⟨le_rfl, hab⟩, rfl⟩
   have hbS : f b ∈ S := ⟨b, ⟨hab, le_rfl⟩, rfl⟩
-  rcases J.mem_inside_or_outside (hsubset haS) with haInside | haOutside
-  · left
-    refine ⟨haInside, ?_⟩
-    have hcomponent :=
-      hpreconnected.subset_connectedComponentIn haS hsubset hbS
-    have hcomponentEq :
-        connectedComponentIn J.carrierᶜ (f a) = J.inside := by
-      change connectedComponentIn J.carrierᶜ (f a) =
-        connectedComponentIn J.carrierᶜ J.insidePoint
-      exact (connectedComponentIn_eq haInside).symm
-    rwa [hcomponentEq] at hcomponent
-  · right
-    refine ⟨haOutside, ?_⟩
-    have hcomponent :=
-      hpreconnected.subset_connectedComponentIn haS hsubset hbS
-    have hcomponentEq :
-        connectedComponentIn J.carrierᶜ (f a) = J.outside := by
-      change connectedComponentIn J.carrierᶜ (f a) =
-        connectedComponentIn J.carrierᶜ J.outsidePoint
-      exact (connectedComponentIn_eq haOutside).symm
-    rwa [hcomponentEq] at hcomponent
+  exact J.preconnected_subset_same_side hpreconnected hsubset haS hbS
 
 end JordanCircle
 

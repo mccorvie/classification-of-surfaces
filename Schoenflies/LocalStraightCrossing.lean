@@ -431,13 +431,15 @@ theorem local_lineSide_dichotomy {p d : Plane} {r : ℝ}
     exact Or.inr ⟨hposOutside, hnegInside⟩
 
 /-- A straight direction transverse to the local carrier enters different
-Jordan regions on its two sides of the crossing point. -/
-theorem local_transverse_points_opposite {p d e : Plane} {r : ℝ}
+Jordan regions on its two sides of the crossing point.  This strengthened
+form also records that both witnesses remain in the prescribed local ball. -/
+theorem local_transverse_points_opposite_in_ball {p d e : Plane} {r : ℝ}
     (hr : 0 < r) (hp : p ∈ J.carrier)
     (hlocal : ball p r ∩ J.carrier =
       ball p r ∩ determinantLine p d)
     (htransverse : planeDet e d ≠ 0) :
     ∃ delta : ℝ, 0 < delta ∧
+      p + delta • e ∈ ball p r ∧ p - delta • e ∈ ball p r ∧
       (((p + delta • e) ∈ J.inside ∧ (p - delta • e) ∈ J.outside) ∨
         ((p + delta • e) ∈ J.outside ∧ (p - delta • e) ∈ J.inside)) := by
   obtain ⟨delta, hdelta, hdeltaNorm⟩ :=
@@ -469,10 +471,10 @@ theorem local_transverse_points_opposite {p d e : Plane} {r : ℝ}
       rw [hminusDet]
       exact neg_pos.mpr (mul_neg_of_pos_of_neg hdelta hdetNeg)
     rcases hsides with horder | horder
-    · exact ⟨delta, hdelta, Or.inr
+    · exact ⟨delta, hdelta, hplusBall, hminusBall, Or.inr
         ⟨horder.2 ⟨hplusBall, hplusNeg⟩,
           horder.1 ⟨hminusBall, hminusPos⟩⟩⟩
-    · exact ⟨delta, hdelta, Or.inl
+    · exact ⟨delta, hdelta, hplusBall, hminusBall, Or.inl
         ⟨horder.2 ⟨hplusBall, hplusNeg⟩,
           horder.1 ⟨hminusBall, hminusPos⟩⟩⟩
   · have hplusPos : p + delta • e ∈ positiveLineSide p d := by
@@ -484,12 +486,26 @@ theorem local_transverse_points_opposite {p d e : Plane} {r : ℝ}
       rw [hminusDet]
       exact neg_lt_zero.mpr (mul_pos hdelta hdetPos)
     rcases hsides with horder | horder
-    · exact ⟨delta, hdelta, Or.inl
+    · exact ⟨delta, hdelta, hplusBall, hminusBall, Or.inl
         ⟨horder.1 ⟨hplusBall, hplusPos⟩,
           horder.2 ⟨hminusBall, hminusNeg⟩⟩⟩
-    · exact ⟨delta, hdelta, Or.inr
+    · exact ⟨delta, hdelta, hplusBall, hminusBall, Or.inr
         ⟨horder.1 ⟨hplusBall, hplusPos⟩,
           horder.2 ⟨hminusBall, hminusNeg⟩⟩⟩
+
+/-- A straight direction transverse to the local carrier enters different
+Jordan regions on its two sides of the crossing point. -/
+theorem local_transverse_points_opposite {p d e : Plane} {r : ℝ}
+    (hr : 0 < r) (hp : p ∈ J.carrier)
+    (hlocal : ball p r ∩ J.carrier =
+      ball p r ∩ determinantLine p d)
+    (htransverse : planeDet e d ≠ 0) :
+    ∃ delta : ℝ, 0 < delta ∧
+      (((p + delta • e) ∈ J.inside ∧ (p - delta • e) ∈ J.outside) ∨
+        ((p + delta • e) ∈ J.outside ∧ (p - delta • e) ∈ J.inside)) := by
+  obtain ⟨delta, hdelta, _hplusBall, _hminusBall, hsides⟩ :=
+    J.local_transverse_points_opposite_in_ball hr hp hlocal htransverse
+  exact ⟨delta, hdelta, hsides⟩
 
 end JordanCircle
 
