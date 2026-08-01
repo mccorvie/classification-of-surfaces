@@ -1,5 +1,6 @@
 import Schoenflies.AuxiliaryJordan
 import Schoenflies.TransverseIntersections
+import Schoenflies.OrderedPathCrossing
 
 /-!
 # Transverse intersections with the auxiliary Jordan circle
@@ -106,6 +107,103 @@ theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliary
           exact Set.mem_iUnion.mpr ⟨X.brokenEdge, X.mem_brokenEdge⟩)
       hlocalAux htransverse
   exact ⟨delta, hdelta, hsides⟩
+
+/-- A transverse intersection changes polygonal side inside every prescribed
+parameter interval around its return-path parameter. -/
+theorem SimpleBrokenLine.TransverseIntersection.exists_returnPath_parameters_opposite_polygonSides_between
+    (A : J.AccessibleAngularArc) (Q : PolygonalCircle)
+    {p : Plane}
+    (X : A.returnCarrierBrokenLine.TransverseIntersection Q p)
+    {a t b : unitInterval} (htp : A.returnPath t = p)
+    (hat : a < t) (htb : t < b) :
+    ∃ l u : unitInterval,
+      a < l ∧ l < t ∧ t < u ∧ u < b ∧
+        (((A.returnPath l ∈ Q.interiorRegion) ∧
+            (A.returnPath u ∈ Q.exteriorRegion)) ∨
+          ((A.returnPath l ∈ Q.exteriorRegion) ∧
+            (A.returnPath u ∈ Q.interiorRegion))) := by
+  have hpQ : p ∈ Q.carrier :=
+    Q.edgeSegment_subset_carrier X.polygonEdge X.mem_polygonEdge
+  obtain ⟨rQ, hrQ, hlocalQ⟩ :=
+    polygonalCircle_exists_local_determinantLine Q
+      X.mem_open_polygonEdge
+  have hlocalQJordan : ball p rQ ∩ Q.toJordanCircle.carrier =
+      ball p rQ ∩ determinantLine p
+        (Q.vertex (X.polygonEdge + 1) - Q.vertex X.polygonEdge) := by
+    simpa using hlocalQ
+  let e : Plane :=
+    A.returnCarrierBrokenLine.data.vertex X.brokenEdge.succ -
+      A.returnCarrierBrokenLine.data.vertex X.brokenEdge.castSucc
+  obtain ⟨rReturn, hrReturn, hlocalReturn⟩ :=
+    resolvedBrokenLine_exists_local_determinantLine
+      A.returnBrokenLine.data X.brokenEdge X.mem_open_brokenEdge
+  change ball p rReturn ∩
+      A.returnCarrierBrokenLine.data.segmentCarrier =
+    ball p rReturn ∩ determinantLine p e at hlocalReturn
+  have hlocalPath : ball p rReturn ∩ range A.returnPath =
+      ball p rReturn ∩ determinantLine p e := by
+    rw [← A.segmentCarrier_returnCarrierBrokenLine]
+    exact hlocalReturn
+  obtain ⟨l, u, hal, hlt, htu, hub, hsides⟩ :=
+    Q.toJordanCircle.exists_ordered_points_opposite_sides_between
+      A.returnPath.continuous A.returnPath_injective
+      hat htb htp hrQ
+      (by rw [Q.carrier_toJordanCircle]; exact hpQ)
+      hlocalQJordan hrReturn hlocalPath X.transverse
+  refine ⟨l, u, hal, hlt, htu, hub, ?_⟩
+  simpa only [Q.inside_toJordanCircle, Q.outside_toJordanCircle] using
+    hsides
+
+/-- The local crossing of the polygon is a genuine side change in the order
+of the return-path parameter.  This is the local input to the odd-crossing
+count on each endpoint tail. -/
+theorem SimpleBrokenLine.TransverseIntersection.exists_returnPath_parameters_opposite_polygonSides
+    (A : J.AccessibleAngularArc) (Q : PolygonalCircle)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    {p : Plane}
+    (X : A.returnCarrierBrokenLine.TransverseIntersection Q p) :
+    ∃ l t u : unitInterval,
+      l < t ∧ t < u ∧ A.returnPath t = p ∧
+        (((A.returnPath l ∈ Q.interiorRegion) ∧
+            (A.returnPath u ∈ Q.exteriorRegion)) ∨
+          ((A.returnPath l ∈ Q.exteriorRegion) ∧
+            (A.returnPath u ∈ Q.interiorRegion))) := by
+  have hpQ : p ∈ Q.carrier :=
+    Q.edgeSegment_subset_carrier X.polygonEdge X.mem_polygonEdge
+  have hpReturnCarrier :
+      p ∈ A.returnCarrierBrokenLine.data.segmentCarrier :=
+    Set.mem_iUnion.mpr ⟨X.brokenEdge, X.mem_brokenEdge⟩
+  have hpReturnRange : p ∈ range A.returnPath := by
+    rw [← A.segmentCarrier_returnCarrierBrokenLine]
+    exact hpReturnCarrier
+  obtain ⟨t, htp⟩ := hpReturnRange
+  have hpNotArc : p ∉ A.curveArcPlane := by
+    intro hpArc
+    have hpInterior := hArcInside hpArc
+    have hpCompl : p ∈ Q.carrierᶜ := by
+      rw [← Q.interior_union_exterior]
+      exact Or.inl hpInterior
+    exact hpCompl hpQ
+  have htLower : (⊥ : unitInterval) < t := by
+    rw [bot_lt_iff_ne_bot]
+    intro ht
+    apply hpNotArc
+    have hpRight : p = (J.curvePoint A.right : Plane) := by
+      rw [← htp, ht]
+      exact A.returnPath.source
+    simpa [hpRight] using A.right_mem_curveArcPlane
+  have htUpper : t < (⊤ : unitInterval) := by
+    rw [lt_top_iff_ne_top]
+    intro ht
+    apply hpNotArc
+    have hpLeft : p = (J.curvePoint A.left : Plane) := by
+      rw [← htp, ht]
+      exact A.returnPath.target
+    simpa [hpLeft] using A.left_mem_curveArcPlane
+  obtain ⟨l, u, _hlower, hlt, htu, _hupper, hsides⟩ :=
+    Schoenflies.JordanCircle.AccessibleAngularArc.SimpleBrokenLine.TransverseIntersection.exists_returnPath_parameters_opposite_polygonSides_between
+      A Q X htp htLower htUpper
+  exact ⟨l, t, u, hlt, htu, htp, hsides⟩
 
 end AccessibleAngularArc
 end JordanCircle

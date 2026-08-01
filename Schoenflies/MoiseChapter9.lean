@@ -16,6 +16,9 @@ import Schoenflies.LocalStraightCrossing
 import Schoenflies.TransverseIntersections
 import Schoenflies.AuxiliaryTransverseIntersections
 import Schoenflies.FiniteSeparatorSetup
+import Schoenflies.ReturnPathCrossings
+import Schoenflies.SideConstancy
+import Schoenflies.FiniteCrossingParity
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.RegionalExtensions
 import ClassificationOfSurfaces.Moise.BrokenLine
