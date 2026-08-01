@@ -133,6 +133,24 @@ theorem exists_later
     (F.closedRegion_synchronizedPolygonalCircle_subset_inside hn) (n + 1)
   exact ⟨T, by omega⟩
 
+/-- A later synchronized collar can simultaneously be forced to use an
+arbitrarily small positive separation buffer.  This is the quantitative
+version used to make the recursive collar cells shrink at the Jordan
+boundary. -/
+theorem exists_later_with_buffer_le
+    {n : ℕ} {epsilon : ℝ}
+    (F : I.LevelAvoidingJoinFamily n epsilon) (hn : 1 ≤ n)
+    {upper : ℝ} (hupper : 0 < upper) :
+    ∃ T : I.RecursiveInsideCollarStep
+        (F.synchronizedPolygonalCircle hn),
+      n < T.level ∧ T.buffer ≤ upper := by
+  obtain ⟨T, hT, hbuffer⟩ :=
+    I.exists_recursiveInsideCollarStep_atLeast_with_buffer_le
+      (F.synchronizedPolygonalCircle hn)
+      (F.closedRegion_synchronizedPolygonalCircle_subset_inside hn)
+      (n + 1) hupper
+  exact ⟨T, by omega, hbuffer⟩
+
 /-- A synchronized point on the earlier collar is at least one full buffer
 away from its left boundary base. -/
 theorem buffer_le_dist_parent_leftSynchronizedPoint
@@ -276,6 +294,16 @@ theorem nonempty_later
     Nonempty (Later F hn) := by
   obtain ⟨T, hT⟩ := exists_later F hn
   exact ⟨⟨T, hT⟩⟩
+
+/-- Quantitative inhabitance of `Later`: the stored next collar can be
+chosen with buffer at most `upper`. -/
+theorem exists_later_buffer_le
+    {n : ℕ} {epsilon : ℝ}
+    (F : I.LevelAvoidingJoinFamily n epsilon) (hn : 1 ≤ n)
+    {upper : ℝ} (hupper : 0 < upper) :
+    ∃ L : Later F hn, L.next.buffer ≤ upper := by
+  obtain ⟨T, hlater, hbuffer⟩ := exists_later_with_buffer_le F hn hupper
+  exact ⟨⟨T, hlater⟩, hbuffer⟩
 
 namespace Later
 

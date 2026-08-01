@@ -62,6 +62,26 @@ theorem circle_closedRegion_subset_inside :
   LevelAvoidingJoinFamily.closedRegion_synchronizedPolygonalCircle_subset_inside
     S.family.forgetObstacle S.one_le_level
 
+/-- The whole new polygonal carrier lies within one quarter of the stored
+buffer from the original Jordan curve.  This follows from the stronger
+closed-cell estimate retained by a recursive step, and is the metric input
+used by the eventual boundary-continuity argument. -/
+theorem circle_carrier_subset_cthickening_quarter :
+    S.circle.carrier ⊆ cthickening (S.buffer / 4) J.carrier := by
+  intro x hx
+  have hxUnion :=
+    S.family.forgetObstacle
+      |>.carrier_synchronizedPolygonalCircle_subset_iUnion_exactAuxiliaryCarrier
+        S.one_le_level hx
+  obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hxUnion
+  have hxClosure : x ∈ closure
+      (S.family.forgetObstacle.exactSynchronizedAuxiliaryJordanCircle a).inside := by
+    rw [(S.family.forgetObstacle.exactSynchronizedAuxiliaryJordanCircle a).closure_inside]
+    exact Or.inr hxa
+  have hxBall := S.cell_near a hxClosure
+  exact (closedBall_subset_cthickening
+    (J.curvePoint (I.levelArc a).left).2 (S.buffer / 4)) hxBall
+
 /-- Since the old polygonal disk is connected and avoids the new collar, it
 lies wholly on one side of that collar.  The remaining nesting argument only
 has to rule out the exterior alternative. -/
@@ -97,13 +117,28 @@ end RecursiveInsideCollarStep
 
 /-- Every polygonal disk already contained in the Jordan inside admits a
 recursive collar step beyond any prescribed subdivision level, with both
-carrier avoidance and closed-cell avoidance. -/
-theorem exists_recursiveInsideCollarStep_atLeast
+carrier avoidance and closed-cell avoidance.  Moreover, the separation
+buffer can be required to be no larger than an arbitrary positive scale.
+
+The upper bound is needed when these one-step choices are assembled into
+Moise's shrinking sequence.  It does not weaken the separation statement:
+after first obtaining a positive separating radius, we replace it by its
+minimum with `upper`. -/
+theorem exists_recursiveInsideCollarStep_atLeast_with_buffer_le
     (I : J.InitialAngularArcs) (P : PolygonalCircle)
-    (hPinside : P.closedRegion ⊆ J.inside) (lower : ℕ) :
-    ∃ S : I.RecursiveInsideCollarStep P, lower ≤ S.level := by
-  obtain ⟨buffer, hbuffer, hseparated⟩ :=
+    (hPinside : P.closedRegion ⊆ J.inside) (lower : ℕ)
+    {upper : ℝ} (hupper : 0 < upper) :
+    ∃ S : I.RecursiveInsideCollarStep P,
+      lower ≤ S.level ∧ S.buffer ≤ upper := by
+  obtain ⟨buffer₀, hbuffer₀, hseparated₀⟩ :=
     exists_thickening_carrier_disjoint_closedRegion P hPinside
+  let buffer := min buffer₀ upper
+  have hbuffer : 0 < buffer := lt_min hbuffer₀ hupper
+  have hbufferLe : buffer ≤ buffer₀ := min_le_left _ _
+  have hbufferUpper : buffer ≤ upper := min_le_right _ _
+  have hseparated : Disjoint P.closedRegion
+      (thickening buffer J.carrier) :=
+    hseparated₀.mono_right (thickening_mono hbufferLe J.carrier)
   have hquarter : 0 < buffer / 4 := by positivity
   obtain ⟨Ncarrier, hNcarrierPos, hNcarrier⟩ :=
     I.eventually_carrier_synchronizedPolygonalCircle_subset_thickening hquarter
@@ -141,7 +176,7 @@ theorem exists_recursiveInsideCollarStep_atLeast
         (ball_subset_thickening
           ((I.levelArc a).curveArcPlane_subset_carrier J
             (I.levelArc a).left_mem_curveArcPlane) buffer)
-  exact ⟨{
+  refine ⟨{
     buffer := buffer
     buffer_pos := hbuffer
     buffer_separation := hseparated
@@ -150,7 +185,20 @@ theorem exists_recursiveInsideCollarStep_atLeast
     family := G
     carrier_disjoint := hcarrierDisjoint
     cell_near := hNcell N hcellLevel F
-    cell_disjoint := hcellDisjoint }, hlower⟩
+    cell_disjoint := hcellDisjoint }, hlower, ?_⟩
+  exact hbufferUpper
+
+/-- Backwards-compatible one-step API.  The shrinking construction uses
+`exists_recursiveInsideCollarStep_atLeast_with_buffer_le`; callers that only
+need a later avoiding collar can continue to use this theorem. -/
+theorem exists_recursiveInsideCollarStep_atLeast
+    (I : J.InitialAngularArcs) (P : PolygonalCircle)
+    (hPinside : P.closedRegion ⊆ J.inside) (lower : ℕ) :
+    ∃ S : I.RecursiveInsideCollarStep P, lower ≤ S.level := by
+  obtain ⟨S, hlevel, _hbuffer⟩ :=
+    I.exists_recursiveInsideCollarStep_atLeast_with_buffer_le
+      P hPinside lower (upper := 1) one_pos
+  exact ⟨S, hlevel⟩
 
 /-- The unbounded version of `exists_recursiveInsideCollarStep_atLeast`,
 retained as the convenient one-step API. -/

@@ -24,6 +24,7 @@ import Schoenflies.OddWalkEdgeGraph
 import Schoenflies.CommonSegmentArrangement
 import Schoenflies.SegmentChainWalk
 import Schoenflies.CollarBandSegments
+import Schoenflies.NestedCollarStages
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
