@@ -34,6 +34,22 @@ theorem endpoint_ne (A : J.AccessibleAngularArc) :
     (right_mem_Icc.mpr A.left_lt_right.le) hparam
   exact A.left_lt_right.ne hangle
 
+/-- The data from an inside polygonal return arc that is actually consumed by
+the Chapter 9 separator argument.  The polygonal carrier is stored separately
+from its oriented path so generic-position arguments can use finite vertices
+while the topological argument uses the path parameter. -/
+structure InsideReturnArc (A : J.AccessibleAngularArc) where
+  permittedSet : Set Plane
+  path : Path (J.curvePoint A.right : Plane) (J.curvePoint A.left : Plane)
+  carrierBrokenLine : SimpleBrokenLine permittedSet
+    (J.curvePoint A.left : Plane) (J.curvePoint A.right : Plane)
+  path_injective : Injective path
+  segmentCarrier_eq_range :
+    carrierBrokenLine.data.segmentCarrier = range path
+  range_subset_insideCrosscutSet :
+    range path ⊆
+      J.insideCrosscutSet (J.curvePoint A.left) (J.curvePoint A.right)
+
 /-- A chosen simple polygonal return arc through the inside of `J`. -/
 noncomputable def returnBrokenLine (A : J.AccessibleAngularArc) :
     SimpleBrokenLine
@@ -74,6 +90,26 @@ theorem range_returnPath_subset_insideCrosscutSet
       J.insideCrosscutSet (J.curvePoint A.left) (J.curvePoint A.right) := by
   rw [returnPath, Path.symm_range]
   exact A.returnBrokenLine.range_toPath_subset A.endpoint_ne
+
+/-- Package the original arbitrary inside crosscut behind the stable return
+arc interface. -/
+noncomputable def insideReturnArc (A : J.AccessibleAngularArc) :
+    A.InsideReturnArc where
+  permittedSet :=
+    J.insideCrosscutSet (J.curvePoint A.left) (J.curvePoint A.right)
+  path := A.returnPath
+  carrierBrokenLine := A.returnCarrierBrokenLine
+  path_injective := A.returnPath_injective
+  segmentCarrier_eq_range := A.segmentCarrier_returnCarrierBrokenLine
+  range_subset_insideCrosscutSet :=
+    A.range_returnPath_subset_insideCrosscutSet
+
+@[simp] theorem insideReturnArc_path (A : J.AccessibleAngularArc) :
+    A.insideReturnArc.path = A.returnPath := rfl
+
+@[simp] theorem insideReturnArc_carrierBrokenLine
+    (A : J.AccessibleAngularArc) :
+    A.insideReturnArc.carrierBrokenLine = A.returnCarrierBrokenLine := rfl
 
 /-- The wild boundary subarc and the polygonal return arc have no accidental
 intersection in their interiors. -/

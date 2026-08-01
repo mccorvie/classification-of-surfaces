@@ -115,6 +115,26 @@ theorem range_hairReturnPath_subset (A : J.AccessibleAngularArc)
   rw [hairReturnPath, Path.symm_range]
   exact (A.hairReturnBrokenLine HL HR).range_toPath_subset A.endpoint_ne
 
+/-- The resolved finite carrier of the prescribed-hair return path. -/
+noncomputable def hairReturnCarrierBrokenLine
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    SimpleBrokenLine (A.hairReturnSet HL HR)
+      (J.curvePoint A.left : Plane) (J.curvePoint A.right : Plane) :=
+  (A.hairReturnBrokenLine HL HR).carrierBrokenLine A.endpoint_ne
+
+theorem segmentCarrier_hairReturnCarrierBrokenLine
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    (A.hairReturnCarrierBrokenLine HL HR).data.segmentCarrier =
+      range (A.hairReturnPath HL HR) := by
+  rw [hairReturnCarrierBrokenLine,
+    (A.hairReturnBrokenLine HL HR).segmentCarrier_carrierBrokenLine
+      A.endpoint_ne,
+    hairReturnPath, Path.symm_range]
+
 theorem hairMiddle_segmentCarrier_subset_inside
     (A : J.AccessibleAngularArc)
     (HL : J.InsideAccessHair (J.curvePoint A.left))
@@ -124,6 +144,44 @@ theorem hairMiddle_segmentCarrier_subset_inside
   rw [BrokenLineData.segmentCarrier, mem_iUnion] at hx
   obtain ⟨i, hi⟩ := hx
   exact (A.hairMiddleBrokenLine HL HR).segment_subset i hi
+
+/-- The prescribed-hair construction is a valid input to the same separator
+pipeline as the original arbitrary inside crosscut. -/
+noncomputable def prescribedInsideReturnArc
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    A.InsideReturnArc where
+  permittedSet := A.hairReturnSet HL HR
+  path := A.hairReturnPath HL HR
+  carrierBrokenLine := A.hairReturnCarrierBrokenLine HL HR
+  path_injective := A.hairReturnPath_injective HL HR
+  segmentCarrier_eq_range :=
+    A.segmentCarrier_hairReturnCarrierBrokenLine HL HR
+  range_subset_insideCrosscutSet := by
+    intro x hx
+    rcases A.range_hairReturnPath_subset HL HR hx with
+      (hxLeft | hxMiddle) | hxRight
+    · rcases HL.carrier_subset hxLeft with hxInside | hxBase
+      · exact Or.inl hxInside
+      · exact Or.inr (Or.inl (mem_singleton_iff.mp hxBase))
+    · exact Or.inl (A.hairMiddle_segmentCarrier_subset_inside HL HR hxMiddle)
+    · rcases HR.carrier_subset hxRight with hxInside | hxBase
+      · exact Or.inl hxInside
+      · exact Or.inr (Or.inr hxBase)
+
+@[simp] theorem prescribedInsideReturnArc_path
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    (A.prescribedInsideReturnArc HL HR).path = A.hairReturnPath HL HR := rfl
+
+@[simp] theorem prescribedInsideReturnArc_carrierBrokenLine
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    (A.prescribedInsideReturnArc HL HR).carrierBrokenLine =
+      A.hairReturnCarrierBrokenLine HL HR := rfl
 
 /-- The prescribed-hair return meets the original Jordan carrier only at the
 two boundary endpoints. -/
