@@ -126,14 +126,8 @@ theorem spherePreMap_eq_of_gluingRel
     {x y : sphere.PolygonalPreRealization}
     (hxy : sphere.PolygonalGluingRel sphere_occurrencePairingValid x y) :
     spherePreMap x = spherePreMap y := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      (sphere.polygonalIdentifications sphere_occurrencePairingValid)) x y at hxy
-  induction hxy with
-  | rel _ _ h => exact spherePreMap_eq_of_generator h
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ hxy hyz => exact hxy.trans hyz
+  exact eqvGen_map_of_generator_to_equiv spherePreMap
+    (fun _ _ h => spherePreMap_eq_of_generator h) hxy
 
 /-- The continuous sphere map descended from the two monogon faces to their polygonal quotient. -/
 noncomputable def sphereQuotientMap :
