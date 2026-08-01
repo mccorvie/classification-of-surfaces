@@ -33,6 +33,24 @@ lake build
 
 The public classification proof is complete and contains no `sorry`.
 
+## Reusable API
+
+Import the package API module and use the indexed normal-form theorem when the exact nested
+Lean-Eval conclusion is not required:
+
+```lean
+import ClassificationOfSurfaces.API
+
+open LeanEval.Topology.ClassificationOfSurfaces
+
+#check exists_homeomorphic_normalForm
+#check classification_of_surfaces
+```
+
+`exists_homeomorphic_normalForm` returns an admissible `NormalForm` together with a homeomorphism
+to `NormalForm.Representative`. The original `classification_of_surfaces` statement remains
+available unchanged for Lean-Eval compatibility.
+
 ## Architecture
 
 The proof is organized around the faithful finite-cyclic polygonal-realization handoff:

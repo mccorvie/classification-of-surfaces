@@ -112,3 +112,15 @@ Decision: use `GeometricTriangulation.toFiniteCyclicPresentation` and
 
 Reason: the finite-cyclic presentation retains exactly the signed boundary data used by
 normalization, and its realization is proved homeomorphic to the source geometric triangulation.
+
+### D9. Indexed Classification Interface
+
+Decision: expose classification primarily as an admissible `NormalForm` together with a
+homeomorphism to `NormalForm.Representative`. Keep the exact nested Lean-Eval disjunction as a
+compatibility theorem derived by case analysis on that index.
+
+Reason: downstream proofs can transport across one uniform representative family without
+repeating the sphere/orientable/nonorientable case split, while the benchmark statement and its
+established theorem names remain unchanged.
+
+Status: accepted.

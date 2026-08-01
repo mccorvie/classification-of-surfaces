@@ -1009,6 +1009,7 @@ polygonal pairing.  Apply
 \begin{definition}[Certified finite-cyclic normalization result]
 \label{moise:def:normal_form_witness}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.IsEvalAdmissible,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.Representative,
   LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.NormalizationResult}
 \leanok
 \uses{moise:def:canonical_normal_form_complexes,moise:def:gx_elementary_moves}
@@ -1040,7 +1041,8 @@ existing canonical presentation.
 \label{moise:lem:canonical_endpoint_realizations}
 \lean{LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalSphereRealizationHomeomorph,
   LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalOrientableRealizationHomeomorph,
-  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalNonOrientableRealizationHomeomorph}
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalNonOrientableRealizationHomeomorph,
+  LeanEval.Topology.ClassificationOfSurfaces.NormalForm.canonicalRealizationHomeomorph}
 \leanok
 \uses{moise:def:eval_quotient_representatives,
   moise:def:canonical_normal_form_complexes,
@@ -1061,7 +1063,8 @@ one-face word and compose that quotient congruence with
 
 \begin{lemma}[Finite-cyclic presentation gives an Eval branch]
 \label{moise:lem:normal_form_witness_eval_branch}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.hasEvalRepresentative}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.exists_homeomorphic_normalForm,
+  LeanEval.Topology.ClassificationOfSurfaces.FiniteCyclicPresentation.hasEvalRepresentative}
 \leanok
 \uses{moise:def:normal_form_witness,moise:thm:gx_normal_form,
   moise:lem:canonical_endpoint_realizations}
@@ -1081,7 +1084,9 @@ supplies the positivity side conditions.
 
 \begin{theorem}[Topological classification of compact Eval surfaces]
 \label{moise:thm:eval_classification_of_surfaces}
-\lean{LeanEval.Topology.ClassificationOfSurfaces.classification_of_surfaces, LeanEval.Topology.ClassificationOfSurfaces.topological_classification_of_surfaces}
+\lean{LeanEval.Topology.ClassificationOfSurfaces.exists_homeomorphic_normalForm,
+  LeanEval.Topology.ClassificationOfSurfaces.classification_of_surfaces,
+  LeanEval.Topology.ClassificationOfSurfaces.topological_classification_of_surfaces}
 \leanok
 \uses{moise:thm:compact_surface_cellulable,
   moise:lem:normal_form_witness_eval_branch}
