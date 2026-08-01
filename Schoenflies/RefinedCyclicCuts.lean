@@ -460,6 +460,214 @@ theorem cutRun_edgePoint_inside_or_endpoint {n : ℕ}
       hcarrier hvertices i hxOpen).mpr
     exact hrun q haq hqb
 
+/-- The two parameter tails separated by a nonempty middle interval have
+disjoint images under the injective return path. -/
+theorem disjoint_firstTail_lastTail
+    (A : J.AccessibleAngularArc) {s t : unitInterval} (hst : s < t) :
+    Disjoint
+      (A.returnPath '' Icc (⊥ : unitInterval) s)
+      (A.returnPath '' Icc t (⊤ : unitInterval)) := by
+  rw [Set.disjoint_left]
+  intro x hxFirst hxLast
+  obtain ⟨u, hu, hux⟩ := hxFirst
+  obtain ⟨v, hv, hvx⟩ := hxLast
+  have huv : u = v := A.returnPath_injective (hux.trans hvx.symm)
+  subst v
+  exact (not_le_of_gt hst) (hv.1.trans hu.2)
+
+/-- Distinct first-tail marks on two auxiliary-circle crossings force the
+crossings to lie on opposite endpoint tails of the return path. -/
+theorem cutVertices_of_distinct_firstTailMarks_lie_on_opposite_tails
+    {n : ℕ} (A : J.AccessibleAngularArc) (Q K : PolygonalCircle)
+    (hcarrier : K.carrier = Q.carrier) (start : ZMod K.n)
+    (T : Finset unitInterval) {s t : unitInterval} (hst : s < t)
+    (hMiddleExterior : A.returnPath '' Icc s t ⊆ Q.exteriorRegion)
+    (hT : ∀ u, u ∈ T ↔ A.returnPath u ∈ Q.carrier)
+    (hintersections :
+      Q.carrier ∩ A.auxiliaryJordanCircle.carrier ⊆
+        A.returnPath '' Icc (⊥ : unitInterval) s ∪
+          A.returnPath '' Icc t (⊤ : unitInterval))
+    {a b : Fin (n + 1)}
+    (haAux : cutVertex K start a ∈ A.auxiliaryJordanCircle.carrier)
+    (hbAux : cutVertex K start b ∈ A.auxiliaryJordanCircle.carrier)
+    (hmark : A.cutFirstTailMark K start T s a ≠
+      A.cutFirstTailMark K start T s b) :
+    ((cutVertex K start a ∈
+          A.returnPath '' Icc (⊥ : unitInterval) s ∧
+        cutVertex K start b ∈
+          A.returnPath '' Icc t (⊤ : unitInterval)) ∨
+      (cutVertex K start a ∈
+          A.returnPath '' Icc t (⊤ : unitInterval) ∧
+        cutVertex K start b ∈
+          A.returnPath '' Icc (⊥ : unitInterval) s)) := by
+  have hsExterior : A.returnPath s ∈ Q.exteriorRegion :=
+    hMiddleExterior ⟨s, ⟨le_rfl, hst.le⟩, rfl⟩
+  have hsNotCarrier : A.returnPath s ∉ Q.carrier := by
+    intro hsCarrier
+    exact Set.disjoint_left.mp Q.disjoint_carrier_exteriorRegion
+      hsCarrier hsExterior
+  have haQ : cutVertex K start a ∈ Q.carrier := by
+    rw [← hcarrier]
+    exact K.vertex_mem_carrier (cutEdgeIndex K start a)
+  have hbQ : cutVertex K start b ∈ Q.carrier := by
+    rw [← hcarrier]
+    exact K.vertex_mem_carrier (cutEdgeIndex K start b)
+  have haTails := hintersections ⟨haQ, haAux⟩
+  have hbTails := hintersections ⟨hbQ, hbAux⟩
+  have haMarkIff :=
+    A.cutFirstTailMark_eq_true_iff_mem_firstTail Q K start T s
+      hT hsNotCarrier a haQ
+  have hbMarkIff :=
+    A.cutFirstTailMark_eq_true_iff_mem_firstTail Q K start T s
+      hT hsNotCarrier b hbQ
+  have hdisjoint := A.disjoint_firstTail_lastTail hst
+  rcases haTails with haFirst | haLast
+  · rcases hbTails with hbFirst | hbLast
+    · have haTrue := haMarkIff.mpr haFirst
+      have hbTrue := hbMarkIff.mpr hbFirst
+      exact False.elim (hmark (haTrue.trans hbTrue.symm))
+    · exact Or.inl ⟨haFirst, hbLast⟩
+  · rcases hbTails with hbFirst | hbLast
+    · exact Or.inr ⟨haLast, hbFirst⟩
+    · have haNotFirst : cutVertex K start a ∉
+          A.returnPath '' Icc (⊥ : unitInterval) s :=
+        fun haFirst => Set.disjoint_left.mp hdisjoint haFirst haLast
+      have hbNotFirst : cutVertex K start b ∉
+          A.returnPath '' Icc (⊥ : unitInterval) s :=
+        fun hbFirst => Set.disjoint_left.mp hdisjoint hbFirst hbLast
+      have haFalse : A.cutFirstTailMark K start T s a = false :=
+        Bool.eq_false_of_not_eq_true (fun haTrue =>
+          haNotFirst (haMarkIff.mp haTrue))
+      have hbFalse : A.cutFirstTailMark K start T s b = false :=
+        Bool.eq_false_of_not_eq_true (fun hbTrue =>
+          hbNotFirst (hbMarkIff.mp hbTrue))
+      exact False.elim (hmark (haFalse.trans hbFalse.symm))
+
+/-- A true run in the linear cut is itself a broken-line join through the
+auxiliary inside, allowing only its two crossing endpoints on the boundary. -/
+theorem joinedByBrokenLine_cutRun {n : ℕ}
+    (A : J.AccessibleAngularArc) (Q K : PolygonalCircle)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    (hcarrier : K.carrier = Q.carrier)
+    (hvertices : ∀ p ∈ Q.carrier ∩ range A.returnPath,
+      K.IsVertexPoint p)
+    (hpolygonVertices : ∀ (i : ZMod Q.n)
+        (j : Fin A.returnCarrierBrokenLine.data.n),
+      planeDet
+        (A.returnCarrierBrokenLine.data.vertex j.castSucc - Q.vertex i)
+        (A.returnCarrierBrokenLine.data.vertex j.succ -
+          A.returnCarrierBrokenLine.data.vertex j.castSucc) ≠ 0)
+    (hbrokenVertices : ∀ (i : ZMod Q.n)
+        (j : Fin (A.returnCarrierBrokenLine.data.n + 1)),
+      planeDet
+        (A.returnCarrierBrokenLine.data.vertex j - Q.vertex i)
+        (Q.vertex (i + 1) - Q.vertex i) ≠ 0)
+    (start : ZMod K.n)
+    (hstartPrev : A.refinedEdgeInside K (start - 1) = false)
+    {a b : Fin (n + 1)} (hab : a < b)
+    (hrun : ∀ q : Fin (n + 1), a ≤ q → q < b →
+      A.cutRefinedEdgeSide K start q = true) :
+    JoinedByBrokenLine
+      ((A.auxiliaryJordanCircle.inside ∩ K.carrier) ∪
+        {cutVertex K start a, cutVertex K start b})
+      (cutVertex K start a) (cutVertex K start b) := by
+  let k := b.val - a.val
+  let qAt : Fin (k + 1) → Fin (n + 1) := fun j =>
+    ⟨a.val + j.val, by
+      change a.val < b.val at hab
+      omega⟩
+  have hqZero : qAt 0 = a := by
+    apply Fin.ext
+    simp [qAt]
+  have hqLast : qAt (Fin.last k) = b := by
+    apply Fin.ext
+    simp only [qAt, Fin.val_last, k]
+    change a.val < b.val at hab
+    omega
+  refine ⟨k, (fun j => cutVertex K start (qAt j)), ?_, ?_, ?_⟩
+  · change cutVertex K start (qAt 0) = cutVertex K start a
+    rw [hqZero]
+  · change cutVertex K start (qAt (Fin.last k)) = cutVertex K start b
+    rw [hqLast]
+  · intro i x hx
+    have hqA : a ≤ qAt i.castSucc := by
+      change a.val ≤ a.val + i.val
+      omega
+    have hqB : qAt i.castSucc < b := by
+      change a.val + i.val < b.val
+      have hi : i.val < b.val - a.val := i.isLt
+      omega
+    have hindex : cutEdgeIndex K start (qAt i.succ) =
+        cutEdgeIndex K start (qAt i.castSucc) + 1 := by
+      simp only [cutEdgeIndex, qAt, Fin.val_succ, Fin.val_castSucc]
+      push_cast
+      abel
+    have hxEdge : x ∈ K.edgeSegment
+        (cutEdgeIndex K start (qAt i.castSucc)) := by
+      rw [PolygonalCircle.edgeSegment]
+      simpa only [cutVertex, hindex] using hx
+    rcases A.cutRun_edgePoint_inside_or_endpoint Q K hArcInside
+        hcarrier hvertices hpolygonVertices hbrokenVertices start hstartPrev
+        hab hrun (qAt i.castSucc) hqA hqB x hxEdge with hxa | hxb | hxInside
+    · exact Or.inr (by simp [hxa])
+    · exact Or.inr (by simp [hxb])
+    · exact Or.inl ⟨hxInside,
+        K.edgeSegment_subset_carrier
+          (cutEdgeIndex K start (qAt i.castSucc)) hxEdge⟩
+
+/-- The odd tail parity package produces a polygonal join through the
+auxiliary inside from the first return-path tail to the last one. -/
+theorem exists_inside_brokenLine_between_returnTails {n : ℕ}
+    (A : J.AccessibleAngularArc) (Q K : PolygonalCircle)
+    (hsize : n + 1 = K.n)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    (hcarrier : K.carrier = Q.carrier)
+    (hvertices : ∀ p ∈ Q.carrier ∩ range A.returnPath,
+      K.IsVertexPoint p)
+    (hpolygonVertices : ∀ (i : ZMod Q.n)
+        (j : Fin A.returnCarrierBrokenLine.data.n),
+      planeDet
+        (A.returnCarrierBrokenLine.data.vertex j.castSucc - Q.vertex i)
+        (A.returnCarrierBrokenLine.data.vertex j.succ -
+          A.returnCarrierBrokenLine.data.vertex j.castSucc) ≠ 0)
+    (hbrokenVertices : ∀ (i : ZMod Q.n)
+        (j : Fin (A.returnCarrierBrokenLine.data.n + 1)),
+      planeDet
+        (A.returnCarrierBrokenLine.data.vertex j - Q.vertex i)
+        (Q.vertex (i + 1) - Q.vertex i) ≠ 0)
+    (start : ZMod K.n)
+    (hstartPrev : A.refinedEdgeInside K (start - 1) = false)
+    (hstart : A.refinedEdgeInside K start = true)
+    (T : Finset unitInterval) {s t : unitInterval} (hst : s < t)
+    (hMiddleExterior : A.returnPath '' Icc s t ⊆ Q.exteriorRegion)
+    (hT : ∀ u, u ∈ T ↔ A.returnPath u ∈ Q.carrier)
+    (hodd : Odd ((T.filter fun u => u < s).card))
+    (hintersections :
+      Q.carrier ∩ A.auxiliaryJordanCircle.carrier ⊆
+        A.returnPath '' Icc (⊥ : unitInterval) s ∪
+          A.returnPath '' Icc t (⊤ : unitInterval)) :
+    ∃ p q : Plane,
+      p ∈ A.returnPath '' Icc (⊥ : unitInterval) s ∧
+        q ∈ A.returnPath '' Icc t (⊤ : unitInterval) ∧
+        JoinedByBrokenLine
+          ((A.auxiliaryJordanCircle.inside ∩ K.carrier) ∪ {p, q}) p q := by
+  obtain ⟨a, b, hab, haAux, hbAux, hmark, _haTrue, _hbFalse, hrun⟩ :=
+    A.exists_mixedTail_inside_cutRun Q K hsize hArcInside hcarrier
+      hvertices hpolygonVertices hbrokenVertices start hstartPrev hstart
+      T s hT hodd
+  have hopposite :=
+    A.cutVertices_of_distinct_firstTailMarks_lie_on_opposite_tails
+      Q K hcarrier start T hst hMiddleExterior hT hintersections
+      haAux hbAux hmark
+  have hjoin := A.joinedByBrokenLine_cutRun Q K hArcInside hcarrier
+    hvertices hpolygonVertices hbrokenVertices start hstartPrev hab hrun
+  rcases hopposite with ⟨haFirst, hbLast⟩ | ⟨haLast, hbFirst⟩
+  · exact ⟨cutVertex K start a, cutVertex K start b,
+      haFirst, hbLast, hjoin⟩
+  · refine ⟨cutVertex K start b, cutVertex K start a,
+      hbFirst, haLast, ?_⟩
+    simpa only [Set.pair_comm] using hjoin.symm
+
 /-- A generic refined separator that meets the return path has a cyclic
 outside-to-inside edge transition at which to make the linear cut. -/
 theorem exists_refined_false_true_transition
