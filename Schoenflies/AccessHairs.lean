@@ -1,0 +1,231 @@
+import Schoenflies.BoundaryPartitions
+
+/-!
+# Short disjoint access hairs
+
+Moise 9.4 repeatedly shortens the straight access intervals supplied by
+linear accessibility.  This file isolates the local shortening lemma.  It is
+strong enough to put the whole shortened interval in any prescribed open
+neighborhood of its boundary endpoint.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function AffineMap
+
+namespace JordanCircle
+
+variable (J : JordanCircle)
+
+/-- A nondegenerate straight access hair based at `q`, contained in the
+inside except at its base point. -/
+structure InsideAccessHair (q : Plane) where
+  tip : Plane
+  tip_ne_base : tip ≠ q
+  carrier_subset : segment ℝ q tip ⊆ J.inside ∪ {q}
+  open_carrier_subset : openSegment ℝ q tip ⊆ J.inside
+
+namespace InsideAccessHair
+
+variable {J : JordanCircle} {q : Plane}
+
+def carrier (H : J.InsideAccessHair q) : Set Plane := segment ℝ q H.tip
+
+theorem base_mem (H : J.InsideAccessHair q) : q ∈ H.carrier :=
+  left_mem_segment ℝ q H.tip
+
+theorem tip_mem (H : J.InsideAccessHair q) : H.tip ∈ H.carrier :=
+  right_mem_segment ℝ q H.tip
+
+theorem isCompact_carrier (H : J.InsideAccessHair q) : IsCompact H.carrier := by
+  rw [carrier, segment_eq_image_lineMap]
+  exact isCompact_Icc.image (continuous_const.lineMap continuous_const continuous_id)
+
+theorem isClosed_carrier (H : J.InsideAccessHair q) : IsClosed H.carrier :=
+  H.isCompact_carrier.isClosed
+
+/-- An inside hair meets the Jordan curve only at its base point. -/
+theorem carrier_inter_curve (H : J.InsideAccessHair q) (hq : q ∈ J.carrier) :
+    H.carrier ∩ J.carrier = {q} := by
+  ext x
+  constructor
+  · rintro ⟨hxH, hxJ⟩
+    rcases H.carrier_subset hxH with hxI | hxq
+    · exact False.elim ((J.inside_subset_compl hxI) hxJ)
+    · exact hxq
+  · intro hx
+    have hxq : x = q := mem_singleton_iff.mp hx
+    subst x
+    exact ⟨H.base_mem, hq⟩
+
+end InsideAccessHair
+
+/-- A linearly accessible point has an access hair lying in every prescribed
+open neighborhood of that point. -/
+theorem exists_insideAccessHair_subset_open {q : Plane}
+    (hq : q ∈ J.insideLinearlyAccessiblePoints) {U : Set Plane}
+    (hU : IsOpen U) (hqU : q ∈ U) :
+    ∃ H : J.InsideAccessHair q, H.carrier ⊆ U := by
+  obtain ⟨hqCarrier, p, hpInside, hpq⟩ := hq
+  obtain ⟨r, hr, hball⟩ := Metric.isOpen_iff.mp hU q hqU
+  have hpq_ne : p ≠ q := by
+    intro heq
+    exact (J.inside_subset_compl hpInside) (heq ▸ hqCarrier)
+  have hqp_ne : q ≠ p := hpq_ne.symm
+  have hd : 0 < dist q p := dist_pos.mpr hqp_ne
+  let t : ℝ := min (1 / 2) (r / (2 * dist q p))
+  have htpos : 0 < t := by
+    dsimp [t]
+    exact lt_min (by norm_num) (div_pos hr (mul_pos two_pos hd))
+  have htlt : t < 1 :=
+    lt_of_le_of_lt (min_le_left _ _) (by norm_num)
+  have htdist : t * dist q p < r := by
+    have htbound : t ≤ r / (2 * dist q p) := min_le_right _ _
+    have hdnonneg : 0 ≤ dist q p := dist_nonneg
+    calc
+      t * dist q p ≤ (r / (2 * dist q p)) * dist q p :=
+        mul_le_mul_of_nonneg_right htbound hdnonneg
+      _ = r / 2 := by field_simp [hd.ne']
+      _ < r := by linarith
+  let w : Plane := lineMap q p t
+  have hwBall : w ∈ ball q r := by
+    rw [mem_ball, show w = lineMap q p t from rfl,
+      dist_lineMap_left, Real.norm_eq_abs, abs_of_pos htpos]
+    exact htdist
+  have hwInside : w ∈ J.inside := by
+    apply hpq
+    rw [openSegment_symm]
+    exact lineMap_mem_openSegment ℝ q p ⟨htpos, htlt⟩
+  have hqBall : q ∈ ball q r := mem_ball_self hr
+  have hsegmentBall : segment ℝ q w ⊆ ball q r :=
+    (convex_ball q r).segment_subset hqBall hwBall
+  have hwne : w ≠ q := by
+    intro hwq
+    have hzero : dist w q = 0 := by rw [hwq, dist_self]
+    rw [show w = lineMap q p t from rfl, dist_lineMap_left,
+      Real.norm_eq_abs, abs_of_pos htpos] at hzero
+    nlinarith [hd]
+  have hopenInside : openSegment ℝ q w ⊆ J.inside := by
+    intro z hz
+    rw [openSegment_eq_image_lineMap] at hz
+    obtain ⟨s, hs, rfl⟩ := hz
+    have hst : s * t ∈ Ioo (0 : ℝ) 1 := by
+      constructor
+      · exact mul_pos hs.1 htpos
+      · calc
+          s * t < 1 * t := mul_lt_mul_of_pos_right hs.2 htpos
+          _ = t := one_mul t
+          _ < 1 := htlt
+    have hcompose : lineMap q w s = lineMap q p (s * t) := by
+      simp only [w, lineMap_apply_module]
+      module
+    rw [hcompose]
+    apply hpq
+    rw [openSegment_symm]
+    exact lineMap_mem_openSegment ℝ q p hst
+  let H : J.InsideAccessHair q :=
+    { tip := w
+      tip_ne_base := hwne
+      carrier_subset := by
+        intro z hz
+        rw [← insert_endpoints_openSegment] at hz
+        rcases hz with hz | hz | hz
+        · exact Or.inr (mem_singleton_iff.mpr hz)
+        · exact Or.inl (hz ▸ hwInside)
+        · exact Or.inl (hopenInside hz)
+      open_carrier_subset := hopenInside }
+  exact ⟨H, hsegmentBall.trans hball⟩
+
+/-- Pairwise-disjoint straight hairs based at a finite family of distinct
+linearly accessible points. -/
+structure InsideHairFamily (ι : Type*) [Fintype ι] (anchor : ι → Plane) where
+  hair : ∀ i, J.InsideAccessHair (anchor i)
+  pairwise_disjoint : Pairwise fun i j => Disjoint (hair i).carrier (hair j).carrier
+
+/-- Moise 9.4 at one finite stage: shorten each available access interval
+inside a disjoint open neighborhood of its base point. -/
+theorem exists_pairwiseDisjoint_insideHairFamily
+    {ι : Type*} [Fintype ι] {anchor : ι → Plane}
+    (hanchor : Injective anchor)
+    (haccessible : ∀ i, anchor i ∈ J.insideLinearlyAccessiblePoints) :
+    Nonempty (J.InsideHairFamily ι anchor) := by
+  classical
+  have hfinite : (range anchor).Finite := finite_range anchor
+  obtain ⟨U, hU, hdisjoint⟩ := hfinite.t2_separation
+  have hexists : ∀ i, ∃ H : J.InsideAccessHair (anchor i), H.carrier ⊆ U (anchor i) := by
+    intro i
+    exact J.exists_insideAccessHair_subset_open (haccessible i)
+      (hU (anchor i)).2 (hU (anchor i)).1
+  choose H hH using hexists
+  refine ⟨{ hair := H, pairwise_disjoint := ?_ }⟩
+  intro i j hij
+  apply (hdisjoint (mem_range_self i) (mem_range_self j) (hanchor.ne hij)).mono
+    (hH i) (hH j)
+
+/-- The recursive output shape of Moise 9.4: hairs for new base points,
+pairwise disjoint and disjoint from every retained old hair. -/
+structure InsideHairExtension
+    (ι κ : Type*) [Fintype ι] [Fintype κ]
+    (oldAnchor : ι → Plane) (newAnchor : κ → Plane)
+    (old : J.InsideHairFamily ι oldAnchor) where
+  newHair : ∀ j, J.InsideAccessHair (newAnchor j)
+  new_pairwise_disjoint :
+    Pairwise fun i j => Disjoint (newHair i).carrier (newHair j).carrier
+  old_new_disjoint :
+    ∀ i j, Disjoint (old.hair i).carrier (newHair j).carrier
+
+/-- New accessible base points can be equipped with short hairs without
+altering a finite retained family. -/
+theorem exists_insideHairExtension
+    {ι κ : Type*} [Fintype ι] [Fintype κ]
+    {oldAnchor : ι → Plane} {newAnchor : κ → Plane}
+    (holdCarrier : ∀ i, oldAnchor i ∈ J.carrier)
+    (hnewCarrier : ∀ j, newAnchor j ∈ J.carrier)
+    (hnewInjective : Injective newAnchor)
+    (hcross : ∀ i j, oldAnchor i ≠ newAnchor j)
+    (haccessible : ∀ j, newAnchor j ∈ J.insideLinearlyAccessiblePoints)
+    (old : J.InsideHairFamily ι oldAnchor) :
+    Nonempty (J.InsideHairExtension ι κ oldAnchor newAnchor old) := by
+  classical
+  let C : Set Plane := ⋃ i, (old.hair i).carrier
+  have hCclosed : IsClosed C := by
+    dsimp [C]
+    exact isClosed_iUnion_of_finite fun i => (old.hair i).isClosed_carrier
+  have hnewC : ∀ j, newAnchor j ∉ C := by
+    intro j hj
+    change newAnchor j ∈ ⋃ i, (old.hair i).carrier at hj
+    rw [mem_iUnion] at hj
+    obtain ⟨i, hi⟩ := hj
+    have hinter : newAnchor j ∈ (old.hair i).carrier ∩ J.carrier :=
+      ⟨hi, hnewCarrier j⟩
+    rw [(old.hair i).carrier_inter_curve (holdCarrier i)] at hinter
+    exact hcross i j (mem_singleton_iff.mp hinter).symm
+  have hfinite : (range newAnchor).Finite := finite_range newAnchor
+  obtain ⟨U, hU, hUsep⟩ := hfinite.t2_separation
+  let V : κ → Set Plane := fun j => U (newAnchor j) ∩ Cᶜ
+  have hVopen : ∀ j, IsOpen (V j) := fun j =>
+    (hU (newAnchor j)).2.inter hCclosed.isOpen_compl
+  have hVmem : ∀ j, newAnchor j ∈ V j := fun j =>
+    ⟨(hU (newAnchor j)).1, hnewC j⟩
+  have hexists : ∀ j, ∃ H : J.InsideAccessHair (newAnchor j), H.carrier ⊆ V j := by
+    intro j
+    exact J.exists_insideAccessHair_subset_open (haccessible j) (hVopen j) (hVmem j)
+  choose H hH using hexists
+  refine ⟨{
+    newHair := H
+    new_pairwise_disjoint := ?_
+    old_new_disjoint := ?_ }⟩
+  · intro i j hij
+    apply (hUsep (mem_range_self i) (mem_range_self j)
+      (hnewInjective.ne hij)).mono
+    · exact (hH i).trans inter_subset_left
+    · exact (hH j).trans inter_subset_left
+  · intro i j
+    rw [Set.disjoint_left]
+    intro x hxi hxj
+    have hxiC : x ∈ C := mem_iUnion_of_mem i hxi
+    exact ((hH j hxj).2) hxiC
+
+end JordanCircle
+
+end Schoenflies

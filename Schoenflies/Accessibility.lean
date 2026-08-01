@@ -1,0 +1,224 @@
+import Schoenflies.JordanRegions
+import ClassificationOfSurfaces.Moise.BrokenLine
+import Mathlib.Analysis.Convex.StrictConvexSpace
+import Mathlib.Topology.MetricSpace.HausdorffDistance
+
+/-!
+# Accessible points of a Jordan curve
+
+This file proves the accessible-point density needed in Moise Chapter 9 by a
+nearest-point argument.  If `p` lies in a complementary component and `q` is a
+nearest point of the compact curve, the open segment from `p` to `q` cannot
+meet the curve.  Consequently it stays in the component of `p`.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+
+namespace JordanCircle
+
+variable (J : JordanCircle)
+
+private theorem carrier_isCompact : IsCompact J.carrier :=
+  JordanCurve.jordanCurve_isCompact J.parametrization J.continuous
+
+private theorem carrier_nonempty : J.carrier.Nonempty := by
+  obtain ⟨z, hz⟩ : (sphere (0 : Plane) 1).Nonempty :=
+    NormedSpace.sphere_nonempty.mpr zero_le_one
+  exact ⟨J.parametrization ⟨z, hz⟩, ⟨⟨z, hz⟩, rfl⟩⟩
+
+/-- A nearest point of the Jordan curve to any point of the plane. -/
+theorem exists_nearest_carrier_point (p : Plane) :
+    ∃ q ∈ J.carrier, ∀ z ∈ J.carrier, dist p q ≤ dist p z := by
+  obtain ⟨q, hq, hmin⟩ := J.carrier_isCompact.exists_isMinOn
+    J.carrier_nonempty (continuous_const.dist continuous_id).continuousOn
+  exact ⟨q, hq, hmin⟩
+
+/-- The open segment to a nearest point of a closed Jordan curve misses the
+curve. -/
+theorem openSegment_nearest_disjoint_carrier {p q : Plane}
+    (hp : p ∈ J.carrierᶜ) (hq : q ∈ J.carrier)
+    (hmin : ∀ z ∈ J.carrier, dist p q ≤ dist p z) :
+    Disjoint (openSegment ℝ p q) J.carrier := by
+  rw [Set.disjoint_left]
+  intro y hySeg hyJ
+  have hpq : p ≠ q := fun h => hp (h ▸ hq)
+  have hpBall : p ∈ closedBall p (dist p q) := by simp
+  have hqBall : q ∈ closedBall p (dist p q) := by simp [dist_comm]
+  have hyBall := openSegment_subset_ball_of_ne hpBall hqBall hpq hySeg
+  exact (not_lt_of_ge (hmin y hyJ)) (show dist p y < dist p q by
+    simpa [dist_comm] using hyBall)
+
+/-- Every point of the open segment from a complementary point to a nearest
+curve point lies in the same complementary component. -/
+theorem openSegment_nearest_subset_component {p q : Plane}
+    (hp : p ∈ J.carrierᶜ) (hq : q ∈ J.carrier)
+    (hmin : ∀ z ∈ J.carrier, dist p q ≤ dist p z) :
+    openSegment ℝ p q ⊆ connectedComponentIn J.carrierᶜ p := by
+  intro y hy
+  have hpq : p ≠ q := fun h => hp (h ▸ hq)
+  have hpBall : p ∈ closedBall p (dist p q) := by simp
+  have hqBall : q ∈ closedBall p (dist p q) := by simp [dist_comm]
+  have hopenSub : openSegment ℝ p q ⊆ J.carrierᶜ := by
+    intro z hz hzc
+    exact Set.disjoint_left.mp (J.openSegment_nearest_disjoint_carrier hp hq hmin) hz hzc
+  have hyBall : y ∈ ball p (dist p q) :=
+    openSegment_subset_ball_of_ne hpBall hqBall hpq hy
+  have hdistPos : 0 < dist p q := dist_pos.mpr hpq
+  have hsegSubBall : segment ℝ p y ⊆ ball p (dist p q) :=
+    (convex_ball p (dist p q)).segment_subset (mem_ball_self hdistPos) hyBall
+  have hballSub : ball p (dist p q) ⊆ J.carrierᶜ := by
+    intro z hz hzc
+    exact (not_lt_of_ge (hmin z hzc)) (show dist p z < dist p q by
+      simpa [dist_comm] using hz)
+  have hsegSub : segment ℝ p y ⊆ J.carrierᶜ := hsegSubBall.trans hballSub
+  have hconn : IsPreconnected (segment ℝ p y) := (convex_segment p y).isPreconnected
+  exact hconn.subset_connectedComponentIn (left_mem_segment ℝ p y) hsegSub
+    (right_mem_segment ℝ p y)
+
+/-- A nearest curve point is accessible by one straight segment from the
+component containing `p`. -/
+theorem nearest_point_joinedByBrokenLine {p q : Plane}
+    (hp : p ∈ J.carrierᶜ) (hq : q ∈ J.carrier)
+    (hmin : ∀ z ∈ J.carrier, dist p q ≤ dist p z) :
+    LeanEval.Topology.ClassificationOfSurfaces.Moise.JoinedByBrokenLine
+      (connectedComponentIn J.carrierᶜ p ∪ {q}) p q := by
+  apply LeanEval.Topology.ClassificationOfSurfaces.Moise.JoinedByBrokenLine.of_segment
+  rw [← insert_endpoints_openSegment]
+  simp only [insert_subset_iff]
+  exact ⟨Or.inl (mem_connectedComponentIn hp), Or.inr (mem_singleton q),
+    fun y hy => Or.inl (J.openSegment_nearest_subset_component hp hq hmin hy)⟩
+
+/-- Points accessible from the inside by a broken line. -/
+def insideAccessiblePoints : Set Plane :=
+  {q | q ∈ J.carrier ∧
+    ∃ p ∈ J.inside,
+      LeanEval.Topology.ClassificationOfSurfaces.Moise.JoinedByBrokenLine
+        (J.inside ∪ {q}) p q}
+
+/-- Linearly accessible boundary points are dense in the Jordan curve.  This
+is Moise 9.2 for the bounded complementary domain. -/
+theorem carrier_subset_closure_insideAccessiblePoints :
+    J.carrier ⊆ closure J.insideAccessiblePoints := by
+  intro x hx
+  rw [Metric.mem_closure_iff]
+  intro ε hε
+  have hxClosure : x ∈ closure J.inside := by
+    rw [J.closure_inside]
+    exact Or.inr hx
+  obtain ⟨p, hpI, hxp⟩ := Metric.mem_closure_iff.mp hxClosure (ε / 3) (by positivity)
+  obtain ⟨q, hqJ, hmin⟩ := J.exists_nearest_carrier_point p
+  have hpCompl : p ∈ J.carrierᶜ := J.inside_subset_compl hpI
+  have hline := J.nearest_point_joinedByBrokenLine hpCompl hqJ hmin
+  have hcomponent : connectedComponentIn J.carrierᶜ p = J.inside := by
+    exact (connectedComponentIn_eq hpI).symm
+  rw [hcomponent] at hline
+  refine ⟨q, ⟨hqJ, p, hpI, hline⟩, ?_⟩
+  have hpq : dist p q ≤ dist p x := hmin x hx
+  calc
+    dist x q ≤ dist x p + dist p q := dist_triangle _ _ _
+    _ ≤ dist x p + dist p x := by gcongr
+    _ = 2 * dist x p := by rw [dist_comm p x]; ring
+    _ < 2 * (ε / 3) := mul_lt_mul_of_pos_left hxp (by positivity)
+    _ < ε := by linarith
+
+/-- Points that are accessible from the inside by one straight interval.
+This is Moise's actual notion of linear accessibility in Chapter 9. -/
+def insideLinearlyAccessiblePoints : Set Plane :=
+  {q | q ∈ J.carrier ∧ ∃ p ∈ J.inside, openSegment ℝ p q ⊆ J.inside}
+
+/-- The linearly accessible points are dense.  The nearest-point proof above
+already produces a single straight access interval, so no polygonal
+simplification is needed. -/
+theorem carrier_subset_closure_insideLinearlyAccessiblePoints :
+    J.carrier ⊆ closure J.insideLinearlyAccessiblePoints := by
+  intro x hx
+  rw [Metric.mem_closure_iff]
+  intro ε hε
+  have hxClosure : x ∈ closure J.inside := by
+    rw [J.closure_inside]
+    exact Or.inr hx
+  obtain ⟨p, hpI, hxp⟩ := Metric.mem_closure_iff.mp hxClosure (ε / 3) (by positivity)
+  obtain ⟨q, hqJ, hmin⟩ := J.exists_nearest_carrier_point p
+  have hpCompl : p ∈ J.carrierᶜ := J.inside_subset_compl hpI
+  have hsegment := J.openSegment_nearest_subset_component hpCompl hqJ hmin
+  have hcomponent : connectedComponentIn J.carrierᶜ p = J.inside :=
+    (connectedComponentIn_eq hpI).symm
+  rw [hcomponent] at hsegment
+  refine ⟨q, ⟨hqJ, p, hpI, hsegment⟩, ?_⟩
+  have hpq : dist p q ≤ dist p x := hmin x hx
+  calc
+    dist x q ≤ dist x p + dist p q := dist_triangle _ _ _
+    _ ≤ dist x p + dist p x := by gcongr
+    _ = 2 * dist x p := by rw [dist_comm p x]; ring
+    _ < 2 * (ε / 3) := mul_lt_mul_of_pos_left hxp (by positivity)
+    _ < ε := by linarith
+
+/-- Points accessible from the outside by a broken line. -/
+def outsideAccessiblePoints : Set Plane :=
+  {q | q ∈ J.carrier ∧
+    ∃ p ∈ J.outside,
+      LeanEval.Topology.ClassificationOfSurfaces.Moise.JoinedByBrokenLine
+        (J.outside ∪ {q}) p q}
+
+/-- Points accessible from the outside by one straight interval. -/
+def outsideLinearlyAccessiblePoints : Set Plane :=
+  {q | q ∈ J.carrier ∧ ∃ p ∈ J.outside, openSegment ℝ p q ⊆ J.outside}
+
+/-- Linearly accessible boundary points are also dense from the unbounded
+complementary domain. -/
+theorem carrier_subset_closure_outsideAccessiblePoints :
+    J.carrier ⊆ closure J.outsideAccessiblePoints := by
+  intro x hx
+  rw [Metric.mem_closure_iff]
+  intro ε hε
+  have hxClosure : x ∈ closure J.outside := by
+    rw [J.closure_outside]
+    exact Or.inr hx
+  obtain ⟨p, hpO, hxp⟩ := Metric.mem_closure_iff.mp hxClosure (ε / 3) (by positivity)
+  obtain ⟨q, hqJ, hmin⟩ := J.exists_nearest_carrier_point p
+  have hpCompl : p ∈ J.carrierᶜ := J.outside_subset_compl hpO
+  have hline := J.nearest_point_joinedByBrokenLine hpCompl hqJ hmin
+  have hcomponent : connectedComponentIn J.carrierᶜ p = J.outside :=
+    (connectedComponentIn_eq hpO).symm
+  rw [hcomponent] at hline
+  refine ⟨q, ⟨hqJ, p, hpO, hline⟩, ?_⟩
+  have hpq : dist p q ≤ dist p x := hmin x hx
+  calc
+    dist x q ≤ dist x p + dist p q := dist_triangle _ _ _
+    _ ≤ dist x p + dist p x := by gcongr
+    _ = 2 * dist x p := by rw [dist_comm p x]; ring
+    _ < 2 * (ε / 3) := mul_lt_mul_of_pos_left hxp (by positivity)
+    _ < ε := by linarith
+
+/-- The nearest-point construction gives dense linear access from the
+unbounded complementary component as well. -/
+theorem carrier_subset_closure_outsideLinearlyAccessiblePoints :
+    J.carrier ⊆ closure J.outsideLinearlyAccessiblePoints := by
+  intro x hx
+  rw [Metric.mem_closure_iff]
+  intro epsilon hepsilon
+  have hxClosure : x ∈ closure J.outside := by
+    rw [J.closure_outside]
+    exact Or.inr hx
+  obtain ⟨p, hpO, hxp⟩ := Metric.mem_closure_iff.mp hxClosure
+    (epsilon / 3) (by positivity)
+  obtain ⟨q, hqJ, hmin⟩ := J.exists_nearest_carrier_point p
+  have hpCompl : p ∈ J.carrierᶜ := J.outside_subset_compl hpO
+  have hsegment := J.openSegment_nearest_subset_component hpCompl hqJ hmin
+  have hcomponent : connectedComponentIn J.carrierᶜ p = J.outside :=
+    (connectedComponentIn_eq hpO).symm
+  rw [hcomponent] at hsegment
+  refine ⟨q, ⟨hqJ, p, hpO, hsegment⟩, ?_⟩
+  have hpq : dist p q ≤ dist p x := hmin x hx
+  calc
+    dist x q ≤ dist x p + dist p q := dist_triangle _ _ _
+    _ ≤ dist x p + dist p x := by gcongr
+    _ = 2 * dist x p := by rw [dist_comm p x]; ring
+    _ < 2 * (epsilon / 3) := mul_lt_mul_of_pos_left hxp (by positivity)
+    _ < epsilon := by linarith
+
+end JordanCircle
+
+end Schoenflies
