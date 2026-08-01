@@ -301,6 +301,94 @@ theorem synchronizedRanges_inter (a b : LevelAddress n) (hab : a ≠ b)
     exact ⟨Or.inl (left_mem_segment ℝ _ _),
       Or.inr (right_mem_segment ℝ _ _)⟩
 
+/-- A crosscut is disjoint from a retained right hair based at neither of
+its own endpoints. -/
+theorem trimmedPath_disjoint_levelRightHair_of_nonincident
+    (a c : LevelAddress n)
+    (hLeft :
+      (J.curvePoint (I.levelArc a).right : Plane) ≠
+        (J.curvePoint (I.levelArc c).left : Plane))
+    (hRight :
+      (J.curvePoint (I.levelArc a).right : Plane) ≠
+        (J.curvePoint (I.levelArc c).right : Plane)) :
+    Disjoint (range (F.trimmedPath (index c)))
+      (I.levelRightHair a).carrier := by
+  have hAvoid := F.range_trimmedPath_disjoint_nonEndpointHairCarrier (index c)
+  have haddr : levelAddressAt n (index c) = c :=
+    levelAddressAt_levelIndexOf n c
+  have hcarrier :
+      I.nonEndpointHairCarrier (levelAddressAt n (index c)) =
+        I.nonEndpointHairCarrier c :=
+    congrArg I.nonEndpointHairCarrier haddr
+  have hAvoid' : Disjoint (range (F.trimmedPath (index c)))
+      (I.nonEndpointHairCarrier c) := hcarrier ▸ hAvoid
+  exact hAvoid'.mono_right
+    (I.levelRightHair_carrier_subset_nonEndpointHairCarrier
+      a c hLeft hRight)
+
+/-- A synchronized source extension at the junction `a.right = b.left`
+remains disjoint from every crosscut `c` not incident to that junction. -/
+theorem synchronizedRightRange_disjoint_trimmedPath_of_nonincident
+    (a b c : LevelAddress n) (hac : a ≠ c)
+    (hshared :
+      (J.curvePoint (I.levelArc a).right : Plane) =
+        (J.curvePoint (I.levelArc b).left : Plane))
+    (hLeft :
+      (J.curvePoint (I.levelArc a).right : Plane) ≠
+        (J.curvePoint (I.levelArc c).left : Plane))
+    (hRight :
+      (J.curvePoint (I.levelArc a).right : Plane) ≠
+        (J.curvePoint (I.levelArc c).right : Plane)) :
+    Disjoint (F.synchronizedRightRange a b hshared)
+      (range (F.trimmedPath (index c))) := by
+  rw [Set.disjoint_left]
+  intro x hxSync hxC
+  rcases hxSync with hxExtension | hxA
+  · have hxHair : x ∈ (I.levelRightHair a).carrier :=
+      (convex_segment
+        (J.curvePoint (I.levelArc a).right : Plane)
+        (I.levelRightHair a).tip).segment_subset
+          (F.synchronizedPoint_mem_rightHair a b hshared)
+          (F.rightHairPoint a).2 hxExtension
+    exact Set.disjoint_left.mp
+      (F.trimmedPath_disjoint_levelRightHair_of_nonincident
+        a c hLeft hRight) hxC hxHair
+  · exact Set.disjoint_left.mp
+      (F.pairwise_disjoint_trimmedPath
+        (fun hindex => hac (levelIndexOf_injective n hindex))) hxA hxC
+
+/-- The analogous target extension on the following arc is also disjoint
+from every crosscut not incident to the shared junction. -/
+theorem synchronizedLeftRange_disjoint_trimmedPath_of_nonincident
+    (a b c : LevelAddress n) (hbc : b ≠ c)
+    (hshared :
+      (J.curvePoint (I.levelArc a).right : Plane) =
+        (J.curvePoint (I.levelArc b).left : Plane))
+    (hLeft :
+      (J.curvePoint (I.levelArc a).right : Plane) ≠
+        (J.curvePoint (I.levelArc c).left : Plane))
+    (hRight :
+      (J.curvePoint (I.levelArc a).right : Plane) ≠
+        (J.curvePoint (I.levelArc c).right : Plane)) :
+    Disjoint (F.synchronizedLeftRange a b hshared)
+      (range (F.trimmedPath (index c))) := by
+  rw [Set.disjoint_left]
+  intro x hxSync hxC
+  rcases hxSync with hxB | hxExtension
+  · exact Set.disjoint_left.mp
+      (F.pairwise_disjoint_trimmedPath
+        (fun hindex => hbc (levelIndexOf_injective n hindex))) hxB hxC
+  · have hxHair : x ∈ (I.levelRightHair a).carrier :=
+      (convex_segment
+        (J.curvePoint (I.levelArc a).right : Plane)
+        (I.levelRightHair a).tip).segment_subset
+          (F.sharedLeftHairPoint a b hshared).2
+          (F.synchronizedPoint_mem_rightHair a b hshared)
+          hxExtension
+    exact Set.disjoint_left.mp
+      (F.trimmedPath_disjoint_levelRightHair_of_nonincident
+        a c hLeft hRight) hxC hxHair
+
 end LevelAvoidingJoinFamily
 end InitialAngularArcs
 end JordanCircle
