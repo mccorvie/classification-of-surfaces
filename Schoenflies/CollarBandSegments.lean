@@ -196,6 +196,208 @@ theorem childSegments_finish (a : LevelAddress n) :
         (L.rightmostAddress a) :=
   L.next.family.forgetObstacle.edgeFinish_last _
 
+theorem parentEdge_inter_parentEdge_subsingleton
+    (hlevel : 1 ≤ n) (e f : F.LevelEdgeAddress) (hef : e ≠ f) :
+    (F.edgeSegment e ∩ F.edgeSegment f).Subsingleton := by
+  by_cases hfnext : f = F.nextLevelEdge e
+  · rw [hfnext, F.edgeSegment_inter_next hlevel e]
+    exact Set.subsingleton_singleton
+  by_cases henext : e = F.nextLevelEdge f
+  · rw [Set.inter_comm, henext, F.edgeSegment_inter_next hlevel f]
+    exact Set.subsingleton_singleton
+  have hdis := F.disjoint_edgeSegment_of_nonadjacent hlevel e f
+    hef henext hfnext
+  rw [Set.disjoint_iff_inter_eq_empty.mp hdis]
+  exact Set.subsingleton_empty
+
+theorem parentEdge_disjoint_childEdge
+    (e : F.LevelEdgeAddress)
+    (f : L.next.family.forgetObstacle.LevelEdgeAddress) :
+    Disjoint (F.edgeSegment e)
+      (L.next.family.forgetObstacle.edgeSegment f) := by
+  apply L.next.carrier_disjoint.mono
+  · intro x hx
+    rw [(F.synchronizedPolygonalCircle hn).closedRegion_eq_union]
+    apply Or.inr
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr
+      ⟨e.1, F.edgeSegment_subset_crosscutRange e hx⟩
+  · rw [L.next.family.forgetObstacle.carrier_synchronizedPolygonalCircle
+      L.next.one_le_level]
+    intro x hx
+    exact Set.mem_iUnion.mpr
+      ⟨f.1, L.next.family.forgetObstacle.edgeSegment_subset_crosscutRange f hx⟩
+
+theorem leftSide_subset_parentBaseSegment (a : LevelAddress n) :
+    segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.leftSynchronizedPoint
+          (L.leftmostAddress a)) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (F.leftSynchronizedPoint a) := by
+  let H := I.levelLeftHair a
+  let child : H.carrier :=
+    ⟨L.next.family.forgetObstacle.leftSynchronizedPoint
+        (L.leftmostAddress a), by
+      rw [← L.leftmostAddress_leftHair_carrier a]
+      exact L.next.family.forgetObstacle
+        |>.leftSynchronizedPoint_mem_leftHair _⟩
+  let parent : H.carrier :=
+    ⟨F.leftSynchronizedPoint a,
+      F.leftSynchronizedPoint_mem_leftHair a⟩
+  have hparameter : H.carrierParameter child ≤
+      H.carrierParameter parent :=
+    (L.leftmost_carrierParameter_lt_parent a).le
+  have hbase : segment ℝ
+      (J.curvePoint (I.levelArc a).left : Plane) (child : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (parent : Plane) :=
+    H.baseSegment_subset_of_parameter_le child parent hparameter
+  have hchild : (child : Plane) ∈
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (parent : Plane) :=
+    hbase (right_mem_segment ℝ _ _)
+  have hsegment : segment ℝ (parent : Plane) (child : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (parent : Plane) :=
+    (convex_segment _ _).segment_subset
+      (right_mem_segment ℝ _ _) hchild
+  simpa [H, child, parent] using hsegment
+
+theorem rightSide_subset_parentBaseSegment (a : LevelAddress n) :
+    segment ℝ
+        (L.next.family.forgetObstacle.rightSynchronizedPoint
+          (L.rightmostAddress a))
+        (F.rightSynchronizedPoint a) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (F.rightSynchronizedPoint a) := by
+  let H := I.levelRightHair a
+  let child : H.carrier :=
+    ⟨L.next.family.forgetObstacle.rightSynchronizedPoint
+        (L.rightmostAddress a), by
+      rw [← L.rightmostAddress_rightHair_carrier a]
+      exact L.next.family.forgetObstacle
+        |>.rightSynchronizedPoint_mem_rightHair _⟩
+  let parent : H.carrier :=
+    ⟨F.rightSynchronizedPoint a,
+      F.rightSynchronizedPoint_mem_rightHair a⟩
+  have hparameter : H.carrierParameter child ≤
+      H.carrierParameter parent :=
+    (L.rightmost_carrierParameter_lt_parent a).le
+  have hbase : segment ℝ
+      (J.curvePoint (I.levelArc a).right : Plane) (child : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (parent : Plane) :=
+    H.baseSegment_subset_of_parameter_le child parent hparameter
+  have hchild : (child : Plane) ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (parent : Plane) :=
+    hbase (right_mem_segment ℝ _ _)
+  have hsegment : segment ℝ (child : Plane) (parent : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (parent : Plane) :=
+    (convex_segment _ _).segment_subset hchild
+      (right_mem_segment ℝ _ _)
+  simpa [H, child, parent] using hsegment
+
+theorem parentEdge_inter_leftSide_subsingleton
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n) :
+    (F.edgeSegment ⟨a, i⟩ ∩
+      segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.leftSynchronizedPoint
+          (L.leftmostAddress a))).Subsingleton := by
+  intro x hx y hy
+  have hx' : x ∈
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+          (F.leftSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.leftSide_subset_parentBaseSegment a hx.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hx.1⟩
+  have hy' : y ∈
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+          (F.leftSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.leftSide_subset_parentBaseSegment a hy.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hy.1⟩
+  rw [F.leftBaseSegment_inter_range_synchronizedCrosscutPath a] at hx' hy'
+  exact (mem_singleton_iff.mp hx').trans
+    (mem_singleton_iff.mp hy').symm
+
+theorem parentEdge_inter_rightSide_subsingleton
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n) :
+    (F.edgeSegment ⟨a, i⟩ ∩
+      segment ℝ
+        (L.next.family.forgetObstacle.rightSynchronizedPoint
+          (L.rightmostAddress a))
+        (F.rightSynchronizedPoint a)).Subsingleton := by
+  intro x hx y hy
+  have hx' : x ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rightSide_subset_parentBaseSegment a hx.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hx.1⟩
+  have hy' : y ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rightSide_subset_parentBaseSegment a hy.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hy.1⟩
+  rw [F.rightBaseSegment_inter_range_synchronizedCrosscutPath a] at hx' hy'
+  exact (mem_singleton_iff.mp hx').trans
+    (mem_singleton_iff.mp hy').symm
+
+theorem parentSegment_inter_bandSegment_subsingleton
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n)
+    (j : L.BandSegmentAddress)
+    (hji : j ≠ BandSegmentAddress.parent L ⟨a, i⟩) :
+    (segment ℝ
+        (BandSegmentAddress.left L a
+          (BandSegmentAddress.parent L ⟨a, i⟩))
+        (BandSegmentAddress.right L a
+          (BandSegmentAddress.parent L ⟨a, i⟩)) ∩
+      segment ℝ (BandSegmentAddress.left L a j)
+        (BandSegmentAddress.right L a j)).Subsingleton := by
+  rcases j with f | j
+  · have hef : (⟨a, i⟩ : F.LevelEdgeAddress) ≠ f := by
+      intro h
+      apply hji
+      subst f
+      rfl
+    simpa [BandSegmentAddress.parent, BandSegmentAddress.left,
+      BandSegmentAddress.right,
+      LevelAvoidingJoinFamily.edgeSegment, segment_symm] using
+        parentEdge_inter_parentEdge_subsingleton hn
+          (⟨a, i⟩ : F.LevelEdgeAddress) f hef
+  · rcases j with _ | j
+    · simpa [BandSegmentAddress.parent, BandSegmentAddress.leftSide,
+        BandSegmentAddress.left, BandSegmentAddress.right,
+        LevelAvoidingJoinFamily.edgeSegment, segment_symm] using
+          L.parentEdge_inter_leftSide_subsingleton a i
+    · rcases j with f | _
+      · have hdis := L.parentEdge_disjoint_childEdge
+          (⟨a, i⟩ : F.LevelEdgeAddress) f
+        have hsub : (F.edgeSegment ⟨a, i⟩ ∩
+            L.next.family.forgetObstacle.edgeSegment f).Subsingleton := by
+          rw [Set.disjoint_iff_inter_eq_empty.mp hdis]
+          exact Set.subsingleton_empty
+        simpa [BandSegmentAddress.parent, BandSegmentAddress.child,
+          BandSegmentAddress.left, BandSegmentAddress.right,
+          LevelAvoidingJoinFamily.edgeSegment, segment_symm] using hsub
+      · simpa [BandSegmentAddress.parent, BandSegmentAddress.rightSide,
+          BandSegmentAddress.left, BandSegmentAddress.right,
+          LevelAvoidingJoinFamily.edgeSegment, segment_symm] using
+            L.parentEdge_inter_rightSide_subsingleton a i
+
+theorem edgeStart_ne_edgeFinish (e : F.LevelEdgeAddress) :
+    F.edgeStart e ≠ F.edgeFinish e := by
+  intro h
+  have hv := (F.synchronizedCrosscutCarrierLine e.1).vertex_injective h
+  have hval := congrArg Fin.val hv
+  simp at hval
+
 theorem parentSegments_isChain (a : LevelAddress n) :
     (L.parentSegments a).IsChain
       (BandSegmentAddress.Adjacent L a) := by
@@ -480,6 +682,209 @@ noncomputable def bandClosedWalk (a : LevelAddress n) :=
     (BandSegmentAddress.right L a)
     (L.bandFirst a) (L.bandTail a)
     (L.bandRoute_isChain a) (L.bandRoute_closes a)
+
+/-- A fixed old-collar edge whose odd occurrence certifies that the band
+route does not cancel completely. -/
+noncomputable def selectedParentEdge (a : LevelAddress n) :
+    F.LevelEdgeAddress :=
+  ⟨a, F.firstEdgeIndex a⟩
+
+noncomputable def selectedParentSegment (a : LevelAddress n) :
+    L.BandSegmentAddress :=
+  BandSegmentAddress.parent L (selectedParentEdge (F := F) a)
+
+theorem selectedParentSegment_mem_bandSegments (a : LevelAddress n) :
+    L.selectedParentSegment a ∈ L.bandSegments a := by
+  rw [bandSegments]
+  apply List.mem_append_left
+  apply List.mem_append_left
+  apply List.mem_append_left
+  unfold selectedParentSegment selectedParentEdge parentSegments
+  rw [List.mem_map]
+  refine ⟨(⟨a, F.firstEdgeIndex a⟩ : F.LevelEdgeAddress), ?_, rfl⟩
+  rw [List.mem_reverse, LevelAvoidingJoinFamily.edgeBlock,
+    List.mem_ofFn']
+  exact ⟨F.firstEdgeIndex a, rfl⟩
+
+theorem selectedParentSegment_mem_bandRoute (a : LevelAddress n) :
+    L.selectedParentSegment a ∈ L.bandFirst a :: L.bandTail a := by
+  rw [L.bandFirst_cons_bandTail a]
+  exact L.selectedParentSegment_mem_bandSegments a
+
+theorem selectedParentSegment_left_ne_right (a : LevelAddress n) :
+    BandSegmentAddress.left L a (L.selectedParentSegment a) ≠
+      BandSegmentAddress.right L a (L.selectedParentSegment a) := by
+  simpa [selectedParentSegment, selectedParentEdge,
+    BandSegmentAddress.parent, BandSegmentAddress.left,
+    BandSegmentAddress.right] using
+      (edgeStart_ne_edgeFinish (F := F)
+        (selectedParentEdge (F := F) a)).symm
+
+/-- The selected parent segment contributes an arrangement edge that is
+absent from every other member of the collar-band route. -/
+theorem exists_private_selectedParentSegmentEdge (a : LevelAddress n) :
+    ∃ e : Sym2 (BrokenLineData.segmentFamilyComplex
+        (BandSegmentAddress.left L a)
+        (BandSegmentAddress.right L a)).Vertex,
+      e ∈ (BrokenLineData.segmentFamilyPath
+        (BandSegmentAddress.left L a)
+        (BandSegmentAddress.right L a)
+        (L.selectedParentSegment a) :
+          (BrokenLineData.segmentFamilyComplex
+            (BandSegmentAddress.left L a)
+            (BandSegmentAddress.right L a)).vertexGraph.Walk
+              (BrokenLineData.segmentFamilyLeftVertex
+                (BandSegmentAddress.left L a)
+                (BandSegmentAddress.right L a)
+                (L.selectedParentSegment a))
+              (BrokenLineData.segmentFamilyRightVertex
+                (BandSegmentAddress.left L a)
+                (BandSegmentAddress.right L a)
+                (L.selectedParentSegment a))).edges ∧
+      ∀ j ∈ L.bandFirst a :: L.bandTail a,
+        j ≠ L.selectedParentSegment a →
+        e ∉ (BrokenLineData.segmentFamilyPath
+          (BandSegmentAddress.left L a)
+          (BandSegmentAddress.right L a) j :
+            (BrokenLineData.segmentFamilyComplex
+              (BandSegmentAddress.left L a)
+              (BandSegmentAddress.right L a)).vertexGraph.Walk
+                (BrokenLineData.segmentFamilyLeftVertex
+                  (BandSegmentAddress.left L a)
+                  (BandSegmentAddress.right L a) j)
+                (BrokenLineData.segmentFamilyRightVertex
+                  (BandSegmentAddress.left L a)
+                  (BandSegmentAddress.right L a) j)).edges := by
+  let left := BandSegmentAddress.left L a
+  let right := BandSegmentAddress.right L a
+  let s := L.selectedParentSegment a
+  let K := BrokenLineData.segmentFamilyComplex left right
+  let p : K.vertexGraph.Walk
+      (BrokenLineData.segmentFamilyLeftVertex left right s)
+      (BrokenLineData.segmentFamilyRightVertex left right s) :=
+    BrokenLineData.segmentFamilyPath left right s
+  have hvne : BrokenLineData.segmentFamilyLeftVertex left right s ≠
+      BrokenLineData.segmentFamilyRightVertex left right s := by
+    intro h
+    apply L.selectedParentSegment_left_ne_right a
+    calc
+      BandSegmentAddress.left L a (L.selectedParentSegment a) =
+          K.position
+            (BrokenLineData.segmentFamilyLeftVertex left right s) := by
+        exact (BrokenLineData.segmentFamilyLeftVertex_position
+          left right s).symm
+      _ = K.position
+          (BrokenLineData.segmentFamilyRightVertex left right s) :=
+        congrArg K.position h
+      _ = BandSegmentAddress.right L a
+          (L.selectedParentSegment a) := by
+        exact BrokenLineData.segmentFamilyRightVertex_position
+          left right s
+  have hnotnil : ¬p.Nil := SimpleGraph.Walk.not_nil_of_ne hvne
+  have hedges : p.edges ≠ [] :=
+    SimpleGraph.Walk.edges_eq_nil.not.mpr hnotnil
+  obtain ⟨e, he⟩ := List.exists_mem_of_ne_nil p.edges hedges
+  refine ⟨e, he, ?_⟩
+  intro j _hj hjs
+  apply BrokenLineData.segmentFamilyPath_edge_not_mem_of_inter_subsingleton
+    left right s j ?_ e he
+  change (segment ℝ
+      (BandSegmentAddress.left L a (L.selectedParentSegment a))
+      (BandSegmentAddress.right L a (L.selectedParentSegment a)) ∩
+    segment ℝ (BandSegmentAddress.left L a j)
+      (BandSegmentAddress.right L a j)).Subsingleton
+  simpa [selectedParentSegment, selectedParentEdge] using
+    L.parentSegment_inter_bandSegment_subsingleton a
+      (F.firstEdgeIndex a) j hjs
+
+/-- Every collar band contains a simple cycle in its common segment
+arrangement.  This is the precise finite-graph form of Moise's phrase
+"contains a polygonal cell." -/
+theorem exists_bandCycle (a : LevelAddress n) :
+    ∃ (z : (BrokenLineData.segmentFamilyComplex
+          (BandSegmentAddress.left L a)
+          (BandSegmentAddress.right L a)).Vertex)
+        (c : (BrokenLineData.segmentFamilyComplex
+          (BandSegmentAddress.left L a)
+          (BandSegmentAddress.right L a)).vertexGraph.Walk z z),
+      c.IsCycle ∧
+        ∃ e, e ∈ c.edges ∧
+          c.edges.toFinset ⊆
+            (L.bandClosedWalk a).edges.toFinset := by
+  obtain ⟨e, he, hprivate⟩ :=
+    L.exists_private_selectedParentSegmentEdge a
+  obtain ⟨z, c, hc, hec, hsubset⟩ :=
+    BrokenLineData.exists_isCycle_containing_of_private_segmentEdge
+      (BandSegmentAddress.left L a)
+      (BandSegmentAddress.right L a)
+      (L.bandFirst a) (L.bandTail a)
+      (L.bandRoute_isChain a) (L.bandRoute_closes a)
+      (L.bandRoute_nodup a)
+      (L.selectedParentSegment a)
+      (L.selectedParentSegment_mem_bandRoute a)
+      e he hprivate
+  exact ⟨z, c, hc, e, hec, hsubset⟩
+
+/-- Point-set union of the straight segments in one collar-band route. -/
+noncomputable def bandCarrier (a : LevelAddress n) : Set Plane :=
+  ⋃ j ∈ L.bandSegments a,
+    segment ℝ (BandSegmentAddress.left L a j)
+      (BandSegmentAddress.right L a j)
+
+/-- The common-arrangement cycle gives an honest polygonal circle carried
+by the parent crosscut, its retained side hairs, and the child crosscuts. -/
+theorem exists_bandPolygonalCircle (a : LevelAddress n) :
+    ∃ P : PolygonalCircle, P.carrier ⊆ L.bandCarrier a := by
+  obtain ⟨z, c, hc, _e, _hec, hcycleSubset⟩ := L.exists_bandCycle a
+  let left := BandSegmentAddress.left L a
+  let right := BandSegmentAddress.right L a
+  let K := BrokenLineData.segmentFamilyComplex left right
+  have hedgeSource : ∀ v w,
+      s(v, w) ∈ c.edges →
+      segment ℝ (K.position v) (K.position w) ⊆ L.bandCarrier a := by
+    intro v w he
+    have heClosedFin : s(v, w) ∈ (L.bandClosedWalk a).edges.toFinset :=
+      hcycleSubset (List.mem_toFinset.mpr he)
+    have heClosed : s(v, w) ∈ (L.bandClosedWalk a).edges :=
+      List.mem_toFinset.mp heClosedFin
+    obtain ⟨j, hjRoute, hej⟩ :=
+      BrokenLineData.segmentFamilyClosedWalk_edges_covered
+        left right (L.bandFirst a) (L.bandTail a)
+        (L.bandRoute_isChain a) (L.bandRoute_closes a)
+        s(v, w) heClosed
+    have hjBand : j ∈ L.bandSegments a := by
+      rw [← L.bandFirst_cons_bandTail a]
+      exact hjRoute
+    let pj : K.vertexGraph.Walk
+        (BrokenLineData.segmentFamilyLeftVertex left right j)
+        (BrokenLineData.segmentFamilyRightVertex left right j) :=
+      BrokenLineData.segmentFamilyPath left right j
+    have hej' : s(v, w) ∈ pj.edges := hej
+    have hsegmentRange : segment ℝ (K.position v) (K.position w) ⊆
+        range (K.walkGeometricPath pj) :=
+      Schoenflies.TriangleMesh.PlaneComplex.segment_subset_range_walkGeometricPath_of_mem_edges
+        K pj hej'
+    have hrangeSource :=
+      BrokenLineData.range_walkGeometricPath_segmentFamilyPath_subset
+        left right j
+    intro x hx
+    apply Set.mem_iUnion.mpr
+    refine ⟨j, Set.mem_iUnion.mpr ⟨hjBand, ?_⟩⟩
+    apply hrangeSource
+    unfold pj at hsegmentRange
+    exact hsegmentRange hx
+  have hnotnil : ¬c.Nil := hc.not_nil
+  obtain ⟨w, hw, q, hcEq⟩ := SimpleGraph.Walk.not_nil_iff.mp hnotnil
+  have hstart : K.position z ∈ L.bandCarrier a := by
+    apply hedgeSource z w
+      (by rw [hcEq]; simp)
+    exact left_mem_segment ℝ _ _
+  have hrange : range (K.walkGeometricPath c) ⊆ L.bandCarrier a :=
+    BrokenLineData.range_walkGeometricPath_subset_of_start_of_edges
+      K c hstart hedgeSource
+  refine ⟨K.polygonalCircleOfCycle c hc, ?_⟩
+  rw [K.polygonalCircleOfCycle_carrier_eq_range_walkGeometricPath c hc]
+  exact hrange
 
 end RecursiveInsideCollarStep.Later
 

@@ -136,6 +136,108 @@ noncomputable def segmentFamilyPath
   arrangementSegmentPath (segmentFamilyChain left right)
     (segmentFamilyIndex left right i)
 
+/-- Drawing the canonical graph path for one label stays on that label's
+source segment.  This walk-level form is convenient when comparing an edge
+that occurs in two different labelled paths. -/
+theorem range_walkGeometricPath_segmentFamilyPath_subset
+    {I : Type*} [Fintype I] (left right : I → Plane) (i : I) :
+    range ((segmentFamilyChain left right).arrangementMesh.toPlaneComplex
+      |>.walkGeometricPath
+        (segmentFamilyPath left right i :
+          (segmentFamilyChain left right).arrangementMesh.toPlaneComplex
+            |>.vertexGraph.Walk
+              (segmentFamilyLeftVertex left right i)
+              (segmentFamilyRightVertex left right i))) ⊆
+      segment ℝ (left i) (right i) := by
+  have h := range_arrangementSegmentGeometricPath_subset
+    (segmentFamilyChain left right) (segmentFamilyIndex left right i)
+  rw [arrangementSegmentGeometricPath, Path.copy_range] at h
+  rw [segmentFamilyChain_segment left right i] at h
+  intro x hx
+  apply h
+  unfold segmentFamilyPath at hx
+  exact hx
+
+/-- Two labelled source segments whose intersection has at most one point
+cannot contribute a common nondegenerate arrangement edge. -/
+theorem segmentFamilyPath_edge_not_mem_of_inter_subsingleton
+    {I : Type*} [Fintype I] (left right : I → Plane)
+    (i j : I)
+    (hinter : (segment ℝ (left i) (right i) ∩
+      segment ℝ (left j) (right j)).Subsingleton)
+    (e : Sym2
+      (segmentFamilyChain left right).arrangementMesh.toPlaneComplex.Vertex)
+    (hei : e ∈ (segmentFamilyPath left right i :
+      (segmentFamilyChain left right).arrangementMesh.toPlaneComplex
+        |>.vertexGraph.Walk
+        (segmentFamilyLeftVertex left right i)
+        (segmentFamilyRightVertex left right i)).edges) :
+    e ∉ (segmentFamilyPath left right j :
+      (segmentFamilyChain left right).arrangementMesh.toPlaneComplex
+        |>.vertexGraph.Walk
+        (segmentFamilyLeftVertex left right j)
+        (segmentFamilyRightVertex left right j)).edges := by
+  intro hej
+  induction e using Sym2.ind with
+  | _ v w =>
+      let K :=
+        (segmentFamilyChain left right).arrangementMesh.toPlaneComplex
+      let pi : K.vertexGraph.Walk
+          (segmentFamilyLeftVertex left right i)
+          (segmentFamilyRightVertex left right i) :=
+        segmentFamilyPath left right i
+      let pj : K.vertexGraph.Walk
+          (segmentFamilyLeftVertex left right j)
+          (segmentFamilyRightVertex left right j) :=
+        segmentFamilyPath left right j
+      have hiRange : segment ℝ (K.position v) (K.position w) ⊆
+          range (K.walkGeometricPath pi) :=
+        Schoenflies.TriangleMesh.PlaneComplex.segment_subset_range_walkGeometricPath_of_mem_edges
+          K pi hei
+      have hjRange : segment ℝ (K.position v) (K.position w) ⊆
+          range (K.walkGeometricPath pj) :=
+        Schoenflies.TriangleMesh.PlaneComplex.segment_subset_range_walkGeometricPath_of_mem_edges
+          K pj hej
+      have hiSource := range_walkGeometricPath_segmentFamilyPath_subset
+        left right i
+      have hjSource := range_walkGeometricPath_segmentFamilyPath_subset
+        left right j
+      have hv : K.position v ∈ segment ℝ (left i) (right i) ∩
+          segment ℝ (left j) (right j) := by
+        constructor
+        · exact hiSource (hiRange (left_mem_segment ℝ _ _))
+        · exact hjSource (hjRange (left_mem_segment ℝ _ _))
+      have hw : K.position w ∈ segment ℝ (left i) (right i) ∩
+          segment ℝ (left j) (right j) := by
+        constructor
+        · exact hiSource (hiRange (right_mem_segment ℝ _ _))
+        · exact hjSource (hjRange (right_mem_segment ℝ _ _))
+      have hvw : v = w := K.position_injective (hinter hv hw)
+      exact (pi.adj_of_mem_edges hei).ne hvw
+
+/-- If the initial vertex and every traversed straight edge lie in `U`, so
+does the whole geometric realization of a graph walk. -/
+theorem range_walkGeometricPath_subset_of_start_of_edges
+    (K : PlaneComplex) {u z : K.Vertex}
+    (p : K.vertexGraph.Walk u z) {U : Set Plane}
+    (hstart : K.position u ∈ U)
+    (hedges : ∀ v w, s(v, w) ∈ p.edges →
+      segment ℝ (K.position v) (K.position w) ⊆ U) :
+    range (K.walkGeometricPath p) ⊆ U := by
+  induction p with
+  | nil =>
+      rw [K.walkGeometricPath_nil, Path.refl_range]
+      exact Set.singleton_subset_iff.mpr hstart
+  | @cons v w z hvw p ih =>
+      rw [K.walkGeometricPath_cons, Path.trans_range]
+      apply Set.union_subset
+      · rw [Path.range_segment]
+        exact hedges v w (by simp)
+      · apply ih
+        · exact hedges v w (by simp) (right_mem_segment ℝ _ _)
+        · intro x y hxy
+          exact hedges x y (by simp [hxy])
+
 /-- Equal geometric endpoints are represented by the same canonical vertex
 of the common arrangement. -/
 theorem segmentFamilyRightVertex_eq_leftVertex_of_eq
