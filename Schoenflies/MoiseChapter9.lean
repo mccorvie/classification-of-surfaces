@@ -21,6 +21,7 @@ import Schoenflies.SideConstancy
 import Schoenflies.FiniteCrossingParity
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
+import Schoenflies.RefinedEdgeSides
 import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.RegionalExtensions

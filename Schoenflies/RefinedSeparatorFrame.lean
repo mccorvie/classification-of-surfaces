@@ -45,6 +45,44 @@ theorem exists_intersectionVertexRefinement
   apply hvertices p
   simpa only [F, Set.Finite.mem_toFinset]
 
+/-- After all return-path intersections have been inserted as vertices, the
+relative interior of every refined polygon edge avoids the entire auxiliary
+Jordan circle.  The wild boundary arc cannot meet the frame because it lies
+strictly in the polygon interior; any remaining intersection is a return-path
+crossing and hence a vertex, which cannot lie in an open edge. -/
+theorem refined_openEdge_disjoint_auxiliaryCarrier
+    (A : J.AccessibleAngularArc) (Q K : PolygonalCircle)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    (hcarrier : K.carrier = Q.carrier)
+    (hvertices : ∀ p ∈ Q.carrier ∩ range A.returnPath,
+      K.IsVertexPoint p)
+    (i : ZMod K.n) :
+    Disjoint (openSegment ℝ (K.vertex i) (K.vertex (i + 1)))
+      A.auxiliaryJordanCircle.carrier := by
+  rw [Set.disjoint_left]
+  intro p hpOpen hpAuxiliary
+  have hpEdge : p ∈ K.edgeSegment i := by
+    change p ∈ segment ℝ (K.vertex i) (K.vertex (i + 1))
+    exact openSegment_subset_segment ℝ _ _ hpOpen
+  have hpKCarrier : p ∈ K.carrier := K.edgeSegment_subset_carrier i hpEdge
+  have hpQCarrier : p ∈ Q.carrier := by
+    rw [← hcarrier]
+    exact hpKCarrier
+  rw [A.carrier_auxiliaryJordanCircle] at hpAuxiliary
+  rcases hpAuxiliary with hpArc | hpReturn
+  · have hpInterior := hArcInside hpArc
+    have hpComplement : p ∈ Q.carrierᶜ := by
+      rw [← Q.interior_union_exterior]
+      exact Or.inl hpInterior
+    exact hpComplement hpQCarrier
+  · have hpVertex : K.IsVertexPoint p :=
+      hvertices p ⟨hpQCarrier, hpReturn⟩
+    rcases (hpVertex.mem_edgeSegment_iff i).mp hpEdge with hpLeft | hpRight
+    · subst p
+      exact K.adjacent_ne i ((left_mem_openSegment_iff.mp hpOpen))
+    · subst p
+      exact K.adjacent_ne i ((right_mem_openSegment_iff.mp hpOpen))
+
 end AccessibleAngularArc
 end JordanCircle
 
