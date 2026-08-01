@@ -33,6 +33,9 @@ import Schoenflies.PolygonalDiskExhaustion
 import Schoenflies.MarkedPolygonalDiskExhaustion
 import Schoenflies.LocalizedPolygonalDiskExhaustion
 import Schoenflies.MarkedHairCrossings
+import Schoenflies.LocalizedMarkedHairCrossings
+import Schoenflies.PolygonalShells
+import Schoenflies.PolygonalShellTriangulation
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
