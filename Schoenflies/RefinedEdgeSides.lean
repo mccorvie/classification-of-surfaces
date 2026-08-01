@@ -85,6 +85,58 @@ theorem mem_auxiliaryInside_iff_refinedEdgeInside
         hmidInside houtside.2
     simp [refinedEdgeInside, hpNotInside, hmidNotInside]
 
+/-- Away from the auxiliary circle, the two refined edges incident to a
+separator vertex have the same side label. -/
+theorem refined_nonCrossingVertex_same_edgeSide
+    (A : J.AccessibleAngularArc) (Q K : PolygonalCircle)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    (hcarrier : K.carrier = Q.carrier)
+    (hvertices : ∀ p ∈ Q.carrier ∩ range A.returnPath,
+      K.IsVertexPoint p)
+    (i : ZMod K.n)
+    (hiAux : K.vertex i ∉ A.auxiliaryJordanCircle.carrier) :
+    A.refinedEdgeInside K (i - 1) = A.refinedEdgeInside K i := by
+  classical
+  have hclosed : IsClosed A.auxiliaryJordanCircle.carrier := by
+    rw [← A.auxiliaryJordanCircle.frontier_inside]
+    exact isClosed_frontier
+  have hnhds : A.auxiliaryJordanCircle.carrierᶜ ∈ nhds (K.vertex i) :=
+    hclosed.isOpen_compl.mem_nhds hiAux
+  obtain ⟨r, hr, hball⟩ := Metric.mem_nhds_iff.mp hnhds
+  have hprev : K.vertex i ≠ K.vertex (i - 1) := by
+    have := K.adjacent_ne (i - 1)
+    simpa only [sub_add_cancel] using this.symm
+  have hnext : K.vertex i ≠ K.vertex (i + 1) := K.adjacent_ne i
+  obtain ⟨x, hxOpen, hxBall⟩ :=
+    exists_mem_openSegment_inter_ball hprev hr
+  obtain ⟨y, hyOpen, hyBall⟩ :=
+    exists_mem_openSegment_inter_ball hnext hr
+  have hxOpenIncoming : x ∈
+      openSegment ℝ (K.vertex (i - 1)) (K.vertex ((i - 1) + 1)) := by
+    rw [sub_add_cancel, openSegment_symm]
+    exact hxOpen
+  have hxInside := A.mem_auxiliaryInside_iff_refinedEdgeInside
+    Q K hArcInside hcarrier hvertices (i - 1) hxOpenIncoming
+  have hyInside := A.mem_auxiliaryInside_iff_refinedEdgeInside
+    Q K hArcInside hcarrier hvertices i hyOpen
+  have hsame := A.auxiliaryJordanCircle.preconnected_subset_same_side
+    (convex_ball (K.vertex i) r).isPreconnected hball hxBall hyBall
+  rcases hsame with ⟨hxIn, hyIn⟩ | ⟨hxOut, hyOut⟩
+  · exact (hxInside.mp hxIn).trans (hyInside.mp hyIn).symm
+  · have hxNotIn : x ∉ A.auxiliaryJordanCircle.inside := by
+      intro hxIn
+      exact Set.disjoint_left.mp
+        A.auxiliaryJordanCircle.inside_disjoint_outside hxIn hxOut
+    have hyNotIn : y ∉ A.auxiliaryJordanCircle.inside := by
+      intro hyIn
+      exact Set.disjoint_left.mp
+        A.auxiliaryJordanCircle.inside_disjoint_outside hyIn hyOut
+    have hxFalse : A.refinedEdgeInside K (i - 1) = false :=
+      Bool.eq_false_of_not_eq_true fun htrue => hxNotIn (hxInside.mpr htrue)
+    have hyFalse : A.refinedEdgeInside K i = false :=
+      Bool.eq_false_of_not_eq_true fun htrue => hyNotIn (hyInside.mpr htrue)
+    exact hxFalse.trans hyFalse.symm
+
 /-- At a transverse auxiliary-circle crossing, the two refined separator
 edges incident to the crossing vertex have opposite side labels. -/
 theorem refined_crossingVertex_changes_edgeSide
@@ -294,6 +346,36 @@ theorem refined_crossingVertex_changes_edgeSide
         hcarrier hvertices i hminusOpen)
       hsides
   · exact False.elim (hnotBothIncoming ⟨hplusIn, hminusIn⟩)
+
+/-- For a generic refined separator, a vertex is on the auxiliary circle
+exactly when its incident edge labels change. -/
+theorem refinedEdgeSides_ne_iff_crossingVertex
+    (A : J.AccessibleAngularArc) (Q K : PolygonalCircle)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    (hcarrier : K.carrier = Q.carrier)
+    (hvertices : ∀ p ∈ Q.carrier ∩ range A.returnPath,
+      K.IsVertexPoint p)
+    (hpolygonVertices : ∀ (i : ZMod Q.n)
+        (j : Fin A.returnCarrierBrokenLine.data.n),
+      planeDet
+        (A.returnCarrierBrokenLine.data.vertex j.castSucc - Q.vertex i)
+        (A.returnCarrierBrokenLine.data.vertex j.succ -
+          A.returnCarrierBrokenLine.data.vertex j.castSucc) ≠ 0)
+    (hbrokenVertices : ∀ (i : ZMod Q.n)
+        (j : Fin (A.returnCarrierBrokenLine.data.n + 1)),
+      planeDet
+        (A.returnCarrierBrokenLine.data.vertex j - Q.vertex i)
+        (Q.vertex (i + 1) - Q.vertex i) ≠ 0)
+    (i : ZMod K.n) :
+    A.refinedEdgeInside K (i - 1) ≠ A.refinedEdgeInside K i ↔
+      K.vertex i ∈ A.auxiliaryJordanCircle.carrier := by
+  constructor
+  · intro hchange
+    by_contra hiAux
+    exact hchange (A.refined_nonCrossingVertex_same_edgeSide Q K
+      hArcInside hcarrier hvertices i hiAux)
+  · exact A.refined_crossingVertex_changes_edgeSide Q K hArcInside
+      hcarrier hvertices hpolygonVertices hbrokenVertices i
 
 end AccessibleAngularArc
 end JordanCircle
