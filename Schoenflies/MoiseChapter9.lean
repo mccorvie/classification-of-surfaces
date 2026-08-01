@@ -40,9 +40,13 @@ import Schoenflies.LocalizedShellCrosscuts
 import Schoenflies.LocalizedShellCutPaths
 import Schoenflies.JordanArcPaths
 import Schoenflies.AnnularCrosscutSeparators
+import Schoenflies.AnnularSeparatorPairs
+import Schoenflies.LocallyStraightSets
 import Schoenflies.LocalizedAnnularCrosscuts
 import Schoenflies.AnnularSeparatorSides
 import Schoenflies.JordanThetaRegions
+import Schoenflies.PolygonalAnnularTheta
+import Schoenflies.LocalizedAnnularTheta
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
