@@ -102,6 +102,30 @@ theorem curvePoint_descendant_right_ne_parent_left
       (left_mem_Icc.mpr (A.descendant bs).left_lt_right.le)).1
   exact (hdescLeft.trans_lt (A.descendant bs).left_lt_right).ne hangle.symm
 
+/-- Dually, a descendant's left endpoint never reaches the right endpoint
+of its parent arc. -/
+theorem curvePoint_descendant_left_ne_parent_right
+    (A : J.AccessibleAngularArc) (bs : List Bool) :
+    (J.curvePoint (A.descendant bs).left : Plane) ≠
+      (J.curvePoint A.right : Plane) := by
+  intro hplane
+  have hcurve : J.curvePoint (A.descendant bs).left =
+      J.curvePoint A.right := Subtype.ext hplane
+  have hparam : JordanCurve.Arcs.param (A.descendant bs).left =
+      JordanCurve.Arcs.param A.right :=
+    J.carrierHomeomorph.injective hcurve
+  have hleftMem : (A.descendant bs).left ∈ Icc A.left A.right :=
+    A.descendant_interval_subset bs
+      (left_mem_Icc.mpr (A.descendant bs).left_lt_right.le)
+  have hrightMem : A.right ∈ Icc A.left A.right :=
+    right_mem_Icc.mpr A.left_lt_right.le
+  have hangle := JordanCurve.Arcs.param_injOn A.width_lt_turn
+    hleftMem hrightMem hparam
+  have hdescRight : (A.descendant bs).right ≤ A.right :=
+    (A.descendant_interval_subset bs
+      (right_mem_Icc.mpr (A.descendant bs).left_lt_right.le)).2
+  exact ((A.descendant bs).left_lt_right.trans_le hdescRight).ne hangle
+
 end AccessibleAngularArc
 
 namespace InitialAngularArcs

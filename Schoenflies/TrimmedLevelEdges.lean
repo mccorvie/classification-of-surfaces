@@ -187,6 +187,55 @@ theorem trimmedEdgeSegment_inter_of_same_block_succ
     trimmedCrosscutCarrierLine, SimpleBrokenLine.carrierBrokenLine,
     BrokenLineData.resolvedBrokenLine] using h
 
+theorem trimmedRightPoint_mem_trimmedEdgeSegment_iff
+    (a : LevelAddress n)
+    (i : Fin (F.trimmedCrosscutCarrierLine a).data.n) :
+    F.trimmedRightPoint (index a) ∈ F.trimmedEdgeSegment ⟨a, i⟩ ↔
+      i.val = 0 := by
+  let B := (F.trimmedLine (index a)).data
+  have h := B.resolvedVertex_zero_mem_segment_iff i
+  have h' : (F.trimmedCrosscutCarrierLine a).data.vertex 0 ∈
+      F.trimmedEdgeSegment ⟨a, i⟩ ↔ i.val = 0 := by
+    convert h using 1
+    all_goals simp [B, trimmedEdgeSegment, trimmedEdgeStart,
+      trimmedEdgeFinish, trimmedCrosscutCarrierLine,
+      SimpleBrokenLine.carrierBrokenLine,
+      BrokenLineData.resolvedBrokenLine]
+    all_goals rfl
+  constructor
+  · intro hx
+    apply h'.mp
+    convert hx using 1
+    exact (F.trimmedCrosscutCarrierLine a).start_eq
+  · intro hi
+    convert h'.mpr hi using 1
+    exact (F.trimmedCrosscutCarrierLine a).start_eq.symm
+
+theorem trimmedLeftPoint_mem_trimmedEdgeSegment_iff
+    (a : LevelAddress n)
+    (i : Fin (F.trimmedCrosscutCarrierLine a).data.n) :
+    F.trimmedLeftPoint (index a) ∈ F.trimmedEdgeSegment ⟨a, i⟩ ↔
+      i.val + 1 = (F.trimmedCrosscutCarrierLine a).data.n := by
+  let B := (F.trimmedLine (index a)).data
+  have h := B.resolvedVertex_last_mem_segment_iff i
+  have h' : (F.trimmedCrosscutCarrierLine a).data.vertex
+        (Fin.last (F.trimmedCrosscutCarrierLine a).data.n) ∈
+      F.trimmedEdgeSegment ⟨a, i⟩ ↔
+        i.val + 1 = (F.trimmedCrosscutCarrierLine a).data.n := by
+    convert h using 1
+    all_goals simp [B, trimmedEdgeSegment, trimmedEdgeStart,
+      trimmedEdgeFinish, trimmedCrosscutCarrierLine,
+      SimpleBrokenLine.carrierBrokenLine,
+      BrokenLineData.resolvedBrokenLine]
+  constructor
+  · intro hx
+    apply h'.mp
+    convert hx using 1
+    exact (F.trimmedCrosscutCarrierLine a).finish_eq
+  · intro hi
+    convert h'.mpr hi using 1
+    exact (F.trimmedCrosscutCarrierLine a).finish_eq.symm
+
 theorem disjoint_trimmedEdgeSegment_of_same_block_nonadjacent
     (a : LevelAddress n)
     (i j : Fin (F.trimmedCrosscutCarrierLine a).data.n)

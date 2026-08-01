@@ -1,5 +1,6 @@
 import Schoenflies.CyclicLevelAddresses
 import Schoenflies.HairOrdering
+import Schoenflies.LevelEndpointIncidence
 
 /-!
 # Endpoint hairs retained between consecutive subdivision levels
@@ -200,6 +201,64 @@ theorem levelArc_curveArcPlane_subset_of_mem_descendantAddresses
             subset_union_right).trans_eq
               (I.levelArc c).leftChild_union_rightChild_curveArcPlane).trans
         exact ih c hc
+
+/-- Every entry of the recursively listed descendants is literally obtained
+by a finite descendant word from the parent arc. -/
+theorem exists_levelArc_eq_descendant_of_mem_descendantAddresses
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n) :
+    ∀ {k : ℕ} (b : LevelAddress (n + k)),
+      b ∈ descendantAddresses a k →
+        ∃ bs : List Bool,
+          I.levelArc b = (I.levelArc a).descendant bs := by
+  intro k
+  induction k with
+  | zero =>
+      intro b hb
+      simp only [descendantAddresses, List.mem_singleton] at hb
+      subst b
+      exact ⟨[], rfl⟩
+  | succ k ih =>
+      intro b hb
+      change b ∈ refineLevelAddresses (descendantAddresses a k) at hb
+      rw [refineLevelAddresses, List.mem_flatMap] at hb
+      obtain ⟨c, hc, hb⟩ := hb
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hb
+      obtain ⟨bs, hbs⟩ := ih c hc
+      rcases hb with rfl | rfl
+      · refine ⟨bs ++ [false], ?_⟩
+        rw [I.levelArc_extendLevelAddress_false,
+          AccessibleAngularArc.descendant_append, ← hbs]
+        rfl
+      · refine ⟨bs ++ [true], ?_⟩
+        rw [I.levelArc_extendLevelAddress_true,
+          AccessibleAngularArc.descendant_append, ← hbs]
+        rfl
+
+/-- A listed proper-or-improper descendant's right endpoint never wraps
+back to the parent arc's left endpoint. -/
+theorem levelArc_right_ne_parent_left_of_mem_descendantAddresses
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {k : ℕ} (b : LevelAddress (n + k))
+    (hb : b ∈ descendantAddresses a k) :
+    (J.curvePoint (I.levelArc b).right : Plane) ≠
+      (J.curvePoint (I.levelArc a).left : Plane) := by
+  obtain ⟨bs, hbs⟩ :=
+    I.exists_levelArc_eq_descendant_of_mem_descendantAddresses a b hb
+  rw [hbs]
+  exact (I.levelArc a).curvePoint_descendant_right_ne_parent_left bs
+
+/-- The left endpoint of a listed descendant likewise never reaches the
+parent arc's right endpoint. -/
+theorem levelArc_left_ne_parent_right_of_mem_descendantAddresses
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {k : ℕ} (b : LevelAddress (n + k))
+    (hb : b ∈ descendantAddresses a k) :
+    (J.curvePoint (I.levelArc b).left : Plane) ≠
+      (J.curvePoint (I.levelArc a).right : Plane) := by
+  obtain ⟨bs, hbs⟩ :=
+    I.exists_levelArc_eq_descendant_of_mem_descendantAddresses a b hb
+  rw [hbs]
+  exact (I.levelArc a).curvePoint_descendant_left_ne_parent_right bs
 
 /-- The left child retains its parent's left endpoint hair. -/
 @[simp] theorem levelLeftHair_extendLevelAddress_false_carrier
