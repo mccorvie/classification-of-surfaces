@@ -30,6 +30,7 @@ import Schoenflies.ShrinkingCollars
 import Schoenflies.TrimmedHairCrosscuts
 import Schoenflies.PolygonalSubpathExtraction
 import Schoenflies.OpenControlledCrosscuts
+import Schoenflies.TrimmedCollarCells
 import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.HairReturns
