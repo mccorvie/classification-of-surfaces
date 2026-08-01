@@ -31,6 +31,7 @@ import Schoenflies.NestedCollarStages
 import Schoenflies.PolyhedralDiskNeighborhoods
 import Schoenflies.PolygonalDiskExhaustion
 import Schoenflies.MarkedPolygonalDiskExhaustion
+import Schoenflies.LocalizedPolygonalDiskExhaustion
 import Schoenflies.MarkedHairCrossings
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
@@ -148,6 +149,17 @@ The output here consists only of homeomorphisms of the two closed regions.
 ambient pasting.  This is a proposition, not an axiom. -/
 def HasMoiseDiskExtensions (J : JordanCircle) : Prop :=
   Nonempty (RegionalExtensionData J)
+
+/-- Moise's first form: the closed bounded complementary region is a disk,
+with the parametrized Jordan curve sent to the corresponding point of the
+unit circle.  This is the active geometric milestone; the unbounded form is
+derived only after this proposition has been constructed. -/
+def HasMoiseInsideDiskExtension (J : JordanCircle) : Prop :=
+  Nonempty (InsideRegionalExtensionData J)
+
+theorem HasMoiseDiskExtensions.inside {J : JordanCircle}
+    (h : HasMoiseDiskExtensions J) : HasMoiseInsideDiskExtension J :=
+  ⟨h.some.insideData⟩
 
 end MoiseChapter9
 

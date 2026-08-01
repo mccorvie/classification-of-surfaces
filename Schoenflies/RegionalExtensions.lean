@@ -25,9 +25,18 @@ private theorem extendFromClosed_apply (s : Set Plane) (hs : IsClosed s)
   have h := Classical.choose_spec (f.exists_extension hs.isClosedEmbedding_subtypeVal)
   exact DFunLike.congr_fun h x
 
+/-- The bounded-side, or "first form", of Schoenflies.  This is the exact
+output of Moise's nested-cell construction before the unbounded side is
+recovered by inversion. -/
+structure InsideRegionalExtensionData (J : JordanCircle) where
+  homeomorph : Homeomorph (closure J.inside) (closedBall (0 : Plane) 1)
+  boundary : ∀ x : J.carrier,
+    (homeomorph ⟨x, by rw [J.closure_inside]; exact Or.inr x.2⟩ : Plane) =
+      (J.carrierHomeomorph.symm x : Plane)
+
 /-- Homeomorphisms of the closed inside and outside regions, with their
 boundary and open-stratum behavior made explicit.  This is the economical
-output type for the nested-cell construction. -/
+output type for the completed regional construction. -/
 structure RegionalExtensionData (J : JordanCircle) where
   insideHomeomorph : closure J.inside ≃ₜ closedBall (0 : Plane) 1
   outsideHomeomorph : closure J.outside ≃ₜ ((ball (0 : Plane) 1)ᶜ : Set Plane)
@@ -40,7 +49,14 @@ structure RegionalExtensionData (J : JordanCircle) where
 
 namespace RegionalExtensionData
 
-variable {J : JordanCircle} (E : RegionalExtensionData J)
+variable {J : JordanCircle}
+
+/-- Forget the unbounded-side data and retain Moise's first-form theorem. -/
+def insideData (E : RegionalExtensionData J) : InsideRegionalExtensionData J where
+  homeomorph := E.insideHomeomorph
+  boundary := E.inside_boundary
+
+variable (E : RegionalExtensionData J)
 
 theorem inside_inverse_boundary (y : sphere (0 : Plane) 1) :
     (E.insideHomeomorph.symm ⟨y, sphere_subset_closedBall y.2⟩ : Plane) =
