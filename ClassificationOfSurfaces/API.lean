@@ -364,6 +364,7 @@ or at a pair-reduced valid one-face word.
 * `SurfaceCellComplex.oppositeDirectionIdentification_mem_of_get_pos_neg`
 * `quotEqvGenHomeomorph`
 * `eqvGenQuotientCongrRaw`
+* `eqvGen_map_of_generator_to_equiv`
 * `eqvGen_map_of_generator_to_eqvGen`
 * `eqvGen_iff_of_generator_maps`
 * `eqvGenQuotientCongrRawOfGeneratorMaps`
