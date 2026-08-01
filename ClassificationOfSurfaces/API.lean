@@ -343,6 +343,8 @@ or at a pair-reduced valid one-face word.
 * `PolygonGluing.setoid`
 * `PolygonGluing.Realization`
 * `PolygonGluing.realizationCongr`
+* `PolygonGluing.realizationCongrOfMaps`
+* `PolygonGluing.realizationCongrOfGeneratorMaps`
 * `FiniteCyclicPresentation.edgeMultiplicity_eq_card_edgeOccurrences`
 * `FiniteCyclicPresentation.IsSurfaceValid.exists_unique_partner`
 * `FiniteCyclicPresentation.IsSurfaceValid.exists_identification_source`

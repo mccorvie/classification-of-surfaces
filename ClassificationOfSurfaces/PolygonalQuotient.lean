@@ -378,6 +378,37 @@ noncomputable def realizationCongr
     Realization identifications₁ ≃ₜ Realization identifications₂ :=
   Homeomorph.Quotient.congr e h
 
+/-- A homeomorphism preserving the generated relations in both directions descends to polygonal
+realizations. -/
+noncomputable def realizationCongrOfMaps
+    {Face₁ : Type u} {sideCount₁ : Face₁ → ℕ}
+    {Face₂ : Type u} {sideCount₂ : Face₂ → ℕ}
+    {identifications₁ : Set (Identification Face₁ sideCount₁)}
+    {identifications₂ : Set (Identification Face₂ sideCount₂)}
+    (e : PreRealization Face₁ sideCount₁ ≃ₜ PreRealization Face₂ sideCount₂)
+    (hforward : ∀ x y, setoid identifications₁ x y →
+      setoid identifications₂ (e x) (e y))
+    (hbackward : ∀ x y, setoid identifications₂ x y →
+      setoid identifications₁ (e.symm x) (e.symm y)) :
+    Realization identifications₁ ≃ₜ Realization identifications₂ :=
+  realizationCongr e fun x y ↦ ⟨hforward x y, fun hxy ↦ by
+    simpa only [e.symm_apply_apply] using hbackward (e x) (e y) hxy⟩
+
+/-- Bidirectional maps of elementary generators descend to polygonal realizations. -/
+noncomputable def realizationCongrOfGeneratorMaps
+    {Face₁ : Type u} {sideCount₁ : Face₁ → ℕ}
+    {Face₂ : Type u} {sideCount₂ : Face₂ → ℕ}
+    {identifications₁ : Set (Identification Face₁ sideCount₁)}
+    {identifications₂ : Set (Identification Face₂ sideCount₂)}
+    (e : PreRealization Face₁ sideCount₁ ≃ₜ PreRealization Face₂ sideCount₂)
+    (hforward : ∀ x y, Generator identifications₁ x y →
+      setoid identifications₂ (e x) (e y))
+    (hbackward : ∀ x y, Generator identifications₂ x y →
+      setoid identifications₁ (e.symm x) (e.symm y)) :
+    Realization identifications₁ ≃ₜ Realization identifications₂ :=
+  realizationCongr e
+    (eqvGen_iff_of_generator_maps e.toEquiv hforward hbackward)
+
 /-- Equal generated relations give homeomorphic realizations on a fixed pre-space. -/
 noncomputable def realizationCongrRight
     {Face : Type u} {sideCount : Face → ℕ}
