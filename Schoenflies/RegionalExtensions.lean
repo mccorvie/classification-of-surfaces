@@ -1,0 +1,314 @@
+import Schoenflies.AmbientGluing
+import Mathlib.Topology.TietzeExtension
+
+/-!
+# From regional homeomorphisms to ambient gluing data
+
+The geometric Chapter 9 construction naturally produces homeomorphisms of
+the two closed complementary regions.  `DiskExtensionData`, by contrast,
+uses maps on the whole plane so that its final pasting proof is convenient.
+This file bridges the two formulations.  Tietze extension is used only to
+choose irrelevant values away from each closed domain.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+
+private noncomputable def extendFromClosed (s : Set Plane) (hs : IsClosed s)
+    (f : C(s, Plane)) : C(Plane, Plane) :=
+  Classical.choose (f.exists_extension hs.isClosedEmbedding_subtypeVal)
+
+private theorem extendFromClosed_apply (s : Set Plane) (hs : IsClosed s)
+    (f : C(s, Plane)) (x : s) :
+    extendFromClosed s hs f x = f x := by
+  have h := Classical.choose_spec (f.exists_extension hs.isClosedEmbedding_subtypeVal)
+  exact DFunLike.congr_fun h x
+
+/-- Homeomorphisms of the closed inside and outside regions, with their
+boundary and open-stratum behavior made explicit.  This is the economical
+output type for the nested-cell construction. -/
+structure RegionalExtensionData (J : JordanCircle) where
+  insideHomeomorph : closure J.inside ≃ₜ closedBall (0 : Plane) 1
+  outsideHomeomorph : closure J.outside ≃ₜ ((ball (0 : Plane) 1)ᶜ : Set Plane)
+  inside_boundary : ∀ x : J.carrier,
+    (insideHomeomorph ⟨x, by rw [J.closure_inside]; exact Or.inr x.2⟩ : Plane) =
+      (J.carrierHomeomorph.symm x : Plane)
+  outside_boundary : ∀ x : J.carrier,
+    (outsideHomeomorph ⟨x, by rw [J.closure_outside]; exact Or.inr x.2⟩ : Plane) =
+      (J.carrierHomeomorph.symm x : Plane)
+
+namespace RegionalExtensionData
+
+variable {J : JordanCircle} (E : RegionalExtensionData J)
+
+theorem inside_inverse_boundary (y : sphere (0 : Plane) 1) :
+    (E.insideHomeomorph.symm ⟨y, sphere_subset_closedBall y.2⟩ : Plane) =
+      (J.carrierHomeomorph y : Plane) := by
+  let x : J.carrier := J.carrierHomeomorph y
+  have hx : (x : Plane) ∈ closure J.inside := by
+    rw [J.closure_inside]
+    exact Or.inr x.2
+  have hmap : E.insideHomeomorph ⟨x, hx⟩ =
+      ⟨y, sphere_subset_closedBall y.2⟩ := by
+    apply Subtype.ext
+    exact (E.inside_boundary x).trans
+      (congrArg Subtype.val (J.carrierHomeomorph.symm_apply_apply y))
+  rw [← hmap]
+  exact congrArg Subtype.val (E.insideHomeomorph.symm_apply_apply ⟨x, hx⟩)
+
+theorem outside_inverse_boundary (y : sphere (0 : Plane) 1) :
+    (E.outsideHomeomorph.symm ⟨y, fun hy => by
+      rw [mem_ball, y.2] at hy
+      exact lt_irrefl 1 hy⟩ : Plane) = (J.carrierHomeomorph y : Plane) := by
+  let x : J.carrier := J.carrierHomeomorph y
+  have hx : (x : Plane) ∈ closure J.outside := by
+    rw [J.closure_outside]
+    exact Or.inr x.2
+  let y' : ((ball (0 : Plane) 1)ᶜ : Set Plane) := ⟨y, fun hy => by
+    rw [mem_ball, y.2] at hy
+    exact lt_irrefl 1 hy⟩
+  have hmap : E.outsideHomeomorph ⟨x, hx⟩ = y' := by
+    apply Subtype.ext
+    exact (E.outside_boundary x).trans
+      (congrArg Subtype.val (J.carrierHomeomorph.symm_apply_apply y))
+  change (E.outsideHomeomorph.symm y' : Plane) = _
+  rw [← hmap]
+  exact congrArg Subtype.val (E.outsideHomeomorph.symm_apply_apply ⟨x, hx⟩)
+
+theorem inside_maps_open (x : J.inside) :
+    (E.insideHomeomorph ⟨x, subset_closure x.2⟩ : Plane) ∈
+      ball (0 : Plane) 1 := by
+  let z := E.insideHomeomorph ⟨x, subset_closure x.2⟩
+  by_contra hzball
+  have hzsphere : (z : Plane) ∈ sphere (0 : Plane) 1 := by
+    rw [mem_sphere]
+    have hzle : dist (z : Plane) 0 ≤ 1 := by
+      have h := z.2
+      rwa [mem_closedBall] at h
+    have hzge : 1 ≤ dist (z : Plane) 0 := by
+      exact not_lt.mp (by simpa [mem_ball] using hzball)
+    exact le_antisymm hzle hzge
+  let y : sphere (0 : Plane) 1 := ⟨z, hzsphere⟩
+  let c : J.carrier := J.carrierHomeomorph y
+  have hc : (c : Plane) ∈ closure J.inside := by
+    rw [J.closure_inside]
+    exact Or.inr c.2
+  have hsame : E.insideHomeomorph ⟨c, hc⟩ = z := by
+    apply Subtype.ext
+    exact (E.inside_boundary c).trans
+      (congrArg Subtype.val (J.carrierHomeomorph.symm_apply_apply y))
+  have hxc : (⟨x, subset_closure x.2⟩ : closure J.inside) = ⟨c, hc⟩ :=
+    E.insideHomeomorph.injective hsame.symm
+  have hxcarrier : (x : Plane) ∈ J.carrier := by
+    have hval : (x : Plane) = (c : Plane) := congrArg Subtype.val hxc
+    rw [hval]
+    exact c.2
+  exact (J.inside_subset_compl x.2) hxcarrier
+
+theorem outside_maps_open (x : J.outside) :
+    (E.outsideHomeomorph ⟨x, subset_closure x.2⟩ : Plane) ∈
+      (closedBall (0 : Plane) 1)ᶜ := by
+  let z := E.outsideHomeomorph ⟨x, subset_closure x.2⟩
+  intro hzclosed
+  have hzsphere : (z : Plane) ∈ sphere (0 : Plane) 1 := by
+    rw [mem_sphere]
+    have hzle : dist (z : Plane) 0 ≤ 1 := by simpa [mem_closedBall] using hzclosed
+    have hzge : 1 ≤ dist (z : Plane) 0 := by
+      have h := z.2
+      exact le_of_not_gt fun hlt => h (mem_ball.mpr hlt)
+    exact le_antisymm hzle hzge
+  let y : sphere (0 : Plane) 1 := ⟨z, hzsphere⟩
+  let c : J.carrier := J.carrierHomeomorph y
+  have hc : (c : Plane) ∈ closure J.outside := by
+    rw [J.closure_outside]
+    exact Or.inr c.2
+  have hsame : E.outsideHomeomorph ⟨c, hc⟩ = z := by
+    apply Subtype.ext
+    exact (E.outside_boundary c).trans
+      (congrArg Subtype.val (J.carrierHomeomorph.symm_apply_apply y))
+  have hxc : (⟨x, subset_closure x.2⟩ : closure J.outside) = ⟨c, hc⟩ :=
+    E.outsideHomeomorph.injective hsame.symm
+  have hxcarrier : (x : Plane) ∈ J.carrier := by
+    have hval : (x : Plane) = (c : Plane) := congrArg Subtype.val hxc
+    rw [hval]
+    exact c.2
+  exact (J.outside_subset_compl x.2) hxcarrier
+
+theorem inside_inverse_maps_open (y : ball (0 : Plane) 1) :
+    (E.insideHomeomorph.symm ⟨y, ball_subset_closedBall y.2⟩ : Plane) ∈
+      J.inside := by
+  let z := E.insideHomeomorph.symm ⟨y, ball_subset_closedBall y.2⟩
+  have hz : (z : Plane) ∈ J.inside ∪ J.carrier := by
+    rw [← J.closure_inside]
+    exact z.2
+  rcases hz with hz | hz
+  · exact hz
+  · exfalso
+    have heq := congrArg Subtype.val
+      (E.insideHomeomorph.apply_symm_apply
+        ⟨y, ball_subset_closedBall y.2⟩)
+    have hys : (y : Plane) ∈ sphere (0 : Plane) 1 := by
+      rw [← heq, E.inside_boundary ⟨z, hz⟩]
+      exact (J.carrierHomeomorph.symm ⟨z, hz⟩).2
+    have hyball := y.2
+    rw [mem_ball, hys] at hyball
+    exact lt_irrefl 1 hyball
+
+theorem outside_inverse_maps_open
+    (y : ((closedBall (0 : Plane) 1)ᶜ : Set Plane)) :
+    (E.outsideHomeomorph.symm
+      ⟨y, fun hy => y.2 (ball_subset_closedBall hy)⟩ : Plane) ∈ J.outside := by
+  let y' : ((ball (0 : Plane) 1)ᶜ : Set Plane) :=
+    ⟨y, fun hy => y.2 (ball_subset_closedBall hy)⟩
+  let z := E.outsideHomeomorph.symm y'
+  have hz : (z : Plane) ∈ J.outside ∪ J.carrier := by
+    rw [← J.closure_outside]
+    exact z.2
+  rcases hz with hz | hz
+  · exact hz
+  · exfalso
+    have heq := congrArg Subtype.val (E.outsideHomeomorph.apply_symm_apply y')
+    have hys : (y : Plane) ∈ sphere (0 : Plane) 1 := by
+      change (y' : Plane) ∈ sphere (0 : Plane) 1
+      rw [← heq, E.outside_boundary ⟨z, hz⟩]
+      exact (J.carrierHomeomorph.symm ⟨z, hz⟩).2
+    exact y.2 (sphere_subset_closedBall hys)
+
+private def insideForward : C(closure J.inside, Plane) :=
+  ⟨fun x => E.insideHomeomorph x,
+    continuous_subtype_val.comp E.insideHomeomorph.continuous⟩
+
+private def outsideForward : C(closure J.outside, Plane) :=
+  ⟨fun x => E.outsideHomeomorph x,
+    continuous_subtype_val.comp E.outsideHomeomorph.continuous⟩
+
+private def insideBackward : C(closedBall (0 : Plane) 1, Plane) :=
+  ⟨fun x => E.insideHomeomorph.symm x,
+    continuous_subtype_val.comp E.insideHomeomorph.symm.continuous⟩
+
+private def outsideBackward : C(((ball (0 : Plane) 1)ᶜ : Set Plane), Plane) :=
+  ⟨fun x => E.outsideHomeomorph.symm x,
+    continuous_subtype_val.comp E.outsideHomeomorph.symm.continuous⟩
+
+noncomputable def insideMap : Plane → Plane :=
+  extendFromClosed (closure J.inside) isClosed_closure E.insideForward
+
+noncomputable def outsideMap : Plane → Plane :=
+  extendFromClosed (closure J.outside) isClosed_closure E.outsideForward
+
+noncomputable def insideInv : Plane → Plane :=
+  extendFromClosed (closedBall (0 : Plane) 1) isClosed_closedBall E.insideBackward
+
+noncomputable def outsideInv : Plane → Plane :=
+  extendFromClosed ((ball (0 : Plane) 1)ᶜ) isOpen_ball.isClosed_compl E.outsideBackward
+
+private theorem insideMap_apply {x : Plane} (hx : x ∈ closure J.inside) :
+    E.insideMap x = E.insideHomeomorph ⟨x, hx⟩ :=
+  extendFromClosed_apply _ _ _ ⟨x, hx⟩
+
+private theorem outsideMap_apply {x : Plane} (hx : x ∈ closure J.outside) :
+    E.outsideMap x = E.outsideHomeomorph ⟨x, hx⟩ :=
+  extendFromClosed_apply _ _ _ ⟨x, hx⟩
+
+private theorem insideInv_apply {x : Plane} (hx : x ∈ closedBall (0 : Plane) 1) :
+    E.insideInv x = E.insideHomeomorph.symm ⟨x, hx⟩ :=
+  extendFromClosed_apply _ _ _ ⟨x, hx⟩
+
+private theorem outsideInv_apply {x : Plane} (hx : x ∈ (ball (0 : Plane) 1)ᶜ) :
+    E.outsideInv x = E.outsideHomeomorph.symm ⟨x, hx⟩ :=
+  extendFromClosed_apply _ _ _ ⟨x, hx⟩
+
+/-- Regional homeomorphisms provide exactly the data consumed by the ambient
+pasting theorem. -/
+noncomputable def diskExtensionData : DiskExtensionData J where
+  insideMap := E.insideMap
+  outsideMap := E.outsideMap
+  insideInv := E.insideInv
+  outsideInv := E.outsideInv
+  continuousOn_insideMap :=
+    (extendFromClosed _ _ E.insideForward).continuous.continuousOn
+  continuousOn_outsideMap :=
+    (extendFromClosed _ _ E.outsideForward).continuous.continuousOn
+  continuousOn_insideInv :=
+    (extendFromClosed _ _ E.insideBackward).continuous.continuousOn
+  continuousOn_outsideInv :=
+    (extendFromClosed _ _ E.outsideBackward).continuous.continuousOn
+  maps_inside := fun x hx => by
+    rw [E.insideMap_apply hx]
+    exact (E.insideHomeomorph ⟨x, hx⟩).2
+  maps_inside_open := fun x hx => by
+    rw [E.insideMap_apply (subset_closure hx)]
+    exact E.inside_maps_open ⟨x, hx⟩
+  maps_outside := fun x hx => by
+    rw [E.outsideMap_apply hx]
+    exact (E.outsideHomeomorph ⟨x, hx⟩).2
+  maps_outside_open := fun x hx => by
+    rw [E.outsideMap_apply (subset_closure hx)]
+    exact E.outside_maps_open ⟨x, hx⟩
+  inv_maps_inside := fun x hx => by
+    rw [E.insideInv_apply hx]
+    exact (E.insideHomeomorph.symm ⟨x, hx⟩).2
+  inv_maps_inside_open := fun x hx => by
+    rw [E.insideInv_apply (ball_subset_closedBall hx)]
+    exact E.inside_inverse_maps_open ⟨x, hx⟩
+  inv_maps_outside := fun x hx => by
+    rw [E.outsideInv_apply hx]
+    exact (E.outsideHomeomorph.symm ⟨x, hx⟩).2
+  inv_maps_outside_open := fun x hx => by
+    have hx' : x ∈ (ball (0 : Plane) 1)ᶜ := fun h => hx (ball_subset_closedBall h)
+    rw [E.outsideInv_apply hx']
+    exact E.outside_inverse_maps_open ⟨x, hx⟩
+  agree_on_curve := fun x hx => by
+    have hxi : x ∈ closure J.inside := by rw [J.closure_inside]; exact Or.inr hx
+    have hxo : x ∈ closure J.outside := by rw [J.closure_outside]; exact Or.inr hx
+    rw [E.insideMap_apply hxi, E.outsideMap_apply hxo]
+    exact (E.inside_boundary ⟨x, hx⟩).trans (E.outside_boundary ⟨x, hx⟩).symm
+  maps_curve_onto_sphere := by
+    apply Set.Subset.antisymm
+    · rintro y ⟨x, hx, rfl⟩
+      have hxi : x ∈ closure J.inside := by rw [J.closure_inside]; exact Or.inr hx
+      rw [E.insideMap_apply hxi, E.inside_boundary ⟨x, hx⟩]
+      exact (J.carrierHomeomorph.symm ⟨x, hx⟩).2
+    · intro y hy
+      let z : sphere (0 : Plane) 1 := ⟨y, hy⟩
+      let x : J.carrier := J.carrierHomeomorph z
+      refine ⟨x, x.2, ?_⟩
+      have hxi : (x : Plane) ∈ closure J.inside := by
+        rw [J.closure_inside]
+        exact Or.inr x.2
+      rw [E.insideMap_apply hxi, E.inside_boundary x]
+      exact congrArg Subtype.val (J.carrierHomeomorph.symm_apply_apply z)
+  inv_agree_on_sphere := fun y hy => by
+    have hyc : y ∈ closedBall (0 : Plane) 1 := sphere_subset_closedBall hy
+    have hye : y ∈ (ball (0 : Plane) 1)ᶜ := by
+      intro h
+      rw [mem_ball, hy] at h
+      exact lt_irrefl 1 h
+    rw [E.insideInv_apply hyc, E.outsideInv_apply hye]
+    exact (E.inside_inverse_boundary ⟨y, hy⟩).trans
+      (E.outside_inverse_boundary ⟨y, hy⟩).symm
+  left_inside := fun x hx => by
+    rw [E.insideMap_apply hx]
+    have hm := (E.insideHomeomorph ⟨x, hx⟩).2
+    rw [E.insideInv_apply hm]
+    exact congrArg Subtype.val (E.insideHomeomorph.symm_apply_apply ⟨x, hx⟩)
+  left_outside := fun x hx => by
+    rw [E.outsideMap_apply hx]
+    have hm := (E.outsideHomeomorph ⟨x, hx⟩).2
+    rw [E.outsideInv_apply hm]
+    exact congrArg Subtype.val (E.outsideHomeomorph.symm_apply_apply ⟨x, hx⟩)
+  right_inside := fun x hx => by
+    rw [E.insideInv_apply hx]
+    have hm := (E.insideHomeomorph.symm ⟨x, hx⟩).2
+    rw [E.insideMap_apply hm]
+    exact congrArg Subtype.val (E.insideHomeomorph.apply_symm_apply ⟨x, hx⟩)
+  right_outside := fun x hx => by
+    rw [E.outsideInv_apply hx]
+    have hm := (E.outsideHomeomorph.symm ⟨x, hx⟩).2
+    rw [E.outsideMap_apply hm]
+    exact congrArg Subtype.val (E.outsideHomeomorph.apply_symm_apply ⟨x, hx⟩)
+
+end RegionalExtensionData
+
+end Schoenflies

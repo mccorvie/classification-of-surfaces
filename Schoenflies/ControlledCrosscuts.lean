@@ -1,0 +1,206 @@
+import Schoenflies.ArcNeighborhoods
+import Schoenflies.Crosscuts
+import Schoenflies.PolygonalPaths
+import ClassificationOfSurfaces.Moise.PLApproximation
+
+/-!
+# Compact avoidance for controlled crosscuts
+
+Moise 9.5 first joins auxiliary points through the complement of the selected
+Jordan subarc, and only afterwards chooses the brick-neighborhood mesh.  The
+order matters: the compact path then has a positive buffer from the subarc, so
+the polygonal frame can be chosen without meeting that path.
+
+This file records that metric/topological part of the argument independently
+of the finite separator extraction which follows it.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+namespace JordanCircle
+
+variable {J : JordanCircle}
+
+private abbrev MoiseBrokenLineData :=
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.BrokenLineData
+
+namespace BrokenLineData
+
+/-- The geometric carrier of a finite broken line is compact.  This is kept
+in the Schoenflies layer so the existing Moise API remains unchanged. -/
+theorem isCompact_segmentCarrier {U : Set Plane} (B : MoiseBrokenLineData U) :
+    IsCompact B.segmentCarrier := by
+  rw [LeanEval.Topology.ClassificationOfSurfaces.Moise.BrokenLineData.segmentCarrier]
+  apply isCompact_iUnion
+  intro i
+  rw [segment_eq_image_lineMap]
+  exact isCompact_Icc.image
+    (continuous_const.lineMap continuous_const continuous_id)
+
+/-- All listed segments, hence the whole geometric carrier, lie in the set
+indexed by the broken-line data. -/
+theorem segmentCarrier_subset {U : Set Plane} (B : MoiseBrokenLineData U) :
+    B.segmentCarrier ⊆ U := by
+  intro x hx
+  rw [LeanEval.Topology.ClassificationOfSurfaces.Moise.BrokenLineData.segmentCarrier,
+    mem_iUnion] at hx
+  obtain ⟨i, hi⟩ := hx
+  exact B.segment_subset i hi
+
+end BrokenLineData
+
+namespace AccessibleAngularArc
+
+/-- The complement of a proper Jordan subarc is path connected.  Maehara's
+arc theorem supplies connectedness; openness upgrades it to path
+connectedness in the locally path-connected plane. -/
+theorem isPathConnected_compl_curveArcPlane (A : J.AccessibleAngularArc) :
+    IsPathConnected A.curveArcPlaneᶜ := by
+  apply A.curveArcPlane_isCompact.isClosed.isOpen_compl.isConnected_iff_isPathConnected.mp
+  exact A.isConnected_compl_curveArcPlane
+
+/-- Two points avoiding the selected boundary arc can be joined by a compact
+path which still avoids one positive metric thickening of that arc.  This is
+the precise compact-buffer step behind Moise's phrase that the auxiliary
+broken line lies in the unbounded component of the complement of a
+sufficiently small brick neighborhood. -/
+theorem exists_path_disjoint_thickening (A : J.AccessibleAngularArc)
+    {x y : Plane} (hx : x ∉ A.curveArcPlane) (hy : y ∉ A.curveArcPlane) :
+    ∃ (gamma : Path x y) (delta : ℝ), 0 < delta ∧
+      Disjoint (range gamma) (thickening delta A.curveArcPlane) := by
+  have hjoined : JoinedIn A.curveArcPlaneᶜ x y :=
+    A.isPathConnected_compl_curveArcPlane.joinedIn x hx y hy
+  let gamma : Path x y := hjoined.somePath
+  have hgammaCompact : IsCompact (range gamma) :=
+    isCompact_range gamma.continuous
+  have hgammaSubset : range gamma ⊆ A.curveArcPlaneᶜ := by
+    rw [range_subset_iff]
+    exact hjoined.somePath_mem
+  have hdisjoint : Disjoint (range gamma) A.curveArcPlane := by
+    rw [Set.disjoint_left]
+    intro z hzPath hzArc
+    exact hgammaSubset hzPath hzArc
+  obtain ⟨delta, hdelta, hthickenings⟩ :=
+    hdisjoint.exists_thickenings hgammaCompact A.curveArcPlane_isCompact.isClosed
+  refine ⟨gamma, delta, hdelta, ?_⟩
+  exact hthickenings.mono (self_subset_thickening hdelta _) Subset.rfl
+
+/-- Compact avoidance in the form used for an already chosen auxiliary
+polygonal carrier. -/
+theorem exists_thickening_disjoint_of_compact
+    (A : J.AccessibleAngularArc) {C : Set Plane}
+    (hCcompact : IsCompact C) (hdisjoint : Disjoint C A.curveArcPlane) :
+    ∃ delta : ℝ, 0 < delta ∧
+      Disjoint C (thickening delta A.curveArcPlane) := by
+  obtain ⟨delta, hdelta, hthickenings⟩ :=
+    hdisjoint.exists_thickenings hCcompact A.curveArcPlane_isCompact.isClosed
+  exact ⟨delta, hdelta,
+    hthickenings.mono (self_subset_thickening hdelta _) Subset.rfl⟩
+
+/-- A quantitatively small outer polygonal frame can be chosen with any
+prescribed point of the arc complement on its exterior side.
+
+The proof avoids a circular choice.  First choose a path from the prescribed
+point to a point outside a fixed ball containing the original
+`epsilon`-neighborhood.  Compactness gives a positive distance between that
+path and the arc.  Only then is the finer polyhedral neighborhood, and hence
+its outer boundary polygon, selected. -/
+theorem exists_outerFrame_with_point_exterior
+    (A : J.AccessibleAngularArc) {epsilon : ℝ} (hepsilon : 0 < epsilon)
+    {x : Plane} (hx : x ∉ A.curveArcPlane) :
+    ∃ (rho : ℝ)
+      (N : FinitePolyhedralNeighborhood A.curveArcPlane
+        (thickening rho A.curveArcPlane))
+      (P : PolygonalCircle),
+        0 < rho ∧ rho ≤ epsilon ∧
+          P.carrier ⊆ thickening rho A.curveArcPlane ∧
+            A.curveArcPlane ⊆ P.interiorRegion ∧
+              x ∈ P.exteriorRegion := by
+  have hbounded : Bornology.IsBounded
+      (thickening epsilon A.curveArcPlane) :=
+    A.curveArcPlane_isCompact.isBounded.thickening
+  obtain ⟨R, hR⟩ :=
+    (Metric.isBounded_iff_subset_closedBall (0 : Plane)).mp hbounded
+  have hball_ne_univ : closedBall (0 : Plane) R ≠ Set.univ := by
+    intro hball
+    exact NormedSpace.unbounded_univ ℝ Plane (hball ▸ Metric.isBounded_closedBall)
+  obtain ⟨y, hyBall⟩ := Set.nonempty_compl.mpr hball_ne_univ
+  have hyArc : y ∉ A.curveArcPlane := by
+    intro hy
+    have hyThick : y ∈ thickening epsilon A.curveArcPlane :=
+      self_subset_thickening hepsilon _ hy
+    exact hyBall (hR hyThick)
+  obtain ⟨gamma, delta, hdelta, hgammaThick⟩ :=
+    A.exists_path_disjoint_thickening hx hyArc
+  let rho : ℝ := min epsilon delta
+  have hrho : 0 < rho := lt_min hepsilon hdelta
+  have hrhoEpsilon : rho ≤ epsilon := min_le_left _ _
+  have hrhoDelta : rho ≤ delta := min_le_right _ _
+  let N : FinitePolyhedralNeighborhood A.curveArcPlane
+      (thickening rho A.curveArcPlane) :=
+    Classical.choice (A.exists_finitePolyhedralNeighborhood_in_thickening hrho)
+  obtain ⟨P, hPfrontier, hPthick, hcoreClosed⟩ :=
+    N.exists_outerBoundaryPolygonalCircle A
+  have hPgamma : Disjoint (range gamma) P.carrier := by
+    apply hgammaThick.mono_right
+    intro z hz
+    exact thickening_mono hrhoDelta _ (hPthick hz)
+  have hArcInside : A.curveArcPlane ⊆ P.interiorRegion := by
+    intro z hzArc
+    have hzClosed : z ∈ P.closedRegion :=
+      hcoreClosed (N.curveArcPlane_subset_arcFrameCore A hzArc)
+    rw [P.closedRegion_eq_union] at hzClosed
+    rcases hzClosed with hzInside | hzCarrier
+    · exact hzInside
+    · have hzComponent : z ∈ N.arcComponent A :=
+        N.curveArcPlane_subset_arcComponent A hzArc
+      have hzCoreInterior : z ∈ interior (N.arcFrameCore A) :=
+        N.arcComponent_subset_interior_arcFrameCore A hzComponent
+      have hzCoreFrontier : z ∈ frontier (N.arcFrameCore A) :=
+        hPfrontier hzCarrier
+      exact False.elim
+        (Set.disjoint_left.mp disjoint_interior_frontier
+          hzCoreInterior hzCoreFrontier)
+  have hPball : P.carrier ⊆ closedBall (0 : Plane) R := by
+    exact hPthick.trans
+      ((thickening_mono hrhoEpsilon A.curveArcPlane).trans hR)
+  have hyNotClosed : y ∉ P.closedRegion := by
+    intro hyClosed
+    exact hyBall
+      (P.closedRegion_subset_closedBall_of_carrier_subset hPball hyClosed)
+  have hyExterior : y ∈ P.exteriorRegion := by
+    have hyCompl : y ∈ P.carrierᶜ := by
+      intro hyCarrier
+      apply hyNotClosed
+      rw [P.closedRegion_eq_union]
+      exact Or.inr hyCarrier
+    rw [← P.interior_union_exterior] at hyCompl
+    rcases hyCompl with hyInterior | hyExterior
+    · exact False.elim <| hyNotClosed <| by
+        rw [P.closedRegion_eq_union]
+        exact Or.inl hyInterior
+    · exact hyExterior
+  have hpathRegions : range gamma ⊆
+      P.interiorRegion ∪ P.exteriorRegion := by
+    rw [P.interior_union_exterior]
+    intro z hzPath hzCarrier
+    exact Set.disjoint_left.mp hPgamma hzPath hzCarrier
+  have hxExterior : x ∈ P.exteriorRegion := by
+    rcases (isConnected_range gamma.continuous).isPreconnected.subset_or_subset
+        P.isOpen_interiorRegion P.isOpen_exteriorRegion
+        P.disjoint_interior_exterior hpathRegions with hInside | hOutside
+    · have hyInside : y ∈ P.interiorRegion :=
+        hInside gamma.target_mem_range
+      exact False.elim
+        (Set.disjoint_left.mp P.disjoint_interior_exterior hyInside hyExterior)
+    · exact hOutside gamma.source_mem_range
+  exact ⟨rho, N, P, hrho, hrhoEpsilon, hPthick, hArcInside, hxExterior⟩
+
+end AccessibleAngularArc
+
+end JordanCircle
+
+end Schoenflies

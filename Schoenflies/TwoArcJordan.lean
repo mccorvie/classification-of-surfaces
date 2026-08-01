@@ -1,0 +1,207 @@
+import Schoenflies.JordanRegions
+import JordanCurve.Arcs
+
+/-!
+# A Jordan circle assembled from two arcs
+
+Moise 9.1 and 9.5 repeatedly replace one of the two arcs of a Jordan circle
+by another simple arc with the same endpoints.  This file supplies the
+topological gluing primitive: two injective paths, oppositely oriented and
+meeting only at their endpoints, give a parametrized Jordan circle.
+
+The construction uses `AddCircle 2`.  The first half of a representative
+interval traverses the first path and the second half traverses the second
+path.  Identifying `0` with `2` closes the loop.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+
+namespace TwoArcJordan
+
+variable {a b : Plane}
+
+local instance : Fact (0 < (2 : ℝ)) := ⟨by norm_num⟩
+
+/-- The closed two-path loop on the representative interval `[0,2]`. -/
+noncomputable def loop (p : Path a b) (q : Path b a) (t : ℝ) : Plane :=
+  if t ≤ 1 then
+    p (Set.projIcc (0 : ℝ) 1 (by norm_num) t)
+  else
+    q (Set.projIcc (0 : ℝ) 1 (by norm_num) (t - 1))
+
+theorem loop_eq_first (p : Path a b) (q : Path b a) {t : ℝ}
+    (ht : t ∈ Icc (0 : ℝ) 1) :
+    loop p q t = p ⟨t, ht⟩ := by
+  rw [loop, if_pos ht.2]
+  rw [Set.projIcc_of_mem _ ht]
+
+theorem loop_eq_second (p : Path a b) (q : Path b a) {t : ℝ}
+    (ht : t ∈ Ioc (1 : ℝ) 2) :
+    loop p q t = q ⟨t - 1, by constructor <;> linarith [ht.1, ht.2]⟩ := by
+  rw [loop, if_neg (not_le.mpr ht.1)]
+  rw [Set.projIcc_of_mem]
+
+@[simp] theorem loop_zero (p : Path a b) (q : Path b a) :
+    loop p q 0 = a := by
+  rw [loop_eq_first p q (by norm_num)]
+  exact p.source
+
+@[simp] theorem loop_one (p : Path a b) (q : Path b a) :
+    loop p q 1 = b := by
+  rw [loop_eq_first p q (by norm_num)]
+  exact p.target
+
+@[simp] theorem loop_two (p : Path a b) (q : Path b a) :
+    loop p q 2 = a := by
+  rw [loop_eq_second p q (by norm_num)]
+  convert q.target using 1 <;> norm_num
+
+theorem continuous_loop (p : Path a b) (q : Path b a) :
+    Continuous (loop p q) := by
+  let f : ℝ → Plane := fun t =>
+    p (Set.projIcc (0 : ℝ) 1 (by norm_num) t)
+  let g : ℝ → Plane := fun t =>
+    q (Set.projIcc (0 : ℝ) 1 (by norm_num) (t - 1))
+  change Continuous (fun t : ℝ => if t ≤ 1 then f t else g t)
+  apply continuous_if_le continuous_id continuous_const
+  · fun_prop
+  · fun_prop
+  · intro t ht
+    change t = 1 at ht
+    subst t
+    dsimp [f, g]
+    convert p.target.trans q.source.symm using 1 <;> norm_num
+
+/-- The two-path loop descended to the additive circle of circumference
+two. -/
+noncomputable def circleMap (p : Path a b) (q : Path b a) :
+    AddCircle (2 : ℝ) → Plane :=
+  AddCircle.liftIco 2 0 (loop p q)
+
+theorem continuous_circleMap (p : Path a b) (q : Path b a) :
+    Continuous (circleMap p q) := by
+  apply AddCircle.liftIco_zero_continuous
+  · exact (loop_zero p q).trans (loop_two p q).symm
+  · exact (continuous_loop p q).continuousOn
+
+/-- The half-open representative of an additive-circle point. -/
+private noncomputable def representative (z : AddCircle (2 : ℝ)) :
+    Ico (0 : ℝ) ((0 : ℝ) + 2) :=
+  AddCircle.equivIco 2 0 z
+
+private theorem circleMap_eq_loop_representative
+    (p : Path a b) (q : Path b a) (z : AddCircle (2 : ℝ)) :
+    circleMap p q z = loop p q (representative z) := rfl
+
+/-- The two halves cannot acquire an accidental common point: their only
+common values are the two endpoints, and the half-open circle
+representatives assign both endpoints consistently to the first half. -/
+theorem circleMap_injective (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b}) :
+    Injective (circleMap p q) := by
+  intro z w hzw
+  let s := representative z
+  let t := representative w
+  have hs0 : 0 ≤ (s : ℝ) := s.2.1
+  have hs2 : (s : ℝ) < 2 := by simpa using s.2.2
+  have ht0 : 0 ≤ (t : ℝ) := t.2.1
+  have ht2 : (t : ℝ) < 2 := by simpa using t.2.2
+  have hloop : loop p q s = loop p q t := by
+    simpa only [circleMap_eq_loop_representative] using hzw
+  have hcross (u v : ℝ) (hu : u ∈ Icc (0 : ℝ) 1)
+      (hv : v ∈ Ioo (1 : ℝ) 2) :
+      p ⟨u, hu⟩ ≠
+        q ⟨v - 1, ⟨by linarith [hv.1], by linarith [hv.2]⟩⟩ := by
+    intro heq
+    let up : unitInterval := ⟨u, hu⟩
+    let vq : unitInterval :=
+      ⟨v - 1, by constructor <;> linarith [hv.1, hv.2]⟩
+    have hcommon : p up ∈ range p ∩ range q :=
+      ⟨⟨up, rfl⟩, ⟨vq, heq.symm⟩⟩
+    rw [hinter] at hcommon
+    simp only [mem_insert_iff, mem_singleton_iff] at hcommon
+    rcases hcommon with haValue | hbValue
+    · have hup0 : up = 0 := hp (haValue.trans p.source.symm)
+      have hvq1 : vq = 1 := hq (heq.symm.trans (haValue.trans q.target.symm))
+      have hu0 := congrArg Subtype.val hup0
+      have hv1 := congrArg Subtype.val hvq1
+      dsimp [up, vq] at hu0 hv1
+      linarith [hv.2]
+    · have hup1 : up = 1 := hp (hbValue.trans p.target.symm)
+      have hvq0 : vq = 0 := hq (heq.symm.trans (hbValue.trans q.source.symm))
+      have hu1 := congrArg Subtype.val hup1
+      have hv0 := congrArg Subtype.val hvq0
+      dsimp [up, vq] at hu1 hv0
+      linarith [hv.1]
+  have hst : (s : ℝ) = (t : ℝ) := by
+    by_cases hs1 : (s : ℝ) ≤ 1
+    · have hsI : (s : ℝ) ∈ Icc (0 : ℝ) 1 := ⟨hs0, hs1⟩
+      rw [loop_eq_first p q hsI] at hloop
+      by_cases ht1 : (t : ℝ) ≤ 1
+      · have htI : (t : ℝ) ∈ Icc (0 : ℝ) 1 := ⟨ht0, ht1⟩
+        rw [loop_eq_first p q htI] at hloop
+        have heqI :
+            (⟨(s : ℝ), hsI⟩ : unitInterval) = ⟨(t : ℝ), htI⟩ :=
+          hp hloop
+        exact congrArg (fun u : unitInterval => (u : ℝ)) heqI
+      · have htI : (t : ℝ) ∈ Ioc (1 : ℝ) 2 :=
+          ⟨lt_of_not_ge ht1, ht2.le⟩
+        rw [loop_eq_second p q htI] at hloop
+        exact False.elim
+          (hcross s t hsI ⟨lt_of_not_ge ht1, ht2⟩ hloop)
+    · have hsI : (s : ℝ) ∈ Ioc (1 : ℝ) 2 :=
+        ⟨lt_of_not_ge hs1, hs2.le⟩
+      rw [loop_eq_second p q hsI] at hloop
+      by_cases ht1 : (t : ℝ) ≤ 1
+      · have htI : (t : ℝ) ∈ Icc (0 : ℝ) 1 := ⟨ht0, ht1⟩
+        rw [loop_eq_first p q htI] at hloop
+        exact False.elim
+          (hcross t s htI ⟨lt_of_not_ge hs1, hs2⟩ hloop.symm)
+      · have htI : (t : ℝ) ∈ Ioc (1 : ℝ) 2 :=
+          ⟨lt_of_not_ge ht1, ht2.le⟩
+        rw [loop_eq_second p q htI] at hloop
+        have heq : (s : ℝ) - 1 = (t : ℝ) - 1 :=
+          congrArg (fun u : unitInterval => (u : ℝ)) (hq hloop)
+        linarith
+  apply (AddCircle.equivIco (2 : ℝ) (0 : ℝ)).injective
+  apply Subtype.ext
+  simpa [s, t, representative] using hst
+
+/-- The standard homeomorphism from `AddCircle 2` to the geometric unit
+circle. -/
+noncomputable def circleHomeomorph :
+    AddCircle (2 : ℝ) ≃ₜ sphere (0 : Plane) 1 :=
+  (AddCircle.homeomorphCircle (by norm_num)).trans
+    JordanCurve.Arcs.circleHomeoSphere
+
+/-- Parametrize the union of the two paths by the geometric unit circle. -/
+noncomputable def sphereMap (p : Path a b) (q : Path b a) :
+    sphere (0 : Plane) 1 → Plane :=
+  circleMap p q ∘ circleHomeomorph.symm
+
+theorem continuous_sphereMap (p : Path a b) (q : Path b a) :
+    Continuous (sphereMap p q) :=
+  (continuous_circleMap p q).comp circleHomeomorph.symm.continuous
+
+theorem sphereMap_injective (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b}) :
+    Injective (sphereMap p q) :=
+  (circleMap_injective p q hp hq hinter).comp
+    circleHomeomorph.symm.injective
+
+/-- The Jordan circle obtained by gluing two simple arcs along their common
+endpoints. -/
+noncomputable def toJordanCircle (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b}) : JordanCircle where
+  parametrization := sphereMap p q
+  continuous := continuous_sphereMap p q
+  injective := sphereMap_injective p q hp hq hinter
+
+end TwoArcJordan
+
+end Schoenflies
