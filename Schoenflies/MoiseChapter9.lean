@@ -12,6 +12,9 @@ import Schoenflies.SeparatorFrame
 import Schoenflies.PolygonalTransport
 import Schoenflies.PolygonalJordanCircle
 import Schoenflies.GenericPolygonalFrame
+import Schoenflies.LocalStraightCrossing
+import Schoenflies.TransverseIntersections
+import Schoenflies.AuxiliaryTransverseIntersections
 import Schoenflies.FiniteSeparatorSetup
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.RegionalExtensions

@@ -1,0 +1,496 @@
+import Schoenflies.GenericPolygonalFrame
+import Schoenflies.JordanRegions
+
+/-!
+# Local sides at a straight piece of a Jordan curve
+
+At a point where a Jordan curve agrees locally with a straight line, the two
+determinant half-balls are the two Jordan regions.  This is the local crossing
+input needed by the finite separator argument in Moise Chapter 9.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+/-- The positive determinant side of the oriented line through `p` in
+direction `d`. -/
+def positiveLineSide (p d : Plane) : Set Plane :=
+  {x | 0 < planeDet (x - p) d}
+
+/-- The negative determinant side of the oriented line through `p` in
+direction `d`. -/
+def negativeLineSide (p d : Plane) : Set Plane :=
+  {x | planeDet (x - p) d < 0}
+
+/-- The supporting line through `p` in direction `d`, expressed without an
+auxiliary affine-subspace object. -/
+def determinantLine (p d : Plane) : Set Plane :=
+  {x | planeDet (x - p) d = 0}
+
+/-- In the coordinate plane, vanishing determinant with a nonzero vector is
+equivalent to being a scalar multiple of that vector. -/
+theorem exists_smul_eq_of_planeDet_eq_zero {u d : Plane} (hd : d ≠ 0)
+    (hdet : planeDet u d = 0) :
+    ∃ s : ℝ, s • d = u := by
+  by_cases hd0 : d 0 = 0
+  · have hd1 : d 1 ≠ 0 := by
+      intro hd1
+      apply hd
+      ext k
+      fin_cases k <;> simp [hd0, hd1]
+    refine ⟨u 1 / d 1, ?_⟩
+    ext k
+    fin_cases k
+    · change (u 1 / d 1) * d 0 = u 0
+      simp only [hd0, mul_zero]
+      change u 0 * d 1 - u 1 * d 0 = 0 at hdet
+      rw [hd0, mul_zero, sub_zero] at hdet
+      exact ((mul_eq_zero.mp hdet).resolve_right hd1).symm
+    · change (u 1 / d 1) * d 1 = u 1
+      exact div_mul_cancel₀ _ hd1
+  · refine ⟨u 0 / d 0, ?_⟩
+    ext k
+    fin_cases k
+    · change (u 0 / d 0) * d 0 = u 0
+      exact div_mul_cancel₀ _ hd0
+    · change (u 0 / d 0) * d 1 = u 1
+      change u 0 * d 1 - u 1 * d 0 = 0 at hdet
+      field_simp
+      nlinarith
+
+/-- A sufficiently small part of the supporting line around a relative
+interior point of a nondegenerate segment remains in that segment. -/
+theorem exists_ball_inter_determinantLine_subset_segment
+    {a b p : Plane} (hab : a ≠ b)
+    (hp : p ∈ openSegment ℝ a b) :
+    ∃ r : ℝ, 0 < r ∧
+      ball p r ∩ determinantLine p (b - a) ⊆ segment ℝ a b := by
+  rw [openSegment_eq_image_lineMap] at hp
+  obtain ⟨t, ht, hp⟩ := hp
+  let d : Plane := b - a
+  have hd : d ≠ 0 := sub_ne_zero.mpr hab.symm
+  have hdNorm : 0 < ‖d‖ := norm_pos_iff.mpr hd
+  let eta : ℝ := min t (1 - t)
+  have heta : 0 < eta := lt_min ht.1 (sub_pos.mpr ht.2)
+  let r : ℝ := eta * ‖d‖
+  have hr : 0 < r := mul_pos heta hdNorm
+  refine ⟨r, hr, ?_⟩
+  rintro x ⟨hxBall, hxLine⟩
+  obtain ⟨s, hs⟩ := exists_smul_eq_of_planeDet_eq_zero hd hxLine
+  have hxp : x - p = s • d := hs.symm
+  have hdist : ‖s • d‖ < r := by
+    rw [← hxp]
+    simpa [dist_eq_norm] using hxBall
+  have hsAbs : |s| < eta := by
+    rw [norm_smul, Real.norm_eq_abs] at hdist
+    exact lt_of_mul_lt_mul_right (by simpa [r] using hdist) hdNorm.le
+  have hparam : t + s ∈ Icc (0 : ℝ) 1 := by
+    have hetaT : eta ≤ t := min_le_left _ _
+    have hetaOne : eta ≤ 1 - t := min_le_right _ _
+    rw [abs_lt] at hsAbs
+    constructor <;> linarith
+  rw [segment_eq_image_lineMap]
+  refine ⟨t + s, hparam, ?_⟩
+  have hxEq : x = p + s • d := by
+    have hxEq' : x = s • d + p := (sub_eq_iff_eq_add).mp hxp
+    simpa [add_comm] using hxEq'
+  rw [hxEq, ← hp]
+  simp only [d, AffineMap.lineMap_apply_module]
+  module
+
+theorem mem_determinantLine_of_mem_affineSpan_pair
+    {a b p x : Plane}
+    (hp : p ∈ affineSpan ℝ ({a, b} : Set Plane))
+    (hx : x ∈ affineSpan ℝ ({a, b} : Set Plane)) :
+    x ∈ determinantLine p (b - a) := by
+  have hpDet := planeDet_eq_zero_of_mem_affineSpan_pair hp
+  have hxDet := planeDet_eq_zero_of_mem_affineSpan_pair hx
+  change planeDet (x - p) (b - a) = 0
+  simp [planeDet] at hpDet hxDet ⊢
+  linarith
+
+/-- At a relative-interior point of one polygon edge, the whole polygon agrees
+with that edge's supporting line in a sufficiently small ball. -/
+theorem polygonalCircle_exists_local_determinantLine
+    (P : PolygonalCircle) {i : ZMod P.n} {p : Plane}
+    (hp : p ∈ openSegment ℝ (P.vertex i) (P.vertex (i + 1))) :
+    ∃ r : ℝ, 0 < r ∧
+      ball p r ∩ P.carrier =
+        ball p r ∩ determinantLine p (P.vertex (i + 1) - P.vertex i) := by
+  obtain ⟨rCarrier, hrCarrier, hcarrier⟩ :=
+    P.exists_ball_inter_carrier_subset_edgeSegment hp
+  obtain ⟨rLine, hrLine, hline⟩ :=
+    exists_ball_inter_determinantLine_subset_segment
+      (P.adjacent_ne i) hp
+  let r : ℝ := min rCarrier rLine
+  have hr : 0 < r := lt_min hrCarrier hrLine
+  refine ⟨r, hr, Set.Subset.antisymm ?_ ?_⟩
+  · rintro x ⟨hxBall, hxCarrier⟩
+    have hxBallCarrier : x ∈ ball p rCarrier ∩ P.carrier :=
+      ⟨ball_subset_ball (min_le_left _ _) hxBall, hxCarrier⟩
+    have hxEdge : x ∈ P.edgeSegment i := hcarrier hxBallCarrier
+    refine ⟨hxBall, ?_⟩
+    apply mem_determinantLine_of_mem_affineSpan_pair
+    · exact mem_affineSpan_pair_of_mem_segment
+        (openSegment_subset_segment ℝ _ _ hp)
+    · exact mem_affineSpan_pair_of_mem_segment hxEdge
+  · rintro x ⟨hxBall, hxLine⟩
+    have hxBallLine : x ∈ ball p rLine ∩
+        determinantLine p (P.vertex (i + 1) - P.vertex i) :=
+      ⟨ball_subset_ball (min_le_right _ _) hxBall, hxLine⟩
+    have hxEdge : x ∈ segment ℝ (P.vertex i) (P.vertex (i + 1)) :=
+      hline hxBallLine
+    exact ⟨hxBall, P.edgeSegment_subset_carrier i hxEdge⟩
+
+/-- All resolved arc edges other than the edge with index `i`. -/
+def resolvedOtherSegments {U : Set Plane} (B : BrokenLineData U)
+    (i : Fin B.resolvedWalk.length) : Set Plane :=
+  ⋃ (j : Fin B.resolvedWalk.length) (_ : j ≠ i),
+    segment ℝ (B.resolvedVertex j.castSucc) (B.resolvedVertex j.succ)
+
+theorem isCompact_resolvedOtherSegments {U : Set Plane}
+    (B : BrokenLineData U) (i : Fin B.resolvedWalk.length) :
+    IsCompact (resolvedOtherSegments B i) := by
+  apply isCompact_iUnion
+  intro j
+  apply isCompact_iUnion
+  intro _hji
+  rw [← convexHull_pair]
+  exact Set.Finite.isCompact_convexHull (𝕜 := ℝ) (by simp)
+
+theorem resolved_openSegment_not_mem_otherSegments {U : Set Plane}
+    (B : BrokenLineData U) (i : Fin B.resolvedWalk.length) {p : Plane}
+    (hp : p ∈ openSegment ℝ
+      (B.resolvedVertex i.castSucc) (B.resolvedVertex i.succ)) :
+    p ∉ resolvedOtherSegments B i := by
+  intro hpOther
+  simp only [resolvedOtherSegments, Set.mem_iUnion] at hpOther
+  obtain ⟨j, hji, hpj⟩ := hpOther
+  rw [openSegment_eq_image_lineMap] at hp
+  rw [segment_eq_image_lineMap] at hpj
+  obtain ⟨t, ht, hp⟩ := hp
+  obtain ⟨u, hu, hpu⟩ := hpj
+  have hparameter : (i.val : ℝ) + t = j.val + u := by
+    calc
+      (i.val : ℝ) + t = B.resolvedGlobalParameter p := by
+        rw [← hp]
+        exact (B.resolvedGlobalParameter_lineMap_of_mem i
+          ⟨ht.1.le, ht.2.le⟩).symm
+      _ = (j.val : ℝ) + u := by
+        rw [← hpu]
+        exact B.resolvedGlobalParameter_lineMap_of_mem j hu
+  have hijNe : i.val ≠ j.val := by
+    intro hij
+    apply hji
+    exact Fin.ext hij.symm
+  rcases lt_or_gt_of_ne hijNe with hij | hji'
+  · have hijStep : i.val + 1 ≤ j.val := by omega
+    have hijStepR : (i.val : ℝ) + 1 ≤ j.val := by exact_mod_cast hijStep
+    linarith [ht.2, hu.1]
+  · have hjiStep : j.val + 1 ≤ i.val := by omega
+    have hjiStepR : (j.val : ℝ) + 1 ≤ i.val := by exact_mod_cast hjiStep
+    linarith [ht.1, hu.2]
+
+/-- A resolved simple polygonal arc agrees locally with the supporting line of
+any one of its open edges. -/
+theorem resolvedBrokenLine_exists_local_determinantLine
+    {U : Set Plane} (B : BrokenLineData U)
+    (i : Fin B.resolvedWalk.length) {p : Plane}
+    (hp : p ∈ openSegment ℝ
+      (B.resolvedVertex i.castSucc) (B.resolvedVertex i.succ)) :
+    ∃ r : ℝ, 0 < r ∧
+      ball p r ∩ B.resolvedBrokenLine.segmentCarrier =
+        ball p r ∩ determinantLine p
+          (B.resolvedVertex i.succ - B.resolvedVertex i.castSucc) := by
+  have hpNotOther := resolved_openSegment_not_mem_otherSegments B i hp
+  have hnhds : (resolvedOtherSegments B i)ᶜ ∈ nhds p :=
+    (isCompact_resolvedOtherSegments B i).isClosed.isOpen_compl.mem_nhds
+      hpNotOther
+  obtain ⟨rCarrier, hrCarrier, hballCarrier⟩ :=
+    Metric.mem_nhds_iff.mp hnhds
+  have hvertexNe : B.resolvedVertex i.castSucc ≠ B.resolvedVertex i.succ := by
+    intro hvertex
+    have hidx := B.resolvedVertex_injective hvertex
+    have := congrArg Fin.val hidx
+    simp at this
+  obtain ⟨rLine, hrLine, hline⟩ :=
+    exists_ball_inter_determinantLine_subset_segment hvertexNe hp
+  let r : ℝ := min rCarrier rLine
+  have hr : 0 < r := lt_min hrCarrier hrLine
+  refine ⟨r, hr, Set.Subset.antisymm ?_ ?_⟩
+  · rintro x ⟨hxBall, hxCarrier⟩
+    change x ∈ ⋃ j : Fin B.resolvedWalk.length,
+      segment ℝ (B.resolvedVertex j.castSucc) (B.resolvedVertex j.succ) at hxCarrier
+    obtain ⟨j, hxj⟩ := Set.mem_iUnion.mp hxCarrier
+    have hji : j = i := by
+      by_contra hji
+      have hxOther : x ∈ resolvedOtherSegments B i :=
+        Set.mem_iUnion.mpr ⟨j, Set.mem_iUnion.mpr ⟨hji, hxj⟩⟩
+      exact hballCarrier (ball_subset_ball (min_le_left _ _) hxBall) hxOther
+    subst j
+    refine ⟨hxBall, ?_⟩
+    apply mem_determinantLine_of_mem_affineSpan_pair
+    · exact mem_affineSpan_pair_of_mem_segment
+        (openSegment_subset_segment ℝ _ _ hp)
+    · exact mem_affineSpan_pair_of_mem_segment hxj
+  · rintro x ⟨hxBall, hxLine⟩
+    have hxBallLine : x ∈ ball p rLine ∩ determinantLine p
+        (B.resolvedVertex i.succ - B.resolvedVertex i.castSucc) :=
+      ⟨ball_subset_ball (min_le_right _ _) hxBall, hxLine⟩
+    have hxi := hline hxBallLine
+    refine ⟨hxBall, ?_⟩
+    change x ∈ ⋃ j : Fin B.resolvedWalk.length,
+      segment ℝ (B.resolvedVertex j.castSucc) (B.resolvedVertex j.succ)
+    exact Set.mem_iUnion.mpr ⟨i, hxi⟩
+
+theorem convex_positiveLineSide (p d : Plane) :
+    Convex ℝ (positiveLineSide p d) := by
+  intro x hx y hy a b ha hb hab
+  change 0 < planeDet (x - p) d at hx
+  change 0 < planeDet (y - p) d at hy
+  change 0 < planeDet (a • x + b • y - p) d
+  have hrewrite :
+      a • x + b • y - p = a • (x - p) + b • (y - p) := by
+    ext k
+    change a * x k + b * y k - p k =
+      a * (x k - p k) + b * (y k - p k)
+    have hbEq : b = 1 - a := by linarith
+    rw [hbEq]
+    ring
+  have hdet : planeDet (a • (x - p) + b • (y - p)) d =
+      a * planeDet (x - p) d + b * planeDet (y - p) d := by
+    simp [planeDet]
+    ring
+  rw [hrewrite]
+  rw [hdet]
+  by_cases haZero : a = 0
+  · have hbOne : b = 1 := by linarith
+    simp [haZero, hbOne, hy]
+  · have haPos : 0 < a := lt_of_le_of_ne ha (Ne.symm haZero)
+    have haxPos : 0 < a * planeDet (x - p) d := mul_pos haPos hx
+    have hbyNonneg : 0 ≤ b * planeDet (y - p) d :=
+      mul_nonneg hb hy.le
+    linarith
+
+theorem convex_negativeLineSide (p d : Plane) :
+    Convex ℝ (negativeLineSide p d) := by
+  intro x hx y hy a b ha hb hab
+  change planeDet (x - p) d < 0 at hx
+  change planeDet (y - p) d < 0 at hy
+  change planeDet (a • x + b • y - p) d < 0
+  have hrewrite :
+      a • x + b • y - p = a • (x - p) + b • (y - p) := by
+    ext k
+    change a * x k + b * y k - p k =
+      a * (x k - p k) + b * (y k - p k)
+    have hbEq : b = 1 - a := by linarith
+    rw [hbEq]
+    ring
+  have hdet : planeDet (a • (x - p) + b • (y - p)) d =
+      a * planeDet (x - p) d + b * planeDet (y - p) d := by
+    simp [planeDet]
+    ring
+  rw [hrewrite]
+  rw [hdet]
+  by_cases haZero : a = 0
+  · have hbOne : b = 1 := by linarith
+    simp [haZero, hbOne, hy]
+  · have haPos : 0 < a := lt_of_le_of_ne ha (Ne.symm haZero)
+    have haxNeg : a * planeDet (x - p) d < 0 :=
+      mul_neg_of_pos_of_neg haPos hx
+    have hbyNonpos : b * planeDet (y - p) d ≤ 0 :=
+      mul_nonpos_of_nonneg_of_nonpos hb hy.le
+    linarith
+
+theorem positiveLineSide_disjoint_negativeLineSide (p d : Plane) :
+    Disjoint (positiveLineSide p d) (negativeLineSide p d) := by
+  rw [Set.disjoint_left]
+  intro x hx hy
+  change 0 < planeDet (x - p) d at hx
+  change planeDet (x - p) d < 0 at hy
+  linarith
+
+theorem positiveLineSide_union_negativeLineSide (p d : Plane) :
+    positiveLineSide p d ∪ negativeLineSide p d =
+      (determinantLine p d)ᶜ := by
+  ext x
+  change (0 < planeDet (x - p) d ∨ planeDet (x - p) d < 0) ↔
+    planeDet (x - p) d ≠ 0
+  constructor
+  · rintro (h | h) <;> linarith
+  · intro h
+    rcases lt_or_gt_of_ne h with hneg | hpos
+    · exact Or.inr hneg
+    · exact Or.inl hpos
+
+namespace JordanCircle
+
+variable (J : JordanCircle)
+
+/-- If a Jordan curve is exactly a straight line inside a ball, its two open
+half-balls are, in one of the two possible orders, its inside and outside
+sides. -/
+theorem local_lineSide_dichotomy {p d : Plane} {r : ℝ}
+    (hr : 0 < r) (hp : p ∈ J.carrier)
+    (hlocal : ball p r ∩ J.carrier =
+      ball p r ∩ determinantLine p d) :
+    ((ball p r ∩ positiveLineSide p d ⊆ J.inside ∧
+        ball p r ∩ negativeLineSide p d ⊆ J.outside) ∨
+      (ball p r ∩ positiveLineSide p d ⊆ J.outside ∧
+        ball p r ∩ negativeLineSide p d ⊆ J.inside)) := by
+  let Hpos : Set Plane := ball p r ∩ positiveLineSide p d
+  let Hneg : Set Plane := ball p r ∩ negativeLineSide p d
+  have hposPre : IsPreconnected Hpos :=
+    ((convex_ball p r).inter (convex_positiveLineSide p d)).isPreconnected
+  have hnegPre : IsPreconnected Hneg :=
+    ((convex_ball p r).inter (convex_negativeLineSide p d)).isPreconnected
+  have hposCompl : Hpos ⊆ J.carrierᶜ := by
+    rintro x ⟨hxBall, hxPos⟩ hxCarrier
+    have hxLine : x ∈ determinantLine p d := by
+      have : x ∈ ball p r ∩ J.carrier := ⟨hxBall, hxCarrier⟩
+      rw [hlocal] at this
+      exact this.2
+    exact (ne_of_gt hxPos) hxLine
+  have hnegCompl : Hneg ⊆ J.carrierᶜ := by
+    rintro x ⟨hxBall, hxNeg⟩ hxCarrier
+    have hxLine : x ∈ determinantLine p d := by
+      have : x ∈ ball p r ∩ J.carrier := ⟨hxBall, hxCarrier⟩
+      rw [hlocal] at this
+      exact this.2
+    exact (ne_of_lt hxNeg) hxLine
+  have hposCover : Hpos ⊆ J.inside ∪ J.outside := by
+    rw [J.inside_union_outside]
+    exact hposCompl
+  have hnegCover : Hneg ⊆ J.inside ∪ J.outside := by
+    rw [J.inside_union_outside]
+    exact hnegCompl
+  have hposChoice : Hpos ⊆ J.inside ∨ Hpos ⊆ J.outside :=
+    hposPre.subset_or_subset J.inside_isOpen J.outside_isOpen
+      J.inside_disjoint_outside hposCover
+  have hnegChoice : Hneg ⊆ J.inside ∨ Hneg ⊆ J.outside :=
+    hnegPre.subset_or_subset J.inside_isOpen J.outside_isOpen
+      J.inside_disjoint_outside hnegCover
+  have hpClosureInside : p ∈ closure J.inside := by
+    rw [J.closure_inside]
+    exact Or.inr hp
+  have hpClosureOutside : p ∈ closure J.outside := by
+    rw [J.closure_outside]
+    exact Or.inr hp
+  obtain ⟨x, hxBall, hxInside⟩ :=
+    (_root_.mem_closure_iff.mp hpClosureInside) (ball p r)
+      isOpen_ball (mem_ball_self hr)
+  obtain ⟨y, hyBall, hyOutside⟩ :=
+    (_root_.mem_closure_iff.mp hpClosureOutside) (ball p r)
+      isOpen_ball (mem_ball_self hr)
+  have hxNotLine : x ∉ determinantLine p d := by
+    intro hxLine
+    apply J.inside_subset_compl hxInside
+    have : x ∈ ball p r ∩ determinantLine p d := ⟨hxBall, hxLine⟩
+    rw [← hlocal] at this
+    exact this.2
+  have hyNotLine : y ∉ determinantLine p d := by
+    intro hyLine
+    apply J.outside_subset_compl hyOutside
+    have : y ∈ ball p r ∩ determinantLine p d := ⟨hyBall, hyLine⟩
+    rw [← hlocal] at this
+    exact this.2
+  have hxSides : x ∈ Hpos ∨ x ∈ Hneg := by
+    have hx : x ∈ positiveLineSide p d ∪ negativeLineSide p d := by
+      rw [positiveLineSide_union_negativeLineSide]
+      exact hxNotLine
+    exact hx.imp (fun h => ⟨hxBall, h⟩) (fun h => ⟨hxBall, h⟩)
+  have hySides : y ∈ Hpos ∨ y ∈ Hneg := by
+    have hy : y ∈ positiveLineSide p d ∪ negativeLineSide p d := by
+      rw [positiveLineSide_union_negativeLineSide]
+      exact hyNotLine
+    exact hy.imp (fun h => ⟨hyBall, h⟩) (fun h => ⟨hyBall, h⟩)
+  rcases hposChoice with hposInside | hposOutside
+  · have hnegOutside : Hneg ⊆ J.outside := by
+      rcases hnegChoice with hnegInside | hnegOutside
+      · rcases hySides with hyPos | hyNeg
+        · exact False.elim <|
+            Set.disjoint_left.mp J.inside_disjoint_outside
+              (hposInside hyPos) hyOutside
+        · exact False.elim <|
+            Set.disjoint_left.mp J.inside_disjoint_outside
+              (hnegInside hyNeg) hyOutside
+      · exact hnegOutside
+    exact Or.inl ⟨hposInside, hnegOutside⟩
+  · have hnegInside : Hneg ⊆ J.inside := by
+      rcases hnegChoice with hnegInside | hnegOutside
+      · exact hnegInside
+      · rcases hxSides with hxPos | hxNeg
+        · exact False.elim <|
+            Set.disjoint_left.mp J.inside_disjoint_outside
+              hxInside (hposOutside hxPos)
+        · exact False.elim <|
+            Set.disjoint_left.mp J.inside_disjoint_outside
+              hxInside (hnegOutside hxNeg)
+    exact Or.inr ⟨hposOutside, hnegInside⟩
+
+/-- A straight direction transverse to the local carrier enters different
+Jordan regions on its two sides of the crossing point. -/
+theorem local_transverse_points_opposite {p d e : Plane} {r : ℝ}
+    (hr : 0 < r) (hp : p ∈ J.carrier)
+    (hlocal : ball p r ∩ J.carrier =
+      ball p r ∩ determinantLine p d)
+    (htransverse : planeDet e d ≠ 0) :
+    ∃ delta : ℝ, 0 < delta ∧
+      (((p + delta • e) ∈ J.inside ∧ (p - delta • e) ∈ J.outside) ∨
+        ((p + delta • e) ∈ J.outside ∧ (p - delta • e) ∈ J.inside)) := by
+  obtain ⟨delta, hdelta, hdeltaNorm⟩ :=
+    exists_pos_mul_lt hr ‖e‖
+  have hplusBall : p + delta • e ∈ ball p r := by
+    rw [mem_ball, dist_eq_norm]
+    simpa [norm_smul, Real.norm_eq_abs, abs_of_pos hdelta, mul_comm] using
+      hdeltaNorm
+  have hminusBall : p - delta • e ∈ ball p r := by
+    rw [mem_ball, dist_eq_norm]
+    simpa [norm_smul, Real.norm_eq_abs, abs_of_pos hdelta, mul_comm] using
+      hdeltaNorm
+  have hplusDet :
+      planeDet ((p + delta • e) - p) d = delta * planeDet e d := by
+    simp [planeDet]
+    ring
+  have hminusDet :
+      planeDet ((p - delta • e) - p) d = -(delta * planeDet e d) := by
+    simp [planeDet]
+    ring
+  have hsides := J.local_lineSide_dichotomy hr hp hlocal
+  rcases lt_or_gt_of_ne htransverse with hdetNeg | hdetPos
+  · have hplusNeg : p + delta • e ∈ negativeLineSide p d := by
+      change planeDet ((p + delta • e) - p) d < 0
+      rw [hplusDet]
+      exact mul_neg_of_pos_of_neg hdelta hdetNeg
+    have hminusPos : p - delta • e ∈ positiveLineSide p d := by
+      change 0 < planeDet ((p - delta • e) - p) d
+      rw [hminusDet]
+      exact neg_pos.mpr (mul_neg_of_pos_of_neg hdelta hdetNeg)
+    rcases hsides with horder | horder
+    · exact ⟨delta, hdelta, Or.inr
+        ⟨horder.2 ⟨hplusBall, hplusNeg⟩,
+          horder.1 ⟨hminusBall, hminusPos⟩⟩⟩
+    · exact ⟨delta, hdelta, Or.inl
+        ⟨horder.2 ⟨hplusBall, hplusNeg⟩,
+          horder.1 ⟨hminusBall, hminusPos⟩⟩⟩
+  · have hplusPos : p + delta • e ∈ positiveLineSide p d := by
+      change 0 < planeDet ((p + delta • e) - p) d
+      rw [hplusDet]
+      exact mul_pos hdelta hdetPos
+    have hminusNeg : p - delta • e ∈ negativeLineSide p d := by
+      change planeDet ((p - delta • e) - p) d < 0
+      rw [hminusDet]
+      exact neg_lt_zero.mpr (mul_pos hdelta hdetPos)
+    rcases hsides with horder | horder
+    · exact ⟨delta, hdelta, Or.inl
+        ⟨horder.1 ⟨hplusBall, hplusPos⟩,
+          horder.2 ⟨hminusBall, hminusNeg⟩⟩⟩
+    · exact ⟨delta, hdelta, Or.inr
+        ⟨horder.1 ⟨hplusBall, hplusPos⟩,
+          horder.2 ⟨hminusBall, hminusNeg⟩⟩⟩
+
+end JordanCircle
+
+end Schoenflies

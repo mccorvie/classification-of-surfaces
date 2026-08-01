@@ -1,0 +1,174 @@
+import Schoenflies.LocalStraightCrossing
+import Schoenflies.PolygonalJordanCircle
+
+/-!
+# Transverse polygon/broken-line intersections
+
+The generic translation used in the Chapter 9 separator setup excludes every
+vertex from the other curve's supporting edge lines.  Consequently every
+intersection lies in the relative interiors of one polygon edge and one
+broken-line edge, and those two edges are nonparallel.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+theorem planeDet_sub_swap (x y d : Plane) :
+    planeDet (x - y) d = -planeDet (y - x) d := by
+  simp [planeDet]
+  ring
+
+theorem planeDet_smul_left (s : ℝ) (x d : Plane) :
+    planeDet (s • x) d = s * planeDet x d := by
+  simp [planeDet]
+  ring
+
+namespace JordanCircle
+namespace SimpleBrokenLine
+
+variable {U : Set Plane} {a b p : Plane}
+
+/-- Edge-level data at one transverse intersection. -/
+structure TransverseIntersection (B : SimpleBrokenLine U a b)
+    (P : PolygonalCircle) (p : Plane) where
+  polygonEdge : ZMod P.n
+  brokenEdge : Fin B.data.n
+  mem_polygonEdge : p ∈ P.edgeSegment polygonEdge
+  mem_brokenEdge : p ∈ segment ℝ
+    (B.data.vertex brokenEdge.castSucc) (B.data.vertex brokenEdge.succ)
+  mem_open_polygonEdge : p ∈ openSegment ℝ
+    (P.vertex polygonEdge) (P.vertex (polygonEdge + 1))
+  mem_open_brokenEdge : p ∈ openSegment ℝ
+    (B.data.vertex brokenEdge.castSucc) (B.data.vertex brokenEdge.succ)
+  transverse : planeDet
+    (B.data.vertex brokenEdge.succ - B.data.vertex brokenEdge.castSucc)
+    (P.vertex (polygonEdge + 1) - P.vertex polygonEdge) ≠ 0
+
+/-- The two vertex-exclusion conditions furnished by generic translation turn
+every carrier intersection into a transverse edge intersection. -/
+theorem exists_transverseIntersection_of_generic
+    (B : SimpleBrokenLine U a b) (P : PolygonalCircle)
+    (hpolygonVertices : ∀ (i : ZMod P.n) (j : Fin B.data.n),
+      planeDet
+        (B.data.vertex j.castSucc - P.vertex i)
+        (B.data.vertex j.succ - B.data.vertex j.castSucc) ≠ 0)
+    (hbrokenVertices : ∀ (i : ZMod P.n) (j : Fin (B.data.n + 1)),
+      planeDet
+        (B.data.vertex j - P.vertex i)
+        (P.vertex (i + 1) - P.vertex i) ≠ 0)
+    (hp : p ∈ P.carrier ∩ B.data.segmentCarrier) :
+    Nonempty (B.TransverseIntersection P p) := by
+  obtain ⟨i, hpi⟩ := Set.mem_iUnion.mp hp.1
+  obtain ⟨j, hpj⟩ := Set.mem_iUnion.mp hp.2
+  have hpPolygonLeft : P.vertex i ≠ p := by
+    intro hip
+    have hline := planeDet_eq_zero_of_mem_affineSpan_pair
+      (mem_affineSpan_pair_of_mem_segment hpj)
+    apply hpolygonVertices i j
+    simpa [hip]
+  have hpPolygonRight : P.vertex (i + 1) ≠ p := by
+    intro hip
+    have hline := planeDet_eq_zero_of_mem_affineSpan_pair
+      (mem_affineSpan_pair_of_mem_segment hpj)
+    apply hpolygonVertices (i + 1) j
+    simpa [hip]
+  have hpBrokenLeft : B.data.vertex j.castSucc ≠ p := by
+    intro hjp
+    subst p
+    have hline := planeDet_eq_zero_of_mem_affineSpan_pair
+      (mem_affineSpan_pair_of_mem_segment hpi)
+    apply hbrokenVertices i j.castSucc
+    rw [planeDet_sub_swap, hline, neg_zero]
+  have hpBrokenRight : B.data.vertex j.succ ≠ p := by
+    intro hjp
+    subst p
+    have hline := planeDet_eq_zero_of_mem_affineSpan_pair
+      (mem_affineSpan_pair_of_mem_segment hpi)
+    apply hbrokenVertices i j.succ
+    rw [planeDet_sub_swap, hline, neg_zero]
+  have hpOpenPolygon : p ∈ openSegment ℝ
+      (P.vertex i) (P.vertex (i + 1)) :=
+    mem_openSegment_of_ne_left_right hpPolygonLeft hpPolygonRight hpi
+  have hpOpenBroken : p ∈ openSegment ℝ
+      (B.data.vertex j.castSucc) (B.data.vertex j.succ) :=
+    mem_openSegment_of_ne_left_right hpBrokenLeft hpBrokenRight hpj
+  have htransverse : planeDet
+      (B.data.vertex j.succ - B.data.vertex j.castSucc)
+      (P.vertex (i + 1) - P.vertex i) ≠ 0 := by
+    intro hparallel
+    let bdir : Plane :=
+      B.data.vertex j.succ - B.data.vertex j.castSucc
+    let pdir : Plane := P.vertex (i + 1) - P.vertex i
+    change planeDet bdir pdir = 0 at hparallel
+    have hbdir : bdir ≠ 0 := by
+      intro hzero
+      have hvertices := sub_eq_zero.mp hzero
+      have hindices := B.vertex_injective hvertices
+      have hvals := congrArg Fin.val hindices
+      simp at hvals
+    have hpdir : pdir ≠ 0 :=
+      sub_ne_zero.mpr (P.adjacent_ne i).symm
+    have hbLine : planeDet
+        (B.data.vertex j.castSucc - p) bdir = 0 := by
+      exact planeDet_eq_zero_of_mem_affineSpan_pair
+        (mem_affineSpan_pair_of_mem_segment hpj)
+    obtain ⟨s, hs⟩ :=
+      exists_smul_eq_of_planeDet_eq_zero hbdir hbLine
+    have hbLineP : planeDet
+        (B.data.vertex j.castSucc - p) pdir = 0 := by
+      rw [← hs, planeDet_smul_left, hparallel, mul_zero]
+    have hpLineRaw : planeDet (P.vertex i - p) pdir = 0 := by
+      exact planeDet_eq_zero_of_mem_affineSpan_pair
+        (mem_affineSpan_pair_of_mem_segment hpi)
+    have hpLine : planeDet (p - P.vertex i) pdir = 0 := by
+      rw [planeDet_sub_swap, hpLineRaw, neg_zero]
+    apply hbrokenVertices i j.castSucc
+    simp [planeDet, pdir] at hbLineP hpLine ⊢
+    linarith
+  exact ⟨
+    { polygonEdge := i
+      brokenEdge := j
+      mem_polygonEdge := hpi
+      mem_brokenEdge := hpj
+      mem_open_polygonEdge := hpOpenPolygon
+      mem_open_brokenEdge := hpOpenBroken
+      transverse := htransverse }⟩
+
+/-- Locally along the broken-line edge, a generic intersection crosses from
+the polygon's bounded side to its unbounded side (in one of the two possible
+orientations). -/
+theorem TransverseIntersection.exists_points_opposite_polygonSides
+    {B : SimpleBrokenLine U a b} {P : PolygonalCircle} {p : Plane}
+    (X : B.TransverseIntersection P p) :
+    ∃ delta : ℝ, 0 < delta ∧
+      let e := B.data.vertex X.brokenEdge.succ -
+        B.data.vertex X.brokenEdge.castSucc
+      (((p + delta • e) ∈ P.interiorRegion ∧
+          (p - delta • e) ∈ P.exteriorRegion) ∨
+        ((p + delta • e) ∈ P.exteriorRegion ∧
+          (p - delta • e) ∈ P.interiorRegion)) := by
+  obtain ⟨r, hr, hlocal⟩ :=
+    polygonalCircle_exists_local_determinantLine P
+      X.mem_open_polygonEdge
+  have hlocalJordan : ball p r ∩ P.toJordanCircle.carrier =
+      ball p r ∩ determinantLine p
+        (P.vertex (X.polygonEdge + 1) - P.vertex X.polygonEdge) := by
+    simpa using hlocal
+  obtain ⟨delta, hdelta, hsides⟩ :=
+    P.toJordanCircle.local_transverse_points_opposite hr
+      (by
+        rw [P.carrier_toJordanCircle]
+        exact P.edgeSegment_subset_carrier X.polygonEdge
+          X.mem_polygonEdge)
+      hlocalJordan X.transverse
+  refine ⟨delta, hdelta, ?_⟩
+  dsimp only
+  simpa only [P.inside_toJordanCircle, P.outside_toJordanCircle] using
+    hsides
+
+end SimpleBrokenLine
+end JordanCircle
+
+end Schoenflies

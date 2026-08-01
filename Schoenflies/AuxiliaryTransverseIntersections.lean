@@ -1,0 +1,113 @@
+import Schoenflies.AuxiliaryJordan
+import Schoenflies.TransverseIntersections
+
+/-!
+# Transverse intersections with the auxiliary Jordan circle
+
+The auxiliary circle is wild only along the selected boundary arc.  Every
+frame intersection is away from that compact arc and lies in the open part of
+one resolved return-path edge, so locally the auxiliary circle is straight.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+theorem planeDet_swap (x y : Plane) :
+    planeDet x y = -planeDet y x := by
+  simp [planeDet]
+  ring
+
+namespace JordanCircle
+namespace AccessibleAngularArc
+
+variable {J : JordanCircle}
+
+/-- At a generic frame/return-path intersection, moving along the polygon
+edge crosses the two sides of the auxiliary Jordan circle. -/
+theorem SimpleBrokenLine.TransverseIntersection.exists_points_opposite_auxiliarySides
+    (A : J.AccessibleAngularArc) (Q : PolygonalCircle)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    {p : Plane}
+    (X : A.returnCarrierBrokenLine.TransverseIntersection Q p) :
+    ∃ delta : ℝ, 0 < delta ∧
+      let e := Q.vertex (X.polygonEdge + 1) - Q.vertex X.polygonEdge
+      (((p + delta • e) ∈ A.auxiliaryJordanCircle.inside ∧
+          (p - delta • e) ∈ A.auxiliaryJordanCircle.outside) ∨
+        ((p + delta • e) ∈ A.auxiliaryJordanCircle.outside ∧
+          (p - delta • e) ∈ A.auxiliaryJordanCircle.inside)) := by
+  have hpQ : p ∈ Q.carrier :=
+    Q.edgeSegment_subset_carrier X.polygonEdge X.mem_polygonEdge
+  have hpNotArc : p ∉ A.curveArcPlane := by
+    intro hpArc
+    have hpInterior := hArcInside hpArc
+    have hpCompl : p ∈ Q.carrierᶜ := by
+      rw [← Q.interior_union_exterior]
+      exact Or.inl hpInterior
+    exact hpCompl hpQ
+  have hArcNhds : A.curveArcPlaneᶜ ∈ nhds p :=
+    A.curveArcPlane_isCompact.isClosed.isOpen_compl.mem_nhds hpNotArc
+  obtain ⟨rArc, hrArc, hballArc⟩ := Metric.mem_nhds_iff.mp hArcNhds
+  let bdir : Plane :=
+    A.returnCarrierBrokenLine.data.vertex X.brokenEdge.succ -
+      A.returnCarrierBrokenLine.data.vertex X.brokenEdge.castSucc
+  have hlocalReturnRaw :=
+    resolvedBrokenLine_exists_local_determinantLine
+      A.returnBrokenLine.data X.brokenEdge X.mem_open_brokenEdge
+  obtain ⟨rReturn, hrReturn, hlocalReturn⟩ := hlocalReturnRaw
+  change ball p rReturn ∩ A.returnCarrierBrokenLine.data.segmentCarrier =
+    ball p rReturn ∩ determinantLine p bdir at hlocalReturn
+  let r : ℝ := min rArc rReturn
+  have hr : 0 < r := lt_min hrArc hrReturn
+  have hlocalAux : ball p r ∩ A.auxiliaryJordanCircle.carrier =
+      ball p r ∩ determinantLine p bdir := by
+    apply Set.Subset.antisymm
+    · rintro x ⟨hxBall, hxAux⟩
+      rw [A.carrier_auxiliaryJordanCircle] at hxAux
+      rcases hxAux with hxArc | hxReturn
+      · exact False.elim <|
+          hballArc (ball_subset_ball (min_le_left _ _) hxBall) hxArc
+      · have hxCarrier : x ∈
+            A.returnCarrierBrokenLine.data.segmentCarrier := by
+          rw [A.segmentCarrier_returnCarrierBrokenLine]
+          exact hxReturn
+        have hxLocal : x ∈ ball p rReturn ∩
+            A.returnCarrierBrokenLine.data.segmentCarrier :=
+          ⟨ball_subset_ball (min_le_right _ _) hxBall, hxCarrier⟩
+        have hxLine : x ∈ determinantLine p bdir := by
+          rw [hlocalReturn] at hxLocal
+          exact hxLocal.2
+        exact ⟨hxBall, hxLine⟩
+    · rintro x ⟨hxBall, hxLine⟩
+      have hxLocal : x ∈ ball p rReturn ∩ determinantLine p bdir :=
+        ⟨ball_subset_ball (min_le_right _ _) hxBall, hxLine⟩
+      have hxCarrier : x ∈
+          A.returnCarrierBrokenLine.data.segmentCarrier :=
+        by
+          rw [← hlocalReturn] at hxLocal
+          exact hxLocal.2
+      refine ⟨hxBall, ?_⟩
+      rw [A.carrier_auxiliaryJordanCircle]
+      exact Or.inr <| by
+        rw [← A.segmentCarrier_returnCarrierBrokenLine]
+        exact hxCarrier
+  have htransverse : planeDet
+      (Q.vertex (X.polygonEdge + 1) - Q.vertex X.polygonEdge) bdir ≠ 0 := by
+    intro hzero
+    apply X.transverse
+    rw [planeDet_swap, hzero, neg_zero]
+  obtain ⟨delta, hdelta, hsides⟩ :=
+    A.auxiliaryJordanCircle.local_transverse_points_opposite hr
+      (by
+        rw [A.carrier_auxiliaryJordanCircle]
+        exact Or.inr <| by
+          rw [← A.segmentCarrier_returnCarrierBrokenLine]
+          exact Set.mem_iUnion.mpr ⟨X.brokenEdge, X.mem_brokenEdge⟩)
+      hlocalAux htransverse
+  exact ⟨delta, hdelta, hsides⟩
+
+end AccessibleAngularArc
+end JordanCircle
+
+end Schoenflies
