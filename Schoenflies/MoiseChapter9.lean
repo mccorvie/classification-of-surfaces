@@ -24,6 +24,7 @@ import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
 import Schoenflies.CyclicCrossingParity
 import Schoenflies.RefinedCyclicCuts
+import Schoenflies.ControlledTailJoin
 import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.RegionalExtensions
