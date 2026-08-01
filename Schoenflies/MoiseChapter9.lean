@@ -29,6 +29,7 @@ import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.HairReturns
 import Schoenflies.ReturnArcFrames
+import Schoenflies.ReturnArcParity
 import Schoenflies.RegionalExtensions
 import ClassificationOfSurfaces.Moise.BrokenLine
 import ClassificationOfSurfaces.Moise.PolygonalSchoenflies

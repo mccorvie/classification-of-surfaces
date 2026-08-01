@@ -410,7 +410,7 @@ theorem exists_finiteSeparatorFrame (R : A.InsideReturnArc)
     exact Set.disjoint_left.mp Q.disjoint_carrier_exteriorRegion
       hxCarrier (hMiddleQ hxMiddle)
   have hfinite : (Q.carrier ∩ range R.path).Finite := by
-    rw [← R.segmentCarrier_eq_range]
+    rw [← R.segmentCarrier_carrierBrokenLine_eq_range]
     exact hfiniteR
   have hstLe : s ≤ t := hst.le
   have hmeets := R.frame_meets_both_tails Q hstLe hArcQ hMiddleQ
