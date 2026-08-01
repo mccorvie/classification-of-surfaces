@@ -3,8 +3,7 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
-import ClassificationOfSurfaces.EvalStatement
-import ClassificationOfSurfaces.LeanEval.ChallengeDeps
+import ClassificationOfSurfaces.API
 
 /-!
 # Lean-Eval specification audit
@@ -27,6 +26,19 @@ namespace ClassificationOfSurfaces
 
 #check (NonOrientableRel :
   (p n : ℕ) → Complex.ClosedUnitDisc → Complex.ClosedUnitDisc → Prop)
+
+-- Import-level regression checks for the documented public API entry point.
+#check EvalSurface
+#check GeometricTriangulation
+#check SurfaceCellComplex
+#check FiniteCyclicPresentation
+#check FiniteCyclicPresentation.normalizeConnectedToCanonical
+#check FiniteCyclicPresentation.hasEvalRepresentative
+#check compact_eval_surface_polygonalRealization_homeomorphic_surface
+#check sphereNormalForm
+#check orientableQuotRadius
+#check classification_of_surfaces
+#check topological_classification_of_surfaces
 
 /-- Type-level regression check against the exact conclusion published by Lean-Eval. -/
 example (S : Type*) [TopologicalSpace S]
