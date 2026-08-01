@@ -48,6 +48,7 @@ import Schoenflies.SynchronizedCollarCells
 import Schoenflies.ExactSynchronizedCollarCells
 import Schoenflies.JordanRegionRecognition
 import Schoenflies.RecursiveCollarStages
+import Schoenflies.HierarchicalCollarStages
 import Schoenflies.TrimmedCollarCells
 import Schoenflies.LevelHairSynchronization
 import Schoenflies.PolygonalSubarcs

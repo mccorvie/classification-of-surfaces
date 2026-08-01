@@ -20,6 +20,33 @@ namespace InitialAngularArcs
 
 variable {J : JordanCircle}
 
+/-- Transporting an address across an equality of levels does not change its
+geometric level arc. -/
+theorem levelArc_cast
+    (I : J.InitialAngularArcs) {m k : ℕ} (h : m = k)
+    (a : LevelAddress m) :
+    I.levelArc (_root_.cast (congrArg LevelAddress h) a) = I.levelArc a := by
+  subst k
+  rfl
+
+/-- The same transport leaves the recursively selected left hair unchanged. -/
+theorem levelLeftHair_cast_carrier
+    (I : J.InitialAngularArcs) {m k : ℕ} (h : m = k)
+    (a : LevelAddress m) :
+    (I.levelLeftHair (_root_.cast (congrArg LevelAddress h) a)).carrier =
+      (I.levelLeftHair a).carrier := by
+  subst k
+  rfl
+
+/-- The same transport leaves the recursively selected right hair unchanged. -/
+theorem levelRightHair_cast_carrier
+    (I : J.InitialAngularArcs) {m k : ℕ} (h : m = k)
+    (a : LevelAddress m) :
+    (I.levelRightHair (_root_.cast (congrArg LevelAddress h) a)).carrier =
+      (I.levelRightHair a).carrier := by
+  subst k
+  rfl
+
 /-- The leftmost depth-`k` descendant of a level address. -/
 def leftmostDescendant {n : ℕ} (a : LevelAddress n) :
     (k : ℕ) → LevelAddress (n + k)
@@ -31,6 +58,83 @@ def rightmostDescendant {n : ℕ} (a : LevelAddress n) :
     (k : ℕ) → LevelAddress (n + k)
   | 0 => a
   | k + 1 => extendLevelAddress (rightmostDescendant a k) true
+
+/-- All depth-`k` descendants of one parent, in boundary order. -/
+def descendantAddresses {n : ℕ} (a : LevelAddress n) :
+    (k : ℕ) → List (LevelAddress (n + k))
+  | 0 => [a]
+  | k + 1 => refineLevelAddresses (descendantAddresses a k)
+
+theorem descendantAddresses_nonempty {n : ℕ} (a : LevelAddress n) :
+    ∀ k : ℕ, descendantAddresses a k ≠ [] := by
+  intro k
+  induction k with
+  | zero => simp [descendantAddresses]
+  | succ k ih =>
+      cases h : descendantAddresses a k with
+      | nil => exact (ih h).elim
+      | cons b l => simp [descendantAddresses, refineLevelAddresses, h]
+
+theorem descendantAddresses_nodup {n : ℕ} (a : LevelAddress n) :
+    ∀ k : ℕ, (descendantAddresses a k).Nodup := by
+  intro k
+  induction k with
+  | zero => simp [descendantAddresses]
+  | succ k ih =>
+      exact nodup_refineLevelAddresses (descendantAddresses a k) ih
+
+theorem descendantAddresses_isChain
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n) :
+    ∀ k : ℕ, (descendantAddresses a k).IsChain I.LevelAdjacent := by
+  intro k
+  induction k with
+  | zero => simpa [descendantAddresses] using
+      (List.isChain_singleton (r := I.LevelAdjacent) a)
+  | succ k ih =>
+      exact I.isChain_refineLevelAddresses (descendantAddresses a k) ih
+
+theorem descendantAddresses_length {n : ℕ} (a : LevelAddress n) :
+    ∀ k : ℕ, (descendantAddresses a k).length = 2 ^ k := by
+  intro k
+  induction k with
+  | zero => simp [descendantAddresses]
+  | succ k ih =>
+      rw [descendantAddresses, length_refineLevelAddresses, ih, pow_succ]
+      exact Nat.mul_comm _ _
+
+@[simp] theorem descendantAddresses_head
+    {n : ℕ} (a : LevelAddress n) (k : ℕ) :
+    (descendantAddresses a k).head (descendantAddresses_nonempty a k) =
+      leftmostDescendant a k := by
+  induction k with
+  | zero => simp [descendantAddresses, leftmostDescendant]
+  | succ k ih =>
+      cases h : descendantAddresses a k with
+      | nil => exact ((descendantAddresses_nonempty a k) h).elim
+      | cons b l =>
+          have hb : b = leftmostDescendant a k := by
+            simpa [h] using ih
+          simp [descendantAddresses, h, leftmostDescendant, hb,
+            refineLevelAddresses]
+
+@[simp] theorem descendantAddresses_getLast
+    {n : ℕ} (a : LevelAddress n) (k : ℕ) :
+    (descendantAddresses a k).getLast (descendantAddresses_nonempty a k) =
+      rightmostDescendant a k := by
+  induction k with
+  | zero => simp [descendantAddresses, rightmostDescendant]
+  | succ k ih =>
+      cases h : descendantAddresses a k with
+      | nil => exact ((descendantAddresses_nonempty a k) h).elim
+      | cons b l =>
+          have hb : (b :: l).getLast (by simp) =
+              rightmostDescendant a k := by
+            simpa [h] using ih
+          change
+            (refineLevelAddresses (descendantAddresses a k)).getLast _ =
+              extendLevelAddress (rightmostDescendant a k) true
+          simpa only [h, getLast_refineLevelAddresses] using
+            congrArg (fun c => extendLevelAddress c true) hb
 
 @[simp] theorem levelArc_leftmostDescendant_left
     (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
@@ -55,6 +159,47 @@ def rightmostDescendant {n : ℕ} (a : LevelAddress n) :
       simp only [rightmostDescendant,
         I.levelArc_extendLevelAddress_true,
         AccessibleAngularArc.rightChild_right, ih]
+
+/-- Every listed deeper arc is contained in its parent boundary arc. -/
+theorem levelArc_curveArcPlane_subset_of_mem_descendantAddresses
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n) :
+    ∀ {k : ℕ} (b : LevelAddress (n + k)),
+      b ∈ descendantAddresses a k →
+        (I.levelArc b).curveArcPlane ⊆ (I.levelArc a).curveArcPlane := by
+  intro k
+  induction k with
+  | zero =>
+      intro b hb
+      simp only [descendantAddresses, List.mem_singleton] at hb
+      subst b
+      exact Subset.rfl
+  | succ k ih =>
+      intro b hb
+      change b ∈ refineLevelAddresses (descendantAddresses a k) at hb
+      rw [refineLevelAddresses, List.mem_flatMap] at hb
+      obtain ⟨c, hc, hb⟩ := hb
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hb
+      rcases hb with rfl | rfl
+      · apply (show
+            (I.levelArc (extendLevelAddress c false)).curveArcPlane ⊆
+              (I.levelArc c).curveArcPlane by
+          rw [I.levelArc_extendLevelAddress_false]
+          exact (show (I.levelArc c).leftChild.curveArcPlane ⊆
+              (I.levelArc c).leftChild.curveArcPlane ∪
+                (I.levelArc c).rightChild.curveArcPlane from
+            subset_union_left).trans_eq
+              (I.levelArc c).leftChild_union_rightChild_curveArcPlane).trans
+        exact ih c hc
+      · apply (show
+            (I.levelArc (extendLevelAddress c true)).curveArcPlane ⊆
+              (I.levelArc c).curveArcPlane by
+          rw [I.levelArc_extendLevelAddress_true]
+          exact (show (I.levelArc c).rightChild.curveArcPlane ⊆
+              (I.levelArc c).leftChild.curveArcPlane ∪
+                (I.levelArc c).rightChild.curveArcPlane from
+            subset_union_right).trans_eq
+              (I.levelArc c).leftChild_union_rightChild_curveArcPlane).trans
+        exact ih c hc
 
 /-- The left child retains its parent's left endpoint hair. -/
 @[simp] theorem levelLeftHair_extendLevelAddress_false_carrier

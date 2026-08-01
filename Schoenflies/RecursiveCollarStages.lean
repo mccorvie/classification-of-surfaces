@@ -27,12 +27,18 @@ structure RecursiveInsideCollarStep (I : J.InitialAngularArcs)
     (P : PolygonalCircle) where
   buffer : ℝ
   buffer_pos : 0 < buffer
+  buffer_separation : Disjoint P.closedRegion
+    (thickening buffer J.carrier)
   level : ℕ
   one_le_level : 1 ≤ level
   family : I.LevelAvoidingJoinFamilyOver level
-    ((buffer / 2) / 4) P.closedRegion
+    ((buffer / 4) / 4) P.closedRegion
   carrier_disjoint : Disjoint P.closedRegion
     (family.forgetObstacle.synchronizedPolygonalCircle one_le_level).carrier
+  cell_near : ∀ a : LevelAddress level,
+    closure
+        (family.forgetObstacle.exactSynchronizedAuxiliaryJordanCircle a).inside ⊆
+      closedBall (J.curvePoint (I.levelArc a).left : Plane) (buffer / 4)
   cell_disjoint : ∀ a : LevelAddress level,
     Disjoint P.closedRegion
       (closure
@@ -90,32 +96,38 @@ theorem trimmed_path_disjoint (i : Fin (levelAddressCount S.level)) :
 end RecursiveInsideCollarStep
 
 /-- Every polygonal disk already contained in the Jordan inside admits a
-recursive collar step with both carrier avoidance and closed-cell avoidance. -/
-theorem nonempty_recursiveInsideCollarStep
+recursive collar step beyond any prescribed subdivision level, with both
+carrier avoidance and closed-cell avoidance. -/
+theorem exists_recursiveInsideCollarStep_atLeast
     (I : J.InitialAngularArcs) (P : PolygonalCircle)
-    (hPinside : P.closedRegion ⊆ J.inside) :
-    Nonempty (I.RecursiveInsideCollarStep P) := by
+    (hPinside : P.closedRegion ⊆ J.inside) (lower : ℕ) :
+    ∃ S : I.RecursiveInsideCollarStep P, lower ≤ S.level := by
   obtain ⟨buffer, hbuffer, hseparated⟩ :=
     exists_thickening_carrier_disjoint_closedRegion P hPinside
-  have hhalf : 0 < buffer / 2 := half_pos hbuffer
+  have hquarter : 0 < buffer / 4 := by positivity
   obtain ⟨Ncarrier, hNcarrierPos, hNcarrier⟩ :=
-    I.eventually_carrier_synchronizedPolygonalCircle_subset_thickening hhalf
+    I.eventually_carrier_synchronizedPolygonalCircle_subset_thickening hquarter
   obtain ⟨Ncell, hNcell⟩ :=
     LevelAvoidingJoinFamily.eventually_closure_inside_exactSynchronizedAuxiliary_subset_ball
-      I hhalf
-  let N := max Ncarrier Ncell
-  have hNpos : 1 ≤ N := hNcarrierPos.trans (le_max_left _ _)
+      I hquarter
+  let N := max lower (max Ncarrier Ncell)
+  have hlower : lower ≤ N := le_max_left _ _
+  have hcarrierLevel : Ncarrier ≤ N :=
+    (le_max_left Ncarrier Ncell).trans (le_max_right _ _)
+  have hcellLevel : Ncell ≤ N :=
+    (le_max_right Ncarrier Ncell).trans (le_max_right _ _)
+  have hNpos : 1 ≤ N := hNcarrierPos.trans hcarrierLevel
   let G : I.LevelAvoidingJoinFamilyOver N
-      ((buffer / 2) / 4) P.closedRegion :=
+      ((buffer / 4) / 4) P.closedRegion :=
     Classical.choice (I.nonempty_levelAvoidingJoinFamilyOver_closedRegion
       P hPinside N (by positivity))
-  let F : I.LevelAvoidingJoinFamily N ((buffer / 2) / 4) :=
+  let F : I.LevelAvoidingJoinFamily N ((buffer / 4) / 4) :=
     G.forgetObstacle
   have hcarrierNear :
       (F.synchronizedPolygonalCircle hNpos).carrier ⊆
         thickening buffer J.carrier := by
-    exact (hNcarrier N (le_max_left _ _) hNpos F).trans
-      (thickening_mono (by linarith : buffer / 2 ≤ buffer) _)
+    exact (hNcarrier N hcarrierLevel hNpos F).trans
+      (thickening_mono (by linarith : buffer / 4 ≤ buffer) _)
   have hcarrierDisjoint : Disjoint P.closedRegion
       (F.synchronizedPolygonalCircle hNpos).carrier :=
     hseparated.mono_right hcarrierNear
@@ -124,19 +136,30 @@ theorem nonempty_recursiveInsideCollarStep
         (closure (F.exactSynchronizedAuxiliaryJordanCircle a).inside) := by
     intro a
     apply hseparated.mono_right
-    exact (hNcell N (le_max_right _ _) F a).trans <| by
-      exact (closedBall_subset_ball (half_lt_self hbuffer)).trans
+    exact (hNcell N hcellLevel F a).trans <| by
+      exact (closedBall_subset_ball (by linarith : buffer / 4 < buffer)).trans
         (ball_subset_thickening
           ((I.levelArc a).curveArcPlane_subset_carrier J
             (I.levelArc a).left_mem_curveArcPlane) buffer)
   exact ⟨{
     buffer := buffer
     buffer_pos := hbuffer
+    buffer_separation := hseparated
     level := N
     one_le_level := hNpos
     family := G
     carrier_disjoint := hcarrierDisjoint
-    cell_disjoint := hcellDisjoint }⟩
+    cell_near := hNcell N hcellLevel F
+    cell_disjoint := hcellDisjoint }, hlower⟩
+
+/-- The unbounded version of `exists_recursiveInsideCollarStep_atLeast`,
+retained as the convenient one-step API. -/
+theorem nonempty_recursiveInsideCollarStep
+    (I : J.InitialAngularArcs) (P : PolygonalCircle)
+    (hPinside : P.closedRegion ⊆ J.inside) :
+    Nonempty (I.RecursiveInsideCollarStep P) := by
+  obtain ⟨S, _⟩ := I.exists_recursiveInsideCollarStep_atLeast P hPinside 0
+  exact ⟨S⟩
 
 end InitialAngularArcs
 end JordanCircle
