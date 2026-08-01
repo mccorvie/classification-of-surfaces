@@ -22,6 +22,7 @@ import Schoenflies.SideConstancy
 import Schoenflies.FiniteCrossingParity
 import Schoenflies.OddWalkEdgeGraph
 import Schoenflies.CommonSegmentArrangement
+import Schoenflies.SegmentChainWalk
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
