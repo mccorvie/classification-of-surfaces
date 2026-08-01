@@ -1,0 +1,213 @@
+import Schoenflies.JordanArcPaths
+import Schoenflies.PolygonalShells
+
+/-!
+# Jordan separators from two polygonal-annulus crosscuts
+
+Two disjoint paths joining the boundary components of a strictly nested pair
+of polygonal disks, together with one boundary arc on each polygon, form a
+Jordan circle.  This is the separator used to prove that a finite family of
+annular crosscuts has the same cyclic order on both boundary components.
+-/
+
+namespace Schoenflies
+
+open Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace PolygonalCircle
+
+/-- An embedded path from the outer boundary of `Q` to the inner boundary
+of `P`, meeting each boundary component only at the named endpoint. -/
+structure AnnularCrosscut (P Q : PolygonalCircle) where
+  outerPoint : Plane
+  innerPoint : Plane
+  path : Path outerPoint innerPoint
+  path_injective : Injective path
+  outerPoint_mem : outerPoint ∈ Q.carrier
+  innerPoint_mem : innerPoint ∈ P.carrier
+  range_inter_outer : range path ∩ Q.carrier = {outerPoint}
+  range_inter_inner : range path ∩ P.carrier = {innerPoint}
+
+namespace AnnularCrosscut
+
+variable {P Q : PolygonalCircle}
+
+private theorem boundaryArc_inter_crosscut
+    (C : AnnularCrosscut P Q) {z : Plane} {A : Set Plane}
+    (hA : A ⊆ P.carrier) (hzA : z ∈ A)
+    (hz : z = C.innerPoint) :
+    A ∩ range C.path = {z} := by
+  subst z
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxA, hxPath⟩
+    have hx : x ∈ range C.path ∩ P.carrier :=
+      ⟨hxPath, hA hxA⟩
+    rw [C.range_inter_inner] at hx
+    exact hx
+  · intro x hx
+    have hxEq : x = C.innerPoint := Set.mem_singleton_iff.mp hx
+    subst x
+    exact ⟨hzA, Path.target_mem_range C.path⟩
+
+private theorem crosscut_inter_outerBoundaryArc
+    (C : AnnularCrosscut P Q) {z : Plane} {A : Set Plane}
+    (hA : A ⊆ Q.carrier) (hzA : z ∈ A)
+    (hz : z = C.outerPoint) :
+    range C.path ∩ A = {z} := by
+  subst z
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxPath, hxA⟩
+    have hx : x ∈ range C.path ∩ Q.carrier :=
+      ⟨hxPath, hA hxA⟩
+    rw [C.range_inter_outer] at hx
+    exact hx
+  · intro x hx
+    have hxEq : x = C.outerPoint := Set.mem_singleton_iff.mp hx
+    subst x
+    exact ⟨Path.source_mem_range C.path, hzA⟩
+
+/-- Strictly nested polygonal boundary components are disjoint. -/
+theorem disjoint_inner_outer_carriers
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion) :
+    Disjoint P.carrier Q.carrier := by
+  rw [Set.disjoint_left]
+  intro x hxP hxQ
+  have hxPClosed : x ∈ P.closedRegion := by
+    rw [P.closedRegion_eq_union]
+    exact Or.inr hxP
+  exact Set.disjoint_left.mp
+    (PolygonalCircle.carrier_disjoint_interiorRegion Q)
+    hxQ (hPQ hxPClosed)
+
+/-- The path through the first cut, the selected inner boundary arc, and the
+reverse of the second cut. -/
+def bridgePath (A B : AnnularCrosscut P Q)
+    (innerArc : Path A.innerPoint B.innerPoint) :
+    Path A.outerPoint B.outerPoint :=
+  A.path.trans (innerArc.trans B.path.symm)
+
+theorem range_bridgePath (A B : AnnularCrosscut P Q)
+    (innerArc : Path A.innerPoint B.innerPoint) :
+    range (bridgePath A B innerArc) =
+      range A.path ∪ range innerArc ∪ range B.path := by
+  simp only [bridgePath, Path.trans_range, Path.symm_range, union_assoc]
+
+theorem bridgePath_injective
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (A B : AnnularCrosscut P Q)
+    (hAB : Disjoint (range A.path) (range B.path))
+    (innerArc : Path A.innerPoint B.innerPoint)
+    (hInnerInj : Injective innerArc)
+    (hInnerRange : range innerArc ⊆ P.carrier) :
+    Injective (bridgePath A B innerArc) := by
+  have hInnerB : range innerArc ∩ range B.path = {B.innerPoint} :=
+    B.boundaryArc_inter_crosscut hInnerRange
+      (Path.target_mem_range innerArc) rfl
+  have hTailInj : Injective (innerArc.trans B.path.symm) := by
+    apply Path.trans_injective_of_range_inter innerArc B.path.symm
+      hInnerInj
+    · exact B.path_injective.comp unitInterval.symm_bijective.injective
+    · simpa only [Path.symm_range] using hInnerB
+  have hAInner : range A.path ∩ range innerArc = {A.innerPoint} := by
+    rw [Set.inter_comm]
+    exact A.boundaryArc_inter_crosscut hInnerRange
+      (Path.source_mem_range innerArc) rfl
+  have hABInter : range A.path ∩ range B.path = ∅ :=
+    Set.disjoint_iff_inter_eq_empty.mp hAB
+  have hATail :
+      range A.path ∩ range (innerArc.trans B.path.symm) =
+        {A.innerPoint} := by
+    rw [Path.trans_range, Path.symm_range,
+      inter_union_distrib_left, hAInner, hABInter, union_empty]
+  exact Path.trans_injective_of_range_inter A.path
+    (innerArc.trans B.path.symm) A.path_injective hTailInj hATail
+
+/-- The bridge meets a selected outer boundary arc exactly at its two
+endpoints. -/
+theorem range_bridgePath_inter_outerArc
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (A B : AnnularCrosscut P Q)
+    (innerArc : Path A.innerPoint B.innerPoint)
+    (hInnerRange : range innerArc ⊆ P.carrier)
+    (outerArc : Path B.outerPoint A.outerPoint)
+    (hOuterRange : range outerArc ⊆ Q.carrier) :
+    range (bridgePath A B innerArc) ∩ range outerArc =
+      {A.outerPoint, B.outerPoint} := by
+  have hAOuter : range A.path ∩ range outerArc = {A.outerPoint} :=
+    A.crosscut_inter_outerBoundaryArc hOuterRange
+      (Path.target_mem_range outerArc) rfl
+  have hBOuter : range B.path ∩ range outerArc = {B.outerPoint} :=
+    B.crosscut_inter_outerBoundaryArc hOuterRange
+      (Path.source_mem_range outerArc) rfl
+  have hInnerOuter : Disjoint (range innerArc) (range outerArc) :=
+    (disjoint_inner_outer_carriers hPQ).mono hInnerRange hOuterRange
+  rw [range_bridgePath, union_inter_distrib_right,
+    union_inter_distrib_right, hAOuter, hBOuter,
+    Set.disjoint_iff_inter_eq_empty.mp hInnerOuter]
+  simp only [union_empty]
+  ext x
+  simp only [Set.mem_union, Set.mem_singleton_iff,
+    Set.mem_insert_iff]
+
+/-- Two disjoint annular crosscuts and one of the two arcs on each boundary
+produce a Jordan separator.  The returned carrier equality records all four
+pieces exactly. -/
+theorem exists_jordanSeparator
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (A B : AnnularCrosscut P Q)
+    (hAB : Disjoint (range A.path) (range B.path))
+    (hOuterPoints : A.outerPoint ≠ B.outerPoint)
+    (hInnerPoints : A.innerPoint ≠ B.innerPoint) :
+    ∃ innerArc : Path A.innerPoint B.innerPoint,
+      ∃ outerArc : Path B.outerPoint A.outerPoint,
+        ∃ K : JordanCircle,
+          Injective innerArc ∧ Injective outerArc ∧
+          range innerArc ⊆ P.carrier ∧
+          range outerArc ⊆ Q.carrier ∧
+          K.carrier = range A.path ∪ range innerArc ∪
+            range B.path ∪ range outerArc := by
+  let innerSplit := Classical.choice <|
+    P.toJordanCircle.exists_twoBoundaryArcPaths
+      (by simpa only [P.carrier_toJordanCircle] using A.innerPoint_mem)
+      (by simpa only [P.carrier_toJordanCircle] using B.innerPoint_mem)
+      hInnerPoints
+  let outerSplit := Classical.choice <|
+    Q.toJordanCircle.exists_twoBoundaryArcPaths
+      (by simpa only [Q.carrier_toJordanCircle] using A.outerPoint_mem)
+      (by simpa only [Q.carrier_toJordanCircle] using B.outerPoint_mem)
+      hOuterPoints
+  let innerArc : Path A.innerPoint B.innerPoint := innerSplit.first
+  let outerArc : Path B.outerPoint A.outerPoint := outerSplit.second
+  have hInnerRange : range innerArc ⊆ P.carrier := by
+    intro x hx
+    rw [← P.carrier_toJordanCircle, ← innerSplit.cover]
+    exact Or.inl hx
+  have hOuterRange : range outerArc ⊆ Q.carrier := by
+    intro x hx
+    rw [← Q.carrier_toJordanCircle, ← outerSplit.cover]
+    exact Or.inr hx
+  have hBridgeInj : Injective (bridgePath A B innerArc) :=
+    bridgePath_injective hPQ A B hAB innerArc
+      innerSplit.first_injective hInnerRange
+  have hBridgeOuter := range_bridgePath_inter_outerArc
+    hPQ A B innerArc hInnerRange outerArc hOuterRange
+  let K : JordanCircle := TwoArcJordan.toJordanCircle
+    (bridgePath A B innerArc) outerArc hBridgeInj
+      outerSplit.second_injective hBridgeOuter
+  refine ⟨innerArc, outerArc, K,
+    innerSplit.first_injective, outerSplit.second_injective,
+    hInnerRange, hOuterRange, ?_⟩
+  dsimp only [K]
+  rw [TwoArcJordan.carrier_toJordanCircle,
+    range_bridgePath, union_assoc]
+
+end AnnularCrosscut
+
+end PolygonalCircle
+
+end
+
+end Schoenflies

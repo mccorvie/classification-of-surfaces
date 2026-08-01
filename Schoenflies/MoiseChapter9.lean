@@ -39,6 +39,8 @@ import Schoenflies.PolygonalShellTriangulation
 import Schoenflies.LocalizedShellCrosscuts
 import Schoenflies.LocalizedShellCutPaths
 import Schoenflies.JordanArcPaths
+import Schoenflies.AnnularCrosscutSeparators
+import Schoenflies.LocalizedAnnularCrosscuts
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
