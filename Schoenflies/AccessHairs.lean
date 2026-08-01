@@ -37,6 +37,11 @@ theorem base_mem (H : J.InsideAccessHair q) : q ∈ H.carrier :=
 theorem tip_mem (H : J.InsideAccessHair q) : H.tip ∈ H.carrier :=
   right_mem_segment ℝ q H.tip
 
+theorem tip_mem_inside (H : J.InsideAccessHair q) : H.tip ∈ J.inside := by
+  rcases H.carrier_subset H.tip_mem with h | h
+  · exact h
+  · exact False.elim (H.tip_ne_base (mem_singleton_iff.mp h))
+
 theorem isCompact_carrier (H : J.InsideAccessHair q) : IsCompact H.carrier := by
   rw [carrier, segment_eq_image_lineMap]
   exact isCompact_Icc.image (continuous_const.lineMap continuous_const continuous_id)
