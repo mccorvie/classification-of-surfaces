@@ -48,7 +48,18 @@ theorem exists_finiteSeparatorFrame (A : J.AccessibleAngularArc)
           A.returnPath '' Icc t (1 : unitInterval)).Nonempty ∧
         Q.carrier ∩ A.auxiliaryJordanCircle.carrier ⊆
           A.returnPath '' Icc (0 : unitInterval) s ∪
-            A.returnPath '' Icc t (1 : unitInterval) := by
+            A.returnPath '' Icc t (1 : unitInterval) ∧
+        (∀ (i : ZMod Q.n)
+            (j : Fin A.returnCarrierBrokenLine.data.n),
+          planeDet
+            (A.returnCarrierBrokenLine.data.vertex j.castSucc - Q.vertex i)
+            (A.returnCarrierBrokenLine.data.vertex j.succ -
+              A.returnCarrierBrokenLine.data.vertex j.castSucc) ≠ 0) ∧
+        ∀ (i : ZMod Q.n)
+            (j : Fin (A.returnCarrierBrokenLine.data.n + 1)),
+          planeDet
+            (A.returnCarrierBrokenLine.data.vertex j - Q.vertex i)
+            (Q.vertex (i + 1) - Q.vertex i) ≠ 0 := by
   have hhalf : 0 < epsilon / 2 := half_pos hepsilon
   obtain ⟨s, t, rho, _N, P, hspos, hst, htone, hrho,
       hrhoHalf, hfirst, hlast, hPthick, hArcInside,
@@ -95,7 +106,8 @@ theorem exists_finiteSeparatorFrame (A : J.AccessibleAngularArc)
     hfirst.trans (thickening_mono (half_le_self hepsilon.le) _),
     hlast.trans (thickening_mono (half_le_self hepsilon.le) _),
     hQthick, hArcQ, hMiddleQ, hMiddleCompact, hMiddlePreconnected,
-    hMiddleDisjoint, hfinite, hmeets.1, hmeets.2, hintersections⟩
+    hMiddleDisjoint, hfinite, hmeets.1, hmeets.2, hintersections,
+    _hgenericEdges, _hgenericVertices⟩
 
 end AccessibleAngularArc
 end JordanCircle
