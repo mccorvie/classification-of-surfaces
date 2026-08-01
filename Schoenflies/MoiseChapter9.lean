@@ -20,6 +20,7 @@ import Schoenflies.FiniteSeparatorSetup
 import Schoenflies.ReturnPathCrossings
 import Schoenflies.SideConstancy
 import Schoenflies.FiniteCrossingParity
+import Schoenflies.OddWalkEdgeGraph
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
