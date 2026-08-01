@@ -28,7 +28,8 @@ documents its main interfaces.
 * `TriangleFamily.FaceAdjacentAtVertex`, `TriangleFamily.IsStrongVertexStarConnected`, and
   the strong-to-legacy and strong-to-dual connectivity bridges
   (`Moise/GeometricTriangulation.lean`)
-* `PlaneComplex`, `IsPLOn`, `IsPLOnSet` (`Moise/PlaneComplex.lean`)
+* `PlaneComplex`, `PlaneComplex.cellCarrier_singleton`, `PlaneComplex.cellCarrier_pair`,
+  `IsPLOn`, `IsPLOnSet` (`Moise/PlaneComplex.lean`)
 * `IntrinsicTwoComplex`, its faithful `Subdivision`, `IsPLMap`, and `PLHomeomorph`
   (`Moise/IntrinsicComplex.lean`)
 * intrinsic one-skeleton polygonal replacement, exact finite edge complexes, and embedding

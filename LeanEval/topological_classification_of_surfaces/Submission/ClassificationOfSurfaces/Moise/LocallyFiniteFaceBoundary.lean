@@ -246,13 +246,6 @@ theorem faceBoundaryVertex_position (t : K.Face) (i : ZMod 3) :
   exact BrokenLineData.segmentFamily_arrangementVertex_position_left _ _
     (K.faceVertexPiece t i)
 
-private theorem singleton_cellCarrier_eq_position {L : PlaneComplex} (v : L.Vertex) :
-    L.cellCarrier {v} = {L.position v} := by
-  rw [PlaneComplex.cellCarrier]
-  have himage : L.position '' (({v} : Finset L.Vertex) : Set L.Vertex) =
-      {L.position v} := by ext x; simp
-  rw [himage, convexHull_singleton]
-
 /-- Every abstract corner is a zero-face of the common boundary complex. -/
 theorem faceBoundaryVertex_face (t : K.Face) (i : ZMod 3) :
     ({K.faceBoundaryVertex t i} : Finset
@@ -271,7 +264,7 @@ theorem faceBoundaryVertex_face (t : K.Face) (i : ZMod 3) :
   refine ⟨B.arrangementVertex_face q.castSucc, ?_⟩
   change B.arrangementMesh.toPlaneComplex.cellCarrier
     {B.arrangementVertex q.castSucc} ⊆ _
-  rw [singleton_cellCarrier_eq_position,
+  rw [PlaneComplex.cellCarrier_singleton,
     BrokenLineData.segmentFamily_arrangementVertex_position_left]
   rintro x rfl
   apply Set.mem_iUnion.mpr
@@ -374,7 +367,7 @@ private theorem faceBoundaryVertex_cellCarrier_subset_edge (t : K.Face)
         {K.faceBoundaryVertex t j} ⊆
       (faceReplacementArc
         (G := G) t i).completeCarrier := by
-  rw [singleton_cellCarrier_eq_position, K.faceBoundaryVertex_position t j]
+  rw [PlaneComplex.cellCarrier_singleton, K.faceBoundaryVertex_position t j]
   rintro x rfl
   apply (faceReplacementArc
     (G := G) t i

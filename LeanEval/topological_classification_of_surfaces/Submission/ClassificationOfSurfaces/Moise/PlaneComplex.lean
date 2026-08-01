@@ -640,6 +640,23 @@ variable (K : PlaneComplex)
 def cellCarrier (s : Finset K.Vertex) : Set Plane :=
   convexHull ℝ (K.position '' s)
 
+/-- The carrier of a single vertex is its geometric position. -/
+@[simp]
+theorem cellCarrier_singleton (v : K.Vertex) :
+    K.cellCarrier {v} = {K.position v} := by
+  simp [cellCarrier]
+
+/-- The carrier of two vertices is the segment joining their geometric positions. -/
+theorem cellCarrier_pair (u v : K.Vertex) :
+    K.cellCarrier {u, v} = segment ℝ (K.position u) (K.position v) := by
+  rw [cellCarrier]
+  have himage : K.position ''
+      (({u, v} : Finset K.Vertex) : Set K.Vertex) =
+      {K.position u, K.position v} := by
+    ext x
+    simp [eq_comm]
+  rw [himage, convexHull_pair]
+
 /-- The support of the complex: the union of its face carriers. -/
 def support : Set Plane :=
   ⋃ s ∈ K.simplexes, K.cellCarrier s

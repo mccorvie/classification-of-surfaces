@@ -28,14 +28,8 @@ variable (K : PlaneComplex) {v : K.Vertex}
 
 /-- The geometric segment carried by an edge of the vertex graph. -/
 theorem cellCarrier_pair_of_adj {u w : K.Vertex} (_ : K.vertexGraph.Adj u w) :
-    K.cellCarrier {u, w} = segment ℝ (K.position u) (K.position w) := by
-  rw [PlaneComplex.cellCarrier]
-  have himage : K.position ''
-      (({u, w} : Finset K.Vertex) : Set K.Vertex) =
-      {K.position u, K.position w} := by
-    ext x
-    simp [eq_comm]
-  rw [himage, convexHull_pair]
+    K.cellCarrier {u, w} = segment ℝ (K.position u) (K.position w) :=
+  K.cellCarrier_pair u w
 
 /-- A graph walk traces a canonical geometric path through the corresponding straight edges. -/
 noncomputable def walkGeometricPath {u w : K.Vertex}
