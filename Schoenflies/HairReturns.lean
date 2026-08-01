@@ -154,7 +154,7 @@ noncomputable def prescribedInsideReturnArc
     A.InsideReturnArc where
   permittedSet := A.hairReturnSet HL HR
   path := A.hairReturnPath HL HR
-  carrierBrokenLine := A.hairReturnCarrierBrokenLine HL HR
+  sourceBrokenLine := A.hairReturnBrokenLine HL HR
   path_injective := A.hairReturnPath_injective HL HR
   segmentCarrier_eq_range :=
     A.segmentCarrier_hairReturnCarrierBrokenLine HL HR

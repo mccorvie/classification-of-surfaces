@@ -41,11 +41,12 @@ while the topological argument uses the path parameter. -/
 structure InsideReturnArc (A : J.AccessibleAngularArc) where
   permittedSet : Set Plane
   path : Path (J.curvePoint A.right : Plane) (J.curvePoint A.left : Plane)
-  carrierBrokenLine : SimpleBrokenLine permittedSet
+  sourceBrokenLine : SimpleBrokenLine permittedSet
     (J.curvePoint A.left : Plane) (J.curvePoint A.right : Plane)
   path_injective : Injective path
   segmentCarrier_eq_range :
-    carrierBrokenLine.data.segmentCarrier = range path
+    (sourceBrokenLine.carrierBrokenLine A.endpoint_ne).data.segmentCarrier =
+      range path
   range_subset_insideCrosscutSet :
     range path ⊆
       J.insideCrosscutSet (J.curvePoint A.left) (J.curvePoint A.right)
@@ -98,7 +99,7 @@ noncomputable def insideReturnArc (A : J.AccessibleAngularArc) :
   permittedSet :=
     J.insideCrosscutSet (J.curvePoint A.left) (J.curvePoint A.right)
   path := A.returnPath
-  carrierBrokenLine := A.returnCarrierBrokenLine
+  sourceBrokenLine := A.returnBrokenLine
   path_injective := A.returnPath_injective
   segmentCarrier_eq_range := A.segmentCarrier_returnCarrierBrokenLine
   range_subset_insideCrosscutSet :=
@@ -106,6 +107,18 @@ noncomputable def insideReturnArc (A : J.AccessibleAngularArc) :
 
 @[simp] theorem insideReturnArc_path (A : J.AccessibleAngularArc) :
     A.insideReturnArc.path = A.returnPath := rfl
+
+/-- The resolved finite carrier associated to an explicit return arc. -/
+noncomputable def InsideReturnArc.carrierBrokenLine
+    {A : J.AccessibleAngularArc} (R : A.InsideReturnArc) :
+    SimpleBrokenLine R.permittedSet
+      (J.curvePoint A.left : Plane) (J.curvePoint A.right : Plane) :=
+  R.sourceBrokenLine.carrierBrokenLine A.endpoint_ne
+
+theorem InsideReturnArc.segmentCarrier_carrierBrokenLine_eq_range
+    {A : J.AccessibleAngularArc} (R : A.InsideReturnArc) :
+    R.carrierBrokenLine.data.segmentCarrier = range R.path :=
+  R.segmentCarrier_eq_range
 
 @[simp] theorem insideReturnArc_carrierBrokenLine
     (A : J.AccessibleAngularArc) :
