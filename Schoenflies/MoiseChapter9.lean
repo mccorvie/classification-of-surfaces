@@ -27,6 +27,7 @@ import Schoenflies.RefinedCyclicCuts
 import Schoenflies.ControlledTailJoin
 import Schoenflies.PrescribedHairCrosscuts
 import Schoenflies.ShrinkingCollars
+import Schoenflies.TrimmedHairCrosscuts
 import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.HairReturns
