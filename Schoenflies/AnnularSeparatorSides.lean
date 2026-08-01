@@ -42,6 +42,27 @@ theorem outside_subset_outside_of_carrier_subset (J K : JordanCircle)
       (J.outside_unbounded (K.inside_bounded.subset hInside))
   · exact hOutside
 
+/-- Boundary points of `J` not used by an inner Jordan circle `K` lie on
+the unbounded side of `K`. -/
+theorem carrier_sdiff_subset_outside_of_carrier_subset
+    (J K : JordanCircle)
+    (hcarrier : K.carrier ⊆ J.inside ∪ J.carrier) :
+    J.carrier \ K.carrier ⊆ K.outside := by
+  have hOutside := J.outside_subset_outside_of_carrier_subset K hcarrier
+  rintro x ⟨hxJ, hxNotK⟩
+  rcases K.mem_inside_or_outside hxNotK with hxInside | hxOutside
+  · have hxClosure : x ∈ closure J.outside := by
+      apply frontier_subset_closure
+      rw [J.frontier_outside]
+      exact hxJ
+    have hxInterClosure : x ∈ closure (K.inside ∩ J.outside) :=
+      K.inside_isOpen.inter_closure ⟨hxInside, hxClosure⟩
+    obtain ⟨y, hyInside, hyOutside⟩ :=
+      Set.Nonempty.of_closure ⟨x, hxInterClosure⟩
+    exact False.elim <| Set.disjoint_left.mp K.inside_disjoint_outside
+      hyInside (hOutside hyOutside)
+  · exact hxOutside
+
 end JordanCircle
 
 namespace PolygonalCircle
@@ -66,22 +87,13 @@ unbounded side. -/
 theorem outerCarrier_sdiff_separatorCarrier_subset_outside
     (hK : K.carrier ⊆ closedShell P Q) :
     Q.carrier \ K.carrier ⊆ K.outside := by
-  have hExterior := exteriorRegion_subset_separatorOutside
-    (P := P) (Q := Q) (K := K) hK
-  rintro x ⟨hxQ, hxNotK⟩
-  rcases K.mem_inside_or_outside hxNotK with hxInside | hxOutside
-  · have hxClosure : x ∈ closure Q.exteriorRegion := by
-      apply frontier_subset_closure
-      rw [Q.frontier_exteriorRegion]
-      exact hxQ
-    have hxInterClosure :
-        x ∈ closure (K.inside ∩ Q.exteriorRegion) :=
-      K.inside_isOpen.inter_closure ⟨hxInside, hxClosure⟩
-    obtain ⟨y, hyInside, hyExterior⟩ :=
-      Set.Nonempty.of_closure ⟨x, hxInterClosure⟩
-    exact False.elim <| Set.disjoint_left.mp K.inside_disjoint_outside
-      hyInside (hExterior hyExterior)
-  · exact hxOutside
+  rw [← Q.carrier_toJordanCircle]
+  apply Q.toJordanCircle.carrier_sdiff_subset_outside_of_carrier_subset K
+  intro x hxK
+  have hxClosed : x ∈ Q.closedRegion := (hK hxK).1
+  rw [Q.closedRegion_eq_union] at hxClosed
+  simpa only [Q.inside_toJordanCircle, Q.carrier_toJordanCircle]
+    using hxClosed
 
 /-- The inner polygonal interior is connected and misses every separator
 contained in the shell, so it is entirely on one separator side. -/
