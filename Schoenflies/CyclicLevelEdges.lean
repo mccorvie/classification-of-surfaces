@@ -32,6 +32,13 @@ noncomputable def synchronizedCrosscutCarrierLine (a : LevelAddress n) :
   (F.synchronizedCrosscutLine a).carrierBrokenLine
     (F.leftSynchronizedPoint_ne_rightSynchronizedPoint a)
 
+theorem segmentCarrier_synchronizedCrosscutCarrierLine_eq_range
+    (a : LevelAddress n) :
+    (F.synchronizedCrosscutCarrierLine a).data.segmentCarrier =
+      range (F.synchronizedCrosscutPath a) := by
+  exact (F.synchronizedCrosscutLine a).segmentCarrier_carrierBrokenLine
+    (F.leftSynchronizedPoint_ne_rightSynchronizedPoint a)
+
 theorem synchronizedCrosscutCarrierLine_edgeCount_pos
     (a : LevelAddress n) :
     0 < (F.synchronizedCrosscutCarrierLine a).data.n := by
@@ -55,6 +62,12 @@ noncomputable def edgeFinish (e : F.LevelEdgeAddress) : Plane :=
 
 noncomputable def edgeSegment (e : F.LevelEdgeAddress) : Set Plane :=
   segment ℝ (F.edgeStart e) (F.edgeFinish e)
+
+theorem edgeSegment_subset_crosscutRange (e : F.LevelEdgeAddress) :
+    F.edgeSegment e ⊆ range (F.synchronizedCrosscutPath e.1) := by
+  rw [← F.segmentCarrier_synchronizedCrosscutCarrierLine_eq_range e.1]
+  intro x hx
+  exact Set.mem_iUnion.mpr ⟨e.2, hx⟩
 
 def EdgeAdjacent (e f : F.LevelEdgeAddress) : Prop :=
   F.edgeFinish e = F.edgeStart f
@@ -124,6 +137,54 @@ theorem edgeFinish_last (a : LevelAddress n) :
     _ = F.rightSynchronizedPoint a :=
       (F.synchronizedCrosscutCarrierLine a).finish_eq
 
+theorem edgeStart_ne_rightSynchronizedPoint (e : F.LevelEdgeAddress) :
+    F.edgeStart e ≠ F.rightSynchronizedPoint e.1 := by
+  intro h
+  have hv :
+      (F.synchronizedCrosscutCarrierLine e.1).data.vertex e.2.castSucc =
+        (F.synchronizedCrosscutCarrierLine e.1).data.vertex
+          (Fin.last (F.synchronizedCrosscutCarrierLine e.1).data.n) := by
+    calc
+      _ = F.edgeStart e := rfl
+      _ = F.rightSynchronizedPoint e.1 := h
+      _ = (F.synchronizedCrosscutCarrierLine e.1).data.finish :=
+        (F.synchronizedCrosscutCarrierLine e.1).finish_eq.symm
+  have hi := (F.synchronizedCrosscutCarrierLine e.1).vertex_injective hv
+  have hval := congrArg Fin.val hi
+  simp at hval
+  exact (Nat.ne_of_lt e.2.isLt) hval
+
+theorem edgeStart_injective_on_block (a : LevelAddress n) :
+    Function.Injective (fun i :
+        Fin (F.synchronizedCrosscutCarrierLine a).data.n =>
+      F.edgeStart ⟨a, i⟩) := by
+  intro i j hij
+  apply Fin.ext
+  have hvertices :
+      (F.synchronizedCrosscutCarrierLine a).data.vertex i.castSucc =
+        (F.synchronizedCrosscutCarrierLine a).data.vertex j.castSucc := hij
+  have := (F.synchronizedCrosscutCarrierLine a).vertex_injective hvertices
+  simpa using congrArg Fin.val this
+
+theorem head_edgeBlock (a : LevelAddress n) :
+    (F.edgeBlock a).head (F.edgeBlock_nonempty a) =
+      ⟨a, F.firstEdgeIndex a⟩ := by
+  unfold edgeBlock
+  rw [List.head_eq_getElem_zero]
+  simp only [List.getElem_ofFn]
+  apply Sigma.ext rfl
+  rfl
+
+theorem getLast_edgeBlock (a : LevelAddress n) :
+    (F.edgeBlock a).getLast (F.edgeBlock_nonempty a) =
+      ⟨a, F.lastEdgeIndex a⟩ := by
+  unfold edgeBlock
+  rw [← List.get_length_sub_one]
+  · simp only [List.length_ofFn, List.get_ofFn]
+    apply Sigma.ext rfl
+    rfl
+    simpa using F.synchronizedCrosscutCarrierLine_edgeCount_pos a
+
 theorem edgeBlock_bridge {a b : LevelAddress n}
     (hab : I.LevelAdjacent a b) :
     F.EdgeAdjacent ⟨a, F.lastEdgeIndex a⟩
@@ -134,9 +195,126 @@ theorem edgeBlock_bridge {a b : LevelAddress n}
   rw [EdgeAdjacent, F.edgeFinish_last, F.edgeStart_first]
   exact F.rightSynchronizedPoint_next_eq_leftSynchronizedPoint a
 
+theorem flatMap_edgeBlock_isChain
+    (l : List (LevelAddress n))
+    (h : l.IsChain I.LevelAdjacent) :
+    (l.flatMap F.edgeBlock).IsChain F.EdgeAdjacent := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+      rw [List.flatMap_cons]
+      apply (F.edgeBlock_isChain a).append (ih h.tail)
+      cases l with
+      | nil => simp
+      | cons b l =>
+          intro x hx y hy
+          have hab : I.LevelAdjacent a b := h.rel
+          have hx' : x = ⟨a, F.lastEdgeIndex a⟩ := by
+            exact (List.getLast_of_mem_getLast? hx).symm.trans
+              (F.getLast_edgeBlock a)
+          have hy' : y = ⟨b, F.firstEdgeIndex b⟩ := by
+            rw [List.flatMap_cons] at hy
+            rw [List.head?_append_of_ne_nil _
+              (F.edgeBlock_nonempty b)] at hy
+            exact (List.head_of_mem_head? hy).symm.trans
+              (F.head_edgeBlock b)
+          subst x
+          subst y
+          exact F.edgeBlock_bridge hab
+
+theorem flatMap_edgeBlock_cons_nonempty
+    (a : LevelAddress n) (l : List (LevelAddress n)) :
+    ((a :: l).flatMap F.edgeBlock) ≠ [] := by
+  rw [List.flatMap_cons]
+  intro h
+  exact F.edgeBlock_nonempty a (List.append_eq_nil_iff.mp h).1
+
+theorem head?_flatMap_edgeBlock
+    (a : LevelAddress n) (l : List (LevelAddress n)) :
+    ((a :: l).flatMap F.edgeBlock).head? =
+      some ⟨a, F.firstEdgeIndex a⟩ := by
+  rw [List.flatMap_cons, List.head?_append_of_ne_nil _
+    (F.edgeBlock_nonempty a),
+    List.head?_eq_some_head (F.edgeBlock_nonempty a)]
+  exact congrArg some (F.head_edgeBlock a)
+
+theorem getLast?_flatMap_edgeBlock
+    (a : LevelAddress n) (l : List (LevelAddress n)) :
+    ((a :: l).flatMap F.edgeBlock).getLast? =
+      some ⟨(a :: l).getLast (by simp),
+        F.lastEdgeIndex ((a :: l).getLast (by simp))⟩ := by
+  induction l generalizing a with
+  | nil =>
+      simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
+      rw [List.getLast?_eq_getLast_of_ne_nil
+        (F.edgeBlock_nonempty a), F.getLast_edgeBlock]
+      rfl
+  | cons b l ih =>
+      rw [List.flatMap_cons, List.getLast?_append_of_ne_nil _
+        (F.flatMap_edgeBlock_cons_nonempty b l)]
+      simpa using ih b
+
+theorem head?_flatMap_edgeBlock_of_nonempty
+    (l : List (LevelAddress n)) (hne : l ≠ []) :
+    (l.flatMap F.edgeBlock).head? =
+      some ⟨l.head hne, F.firstEdgeIndex (l.head hne)⟩ := by
+  cases l with
+  | nil => exact (hne rfl).elim
+  | cons a l => simpa using F.head?_flatMap_edgeBlock a l
+
+theorem getLast?_flatMap_edgeBlock_of_nonempty
+    (l : List (LevelAddress n)) (hne : l ≠ []) :
+    (l.flatMap F.edgeBlock).getLast? =
+      some ⟨l.getLast hne, F.lastEdgeIndex (l.getLast hne)⟩ := by
+  cases l with
+  | nil => exact (hne rfl).elim
+  | cons a l => simpa using F.getLast?_flatMap_edgeBlock a l
+
 /-- All resolved edges at the level, in positive cyclic order. -/
 noncomputable def orderedLevelEdges : List F.LevelEdgeAddress :=
   (orderedLevelAddresses n).flatMap F.edgeBlock
+
+theorem orderedLevelEdges_nonempty : F.orderedLevelEdges ≠ [] := by
+  cases haddr : orderedLevelAddresses n with
+  | nil => exact (orderedLevelAddresses_nonempty n haddr).elim
+  | cons a l =>
+      simpa [orderedLevelEdges, haddr] using
+        F.flatMap_edgeBlock_cons_nonempty a l
+
+theorem orderedLevelEdges_isChain :
+    F.orderedLevelEdges.IsChain F.EdgeAdjacent := by
+  exact F.flatMap_edgeBlock_isChain (orderedLevelAddresses n)
+    (I.orderedLevelAddresses_isChain n)
+
+theorem head_orderedLevelEdges :
+    F.orderedLevelEdges.head F.orderedLevelEdges_nonempty =
+      ⟨(orderedLevelAddresses n).head
+          (orderedLevelAddresses_nonempty n),
+        F.firstEdgeIndex ((orderedLevelAddresses n).head
+          (orderedLevelAddresses_nonempty n))⟩ := by
+  apply Option.some.inj
+  rw [← List.head?_eq_some_head F.orderedLevelEdges_nonempty]
+  exact F.head?_flatMap_edgeBlock_of_nonempty
+    (orderedLevelAddresses n) (orderedLevelAddresses_nonempty n)
+
+theorem getLast_orderedLevelEdges :
+    F.orderedLevelEdges.getLast F.orderedLevelEdges_nonempty =
+      ⟨(orderedLevelAddresses n).getLast
+          (orderedLevelAddresses_nonempty n),
+        F.lastEdgeIndex ((orderedLevelAddresses n).getLast
+          (orderedLevelAddresses_nonempty n))⟩ := by
+  apply Option.some.inj
+  rw [← List.getLast?_eq_getLast_of_ne_nil
+    F.orderedLevelEdges_nonempty]
+  exact F.getLast?_flatMap_edgeBlock_of_nonempty
+    (orderedLevelAddresses n) (orderedLevelAddresses_nonempty n)
+
+theorem orderedLevelEdges_closes :
+    F.EdgeAdjacent
+      (F.orderedLevelEdges.getLast F.orderedLevelEdges_nonempty)
+      (F.orderedLevelEdges.head F.orderedLevelEdges_nonempty) := by
+  rw [F.getLast_orderedLevelEdges, F.head_orderedLevelEdges]
+  exact F.edgeBlock_bridge (I.orderedLevelAddresses_closes n)
 
 theorem mem_orderedLevelEdges (e : F.LevelEdgeAddress) :
     e ∈ F.orderedLevelEdges := by
@@ -182,6 +360,191 @@ theorem orderedLevelEdges_three_le (hn : 1 ≤ n) :
       _ ≤ 2 ^ (n + 1) :=
         pow_le_pow_right' (by norm_num) (by omega)
   omega
+
+/-- Reading the complete edge list gives a canonical finite indexing of all
+resolved collar edges. -/
+noncomputable def orderedLevelEdgeEquiv :
+    Fin F.orderedLevelEdges.length ≃ F.LevelEdgeAddress :=
+  F.orderedLevelEdges_nodup.getEquivOfForallMemList
+    F.orderedLevelEdges F.mem_orderedLevelEdges
+
+@[simp] theorem orderedLevelEdgeEquiv_apply
+    (i : Fin F.orderedLevelEdges.length) :
+    F.orderedLevelEdgeEquiv i = F.orderedLevelEdges.get i := rfl
+
+/-- The next resolved edge in positive cyclic collar order. -/
+noncomputable def nextLevelEdge (e : F.LevelEdgeAddress) :
+    F.LevelEdgeAddress :=
+  let q := F.orderedLevelEdgeEquiv
+  q (cyclicSuccIndex F.orderedLevelEdges
+    F.orderedLevelEdges_nonempty (q.symm e))
+
+/-- The previous resolved edge in positive cyclic collar order. -/
+noncomputable def prevLevelEdge (e : F.LevelEdgeAddress) :
+    F.LevelEdgeAddress :=
+  let q := F.orderedLevelEdgeEquiv
+  q (cyclicPredIndex F.orderedLevelEdges
+    F.orderedLevelEdges_nonempty (q.symm e))
+
+@[simp] theorem nextLevelEdge_prevLevelEdge (e : F.LevelEdgeAddress) :
+    F.nextLevelEdge (F.prevLevelEdge e) = e := by
+  let l := F.orderedLevelEdges
+  let q := F.orderedLevelEdgeEquiv
+  change q (cyclicSuccIndex l F.orderedLevelEdges_nonempty
+    (q.symm (q (cyclicPredIndex l F.orderedLevelEdges_nonempty
+      (q.symm e))))) = e
+  rw [q.symm_apply_apply, cyclicSuccIndex_cyclicPredIndex,
+    q.apply_symm_apply]
+
+@[simp] theorem prevLevelEdge_nextLevelEdge (e : F.LevelEdgeAddress) :
+    F.prevLevelEdge (F.nextLevelEdge e) = e := by
+  let l := F.orderedLevelEdges
+  let q := F.orderedLevelEdgeEquiv
+  change q (cyclicPredIndex l F.orderedLevelEdges_nonempty
+    (q.symm (q (cyclicSuccIndex l F.orderedLevelEdges_nonempty
+      (q.symm e))))) = e
+  rw [q.symm_apply_apply, cyclicPredIndex_cyclicSuccIndex,
+    q.apply_symm_apply]
+
+theorem nextLevelEdge_ne (hn : 1 ≤ n) (e : F.LevelEdgeAddress) :
+    F.nextLevelEdge e ≠ e := by
+  let q := F.orderedLevelEdgeEquiv
+  let i := q.symm e
+  have hi : q i = e := q.apply_symm_apply e
+  intro hnext
+  have heq : q (cyclicSuccIndex F.orderedLevelEdges
+      F.orderedLevelEdges_nonempty i) = q i := by
+    exact hnext.trans hi.symm
+  exact (cyclicSuccIndex_ne F.orderedLevelEdges
+    F.orderedLevelEdges_nonempty (by
+      have := F.orderedLevelEdges_three_le hn
+      omega) i) (q.injective heq)
+
+theorem nextLevelEdge_next_ne (hn : 1 ≤ n)
+    (e : F.LevelEdgeAddress) :
+    F.nextLevelEdge (F.nextLevelEdge e) ≠ e := by
+  let l := F.orderedLevelEdges
+  let q := F.orderedLevelEdgeEquiv
+  let i : Fin l.length := q.symm e
+  have hi : q i = e := q.apply_symm_apply e
+  intro hnext
+  change q (cyclicSuccIndex l F.orderedLevelEdges_nonempty
+    (q.symm (q (cyclicSuccIndex l F.orderedLevelEdges_nonempty i)))) = e at hnext
+  rw [q.symm_apply_apply] at hnext
+  have heq :
+      q (cyclicSuccIndex l F.orderedLevelEdges_nonempty
+        (cyclicSuccIndex l F.orderedLevelEdges_nonempty i)) = q i :=
+    hnext.trans hi.symm
+  exact (cyclicSuccIndex_sq_ne l F.orderedLevelEdges_nonempty
+    (by
+      change 2 < F.orderedLevelEdges.length
+      have := F.orderedLevelEdges_three_le hn
+      omega) i) (q.injective heq)
+
+/-- Consecutive entries of the flattened edge list meet at their common
+endpoint, including the wraparound pair. -/
+theorem edgeAdjacent_nextLevelEdge (e : F.LevelEdgeAddress) :
+    F.EdgeAdjacent e (F.nextLevelEdge e) := by
+  let l := F.orderedLevelEdges
+  let q := F.orderedLevelEdgeEquiv
+  let i : Fin l.length := q.symm e
+  have hi : q i = e := q.apply_symm_apply e
+  have hrel : F.EdgeAdjacent (q i)
+      (q (cyclicSuccIndex l F.orderedLevelEdges_nonempty i)) := by
+    by_cases hsucc : i.val + 1 < l.length
+    · have hchain := F.orderedLevelEdges_isChain.getElem i.val hsucc
+      simpa [q, l, cyclicSuccIndex, hsucc] using hchain
+    · have hlastVal : i.val = l.length - 1 := by
+        have hle : l.length ≤ i.val + 1 := Nat.le_of_not_gt hsucc
+        omega
+      have hiLast : i = ⟨l.length - 1, by
+          have := i.isLt
+          omega⟩ := Fin.ext hlastVal
+      have hlastGet : l.get i =
+          l.getLast F.orderedLevelEdges_nonempty := by
+        rw [hiLast]
+        exact List.get_length_sub_one _
+      have hnextGet :
+          l.get (cyclicSuccIndex l F.orderedLevelEdges_nonempty i) =
+            l.head F.orderedLevelEdges_nonempty := by
+        rw [cyclicSuccIndex, dif_neg hsucc]
+        exact (List.head_eq_getElem_zero
+          F.orderedLevelEdges_nonempty).symm
+      change F.EdgeAdjacent (l.get i)
+        (l.get (cyclicSuccIndex l F.orderedLevelEdges_nonempty i))
+      rw [hlastGet, hnextGet]
+      exact F.orderedLevelEdges_closes
+  simpa [nextLevelEdge, q, i, hi] using hrel
+
+theorem edgeAdjacent_prevLevelEdge (e : F.LevelEdgeAddress) :
+    F.EdgeAdjacent (F.prevLevelEdge e) e := by
+  have h := F.edgeAdjacent_nextLevelEdge (F.prevLevelEdge e)
+  simpa using h
+
+theorem edgeStart_mem_edgeSegment (e : F.LevelEdgeAddress) :
+    F.edgeStart e ∈ F.edgeSegment e :=
+  left_mem_segment ℝ _ _
+
+theorem edgeFinish_mem_edgeSegment (e : F.LevelEdgeAddress) :
+    F.edgeFinish e ∈ F.edgeSegment e :=
+  right_mem_segment ℝ _ _
+
+/-- No two resolved collar edges have the same initial vertex.  For edges on
+different crosscuts this follows from exact crosscut incidence; the only
+possible shared point is the previous crosscut's terminal endpoint, which
+cannot be an edge's initial vertex on that previous crosscut. -/
+theorem edgeStart_injective (hn : 1 ≤ n) :
+    Function.Injective F.edgeStart := by
+  rintro ⟨a, i⟩ ⟨b, j⟩ hstart
+  by_cases hab : a = b
+  · subst b
+    have hij := F.edgeStart_injective_on_block a hstart
+    subst j
+    rfl
+  · have hiRange : F.edgeStart ⟨a, i⟩ ∈
+        range (F.synchronizedCrosscutPath a) :=
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩
+        (F.edgeStart_mem_edgeSegment ⟨a, i⟩)
+    have hjRange : F.edgeStart ⟨b, j⟩ ∈
+        range (F.synchronizedCrosscutPath b) :=
+      F.edgeSegment_subset_crosscutRange ⟨b, j⟩
+        (F.edgeStart_mem_edgeSegment ⟨b, j⟩)
+    by_cases hbNext : b = nextLevelAddress n a
+    · subst b
+      have hinter : F.edgeStart ⟨a, i⟩ ∈
+          range (F.synchronizedCrosscutPath a) ∩
+            range (F.synchronizedCrosscutPath (nextLevelAddress n a)) :=
+        ⟨hiRange, hstart ▸ hjRange⟩
+      rw [F.range_synchronizedCrosscutPath_inter_next hn a] at hinter
+      exact ((F.edgeStart_ne_rightSynchronizedPoint ⟨a, i⟩)
+        (mem_singleton_iff.mp hinter)).elim
+    · by_cases haNext : a = nextLevelAddress n b
+      · subst a
+        have hinter : F.edgeStart ⟨b, j⟩ ∈
+            range (F.synchronizedCrosscutPath b) ∩
+              range (F.synchronizedCrosscutPath
+                (nextLevelAddress n b)) :=
+          ⟨hjRange, hstart ▸ hiRange⟩
+        rw [F.range_synchronizedCrosscutPath_inter_next hn b] at hinter
+        exact ((F.edgeStart_ne_rightSynchronizedPoint ⟨b, j⟩)
+          (mem_singleton_iff.mp hinter)).elim
+      · have hdis := F.disjoint_range_synchronizedCrosscutPath_of_nonadjacent
+          a b hab hbNext haNext
+        exact (Set.disjoint_left.mp hdis hiRange (hstart ▸ hjRange)).elim
+
+theorem edgeAdjacent_iff_eq_next (hn : 1 ≤ n)
+    (e f : F.LevelEdgeAddress) :
+    F.EdgeAdjacent e f ↔ f = F.nextLevelEdge e := by
+  constructor
+  · intro hef
+    apply F.edgeStart_injective hn
+    exact hef.symm.trans (F.edgeAdjacent_nextLevelEdge e)
+  · rintro rfl
+    exact F.edgeAdjacent_nextLevelEdge e
+
+theorem edgeFinish_eq_edgeStart_next (e : F.LevelEdgeAddress) :
+    F.edgeFinish e = F.edgeStart (F.nextLevelEdge e) :=
+  F.edgeAdjacent_nextLevelEdge e
 
 end LevelAvoidingJoinFamily
 end InitialAngularArcs
