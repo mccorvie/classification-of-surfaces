@@ -2,6 +2,7 @@ import Schoenflies.AmbientGluing
 import Schoenflies.Accessibility
 import Schoenflies.BoundaryPartitions
 import Schoenflies.AccessHairs
+import Schoenflies.HairOrdering
 import Schoenflies.AngularSubdivisions
 import Schoenflies.ArcNeighborhoods
 import Schoenflies.Crosscuts
@@ -30,7 +31,10 @@ import Schoenflies.ShrinkingCollars
 import Schoenflies.TrimmedHairCrosscuts
 import Schoenflies.PolygonalSubpathExtraction
 import Schoenflies.OpenControlledCrosscuts
+import Schoenflies.AvoidingControlledCrosscuts
+import Schoenflies.FiniteAvoidingCrosscuts
 import Schoenflies.TrimmedCollarCells
+import Schoenflies.LevelHairSynchronization
 import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.HairReturns
