@@ -435,6 +435,7 @@ resulting bijection to a homeomorphism with `SphereRepresentative`.
 * `NormalForm.canonicalSphereRealizationHomeomorph`
 * `NormalForm.canonicalOrientableRealizationHomeomorph`
 * `NormalForm.canonicalNonOrientableRealizationHomeomorph`
+* `NormalForm.canonicalRealizationHomeomorph`
 * `NormalForm.orientableCellComplex_isSurfaceValid`
 * `NormalForm.nonOrientableCellComplex_isSurfaceValid`
 * `NormalForm.orientableCellComplex_isConnected`
@@ -476,6 +477,9 @@ resulting bijection to a homeomorphism with `SphereRepresentative`.
 * `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
 * `NormalForm.IsEvalAdmissible`
+* `NormalForm.Representative`
+* `FiniteCyclicPresentation.NormalizationResult.representativeHomeomorph`
+* `FiniteCyclicPresentation.exists_homeomorphic_normalForm`
 * `FiniteCyclicPresentation.hasEvalRepresentative`
 
 The canonical word families match the exact commutator, crosscap, and boundary-block patterns in
@@ -506,6 +510,7 @@ normalization layer does not mention manifold chart machinery.
 * `not_subsingleton_orientableQuot` and `not_subsingleton_nonOrientableQuot`
   (`LeanEval/RepresentativeSanity.lean`, project-owned consequences)
 * `SphereRepresentative` and `NormalForm` (project-owned abbreviations and indices)
+* `exists_homeomorphic_normalForm`
 * `classification_of_surfaces`
 * `topological_classification_of_surfaces`
 
