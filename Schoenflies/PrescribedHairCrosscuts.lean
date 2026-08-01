@@ -136,7 +136,50 @@ theorem exists_controlled_inside_join_between_prescribedHairs
   exact ⟨pHair, qHair, hpHairCarrier, hqHairCarrier,
     hpHairInside, hqHairInside, (hfirstJoin.trans hjoin).trans hlastJoin⟩
 
+/-- Loop erasure turns the controlled join into a simple polygonal arc
+without losing either its prescribed-hair endpoints or its metric control. -/
+theorem exists_simple_controlled_inside_join_between_prescribedHairs
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right))
+    (hdisjoint : Disjoint HL.carrier HR.carrier)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    ∃ (p q : Plane)
+        (_B : SimpleBrokenLine
+          (J.inside ∩ thickening epsilon A.curveArcPlane) p q),
+      p ∈ HR.carrier ∧ q ∈ HL.carrier ∧
+        p ∈ J.inside ∧ q ∈ J.inside := by
+  obtain ⟨p, q, hpHair, hqHair, hpInside, hqInside, hjoin⟩ :=
+    A.exists_controlled_inside_join_between_prescribedHairs
+      HL HR hdisjoint hepsilon
+  exact ⟨p, q, simpleBrokenLineOfJoined hjoin,
+    hpHair, hqHair, hpInside, hqInside⟩
+
 end AccessibleAngularArc
+
+namespace InitialAngularArcs
+
+variable {J : JordanCircle}
+
+/-- The prescribed-hair construction specialized to every arc in the
+contracting binary subdivision.  The endpoint hairs are the retained hairs
+from the recursive family, shortened into the same metric neighborhood as
+the new polygonal join. -/
+theorem exists_level_simple_controlled_inside_join
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    ∃ (p q : Plane)
+        (_B : SimpleBrokenLine
+          (J.inside ∩ thickening epsilon (I.levelArc a).curveArcPlane) p q),
+      p ∈ (I.levelRightHairNear a hepsilon).carrier ∧
+        q ∈ (I.levelLeftHairNear a hepsilon).carrier ∧
+        p ∈ J.inside ∧ q ∈ J.inside := by
+  exact (I.levelArc a).exists_simple_controlled_inside_join_between_prescribedHairs
+    (I.levelLeftHairNear a hepsilon)
+    (I.levelRightHairNear a hepsilon)
+    (I.disjoint_levelEndpointHairsNear a hepsilon) hepsilon
+
+end InitialAngularArcs
 end JordanCircle
 
 end Schoenflies

@@ -1,0 +1,149 @@
+import Schoenflies.PrescribedHairCrosscuts
+
+/-!
+# Shrinking collar data for the binary boundary subdivision
+
+This file begins the Moise 9.6 assembly.  It packages the controlled
+prescribed-hair join chosen for each finite boundary arc and records the
+metric estimates that eventually force the collar cells to shrink at the
+Jordan boundary.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+namespace JordanCircle
+namespace InitialAngularArcs
+
+variable {J : JordanCircle}
+
+/-- The images of all arcs at sufficiently deep complete levels have
+uniformly small diameter. -/
+theorem eventually_levelArc_curvePoint_dist_lt
+    (I : J.InitialAngularArcs) {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    ∃ N : ℕ, ∀ n : ℕ, N ≤ n → ∀ a : LevelAddress n,
+      ∀ s ∈ Icc (I.levelArc a).left (I.levelArc a).right,
+      ∀ t ∈ Icc (I.levelArc a).left (I.levelArc a).right,
+        dist (J.curvePoint s) (J.curvePoint t) < epsilon := by
+  obtain ⟨N₀, hN₀⟩ :=
+    AccessibleAngularArc.eventually_curvePoint_dist_lt J I.first hepsilon
+  obtain ⟨N₁, hN₁⟩ :=
+    AccessibleAngularArc.eventually_curvePoint_dist_lt J I.second hepsilon
+  refine ⟨max N₀ N₁, ?_⟩
+  intro n hn a s hs t ht
+  cases hroot : a.1 with
+  | false =>
+      have hdepth : N₀ ≤ (List.ofFn a.2).length := by
+        simpa using (le_max_left N₀ N₁).trans hn
+      have h := hN₀ (List.ofFn a.2) hdepth
+        s (by simpa [levelArc, rootArc, hroot] using hs)
+        t (by simpa [levelArc, rootArc, hroot] using ht)
+      simpa [levelArc, rootArc, hroot] using h
+  | true =>
+      have hdepth : N₁ ≤ (List.ofFn a.2).length := by
+        simpa using (le_max_right N₀ N₁).trans hn
+      have h := hN₁ (List.ofFn a.2) hdepth
+        s (by simpa [levelArc, rootArc, hroot] using hs)
+        t (by simpa [levelArc, rootArc, hroot] using ht)
+      simpa [levelArc, rootArc, hroot] using h
+
+/-- One finite polygonal join associated to a level arc, with endpoints on
+the recursively retained and locally shortened hairs. -/
+structure LevelInsideJoinData (I : J.InitialAngularArcs) {n : ℕ}
+    (a : LevelAddress n) (epsilon : ℝ) (hepsilon : 0 < epsilon) where
+  rightPoint : Plane
+  leftPoint : Plane
+  line : SimpleBrokenLine
+    (J.inside ∩ thickening epsilon (I.levelArc a).curveArcPlane)
+    rightPoint leftPoint
+  rightPoint_mem : rightPoint ∈ (I.levelRightHairNear a hepsilon).carrier
+  leftPoint_mem : leftPoint ∈ (I.levelLeftHairNear a hepsilon).carrier
+  rightPoint_inside : rightPoint ∈ J.inside
+  leftPoint_inside : leftPoint ∈ J.inside
+
+/-- Every level arc has the finite join data required for a collar cell. -/
+theorem nonempty_levelInsideJoinData
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    Nonempty (I.LevelInsideJoinData a epsilon hepsilon) := by
+  obtain ⟨p, q, B, hp, hq, hpInside, hqInside⟩ :=
+    I.exists_level_simple_controlled_inside_join a hepsilon
+  exact ⟨{
+    rightPoint := p
+    leftPoint := q
+    line := B
+    rightPoint_mem := hp
+    leftPoint_mem := hq
+    rightPoint_inside := hpInside
+    leftPoint_inside := hqInside }⟩
+
+/-- A canonical choice of the finite join at one level and scale. -/
+noncomputable def levelInsideJoinData
+    (I : J.InitialAngularArcs) {n : ℕ} (a : LevelAddress n)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    I.LevelInsideJoinData a epsilon hepsilon :=
+  Classical.choice (I.nonempty_levelInsideJoinData a hepsilon)
+
+namespace LevelInsideJoinData
+
+variable {I : J.InitialAngularArcs} {n : ℕ} {a : LevelAddress n}
+  {epsilon : ℝ} {hepsilon : 0 < epsilon}
+
+/-- The three polygonal pieces that face the selected wild boundary arc:
+the right hair segment, the inside joining line, and the left hair segment. -/
+def collarBoundarySet
+    (D : I.LevelInsideJoinData a epsilon hepsilon) : Set Plane :=
+  segment ℝ (J.curvePoint (I.levelArc a).right) D.rightPoint ∪
+    D.line.data.segmentCarrier ∪
+    segment ℝ D.leftPoint (J.curvePoint (I.levelArc a).left)
+
+/-- Every piece of the collar boundary stays in the prescribed metric
+neighborhood of its boundary arc. -/
+theorem collarBoundarySet_subset_thickening
+    (D : I.LevelInsideJoinData a epsilon hepsilon) :
+    D.collarBoundarySet ⊆
+      thickening epsilon (I.levelArc a).curveArcPlane := by
+  rintro x ((hxRight | hxLine) | hxLeft)
+  · apply I.levelRightHairNear_carrier_subset_thickening a hepsilon
+    exact (convex_segment
+      (J.curvePoint (I.levelArc a).right : Plane)
+      (I.levelRightHairNear a hepsilon).tip).segment_subset
+        (left_mem_segment ℝ _ _) D.rightPoint_mem hxRight
+  · exact (JordanCircle.BrokenLineData.segmentCarrier_subset D.line.data hxLine).2
+  · apply I.levelLeftHairNear_carrier_subset_thickening a hepsilon
+    exact (convex_segment
+      (J.curvePoint (I.levelArc a).left : Plane)
+      (I.levelLeftHairNear a hepsilon).tip).segment_subset
+        D.leftPoint_mem (left_mem_segment ℝ _ _) hxLeft
+
+/-- If the selected boundary arc has diameter less than `delta`, its entire
+three-piece polygonal collar boundary lies in the ball of radius
+`epsilon + delta` about the left boundary endpoint. -/
+theorem collarBoundarySet_subset_ball_left
+    (D : I.LevelInsideJoinData a epsilon hepsilon) {delta : ℝ}
+    (hsmall : ∀ t ∈ Icc (I.levelArc a).left (I.levelArc a).right,
+      dist (J.curvePoint t) (J.curvePoint (I.levelArc a).left) < delta) :
+    D.collarBoundarySet ⊆
+      ball (J.curvePoint (I.levelArc a).left) (epsilon + delta) := by
+  intro x hx
+  obtain ⟨z, hzArc, hxz⟩ := mem_thickening_iff.mp
+    (D.collarBoundarySet_subset_thickening hx)
+  obtain ⟨t, ht, htz⟩ := hzArc
+  obtain ⟨r, hr, hrt⟩ := ht
+  have hzr : z = (J.curvePoint r : Plane) :=
+    htz.symm.trans (congrArg Subtype.val hrt).symm
+  have hzsmall : dist z (J.curvePoint (I.levelArc a).left) < delta := by
+    rw [hzr]
+    exact hsmall r hr
+  rw [mem_ball]
+  exact (dist_triangle x z
+    (J.curvePoint (I.levelArc a).left)).trans_lt
+      (add_lt_add hxz hzsmall)
+
+end LevelInsideJoinData
+end InitialAngularArcs
+end JordanCircle
+
+end Schoenflies
