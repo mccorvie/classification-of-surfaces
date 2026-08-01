@@ -195,6 +195,42 @@ theorem prefixCarrier_subset_exterior_union_point
   · exact Or.inl (C.before_mem_exterior hPinside hq hlt)
   · exact Or.inr (mem_singleton C.point)
 
+/-- The prefix, parametrized from its Jordan-curve base to its first
+polygonal crossing. -/
+noncomputable def prefixPath (C : H.FirstPolygonalCrossing P) :
+    Path q C.point :=
+  ((Path.segment q H.tip).subpath (⊥ : unitInterval) C.parameter).cast
+    (by simp) (by rfl : C.point = Path.segment q H.tip C.parameter)
+
+/-- The path parametrization has exactly the previously defined prefix as
+its range. -/
+theorem range_prefixPath (C : H.FirstPolygonalCrossing P) :
+    range C.prefixPath = C.prefixCarrier := by
+  change range ((Path.segment q H.tip).subpath
+    (⊥ : unitInterval) C.parameter) = C.prefixCarrier
+  rw [Path.range_subpath_of_le _ _ _ bot_le]
+  rfl
+
+/-- A positive first-crossing parameter makes the prefix path an embedded
+arc. -/
+theorem prefixPath_injective (C : H.FirstPolygonalCrossing P)
+    (hPinside : P.closedRegion ⊆ J.inside) (hq : q ∈ J.carrier) :
+    Injective C.prefixPath := by
+  intro s t hst
+  have hsegment : Injective (Path.segment q H.tip) :=
+    Path.segment_injective_of_ne H.tip_ne_base.symm
+  have hcomb :
+      Set.Icc.convexComb (⊥ : unitInterval) C.parameter s =
+        Set.Icc.convexComb (⊥ : unitInterval) C.parameter t := by
+    apply hsegment
+    exact hst
+  have hval := congrArg Subtype.val hcomb
+  simp [Set.Icc.convexComb] at hval
+  rcases hval with hstVal | hzero
+  · exact Subtype.ext hstVal
+  · exact False.elim <|
+      (C.parameter_pos hPinside hq).ne' hzero
+
 end FirstPolygonalCrossing
 end InsideAccessHair
 
@@ -265,6 +301,26 @@ polygonal boundary point. -/
 noncomputable def levelExteriorHairPrefix (k : ℕ)
     (a : LevelAddress k) : Set Plane :=
   (I.levelFirstPolygonalCrossing k a).prefixCarrier
+
+/-- The embedded path underlying a level exterior hair prefix. -/
+noncomputable def levelExteriorHairPrefixPath (k : ℕ)
+    (a : LevelAddress k) :
+    Path (J.curvePoint (I.levelArc a).left : Plane)
+      (I.levelPolygonalBoundaryMark k a) :=
+  (I.levelFirstPolygonalCrossing k a).prefixPath
+
+theorem range_levelExteriorHairPrefixPath (k : ℕ)
+    (a : LevelAddress k) :
+    range (I.levelExteriorHairPrefixPath k a) =
+      I.levelExteriorHairPrefix k a :=
+  (I.levelFirstPolygonalCrossing k a).range_prefixPath
+
+theorem levelExteriorHairPrefixPath_injective (k : ℕ)
+    (a : LevelAddress k) :
+    Injective (I.levelExteriorHairPrefixPath k a) :=
+  (I.levelFirstPolygonalCrossing k a).prefixPath_injective
+    (I.markedPolygonalDiskExhaustion_closedRegion_subset_inside (k + 1))
+    (J.curvePoint (I.levelArc a).left).2
 
 theorem levelExteriorHairPrefix_subset_leftHair (k : ℕ)
     (a : LevelAddress k) :
