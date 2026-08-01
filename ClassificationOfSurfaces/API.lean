@@ -86,6 +86,8 @@ with the geometric triangulation.
 * `SurfaceCellComplex.FaceAdjacent`
 * `SurfaceCellComplex.IsConnected`
 * `SurfaceCellComplex.SignedDart`
+* `SurfaceCellComplex.SignedDart.edge`
+* `SurfaceCellComplex.orientedEdgeSignedDartEquiv`
 * `SurfaceCellComplex.oneFacePresentation`
 * `SurfaceCellComplex.EdgeOrbit`
 * `SurfaceCellComplex.edgeOrbit`
