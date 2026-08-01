@@ -3,7 +3,8 @@
 ![Classification of Surfaces](images/tcos-hero.png)
 
 This repository contains a Lean proof of the Lean Eval challenge
-`topological_classification_of_surfaces`.  [Link](https://lean-lang.org/eval/problems/topological_classification_of_surfaces/)
+`topological_classification_of_surfaces` and shared work toward the related
+`jordan_curve` and `schoenflies` problems.  [Lean Eval problem](https://lean-lang.org/eval/problems/topological_classification_of_surfaces/)
 
 It proves that every compact connected Hausdorff topological 2-manifold with boundary is
 homeomorphic to the sphere, an orientable normal-form quotient, or a non-orientable normal-form
@@ -32,6 +33,32 @@ lake build
 ```
 
 The public classification proof is complete and contains no `sorry`.
+
+## Lean Eval submissions
+
+The repository is directly submittable to Lean Eval.  Exact benchmark workspaces
+live side by side under `LeanEval/`; Lean Eval discovers them by the `name` in
+each `lakefile.toml` and overlays only their `Submission.lean` and
+`Submission/**/*.lean` files onto pristine benchmark workspaces.
+
+The large supporting payloads are generated from the normal source tree:
+
+```bash
+python3 port_submission.py          # refresh every ready payload
+python3 port_submission.py --check  # verify that checked-in payloads are current
+python3 port_submission.py --list   # show ready submissions and scaffolds
+```
+
+`jordan_curve` and `topological_classification_of_surfaces` are wired to complete
+proofs.  `schoenflies` has the correct workspace shape but remains a scaffold
+until the full theorem is proved.  See [`LeanEval/README.md`](LeanEval/README.md)
+for the layout, local comparator commands, CI behavior, and the steps for adding
+another shared source root.
+
+Normal pull requests build only the development project.  Apply the
+`lean-eval-submission` label when a PR's generated payloads are ready for the
+standalone Lean Eval freshness and comparator checks; the same workflow can also
+be started manually for any revision.
 
 ## Architecture
 

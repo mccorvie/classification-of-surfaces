@@ -1,4 +1,6 @@
 /.lake
+LeanEval/*/.lake/
+LeanEval/*/lake-manifest.json
 *pdf
 blueprint/lean_decls
 blueprint/print/

@@ -1,0 +1,85 @@
+name: Lean Eval Submissions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
+
+concurrency:
+  group: lean-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  payloads-current:
+    name: Generated payloads are current
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'lean-eval-submission')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python3 port_submission.py --check
+
+  comparator:
+    name: Comparator (${{ matrix.problem }})
+    needs: payloads-current
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Add schoenflies when its source root and shim are complete.
+        problem:
+          - jordan_curve
+          - topological_classification_of_surfaces
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - name: Build the pristine-shaped workspace
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9
+        with:
+          lake-package-directory: LeanEval/${{ matrix.problem }}
+          build: true
+          build-args: Submission Solution
+          test: false
+          lint: false
+          use-mathlib-cache: true
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.24.0'
+
+      - name: Cache comparator tooling
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/lean-eval-tools
+          key: lean-eval-tools-v2-${{ hashFiles(format('LeanEval/{0}/lean-toolchain', matrix.problem), 'scripts/setup_lean_eval_tools.sh') }}
+
+      - name: Install pinned comparator tooling
+        run: >-
+          bash scripts/setup_lean_eval_tools.sh
+          "${{ runner.temp }}/lean-eval-tools"
+          "LeanEval/${{ matrix.problem }}/lean-toolchain"
+
+      - name: Run comparator and external kernel replay
+        working-directory: LeanEval/${{ matrix.problem }}
+        env:
+          COMPARATOR_BIN: ${{ runner.temp }}/lean-eval-tools/comparator/.lake/build/bin/comparator
+          VERIFIER_ROOT: ${{ runner.temp }}/lean-eval-tools
+        run: |
+          export PATH="$VERIFIER_ROOT/bin:$VERIFIER_ROOT/lean4export/.lake/build/bin:$VERIFIER_ROOT/nanoda/target/release:$PATH"
+          lake test
