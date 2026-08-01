@@ -103,6 +103,34 @@ noncomputable def auxiliaryJordanCircle (A : J.AccessibleAngularArc) :
   rw [auxiliaryJordanCircle, TwoArcJordan.carrier_toJordanCircle,
     A.range_toPath]
 
+/-- The auxiliary circle is contained in the closed inside of the original
+Jordan circle. -/
+theorem carrier_auxiliaryJordanCircle_subset
+    (A : J.AccessibleAngularArc) :
+    A.auxiliaryJordanCircle.carrier ⊆ J.inside ∪ J.carrier := by
+  rw [A.carrier_auxiliaryJordanCircle]
+  apply union_subset
+  · exact fun x hx => Or.inr (A.curveArcPlane_subset_carrier J hx)
+  · intro x hx
+    rcases A.range_returnPath_subset_insideCrosscutSet hx with hxInside | hxEnds
+    · exact Or.inl hxInside
+    · rcases hxEnds with hleft | hright
+      · have hx : x = (J.curvePoint A.left : Plane) := hleft
+        subst x
+        exact Or.inr (J.curvePoint A.left).2
+      · have hx : x = (J.curvePoint A.right : Plane) :=
+          mem_singleton_iff.mp hright
+        subst x
+        exact Or.inr (J.curvePoint A.right).2
+
+/-- The auxiliary Jordan disk cut off by `A` lies in the inside of the
+original Jordan circle. -/
+theorem inside_auxiliaryJordanCircle_subset
+    (A : J.AccessibleAngularArc) :
+    A.auxiliaryJordanCircle.inside ⊆ J.inside :=
+  J.inside_subset_inside_of_carrier_subset A.auxiliaryJordanCircle
+    A.carrier_auxiliaryJordanCircle_subset
+
 /-- Cut the polygonal return path into two short endpoint tails and a compact
 middle.  The tails lie in the prescribed neighborhood of the wild boundary
 arc, while the middle lies strictly inside the original Jordan curve and is
