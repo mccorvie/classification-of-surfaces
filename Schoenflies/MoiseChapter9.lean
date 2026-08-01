@@ -19,6 +19,8 @@ import Schoenflies.FiniteSeparatorSetup
 import Schoenflies.ReturnPathCrossings
 import Schoenflies.SideConstancy
 import Schoenflies.FiniteCrossingParity
+import Schoenflies.RefinedSeparatorFrame
+import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.RegionalExtensions
 import ClassificationOfSurfaces.Moise.BrokenLine
