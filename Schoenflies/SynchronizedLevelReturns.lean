@@ -480,6 +480,25 @@ theorem disjoint_range_synchronizedCrosscutPath_of_nonadjacent
       (F.range_synchronizedCrosscutPath_subset a)
       (F.range_synchronizedCrosscutPath_subset c)
 
+/-- A point controlled by the thickening of a small level arc is close to
+any chosen point of that arc. -/
+theorem dist_curvePoint_lt_add_of_mem_levelArc_thickening
+    {delta : ℝ} (c : LevelAddress n) {x : Plane}
+    (hx : x ∈ thickening epsilon (I.levelArc c).curveArcPlane)
+    (hsmall : ∀ s ∈ Icc (I.levelArc c).left (I.levelArc c).right,
+      ∀ t ∈ Icc (I.levelArc c).left (I.levelArc c).right,
+        dist (J.curvePoint s) (J.curvePoint t) < delta)
+    (u : ℝ) (hu : u ∈ Icc (I.levelArc c).left (I.levelArc c).right) :
+    dist x (J.curvePoint u : Plane) < epsilon + delta := by
+  obtain ⟨z, hzArc, hxz⟩ := mem_thickening_iff.mp hx
+  obtain ⟨y, ⟨t, ht, rfl⟩, hzy⟩ := hzArc
+  have hz : z = (J.curvePoint t : Plane) := hzy.symm
+  have htu : dist (J.curvePoint t) (J.curvePoint u) < delta :=
+    hsmall t ht u hu
+  rw [hz] at hxz
+  exact (dist_triangle x (J.curvePoint t : Plane)
+    (J.curvePoint u : Plane)).trans_lt (add_lt_add hxz htu)
+
 /-- The whole cell-side return, including the two boundary-side retained-hair
 segments. -/
 noncomputable def synchronizedReturnSet (a : LevelAddress n) : Set Plane :=
@@ -488,6 +507,169 @@ noncomputable def synchronizedReturnSet (a : LevelAddress n) : Set Plane :=
     F.synchronizedCrosscutSet a ∪
     segment ℝ (F.rightSynchronizedPoint a)
       (J.curvePoint (I.levelArc a).right)
+
+/-- If every arc at the selected level has diameter less than `delta`, the
+whole synchronized return for `a` lies in a ball of radius
+`epsilon + 2 * delta` about its left boundary endpoint. -/
+theorem synchronizedReturnSet_subset_ball_left {delta : ℝ}
+    (hepsilon : 0 < epsilon) (hdelta : 0 < delta)
+    (hsmall : ∀ c : LevelAddress n,
+      ∀ s ∈ Icc (I.levelArc c).left (I.levelArc c).right,
+      ∀ t ∈ Icc (I.levelArc c).left (I.levelArc c).right,
+        dist (J.curvePoint s) (J.curvePoint t) < delta)
+    (a : LevelAddress n) :
+    F.synchronizedReturnSet a ⊆
+      ball (J.curvePoint (I.levelArc a).left) (epsilon + 2 * delta) := by
+  let center : Plane := J.curvePoint (I.levelArc a).left
+  have htrimLeft (c : LevelAddress n) :
+      dist (F.trimmedLeftPoint (index c))
+          (J.curvePoint (I.levelArc c).left : Plane) < epsilon + delta := by
+    have hx := (F.range_trimmedPath_subset_controlled (index c)
+      (Path.target_mem_range (F.trimmedPath (index c)))).2
+    have hx' : F.trimmedLeftPoint (index c) ∈
+        thickening epsilon (I.levelArc c).curveArcPlane := by
+      simpa [index] using hx
+    exact dist_curvePoint_lt_add_of_mem_levelArc_thickening
+      (I := I) (epsilon := epsilon) c
+      hx'
+      (hsmall c) (I.levelArc c).left
+      (left_mem_Icc.mpr (I.levelArc c).left_lt_right.le)
+  have htrimRight (c : LevelAddress n) :
+      dist (F.trimmedRightPoint (index c))
+          (J.curvePoint (I.levelArc c).right : Plane) < epsilon + delta := by
+    have hx := (F.range_trimmedPath_subset_controlled (index c)
+      (Path.source_mem_range (F.trimmedPath (index c)))).2
+    have hx' : F.trimmedRightPoint (index c) ∈
+        thickening epsilon (I.levelArc c).curveArcPlane := by
+      simpa [index] using hx
+    exact dist_curvePoint_lt_add_of_mem_levelArc_thickening
+      (I := I) (epsilon := epsilon) c
+      hx'
+      (hsmall c) (I.levelArc c).right
+      (right_mem_Icc.mpr (I.levelArc c).left_lt_right.le)
+  have hleftSync : dist (F.leftSynchronizedPoint a) center <
+      epsilon + 2 * delta := by
+    rcases F.synchronizedPoint_eq_right_or_left
+        (prevLevelAddress n a) a
+        (I.levelAdjacent_prevLevelAddress n a) with h | h
+    · have h' : F.leftSynchronizedPoint a =
+          F.trimmedRightPoint (index (prevLevelAddress n a)) := by
+        simpa [leftSynchronizedPoint] using h
+      rw [h']
+      have hp := htrimRight (prevLevelAddress n a)
+      have hbase := I.levelAdjacent_prevLevelAddress n a
+      change (J.curvePoint
+        (I.levelArc (prevLevelAddress n a)).right : Plane) = center at hbase
+      rw [hbase] at hp
+      exact hp.trans_le (by linarith)
+    · have h' : F.leftSynchronizedPoint a =
+          F.trimmedLeftPoint (index a) := by
+        simpa [leftSynchronizedPoint] using h
+      rw [h']
+      exact (htrimLeft a).trans_le (by linarith)
+  have hrightBase :
+      dist (J.curvePoint (I.levelArc a).right : Plane) center < delta := by
+    simpa [center, dist_comm, Subtype.dist_eq] using
+      hsmall a (I.levelArc a).left
+      (left_mem_Icc.mpr (I.levelArc a).left_lt_right.le)
+      (I.levelArc a).right
+      (right_mem_Icc.mpr (I.levelArc a).left_lt_right.le)
+  have hrightSync : dist (F.rightSynchronizedPoint a) center <
+      epsilon + 2 * delta := by
+    rcases F.synchronizedPoint_eq_right_or_left a
+        (nextLevelAddress n a)
+        (I.levelAdjacent_nextLevelAddress n a) with h | h
+    · have h' : F.rightSynchronizedPoint a =
+          F.trimmedRightPoint (index a) := by
+        simpa [rightSynchronizedPoint] using h
+      rw [h']
+      have hp := htrimRight a
+      exact (dist_triangle _
+        (J.curvePoint (I.levelArc a).right : Plane) center).trans_lt <| by
+          linarith
+    · have h' : F.rightSynchronizedPoint a =
+          F.trimmedLeftPoint (index (nextLevelAddress n a)) := by
+        simpa [rightSynchronizedPoint] using h
+      rw [h']
+      have hp := htrimLeft (nextLevelAddress n a)
+      have hbase := I.levelAdjacent_nextLevelAddress n a
+      change (J.curvePoint (I.levelArc a).right : Plane) =
+        (J.curvePoint (I.levelArc (nextLevelAddress n a)).left : Plane)
+          at hbase
+      have hp' : dist (F.trimmedLeftPoint
+          (index (nextLevelAddress n a)))
+          (J.curvePoint (I.levelArc a).right : Plane) < epsilon + delta := by
+        rw [hbase]
+        exact hp
+      exact (dist_triangle _
+        (J.curvePoint (I.levelArc a).right : Plane) center).trans_lt <| by
+          linarith
+  have htrimLeftCenter : dist (F.trimmedLeftPoint (index a)) center <
+      epsilon + 2 * delta :=
+    (htrimLeft a).trans_le (by linarith)
+  have htrimRightCenter : dist (F.trimmedRightPoint (index a)) center <
+      epsilon + 2 * delta := by
+    exact (dist_triangle _
+      (J.curvePoint (I.levelArc a).right : Plane) center).trans_lt <| by
+        linarith [htrimRight a, hrightBase]
+  have hmiddle : range (F.trimmedPath (index a)) ⊆
+      ball center (epsilon + 2 * delta) := by
+    intro x hx
+    rw [mem_ball]
+    have hxThick := (F.range_trimmedPath_subset_controlled
+      (index a) hx).2
+    have hxThick' : x ∈
+        thickening epsilon (I.levelArc a).curveArcPlane := by
+      simpa [index] using hxThick
+    exact (dist_curvePoint_lt_add_of_mem_levelArc_thickening
+      (I := I) (epsilon := epsilon) a
+      hxThick' (hsmall a) (I.levelArc a).left
+      (left_mem_Icc.mpr (I.levelArc a).left_lt_right.le)).trans_le
+        (by linarith)
+  have hcenter : center ∈ ball center (epsilon + 2 * delta) := by
+    rw [mem_ball, dist_self]
+    linarith
+  have hleftSyncMem : F.leftSynchronizedPoint a ∈
+      ball center (epsilon + 2 * delta) := hleftSync
+  have hrightSyncMem : F.rightSynchronizedPoint a ∈
+      ball center (epsilon + 2 * delta) := hrightSync
+  have hrightBaseMem : (J.curvePoint (I.levelArc a).right : Plane) ∈
+      ball center (epsilon + 2 * delta) := by
+    rw [mem_ball]
+    linarith
+  rintro x ((hxLeftBase | ((hxLeftExt | hxMiddle) | hxRightExt)) |
+    hxRightBase)
+  · exact (convex_ball center (epsilon + 2 * delta)).segment_subset
+      hcenter hleftSyncMem hxLeftBase
+  · exact (convex_ball center (epsilon + 2 * delta)).segment_subset
+      hleftSyncMem htrimLeftCenter hxLeftExt
+  · exact hmiddle hxMiddle
+  · exact (convex_ball center (epsilon + 2 * delta)).segment_subset
+      htrimRightCenter hrightSyncMem hxRightExt
+  · exact (convex_ball center (epsilon + 2 * delta)).segment_subset
+      hrightSyncMem hrightBaseMem hxRightBase
+
+/-- Choosing the crosscut scale and the subdivision diameter together makes
+all synchronized returns uniformly small. -/
+theorem eventually_synchronizedReturnSet_subset_ball
+    (I : J.InitialAngularArcs) {rho : ℝ} (hrho : 0 < rho) :
+    ∃ N : ℕ, ∀ n : ℕ, N ≤ n →
+      ∀ (F : I.LevelAvoidingJoinFamily n (rho / 4))
+        (a : LevelAddress n),
+        F.synchronizedReturnSet a ⊆
+          ball (J.curvePoint (I.levelArc a).left) rho := by
+  obtain ⟨N, hN⟩ := I.eventually_levelArc_curvePoint_dist_lt
+    (show 0 < rho / 4 by positivity)
+  refine ⟨N, ?_⟩
+  intro n hn F a
+  have hsmall : ∀ c : LevelAddress n,
+      ∀ s ∈ Icc (I.levelArc c).left (I.levelArc c).right,
+      ∀ t ∈ Icc (I.levelArc c).left (I.levelArc c).right,
+        dist (J.curvePoint s) (J.curvePoint t) < rho / 4 :=
+    fun c => hN n hn c
+  exact (F.synchronizedReturnSet_subset_ball_left
+    (delta := rho / 4) (by positivity) (by positivity) hsmall a).trans
+      (ball_subset_ball (by linarith))
 
 theorem joinedByBrokenLine_synchronizedReturnSet (a : LevelAddress n) :
     JoinedByBrokenLine (F.synchronizedReturnSet a)
