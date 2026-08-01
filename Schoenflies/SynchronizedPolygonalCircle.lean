@@ -401,6 +401,93 @@ noncomputable def synchronizedPolygonalCircle (hn : 1 ≤ n) :
           rw [F.cyclicEdgeAddress_add_one hthree]
           exact haddr }
 
+theorem cyclicEdgeAddress_surjective
+    [NeZero F.orderedLevelEdges.length] :
+    Function.Surjective F.cyclicEdgeAddress := by
+  intro e
+  let q := F.orderedLevelEdgeEquiv
+  let i : Fin F.orderedLevelEdges.length := q.symm e
+  let z : ZMod F.orderedLevelEdges.length := i.val
+  refine ⟨z, ?_⟩
+  change q ⟨z.val, z.val_lt⟩ = e
+  rw [← q.apply_symm_apply e]
+  apply congrArg q
+  apply Fin.ext
+  change z.val = i.val
+  rw [show z.val = i.val % F.orderedLevelEdges.length by
+    simp [z, ZMod.val_natCast]]
+  exact Nat.mod_eq_of_lt i.isLt
+
+theorem iUnion_edgeSegment_eq_iUnion_crosscutRange :
+    (⋃ e : F.LevelEdgeAddress, F.edgeSegment e) =
+      ⋃ a : LevelAddress n, range (F.synchronizedCrosscutPath a) := by
+  apply Set.Subset.antisymm
+  · intro x hx
+    obtain ⟨e, hxe⟩ := Set.mem_iUnion.mp hx
+    exact Set.mem_iUnion.mpr
+      ⟨e.1, F.edgeSegment_subset_crosscutRange e hxe⟩
+  · intro x hx
+    obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx
+    have hxCarrier : x ∈
+        (F.synchronizedCrosscutCarrierLine a).data.segmentCarrier := by
+      rw [F.segmentCarrier_synchronizedCrosscutCarrierLine_eq_range a]
+      exact hxa
+    obtain ⟨i, hxi⟩ := Set.mem_iUnion.mp hxCarrier
+    exact Set.mem_iUnion.mpr ⟨⟨a, i⟩, hxi⟩
+
+/-- The polygonal collar has exactly the union of the synchronized inner
+crosscuts as its point-set carrier. -/
+theorem carrier_synchronizedPolygonalCircle (hn : 1 ≤ n) :
+    (F.synchronizedPolygonalCircle hn).carrier =
+      ⋃ a : LevelAddress n, range (F.synchronizedCrosscutPath a) := by
+  rw [← F.iUnion_edgeSegment_eq_iUnion_crosscutRange]
+  have hthree : 3 ≤ F.orderedLevelEdges.length :=
+    F.orderedLevelEdges_three_le hn
+  letI : NeZero F.orderedLevelEdges.length := ⟨by omega⟩
+  change (⋃ i : ZMod F.orderedLevelEdges.length,
+      segment ℝ (F.edgeStart (F.cyclicEdgeAddress i))
+        (F.edgeStart (F.cyclicEdgeAddress (i + 1)))) =
+    ⋃ e : F.LevelEdgeAddress, F.edgeSegment e
+  apply Set.Subset.antisymm
+  · intro x hx
+    obtain ⟨i, hxi⟩ := Set.mem_iUnion.mp hx
+    exact Set.mem_iUnion.mpr ⟨F.cyclicEdgeAddress i, by
+      rw [← F.cyclicEdge_segment hthree]
+      exact hxi⟩
+  · intro x hx
+    obtain ⟨e, hxe⟩ := Set.mem_iUnion.mp hx
+    obtain ⟨i, hi⟩ := F.cyclicEdgeAddress_surjective e
+    subst e
+    apply Set.mem_iUnion.mpr
+    refine ⟨i, ?_⟩
+    rw [F.cyclicEdge_segment hthree]
+    exact hxe
+
+theorem carrier_synchronizedPolygonalCircle_subset_inside (hn : 1 ≤ n) :
+    (F.synchronizedPolygonalCircle hn).carrier ⊆ J.inside := by
+  rw [F.carrier_synchronizedPolygonalCircle hn]
+  intro x hx
+  obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx
+  exact F.synchronizedCrosscutSet_subset_inside a
+    (F.range_synchronizedCrosscutPath_subset a hxa)
+
+/-- The entire polygonal disk bounded by the synchronized collar lies in
+the original Jordan inside, not merely its boundary. -/
+theorem closedRegion_synchronizedPolygonalCircle_subset_inside
+    (hn : 1 ≤ n) :
+    (F.synchronizedPolygonalCircle hn).closedRegion ⊆ J.inside := by
+  let P := F.synchronizedPolygonalCircle hn
+  have hcarrier : P.toJordanCircle.carrier ⊆ J.inside ∪ J.carrier := by
+    rw [P.carrier_toJordanCircle]
+    exact (F.carrier_synchronizedPolygonalCircle_subset_inside hn).trans
+      Set.subset_union_left
+  have hinterior : P.interiorRegion ⊆ J.inside := by
+    rw [← P.inside_toJordanCircle]
+    exact J.inside_subset_inside_of_carrier_subset P.toJordanCircle hcarrier
+  rw [P.closedRegion_eq_union]
+  exact Set.union_subset hinterior
+    (F.carrier_synchronizedPolygonalCircle_subset_inside hn)
+
 end LevelAvoidingJoinFamily
 end InitialAngularArcs
 end JordanCircle

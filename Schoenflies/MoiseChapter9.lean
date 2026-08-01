@@ -41,6 +41,7 @@ import Schoenflies.SynchronizedLevelReturns
 import Schoenflies.ResolvedPolygonalArcs
 import Schoenflies.CyclicLevelEdges
 import Schoenflies.SynchronizedPolygonalCircle
+import Schoenflies.AvoidingLevelCollars
 import Schoenflies.TrimmedCollarCells
 import Schoenflies.LevelHairSynchronization
 import Schoenflies.PolygonalSubarcs
