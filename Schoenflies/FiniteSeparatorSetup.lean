@@ -57,7 +57,8 @@ theorem exists_finiteSeparatorFrame (A : J.AccessibleAngularArc)
     A.exists_separatorFrame hhalf
   let middle : Set Plane := A.returnPath '' Icc s t
   let R := A.returnCarrierBrokenLine
-  obtain ⟨v, Q, hv, hQcarrier, hArcQ, hMiddleQ, hfiniteR⟩ :=
+  obtain ⟨v, Q, hv, hQcarrier, hArcQ, hMiddleQ, hfiniteR,
+      _hgenericEdges, _hgenericVertices⟩ :=
     R.exists_generic_translation P
       A.curveArcPlane_isCompact hMiddleCompact
       hArcInside hMiddleExterior hhalf

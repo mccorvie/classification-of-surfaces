@@ -10,6 +10,7 @@ import Schoenflies.TwoArcJordan
 import Schoenflies.AuxiliaryJordan
 import Schoenflies.SeparatorFrame
 import Schoenflies.PolygonalTransport
+import Schoenflies.PolygonalJordanCircle
 import Schoenflies.GenericPolygonalFrame
 import Schoenflies.FiniteSeparatorSetup
 import Schoenflies.ControlledCrosscuts

@@ -121,6 +121,65 @@ theorem exists_transverseVector (B : SimpleBrokenLine U a b) :
     rw [if_neg hd0]
     exact heq
 
+/-- One direction can simultaneously be chosen transverse to every edge of
+the broken line and every edge of a polygonal frame. -/
+theorem exists_commonTransverseVector
+    (B : SimpleBrokenLine U a b) (P : PolygonalCircle) :
+    ∃ w : Plane,
+      (∀ j : Fin B.data.n,
+        planeDet w
+          (B.data.vertex j.succ - B.data.vertex j.castSucc) ≠ 0) ∧
+      ∀ i : ZMod P.n,
+        planeDet w (P.vertex (i + 1) - P.vertex i) ≠ 0 := by
+  let direction : Fin B.data.n ⊕ ZMod P.n → Plane
+    | Sum.inl j => B.data.vertex j.succ - B.data.vertex j.castSucc
+    | Sum.inr i => P.vertex (i + 1) - P.vertex i
+  have hdirection : ∀ k, direction k ≠ 0 := by
+    intro k
+    rcases k with j | i
+    · intro hzero
+      have := B.vertex_injective (sub_eq_zero.mp hzero)
+      have hval := congrArg Fin.val this
+      simp at hval
+    · exact sub_ne_zero.mpr (P.adjacent_ne i).symm
+  let slope : Fin B.data.n ⊕ ZMod P.n → ℝ := fun k =>
+    if (direction k) 0 = 0 then 0 else (direction k) 1 / (direction k) 0
+  let forbidden : Finset ℝ := Finset.univ.image slope
+  obtain ⟨m, _hmIoo, hm⟩ :=
+    (Set.Ioo_infinite (by norm_num : (0 : ℝ) < 1)).exists_notMem_finset
+      forbidden
+  have htransverse : ∀ k,
+      planeDet !₂[1, m] (direction k) ≠ 0 := by
+    intro k
+    let d := direction k
+    have hdNe : d ≠ 0 := hdirection k
+    have hmSlope : m ≠ slope k := by
+      intro hmi
+      apply hm
+      rw [hmi]
+      exact Finset.mem_image_of_mem slope (Finset.mem_univ k)
+    by_cases hd0 : d 0 = 0
+    · have hd1 : d 1 ≠ 0 := by
+        intro hd1
+        apply hdNe
+        ext q
+        fin_cases q <;> simp [hd0, hd1]
+      simpa [planeDet_vector, d, hd0] using hd1
+    · intro hdet
+      have heq : m = d 1 / d 0 := by
+        rw [planeDet_vector] at hdet
+        field_simp
+        nlinarith
+      apply hmSlope
+      change m = (if d 0 = 0 then 0 else d 1 / d 0)
+      rw [if_neg hd0]
+      exact heq
+  refine ⟨!₂[1, m], ?_, ?_⟩
+  · intro j
+    exact htransverse (Sum.inl j)
+  · intro i
+    exact htransverse (Sum.inr i)
+
 /-- There is an arbitrarily small translation for which no translated frame
 vertex lies on a supporting line of the fixed broken line.  Consequently no
 translated frame edge can overlap a nontrivial subsegment of a broken-line
@@ -129,19 +188,30 @@ theorem exists_small_translation_no_vertex_on_edgeLine
     (B : SimpleBrokenLine U a b) (P : PolygonalCircle)
     {epsilon : ℝ} (hepsilon : 0 < epsilon) :
     ∃ v : Plane, ‖v‖ < epsilon ∧
-      ∀ (i : ZMod P.n) (j : Fin B.data.n),
+      (∀ (i : ZMod P.n) (j : Fin B.data.n),
         planeDet
           (B.data.vertex j.castSucc -
             ((Homeomorph.addLeft v : Plane ≃ₜ Plane) (P.vertex i)))
-          (B.data.vertex j.succ - B.data.vertex j.castSucc) ≠ 0 := by
-  obtain ⟨w, hw⟩ := B.exists_transverseVector
-  let bad : ZMod P.n × Fin B.data.n → ℝ := fun ij =>
+          (B.data.vertex j.succ - B.data.vertex j.castSucc) ≠ 0) ∧
+      ∀ (i : ZMod P.n) (j : Fin (B.data.n + 1)),
+        planeDet
+          (B.data.vertex j -
+            ((Homeomorph.addLeft v : Plane ≃ₜ Plane) (P.vertex i)))
+          (P.vertex (i + 1) - P.vertex i) ≠ 0 := by
+  obtain ⟨w, hwB, hwP⟩ := B.exists_commonTransverseVector P
+  let badB : ZMod P.n × Fin B.data.n → ℝ := fun ij =>
     planeDet
         (B.data.vertex ij.2.castSucc - P.vertex ij.1)
         (B.data.vertex ij.2.succ - B.data.vertex ij.2.castSucc) /
       planeDet w
         (B.data.vertex ij.2.succ - B.data.vertex ij.2.castSucc)
-  let forbidden : Finset ℝ := Finset.univ.image bad
+  let badP : ZMod P.n × Fin (B.data.n + 1) → ℝ := fun ij =>
+    planeDet
+        (B.data.vertex ij.2 - P.vertex ij.1)
+        (P.vertex (ij.1 + 1) - P.vertex ij.1) /
+      planeDet w (P.vertex (ij.1 + 1) - P.vertex ij.1)
+  let forbidden : Finset ℝ :=
+    Finset.univ.image badB ∪ Finset.univ.image badP
   let R : ℝ := ‖w‖ + 1
   have hR : 0 < R := by
     dsimp [R]
@@ -162,31 +232,55 @@ theorem exists_small_translation_no_vertex_on_edgeLine
           mul_lt_mul_of_pos_right hr.2 hR
     rw [div_mul_cancel₀ epsilon hR.ne'] at hmul
     simpa [v, norm_smul, Real.norm_eq_abs, abs_of_pos hr.1] using hmul
-  refine ⟨v, hvNorm, ?_⟩
-  intro i j
-  have hdet : planeDet w
-      (B.data.vertex j.succ - B.data.vertex j.castSucc) ≠ 0 := hw j
-  have hrBad : r ≠ bad (i, j) := by
-    intro hrEq
-    apply hrForbidden
-    rw [hrEq]
-    exact Finset.mem_image_of_mem bad (Finset.mem_univ (i, j))
-  intro hline
-  have hformula := planeDet_sub_add_smul
-    (B.data.vertex j.castSucc) (P.vertex i) w
-    (B.data.vertex j.succ - B.data.vertex j.castSucc) r
-  have hzero :
-      planeDet
-          (B.data.vertex j.castSucc - P.vertex i)
-          (B.data.vertex j.succ - B.data.vertex j.castSucc) -
-        r * planeDet w
-          (B.data.vertex j.succ - B.data.vertex j.castSucc) = 0 := by
-    rw [← hformula]
-    simpa [v, add_comm] using hline
-  apply hrBad
-  dsimp [bad]
-  apply (eq_div_iff hdet).2
-  nlinarith
+  refine ⟨v, hvNorm, ?_, ?_⟩
+  · intro i j
+    have hdet : planeDet w
+        (B.data.vertex j.succ - B.data.vertex j.castSucc) ≠ 0 := hwB j
+    have hrBad : r ≠ badB (i, j) := by
+      intro hrEq
+      apply hrForbidden
+      apply Finset.mem_union_left
+      rw [hrEq]
+      exact Finset.mem_image_of_mem badB (Finset.mem_univ (i, j))
+    intro hline
+    have hformula := planeDet_sub_add_smul
+      (B.data.vertex j.castSucc) (P.vertex i) w
+      (B.data.vertex j.succ - B.data.vertex j.castSucc) r
+    have hzero :
+        planeDet
+            (B.data.vertex j.castSucc - P.vertex i)
+            (B.data.vertex j.succ - B.data.vertex j.castSucc) -
+          r * planeDet w
+            (B.data.vertex j.succ - B.data.vertex j.castSucc) = 0 := by
+      rw [← hformula]
+      simpa [v, add_comm] using hline
+    apply hrBad
+    dsimp [badB]
+    apply (eq_div_iff hdet).2
+    nlinarith
+  · intro i j
+    have hdet :
+        planeDet w (P.vertex (i + 1) - P.vertex i) ≠ 0 := hwP i
+    have hrBad : r ≠ badP (i, j) := by
+      intro hrEq
+      apply hrForbidden
+      apply Finset.mem_union_right
+      rw [hrEq]
+      exact Finset.mem_image_of_mem badP (Finset.mem_univ (i, j))
+    intro hline
+    have hformula := planeDet_sub_add_smul
+      (B.data.vertex j) (P.vertex i) w
+      (P.vertex (i + 1) - P.vertex i) r
+    have hzero :
+        planeDet (B.data.vertex j - P.vertex i)
+            (P.vertex (i + 1) - P.vertex i) -
+          r * planeDet w (P.vertex (i + 1) - P.vertex i) = 0 := by
+      rw [← hformula]
+      simpa [v, add_comm] using hline
+    apply hrBad
+    dsimp [badP]
+    apply (eq_div_iff hdet).2
+    nlinarith
 
 /-- Under the preceding genericity condition, the translated polygon carrier
 has only finitely many intersections with the broken-line carrier. -/
@@ -256,23 +350,56 @@ theorem exists_generic_translation
       ‖v‖ < epsilon ∧
       Q.carrier = (Homeomorph.addLeft v : Plane ≃ₜ Plane) '' P.carrier ∧
       C ⊆ Q.interiorRegion ∧ D ⊆ Q.exteriorRegion ∧
-      (Q.carrier ∩ B.data.segmentCarrier).Finite := by
+      (Q.carrier ∩ B.data.segmentCarrier).Finite ∧
+      (∀ (i : ZMod Q.n) (j : Fin B.data.n),
+        planeDet
+          (B.data.vertex j.castSucc - Q.vertex i)
+          (B.data.vertex j.succ - B.data.vertex j.castSucc) ≠ 0) ∧
+      ∀ (i : ZMod Q.n) (j : Fin (B.data.n + 1)),
+        planeDet
+          (B.data.vertex j - Q.vertex i)
+          (Q.vertex (i + 1) - Q.vertex i) ≠ 0 := by
   obtain ⟨eta, heta, hstable⟩ :=
     PolygonalTransport.exists_translation_stabilityRadius
       P hCcompact hDcompact hC hD
   let delta : ℝ := min epsilon eta
   have hdelta : 0 < delta := lt_min hepsilon heta
-  obtain ⟨v, hv, hgeneric⟩ :=
+  obtain ⟨v, hv, hgeneric, hgenericVertices⟩ :=
     B.exists_small_translation_no_vertex_on_edgeLine P hdelta
-  obtain ⟨Q, hQcarrier, _hQinside, _hQoutside⟩ :=
-    PolygonalTransport.exists_translation P v
+  let h : Plane ≃ₜ Plane := Homeomorph.addLeft v
+  have hedge : ∀ i : ZMod P.n,
+      h '' P.edgeSegment i =
+        segment ℝ (h (P.vertex i)) (h (P.vertex (i + 1))) := by
+    intro i
+    rw [PolygonalCircle.edgeSegment]
+    exact segment_translate_image ℝ v (P.vertex i) (P.vertex (i + 1))
+  let Q : PolygonalCircle := P.mapHomeomorph h hedge
+  have hQcarrier :
+      Q.carrier = (Homeomorph.addLeft v : Plane ≃ₜ Plane) '' P.carrier := by
+    exact P.mapHomeomorph_carrier h hedge
   have hvEpsilon : ‖v‖ < epsilon := hv.trans_le (min_le_left _ _)
   have hvEta : ‖v‖ < eta := hv.trans_le (min_le_right _ _)
   obtain ⟨hCQ, hDQ⟩ := hstable v Q hvEta hQcarrier
   have hfinite : (Q.carrier ∩ B.data.segmentCarrier).Finite := by
     rw [hQcarrier]
     exact B.finite_translatedCarrier_inter_segmentCarrier P v hgeneric
-  exact ⟨v, Q, hvEpsilon, hQcarrier, hCQ, hDQ, hfinite⟩
+  have hgenericQ : ∀ (i : ZMod Q.n) (j : Fin B.data.n),
+      planeDet
+        (B.data.vertex j.castSucc - Q.vertex i)
+        (B.data.vertex j.succ - B.data.vertex j.castSucc) ≠ 0 := by
+    intro i j
+    exact hgeneric i j
+  have hgenericVerticesQ :
+      ∀ (i : ZMod Q.n) (j : Fin (B.data.n + 1)),
+        planeDet
+          (B.data.vertex j - Q.vertex i)
+          (Q.vertex (i + 1) - Q.vertex i) ≠ 0 := by
+    simp only [Q, PolygonalCircle.mapHomeomorph_n,
+      PolygonalCircle.mapHomeomorph_vertex, h, Homeomorph.coe_addLeft,
+      add_sub_add_left_eq_sub]
+    exact hgenericVertices
+  exact ⟨v, Q, hvEpsilon, hQcarrier, hCQ, hDQ, hfinite,
+    hgenericQ, hgenericVerticesQ⟩
 
 end JordanCircle.SimpleBrokenLine
 
