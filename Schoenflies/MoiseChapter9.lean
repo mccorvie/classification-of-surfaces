@@ -12,6 +12,7 @@ import Schoenflies.AuxiliaryJordan
 import Schoenflies.SeparatorFrame
 import Schoenflies.PolygonalTransport
 import Schoenflies.PolygonalJordanCircle
+import Schoenflies.PolygonalJordanNesting
 import Schoenflies.GenericPolygonalFrame
 import Schoenflies.LocalStraightCrossing
 import Schoenflies.TransverseIntersections
@@ -27,6 +28,8 @@ import Schoenflies.CollarBandSegments
 import Schoenflies.NestedCollarStages
 import Schoenflies.PolyhedralDiskNeighborhoods
 import Schoenflies.PolygonalDiskExhaustion
+import Schoenflies.MarkedPolygonalDiskExhaustion
+import Schoenflies.MarkedHairCrossings
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides

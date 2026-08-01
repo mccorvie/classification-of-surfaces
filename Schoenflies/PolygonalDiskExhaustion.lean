@@ -114,6 +114,59 @@ theorem exists_nestedPolygonalDisk_near
     exact Set.disjoint_left.mp hQdisjoint hxCarrier hxC
   exact ⟨Q, hPInterior, hdeepInterior, hQinside, hQnear⟩
 
+/-- A nested successor may additionally be required to contain any prescribed
+compact subset of the Jordan inside.  This is the marked version used later:
+at stage `n`, the extra compact set will be the finite set of tips of the
+level-`n` retained access hairs. -/
+theorem exists_nestedPolygonalDisk_near_containing_compact
+    (J : JordanCircle) (P : PolygonalCircle)
+    (hPinside : P.closedRegion ⊆ J.inside)
+    {K : Set Plane} (hKcompact : IsCompact K) (hKinside : K ⊆ J.inside)
+    {delta : ℝ} (hdelta : 0 < delta) :
+    ∃ Q : PolygonalCircle,
+      P.closedRegion ⊆ Q.interiorRegion ∧
+        J.deepInsideCore delta ⊆ Q.interiorRegion ∧
+        K ⊆ Q.interiorRegion ∧
+        Q.closedRegion ⊆ J.inside ∧
+        Q.carrier ⊆ thickening delta J.carrier := by
+  let K₀ := (P.closedRegion ∪ J.deepInsideCore delta) ∪ K
+  have hK₀compact : IsCompact K₀ :=
+    (P.isCompact_closedRegion.union
+      (J.isCompact_deepInsideCore delta)).union hKcompact
+  have hK₀nonempty : K₀.Nonempty := by
+    refine ⟨P.vertex 0, Or.inl (Or.inl ?_)⟩
+    rw [P.closedRegion_eq_union]
+    exact Or.inr (P.vertex_mem_carrier 0)
+  have hK₀inside : K₀ ⊆ J.inside := by
+    exact Set.union_subset
+      (Set.union_subset hPinside
+        (J.deepInsideCore_subset_inside hdelta)) hKinside
+  obtain ⟨C, hK₀C, hCcompact, hCconnected, hCinside⟩ :=
+    J.exists_compactConnected_superset_inside
+      hK₀compact hK₀nonempty hK₀inside
+  obtain ⟨Q, hCInterior, hQinside, hQdisjoint⟩ :=
+    J.exists_polygonalDiskNeighborhood_with_boundary_avoidance
+      hCcompact hCconnected hCinside
+  have hPInterior : P.closedRegion ⊆ Q.interiorRegion := by
+    exact fun x hx => hCInterior (hK₀C (Or.inl (Or.inl hx)))
+  have hdeepInterior : J.deepInsideCore delta ⊆ Q.interiorRegion := by
+    exact fun x hx => hCInterior (hK₀C (Or.inl (Or.inr hx)))
+  have hKInterior : K ⊆ Q.interiorRegion := by
+    exact fun x hx => hCInterior (hK₀C (Or.inr hx))
+  have hQnear : Q.carrier ⊆ thickening delta J.carrier := by
+    intro x hxCarrier
+    by_contra hxNear
+    have hxClosed : x ∈ Q.closedRegion := by
+      rw [Q.closedRegion_eq_union]
+      exact Or.inr hxCarrier
+    have hxInside : x ∈ J.inside := hQinside hxClosed
+    have hxDeep : x ∈ J.deepInsideCore delta :=
+      ⟨subset_closure hxInside, hxNear⟩
+    have hxC : x ∈ C := hK₀C (Or.inl (Or.inr hxDeep))
+    exact Set.disjoint_left.mp hQdisjoint hxCarrier hxC
+  exact ⟨Q, hPInterior, hdeepInterior, hKInterior,
+    hQinside, hQnear⟩
+
 /-- The target boundary scale at successor number `k+1`. -/
 def polygonalDiskBoundaryScale (k : ℕ) : ℝ :=
   ((k + 1 : ℕ) : ℝ)⁻¹
