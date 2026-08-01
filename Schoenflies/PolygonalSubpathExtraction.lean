@@ -147,7 +147,299 @@ theorem range_hairTrimmedPath
   ext x
   exact B.mem_range_hairTrimmedPath_iff hne T x
 
+private theorem resolvedGlobalParameter_mem_edgeIcc
+    (D : BrokenLineData U) (i : Fin D.resolvedWalk.length) {x : Plane}
+    (hx : x ∈ segment ℝ (D.resolvedVertex i.castSucc)
+      (D.resolvedVertex i.succ)) :
+    D.resolvedGlobalParameter x ∈ Set.Icc (i.val : ℝ) (i.val + 1) := by
+  rw [D.resolvedGlobalParameter_eq_on_edge i hx]
+  have himage : D.resolvedEdgeGlobalParameter i x ∈
+      segment ℝ
+        (D.resolvedEdgeGlobalParameter i (D.resolvedVertex i.castSucc))
+        (D.resolvedEdgeGlobalParameter i (D.resolvedVertex i.succ)) := by
+    rw [← _root_.image_segment ℝ (D.resolvedEdgeGlobalParameter i)]
+    exact ⟨x, hx, rfl⟩
+  simpa [D.resolvedEdgeGlobalParameter_apply_left,
+    D.resolvedEdgeGlobalParameter_apply_right,
+    segment_eq_Icc] using himage
+
+private theorem segment_subset_resolvedScalarIcc
+    (D : BrokenLineData U) (i : Fin D.resolvedWalk.length)
+    {a b : ℝ} {x y : Plane}
+    (hx : x ∈ segment ℝ (D.resolvedVertex i.castSucc)
+      (D.resolvedVertex i.succ))
+    (hy : y ∈ segment ℝ (D.resolvedVertex i.castSucc)
+      (D.resolvedVertex i.succ))
+    (hxy : D.resolvedGlobalParameter x ≤ D.resolvedGlobalParameter y)
+    (ha : a ≤ D.resolvedGlobalParameter x)
+    (hb : D.resolvedGlobalParameter y ≤ b) :
+    segment ℝ x y ⊆
+      {z | z ∈ D.resolvedCarrier ∧
+        a ≤ D.resolvedGlobalParameter z ∧
+        D.resolvedGlobalParameter z ≤ b} := by
+  intro z hz
+  have hzEdge : z ∈ segment ℝ (D.resolvedVertex i.castSucc)
+      (D.resolvedVertex i.succ) :=
+    (convex_segment (D.resolvedVertex i.castSucc)
+      (D.resolvedVertex i.succ)).segment_subset hx hy hz
+  have hparamSegment : D.resolvedGlobalParameter z ∈
+      segment ℝ (D.resolvedGlobalParameter x)
+        (D.resolvedGlobalParameter y) := by
+    rw [D.resolvedGlobalParameter_eq_on_edge i hzEdge,
+      D.resolvedGlobalParameter_eq_on_edge i hx,
+      D.resolvedGlobalParameter_eq_on_edge i hy,
+      ← _root_.image_segment ℝ (D.resolvedEdgeGlobalParameter i)]
+    exact ⟨z, hz, rfl⟩
+  rw [segment_eq_Icc hxy] at hparamSegment
+  refine ⟨?_, ha.trans hparamSegment.1, hparamSegment.2.trans hb⟩
+  unfold BrokenLineData.resolvedCarrier
+  have hlength : D.resolvedWalk.length ≠ 0 :=
+    Nat.ne_of_gt (Nat.zero_lt_of_lt i.isLt)
+  simp only [hlength, ↓reduceDIte]
+  exact Set.mem_iUnion.mpr ⟨i, hzEdge⟩
+
+/-- Consecutive vertices in a finite resolved walk can be retained between
+any two ordered vertex indices. -/
+private theorem joinedByBrokenLine_resolvedVertices
+    (D : BrokenLineData U) (W : Set Plane)
+    (i j : Fin (D.resolvedWalk.length + 1)) (hij : i.val ≤ j.val)
+    (hsegments : ∀ k : Fin D.resolvedWalk.length,
+      i.val ≤ k.val → k.val < j.val →
+        segment ℝ (D.resolvedVertex k.castSucc)
+          (D.resolvedVertex k.succ) ⊆ W) :
+    JoinedByBrokenLine W (D.resolvedVertex i) (D.resolvedVertex j) := by
+  let m := j.val - i.val
+  let v : Fin (m + 1) → Plane := fun k =>
+    D.resolvedVertex ⟨i.val + k.val, by omega⟩
+  refine ⟨m, v, ?_, ?_, ?_⟩
+  · apply congrArg D.resolvedVertex
+    apply Fin.ext
+    simp
+  · apply congrArg D.resolvedVertex
+    apply Fin.ext
+    simp [m]
+    omega
+  · intro k
+    let edge : Fin D.resolvedWalk.length :=
+      ⟨i.val + k.val, by
+        have hk : k.val < j.val - i.val := k.isLt
+        omega⟩
+    have hleft : v k.castSucc = D.resolvedVertex edge.castSucc := by
+      apply congrArg D.resolvedVertex
+      apply Fin.ext
+      rfl
+    have hright : v k.succ = D.resolvedVertex edge.succ := by
+      apply congrArg D.resolvedVertex
+      apply Fin.ext
+      rfl
+    rw [hleft, hright]
+    apply hsegments edge <;> dsimp [edge] <;> omega
+
+/-- Every ordered pair of distinct points on a resolved finite polygonal
+carrier is joined by a finite broken line contained in the closed carrier
+interval between them. -/
+theorem joinedByBrokenLine_resolvedScalarIcc
+    (B : SimpleBrokenLine U p q) (hne : p ≠ q) {x y : Plane}
+    (hx : x ∈ B.data.resolvedCarrier)
+    (hy : y ∈ B.data.resolvedCarrier)
+    (hxy : B.data.resolvedGlobalParameter x ≤
+      B.data.resolvedGlobalParameter y) :
+    JoinedByBrokenLine
+      {z | z ∈ B.data.resolvedCarrier ∧
+        B.data.resolvedGlobalParameter x ≤
+          B.data.resolvedGlobalParameter z ∧
+        B.data.resolvedGlobalParameter z ≤
+          B.data.resolvedGlobalParameter y}
+      x y := by
+  let W : Set Plane :=
+    {z | z ∈ B.data.resolvedCarrier ∧
+      B.data.resolvedGlobalParameter x ≤
+        B.data.resolvedGlobalParameter z ∧
+      B.data.resolvedGlobalParameter z ≤
+        B.data.resolvedGlobalParameter y}
+  by_cases hpoint : x = y
+  · subst y
+    exact JoinedByBrokenLine.refl ⟨hx, le_rfl, le_rfl⟩
+  have hparam : B.data.resolvedGlobalParameter x <
+      B.data.resolvedGlobalParameter y := lt_of_le_of_ne hxy fun h =>
+    hpoint (B.data.resolvedGlobalParameter_injectiveOn hx hy h)
+  have hdata : B.data.start ≠ B.data.finish := by
+    intro h
+    exact hne (B.start_eq.symm.trans (h.trans B.finish_eq))
+  have hlength : B.data.resolvedWalk.length ≠ 0 := Nat.ne_of_gt <|
+    BrokenLineData.n_pos_of_start_ne_finish B.data.resolvedBrokenLine (by
+      rw [B.data.resolvedBrokenLine_start,
+        B.data.resolvedBrokenLine_finish]
+      exact hdata)
+  unfold BrokenLineData.resolvedCarrier at hx hy
+  simp only [hlength, ↓reduceDIte] at hx hy
+  obtain ⟨i, hxi⟩ := Set.mem_iUnion.mp hx
+  obtain ⟨j, hyj⟩ := Set.mem_iUnion.mp hy
+  have hxiParam := resolvedGlobalParameter_mem_edgeIcc B.data i hxi
+  have hyjParam := resolvedGlobalParameter_mem_edgeIcc B.data j hyj
+  have hij : i.val ≤ j.val := by
+    by_contra h
+    have hji : j.val + 1 ≤ i.val := by omega
+    have hjiReal : (j.val : ℝ) + 1 ≤ i.val := by exact_mod_cast hji
+    exact (not_lt_of_ge
+      (hyjParam.2.trans (hjiReal.trans hxiParam.1))) hparam
+  by_cases hsamedge : i = j
+  · subst j
+    exact JoinedByBrokenLine.of_segment <|
+      segment_subset_resolvedScalarIcc B.data i hxi hyj hxy le_rfl le_rfl
+  have hijlt : i.val < j.val := lt_of_le_of_ne hij (by
+    intro h
+    exact hsamedge (Fin.ext h))
+  have hfirstParam : B.data.resolvedGlobalParameter x ≤
+      B.data.resolvedGlobalParameter (B.data.resolvedVertex i.succ) := by
+    rw [B.data.resolvedGlobalParameter_eq_on_edge i
+      (right_mem_segment ℝ _ _),
+      B.data.resolvedEdgeGlobalParameter_apply_right]
+    exact hxiParam.2
+  have hlastParam :
+      B.data.resolvedGlobalParameter (B.data.resolvedVertex j.castSucc) ≤
+        B.data.resolvedGlobalParameter y := by
+    rw [B.data.resolvedGlobalParameter_eq_on_edge j
+      (left_mem_segment ℝ _ _),
+      B.data.resolvedEdgeGlobalParameter_apply_left]
+    exact hyjParam.1
+  have hmiddleParam :
+      B.data.resolvedGlobalParameter (B.data.resolvedVertex i.succ) ≤
+        B.data.resolvedGlobalParameter (B.data.resolvedVertex j.castSucc) := by
+    rw [B.data.resolvedGlobalParameter_eq_on_edge i
+          (right_mem_segment ℝ _ _),
+      B.data.resolvedGlobalParameter_eq_on_edge j
+          (left_mem_segment ℝ _ _),
+      B.data.resolvedEdgeGlobalParameter_apply_right,
+      B.data.resolvedEdgeGlobalParameter_apply_left]
+    exact_mod_cast (show i.val + 1 ≤ j.val by omega)
+  have hfirst : JoinedByBrokenLine W x (B.data.resolvedVertex i.succ) :=
+    JoinedByBrokenLine.of_segment <|
+      segment_subset_resolvedScalarIcc B.data i hxi
+        (right_mem_segment ℝ _ _) hfirstParam le_rfl (by
+          exact hmiddleParam.trans hlastParam)
+  have hmiddle : JoinedByBrokenLine W
+      (B.data.resolvedVertex i.succ)
+      (B.data.resolvedVertex j.castSucc) := by
+    apply joinedByBrokenLine_resolvedVertices B.data W i.succ j.castSucc
+    · simpa using hijlt
+    · intro k hik hkj
+      apply segment_subset_resolvedScalarIcc B.data k
+        (left_mem_segment ℝ _ _) (right_mem_segment ℝ _ _)
+      · rw [B.data.resolvedGlobalParameter_eq_on_edge k
+            (left_mem_segment ℝ _ _),
+          B.data.resolvedGlobalParameter_eq_on_edge k
+            (right_mem_segment ℝ _ _),
+          B.data.resolvedEdgeGlobalParameter_apply_left,
+          B.data.resolvedEdgeGlobalParameter_apply_right]
+        norm_num
+      · rw [B.data.resolvedGlobalParameter_eq_on_edge k
+            (left_mem_segment ℝ _ _),
+          B.data.resolvedEdgeGlobalParameter_apply_left]
+        apply hfirstParam.trans
+        rw [B.data.resolvedGlobalParameter_eq_on_edge i
+              (right_mem_segment ℝ _ _),
+          B.data.resolvedEdgeGlobalParameter_apply_right]
+        exact_mod_cast hik
+      · rw [B.data.resolvedGlobalParameter_eq_on_edge k
+            (right_mem_segment ℝ _ _),
+          B.data.resolvedEdgeGlobalParameter_apply_right]
+        apply LE.le.trans ?_ hlastParam
+        rw [B.data.resolvedGlobalParameter_eq_on_edge j
+              (left_mem_segment ℝ _ _),
+          B.data.resolvedEdgeGlobalParameter_apply_left]
+        exact_mod_cast hkj
+  have hlast : JoinedByBrokenLine W
+      (B.data.resolvedVertex j.castSucc) y :=
+    JoinedByBrokenLine.of_segment <|
+      segment_subset_resolvedScalarIcc B.data j
+        (left_mem_segment ℝ _ _) hyj hlastParam
+        (hfirstParam.trans hmiddleParam) le_rfl
+  exact (hfirst.trans hmiddle).trans hlast
+
+/-- The two endpoints of a nondegenerate trimmed canonical path remain
+distinct. -/
+theorem hairTrimmedEndpoints_ne
+    (B : SimpleBrokenLine U p q) (hne : p ≠ q)
+    {rbase lbase : Plane}
+    {HR : J.InsideAccessHair rbase} {HL : J.InsideAccessHair lbase}
+    (T : Path.HairTrimData (B.toPath hne) HR HL) :
+    B.toPath hne T.rightTime ≠ B.toPath hne T.leftTime := by
+  intro h
+  exact T.right_lt_left.ne (B.toPath_injective hne h)
+
+/-- The scalar-interval extraction gives an explicit finite broken-line join
+whose every segment lies in the trimmed path range. -/
+theorem joinedByBrokenLine_hairTrimmedPath
+    (B : SimpleBrokenLine U p q) (hne : p ≠ q)
+    {rbase lbase : Plane}
+    {HR : J.InsideAccessHair rbase} {HL : J.InsideAccessHair lbase}
+    (T : Path.HairTrimData (B.toPath hne) HR HL) :
+    JoinedByBrokenLine (range T.trimmedPath)
+      (B.toPath hne T.rightTime) (B.toPath hne T.leftTime) := by
+  have hright : B.toPath hne T.rightTime ∈ B.data.resolvedCarrier := by
+    rw [← B.range_toPath hne]
+    exact ⟨T.rightTime, rfl⟩
+  have hleft : B.toPath hne T.leftTime ∈ B.data.resolvedCarrier := by
+    rw [← B.range_toPath hne]
+    exact ⟨T.leftTime, rfl⟩
+  have horder :
+      B.data.resolvedGlobalParameter (B.toPath hne T.rightTime) ≤
+        B.data.resolvedGlobalParameter (B.toPath hne T.leftTime) :=
+    (B.strictMono_pathScalar hne).monotone T.right_lt_left.le
+  have hjoin := B.joinedByBrokenLine_resolvedScalarIcc hne
+    hright hleft horder
+  rw [B.range_hairTrimmedPath hne T]
+  simpa [pathScalar] using hjoin
+
+/-- A trimmed canonical polygonal path, repackaged for all APIs that consume
+`SimpleBrokenLine`. -/
+noncomputable def hairTrimmedSimpleBrokenLine
+    (B : SimpleBrokenLine U p q) (hne : p ≠ q)
+    {rbase lbase : Plane}
+    {HR : J.InsideAccessHair rbase} {HL : J.InsideAccessHair lbase}
+    (T : Path.HairTrimData (B.toPath hne) HR HL) :
+    SimpleBrokenLine (range T.trimmedPath)
+      (B.toPath hne T.rightTime) (B.toPath hne T.leftTime) :=
+  simpleBrokenLineOfJoined (B.joinedByBrokenLine_hairTrimmedPath hne T)
+
 end SimpleBrokenLine
+
+namespace InitialAngularArcs
+namespace LevelInsideJoinData
+
+variable {J : JordanCircle} {I : J.InitialAngularArcs} {n : ℕ}
+  {a : LevelAddress n} {epsilon : ℝ} {hepsilon : 0 < epsilon}
+
+/-- The trimmed controlled join from Moise 9.5 as explicit finite simple
+broken-line data. -/
+noncomputable def trimmedLine
+    (D : I.LevelInsideJoinData a epsilon hepsilon) :
+    SimpleBrokenLine (range D.trimmedLinePath)
+      D.trimmedRightPoint D.trimmedLeftPoint := by
+  change SimpleBrokenLine (range D.hairTrimData.trimmedPath)
+    (D.originalPath D.hairTrimData.rightTime)
+    (D.originalPath D.hairTrimData.leftTime)
+  exact D.line.hairTrimmedSimpleBrokenLine D.endpoints_ne D.hairTrimData
+
+theorem trimmedEndpoints_ne
+    (D : I.LevelInsideJoinData a epsilon hepsilon) :
+    D.trimmedRightPoint ≠ D.trimmedLeftPoint := by
+  simpa [originalPath, trimmedRightPoint, trimmedLeftPoint] using
+    D.line.hairTrimmedEndpoints_ne D.endpoints_ne D.hairTrimData
+
+/-- Every listed edge of the extracted finite line retains the metric and
+inside control already proved for the trimmed path. -/
+theorem trimmedLine_segmentCarrier_subset_controlled
+    (D : I.LevelInsideJoinData a epsilon hepsilon) :
+    D.trimmedLine.data.segmentCarrier ⊆
+      J.inside ∩ thickening epsilon (I.levelArc a).curveArcPlane :=
+  (JordanCircle.BrokenLineData.segmentCarrier_subset D.trimmedLine.data).trans
+    D.range_trimmedLinePath_subset_controlled
+
+end LevelInsideJoinData
+end InitialAngularArcs
+
 end JordanCircle
 
 end Schoenflies
