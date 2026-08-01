@@ -23,6 +23,7 @@ import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
 import Schoenflies.CyclicCrossingParity
+import Schoenflies.RefinedCyclicCuts
 import Schoenflies.PolygonalSubarcs
 import Schoenflies.ControlledCrosscuts
 import Schoenflies.RegionalExtensions

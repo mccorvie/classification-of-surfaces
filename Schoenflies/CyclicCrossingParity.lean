@@ -30,6 +30,45 @@ noncomputable def linearCrossings {n : ℕ} (side : Fin (n + 1) → Bool) :
   classical
   exact Finset.univ.filter (IsLinearCrossing side)
 
+/-- A nonconstant Boolean labelling of a finite cycle has a
+`false`-to-`true` transition. -/
+theorem exists_cyclic_false_true_transition {N : ℕ} (hN : 0 < N)
+    (side : ZMod N → Bool)
+    (hfalse : ∃ i, side i = false) (htrue : ∃ i, side i = true) :
+    ∃ i, side (i - 1) = false ∧ side i = true := by
+  classical
+  obtain ⟨n, rfl⟩ : ∃ n, N = n + 1 := ⟨N - 1, by omega⟩
+  by_contra htransition
+  push Not at htransition
+  obtain ⟨start, hstart⟩ := hfalse
+  have hallFalse : ∀ q : Fin (n + 1),
+      side ((q.val : ZMod (n + 1)) + start) = false := by
+    intro q
+    induction q using Fin.induction with
+    | zero => simpa using hstart
+    | succ q ih =>
+        by_cases hnext :
+            side ((q.succ.val : ZMod (n + 1)) + start) = false
+        · exact hnext
+        · have hnextTrue :
+              side ((q.succ.val : ZMod (n + 1)) + start) = true :=
+            Bool.eq_true_of_not_eq_false hnext
+          have hindex :
+              ((q.val : ZMod (n + 1)) + start) =
+                ((q.succ.val : ZMod (n + 1)) + start) - 1 := by
+            simp only [Fin.val_succ, Nat.cast_add, Nat.cast_one]
+            abel
+          exact False.elim <| htransition
+            ((q.succ.val : ZMod (n + 1)) + start) (hindex ▸ ih) hnextTrue
+  obtain ⟨finish, hfinish⟩ := htrue
+  let q : Fin (n + 1) := ⟨(finish - start).val, ZMod.val_lt _⟩
+  have hindex : (q.val : ZMod (n + 1)) + start = finish := by
+    rw [ZMod.natCast_zmod_val]
+    abel
+  have := hallFalse q
+  rw [hindex, hfinish] at this
+  contradiction
+
 @[simp] theorem incomingLinearSide_zero {n : ℕ}
     (side : Fin (n + 1) → Bool) :
     incomingLinearSide side 0 = false := by
