@@ -27,7 +27,9 @@ import Schoenflies.CommonSegmentArrangement
 import Schoenflies.SegmentChainWalk
 import Schoenflies.CollarBandSegments
 import Schoenflies.MoiseBandCells
+import Schoenflies.MoiseBandCellBounds
 import Schoenflies.NestedCollarStages
+import Schoenflies.ShrinkingMoiseBandCells
 import Schoenflies.PolyhedralDiskNeighborhoods
 import Schoenflies.PolygonalDiskExhaustion
 import Schoenflies.MarkedPolygonalDiskExhaustion
