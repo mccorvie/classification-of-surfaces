@@ -1,0 +1,228 @@
+import Schoenflies.PolygonalJordanCircle
+import ClassificationOfSurfaces.PolygonCellRadial
+
+/-!
+# Extending topological boundary homeomorphisms of polygonal disks
+
+The PL disk extension is useful when a finite PL certificate is needed.  For
+the nested-cell argument we only need compatible homeomorphisms of closed
+cells.  Here an ambient straightening identifies every polygonal disk with
+the Euclidean closed unit disk, and the existing Alexander trick extends an
+arbitrary homeomorphism of its boundary circle.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace PolygonalCircle
+
+/-- A polygonal circle admits an ambient straightening which simultaneously
+identifies its carrier and its closed bounded region with the unit sphere
+and closed unit ball. -/
+theorem exists_diskStraightening (P : PolygonalCircle) :
+    ∃ h : Plane ≃ₜ Plane,
+      h '' P.closedRegion = closedBall (0 : Plane) 1 ∧
+        h '' P.carrier = sphere (0 : Plane) 1 := by
+  obtain ⟨g, -, ⟨C, hC, hcarrier, hregion⟩, -⟩ :=
+    P.polygonal_schoenflies_rel Set.univ isOpen_univ
+      (Set.subset_univ P.closedRegion)
+  obtain ⟨e, -, hclosure, hfrontier⟩ :=
+    exists_homeomorph_image_interior_closure_frontier_eq_unitBall
+      hC.convex hC.infinite_interior.nonempty hC.isCompact.isBounded
+  refine ⟨g.trans e, ?_, ?_⟩
+  · rw [show (g.trans e) '' P.closedRegion =
+        e '' (g '' P.closedRegion) by
+      rw [Set.image_image]
+      rfl]
+    rw [hregion]
+    simpa only [hC.isCompact.isClosed.closure_eq] using hclosure
+  · rw [show (g.trans e) '' P.carrier = e '' (g '' P.carrier) by
+      rw [Set.image_image]
+      rfl]
+    rw [hcarrier, hfrontier]
+
+/-- A fixed simultaneous straightening of a polygonal closed disk and its
+boundary. -/
+def diskStraightening (P : PolygonalCircle) : Plane ≃ₜ Plane :=
+  Classical.choose (exists_diskStraightening P)
+
+theorem diskStraightening_image_closedRegion (P : PolygonalCircle) :
+    diskStraightening P '' P.closedRegion = closedBall (0 : Plane) 1 :=
+  (Classical.choose_spec (exists_diskStraightening P)).1
+
+theorem diskStraightening_image_carrier (P : PolygonalCircle) :
+    diskStraightening P '' P.carrier = sphere (0 : Plane) 1 :=
+  (Classical.choose_spec (exists_diskStraightening P)).2
+
+/-- Restrict the ambient disk straightening to the closed polygonal disk. -/
+def closedRegionToBall (P : PolygonalCircle) :
+    P.closedRegion ≃ₜ closedBall (0 : Plane) 1 :=
+  ((diskStraightening P).image P.closedRegion).trans
+    (Homeomorph.setCongr (diskStraightening_image_closedRegion P))
+
+/-- Restrict the same straightening to the polygonal boundary. -/
+def carrierToSphere (P : PolygonalCircle) :
+    P.carrier ≃ₜ sphere (0 : Plane) 1 :=
+  ((diskStraightening P).image P.carrier).trans
+    (Homeomorph.setCongr (diskStraightening_image_carrier P))
+
+@[simp] theorem coe_closedRegionToBall_apply (P : PolygonalCircle)
+    (x : P.closedRegion) :
+    (closedRegionToBall P x : Plane) = diskStraightening P x := rfl
+
+@[simp] theorem coe_carrierToSphere_apply (P : PolygonalCircle)
+    (x : P.carrier) :
+    (carrierToSphere P x : Plane) = diskStraightening P x := rfl
+
+theorem closedRegionToBall_boundary (P : PolygonalCircle) (x : P.carrier) :
+    closedRegionToBall P
+        ⟨x, by rw [P.closedRegion_eq_union]; exact Or.inr x.2⟩ =
+      ⟨carrierToSphere P x, sphere_subset_closedBall
+        (carrierToSphere P x).2⟩ := by
+  apply Subtype.ext
+  rfl
+
+end PolygonalCircle
+
+namespace PlaneAlexander
+
+/-- The standard linear isometry identifies the plane closed unit ball with
+the closed complex disk underlying a polygon cell. -/
+def ballToPolygonCell : closedBall (0 : Plane) 1 ≃ₜ PolygonCell 0 where
+  toFun x :=
+    ⟨PolygonalCircle.planeComplexEquiv x, by
+      simpa only [mem_closedBall, dist_zero_right,
+        PolygonalCircle.norm_planeComplexEquiv] using x.2⟩
+  invFun z :=
+    ⟨PolygonalCircle.planeComplexEquiv.symm z.val, by
+      simpa only [mem_closedBall, dist_zero_right,
+        ← PolygonalCircle.norm_planeComplexEquiv,
+        PolygonalCircle.planeComplexEquiv.apply_symm_apply] using z.property⟩
+  left_inv := by
+    intro x
+    apply Subtype.ext
+    exact PolygonalCircle.planeComplexEquiv.symm_apply_apply x
+  right_inv := by
+    intro z
+    apply PolygonCell.ext
+    exact PolygonalCircle.planeComplexEquiv.apply_symm_apply z.val
+  continuous_toFun := by
+    apply continuous_induced_rng.2
+    exact PolygonalCircle.planeComplexEquiv.continuous.comp
+      continuous_subtype_val
+  continuous_invFun := by
+    apply continuous_induced_rng.2
+    exact PolygonalCircle.planeComplexEquiv.symm.continuous.comp
+      PolygonCell.continuous_val
+
+/-- The corresponding identification of the geometric plane unit sphere
+with the complex unit circle. -/
+def sphereToCircle : sphere (0 : Plane) 1 ≃ₜ Circle where
+  toFun x :=
+    ⟨PolygonalCircle.planeComplexEquiv x, by
+      simpa [Submonoid.unitSphere, mem_sphere, dist_zero_right,
+        PolygonalCircle.norm_planeComplexEquiv] using x.2⟩
+  invFun z :=
+    ⟨PolygonalCircle.planeComplexEquiv.symm z, by
+      simpa [Submonoid.unitSphere, mem_sphere, dist_zero_right,
+        ← PolygonalCircle.norm_planeComplexEquiv,
+        PolygonalCircle.planeComplexEquiv.apply_symm_apply] using z.2⟩
+  left_inv := by
+    intro x
+    apply Subtype.ext
+    exact PolygonalCircle.planeComplexEquiv.symm_apply_apply x
+  right_inv := by
+    intro z
+    apply Circle.ext
+    exact PolygonalCircle.planeComplexEquiv.apply_symm_apply z
+  continuous_toFun := by
+    apply continuous_induced_rng.2
+    exact PolygonalCircle.planeComplexEquiv.continuous.comp
+      continuous_subtype_val
+  continuous_invFun := by
+    apply continuous_induced_rng.2
+    exact PolygonalCircle.planeComplexEquiv.symm.continuous.comp
+      continuous_subtype_val
+
+theorem ballToPolygonCell_ofSphere (z : sphere (0 : Plane) 1) :
+    ballToPolygonCell ⟨z, sphere_subset_closedBall z.2⟩ =
+      PolygonCell.ofCircle 0 (sphereToCircle z) := by
+  apply PolygonCell.ext
+  rfl
+
+/-- Alexander extension of a homeomorphism of the plane unit sphere. -/
+def radialHomeomorph (h : sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1) :
+    closedBall (0 : Plane) 1 ≃ₜ closedBall (0 : Plane) 1 :=
+  ballToPolygonCell.trans
+    ((PolygonCell.radialHomeomorph
+      (sphereToCircle.symm.trans (h.trans sphereToCircle))).trans
+        ballToPolygonCell.symm)
+
+/-- On the unit sphere the radial extension is the prescribed map. -/
+theorem radialHomeomorph_ofSphere
+    (h : sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1)
+    (z : sphere (0 : Plane) 1) :
+    radialHomeomorph h ⟨z, sphere_subset_closedBall z.2⟩ =
+      ⟨h z, sphere_subset_closedBall (h z).2⟩ := by
+  apply ballToPolygonCell.injective
+  rw [radialHomeomorph, Homeomorph.trans_apply,
+    Homeomorph.trans_apply, Homeomorph.apply_symm_apply,
+    ballToPolygonCell_ofSphere,
+    PolygonCell.radialHomeomorph_ofCircle]
+  simp only [Homeomorph.trans_apply, Homeomorph.symm_apply_apply]
+  apply PolygonCell.ext
+  rfl
+
+end PlaneAlexander
+
+namespace PolygonalCircle
+
+variable (P Q : PolygonalCircle)
+
+/-- Extend an arbitrary homeomorphism of polygonal boundaries to a
+homeomorphism of their closed bounded regions. -/
+def extendBoundaryHomeomorph (b : P.carrier ≃ₜ Q.carrier) :
+    P.closedRegion ≃ₜ Q.closedRegion :=
+  closedRegionToBall P |>.trans
+    (PlaneAlexander.radialHomeomorph
+      ((carrierToSphere P).symm.trans (b.trans (carrierToSphere Q))) |>.trans
+        (closedRegionToBall Q).symm)
+
+/-- The Alexander extension agrees pointwise with its boundary input. -/
+theorem extendBoundaryHomeomorph_apply
+    (b : P.carrier ≃ₜ Q.carrier) (x : P.carrier) :
+    ((extendBoundaryHomeomorph P Q b)
+        ⟨x, by rw [P.closedRegion_eq_union]; exact Or.inr x.2⟩ : Plane) =
+      (b x : Plane) := by
+  change
+    ((closedRegionToBall Q).symm
+      (PlaneAlexander.radialHomeomorph
+        ((carrierToSphere P).symm.trans (b.trans (carrierToSphere Q)))
+        (closedRegionToBall P
+          ⟨x, by rw [P.closedRegion_eq_union]; exact Or.inr x.2⟩)) : Plane) = _
+  rw [closedRegionToBall_boundary P]
+  rw [PlaneAlexander.radialHomeomorph_ofSphere]
+  have hsphere :
+      ((carrierToSphere P).symm.trans
+          (b.trans (carrierToSphere Q))) (carrierToSphere P x) =
+        carrierToSphere Q (b x) := by
+    simp
+  rw [hsphere]
+  have htarget :
+      closedRegionToBall Q
+          ⟨b x, by rw [Q.closedRegion_eq_union]; exact Or.inr (b x).2⟩ =
+        ⟨carrierToSphere Q (b x),
+          sphere_subset_closedBall (carrierToSphere Q (b x)).2⟩ :=
+    closedRegionToBall_boundary Q (b x)
+  rw [← htarget, (closedRegionToBall Q).symm_apply_apply]
+
+end PolygonalCircle
+
+end
+
+end Schoenflies

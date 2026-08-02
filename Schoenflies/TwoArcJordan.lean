@@ -95,6 +95,24 @@ private theorem circleMap_eq_loop_representative
     (p : Path a b) (q : Path b a) (z : AddCircle (2 : ℝ)) :
     circleMap p q z = loop p q (representative z) := rfl
 
+/-- The additive-circle point representing parameter `t` on the first
+constituent path. -/
+noncomputable def firstCoordinate (t : unitInterval) : AddCircle (2 : ℝ) :=
+  (AddCircle.equivIco (2 : ℝ) (0 : ℝ)).symm
+    ⟨t, ⟨t.2.1, by norm_num; linarith [t.2.2]⟩⟩
+
+/-- The first half of the additive-circle parametrization uses the original
+unit-interval parameter literally. -/
+theorem circleMap_firstCoordinate (p : Path a b) (q : Path b a)
+    (t : unitInterval) :
+    circleMap p q (firstCoordinate t) = p t := by
+  rw [circleMap_eq_loop_representative]
+  have hrep : representative (firstCoordinate t) =
+      ⟨(t : ℝ), ⟨t.2.1, by norm_num; linarith [t.2.2]⟩⟩ := by
+    simp [representative, firstCoordinate]
+  rw [hrep]
+  exact loop_eq_first p q t.2
+
 /-- The two halves cannot acquire an accidental common point: their only
 common values are the two endpoints, and the half-open circle
 representatives assign both endpoints consistently to the first half. -/
