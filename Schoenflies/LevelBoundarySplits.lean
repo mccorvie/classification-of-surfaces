@@ -1,0 +1,149 @@
+import Schoenflies.LevelArcCover
+import Schoenflies.LevelEndpointIncidence
+import Schoenflies.TwoBoundaryArcRigidity
+
+/-!
+# Canonical boundary splits at a binary subdivision level
+
+Every elementary level arc runs from one retained boundary mark to the next
+one in `nextLevelAddress` order and contains no other retained level mark.
+This file packages that arc, with its actual angular parametrization, as the
+first half of a complementary two-arc presentation of the Jordan carrier.
+-/
+
+namespace Schoenflies
+
+open Set Function
+
+noncomputable section
+
+namespace JordanCircle.InitialAngularArcs
+
+variable {J : JordanCircle} (I : J.InitialAngularArcs)
+
+/-- The endpoint of an elementary level arc is the initial point of its
+cyclic successor. -/
+theorem levelArc_rightPoint_eq_next_leftPoint
+    {n : ℕ} (a : LevelAddress n) :
+    (J.curvePoint (I.levelArc a).right : Plane) =
+      (J.curvePoint
+        (I.levelArc (nextLevelAddress n a)).left : Plane) :=
+  I.levelAdjacent_nextLevelAddress n a
+
+/-- The angular parametrization of one elementary level arc, with its
+target endpoint written using the successor address. -/
+def levelBoundaryArcPath {n : ℕ} (a : LevelAddress n) :
+    Path (J.curvePoint (I.levelArc a).left : Plane)
+      (J.curvePoint
+        (I.levelArc (nextLevelAddress n a)).left : Plane) :=
+  (I.levelArc a).toPath.cast rfl
+    (I.levelArc_rightPoint_eq_next_leftPoint a).symm
+
+theorem levelBoundaryArcPath_injective
+    {n : ℕ} (a : LevelAddress n) :
+    Injective (I.levelBoundaryArcPath a) := by
+  intro s t hst
+  exact AccessibleAngularArc.toPath_injective (J := J) (I.levelArc a) hst
+
+theorem range_levelBoundaryArcPath
+    {n : ℕ} (a : LevelAddress n) :
+    range (I.levelBoundaryArcPath a) =
+      (I.levelArc a).curveArcPlane := by
+  exact (I.levelArc a).range_toPath
+
+/-- A complementary presentation whose first path is literally the
+elementary angular path, rather than merely an independently chosen path
+with the same range. -/
+noncomputable def levelBoundarySplit
+    {n : ℕ} (a : LevelAddress n) :
+    J.TwoBoundaryArcPaths
+      (J.curvePoint (I.levelArc a).left : Plane)
+      (J.curvePoint
+        (I.levelArc (nextLevelAddress n a)).left : Plane) := by
+  let p := I.levelBoundaryArcPath a
+  have hp : Injective p := I.levelBoundaryArcPath_injective a
+  have hxy :
+      (J.curvePoint (I.levelArc a).left : Plane) ≠
+        (J.curvePoint
+          (I.levelArc (nextLevelAddress n a)).left : Plane) := by
+    intro h
+    exact (nextLevelAddress_ne n a) (I.levelLeftPoint_injective h).symm
+  let S := Classical.choice <| J.exists_twoBoundaryArcPaths
+    (J.curvePoint (I.levelArc a).left).2
+    (J.curvePoint (I.levelArc (nextLevelAddress n a)).left).2 hxy
+  have hranges := S.range_eq_first_or_second_of_path p hp (by
+    intro x hx
+    rw [I.range_levelBoundaryArcPath a] at hx
+    exact (I.levelArc a).curveArcPlane_subset_carrier J hx)
+  by_cases hfirst : range p = range S.first
+  · exact {
+      first := p
+      second := S.second
+      first_injective := hp
+      second_injective := S.second_injective
+      cover := by rw [hfirst, S.cover]
+      overlap := by rw [hfirst, S.overlap] }
+  · have hsecond : range p = range S.second :=
+      hranges.resolve_left hfirst
+    exact {
+      first := p
+      second := S.first.symm
+      first_injective := hp
+      second_injective :=
+        S.first_injective.comp unitInterval.symm_bijective.injective
+      cover := by
+        rw [hsecond, Path.symm_range, Set.union_comm, S.cover]
+      overlap := by
+        rw [hsecond, Path.symm_range, Set.inter_comm, S.overlap] }
+
+@[simp] theorem levelBoundarySplit_first
+    {n : ℕ} (a : LevelAddress n) :
+    (I.levelBoundarySplit a).first = I.levelBoundaryArcPath a := by
+  simp only [levelBoundarySplit]
+  split <;> rfl
+
+theorem range_levelBoundarySplit_first
+    {n : ℕ} (a : LevelAddress n) :
+    range (I.levelBoundarySplit a).first =
+      (I.levelArc a).curveArcPlane := by
+  rw [I.levelBoundarySplit_first, I.range_levelBoundaryArcPath]
+
+/-- No retained mark other than the two endpoint labels lies on the first
+path of an elementary level split. -/
+theorem other_levelLeftPoint_mem_levelBoundarySplit_second
+    {n : ℕ} (a c : LevelAddress n)
+    (hca : c ≠ a) (hcnext : c ≠ nextLevelAddress n a) :
+    (J.curvePoint (I.levelArc c).left : Plane) ∈
+      range (I.levelBoundarySplit a).second := by
+  have hcCarrier :
+      (J.curvePoint (I.levelArc c).left : Plane) ∈ J.carrier :=
+    (J.curvePoint (I.levelArc c).left).2
+  have hcUnion :
+      (J.curvePoint (I.levelArc c).left : Plane) ∈
+        range (I.levelBoundarySplit a).first ∪
+          range (I.levelBoundarySplit a).second := by
+    rw [(I.levelBoundarySplit a).cover]
+    exact hcCarrier
+  rcases hcUnion with hcFirst | hcSecond
+  · exfalso
+    have hcArc :
+        (J.curvePoint (I.levelArc c).left : Plane) ∈
+          (I.levelArc a).curveArcPlane := by
+      rwa [← I.range_levelBoundarySplit_first a]
+    have hcGeneration :
+        (J.curvePoint (I.levelArc c).left : Plane) ∈
+          I.generationMarks n :=
+      I.levelArc_left_mem_generationMarks c
+    rcases I.generationMark_mem_levelArc_eq_endpoint a
+        hcGeneration hcArc with hleft | hright
+    · exact hca (I.levelLeftPoint_injective hleft)
+    · apply hcnext
+      apply I.levelLeftPoint_injective
+      exact hright.trans (I.levelArc_rightPoint_eq_next_leftPoint a)
+  · exact hcSecond
+
+end JordanCircle.InitialAngularArcs
+
+end
+
+end Schoenflies
