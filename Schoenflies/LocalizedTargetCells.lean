@@ -151,6 +151,30 @@ noncomputable def targetAttachmentPresentation :
     else C.targetDecomposition.attachmentPresentation₀
       (C.targetSecondAlternative_of_not_first h)
 
+theorem targetAttachmentPresentation_exposedSecondCoordinate
+    (t : unitInterval) :
+    C.targetAttachmentPresentation.exposed
+        (PolygonalCircle.AnnularCellDecomposition.exposedSecondCoordinate t) =
+      C.targetDecomposition.second.path.symm t := by
+  classical
+  by_cases h : C.targetFirstAlternative
+  · rw [targetAttachmentPresentation, dif_pos h]
+    exact C.targetDecomposition.exposedPath_exposedSecondCoordinate _ t
+  · rw [targetAttachmentPresentation, dif_neg h]
+    exact C.targetDecomposition.exposedPath_exposedSecondCoordinate _ t
+
+theorem targetAttachmentPresentation_exposedFirstCoordinate
+    (t : unitInterval) :
+    C.targetAttachmentPresentation.exposed
+        (PolygonalCircle.AnnularCellDecomposition.exposedFirstCoordinate t) =
+      C.targetDecomposition.first.path t := by
+  classical
+  by_cases h : C.targetFirstAlternative
+  · rw [targetAttachmentPresentation, dif_pos h]
+    exact C.targetDecomposition.exposedPath_exposedFirstCoordinate _ t
+  · rw [targetAttachmentPresentation, dif_neg h]
+    exact C.targetDecomposition.exposedPath_exposedFirstCoordinate _ t
+
 theorem range_targetAttachmentPresentation_shared :
     range C.targetAttachmentPresentation.shared =
       range (C.targetBoundarySplit (k + 1)).first := by

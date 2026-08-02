@@ -55,6 +55,13 @@ theorem shared_mem_closedRegion (D : Presentation A)
     exact ⟨t, rfl⟩
   exact h.2
 
+theorem exposed_mem_closedRegion (D : Presentation A)
+    (t : unitInterval) : D.exposed t ∈ D.disk.closedRegion := by
+  rw [D.disk.closedRegion_eq_union]
+  right
+  rw [D.carrier_eq]
+  exact Or.inr ⟨t, rfl⟩
+
 theorem shared_mem_carrier (D : Presentation A) (t : unitInterval) :
     D.shared t ∈ D.disk.carrier := by
   rw [D.carrier_eq]
@@ -133,19 +140,11 @@ theorem newDiskHomeomorph_apply_shared (t : unitInterval) :
 
 theorem newDiskHomeomorph_apply_exposed (t : unitInterval) :
     (newDiskHomeomorph D E
-        ⟨D.exposed t, by
-          rw [D.disk.closedRegion_eq_union]
-          right
-          rw [D.carrier_eq]
-          exact Or.inr ⟨t, rfl⟩⟩ : Plane) =
+        ⟨D.exposed t, D.exposed_mem_closedRegion t⟩ : Plane) =
       E.exposed t := by
   calc
     (newDiskHomeomorph D E
-        ⟨D.exposed t, by
-          rw [D.disk.closedRegion_eq_union]
-          right
-          rw [D.carrier_eq]
-          exact Or.inr ⟨t, rfl⟩⟩ : Plane) =
+        ⟨D.exposed t, D.exposed_mem_closedRegion t⟩ : Plane) =
         (boundaryHomeomorph D E
           ⟨D.exposed t, by
             rw [D.carrier_eq]

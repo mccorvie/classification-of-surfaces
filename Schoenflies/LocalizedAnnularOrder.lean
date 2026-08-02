@@ -65,6 +65,21 @@ noncomputable def levelLocalizedSuccessor (k : ℕ)
     (a : LevelAddress k) : LevelAddress k :=
   (I.levelLocalizedInnerMarking k).successor a
 
+/-- The preceding retained cut in the same canonical cyclic order. -/
+noncomputable def levelLocalizedPredecessor (k : ℕ)
+    (a : LevelAddress k) : LevelAddress k :=
+  (I.levelLocalizedInnerMarking k).predecessor a
+
+@[simp] theorem levelLocalizedSuccessor_predecessor (k : ℕ)
+    (a : LevelAddress k) :
+    I.levelLocalizedSuccessor k (I.levelLocalizedPredecessor k a) = a :=
+  (I.levelLocalizedInnerMarking k).successor_predecessor a
+
+@[simp] theorem levelLocalizedPredecessor_successor (k : ℕ)
+    (a : LevelAddress k) :
+    I.levelLocalizedPredecessor k (I.levelLocalizedSuccessor k a) = a :=
+  (I.levelLocalizedInnerMarking k).predecessor_successor a
+
 theorem levelLocalizedSuccessor_bijective (k : ℕ) :
     Function.Bijective (I.levelLocalizedSuccessor k) :=
   (I.levelLocalizedInnerMarking k).successor_bijective

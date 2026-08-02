@@ -143,6 +143,48 @@ noncomputable def attachmentPresentation :
 noncomputable def disk : PolygonalCircle :=
   C.attachmentPresentation.disk
 
+theorem attachmentPresentation_exposedSecondCoordinate
+    (t : unitInterval) :
+    C.attachmentPresentation.exposed
+        (PolygonalCircle.AnnularCellDecomposition.exposedSecondCoordinate t) =
+      C.decomposition.second.path.symm t := by
+  classical
+  by_cases h : C.firstAlternative
+  · rw [attachmentPresentation, dif_pos h]
+    exact C.decomposition.exposedPath_exposedSecondCoordinate _ t
+  · rw [attachmentPresentation, dif_neg h]
+    exact C.decomposition.exposedPath_exposedSecondCoordinate _ t
+
+theorem attachmentPresentation_exposedFirstCoordinate
+    (t : unitInterval) :
+    C.attachmentPresentation.exposed
+        (PolygonalCircle.AnnularCellDecomposition.exposedFirstCoordinate t) =
+      C.decomposition.first.path t := by
+  classical
+  by_cases h : C.firstAlternative
+  · rw [attachmentPresentation, dif_pos h]
+    exact C.decomposition.exposedPath_exposedFirstCoordinate _ t
+  · rw [attachmentPresentation, dif_neg h]
+    exact C.decomposition.exposedPath_exposedFirstCoordinate _ t
+
+theorem decomposition_firstPath_mem_disk_closedRegion (t : unitInterval) :
+    C.decomposition.first.path t ∈ C.disk.closedRegion := by
+  change C.decomposition.first.path t ∈
+    C.attachmentPresentation.disk.closedRegion
+  rw [← C.attachmentPresentation_exposedFirstCoordinate t]
+  exact C.attachmentPresentation.exposed_mem_closedRegion _
+
+theorem decomposition_secondPath_mem_disk_closedRegion (t : unitInterval) :
+    C.decomposition.second.path t ∈ C.disk.closedRegion := by
+  change C.decomposition.second.path t ∈
+    C.attachmentPresentation.disk.closedRegion
+  have h := C.attachmentPresentation.exposed_mem_closedRegion
+    (PolygonalCircle.AnnularCellDecomposition.exposedSecondCoordinate
+      (unitInterval.symm t))
+  rw [C.attachmentPresentation_exposedSecondCoordinate] at h
+  simpa only [Path.symm_apply, Function.comp_apply,
+    unitInterval.symm_symm] using h
+
 theorem base_inter_disk :
     (I.innerDisk k).closedRegion ∩ C.disk.closedRegion =
       range C.attachmentPresentation.shared :=

@@ -32,6 +32,82 @@ def exposedPath (outer : Path D.second.outerPoint D.first.outerPoint) :
     Path D.second.innerPoint D.first.innerPoint :=
   D.second.path.symm.trans (outer.trans D.first.path)
 
+/-- Parameter on `exposedPath` corresponding to the reversed second radial
+cut. -/
+def exposedSecondCoordinate (t : unitInterval) : unitInterval :=
+  ⟨(t : ℝ) / 2, by constructor <;> nlinarith [t.2.1, t.2.2]⟩
+
+/-- Parameter on `exposedPath` corresponding to the outer boundary arc. -/
+def exposedOuterCoordinate (t : unitInterval) : unitInterval :=
+  ⟨1 / 2 + (t : ℝ) / 4, by
+    constructor <;> nlinarith [t.2.1, t.2.2]⟩
+
+/-- Parameter on `exposedPath` corresponding to the first radial cut. -/
+def exposedFirstCoordinate (t : unitInterval) : unitInterval :=
+  ⟨3 / 4 + (t : ℝ) / 4, by
+    constructor <;> nlinarith [t.2.1, t.2.2]⟩
+
+theorem exposedPath_exposedSecondCoordinate
+    (outer : Path D.second.outerPoint D.first.outerPoint)
+    (t : unitInterval) :
+    D.exposedPath outer (exposedSecondCoordinate t) =
+      D.second.path.symm t := by
+  rw [exposedPath, Path.trans_apply]
+  simp only [exposedSecondCoordinate]
+  rw [dif_pos (by nlinarith [t.2.2])]
+  congr 1
+  apply Subtype.ext
+  dsimp
+  ring
+
+theorem exposedPath_exposedOuterCoordinate
+    (outer : Path D.second.outerPoint D.first.outerPoint)
+    (t : unitInterval) :
+    D.exposedPath outer (exposedOuterCoordinate t) = outer t := by
+  by_cases ht : (t : ℝ) = 0
+  · have ht' : t = 0 := Subtype.ext ht
+    subst t
+    simp [exposedPath, exposedOuterCoordinate, Path.trans_apply]
+  have htpos : 0 < (t : ℝ) := lt_of_le_of_ne t.2.1 (Ne.symm ht)
+  rw [exposedPath, Path.trans_apply]
+  simp only [exposedOuterCoordinate]
+  rw [dif_neg (by nlinarith)]
+  rw [Path.trans_apply]
+  rw [dif_pos (by nlinarith [t.2.2])]
+  congr 1
+  apply Subtype.ext
+  dsimp
+  ring
+
+theorem exposedPath_exposedFirstCoordinate
+    (outer : Path D.second.outerPoint D.first.outerPoint)
+    (t : unitInterval) :
+    D.exposedPath outer (exposedFirstCoordinate t) = D.first.path t := by
+  by_cases ht : (t : ℝ) = 0
+  · have ht' : t = 0 := Subtype.ext ht
+    subst t
+    rw [exposedPath, Path.trans_apply]
+    simp only [exposedFirstCoordinate]
+    rw [dif_neg (by norm_num)]
+    rw [Path.trans_apply]
+    rw [dif_pos (by norm_num)]
+    have hendpoint : outer 1 = D.first.path 0 :=
+      outer.target.trans D.first.path.source.symm
+    rw [← hendpoint]
+    congr 1
+    apply Subtype.ext
+    norm_num
+  have htpos : 0 < (t : ℝ) := lt_of_le_of_ne t.2.1 (Ne.symm ht)
+  rw [exposedPath, Path.trans_apply]
+  simp only [exposedFirstCoordinate]
+  rw [dif_neg (by nlinarith [t.2.1])]
+  rw [Path.trans_apply]
+  rw [dif_neg (by nlinarith)]
+  congr 1
+  apply Subtype.ext
+  dsimp
+  ring
+
 theorem range_exposedPath
     (outer : Path D.second.outerPoint D.first.outerPoint) :
     range (D.exposedPath outer) =
