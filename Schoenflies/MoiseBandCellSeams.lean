@@ -150,6 +150,110 @@ theorem moiseBandLeftSideCarrier_next_eq_segment (a : LevelAddress n) :
     coe_adjacentMoiseBandParentPoint,
     F.rightSynchronizedPoint_next_eq_leftSynchronizedPoint a]
 
+theorem moiseBandLeftSideCarrier_subset_leftHairCarrier
+    (a : LevelAddress n) :
+    L.moiseBandLeftSideCarrier a ⊆ (I.levelLeftHair a).carrier := by
+  exact L.rawLeftSide_subset_leftHairCarrier a
+
+theorem moiseBandRightSideCarrier_subset_rightHairCarrier
+    (a : LevelAddress n) :
+    L.moiseBandRightSideCarrier a ⊆ (I.levelRightHair a).carrier := by
+  simpa only [moiseBandRightSideCarrier,
+    coe_adjacentMoiseBandRightRawPoint,
+    coe_adjacentMoiseBandParentPoint] using
+      L.rawRightSide_subset_rightHairCarrier a
+
+/-- Any old crosscut can meet a retained left side only at that side's old
+synchronized endpoint. -/
+theorem parentMoiseCarrier_inter_leftSideCarrier_subset
+    (b d : LevelAddress n) :
+    L.parentMoiseCarrier b ∩ L.moiseBandLeftSideCarrier d ⊆
+      ({F.leftSynchronizedPoint d} : Set Plane) := by
+  intro x hx
+  have hxRange : x ∈ range (F.synchronizedCrosscutPath b) := by
+    rw [← L.parentMoiseCarrier_eq_crosscutRange b]
+    exact hx.1
+  have hxParent : x ∈ (F.synchronizedPolygonalCircle hn).carrier := by
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr ⟨b, hxRange⟩
+  have hxBase : x ∈ segment ℝ
+      (J.curvePoint (I.levelArc d).left : Plane)
+      (F.leftSynchronizedPoint d) :=
+    L.rawLeftSide_subset_parentBaseSegment d hx.2
+  have hxInter : x ∈ segment ℝ
+      (J.curvePoint (I.levelArc d).left : Plane)
+      (F.leftSynchronizedPoint d) ∩
+        (F.synchronizedPolygonalCircle hn).carrier :=
+    ⟨hxBase, hxParent⟩
+  rwa [L.leftBaseSegment_inter_parentCarrier d] at hxInter
+
+/-- The analogous old-crosscut intersection with a retained right side. -/
+theorem parentMoiseCarrier_inter_rightSideCarrier_subset
+    (b d : LevelAddress n) :
+    L.parentMoiseCarrier b ∩ L.moiseBandRightSideCarrier d ⊆
+      ({F.rightSynchronizedPoint d} : Set Plane) := by
+  intro x hx
+  have hxRange : x ∈ range (F.synchronizedCrosscutPath b) := by
+    rw [← L.parentMoiseCarrier_eq_crosscutRange b]
+    exact hx.1
+  have hxParent : x ∈ (F.synchronizedPolygonalCircle hn).carrier := by
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr ⟨b, hxRange⟩
+  have hxBase : x ∈ segment ℝ
+      (J.curvePoint (I.levelArc d).right : Plane)
+      (F.rightSynchronizedPoint d) := by
+    apply L.rawRightSide_subset_parentBaseSegment d
+    simpa only [moiseBandRightSideCarrier,
+      coe_adjacentMoiseBandRightRawPoint,
+      coe_adjacentMoiseBandParentPoint] using hx.2
+  have hxInter : x ∈ segment ℝ
+      (J.curvePoint (I.levelArc d).right : Plane)
+      (F.rightSynchronizedPoint d) ∩
+        (F.synchronizedPolygonalCircle hn).carrier :=
+    ⟨hxBase, hxParent⟩
+  rwa [L.rightBaseSegment_inter_parentCarrier d] at hxInter
+
+/-- Adjacent old-crosscut portions meet only at their synchronized endpoint. -/
+theorem parentMoiseCarrier_inter_next (a : LevelAddress n) :
+    L.parentMoiseCarrier a ∩
+        L.parentMoiseCarrier (nextLevelAddress n a) =
+      {F.rightSynchronizedPoint a} := by
+  rw [L.parentMoiseCarrier_eq_crosscutRange a,
+    L.parentMoiseCarrier_eq_crosscutRange (nextLevelAddress n a),
+    F.range_synchronizedCrosscutPath_inter_next hn a]
+
+/-- The left sides of two adjacent cells lie on distinct retained hairs. -/
+theorem disjoint_moiseBandLeftSideCarrier_next (a : LevelAddress n) :
+    Disjoint (L.moiseBandLeftSideCarrier a)
+      (L.moiseBandLeftSideCarrier (nextLevelAddress n a)) :=
+  (I.disjoint_levelLeftHairs_of_ne a (nextLevelAddress n a)
+      (nextLevelAddress_ne n a).symm).mono
+    (L.moiseBandLeftSideCarrier_subset_leftHairCarrier a)
+    (L.moiseBandLeftSideCarrier_subset_leftHairCarrier
+      (nextLevelAddress n a))
+
+/-- The right sides of two adjacent cells lie on distinct retained hairs. -/
+theorem disjoint_moiseBandRightSideCarrier_next (a : LevelAddress n) :
+    Disjoint (L.moiseBandRightSideCarrier a)
+      (L.moiseBandRightSideCarrier (nextLevelAddress n a)) :=
+  (I.disjoint_levelRightHairs_of_ne a (nextLevelAddress n a)
+      (nextLevelAddress_ne n a).symm).mono
+    (L.moiseBandRightSideCarrier_subset_rightHairCarrier a)
+    (L.moiseBandRightSideCarrier_subset_rightHairCarrier
+      (nextLevelAddress n a))
+
+/-- The nonshared pair of extreme sides of adjacent cells is disjoint. -/
+theorem disjoint_moiseBandLeftSideCarrier_rightSideCarrier_next
+    (a : LevelAddress n) :
+    Disjoint (L.moiseBandLeftSideCarrier a)
+      (L.moiseBandRightSideCarrier (nextLevelAddress n a)) := by
+  apply (I.disjoint_levelRightHair_levelLeftHair_of_ne_next
+      (nextLevelAddress n a) a
+      (nextLevelAddress_next_ne n hn a).symm).symm.mono
+  · exact L.moiseBandLeftSideCarrier_subset_leftHairCarrier a
+  · exact L.moiseBandRightSideCarrier_subset_rightHairCarrier
+      (nextLevelAddress n a)
+
 theorem moiseBandRightSideCarrier_subset (a : LevelAddress n) :
     L.moiseBandRightSideCarrier a ⊆ L.moiseBandCarrier a := by
   rw [L.moiseBandRightSideCarrier_eq_segment a]
@@ -171,6 +275,255 @@ theorem adjacentMoiseBandSideSeam_subset_right (a : LevelAddress n) :
       L.moiseBandCarrier (nextLevelAddress n a) := by
   exact Set.inter_subset_right.trans
     (L.moiseBandLeftSideCarrier_subset (nextLevelAddress n a))
+
+/-- The common point of the two adjacent old crosscuts is part of their side
+seam as well. -/
+theorem parentMoiseCarrier_inter_next_subset_sideSeam
+    (a : LevelAddress n) :
+    L.parentMoiseCarrier a ∩
+        L.parentMoiseCarrier (nextLevelAddress n a) ⊆
+      L.adjacentMoiseBandSideSeam a := by
+  intro x hx
+  have hxPoint : x ∈ ({F.rightSynchronizedPoint a} : Set Plane) := by
+    rw [← L.parentMoiseCarrier_inter_next a]
+    exact hx
+  have hxEq : x = F.rightSynchronizedPoint a :=
+    mem_singleton_iff.mp hxPoint
+  subst x
+  constructor
+  · exact right_mem_segment ℝ _ _
+  · rw [F.rightSynchronizedPoint_next_eq_leftSynchronizedPoint a]
+    exact left_mem_segment ℝ _ _
+
+theorem leftSynchronizedPoint_mem_parentMoiseCarrier
+    (a : LevelAddress n) :
+    F.leftSynchronizedPoint a ∈ L.parentMoiseCarrier a := by
+  rw [L.parentMoiseCarrier_eq_crosscutRange a]
+  exact Path.source_mem_range (F.synchronizedCrosscutPath a)
+
+theorem rightSynchronizedPoint_mem_parentMoiseCarrier
+    (a : LevelAddress n) :
+    F.rightSynchronizedPoint a ∈ L.parentMoiseCarrier a := by
+  rw [L.parentMoiseCarrier_eq_crosscutRange a]
+  exact Path.target_mem_range (F.synchronizedCrosscutPath a)
+
+/-! The four mixed old-crosscut/side intersections below all reduce to the
+old-crosscut intersection.  Packaging them separately keeps the eventual
+four-by-four carrier decomposition proof purely set-theoretic. -/
+
+theorem parentMoiseCarrier_inter_leftSideCarrier_next_subset_sideSeam
+    (a : LevelAddress n) :
+    L.parentMoiseCarrier a ∩
+        L.moiseBandLeftSideCarrier (nextLevelAddress n a) ⊆
+      L.adjacentMoiseBandSideSeam a := by
+  intro x hx
+  have hxPoint := L.parentMoiseCarrier_inter_leftSideCarrier_subset
+    a (nextLevelAddress n a) hx
+  have hxEq : x = F.leftSynchronizedPoint (nextLevelAddress n a) :=
+    mem_singleton_iff.mp hxPoint
+  subst x
+  refine ⟨?_, hx.2⟩
+  change F.leftSynchronizedPoint (nextLevelAddress n a) ∈
+    segment ℝ (L.adjacentMoiseBandRightRawPoint a : Plane)
+      (F.rightSynchronizedPoint a)
+  rw [← F.rightSynchronizedPoint_next_eq_leftSynchronizedPoint a]
+  exact right_mem_segment ℝ _ _
+
+theorem parentMoiseCarrier_inter_rightSideCarrier_next_subset_sideSeam
+    (a : LevelAddress n) :
+    L.parentMoiseCarrier a ∩
+        L.moiseBandRightSideCarrier (nextLevelAddress n a) ⊆
+      L.adjacentMoiseBandSideSeam a := by
+  intro x hx
+  have hxPoint := L.parentMoiseCarrier_inter_rightSideCarrier_subset
+    a (nextLevelAddress n a) hx
+  have hxEq : x = F.rightSynchronizedPoint (nextLevelAddress n a) :=
+    mem_singleton_iff.mp hxPoint
+  have hxParentNext : x ∈
+      L.parentMoiseCarrier (nextLevelAddress n a) := by
+    rw [hxEq]
+    exact L.rightSynchronizedPoint_mem_parentMoiseCarrier
+      (nextLevelAddress n a)
+  exact L.parentMoiseCarrier_inter_next_subset_sideSeam a
+    ⟨hx.1, hxParentNext⟩
+
+theorem leftSideCarrier_inter_parentMoiseCarrier_next_subset_sideSeam
+    (a : LevelAddress n) :
+    L.moiseBandLeftSideCarrier a ∩
+        L.parentMoiseCarrier (nextLevelAddress n a) ⊆
+      L.adjacentMoiseBandSideSeam a := by
+  intro x hx
+  have hxPoint := L.parentMoiseCarrier_inter_leftSideCarrier_subset
+    (nextLevelAddress n a) a ⟨hx.2, hx.1⟩
+  have hxEq : x = F.leftSynchronizedPoint a :=
+    mem_singleton_iff.mp hxPoint
+  have hxParent : x ∈ L.parentMoiseCarrier a := by
+    rw [hxEq]
+    exact L.leftSynchronizedPoint_mem_parentMoiseCarrier a
+  exact L.parentMoiseCarrier_inter_next_subset_sideSeam a
+    ⟨hxParent, hx.2⟩
+
+theorem rightSideCarrier_inter_parentMoiseCarrier_next_subset_sideSeam
+    (a : LevelAddress n) :
+    L.moiseBandRightSideCarrier a ∩
+        L.parentMoiseCarrier (nextLevelAddress n a) ⊆
+      L.adjacentMoiseBandSideSeam a := by
+  intro x hx
+  have hxPoint := L.parentMoiseCarrier_inter_rightSideCarrier_subset
+    (nextLevelAddress n a) a ⟨hx.2, hx.1⟩
+  have hxEq : x = F.rightSynchronizedPoint a :=
+    mem_singleton_iff.mp hxPoint
+  have hxParent : x ∈ L.parentMoiseCarrier a := by
+    rw [hxEq]
+    exact L.rightSynchronizedPoint_mem_parentMoiseCarrier a
+  exact L.parentMoiseCarrier_inter_next_subset_sideSeam a
+    ⟨hxParent, hx.2⟩
+
+/-- The finer route of the left adjacent cell can meet the following cell's
+left side only at the extreme raw endpoint; whenever that endpoint is
+present, it already lies in the common side seam. -/
+theorem childMoiseCarrier_inter_leftSideCarrier_next_subset_sideSeam
+    (a : LevelAddress n) :
+    L.childMoiseCarrier a ∩
+        L.moiseBandLeftSideCarrier (nextLevelAddress n a) ⊆
+      L.adjacentMoiseBandSideSeam a := by
+  intro x hx
+  have hxHair : x ∈ (I.levelRightHair a).carrier := by
+    rw [I.levelRightHair_carrier_eq_levelLeftHair_of_eq a
+      (nextLevelAddress n a) (I.levelAdjacent_nextLevelAddress n a)]
+    exact L.moiseBandLeftSideCarrier_subset_leftHairCarrier
+      (nextLevelAddress n a) hx.2
+  have hxRaw : x ∈
+      ({L.next.family.forgetObstacle.trimmedRightPoint
+        (levelIndexOf L.next.level (L.rightmostAddress a))} : Set Plane) :=
+    L.childMoiseCarrier_inter_parentRightHair_subset a ⟨hx.1, hxHair⟩
+  have hxEq : x =
+      L.next.family.forgetObstacle.trimmedRightPoint
+        (levelIndexOf L.next.level (L.rightmostAddress a)) :=
+    mem_singleton_iff.mp hxRaw
+  refine ⟨?_, hx.2⟩
+  rw [moiseBandRightSideCarrier, hxEq]
+  exact left_mem_segment ℝ _ _
+
+/-- Symmetrically, the following cell's finer route can meet the preceding
+cell's right side only at the following extreme raw endpoint, which is again
+already in the common side seam. -/
+theorem rightSideCarrier_inter_childMoiseCarrier_next_subset_sideSeam
+    (a : LevelAddress n) :
+    L.moiseBandRightSideCarrier a ∩
+        L.childMoiseCarrier (nextLevelAddress n a) ⊆
+      L.adjacentMoiseBandSideSeam a := by
+  intro x hx
+  have hxHair : x ∈
+      (I.levelLeftHair (nextLevelAddress n a)).carrier := by
+    rw [← I.levelRightHair_carrier_eq_levelLeftHair_of_eq a
+      (nextLevelAddress n a) (I.levelAdjacent_nextLevelAddress n a)]
+    exact L.moiseBandRightSideCarrier_subset_rightHairCarrier a hx.1
+  have hxRaw : x ∈
+      ({L.next.family.forgetObstacle.trimmedLeftPoint
+        (levelIndexOf L.next.level
+          (L.leftmostAddress (nextLevelAddress n a)))} : Set Plane) :=
+    L.childMoiseCarrier_inter_parentLeftHair_subset
+      (nextLevelAddress n a) ⟨hx.2, hxHair⟩
+  have hxEq : x =
+      L.next.family.forgetObstacle.trimmedLeftPoint
+        (levelIndexOf L.next.level
+          (L.leftmostAddress (nextLevelAddress n a))) :=
+    mem_singleton_iff.mp hxRaw
+  refine ⟨hx.1, ?_⟩
+  rw [moiseBandLeftSideCarrier, hxEq]
+  exact right_mem_segment ℝ _ _
+
+/-- The two nonincident side/descendant pairs in adjacent cells are
+disjoint.  This is where the cyclic ordering of complete descendant blocks
+enters the carrier-overlap proof. -/
+theorem disjoint_leftSideCarrier_childMoiseCarrier_next
+    (a : LevelAddress n) :
+    Disjoint (L.moiseBandLeftSideCarrier a)
+      (L.childMoiseCarrier (nextLevelAddress n a)) :=
+  (L.disjoint_parentLeftHair_childMoiseCarrier_next a).mono
+    (L.moiseBandLeftSideCarrier_subset_leftHairCarrier a)
+    Set.Subset.rfl
+
+theorem disjoint_childMoiseCarrier_rightSideCarrier_next
+    (a : LevelAddress n) :
+    Disjoint (L.childMoiseCarrier a)
+      (L.moiseBandRightSideCarrier (nextLevelAddress n a)) :=
+  (L.disjoint_childMoiseCarrier_parentRightHair_next a).mono
+    Set.Subset.rfl
+    (L.moiseBandRightSideCarrier_subset_rightHairCarrier
+      (nextLevelAddress n a))
+
+/-- The four conceptual pieces of a band carrier, stated using the side
+carrier names used throughout this file. -/
+theorem moiseBandCarrier_eq_parent_leftSide_child_rightSide
+    (a : LevelAddress n) :
+    L.moiseBandCarrier a =
+      L.parentMoiseCarrier a ∪
+        (L.moiseBandLeftSideCarrier a ∪
+          (L.childMoiseCarrier a ∪ L.moiseBandRightSideCarrier a)) := by
+  simpa only [moiseBandLeftSideCarrier, moiseBandRightSideCarrier,
+    coe_adjacentMoiseBandRightRawPoint,
+    coe_adjacentMoiseBandParentPoint] using
+      L.moiseBandCarrier_eq_parent_left_child_right a
+
+/-- Adjacent recursive Moise boundary carriers have no overlap away from
+their common retained-hair seam. -/
+theorem moiseBandCarrier_inter_next_subset_sideSeam
+    (a : LevelAddress n) :
+    L.moiseBandCarrier a ∩
+        L.moiseBandCarrier (nextLevelAddress n a) ⊆
+      L.adjacentMoiseBandSideSeam a := by
+  intro x hx
+  rw [L.moiseBandCarrier_eq_parent_leftSide_child_rightSide a] at hx
+  rw [L.moiseBandCarrier_eq_parent_leftSide_child_rightSide
+    (nextLevelAddress n a)] at hx
+  rcases hx.1 with hxP | hxL | hxC | hxR <;>
+    rcases hx.2 with hyP | hyL | hyC | hyR
+  · exact L.parentMoiseCarrier_inter_next_subset_sideSeam a ⟨hxP, hyP⟩
+  · exact L.parentMoiseCarrier_inter_leftSideCarrier_next_subset_sideSeam
+      a ⟨hxP, hyL⟩
+  · exact False.elim <| Set.disjoint_left.mp
+      (L.disjoint_parentMoiseCarrier_childMoiseCarrier a
+        (nextLevelAddress n a)) hxP hyC
+  · exact L.parentMoiseCarrier_inter_rightSideCarrier_next_subset_sideSeam
+      a ⟨hxP, hyR⟩
+  · exact L.leftSideCarrier_inter_parentMoiseCarrier_next_subset_sideSeam
+      a ⟨hxL, hyP⟩
+  · exact False.elim <| Set.disjoint_left.mp
+      (L.disjoint_moiseBandLeftSideCarrier_next a) hxL hyL
+  · exact False.elim <| Set.disjoint_left.mp
+      (L.disjoint_leftSideCarrier_childMoiseCarrier_next a) hxL hyC
+  · exact False.elim <| Set.disjoint_left.mp
+      (L.disjoint_moiseBandLeftSideCarrier_rightSideCarrier_next a) hxL hyR
+  · exact False.elim <| Set.disjoint_left.mp
+      (L.disjoint_parentMoiseCarrier_childMoiseCarrier
+        (nextLevelAddress n a) a) hyP hxC
+  · exact L.childMoiseCarrier_inter_leftSideCarrier_next_subset_sideSeam
+      a ⟨hxC, hyL⟩
+  · exact False.elim <| Set.disjoint_left.mp
+      (L.childMoiseCarrier_disjoint_of_ne
+        (nextLevelAddress_ne n a).symm) hxC hyC
+  · exact False.elim <| Set.disjoint_left.mp
+      (L.disjoint_childMoiseCarrier_rightSideCarrier_next a) hxC hyR
+  · exact L.rightSideCarrier_inter_parentMoiseCarrier_next_subset_sideSeam
+      a ⟨hxR, hyP⟩
+  · exact ⟨hxR, hyL⟩
+  · exact L.rightSideCarrier_inter_childMoiseCarrier_next_subset_sideSeam
+      a ⟨hxR, hyC⟩
+  · exact False.elim <| Set.disjoint_left.mp
+      (L.disjoint_moiseBandRightSideCarrier_next a) hxR hyR
+
+/-- Exact boundary overlap of two cyclically adjacent recursive cells. -/
+theorem moiseBandCarrier_inter_next (a : LevelAddress n) :
+    L.moiseBandCarrier a ∩
+        L.moiseBandCarrier (nextLevelAddress n a) =
+      L.adjacentMoiseBandSideSeam a := by
+  apply Set.Subset.antisymm
+  · exact L.moiseBandCarrier_inter_next_subset_sideSeam a
+  · intro x hx
+    exact ⟨L.adjacentMoiseBandSideSeam_subset_left a hx,
+      L.adjacentMoiseBandSideSeam_subset_right a hx⟩
 
 /-- The common parent synchronized endpoint lies on the adjacent seam. -/
 theorem rightSynchronizedPoint_mem_adjacentMoiseBandSideSeam

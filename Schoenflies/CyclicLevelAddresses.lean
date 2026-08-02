@@ -408,6 +408,12 @@ noncomputable def prevLevelAddress (n : ℕ) (a : LevelAddress n) :
   rw [e.symm_apply_apply, cyclicPredIndex_cyclicSuccIndex,
     e.apply_symm_apply]
 
+theorem nextLevelAddress_injective (n : ℕ) :
+    Injective (nextLevelAddress n) := by
+  intro a b hab
+  have hprev := congrArg (prevLevelAddress n) hab
+  simpa using hprev
+
 theorem nextLevelAddress_ne (n : ℕ) (a : LevelAddress n) :
     nextLevelAddress n a ≠ a := by
   let e := orderedLevelAddressEquiv n

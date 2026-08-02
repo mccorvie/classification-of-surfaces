@@ -91,6 +91,37 @@ theorem addresses_isChain (a : LevelAddress n) :
   unfold addresses rightmostAddress
   simp only [List.getLast_map, descendantAddresses_getLast]
 
+theorem leftmostAddress_mem_addresses (a : LevelAddress n) :
+    L.leftmostAddress a ∈ L.addresses a := by
+  have h := List.head_mem (L.addresses_nonempty a)
+  rwa [L.addresses_head a] at h
+
+theorem rightmostAddress_mem_addresses (a : LevelAddress n) :
+    L.rightmostAddress a ∈ L.addresses a := by
+  have h := List.getLast_mem (L.addresses_nonempty a)
+  rwa [L.addresses_getLast a] at h
+
+/-- The last descendant of one parent block is followed cyclically by the
+first descendant of the next parent block. -/
+theorem nextLevelAddress_rightmostAddress (a : LevelAddress n) :
+    nextLevelAddress L.next.level (L.rightmostAddress a) =
+      L.leftmostAddress (nextLevelAddress n a) := by
+  symm
+  apply (I.levelRightPoint_eq_levelLeftPoint_iff
+    (L.rightmostAddress a)
+    (L.leftmostAddress (nextLevelAddress n a))).mp
+  calc
+    (J.curvePoint (I.levelArc (L.rightmostAddress a)).right : Plane) =
+        (J.curvePoint (I.levelArc a).right : Plane) := by
+      rw [L.levelArc_rightmostAddress_right a]
+    _ = (J.curvePoint
+          (I.levelArc (nextLevelAddress n a)).left : Plane) :=
+      I.levelAdjacent_nextLevelAddress n a
+    _ = (J.curvePoint
+          (I.levelArc (L.leftmostAddress
+            (nextLevelAddress n a))).left : Plane) := by
+      rw [L.levelArc_leftmostAddress_left]
+
 /-- Labels for all source segments used by a single collar band. -/
 abbrev BandSegmentAddress :=
   F.LevelEdgeAddress ⊕

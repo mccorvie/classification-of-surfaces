@@ -176,13 +176,6 @@ theorem exists_mem_descendantAddresses (n k : ℕ)
   obtain ⟨a, _ha, hba⟩ := hb
   exact ⟨a, hba⟩
 
-/-- Cyclic successor on a complete address level is injective. -/
-theorem nextLevelAddress_injective (n : ℕ) :
-    Injective (nextLevelAddress n) := by
-  intro a b hab
-  have hprev := congrArg (prevLevelAddress n) hab
-  simpa using hprev
-
 namespace RecursiveInsideCollarStep.Later
 
 variable {J : JordanCircle} {I : J.InitialAngularArcs}
@@ -509,28 +502,6 @@ theorem childRawEndpoints_mem_moiseBandCarrier
   · exact L.childTrimmedPathRange_subset_moiseBandCarrier a hb
       (Path.source_mem_range
         (L.next.family.forgetObstacle.trimmedPath (L.childIndex b)))
-
-/-- The rightmost child of a parent is followed cyclically by the leftmost
-child of the next parent.  This is obtained geometrically from endpoint
-incidence, avoiding any dependence on the implementation of binary indices. -/
-theorem nextLevelAddress_rightmostAddress (a : LevelAddress n) :
-    nextLevelAddress L.next.level (L.rightmostAddress a) =
-      L.leftmostAddress (nextLevelAddress n a) := by
-  symm
-  apply (I.levelRightPoint_eq_levelLeftPoint_iff
-    (L.rightmostAddress a)
-    (L.leftmostAddress (nextLevelAddress n a))).mp
-  calc
-    (J.curvePoint (I.levelArc (L.rightmostAddress a)).right : Plane) =
-        (J.curvePoint (I.levelArc a).right : Plane) := by
-      rw [L.levelArc_rightmostAddress_right a]
-    _ = (J.curvePoint
-          (I.levelArc (nextLevelAddress n a)).left : Plane) :=
-      I.levelAdjacent_nextLevelAddress n a
-    _ = (J.curvePoint
-          (I.levelArc (L.leftmostAddress
-            (nextLevelAddress n a))).left : Plane) := by
-      rw [L.levelArc_leftmostAddress_left]
 
 /-- Away from the first child of a parent block, the synchronized left
 extension is covered by that same parent Moise cell. -/
