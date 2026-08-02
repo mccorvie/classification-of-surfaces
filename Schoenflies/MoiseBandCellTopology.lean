@@ -165,31 +165,6 @@ namespace InitialAngularArcs
 
 variable {J : JordanCircle}
 
-/-- Refining every depth-`k` descendant block gives the complete ordered
-level at depth `n+k`. -/
-theorem flatMap_descendantAddresses_orderedLevelAddresses
-    (n k : ℕ) :
-    (orderedLevelAddresses n).flatMap
-        (fun a => descendantAddresses a k) =
-      orderedLevelAddresses (n + k) := by
-  induction k with
-  | zero => simp [descendantAddresses]
-  | succ k ih =>
-      change (orderedLevelAddresses n).flatMap
-          (fun a => refineLevelAddresses (descendantAddresses a k)) =
-        orderedLevelAddresses (n + (k + 1))
-      have hrefine :
-          (orderedLevelAddresses n).flatMap
-              (fun a => refineLevelAddresses (descendantAddresses a k)) =
-            refineLevelAddresses
-              ((orderedLevelAddresses n).flatMap
-                (fun a => descendantAddresses a k)) := by
-        simp only [refineLevelAddresses, List.flatMap_assoc]
-      rw [hrefine, ih]
-      change refineLevelAddresses (orderedLevelAddresses (n + k)) =
-        orderedLevelAddresses ((n + k) + 1)
-      rw [orderedLevelAddresses]
-
 /-- Every address at a deeper complete level belongs to the descendant
 block of some address at the parent level. -/
 theorem exists_mem_descendantAddresses (n k : ℕ)

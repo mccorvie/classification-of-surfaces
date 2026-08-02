@@ -103,6 +103,49 @@ theorem descendantAddresses_length {n : ℕ} (a : LevelAddress n) :
       rw [descendantAddresses, length_refineLevelAddresses, ih, pow_succ]
       exact Nat.mul_comm _ _
 
+/-- Refining every depth-`k` descendant block gives the complete ordered
+level at depth `n+k`. -/
+theorem flatMap_descendantAddresses_orderedLevelAddresses
+    (n k : ℕ) :
+    (orderedLevelAddresses n).flatMap
+        (fun a => descendantAddresses a k) =
+      orderedLevelAddresses (n + k) := by
+  induction k with
+  | zero => simp [descendantAddresses]
+  | succ k ih =>
+      change (orderedLevelAddresses n).flatMap
+          (fun a => refineLevelAddresses (descendantAddresses a k)) =
+        orderedLevelAddresses (n + (k + 1))
+      have hrefine :
+          (orderedLevelAddresses n).flatMap
+              (fun a => refineLevelAddresses (descendantAddresses a k)) =
+            refineLevelAddresses
+              ((orderedLevelAddresses n).flatMap
+                (fun a => descendantAddresses a k)) := by
+        simp only [refineLevelAddresses, List.flatMap_assoc]
+      rw [hrefine, ih]
+      change refineLevelAddresses (orderedLevelAddresses (n + k)) =
+        orderedLevelAddresses ((n + k) + 1)
+      rw [orderedLevelAddresses]
+
+/-- Descendant blocks of two distinct addresses at the same parent level are
+disjoint. -/
+theorem descendantAddresses_disjoint_of_ne
+    {n k : ℕ} {a b : LevelAddress n} (hab : a ≠ b) :
+    List.Disjoint (descendantAddresses a k) (descendantAddresses b k) := by
+  have hflat :
+      ((orderedLevelAddresses n).flatMap
+        (fun c => descendantAddresses c k)).Nodup := by
+    rw [flatMap_descendantAddresses_orderedLevelAddresses]
+    exact orderedLevelAddresses_nodup (n + k)
+  have hpairs := (List.nodup_flatMap.mp hflat).2
+  let _ : Std.Symm
+      (List.Disjoint on fun c : LevelAddress n => descendantAddresses c k) :=
+    { symm := fun _ _ h => h.symm }
+  exact hpairs.forall
+    (mem_orderedLevelAddresses n a)
+    (mem_orderedLevelAddresses n b) hab
+
 @[simp] theorem descendantAddresses_head
     {n : ℕ} (a : LevelAddress n) (k : ℕ) :
     (descendantAddresses a k).head (descendantAddresses_nonempty a k) =

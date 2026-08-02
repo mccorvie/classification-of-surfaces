@@ -1156,6 +1156,81 @@ theorem junction_disjoint_junction_of_left_ne
     (L.junctionSegment_subset_rightHairCarrier hbc)
     (L.junctionSegment_subset_rightHairCarrier hde)
 
+/-- Child-route segments assigned to distinct parent cells are disjoint.
+This is the geometric form of the fact that the two cells use disjoint
+blocks of descendant crosscuts. -/
+theorem childMoiseSegment_disjoint_of_parent_ne
+    {a d : LevelAddress n} (had : a ≠ d)
+    {j k : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.childMoiseSegments (L.addresses a))
+    (hk : k ∈ L.childMoiseSegments (L.addresses d)) :
+    Disjoint
+      (segment ℝ (MoiseBandSegmentAddress.left L a j)
+        (MoiseBandSegmentAddress.right L a j))
+      (segment ℝ (MoiseBandSegmentAddress.left L d k)
+        (MoiseBandSegmentAddress.right L d k)) := by
+  have hblocks := L.addresses_disjoint_of_ne had
+  have hne_of_mem :
+      ∀ {b c : LevelAddress L.next.level},
+        b ∈ L.addresses a → c ∈ L.addresses d → b ≠ c := by
+    intro b c hb hc hbc
+    subst c
+    exact List.disjoint_left.mp hblocks hb hc
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain a) hj with hjRaw | hjunction
+  · obtain ⟨e, heMem, rfl⟩ := hjRaw
+    rcases L.child_or_junction_with_addresses_of_mem
+        (L.addresses_isChain d) hk with hkRaw | hkJunction
+    · obtain ⟨f, hfMem, rfl⟩ := hkRaw
+      change Disjoint
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+          (L.next.family.forgetObstacle.trimmedEdgeStart e))
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+          (L.next.family.forgetObstacle.trimmedEdgeStart f))
+      rw [segment_symm ℝ
+        (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+        (L.next.family.forgetObstacle.trimmedEdgeStart e),
+        segment_symm ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+          (L.next.family.forgetObstacle.trimmedEdgeStart f)]
+      exact L.rawChildEdge_disjoint_of_address_ne e f
+        (hne_of_mem heMem hfMem)
+    · obtain ⟨b, c, hbMem, hcMem, hbc, rfl⟩ := hkJunction
+      change Disjoint
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+          (L.next.family.forgetObstacle.trimmedEdgeStart e))
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+          (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+      rw [segment_symm ℝ
+        (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+        (L.next.family.forgetObstacle.trimmedEdgeStart e)]
+      exact L.rawChildEdge_disjoint_junction_of_nonincident e hbc
+        (hne_of_mem heMem hbMem) (hne_of_mem heMem hcMem)
+  · obtain ⟨b, c, hbMem, hcMem, hbc, rfl⟩ := hjunction
+    rcases L.child_or_junction_with_addresses_of_mem
+        (L.addresses_isChain d) hk with hkRaw | hkJunction
+    · obtain ⟨f, hfMem, rfl⟩ := hkRaw
+      change Disjoint
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+          (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+          (L.next.family.forgetObstacle.trimmedEdgeStart f))
+      rw [segment_symm ℝ
+        (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+        (L.next.family.forgetObstacle.trimmedEdgeStart f)]
+      exact (L.rawChildEdge_disjoint_junction_of_nonincident f hbc
+        (hne_of_mem hbMem hfMem).symm
+        (hne_of_mem hcMem hfMem).symm).symm
+    · obtain ⟨e, f, heMem, hfMem, hef, rfl⟩ := hkJunction
+      exact L.junction_disjoint_junction_of_left_ne hbc hef
+        (hne_of_mem hbMem heMem)
+
 theorem child_with_address_of_mem_reversedTrimmedBlock
     {b : LevelAddress L.next.level} {j : L.MoiseBandSegmentAddress}
     (hj : j ∈ L.reversedTrimmedBlock b) :
@@ -1893,6 +1968,27 @@ theorem moiseBandOpen_inter_rightSide_subset_endpoints
       exact (Set.disjoint_left.mp
         (L.junction_disjoint_rawRightSide a hbMem hcMem hbc)
         hxSegment hx.2).elim
+
+/-- Point-set union of the finer-level crosscuts and their internal retained-
+hair junctions belonging to one parent cell. -/
+noncomputable def childMoiseCarrier (a : LevelAddress n) : Set Plane :=
+  ⋃ j ∈ L.childMoiseSegments (L.addresses a),
+    segment ℝ (MoiseBandSegmentAddress.left L a j)
+      (MoiseBandSegmentAddress.right L a j)
+
+/-- Distinct parent cells have disjoint finer-level boundary routes. -/
+theorem childMoiseCarrier_disjoint_of_ne
+    {a d : LevelAddress n} (had : a ≠ d) :
+    Disjoint (L.childMoiseCarrier a) (L.childMoiseCarrier d) := by
+  rw [Set.disjoint_left]
+  intro x hxa hxd
+  rcases Set.mem_iUnion.mp hxa with ⟨j, hxj⟩
+  rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+  rcases Set.mem_iUnion.mp hxd with ⟨k, hxk⟩
+  rcases Set.mem_iUnion.mp hxk with ⟨hk, hxSegment'⟩
+  exact Set.disjoint_left.mp
+    (L.childMoiseSegment_disjoint_of_parent_ne had hj hk)
+    hxSegment hxSegment'
 
 /-- Point-set union of the non-retracing source segments. -/
 noncomputable def moiseBandCarrier (a : LevelAddress n) : Set Plane :=

@@ -49,6 +49,26 @@ theorem addresses_nodup (a : LevelAddress n) :
   exact (Equiv.cast
     (congrArg LevelAddress L.parentLevel_add_depth)).injective
 
+/-- Different parent cells use disjoint transported descendant blocks. -/
+theorem addresses_disjoint_of_ne {a b : LevelAddress n} (hab : a ≠ b) :
+    List.Disjoint (L.addresses a) (L.addresses b) := by
+  rw [List.disjoint_left]
+  intro c hca hcb
+  rw [addresses, List.mem_map] at hca hcb
+  obtain ⟨ca, hcaMem, hcaEq⟩ := hca
+  obtain ⟨cb, hcbMem, hcbEq⟩ := hcb
+  have hcast :
+      (_root_.cast (congrArg LevelAddress L.parentLevel_add_depth) ca :
+          LevelAddress L.next.level) =
+        _root_.cast (congrArg LevelAddress L.parentLevel_add_depth) cb := by
+    exact hcaEq.trans hcbEq.symm
+  have hcab : ca = cb :=
+    (Equiv.cast
+      (congrArg LevelAddress L.parentLevel_add_depth)).injective hcast
+  subst cb
+  exact List.disjoint_left.mp
+    (descendantAddresses_disjoint_of_ne hab) hcaMem hcbMem
+
 theorem addresses_isChain (a : LevelAddress n) :
     (L.addresses a).IsChain I.LevelAdjacent := by
   rw [addresses, List.isChain_map]
