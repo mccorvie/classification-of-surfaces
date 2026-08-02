@@ -113,6 +113,52 @@ theorem circleMap_firstCoordinate (p : Path a b) (q : Path b a)
   rw [hrep]
   exact loop_eq_first p q t.2
 
+/-- The additive-circle point representing parameter `t` on the second
+constituent path. -/
+noncomputable def secondCoordinate (t : unitInterval) : AddCircle (2 : ℝ) :=
+  ((t : ℝ) + 1 : ℝ)
+
+/-- The second half of the additive-circle parametrization also uses the
+original unit-interval parameter literally. -/
+theorem circleMap_secondCoordinate (p : Path a b) (q : Path b a)
+    (t : unitInterval) :
+    circleMap p q (secondCoordinate t) = q t := by
+  by_cases ht : t = 1
+  · subst t
+    have hcoord : secondCoordinate (1 : unitInterval) = 0 := by
+      norm_num [secondCoordinate]
+    rw [hcoord]
+    rw [circleMap, show (0 : AddCircle (2 : ℝ)) =
+      ((0 : ℝ) : AddCircle (2 : ℝ)) by rfl,
+      AddCircle.liftIco_coe_apply (p := (2 : ℝ)) (a := (0 : ℝ))
+        (x := (0 : ℝ)) (by norm_num),
+      loop_zero, q.target]
+  · have htlt : (t : ℝ) < 1 := lt_of_le_of_ne t.2.2 (by
+      intro h
+      exact ht (Subtype.ext h))
+    by_cases ht0 : t = 0
+    · subst t
+      have hcoord0 : secondCoordinate (0 : unitInterval) =
+          ((1 : ℝ) : AddCircle (2 : ℝ)) := by
+        norm_num [secondCoordinate]
+      rw [hcoord0, circleMap,
+        AddCircle.liftIco_coe_apply (p := (2 : ℝ)) (a := (0 : ℝ))
+          (x := (1 : ℝ)) (by norm_num),
+        loop_one, q.source]
+    have htpos : 0 < (t : ℝ) := lt_of_le_of_ne t.2.1 (by
+      intro h
+      exact ht0 (Subtype.ext h.symm))
+    have hmem : (t : ℝ) + 1 ∈ Set.Ico (0 : ℝ) (0 + 2) := by
+      constructor <;> linarith [t.2.1]
+    rw [circleMap, secondCoordinate,
+      AddCircle.liftIco_coe_apply hmem]
+    have hloop := loop_eq_second p q (t := (t : ℝ) + 1)
+      ⟨by linarith [htpos], by linarith [htlt]⟩
+    rw [hloop]
+    congr 1
+    apply Subtype.ext
+    simp
+
 /-- The two halves cannot acquire an accidental common point: their only
 common values are the two endpoints, and the half-open circle
 representatives assign both endpoints consistently to the first half. -/

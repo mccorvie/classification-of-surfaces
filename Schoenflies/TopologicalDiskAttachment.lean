@@ -91,6 +91,24 @@ theorem boundaryHomeomorph_apply_shared (t : unitInterval) :
       D.shared D.exposed D.shared_injective D.exposed_injective
         D.boundary_overlap
       E.shared E.exposed E.shared_injective E.exposed_injective
+      E.boundary_overlap t
+
+theorem boundaryHomeomorph_apply_exposed (t : unitInterval) :
+    boundaryHomeomorph D E ⟨D.exposed t, by
+      rw [D.carrier_eq]
+      exact Or.inr ⟨t, rfl⟩⟩ =
+      ⟨E.exposed t, by
+        rw [E.carrier_eq]
+        exact Or.inr ⟨t, rfl⟩⟩ := by
+  apply Subtype.ext
+  change
+    ((rawBoundaryHomeomorph D E)
+      ⟨D.exposed t, Or.inr ⟨t, rfl⟩⟩ : Plane) = E.exposed t
+  exact congrArg Subtype.val <|
+    TwoArcJordan.carrierCorrespondence_apply_second
+      D.shared D.exposed D.shared_injective D.exposed_injective
+        D.boundary_overlap
+      E.shared E.exposed E.shared_injective E.exposed_injective
         E.boundary_overlap t
 
 /-- Fill the new polygonal disk by Alexander extension. -/
@@ -112,6 +130,33 @@ theorem newDiskHomeomorph_apply_shared (t : unitInterval) :
           ⟨D.shared t, D.shared_mem_carrier t⟩
     _ = E.shared t :=
       congrArg Subtype.val (boundaryHomeomorph_apply_shared D E t)
+
+theorem newDiskHomeomorph_apply_exposed (t : unitInterval) :
+    (newDiskHomeomorph D E
+        ⟨D.exposed t, by
+          rw [D.disk.closedRegion_eq_union]
+          right
+          rw [D.carrier_eq]
+          exact Or.inr ⟨t, rfl⟩⟩ : Plane) =
+      E.exposed t := by
+  calc
+    (newDiskHomeomorph D E
+        ⟨D.exposed t, by
+          rw [D.disk.closedRegion_eq_union]
+          right
+          rw [D.carrier_eq]
+          exact Or.inr ⟨t, rfl⟩⟩ : Plane) =
+        (boundaryHomeomorph D E
+          ⟨D.exposed t, by
+            rw [D.carrier_eq]
+            exact Or.inr ⟨t, rfl⟩⟩ : Plane) :=
+      PolygonalCircle.extendBoundaryHomeomorph_apply
+        D.disk E.disk (boundaryHomeomorph D E)
+          ⟨D.exposed t, by
+            rw [D.carrier_eq]
+            exact Or.inr ⟨t, rfl⟩⟩
+    _ = E.exposed t :=
+      congrArg Subtype.val (boundaryHomeomorph_apply_exposed D E t)
 
 variable (old : A ≃ₜ B)
   (hshared : ∀ t : unitInterval,

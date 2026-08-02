@@ -51,6 +51,16 @@ theorem carrierHomeomorph_firstCoordinate
   apply Subtype.ext
   rw [coe_carrierHomeomorph_apply, circleMap_firstCoordinate]
 
+theorem carrierHomeomorph_secondCoordinate
+    (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b})
+    (t : unitInterval) :
+    carrierHomeomorph p q hp hq hinter (secondCoordinate t) =
+      ⟨q t, Or.inr ⟨t, rfl⟩⟩ := by
+  apply Subtype.ext
+  rw [coe_carrierHomeomorph_apply, circleMap_secondCoordinate]
+
 /-- The canonical correspondence between two carriers presented as unions
 of two oppositely oriented arcs. -/
 def carrierCorrespondence
@@ -82,6 +92,24 @@ theorem carrierCorrespondence_apply_first
       p q hp hq hinter t,
     Homeomorph.trans_apply, Homeomorph.symm_apply_apply,
     carrierHomeomorph_firstCoordinate]
+
+/-- The canonical correspondence uses the same parameter on both second
+paths as well. -/
+theorem carrierCorrespondence_apply_second
+    (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b})
+    (p' : Path a' b') (q' : Path b' a')
+    (hp' : Injective p') (hq' : Injective q')
+    (hinter' : range p' ∩ range q' = {a', b'})
+    (t : unitInterval) :
+    carrierCorrespondence p q hp hq hinter p' q' hp' hq' hinter'
+        ⟨q t, Or.inr ⟨t, rfl⟩⟩ =
+      ⟨q' t, Or.inr ⟨t, rfl⟩⟩ := by
+  rw [carrierCorrespondence, ← carrierHomeomorph_secondCoordinate
+      p q hp hq hinter t,
+    Homeomorph.trans_apply, Homeomorph.symm_apply_apply,
+    carrierHomeomorph_secondCoordinate]
 
 /-- The inverse correspondence has the matching first-path formula. -/
 theorem carrierCorrespondence_symm_apply_first
