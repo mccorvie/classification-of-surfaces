@@ -103,6 +103,24 @@ theorem boundaryHomeomorph_apply_first
       S.first S.second S.first_injective S.second_injective S.overlap
       T.first T.second T.first_injective T.second_injective T.overlap t
 
+theorem boundaryHomeomorph_apply_second
+    (S : P.toJordanCircle.TwoBoundaryArcPaths x y)
+    (T : Q.toJordanCircle.TwoBoundaryArcPaths u v)
+    (t : unitInterval) :
+    ((boundaryHomeomorph S T)
+        ⟨S.second t, by
+          rw [← P.carrier_toJordanCircle, ← S.cover]
+          exact Or.inr ⟨t, rfl⟩⟩ : Plane) = T.second t := by
+  change
+    ((TwoArcJordan.carrierCorrespondence
+      S.first S.second S.first_injective S.second_injective S.overlap
+      T.first T.second T.first_injective T.second_injective T.overlap)
+        ⟨S.second t, Or.inr ⟨t, rfl⟩⟩ : Plane) = T.second t
+  exact congrArg Subtype.val <|
+    TwoArcJordan.carrierCorrespondence_apply_second
+      S.first S.second S.first_injective S.second_injective S.overlap
+      T.first T.second T.first_injective T.second_injective T.overlap t
+
 /-- Extend the marked boundary correspondence over both polygonal disks. -/
 def closedRegionHomeomorph
     (S : P.toJordanCircle.TwoBoundaryArcPaths x y)
@@ -134,6 +152,31 @@ theorem closedRegionHomeomorph_apply_first
           rw [← P.carrier_toJordanCircle, ← S.cover]
           exact Or.inl ⟨t, rfl⟩⟩ : Plane) = T.first t
       exact boundaryHomeomorph_apply_first S T t
+
+theorem closedRegionHomeomorph_apply_second
+    (S : P.toJordanCircle.TwoBoundaryArcPaths x y)
+    (T : Q.toJordanCircle.TwoBoundaryArcPaths u v)
+    (t : unitInterval) :
+    ((closedRegionHomeomorph S T)
+        ⟨S.second t, by
+          rw [P.closedRegion_eq_union]
+          exact Or.inr <| by
+            rw [← P.carrier_toJordanCircle, ← S.cover]
+            exact Or.inr ⟨t, rfl⟩⟩ : Plane) = T.second t := by
+  let z : P.carrier := ⟨S.second t, by
+    rw [← P.carrier_toJordanCircle, ← S.cover]
+    exact Or.inr ⟨t, rfl⟩⟩
+  have hExtend := PolygonalCircle.extendBoundaryHomeomorph_apply
+    P Q (boundaryHomeomorph S T) z
+  calc
+    ((closedRegionHomeomorph S T) ⟨S.second t, _⟩ : Plane) =
+        ((boundaryHomeomorph S T) z : Plane) := hExtend
+    _ = T.second t := by
+      change ((boundaryHomeomorph S T)
+        ⟨S.second t, by
+          rw [← P.carrier_toJordanCircle, ← S.cover]
+          exact Or.inr ⟨t, rfl⟩⟩ : Plane) = T.second t
+      exact boundaryHomeomorph_apply_second S T t
 
 end MarkedPolygonalDisk
 
@@ -243,6 +286,20 @@ theorem markedMoiseCellHomeomorph_apply_innerBoundaryPath
       MarkedPolygonalDisk.closedRegionHomeomorph_apply_first
         (L.moiseCellBoundarySplit a)
         (I.indexedTargetCellBoundarySplit m a) t
+
+theorem markedMoiseCellHomeomorph_apply_outerBoundaryPath
+    (m : ℕ) (a : LevelAddress n) (t : unitInterval) :
+    (L.markedMoiseCellHomeomorph m a
+        ⟨(L.moiseCellBoundarySplit a).second t, by
+          rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union]
+          exact Or.inr <| by
+            rw [← (L.moiseBandPolygonalCircle a).carrier_toJordanCircle,
+              ← (L.moiseCellBoundarySplit a).cover]
+            exact Or.inr ⟨t, rfl⟩⟩ : Plane) =
+      (I.indexedTargetCellBoundarySplit m a).second t := by
+  exact MarkedPolygonalDisk.closedRegionHomeomorph_apply_second
+    (L.moiseCellBoundarySplit a)
+    (I.indexedTargetCellBoundarySplit m a) t
 
 theorem markedMoiseCellHomeomorph_apply_incomingSeam
     (m : ℕ) (a : LevelAddress n) (t : unitInterval) :

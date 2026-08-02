@@ -80,8 +80,11 @@ import Schoenflies.CyclicTargetCellCompatibility
 import Schoenflies.CyclicTargetCellCover
 import Schoenflies.MoiseCellBoundaryRoutes
 import Schoenflies.MarkedMoiseCellHomeomorphisms
+import Schoenflies.MarkedMoiseCellOuterBoundaries
 import Schoenflies.MarkedMoiseCellCompatibility
 import Schoenflies.MarkedMoiseBandGluing
+import Schoenflies.MarkedMoiseBandBoundaries
+import Schoenflies.ShrinkingMoiseBandHomeomorphisms
 import Schoenflies.LocalizedAnnularOrder
 import Schoenflies.LocalizedCutFreeCells
 import Schoenflies.LocalizedCellCover
