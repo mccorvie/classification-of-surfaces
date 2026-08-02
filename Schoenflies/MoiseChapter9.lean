@@ -38,6 +38,7 @@ import Schoenflies.MoiseBandChildCarrier
 import Schoenflies.MoiseBandCellAttachments
 import Schoenflies.MoiseBandCellCyclicAttachments
 import Schoenflies.MoiseBandCellParentSeams
+import Schoenflies.MoiseBandFilledDisk
 import Schoenflies.NestedCollarStages
 import Schoenflies.ShrinkingMoiseBandCells
 import Schoenflies.PolyhedralDiskNeighborhoods

@@ -130,6 +130,127 @@ theorem childMoiseCarrier_subset_childCarrier
   · obtain ⟨b, c, hbc, rfl⟩ := hjunction
     exact L.childJunction_subset_childCarrier a hbc hxSegment
 
+/-- The raw junction across a parent-block boundary is part of the child
+polygon just as the junctions internal to a block are. -/
+theorem extremeChildJunction_subset_childCarrier
+    (a : LevelAddress n) :
+    segment ℝ
+        (L.adjacentMoiseBandRightRawPoint a : Plane)
+        (L.adjacentMoiseBandLeftRawPoint a : Plane) ⊆
+      L.childDisk.carrier := by
+  let b := L.rightmostAddress a
+  let c := L.leftmostAddress (nextLevelAddress n a)
+  have hnext : nextLevelAddress L.next.level b = c := by
+    dsimp only [b, c]
+    exact L.nextLevelAddress_rightmostAddress a
+  have hbc : I.LevelAdjacent b c := by
+    rw [← hnext]
+    exact I.levelAdjacent_nextLevelAddress L.next.level b
+  have h := L.childJunction_subset_childCarrier a hbc
+  change segment ℝ
+      (L.next.family.forgetObstacle.trimmedRightPoint
+        (levelIndexOf L.next.level b))
+      (L.next.family.forgetObstacle.trimmedLeftPoint
+        (levelIndexOf L.next.level c)) ⊆ L.childDisk.carrier at h
+  change segment ℝ
+      (L.next.family.forgetObstacle.trimmedRightPoint
+        (levelIndexOf L.next.level (L.rightmostAddress a)))
+      (L.next.family.forgetObstacle.trimmedLeftPoint
+        (levelIndexOf L.next.level
+          (L.leftmostAddress (nextLevelAddress n a)))) ⊆
+    L.childDisk.carrier
+  simpa only [b, c] using h
+
+/-- A right side of a Moise cell is either on the child polygon or on the
+part shared with the cyclic successor. -/
+theorem moiseBandRightSideCarrier_subset_childCarrier_union_sideSeam
+    (a : LevelAddress n) :
+    L.moiseBandRightSideCarrier a ⊆
+      L.childDisk.carrier ∪ L.adjacentMoiseBandSideSeam a := by
+  let H := I.levelRightHair a
+  let x := L.adjacentMoiseBandRightRawPoint a
+  let y := L.adjacentMoiseBandLeftRawPoint a
+  let p := L.adjacentMoiseBandParentPoint a
+  have hxp : H.carrierParameter x < H.carrierParameter p :=
+    L.adjacentMoiseBandRightRawPoint_parameter_lt_parent a
+  have hyp : H.carrierParameter y < H.carrierParameter p :=
+    L.adjacentMoiseBandLeftRawPoint_parameter_lt_parent a
+  have hchild : segment ℝ (x : Plane) (y : Plane) ⊆
+      L.childDisk.carrier := by
+    simpa only [x, y] using L.extremeChildJunction_subset_childCarrier a
+  intro z hz
+  change z ∈ segment ℝ (x : Plane) (p : Plane) at hz
+  by_cases hxy : H.carrierParameter x ≤ H.carrierParameter y
+  · have hzHair : z ∈ H.carrier :=
+      (convex_segment (J.curvePoint (I.levelArc a).right : Plane) H.tip)
+        |>.segment_subset x.2 p.2 hz
+    let z' : H.carrier := ⟨z, hzHair⟩
+    have hzbounds :=
+      H.carrierParameter_bounds_of_mem_segment x p hxp.le hz
+    by_cases hzy : H.carrierParameter z' ≤ H.carrierParameter y
+    · apply Or.inl
+      apply hchild
+      exact H.segment_subset_segment_of_parameter_le x z' y
+        hzbounds.1 hzy (right_mem_segment ℝ _ _)
+    · apply Or.inr
+      rw [L.adjacentMoiseBandSideSeam_eq_segment a]
+      change z ∈ segment ℝ (H.deeperPoint x y : Plane) (p : Plane)
+      rw [JordanCircle.InsideAccessHair.deeperPoint, if_pos hxy]
+      exact H.segment_subset_segment_of_parameter_le y z' p
+        (le_of_not_ge hzy) hzbounds.2 (right_mem_segment ℝ _ _)
+  · apply Or.inr
+    rw [L.adjacentMoiseBandSideSeam_eq_segment a]
+    change z ∈ segment ℝ (H.deeperPoint x y : Plane) (p : Plane)
+    rw [JordanCircle.InsideAccessHair.deeperPoint, if_neg hxy]
+    exact hz
+
+/-- Symmetrically, the successor's left side is either on the child polygon
+or on its shared seam with the current cell. -/
+theorem moiseBandLeftSideCarrier_next_subset_childCarrier_union_sideSeam
+    (a : LevelAddress n) :
+    L.moiseBandLeftSideCarrier (nextLevelAddress n a) ⊆
+      L.childDisk.carrier ∪ L.adjacentMoiseBandSideSeam a := by
+  let H := I.levelRightHair a
+  let x := L.adjacentMoiseBandRightRawPoint a
+  let y := L.adjacentMoiseBandLeftRawPoint a
+  let p := L.adjacentMoiseBandParentPoint a
+  have hxp : H.carrierParameter x < H.carrierParameter p :=
+    L.adjacentMoiseBandRightRawPoint_parameter_lt_parent a
+  have hyp : H.carrierParameter y < H.carrierParameter p :=
+    L.adjacentMoiseBandLeftRawPoint_parameter_lt_parent a
+  have hchild : segment ℝ (x : Plane) (y : Plane) ⊆
+      L.childDisk.carrier := by
+    simpa only [x, y] using L.extremeChildJunction_subset_childCarrier a
+  intro z hz
+  rw [L.moiseBandLeftSideCarrier_next_eq_segment a] at hz
+  change z ∈ segment ℝ (y : Plane) (p : Plane) at hz
+  by_cases hxy : H.carrierParameter x ≤ H.carrierParameter y
+  · apply Or.inr
+    rw [L.adjacentMoiseBandSideSeam_eq_segment a]
+    change z ∈ segment ℝ (H.deeperPoint x y : Plane) (p : Plane)
+    rw [JordanCircle.InsideAccessHair.deeperPoint, if_pos hxy]
+    exact hz
+  · have hzHair : z ∈ H.carrier :=
+      (convex_segment (J.curvePoint (I.levelArc a).right : Plane) H.tip)
+        |>.segment_subset y.2 p.2 hz
+    let z' : H.carrier := ⟨z, hzHair⟩
+    have hyx : H.carrierParameter y ≤ H.carrierParameter x :=
+      le_of_not_ge hxy
+    have hzbounds :=
+      H.carrierParameter_bounds_of_mem_segment y p hyp.le hz
+    by_cases hzx : H.carrierParameter z' ≤ H.carrierParameter x
+    · apply Or.inl
+      apply hchild
+      rw [segment_symm]
+      exact H.segment_subset_segment_of_parameter_le y z' x
+        hzbounds.1 hzx (right_mem_segment ℝ _ _)
+    · apply Or.inr
+      rw [L.adjacentMoiseBandSideSeam_eq_segment a]
+      change z ∈ segment ℝ (H.deeperPoint x y : Plane) (p : Plane)
+      rw [JordanCircle.InsideAccessHair.deeperPoint, if_neg hxy]
+      exact H.segment_subset_segment_of_parameter_le x z' p
+        (le_of_not_ge hzx) hzbounds.2 (right_mem_segment ℝ _ _)
+
 end JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
 
 end
