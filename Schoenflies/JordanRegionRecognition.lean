@@ -15,6 +15,50 @@ open Set Bornology
 
 namespace JordanCircle
 
+/-- A compact planar set whose frontier lies on a Jordan circle cannot meet
+the unbounded complementary component.  Consequently it lies in the closed
+bounded Jordan region. -/
+theorem subset_closure_inside_of_isCompact_frontier_subset
+    (J : JordanCircle) {S : Set Plane} (hS : IsCompact S)
+    (hfrontier : frontier S ⊆ J.carrier) :
+    S ⊆ closure J.inside := by
+  have hSclosed := hS.isClosed
+  have hOutsideCover : J.outside ⊆ interior S ∪ Sᶜ := by
+    intro p hpOutside
+    by_cases hpS : p ∈ S
+    · left
+      apply (mem_interior_iff_notMem_frontier hpS).mpr
+      intro hpFrontier
+      have hpCarrier : p ∈ J.carrier := hfrontier hpFrontier
+      have hpCompl : p ∈ J.carrierᶜ := by
+        rw [← J.inside_union_outside]
+        exact Or.inr hpOutside
+      exact hpCompl hpCarrier
+    · exact Or.inr hpS
+  have hOutsideNotS : (J.outside ∩ Sᶜ).Nonempty := by
+    by_contra h
+    have hOutsideSub : J.outside ⊆ S := by
+      intro p hpOutside
+      by_contra hpS
+      exact h ⟨p, hpOutside, hpS⟩
+    exact J.outside_unbounded (hS.isBounded.subset hOutsideSub)
+  have hOutsideSub : J.outside ⊆ Sᶜ :=
+    J.outside_isConnected.isPreconnected.subset_right_of_subset_union
+      isOpen_interior hSclosed.isOpen_compl
+      (Set.disjoint_left.mpr fun _ hpInterior hpCompl =>
+        hpCompl (interior_subset hpInterior))
+      hOutsideCover hOutsideNotS
+  intro p hpS
+  by_cases hpCarrier : p ∈ J.carrier
+  · rw [J.closure_inside]
+    exact Or.inr hpCarrier
+  · have hpSplit : p ∈ J.inside ∪ J.outside := by
+      rw [J.inside_union_outside]
+      exact hpCarrier
+    rcases hpSplit with hpInside | hpOutside
+    · exact subset_closure hpInside
+    · exact False.elim (hOutsideSub hpOutside hpS)
+
 /-- A compact subset of a closed Jordan disk which has no frontier in the
 open bounded region is already the whole closed disk, provided it contains
 one interior neighborhood.  This subset form is useful when the outer

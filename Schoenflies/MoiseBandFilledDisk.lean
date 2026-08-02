@@ -196,6 +196,78 @@ theorem frontier_moiseFilledDisk_subset_childCarrier
       (L.frontier_sdiff_moiseBandExceptionalSet_subset_childCarrier hinter)
     rwa [hchildClosed.closure_eq] at hclosure
 
+/-- The old open polygonal disk is an open subset of the filled recursive
+band. -/
+theorem parentInteriorRegion_subset_interior_moiseFilledDisk :
+    L.parentDisk.interiorRegion ⊆ interior L.moiseFilledDisk := by
+  apply interior_maximal
+  · intro x hx
+    left
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inl hx
+  · exact L.parentDisk.isOpen_interiorRegion
+
+/-- Once all internal seams have been cancelled, the old disk and the
+recursive Moise cells fill exactly the closed disk bounded by the child
+polygon.  Compactness rules out the unbounded side of the child curve; the
+old disk supplies a point on its bounded side. -/
+theorem moiseFilledDisk_eq_childClosedRegion
+    (hinter : ∀ a : LevelAddress n,
+      L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle a).closedRegion =
+        range (F.synchronizedCrosscutPath a)) :
+    L.moiseFilledDisk = L.childDisk.closedRegion := by
+  have hfrontier : frontier L.moiseFilledDisk ⊆
+      L.childDisk.toJordanCircle.carrier := by
+    rw [L.childDisk.carrier_toJordanCircle]
+    exact L.frontier_moiseFilledDisk_subset_childCarrier hinter
+  have hsubset : L.moiseFilledDisk ⊆
+      closure L.childDisk.toJordanCircle.inside :=
+    L.childDisk.toJordanCircle
+      |>.subset_closure_inside_of_isCompact_frontier_subset
+        L.isCompact_moiseFilledDisk hfrontier
+  let p : Plane := L.parentDisk.toJordanCircle.insidePoint
+  have hpParentInterior : p ∈ L.parentDisk.interiorRegion := by
+    rw [← L.parentDisk.inside_toJordanCircle]
+    exact L.parentDisk.toJordanCircle.insidePoint_mem_inside
+  have hpFilledInterior : p ∈ interior L.moiseFilledDisk :=
+    L.parentInteriorRegion_subset_interior_moiseFilledDisk hpParentInterior
+  have hpNotChildCarrier : p ∉ L.childDisk.toJordanCircle.carrier := by
+    rw [L.childDisk.carrier_toJordanCircle]
+    exact fun hpChild => Set.disjoint_left.mp L.next.carrier_disjoint
+      (by
+        rw [L.parentDisk.closedRegion_eq_union]
+        exact Or.inl hpParentInterior)
+      hpChild
+  have hpChildInside : p ∈ L.childDisk.toJordanCircle.inside := by
+    have hpClosure := hsubset (interior_subset hpFilledInterior)
+    rw [L.childDisk.toJordanCircle.closure_inside] at hpClosure
+    exact hpClosure.resolve_right hpNotChildCarrier
+  have hrecognition :=
+    L.childDisk.toJordanCircle.eq_closure_inside_of_isCompact_frontier_subset
+      L.isCompact_moiseFilledDisk hsubset hfrontier
+      ⟨p, hpFilledInterior, hpChildInside⟩
+  rw [L.childDisk.inside_toJordanCircle] at hrecognition
+  exact hrecognition
+
+/-- The filled-disk identity, together with the recursive step's carrier
+avoidance, places the entire parent closed disk strictly inside the child
+polygon. -/
+theorem parentClosedRegion_subset_childInteriorRegion
+    (hinter : ∀ a : LevelAddress n,
+      L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle a).closedRegion =
+        range (F.synchronizedCrosscutPath a)) :
+    L.parentDisk.closedRegion ⊆ L.childDisk.interiorRegion := by
+  intro x hxParent
+  have hxFilled : x ∈ L.moiseFilledDisk := Or.inl hxParent
+  have hxChild : x ∈ L.childDisk.closedRegion := by
+    rw [← L.moiseFilledDisk_eq_childClosedRegion hinter]
+    exact hxFilled
+  rw [L.childDisk.closedRegion_eq_union] at hxChild
+  exact hxChild.resolve_right fun hxCarrier =>
+    Set.disjoint_left.mp L.next.carrier_disjoint hxParent hxCarrier
+
 end JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
 
 end

@@ -2,6 +2,7 @@ import Schoenflies.MoiseBandCellBounds
 import Schoenflies.MoiseBandCellAttachments
 import Schoenflies.MoiseBandCellInteriors
 import Schoenflies.MoiseBandCellNonadjacency
+import Schoenflies.MoiseBandFilledDisk
 import Schoenflies.NestedCollarStages
 
 /-!
@@ -239,6 +240,55 @@ theorem shrinkingMoiseBand_parentClosedRegion_inter
       have hkpos := successorBufferBound_pos k
       linarith
 
+/-- Under the late-stage size hypothesis, the preceding closed disk and all
+cells of the recursive Moise band fill exactly the next closed polygonal
+disk. -/
+theorem shrinkingMoiseFilledDisk_eq_nextClosedRegion
+    (k : ℕ)
+    (hsmall : successorBufferBound k <
+      dist (J.curvePoint I.first.left : Plane)
+        (J.curvePoint I.first.right : Plane) / 2) :
+    let L₀ := I.nextInsideCollarLater k
+      (I.shrinkingInsideCollarStage k)
+    let S₁ := InsideCollarStage.ofLater I
+      (I.shrinkingInsideCollarStage k) L₀
+    let L₁ := I.nextInsideCollarLater (k + 1) S₁
+    L₁.moiseFilledDisk = L₁.next.circle.closedRegion := by
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  exact L₁.moiseFilledDisk_eq_childClosedRegion fun a =>
+    I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall a
+
+/-- The filled-band identity and the stored carrier avoidance upgrade weak
+containment to strict nesting of the two polygonal disks. -/
+theorem shrinkingMoiseBand_parentClosedRegion_subset_nextInteriorRegion
+    (k : ℕ)
+    (hsmall : successorBufferBound k <
+      dist (J.curvePoint I.first.left : Plane)
+        (J.curvePoint I.first.right : Plane) / 2) :
+    let L₀ := I.nextInsideCollarLater k
+      (I.shrinkingInsideCollarStage k)
+    let S₁ := InsideCollarStage.ofLater I
+      (I.shrinkingInsideCollarStage k) L₀
+    let L₁ := I.nextInsideCollarLater (k + 1) S₁
+    L₀.next.circle.closedRegion ⊆ L₁.next.circle.interiorRegion := by
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  intro x hxParent
+  have hxFilled : x ∈ L₁.moiseFilledDisk := Or.inl hxParent
+  have hxChild : x ∈ L₁.next.circle.closedRegion := by
+    rw [← I.shrinkingMoiseFilledDisk_eq_nextClosedRegion k hsmall]
+    exact hxFilled
+  rw [L₁.next.circle.closedRegion_eq_union] at hxChild
+  exact hxChild.resolve_right fun hxCarrier =>
+    Set.disjoint_left.mp L₁.next.carrier_disjoint hxParent hxCarrier
+
 /-- The same late-stage estimate, packaged in the exact form consumed by
 the relative disk-extension construction. -/
 noncomputable def shrinkingMoiseBandAttachmentPresentation
@@ -359,6 +409,43 @@ theorem eventually_shrinkingMoiseBand_parentClosedRegion_inter :
         (J.curvePoint I.first.right : Plane) / 2 := by
     simpa [successorBufferBound, one_div] using hN
   exact hmonotone.trans_lt hsmall
+
+/-- All sufficiently late recursive bands strictly nest their parent
+polygonal disk inside their child polygonal disk. -/
+theorem eventually_shrinkingMoiseBand_parentClosedRegion_subset_nextInteriorRegion :
+    ∃ N : ℕ, ∀ k : ℕ, N ≤ k →
+      let L₀ := I.nextInsideCollarLater k
+        (I.shrinkingInsideCollarStage k)
+      let S₁ := InsideCollarStage.ofLater I
+        (I.shrinkingInsideCollarStage k) L₀
+      let L₁ := I.nextInsideCollarLater (k + 1) S₁
+      L₀.next.circle.closedRegion ⊆
+        L₁.next.circle.interiorRegion := by
+  obtain ⟨N, hN⟩ :=
+    I.eventually_shrinkingMoiseBand_parentClosedRegion_inter
+  refine ⟨N, ?_⟩
+  intro k hk
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  exact L₁.parentClosedRegion_subset_childInteriorRegion (hN k hk)
+
+/-- Stable sequence-facing form of eventual strict nesting.  This discharges
+the planar-side obligation that was intentionally left out of
+`InsideCollarStage`. -/
+theorem eventually_shrinkingInsideCollarStage_strictlyNested :
+    ∃ N : ℕ, ∀ k : ℕ, N ≤ k →
+      (I.shrinkingInsideCollarStage k.succ).circle.closedRegion ⊆
+        (I.shrinkingInsideCollarStage k.succ.succ).circle.interiorRegion := by
+  obtain ⟨N, hN⟩ :=
+    I.eventually_shrinkingMoiseBand_parentClosedRegion_subset_nextInteriorRegion
+  refine ⟨N, ?_⟩
+  intro k hk
+  have h := hN k hk
+  simpa only [I.shrinkingInsideCollarStage_succ,
+    nextInsideCollarStage, InsideCollarStage.circle_ofLater] using h
 
 /-- Uniformly in every sufficiently late cyclic band, consecutive closed
 cells overlap precisely in their shared side seam. -/
