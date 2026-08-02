@@ -55,6 +55,7 @@ import Schoenflies.PolygonalAnnularCells
 import Schoenflies.PolygonalAnnularCellFilling
 import Schoenflies.TopologicalAnnularCellFilling
 import Schoenflies.TopologicalDiskAttachment
+import Schoenflies.AnnularCellAttachments
 import Schoenflies.StandardPolygonalCollars
 import Schoenflies.FiniteAnnularCrosscutOrder
 import Schoenflies.LocalizedAnnularOrder
