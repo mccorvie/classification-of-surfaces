@@ -1,5 +1,6 @@
 import Schoenflies.LocalizedCutFreeCells
 import Schoenflies.LocalizedJordanAnnularCrosscuts
+import Schoenflies.BoundaryPathTransport
 
 /-!
 # Boundary coherence for localized cut-free cells
@@ -65,6 +66,16 @@ noncomputable def jordanSeparator :
 @[simp] theorem jordanSeparator_outerSplit :
     C.jordanSeparator.outerSplit = C.jordanOuterSplit := rfl
 
+private def jordanFirstAlternative : Prop :=
+  (I.innerDisk k).interiorRegion ⊆
+      (C.jordanSeparator.circle₀
+        (I.localizedMarkedPolygonalDisk_closedRegion_subset_inside (k + 1))
+        (I.pairwise_disjoint_levelLocalizedJordanAnnularCrosscut k
+          C.next_ne)).inside ∧
+    ∀ c : LevelAddress k, c ≠ a → c ≠ C.next →
+      (I.levelLocalizedJordanAnnularCrosscut k c).outerPoint ∉
+        range C.jordanSeparator.outerArc₁
+
 /-- The original Jordan arc corresponding to the exposed side of the
 canonical inner split contains no third retained boundary anchor. -/
 theorem jordan_cutFreeArcs :
@@ -96,6 +107,101 @@ theorem jordan_cutFreeArcs :
     (I.range_levelLocalizedJordanAnnularCrosscut_eq_segment k a)
     (I.range_levelLocalizedJordanAnnularCrosscut_eq_segment k C.next)
     C.inner_second
+
+private theorem jordanSecondAlternative_of_not_first
+    (h : ¬ C.jordanFirstAlternative) :
+    (I.innerDisk k).interiorRegion ⊆
+        (C.jordanSeparator.circle₁
+          (I.localizedMarkedPolygonalDisk_closedRegion_subset_inside (k + 1))
+          (I.pairwise_disjoint_levelLocalizedJordanAnnularCrosscut k
+            C.next_ne)).inside ∧
+      ∀ c : LevelAddress k, c ≠ a → c ≠ C.next →
+        (I.levelLocalizedJordanAnnularCrosscut k c).outerPoint ∉
+          range C.jordanSeparator.outerArc₀ :=
+  C.jordan_cutFreeArcs.resolve_left h
+
+/-- The endpoint-free original Jordan arc associated to this localized
+cell, oriented from the successor label back to the starting label. -/
+noncomputable def jordanExposedOuterArc :
+    Path
+      (I.levelLocalizedJordanAnnularCrosscut k C.next).outerPoint
+      (I.levelLocalizedJordanAnnularCrosscut k a).outerPoint := by
+  classical
+  exact if C.jordanFirstAlternative then
+      C.jordanSeparator.outerArc₁
+    else C.jordanSeparator.outerArc₀
+
+theorem jordanExposedOuterArc_injective :
+    Injective C.jordanExposedOuterArc := by
+  classical
+  by_cases h : C.jordanFirstAlternative
+  · rw [jordanExposedOuterArc, if_pos h]
+    exact C.jordanSeparator.outerSplit.first_injective.comp
+      unitInterval.symm_bijective.injective
+  · rw [jordanExposedOuterArc, if_neg h]
+    exact C.jordanSeparator.outerSplit.second_injective
+
+theorem jordanExposedOuterArc_range_subset :
+    range C.jordanExposedOuterArc ⊆ J.carrier := by
+  classical
+  by_cases h : C.jordanFirstAlternative
+  · rw [jordanExposedOuterArc, if_pos h]
+    exact C.jordanSeparator.outerArc₁_range_subset
+  · rw [jordanExposedOuterArc, if_neg h]
+    exact C.jordanSeparator.outerArc₀_range_subset
+
+theorem other_jordanOuterPoint_not_mem_exposedOuterArc :
+    ∀ c : LevelAddress k, c ≠ a → c ≠ C.next →
+      (I.levelLocalizedJordanAnnularCrosscut k c).outerPoint ∉
+        range C.jordanExposedOuterArc := by
+  classical
+  intro c hca hcnext
+  by_cases h : C.jordanFirstAlternative
+  · rw [jordanExposedOuterArc, if_pos h]
+    exact h.2 c hca hcnext
+  · rw [jordanExposedOuterArc, if_neg h]
+    exact (C.jordanSecondAlternative_of_not_first h).2 c hca hcnext
+
+/-- Reorient the original complementary split so that its first path runs
+along the selected cell from label `a` to label `next`. -/
+noncomputable def jordanCellBoundarySplit :
+    J.TwoBoundaryArcPaths
+      (I.levelLocalizedJordanAnnularCrosscut k a).outerPoint
+      (I.levelLocalizedJordanAnnularCrosscut k C.next).outerPoint := by
+  classical
+  exact if C.jordanFirstAlternative then
+      C.jordanOuterSplit
+    else C.jordanOuterSplit.swap
+
+theorem jordanCellBoundarySplit_first :
+    C.jordanCellBoundarySplit.first = C.jordanExposedOuterArc.symm := by
+  classical
+  by_cases h : C.jordanFirstAlternative
+  · rw [jordanCellBoundarySplit, if_pos h,
+      jordanExposedOuterArc, if_pos h]
+    simp [PolygonalCircle.JordanAnnularCrosscut.SeparatorPair.outerArc₁]
+  · rw [jordanCellBoundarySplit, if_neg h,
+      jordanExposedOuterArc, if_neg h]
+    simp [PolygonalCircle.JordanAnnularCrosscut.SeparatorPair.outerArc₀]
+
+/-- Every other retained Jordan anchor lies on the complementary path of
+the cell-oriented split. -/
+theorem other_jordanOuterPoint_mem_cellBoundarySplit_second :
+    ∀ c : LevelAddress k, c ≠ a → c ≠ C.next →
+      (I.levelLocalizedJordanAnnularCrosscut k c).outerPoint ∈
+        range C.jordanCellBoundarySplit.second := by
+  intro c hca hcnext
+  have hcarrier :
+      (I.levelLocalizedJordanAnnularCrosscut k c).outerPoint ∈ J.carrier :=
+    (I.levelLocalizedJordanAnnularCrosscut k c).outerPoint_mem
+  rw [← C.jordanCellBoundarySplit.cover] at hcarrier
+  rcases hcarrier with hfirst | hsecond
+  · exact False.elim <|
+      C.other_jordanOuterPoint_not_mem_exposedOuterArc c hca hcnext <| by
+        rw [← Path.symm_range C.jordanExposedOuterArc,
+          ← C.jordanCellBoundarySplit_first]
+        exact hfirst
+  · exact hsecond
 
 end LocalizedCutFreeCellData
 

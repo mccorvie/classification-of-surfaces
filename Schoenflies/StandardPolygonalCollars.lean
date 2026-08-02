@@ -1,4 +1,5 @@
 import Schoenflies.LocalizedAnnularTheta
+import Schoenflies.BoundaryPathTransport
 import ClassificationOfSurfaces.Moise.ConeExtension
 
 /-!
@@ -224,6 +225,47 @@ theorem boundaryPoint_injective (J : JordanCircle) :
   apply Subtype.ext
   apply standardTriangleCircle.sphereStraightening.symm.injective
   exact hxy
+
+/-- The prescribed boundary correspondence as a homeomorphism of carrier
+subtypes. -/
+def boundaryCarrierHomeomorph (J : JordanCircle) :
+    J.carrier ≃ₜ standardTriangleCircle.carrier :=
+  J.carrierHomeomorph.symm.trans <|
+    standardTriangleCircle.toJordanCircle.carrierHomeomorph.trans
+      (Homeomorph.setCongr standardTriangleCircle.carrier_toJordanCircle)
+
+@[simp] theorem boundaryCarrierHomeomorph_apply
+    (J : JordanCircle) (x : J.carrier) :
+    (boundaryCarrierHomeomorph J x : Plane) = boundaryPoint J x := by
+  rfl
+
+/-- Homothety identifies the standard triangle boundary with the boundary
+of target disk `n`. -/
+def diskBoundaryHomeomorph (n : ℕ) :
+    standardTriangleCircle.carrier ≃ₜ (disk n).carrier :=
+  ((homothetyHomeomorph (radius n) (radius_pos n).ne').image
+      standardTriangleCircle.carrier).trans
+    (Homeomorph.setCongr (disk_carrier n).symm)
+
+@[simp] theorem diskBoundaryHomeomorph_apply
+    (n : ℕ) (x : standardTriangleCircle.carrier) :
+    (diskBoundaryHomeomorph n x : Plane) =
+      homothetyPoint (radius n) x := by
+  rfl
+
+/-- Direct carrier homeomorphism from the original Jordan curve to target
+disk `n`, with the required boundary parametrization and radial scale. -/
+def jordanToDiskBoundaryHomeomorph (J : JordanCircle) (n : ℕ) :
+    J.carrier ≃ₜ (disk n).toJordanCircle.carrier :=
+  (boundaryCarrierHomeomorph J).trans <|
+    (diskBoundaryHomeomorph n).trans
+      (Homeomorph.setCongr (disk n).carrier_toJordanCircle.symm)
+
+@[simp] theorem jordanToDiskBoundaryHomeomorph_apply
+    (J : JordanCircle) (n : ℕ) (x : J.carrier) :
+    (jordanToDiskBoundaryHomeomorph J n x : Plane) =
+      homothetyPoint (radius n) (boundaryPoint J x) := by
+  rfl
 
 private theorem homothetyPoint_mem_openSegment
     {r : ℝ} (hr : 0 < r) (hr1 : r < 1)
