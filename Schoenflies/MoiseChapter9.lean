@@ -33,6 +33,7 @@ import Schoenflies.MoiseBandCellCover
 import Schoenflies.MoiseBandCellSeams
 import Schoenflies.SharedArcDiskSeparation
 import Schoenflies.MoiseBandCellInteriors
+import Schoenflies.MoiseBandCellNonadjacency
 import Schoenflies.MoiseBandCellAttachments
 import Schoenflies.NestedCollarStages
 import Schoenflies.ShrinkingMoiseBandCells

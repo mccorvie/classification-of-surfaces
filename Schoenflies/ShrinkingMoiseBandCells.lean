@@ -1,6 +1,7 @@
 import Schoenflies.MoiseBandCellBounds
 import Schoenflies.MoiseBandCellAttachments
 import Schoenflies.MoiseBandCellInteriors
+import Schoenflies.MoiseBandCellNonadjacency
 import Schoenflies.NestedCollarStages
 
 /-!
@@ -289,6 +290,40 @@ theorem shrinkingMoiseBand_cellClosedRegion_inter_next
     (I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall
       (nextLevelAddress L₀.next.level a))
 
+/-- Under the late-stage size hypothesis, cyclically nonadjacent closed
+cells in the selected Moise band are disjoint. -/
+theorem shrinkingMoiseBand_disjoint_cellClosedRegion_of_nonadjacent
+    (k : ℕ)
+    (hsmall : successorBufferBound k <
+      dist (J.curvePoint I.first.left : Plane)
+        (J.curvePoint I.first.right : Plane) / 2)
+    (a d : LevelAddress
+      (I.nextInsideCollarLater k
+        (I.shrinkingInsideCollarStage k)).next.level)
+    (had : a ≠ d)
+    (hda : d ≠ nextLevelAddress
+      (I.nextInsideCollarLater k
+        (I.shrinkingInsideCollarStage k)).next.level a)
+    (hadNext : a ≠ nextLevelAddress
+      (I.nextInsideCollarLater k
+        (I.shrinkingInsideCollarStage k)).next.level d) :
+    let L₀ := I.nextInsideCollarLater k
+      (I.shrinkingInsideCollarStage k)
+    let S₁ := InsideCollarStage.ofLater I
+      (I.shrinkingInsideCollarStage k) L₀
+    let L₁ := I.nextInsideCollarLater (k + 1) S₁
+    Disjoint (L₁.moiseBandPolygonalCircle a).closedRegion
+      (L₁.moiseBandPolygonalCircle d).closedRegion := by
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  exact L₁.disjoint_cellClosedRegion_of_nonadjacent
+    a d had hda hadNext
+    (I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall a)
+    (I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall d)
+
 /-- All sufficiently late recursive Moise cells therefore have the correct
 side choice, uniformly over the finite address set at each level. -/
 theorem eventually_shrinkingMoiseBand_parentClosedRegion_inter :
@@ -352,6 +387,38 @@ theorem eventually_shrinkingMoiseBand_cellClosedRegion_inter_next :
   exact L₁.cellClosedRegion_inter_next a
     (hN k hk a)
     (hN k hk (nextLevelAddress L₀.next.level a))
+
+/-- Uniformly in every sufficiently late band, all cyclically nonadjacent
+closed cells are disjoint. -/
+theorem eventually_shrinkingMoiseBand_disjoint_cellClosedRegion_of_nonadjacent :
+    ∃ N : ℕ, ∀ k : ℕ, N ≤ k →
+      ∀ a d : LevelAddress
+        (I.nextInsideCollarLater k
+          (I.shrinkingInsideCollarStage k)).next.level,
+      a ≠ d →
+      d ≠ nextLevelAddress
+        (I.nextInsideCollarLater k
+          (I.shrinkingInsideCollarStage k)).next.level a →
+      a ≠ nextLevelAddress
+        (I.nextInsideCollarLater k
+          (I.shrinkingInsideCollarStage k)).next.level d →
+      let L₀ := I.nextInsideCollarLater k
+        (I.shrinkingInsideCollarStage k)
+      let S₁ := InsideCollarStage.ofLater I
+        (I.shrinkingInsideCollarStage k) L₀
+      let L₁ := I.nextInsideCollarLater (k + 1) S₁
+      Disjoint (L₁.moiseBandPolygonalCircle a).closedRegion
+        (L₁.moiseBandPolygonalCircle d).closedRegion := by
+  obtain ⟨N, hN⟩ := I.eventually_shrinkingMoiseBand_parentClosedRegion_inter
+  refine ⟨N, ?_⟩
+  intro k hk a d had hda hadNext
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  exact L₁.disjoint_cellClosedRegion_of_nonadjacent
+    a d had hda hadNext (hN k hk a) (hN k hk d)
 
 end InitialAngularArcs
 end JordanCircle

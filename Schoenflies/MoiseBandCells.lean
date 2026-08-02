@@ -2130,22 +2130,16 @@ theorem childMoiseCarrier_disjoint_of_ne
     (L.childMoiseSegment_disjoint_of_parent_ne had hj hk)
     hxSegment hxSegment'
 
-/-- The descendant route of the next parent block stays away from the far
-left retained hair of the current block. -/
-theorem disjoint_parentLeftHair_childMoiseCarrier_next
-    (a : LevelAddress n) :
+/-- A descendant route stays away from a nonincident parent left hair.  The
+two hypotheses exclude the block based at that hair and the block immediately
+preceding it, whose right endpoint uses the same retained hair. -/
+theorem disjoint_parentLeftHair_childMoiseCarrier_of_nonincident
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hdPrev : d ≠ prevLevelAddress n a) :
     Disjoint (I.levelLeftHair a).carrier
-      (L.childMoiseCarrier (nextLevelAddress n a)) := by
-  let d := nextLevelAddress n a
+      (L.childMoiseCarrier d) := by
   let G := L.next.family.forgetObstacle
-  have hdPrev : d ≠ prevLevelAddress n a := by
-    intro h
-    have h' := congrArg (nextLevelAddress n) h
-    dsimp only [d] at h'
-    rw [nextLevelAddress_prevLevelAddress] at h'
-    exact nextLevelAddress_next_ne n hn a h'
-  have hblocksDA :=
-    L.addresses_disjoint_of_ne (nextLevelAddress_ne n a).symm
+  have hblocksDA := L.addresses_disjoint_of_ne had
   have hblocks := L.addresses_disjoint_of_ne hdPrev
   have hleftMem := L.leftmostAddress_mem_addresses a
   have hprevRightMem :=
@@ -2228,20 +2222,30 @@ theorem disjoint_parentLeftHair_childMoiseCarrier_next
         (L.junctionSegment_subset_rightHairCarrier hbc))
       hxHair hxSegment
 
-/-- Symmetrically, the descendant route of the current block stays away
-from the far right retained hair of its successor. -/
-theorem disjoint_childMoiseCarrier_parentRightHair_next
+/-- The descendant route of the next parent block stays away from the far
+left retained hair of the current block. -/
+theorem disjoint_parentLeftHair_childMoiseCarrier_next
     (a : LevelAddress n) :
-    Disjoint (L.childMoiseCarrier a)
-      (I.levelRightHair (nextLevelAddress n a)).carrier := by
-  let d := nextLevelAddress n a
+    Disjoint (I.levelLeftHair a).carrier
+      (L.childMoiseCarrier (nextLevelAddress n a)) := by
+  apply L.disjoint_parentLeftHair_childMoiseCarrier_of_nonincident
+    a (nextLevelAddress n a) (nextLevelAddress_ne n a).symm
+  intro h
+  have h' := congrArg (nextLevelAddress n) h
+  rw [nextLevelAddress_prevLevelAddress] at h'
+  exact nextLevelAddress_next_ne n hn a h'
+
+/-- Symmetrically, a descendant route stays away from a nonincident parent
+right hair.  The second hypothesis excludes the block immediately following
+that hair, whose left endpoint uses the same retained hair. -/
+theorem disjoint_childMoiseCarrier_parentRightHair_of_nonincident
+    (a d : LevelAddress n) (had : a ≠ d)
+    (haNext : a ≠ nextLevelAddress n d) :
+    Disjoint (L.childMoiseCarrier a) (I.levelRightHair d).carrier := by
   let q := nextLevelAddress n d
   let G := L.next.family.forgetObstacle
-  have haq : a ≠ q := by
-    dsimp only [q, d]
-    exact (nextLevelAddress_next_ne n hn a).symm
-  have hblocksAD := L.addresses_disjoint_of_ne (nextLevelAddress_ne n a).symm
-  have hblocksAQ := L.addresses_disjoint_of_ne haq
+  have hblocksAD := L.addresses_disjoint_of_ne had
+  have hblocksAQ := L.addresses_disjoint_of_ne haNext
   have hrightMem := L.rightmostAddress_mem_addresses d
   have hqLeftMem := L.leftmostAddress_mem_addresses q
   rw [Set.disjoint_left]
@@ -2306,6 +2310,16 @@ theorem disjoint_childMoiseCarrier_parentRightHair_next
         (L.junctionSegment_subset_rightHairCarrier hbc)
         (by rw [L.rightmostAddress_rightHair_carrier d]))
       hxSegment hxHair
+
+/-- The descendant route of the current block stays away from the far right
+retained hair of its successor. -/
+theorem disjoint_childMoiseCarrier_parentRightHair_next
+    (a : LevelAddress n) :
+    Disjoint (L.childMoiseCarrier a)
+      (I.levelRightHair (nextLevelAddress n a)).carrier := by
+  apply L.disjoint_childMoiseCarrier_parentRightHair_of_nonincident
+    a (nextLevelAddress n a) (nextLevelAddress_ne n a).symm
+  exact (nextLevelAddress_next_ne n hn a).symm
 
 /-- Every old-crosscut portion is disjoint from every finer-level route,
 even when the two portions are assigned to different parent cells. -/

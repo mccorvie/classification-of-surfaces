@@ -26,7 +26,7 @@ variable {J : JordanCircle} {I : J.InitialAngularArcs}
   {F : I.LevelAvoidingJoinFamily n epsilon} {hn : 1 ≤ n}
   (L : RecursiveInsideCollarStep.Later F hn)
 
-private noncomputable def crosscutMidpoint
+noncomputable def crosscutMidpoint
     (_L : RecursiveInsideCollarStep.Later F hn)
     (a : LevelAddress n) : Plane :=
   F.synchronizedCrosscutPath a ⟨1 / 2, by norm_num⟩
