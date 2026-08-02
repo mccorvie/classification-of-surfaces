@@ -82,7 +82,11 @@ theorem exists_levelLocalized_cutFreeArcToSuccessor
         (I.levelLocalizedAnnularCrosscut k a)
         (I.levelLocalizedAnnularCrosscut k
           (I.levelLocalizedSuccessor k a)),
-      ((I.innerDisk k).interiorRegion ⊆
+      (∀ c : LevelAddress k, c ≠ a →
+          c ≠ I.levelLocalizedSuccessor k a →
+        (I.levelLocalizedAnnularCrosscut k c).innerPoint ∈
+          range S.innerSplit.second) ∧
+      (((I.innerDisk k).interiorRegion ⊆
             (S.circle₀
               (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
               (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k
@@ -99,7 +103,7 @@ theorem exists_levelLocalized_cutFreeArcToSuccessor
           ∀ c : LevelAddress k, c ≠ a →
               c ≠ I.levelLocalizedSuccessor k a →
             (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
-              range S.outerArc₀) := by
+              range S.outerArc₀)) := by
   let M := I.levelLocalizedInnerMarking k
   obtain ⟨innerSplit, hinnerSecond⟩ :=
     M.exists_successor_twoBoundaryArcPaths a
@@ -124,7 +128,7 @@ theorem exists_levelLocalized_cutFreeArcToSuccessor
       (I.levelLocalizedAnnularCrosscut k
         (I.levelLocalizedSuccessor k a)) :=
     ⟨innerSplit, outerSplit⟩
-  refine ⟨S, ?_⟩
+  refine ⟨S, hinnerSecond, ?_⟩
   exact S.family_cutFreeArcs (I.levelLocalizedAnnularCrosscut k) hab
     (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
     (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k)

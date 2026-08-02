@@ -35,6 +35,9 @@ structure LocalizedCutFreeCellData (k : ℕ) (a : LevelAddress k) where
   separator : PolygonalCircle.AnnularCrosscut.SeparatorPair
     (I.levelLocalizedAnnularCrosscut k a)
     (I.levelLocalizedAnnularCrosscut k next)
+  inner_second : ∀ c : LevelAddress k, c ≠ a → c ≠ next →
+    (I.levelLocalizedAnnularCrosscut k c).innerPoint ∈
+      range separator.innerSplit.second
   side :
     ((I.innerDisk k).interiorRegion ⊆
           (separator.circle₀
@@ -54,10 +57,11 @@ structure LocalizedCutFreeCellData (k : ℕ) (a : LevelAddress k) where
 theorem nonempty_localizedCutFreeCellData (k : ℕ)
     (a : LevelAddress k) :
     Nonempty (I.LocalizedCutFreeCellData k a) := by
-  obtain ⟨S, hS⟩ :=
+  obtain ⟨S, hinnerSecond, hS⟩ :=
     I.exists_levelLocalized_cutFreeArcToSuccessor k a
   exact ⟨⟨I.levelLocalizedSuccessor k a,
-    (I.levelLocalizedSuccessor_ne k a).symm, rfl, S, hS⟩⟩
+    (I.levelLocalizedSuccessor_ne k a).symm, rfl, S,
+    hinnerSecond, hS⟩⟩
 
 /-- A canonical cut-free cell starting at the prescribed retained cut. -/
 noncomputable def localizedCutFreeCellData (k : ℕ)

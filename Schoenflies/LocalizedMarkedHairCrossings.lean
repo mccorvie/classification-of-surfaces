@@ -136,6 +136,13 @@ theorem range_levelLocalizedExteriorHairPrefixPath (k : ℕ)
       I.levelLocalizedExteriorHairPrefix k a :=
   (I.levelLocalizedFirstPolygonalCrossing k a).range_prefixPath
 
+theorem range_levelLocalizedExteriorHairPrefixPath_eq_segment (k : ℕ)
+    (a : LevelAddress k) :
+    range (I.levelLocalizedExteriorHairPrefixPath k a) =
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (I.levelLocalizedPolygonalBoundaryMark k a) :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).range_prefixPath_eq_segment
+
 theorem levelLocalizedExteriorHairPrefixPath_injective (k : ℕ)
     (a : LevelAddress k) :
     Injective (I.levelLocalizedExteriorHairPrefixPath k a) :=
