@@ -117,6 +117,14 @@ theorem triangleToBall_image_triangleBody :
       congr 1
     _ = closedBall (0 : Plane) 1 := himage
 
+/-- The simultaneous straightening sends the open standard triangle to the
+open Euclidean unit ball. -/
+theorem triangleToBall_image_interior_triangleBody :
+    triangleToBall '' interior triangleBody = ball (0 : Plane) 1 := by
+  rw [triangleToBall.image_interior,
+    triangleToBall_image_triangleBody,
+    interior_closedBall (0 : Plane) one_ne_zero]
+
 theorem triangleToBall_image_standardCarrier :
     triangleToBall '' standardTriangleCircle.carrier =
       sphere (0 : Plane) 1 := by
@@ -206,6 +214,52 @@ theorem triangleToBall_image_disk_interiorRegion (n : ℕ) :
     triangleToBall.image_interior,
     triangleToBall_image_disk_closedRegion,
     interior_closedBall (0 : Plane) (radius_pos n).ne']
+
+/-- Every point of the open standard triangle lies in one of the standard
+polygonal exhaustion disks. -/
+theorem exists_mem_disk_interiorRegion {x : Plane}
+    (hx : x ∈ interior triangleBody) :
+    ∃ n : ℕ, x ∈ (disk n).interiorRegion := by
+  have hxBall : triangleToBall x ∈ ball (0 : Plane) 1 := by
+    rw [← triangleToBall_image_interior_triangleBody]
+    exact ⟨x, hx, rfl⟩
+  have hxNorm : ‖triangleToBall x‖ < 1 := by
+    simpa only [mem_ball, dist_zero_right] using hxBall
+  have heps : 0 < 1 - ‖triangleToBall x‖ := sub_pos.mpr hxNorm
+  obtain ⟨N, hN⟩ := exists_nat_one_div_lt heps
+  have hfrac : 1 / (N + 2 : ℝ) ≤ 1 / (N + 1 : ℝ) := by
+    apply one_div_le_one_div_of_le
+    · positivity
+    · norm_num
+  have hxRadius : ‖triangleToBall x‖ < radius N := by
+    dsimp only [radius]
+    nlinarith
+  have hxSmallBall : triangleToBall x ∈ ball (0 : Plane) (radius N) := by
+    simpa only [mem_ball, dist_zero_right]
+  rw [← triangleToBall_image_disk_interiorRegion] at hxSmallBall
+  obtain ⟨y, hy, hyx⟩ := hxSmallBall
+  refine ⟨N, ?_⟩
+  have : y = x := triangleToBall.injective hyx
+  rwa [this] at hy
+
+/-- Every finite standard closed disk is contained in the open standard
+triangle. -/
+theorem disk_closedRegion_subset_interior_triangleBody (n : ℕ) :
+    (disk n).closedRegion ⊆ interior triangleBody := by
+  intro x hx
+  have hxClosedBall : triangleToBall x ∈
+      closedBall (0 : Plane) (radius n) := by
+    rw [← triangleToBall_image_disk_closedRegion]
+    exact ⟨x, hx, rfl⟩
+  have hxNorm : ‖triangleToBall x‖ ≤ radius n := by
+    simpa only [mem_closedBall, dist_zero_right] using hxClosedBall
+  have hxBall : triangleToBall x ∈ ball (0 : Plane) 1 := by
+    rw [mem_ball, dist_zero_right]
+    exact hxNorm.trans_lt (radius_lt_one n)
+  rw [← triangleToBall_image_interior_triangleBody] at hxBall
+  obtain ⟨y, hy, hyx⟩ := hxBall
+  have : y = x := triangleToBall.injective hyx
+  rwa [this] at hy
 
 /-- The closed Euclidean annulus between two radii. -/
 def roundClosedShell (r s : ℝ) : Set Plane :=

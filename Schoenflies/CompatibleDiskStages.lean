@@ -262,6 +262,18 @@ theorem compatibleStageSourceDisk_closedRegion_mono
         PolygonalCircle.closedRegion_subset_closedRegion_of_strictlyNested
           _ _ (I.localizedMarkedPolygonalDisk_strictly_nested (n + 2))
 
+/-- The standard target disks are increasing in the same indexing. -/
+theorem compatibleStageTargetDisk_closedRegion_mono
+    {m n : ℕ} (hmn : m ≤ n) :
+    (I.compatibleStageTargetDisk m).closedRegion ⊆
+      (I.compatibleStageTargetDisk n).closedRegion := by
+  induction n, hmn using Nat.le_induction with
+  | base => exact Set.Subset.rfl
+  | succ n hmn ih =>
+      exact ih.trans <|
+        PolygonalCircle.closedRegion_subset_closedRegion_of_strictlyNested
+          _ _ (StandardPolygonalCollars.disk_strictlyNested (n + 2))
+
 /-- Every later finite-stage homeomorphism agrees with an earlier one on the
 entire earlier closed disk. -/
 theorem compatibleClosedDiskHomeomorphStage_apply_of_le
@@ -283,6 +295,29 @@ theorem compatibleClosedDiskHomeomorphStage_apply_of_le
             (I.compatibleClosedDiskHomeomorphStage n).homeomorph xn := by
           exact I.compatibleClosedDiskHomeomorphStage_succ_apply_old n xn
         _ = (I.compatibleClosedDiskHomeomorphStage m).homeomorph x := ih
+
+/-- The inverses of later finite-stage homeomorphisms likewise agree with
+the earlier inverses on every earlier target disk. -/
+theorem compatibleClosedDiskHomeomorphStage_symm_apply_of_le
+    {m n : ℕ} (hmn : m ≤ n)
+    (y : (I.compatibleStageTargetDisk m).closedRegion) :
+    ((I.compatibleClosedDiskHomeomorphStage n).homeomorph.symm
+        ⟨y, I.compatibleStageTargetDisk_closedRegion_mono hmn y.2⟩ :
+      Plane) =
+      (I.compatibleClosedDiskHomeomorphStage m).homeomorph.symm y := by
+  let x := (I.compatibleClosedDiskHomeomorphStage m).homeomorph.symm y
+  have hforward := I.compatibleClosedDiskHomeomorphStage_apply_of_le
+    hmn x
+  have hmap :
+      (I.compatibleClosedDiskHomeomorphStage n).homeomorph
+          ⟨x, I.compatibleStageSourceDisk_closedRegion_mono hmn x.2⟩ =
+        ⟨y, I.compatibleStageTargetDisk_closedRegion_mono hmn y.2⟩ := by
+    apply Subtype.ext
+    rw [hforward]
+    exact congrArg Subtype.val <|
+      (I.compatibleClosedDiskHomeomorphStage m).homeomorph.apply_symm_apply y
+  rw [← hmap,
+    (I.compatibleClosedDiskHomeomorphStage n).homeomorph.symm_apply_apply]
 
 end JordanCircle.InitialAngularArcs
 

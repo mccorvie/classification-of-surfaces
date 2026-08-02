@@ -65,6 +65,7 @@ import Schoenflies.LocalizedCellCover
 import Schoenflies.LocalizedTargetCellCover
 import Schoenflies.CompatibleLocalizedCollars
 import Schoenflies.CompatibleDiskStages
+import Schoenflies.CompatibleInteriorHomeomorphism
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
