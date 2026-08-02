@@ -30,6 +30,7 @@ import Schoenflies.MoiseBandCells
 import Schoenflies.MoiseBandCellBounds
 import Schoenflies.MoiseBandCellTopology
 import Schoenflies.MoiseBandCellCover
+import Schoenflies.MoiseBandCellSeams
 import Schoenflies.MoiseBandCellAttachments
 import Schoenflies.NestedCollarStages
 import Schoenflies.ShrinkingMoiseBandCells

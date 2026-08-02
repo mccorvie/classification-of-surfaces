@@ -113,6 +113,32 @@ theorem segment_subset_segment_of_parameter_le
             module]
         rw [hcoordinate]
 
+/-- Tail segments on one access hair are nested in the opposite direction
+from the initial segments: if `x`, `y`, and `p` occur in that order, then
+the tail from `y` to `p` is contained in the tail from `x` to `p`. -/
+theorem tailSegment_subset_of_parameter_le
+    (H : J.InsideAccessHair q) (x y p : H.carrier)
+    (hxy : H.carrierParameter x ≤ H.carrierParameter y)
+    (hyp : H.carrierParameter y ≤ H.carrierParameter p) :
+    segment ℝ (y : Plane) (p : Plane) ⊆
+      segment ℝ (x : Plane) (p : Plane) := by
+  apply (convex_segment (x : Plane) (p : Plane)).segment_subset
+  · exact H.segment_subset_segment_of_parameter_le x y p hxy hyp
+      (right_mem_segment ℝ _ _)
+  · exact right_mem_segment ℝ _ _
+
+/-- Consequently, two tails ending at the same deeper hair point intersect
+in the tail whose initial point is deeper. -/
+theorem tailSegment_inter_tailSegment_eq_of_parameter_le
+    (H : J.InsideAccessHair q) (x y p : H.carrier)
+    (hxy : H.carrierParameter x ≤ H.carrierParameter y)
+    (hyp : H.carrierParameter y ≤ H.carrierParameter p) :
+    segment ℝ (x : Plane) (p : Plane) ∩
+        segment ℝ (y : Plane) (p : Plane) =
+      segment ℝ (y : Plane) (p : Plane) := by
+  exact Set.inter_eq_right.mpr
+    (H.tailSegment_subset_of_parameter_le x y p hxy hyp)
+
 /-- If two points are both no deeper than a third point of the same hair,
 their joining segment is covered by the two segments to that third point. -/
 theorem segment_subset_union_segments_of_parameter_le
