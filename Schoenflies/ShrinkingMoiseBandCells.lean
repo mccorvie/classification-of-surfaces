@@ -262,6 +262,29 @@ theorem shrinkingMoiseFilledDisk_eq_nextClosedRegion
   exact L₁.moiseFilledDisk_eq_childClosedRegion fun a =>
     I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall a
 
+/-- Under the late-stage side choice, the cells themselves (without the
+parent disk) are exactly the closed shell between the two consecutive
+polygonal collars. -/
+theorem shrinkingMoiseBandClosedCells_eq_closedShell
+    (k : ℕ)
+    (hsmall : successorBufferBound k <
+      dist (J.curvePoint I.first.left : Plane)
+        (J.curvePoint I.first.right : Plane) / 2) :
+    let L₀ := I.nextInsideCollarLater k
+      (I.shrinkingInsideCollarStage k)
+    let S₁ := InsideCollarStage.ofLater I
+      (I.shrinkingInsideCollarStage k) L₀
+    let L₁ := I.nextInsideCollarLater (k + 1) S₁
+    L₁.moiseBandClosedCells =
+      PolygonalCircle.closedShell L₀.next.circle L₁.next.circle := by
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  exact L₁.moiseBandClosedCells_eq_closedShell fun a =>
+    I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall a
+
 /-- The filled-band identity and the stored carrier avoidance upgrade weak
 containment to strict nesting of the two polygonal disks. -/
 theorem shrinkingMoiseBand_parentClosedRegion_subset_nextInteriorRegion
@@ -409,6 +432,28 @@ theorem eventually_shrinkingMoiseBand_parentClosedRegion_inter :
         (J.curvePoint I.first.right : Plane) / 2 := by
     simpa [successorBufferBound, one_div] using hN
   exact hmonotone.trans_lt hsmall
+
+/-- All sufficiently late finite Moise cell unions are exactly the closed
+shells between successive stages of the shrinking collar sequence. -/
+theorem eventually_shrinkingMoiseBandClosedCells_eq_closedShell :
+    ∃ N : ℕ, ∀ k : ℕ, N ≤ k →
+      let L₀ := I.nextInsideCollarLater k
+        (I.shrinkingInsideCollarStage k)
+      let S₁ := InsideCollarStage.ofLater I
+        (I.shrinkingInsideCollarStage k) L₀
+      let L₁ := I.nextInsideCollarLater (k + 1) S₁
+      L₁.moiseBandClosedCells =
+        PolygonalCircle.closedShell L₀.next.circle L₁.next.circle := by
+  obtain ⟨N, hN⟩ :=
+    I.eventually_shrinkingMoiseBand_parentClosedRegion_inter
+  refine ⟨N, ?_⟩
+  intro k hk
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  exact L₁.moiseBandClosedCells_eq_closedShell (hN k hk)
 
 /-- All sufficiently late recursive bands strictly nest their parent
 polygonal disk inside their child polygonal disk. -/

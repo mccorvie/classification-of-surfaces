@@ -268,6 +268,72 @@ theorem parentClosedRegion_subset_childInteriorRegion
   exact hxChild.resolve_right fun hxCarrier =>
     Set.disjoint_left.mp L.next.carrier_disjoint hxParent hxCarrier
 
+/-- Every point of the parent polygon is contained in at least one of the
+closed band cells attached along its synchronized crosscuts. -/
+theorem parentCarrier_subset_moiseBandClosedCells :
+    L.parentDisk.carrier ⊆ L.moiseBandClosedCells := by
+  intro x hxParent
+  rw [F.carrier_synchronizedPolygonalCircle hn] at hxParent
+  obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hxParent
+  apply Set.mem_iUnion.mpr
+  refine ⟨a, ?_⟩
+  rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union,
+    L.moiseBandPolygonalCircle_carrier a]
+  exact Or.inr (L.parentCrosscutRange_subset_moiseBandCarrier a hxa)
+
+/-- With the outward orientation fixed, no closed band cell enters the open
+parent disk. -/
+theorem disjoint_moiseBandClosedCells_parentInterior
+    (hinter : ∀ a : LevelAddress n,
+      L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle a).closedRegion =
+        range (F.synchronizedCrosscutPath a)) :
+    Disjoint L.moiseBandClosedCells L.parentDisk.interiorRegion := by
+  rw [Set.disjoint_left]
+  intro x hxCells hxParentInterior
+  obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hxCells
+  have hxParentClosed : x ∈ L.parentDisk.closedRegion := by
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inl hxParentInterior
+  have hxCross : x ∈ range (F.synchronizedCrosscutPath a) := by
+    rw [← hinter a]
+    exact ⟨hxParentClosed, hxa⟩
+  have hxParentCarrier : x ∈ L.parentDisk.carrier := by
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr ⟨a, hxCross⟩
+  exact Set.disjoint_left.mp
+    (PolygonalCircle.carrier_disjoint_interiorRegion L.parentDisk)
+    hxParentCarrier hxParentInterior
+
+/-- The finite union of recursive Moise cells is exactly the closed
+polygonal shell between the parent and child collars. -/
+theorem moiseBandClosedCells_eq_closedShell
+    (hinter : ∀ a : LevelAddress n,
+      L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle a).closedRegion =
+        range (F.synchronizedCrosscutPath a)) :
+    L.moiseBandClosedCells =
+      PolygonalCircle.closedShell L.parentDisk L.childDisk := by
+  have hfilled := L.moiseFilledDisk_eq_childClosedRegion hinter
+  apply Set.Subset.antisymm
+  · intro x hxCells
+    refine ⟨?_, ?_⟩
+    · rw [← hfilled]
+      exact Or.inr hxCells
+    · intro hxParentInterior
+      exact Set.disjoint_left.mp
+        (L.disjoint_moiseBandClosedCells_parentInterior hinter)
+        hxCells hxParentInterior
+  · rintro x ⟨hxChild, hxNotParentInterior⟩
+    have hxFilled : x ∈ L.moiseFilledDisk := by
+      rw [hfilled]
+      exact hxChild
+    rcases hxFilled with hxParent | hxCells
+    · rw [L.parentDisk.closedRegion_eq_union] at hxParent
+      exact L.parentCarrier_subset_moiseBandClosedCells
+        (hxParent.resolve_left hxNotParentInterior)
+    · exact hxCells
+
 end JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
 
 end
