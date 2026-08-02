@@ -31,6 +31,7 @@ private abbrev outerDisk (k : ℕ) : PolygonalCircle :=
 structure LocalizedCutFreeCellData (k : ℕ) (a : LevelAddress k) where
   next : LevelAddress k
   next_ne : a ≠ next
+  next_eq : next = I.levelLocalizedSuccessor k a
   separator : PolygonalCircle.AnnularCrosscut.SeparatorPair
     (I.levelLocalizedAnnularCrosscut k a)
     (I.levelLocalizedAnnularCrosscut k next)
@@ -53,14 +54,27 @@ structure LocalizedCutFreeCellData (k : ℕ) (a : LevelAddress k) where
 theorem nonempty_localizedCutFreeCellData (k : ℕ)
     (a : LevelAddress k) :
     Nonempty (I.LocalizedCutFreeCellData k a) := by
-  obtain ⟨b, hab, S, hS⟩ :=
-    I.exists_levelLocalized_cutFreeArcFrom k a
-  exact ⟨⟨b, hab, S, hS⟩⟩
+  obtain ⟨S, hS⟩ :=
+    I.exists_levelLocalized_cutFreeArcToSuccessor k a
+  exact ⟨⟨I.levelLocalizedSuccessor k a,
+    (I.levelLocalizedSuccessor_ne k a).symm, rfl, S, hS⟩⟩
 
 /-- A canonical cut-free cell starting at the prescribed retained cut. -/
 noncomputable def localizedCutFreeCellData (k : ℕ)
     (a : LevelAddress k) : I.LocalizedCutFreeCellData k a :=
   Classical.choice (I.nonempty_localizedCutFreeCellData k a)
+
+theorem localizedCutFreeCellData_next (k : ℕ)
+    (a : LevelAddress k) :
+    (I.localizedCutFreeCellData k a).next =
+      I.levelLocalizedSuccessor k a :=
+  (I.localizedCutFreeCellData k a).next_eq
+
+theorem localizedCutFreeCellData_next_bijective (k : ℕ) :
+    Function.Bijective
+      (fun a : LevelAddress k => (I.localizedCutFreeCellData k a).next) := by
+  simpa only [I.localizedCutFreeCellData_next] using
+    I.levelLocalizedSuccessor_bijective k
 
 namespace LocalizedCutFreeCellData
 

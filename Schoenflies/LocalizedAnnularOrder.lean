@@ -1,4 +1,5 @@
 import Schoenflies.FiniteAnnularCrosscutOrder
+import Schoenflies.FiniteJordanCyclicOrder
 import Schoenflies.LocalizedAnnularTheta
 
 /-!
@@ -46,6 +47,92 @@ private theorem two_le_card_levelAddress (k : ℕ) :
     2 = 2 ^ 1 := by norm_num
     _ ≤ 2 ^ (k + 1) :=
       pow_le_pow_right' (by norm_num) (by omega)
+
+/-- The localized inner-boundary marks, equipped with one canonical cyclic
+order shared by every cell at this shell level. -/
+noncomputable def levelLocalizedInnerMarking (k : ℕ) :
+    (I.innerDisk k).toJordanCircle.FiniteMarking (LevelAddress k) where
+  point := fun a => (I.levelLocalizedAnnularCrosscut k a).innerPoint
+  point_mem := fun a => by
+    simpa only [(I.innerDisk k).carrier_toJordanCircle] using
+      (I.levelLocalizedAnnularCrosscut k a).innerPoint_mem
+  point_injective := I.levelLocalizedPolygonalBoundaryMark_injective k
+  two_le_card := two_le_card_levelAddress k
+
+/-- The next retained cut in the actual cyclic order of the localized inner
+polygonal boundary. -/
+noncomputable def levelLocalizedSuccessor (k : ℕ)
+    (a : LevelAddress k) : LevelAddress k :=
+  (I.levelLocalizedInnerMarking k).successor a
+
+theorem levelLocalizedSuccessor_bijective (k : ℕ) :
+    Function.Bijective (I.levelLocalizedSuccessor k) :=
+  (I.levelLocalizedInnerMarking k).successor_bijective
+
+theorem levelLocalizedSuccessor_ne (k : ℕ) (a : LevelAddress k) :
+    I.levelLocalizedSuccessor k a ≠ a :=
+  (I.levelLocalizedInnerMarking k).successor_ne a
+
+/-- The canonical successor pair bounds a cut-free cell.  This is the
+coherent version of `exists_levelLocalized_cutFreeArcFrom`: all starting
+cuts use the same cyclic successor permutation. -/
+theorem exists_levelLocalized_cutFreeArcToSuccessor
+    (k : ℕ) (a : LevelAddress k) :
+    ∃ S : PolygonalCircle.AnnularCrosscut.SeparatorPair
+        (I.levelLocalizedAnnularCrosscut k a)
+        (I.levelLocalizedAnnularCrosscut k
+          (I.levelLocalizedSuccessor k a)),
+      ((I.innerDisk k).interiorRegion ⊆
+            (S.circle₀
+              (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+              (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k
+                (I.levelLocalizedSuccessor_ne k a).symm)).inside ∧
+          ∀ c : LevelAddress k, c ≠ a →
+              c ≠ I.levelLocalizedSuccessor k a →
+            (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+              range S.outerArc₁) ∨
+        ((I.innerDisk k).interiorRegion ⊆
+            (S.circle₁
+              (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+              (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k
+                (I.levelLocalizedSuccessor_ne k a).symm)).inside ∧
+          ∀ c : LevelAddress k, c ≠ a →
+              c ≠ I.levelLocalizedSuccessor k a →
+            (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+              range S.outerArc₀) := by
+  let M := I.levelLocalizedInnerMarking k
+  obtain ⟨innerSplit, hinnerSecond⟩ :=
+    M.exists_successor_twoBoundaryArcPaths a
+  have hab : a ≠ I.levelLocalizedSuccessor k a :=
+    (I.levelLocalizedSuccessor_ne k a).symm
+  have hOuterNe :
+      (I.levelLocalizedAnnularCrosscut k a).outerPoint ≠
+        (I.levelLocalizedAnnularCrosscut k
+          (I.levelLocalizedSuccessor k a)).outerPoint := by
+    intro h
+    exact hab (I.levelLocalizedOuterBoundaryMark_injective k h)
+  let outerSplit := Classical.choice <|
+    (I.outerDisk k).toJordanCircle.exists_twoBoundaryArcPaths
+      (by simpa only [(I.outerDisk k).carrier_toJordanCircle] using
+        (I.levelLocalizedAnnularCrosscut k a).outerPoint_mem)
+      (by simpa only [(I.outerDisk k).carrier_toJordanCircle] using
+        (I.levelLocalizedAnnularCrosscut k
+          (I.levelLocalizedSuccessor k a)).outerPoint_mem)
+      hOuterNe
+  let S : PolygonalCircle.AnnularCrosscut.SeparatorPair
+      (I.levelLocalizedAnnularCrosscut k a)
+      (I.levelLocalizedAnnularCrosscut k
+        (I.levelLocalizedSuccessor k a)) :=
+    ⟨innerSplit, outerSplit⟩
+  refine ⟨S, ?_⟩
+  exact S.family_cutFreeArcs (I.levelLocalizedAnnularCrosscut k) hab
+    (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+    (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k)
+    (I.levelLocalizedPolygonalBoundaryMark_injective k)
+    (I.levelLocalizedOuterBoundaryMark_injective k)
+    (I.range_levelLocalizedAnnularCrosscut_eq_segment k a)
+    (I.range_levelLocalizedAnnularCrosscut_eq_segment k
+      (I.levelLocalizedSuccessor k a)) hinnerSecond
 
 /-- At a localized shell level, an endpoint-free inner arc has a matching
 endpoint-free outer arc.  The alternative in the conclusion says which of
