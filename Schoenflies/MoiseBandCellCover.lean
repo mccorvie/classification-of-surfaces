@@ -505,6 +505,140 @@ theorem parentClosedRegion_inter_moiseBandCarrier
     rw [F.carrier_synchronizedPolygonalCircle hn]
     exact Set.mem_iUnion.mpr ⟨a, hx⟩
 
+theorem parentCarrier_inter_moiseBandCarrier
+    (a : LevelAddress n) :
+    L.parentDisk.carrier ∩ L.moiseBandCarrier a =
+      range (F.synchronizedCrosscutPath a) := by
+  apply Set.Subset.antisymm
+  · intro x hx
+    apply (Set.Subset.antisymm_iff.mp
+      (L.parentClosedRegion_inter_moiseBandCarrier a)).1
+    refine ⟨?_, hx.2⟩
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inr hx.1
+  · intro x hx
+    refine ⟨?_, L.parentCrosscutRange_subset_moiseBandCarrier a hx⟩
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr ⟨a, hx⟩
+
+/-- In particular, no point of a Moise band boundary lies in the open old
+disk. -/
+theorem moiseBandCarrier_disjoint_parentInterior
+    (a : LevelAddress n) :
+    Disjoint (L.moiseBandCarrier a) L.parentDisk.interiorRegion := by
+  rw [Set.disjoint_left]
+  intro x hxBand hxInterior
+  have hxParent : x ∈ L.parentDisk.closedRegion := by
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inl hxInterior
+  have hxCross : x ∈ range (F.synchronizedCrosscutPath a) := by
+    rw [← L.parentClosedRegion_inter_moiseBandCarrier a]
+    exact ⟨hxParent, hxBand⟩
+  have hxCarrier : x ∈ L.parentDisk.carrier := by
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr ⟨a, hxCross⟩
+  exact L.parentDisk.toJordanCircle.inside_subset_compl
+    (by rwa [L.parentDisk.inside_toJordanCircle])
+    (by rwa [L.parentDisk.carrier_toJordanCircle])
+
+theorem moiseBandCarrier_subset_parentExterior_union_carrier
+    (a : LevelAddress n) :
+    L.moiseBandCarrier a ⊆
+      L.parentDisk.exteriorRegion ∪ L.parentDisk.carrier := by
+  intro x hxBand
+  by_cases hxCarrier : x ∈ L.parentDisk.carrier
+  · exact Or.inr hxCarrier
+  · left
+    rw [← L.parentDisk.outside_toJordanCircle]
+    rcases L.parentDisk.toJordanCircle.mem_inside_or_outside (by
+        rwa [L.parentDisk.carrier_toJordanCircle]) with hxInside | hxOutside
+    · have hxInterior : x ∈ L.parentDisk.interiorRegion := by
+        rwa [← L.parentDisk.inside_toJordanCircle]
+      exact False.elim <| Set.disjoint_left.mp
+        (L.moiseBandCarrier_disjoint_parentInterior a) hxBand hxInterior
+    · exact hxOutside
+
+/-- Every band genuinely leaves the parent polygon. -/
+theorem exists_moiseBandCarrier_not_parentCarrier
+    (a : LevelAddress n) :
+    ∃ p ∈ L.moiseBandCarrier a, p ∉ L.parentDisk.carrier := by
+  let p : Plane := L.next.family.forgetObstacle.trimmedLeftPoint
+    (levelIndexOf L.next.level (L.leftmostAddress a))
+  have hpBand : p ∈ L.moiseBandCarrier a :=
+    L.rawLeftSide_subset_moiseBandCarrier a (right_mem_segment ℝ _ _)
+  refine ⟨p, hpBand, ?_⟩
+  intro hpParent
+  have hpClosed : p ∈ L.parentDisk.closedRegion := by
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inr hpParent
+  have hpInter : p ∈ L.parentDisk.closedRegion ∩
+      segment ℝ (F.leftSynchronizedPoint a) p :=
+    ⟨hpClosed, right_mem_segment ℝ _ _⟩
+  rw [L.parentClosedRegion_inter_rawLeftSide a] at hpInter
+  have hpEq : p = F.leftSynchronizedPoint a := mem_singleton_iff.mp hpInter
+  exact L.leftSide_left_ne_right a hpEq.symm
+
+/-- Once the remaining side choice is known, the standard polygonal
+boundary-avoidance theorem gives disjoint open interiors.  This isolates the
+only geometric orientation input still needed for an honest attachment. -/
+theorem disjoint_parentInterior_moiseBandInterior_of_carrier_avoidance
+    (a : LevelAddress n)
+    (hparent : Disjoint L.parentDisk.carrier
+      (L.moiseBandPolygonalCircle a).interiorRegion) :
+    Disjoint L.parentDisk.interiorRegion
+      (L.moiseBandPolygonalCircle a).interiorRegion := by
+  apply L.parentDisk.disjoint_interiorRegion_of_boundary_avoidance
+    (L.moiseBandPolygonalCircle a)
+  · exact hparent
+  · rw [L.moiseBandPolygonalCircle_carrier a]
+    exact L.moiseBandCarrier_disjoint_parentInterior a
+  · obtain ⟨p, hpBand, hpNotParent⟩ :=
+      L.exists_moiseBandCarrier_not_parentCarrier a
+    exact ⟨p, by
+      rw [L.moiseBandPolygonalCircle_carrier a]
+      exact hpBand, hpNotParent⟩
+
+/-- Under that same explicit orientation hypothesis, the two closed disks
+meet in exactly the parent crosscut. -/
+theorem parentClosedRegion_inter_moiseBandClosedRegion_of_carrier_avoidance
+    (a : LevelAddress n)
+    (hparent : Disjoint L.parentDisk.carrier
+      (L.moiseBandPolygonalCircle a).interiorRegion) :
+    L.parentDisk.closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a) := by
+  have hinteriors :=
+    L.disjoint_parentInterior_moiseBandInterior_of_carrier_avoidance
+      a hparent
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxParent, hxCell⟩
+    rw [L.parentDisk.closedRegion_eq_union] at hxParent
+    rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union] at hxCell
+    rcases hxParent with hxParentInterior | hxParentCarrier
+    · rcases hxCell with hxCellInterior | hxCellCarrier
+      · exact False.elim <| Set.disjoint_left.mp hinteriors
+          hxParentInterior hxCellInterior
+      · exact False.elim <| Set.disjoint_left.mp
+          (by
+            rw [L.moiseBandPolygonalCircle_carrier a]
+            exact L.moiseBandCarrier_disjoint_parentInterior a)
+          hxCellCarrier hxParentInterior
+    · rcases hxCell with hxCellInterior | hxCellCarrier
+      · exact False.elim <| Set.disjoint_left.mp hparent
+          hxParentCarrier hxCellInterior
+      · rw [L.moiseBandPolygonalCircle_carrier a] at hxCellCarrier
+        rw [← L.parentCarrier_inter_moiseBandCarrier a]
+        exact ⟨hxParentCarrier, hxCellCarrier⟩
+  · intro x hx
+    refine ⟨?_, ?_⟩
+    · rw [L.parentDisk.closedRegion_eq_union]
+      apply Or.inr
+      rw [F.carrier_synchronizedPolygonalCircle hn]
+      exact Set.mem_iUnion.mpr ⟨a, hx⟩
+    · rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union,
+        L.moiseBandPolygonalCircle_carrier a]
+      exact Or.inr (L.parentCrosscutRange_subset_moiseBandCarrier a hx)
+
 /-- The frontier of the filled union can only come from the old polygon or
 one of the finitely many cell polygons.  Later seam lemmas remove all of
 these candidates except the child polygon. -/
