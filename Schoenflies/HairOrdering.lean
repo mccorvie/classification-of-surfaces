@@ -206,6 +206,42 @@ theorem shallowerPoint_parameter_le_right (H : J.InsideAccessHair q)
   · simp [shallowerPoint, hxy]
   · simp [shallowerPoint, hxy]
 
+/-- Select the deeper of two points on a retained hair.  This is the inner
+endpoint of the overlap of two tails ending at a common still-deeper point. -/
+noncomputable def deeperPoint (H : J.InsideAccessHair q)
+    (x y : H.carrier) : H.carrier :=
+  if H.carrierParameter x ≤ H.carrierParameter y then y else x
+
+theorem deeperPoint_eq_left_or_right (H : J.InsideAccessHair q)
+    (x y : H.carrier) : H.deeperPoint x y = x ∨
+      H.deeperPoint x y = y := by
+  by_cases hxy : H.carrierParameter x ≤ H.carrierParameter y
+  · exact Or.inr (by simp [deeperPoint, hxy])
+  · exact Or.inl (by simp [deeperPoint, hxy])
+
+theorem left_parameter_le_deeperPoint (H : J.InsideAccessHair q)
+    (x y : H.carrier) :
+    H.carrierParameter x ≤ H.carrierParameter (H.deeperPoint x y) := by
+  by_cases hxy : H.carrierParameter x ≤ H.carrierParameter y
+  · simpa [deeperPoint, hxy]
+  · simp [deeperPoint, hxy]
+
+theorem right_parameter_le_deeperPoint (H : J.InsideAccessHair q)
+    (x y : H.carrier) :
+    H.carrierParameter y ≤ H.carrierParameter (H.deeperPoint x y) := by
+  by_cases hxy : H.carrierParameter x ≤ H.carrierParameter y
+  · simp [deeperPoint, hxy]
+  · simpa [deeperPoint, hxy] using le_of_not_ge hxy
+
+theorem deeperPoint_parameter_lt (H : J.InsideAccessHair q)
+    (x y p : H.carrier)
+    (hxp : H.carrierParameter x < H.carrierParameter p)
+    (hyp : H.carrierParameter y < H.carrierParameter p) :
+    H.carrierParameter (H.deeperPoint x y) < H.carrierParameter p := by
+  rcases H.deeperPoint_eq_left_or_right x y with h | h
+  · simpa [h] using hxp
+  · simpa [h] using hyp
+
 end InsideAccessHair
 end JordanCircle
 
