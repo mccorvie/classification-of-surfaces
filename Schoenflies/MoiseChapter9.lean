@@ -46,6 +46,7 @@ import Schoenflies.LocalizedAnnularCrosscuts
 import Schoenflies.AnnularSeparatorSides
 import Schoenflies.JordanThetaRegions
 import Schoenflies.PolygonalAnnularTheta
+import Schoenflies.AnnularCrosscutOrder
 import Schoenflies.LocalizedAnnularTheta
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame

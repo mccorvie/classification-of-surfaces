@@ -90,6 +90,31 @@ private theorem closure_inside_regular (K : JordanCircle) :
   · apply closure_mono
     exact interior_maximal subset_closure K.inside_isOpen
 
+/-- The bounded regions of the two complementary circles in a Jordan theta
+graph are disjoint.  This is the side-separation half of the theta theorem;
+it is exposed separately because the annular cyclic-order argument needs to
+know not only that the two closed regions cover the outer disk, but also
+which one contains the inner boundary component. -/
+theorem disjoint_inside
+    (hK₀ : K₀.carrier ⊆ Q.inside ∪ Q.carrier)
+    (hK₁ : K₁.carrier ⊆ Q.inside ∪ Q.carrier)
+    (hQ : Q.carrier = A₀ ∪ A₁)
+    (hcarrier₀ : K₀.carrier = B ∪ A₀)
+    (hcarrier₁ : K₁.carrier = B ∪ A₁)
+    (hA₀ : (A₀ \ K₁.carrier).Nonempty)
+    (hA₁ : (A₁ \ K₀.carrier).Nonempty) :
+    Disjoint K₀.inside K₁.inside := by
+  have hK₀Other : K₀.inside ⊆ K₁.outside :=
+    inside_subset_otherOutside hK₀ hK₁ hQ hcarrier₀ hcarrier₁ hA₀
+  have hK₁Other : K₁.inside ⊆ K₀.outside :=
+    inside_subset_otherOutside (K₀ := K₁) (K₁ := K₀)
+      (A₀ := A₁) (A₁ := A₀) hK₁ hK₀
+      (by rw [hQ, Set.union_comm]) hcarrier₁ hcarrier₀ hA₁
+  rw [Set.disjoint_left]
+  intro x hx₀ hx₁
+  exact Set.disjoint_left.mp K₁.inside_disjoint_outside
+    hx₁ (hK₀Other hx₀)
+
 private theorem local_shared_arc_mem_interior_union
     (hdisjoint : Disjoint K₀.inside K₁.inside)
     (hcarrier₀ : K₀.carrier = B ∪ A₀)
@@ -224,17 +249,8 @@ theorem closure_inside_eq_union
       ball p r ∩ K₀.carrier = ball p r ∩ determinantLine p d ∧
       ball p r ∩ K₁.carrier = ball p r ∩ determinantLine p d) :
     closure Q.inside = closure K₀.inside ∪ closure K₁.inside := by
-  have hK₀Other : K₀.inside ⊆ K₁.outside :=
-    inside_subset_otherOutside hK₀ hK₁ hQ hcarrier₀ hcarrier₁ hA₀
-  have hK₁Other : K₁.inside ⊆ K₀.outside :=
-    inside_subset_otherOutside (K₀ := K₁) (K₁ := K₀)
-      (A₀ := A₁) (A₁ := A₀) hK₁ hK₀
-      (by rw [hQ, Set.union_comm]) hcarrier₁ hcarrier₀ hA₁
-  have hdisjoint : Disjoint K₀.inside K₁.inside := by
-    rw [Set.disjoint_left]
-    intro x hx₀ hx₁
-    exact Set.disjoint_left.mp K₁.inside_disjoint_outside
-      hx₁ (hK₀Other hx₀)
+  have hdisjoint : Disjoint K₀.inside K₁.inside :=
+    disjoint_inside hK₀ hK₁ hQ hcarrier₀ hcarrier₁ hA₀ hA₁
   let S : Set Plane := closure K₀.inside ∪ closure K₁.inside
   have hSclosed : IsClosed S := isClosed_closure.union isClosed_closure
   have hScompact : IsCompact S :=

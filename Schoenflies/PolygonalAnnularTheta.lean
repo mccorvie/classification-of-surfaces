@@ -308,6 +308,34 @@ theorem circles_exists_common_local_determinantLine
   refine ⟨d, r, hr, hcircleSupport₀.trans hsupport,
     hcircleSupport₁.trans hsupport⟩
 
+/-- The two separator disks selected by a pair of annular crosscuts have
+disjoint interiors.  Unlike the covering theorem below, this side statement
+does not require the crosscuts themselves to be straight. -/
+theorem disjoint_separatorInteriors
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hAB : Disjoint (range A.path) (range B.path)) :
+    Disjoint (S.circle₀ hPQ hAB).inside
+      (S.circle₁ hPQ hAB).inside := by
+  have hcircle₀ : (S.circle₀ hPQ hAB).carrier ⊆
+      Q.toJordanCircle.inside ∪ Q.toJordanCircle.carrier := by
+    intro x hx
+    have hxClosed := (S.circle₀_carrier_subset_closedShell hPQ hAB hx).1
+    rw [Q.closedRegion_eq_union] at hxClosed
+    simpa only [Q.inside_toJordanCircle, Q.carrier_toJordanCircle]
+      using hxClosed
+  have hcircle₁ : (S.circle₁ hPQ hAB).carrier ⊆
+      Q.toJordanCircle.inside ∪ Q.toJordanCircle.carrier := by
+    intro x hx
+    have hxClosed := (S.circle₁_carrier_subset_closedShell hPQ hAB hx).1
+    rw [Q.closedRegion_eq_union] at hxClosed
+    simpa only [Q.inside_toJordanCircle, Q.carrier_toJordanCircle]
+      using hxClosed
+  exact JordanThetaRegions.disjoint_inside hcircle₀ hcircle₁
+    (by simpa only [Q.carrier_toJordanCircle] using S.outer_carrier_eq_union)
+    (S.carrier_circle₀ hPQ hAB) (S.carrier_circle₁ hPQ hAB)
+    (S.outerArc₀_sdiff_circle₁_nonempty hPQ hAB)
+    (S.outerArc₁_sdiff_circle₀_nonempty hPQ hAB)
+
 /-- Polygonal-annulus crosscut theorem: the two complementary separator
 regions exactly fill the outer polygonal disk. -/
 theorem closure_outerInterior_eq_union_separatorInteriors
