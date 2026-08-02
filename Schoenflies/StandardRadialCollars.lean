@@ -1,0 +1,572 @@
+import Schoenflies.StandardPolygonalCollars
+import Schoenflies.TopologicalDiskBoundaryExtension
+import Mathlib.Analysis.Convex.GaugeRescale
+import Mathlib.Analysis.Normed.Module.Ball.Pointwise
+
+/-!
+# Radial straightening of the standard polygonal collars
+
+The standard target disks are positive homothetic copies of one triangle.
+Gauge rescaling from the centered triangle to the Euclidean unit ball is
+homogeneous on nonnegative rays.  Consequently one ambient homeomorphism
+sends every standard target disk to the closed ball of the corresponding
+radius, and every standard target carrier to the corresponding sphere.
+
+This simultaneous straightening is the compatibility interface for the
+infinite collar construction: radial Alexander extensions preserve every
+concentric level, so finite shell maps can be corrected on a shared boundary
+without changing the radial exhaustion.
+-/
+
+namespace Schoenflies
+
+open Metric Set
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+open Filter
+open scoped Pointwise Topology
+
+noncomputable section
+
+namespace StandardPolygonalCollars
+
+/-- Translate the standard triangle so that its chosen interior point is the
+origin. -/
+def centeredTriangleBody : Set Plane :=
+  (-center) +ᵥ triangleBody
+
+theorem centeredTriangleBody_isConvex :
+    Convex ℝ centeredTriangleBody :=
+  triangleBody_isConvex.vadd (-center)
+
+theorem centeredTriangleBody_isCompact :
+    IsCompact centeredTriangleBody :=
+  triangleBody_isCompact.vadd (-center)
+
+theorem centeredTriangleBody_mem_nhds_zero :
+    centeredTriangleBody ∈ 𝓝 (0 : Plane) := by
+  rw [← mem_interior_iff_mem_nhds]
+  change 0 ∈ interior ((-center) +ᵥ triangleBody)
+  rw [interior_vadd]
+  exact ⟨center, center_mem_triangleInterior, by simp⟩
+
+private theorem unitBall_mem_nhds_zero :
+    ball (0 : Plane) 1 ∈ 𝓝 0 :=
+  ball_mem_nhds _ zero_lt_one
+
+private theorem centeredTriangleBody_isVonNBounded :
+    Bornology.IsVonNBounded ℝ centeredTriangleBody :=
+  NormedSpace.isVonNBounded_of_isBounded ℝ
+    centeredTriangleBody_isCompact.isBounded
+
+private theorem unitBall_isVonNBounded :
+    Bornology.IsVonNBounded ℝ (ball (0 : Plane) 1) :=
+  NormedSpace.isVonNBounded_ball (𝕜 := ℝ) (E := Plane) 1
+
+/-- The homogeneous ambient straightening of the centered standard triangle
+to the Euclidean unit ball. -/
+def centeredTriangleToBall : Plane ≃ₜ Plane :=
+  gaugeRescaleHomeomorph centeredTriangleBody (ball (0 : Plane) 1)
+    centeredTriangleBody_isConvex centeredTriangleBody_mem_nhds_zero
+    centeredTriangleBody_isVonNBounded
+    (convex_ball 0 1) unitBall_mem_nhds_zero unitBall_isVonNBounded
+
+/-- Translate the selected triangle center to the origin and apply the
+homogeneous gauge rescaling. -/
+def triangleToBall : Plane ≃ₜ Plane :=
+  (Homeomorph.addLeft (-center)).trans centeredTriangleToBall
+
+theorem centeredTriangleToBall_smul {r : ℝ} (hr : 0 ≤ r)
+    (x : Plane) :
+    centeredTriangleToBall (r • x) =
+      r • centeredTriangleToBall x := by
+  exact gaugeRescale_smul centeredTriangleBody (ball (0 : Plane) 1)
+    hr x
+
+/-- The simultaneous straightening commutes with all nonnegative
+homotheties about the chosen triangle center. -/
+theorem triangleToBall_homothetyPoint {r : ℝ} (hr : 0 ≤ r)
+    (x : Plane) :
+    triangleToBall (homothetyPoint r x) =
+      r • triangleToBall x := by
+  change centeredTriangleToBall
+      (-center + homothetyPoint r x) =
+    r • centeredTriangleToBall (-center + x)
+  rw [show -center + homothetyPoint r x =
+      r • (-center + x) by
+    simp only [homothetyPoint]
+    module]
+  exact centeredTriangleToBall_smul hr (-center + x)
+
+theorem triangleToBall_image_triangleBody :
+    triangleToBall '' triangleBody = closedBall (0 : Plane) 1 := by
+  have hcenteredClosed : IsClosed centeredTriangleBody :=
+    centeredTriangleBody_isCompact.isClosed
+  have himage := image_gaugeRescaleHomeomorph_closure
+    centeredTriangleBody_isConvex centeredTriangleBody_mem_nhds_zero
+    centeredTriangleBody_isVonNBounded
+    (convex_ball (0 : Plane) 1) unitBall_mem_nhds_zero
+    unitBall_isVonNBounded
+  rw [hcenteredClosed.closure_eq, closure_ball _ one_ne_zero] at himage
+  change centeredTriangleToBall '' ((-center) +ᵥ triangleBody) = _ at himage
+  calc
+    triangleToBall '' triangleBody =
+        centeredTriangleToBall '' ((-center) +ᵥ triangleBody) := by
+      change (fun x => centeredTriangleToBall (-center + x)) ''
+        triangleBody = _
+      rw [← Set.image_image]
+      congr 1
+    _ = closedBall (0 : Plane) 1 := himage
+
+theorem triangleToBall_image_standardCarrier :
+    triangleToBall '' standardTriangleCircle.carrier =
+      sphere (0 : Plane) 1 := by
+  rw [← standardTriangleCircle.frontier_closedRegion,
+    standardTriangle_closedRegion,
+    triangleToBall.image_frontier,
+    triangleToBall_image_triangleBody,
+    frontier_closedBall _ one_ne_zero]
+
+/-- The homogeneous straightening sends every standard closed polygonal disk
+to the closed Euclidean ball at the same scale. -/
+theorem triangleToBall_image_disk_closedRegion (n : ℕ) :
+    triangleToBall '' (disk n).closedRegion =
+      closedBall (0 : Plane) (radius n) := by
+  rw [disk_closedRegion, standardTriangle_closedRegion]
+  apply Set.Subset.antisymm
+  · rintro y ⟨x, ⟨p, hp, rfl⟩, rfl⟩
+    rw [homothetyHomeomorph_apply,
+      triangleToBall_homothetyPoint (radius_pos n).le]
+    have hpBall : triangleToBall p ∈ closedBall (0 : Plane) 1 := by
+      rw [← triangleToBall_image_triangleBody]
+      exact ⟨p, hp, rfl⟩
+    rw [mem_closedBall, dist_zero_right,
+      norm_smul, Real.norm_of_nonneg (radius_pos n).le]
+    have hpNorm : ‖triangleToBall p‖ ≤ 1 := by
+      simpa only [mem_closedBall, dist_zero_right] using hpBall
+    nlinarith [radius_pos n]
+  · intro y hy
+    have hyNorm : ‖y‖ ≤ radius n := by
+      simpa only [mem_closedBall, dist_zero_right] using hy
+    let z : Plane := (radius n)⁻¹ • y
+    have hzBall : z ∈ closedBall (0 : Plane) 1 := by
+      rw [mem_closedBall, dist_zero_right, norm_smul,
+        Real.norm_eq_abs, abs_inv, abs_of_pos (radius_pos n)]
+      rw [inv_mul_eq_div]
+      exact (div_le_one (radius_pos n)).mpr hyNorm
+    obtain ⟨p, hp, hpz⟩ := by
+      rw [← triangleToBall_image_triangleBody] at hzBall
+      exact hzBall
+    refine ⟨homothetyPoint (radius n) p, ?_, ?_⟩
+    · exact ⟨p, hp, by
+        simp only [homothetyHomeomorph_apply]⟩
+    · rw [triangleToBall_homothetyPoint (radius_pos n).le, hpz]
+      dsimp only [z]
+      rw [smul_smul, mul_inv_cancel₀ (radius_pos n).ne', one_smul]
+
+/-- The same ambient straightening sends every standard polygonal carrier to
+the Euclidean sphere at the corresponding radius. -/
+theorem triangleToBall_image_disk_carrier (n : ℕ) :
+    triangleToBall '' (disk n).carrier =
+      sphere (0 : Plane) (radius n) := by
+  rw [disk_carrier]
+  apply Set.Subset.antisymm
+  · rintro y ⟨x, ⟨p, hp, rfl⟩, rfl⟩
+    rw [homothetyHomeomorph_apply,
+      triangleToBall_homothetyPoint (radius_pos n).le]
+    have hpSphere : triangleToBall p ∈ sphere (0 : Plane) 1 := by
+      rw [← triangleToBall_image_standardCarrier]
+      exact ⟨p, hp, rfl⟩
+    rw [mem_sphere, dist_zero_right, norm_smul,
+      Real.norm_of_nonneg (radius_pos n).le]
+    have hpNorm : ‖triangleToBall p‖ = 1 := by
+      simpa only [mem_sphere, dist_zero_right] using hpSphere
+    rw [hpNorm, mul_one]
+  · intro y hy
+    have hyNorm : ‖y‖ = radius n := by
+      simpa only [mem_sphere, dist_zero_right] using hy
+    let z : Plane := (radius n)⁻¹ • y
+    have hzSphere : z ∈ sphere (0 : Plane) 1 := by
+      rw [mem_sphere, dist_zero_right, norm_smul,
+        Real.norm_eq_abs, abs_inv, abs_of_pos (radius_pos n), hyNorm]
+      exact inv_mul_cancel₀ (radius_pos n).ne'
+    obtain ⟨p, hp, hpz⟩ := by
+      rw [← triangleToBall_image_standardCarrier] at hzSphere
+      exact hzSphere
+    refine ⟨homothetyPoint (radius n) p, ?_, ?_⟩
+    · exact ⟨p, hp, by
+        simp only [homothetyHomeomorph_apply]⟩
+    · rw [triangleToBall_homothetyPoint (radius_pos n).le, hpz]
+      dsimp only [z]
+      rw [smul_smul, mul_inv_cancel₀ (radius_pos n).ne', one_smul]
+
+theorem triangleToBall_image_disk_interiorRegion (n : ℕ) :
+    triangleToBall '' (disk n).interiorRegion =
+      ball (0 : Plane) (radius n) := by
+  rw [← (disk n).interior_closedRegion,
+    triangleToBall.image_interior,
+    triangleToBall_image_disk_closedRegion,
+    interior_closedBall (0 : Plane) (radius_pos n).ne']
+
+/-- The closed Euclidean annulus between two radii. -/
+def roundClosedShell (r s : ℝ) : Set Plane :=
+  closedBall (0 : Plane) s \ ball (0 : Plane) r
+
+theorem triangleToBall_image_closedShell (n : ℕ) :
+    triangleToBall '' PolygonalCircle.closedShell (disk n) (disk (n + 1)) =
+      roundClosedShell (radius n) (radius (n + 1)) := by
+  rw [PolygonalCircle.closedShell, image_diff triangleToBall.injective,
+    triangleToBall_image_disk_closedRegion,
+    triangleToBall_image_disk_interiorRegion]
+  rfl
+
+/-- Restriction of the simultaneous straightening to one standard closed
+polygonal disk. -/
+def diskToClosedBall (n : ℕ) :
+    (disk n).closedRegion ≃ₜ closedBall (0 : Plane) (radius n) :=
+  (triangleToBall.image (disk n).closedRegion).trans <|
+    Homeomorph.setCongr (triangleToBall_image_disk_closedRegion n)
+
+/-- Restriction of the simultaneous straightening to one standard polygonal
+boundary. -/
+def diskCarrierToSphere (n : ℕ) :
+    (disk n).carrier ≃ₜ sphere (0 : Plane) (radius n) :=
+  (triangleToBall.image (disk n).carrier).trans <|
+    Homeomorph.setCongr (triangleToBall_image_disk_carrier n)
+
+@[simp] theorem diskToClosedBall_apply (n : ℕ)
+    (x : (disk n).closedRegion) :
+    (diskToClosedBall n x : Plane) = triangleToBall x := by
+  rfl
+
+@[simp] theorem diskCarrierToSphere_apply (n : ℕ)
+    (x : (disk n).carrier) :
+    (diskCarrierToSphere n x : Plane) = triangleToBall x := by
+  rfl
+
+/-- Restriction of the simultaneous straightening to one standard polygonal
+shell. -/
+def shellToRoundClosedShell (n : ℕ) :
+    PolygonalCircle.closedShell (disk n) (disk (n + 1)) ≃ₜ
+      roundClosedShell (radius n) (radius (n + 1)) :=
+  (triangleToBall.image
+      (PolygonalCircle.closedShell (disk n) (disk (n + 1)))).trans <|
+    Homeomorph.setCongr (triangleToBall_image_closedShell n)
+
+@[simp] theorem shellToRoundClosedShell_apply (n : ℕ)
+    (x : PolygonalCircle.closedShell (disk n) (disk (n + 1))) :
+    (shellToRoundClosedShell n x : Plane) = triangleToBall x := by
+  rfl
+
+end StandardPolygonalCollars
+
+namespace PlaneAlexander
+
+open LeanEval.Topology.ClassificationOfSurfaces
+
+/-- The Alexander radial construction on the whole plane, rather than only
+on the closed unit ball. -/
+def ambientRadialHomeomorph
+    (h : sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1) :
+    Plane ≃ₜ Plane :=
+  PolygonalCircle.planeComplexEquiv.toHomeomorph.trans <|
+    ({
+      toFun := Circle.radialMap
+        (sphereToCircle.symm.trans (h.trans sphereToCircle))
+      invFun := Circle.radialMap
+        (sphereToCircle.symm.trans (h.symm.trans sphereToCircle))
+      left_inv := fun z => by
+        change Circle.radialMap
+          (sphereToCircle.symm.trans (h.symm.trans sphereToCircle))
+          (Circle.radialMap
+            (sphereToCircle.symm.trans (h.trans sphereToCircle)) z) = z
+        exact Circle.radialMap_symm_apply
+          (sphereToCircle.symm.trans (h.trans sphereToCircle)) z
+      right_inv := fun z => by
+        change Circle.radialMap
+          (sphereToCircle.symm.trans (h.trans sphereToCircle))
+          (Circle.radialMap
+            (sphereToCircle.symm.trans (h.symm.trans sphereToCircle)) z) = z
+        exact Circle.radialMap_symm_apply
+          (sphereToCircle.symm.trans (h.symm.trans sphereToCircle)) z
+      continuous_toFun := Circle.continuous_radialMap _
+      continuous_invFun := Circle.continuous_radialMap _
+    } : ℂ ≃ₜ ℂ).trans
+      PolygonalCircle.planeComplexEquiv.toHomeomorph.symm
+
+/-- Ambient radial extension preserves the Euclidean norm exactly. -/
+theorem norm_ambientRadialHomeomorph
+    (h : sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1)
+    (x : Plane) :
+    ‖ambientRadialHomeomorph h x‖ = ‖x‖ := by
+  change ‖PolygonalCircle.planeComplexEquiv.symm
+      (Circle.radialMap
+        (sphereToCircle.symm.trans (h.trans sphereToCircle))
+        (PolygonalCircle.planeComplexEquiv x))‖ = ‖x‖
+  let w := Circle.radialMap
+    (sphereToCircle.symm.trans (h.trans sphereToCircle))
+    (PolygonalCircle.planeComplexEquiv x)
+  calc
+    ‖PolygonalCircle.planeComplexEquiv.symm w‖ = ‖w‖ := by
+      rw [← PolygonalCircle.norm_planeComplexEquiv,
+        PolygonalCircle.planeComplexEquiv.apply_symm_apply]
+    _ = ‖PolygonalCircle.planeComplexEquiv x‖ :=
+      Circle.norm_radialMap _ _
+    _ = ‖x‖ := PolygonalCircle.norm_planeComplexEquiv x
+
+/-- On every positive radial multiple of the unit sphere, ambient Alexander
+extension acts by the same radial multiple of the prescribed sphere map. -/
+theorem ambientRadialHomeomorph_smul_ofSphere
+    (h : sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1)
+    {r : ℝ} (hr : 0 < r) (z : sphere (0 : Plane) 1) :
+    ambientRadialHomeomorph h (r • (z : Plane)) =
+      r • (h z : Plane) := by
+  let hc : Circle ≃ₜ Circle :=
+    sphereToCircle.symm.trans (h.trans sphereToCircle)
+  have hzComplex :
+      PolygonalCircle.planeComplexEquiv (r • (z : Plane)) =
+        (r : ℂ) * (sphereToCircle z : ℂ) := by
+    change PolygonalCircle.planeComplexEquiv (r • (z : Plane)) = _
+    rw [map_smul]
+    rfl
+  have hzne : (r : ℂ) * (sphereToCircle z : ℂ) ≠ 0 :=
+    mul_ne_zero (Complex.ofReal_ne_zero.mpr hr.ne')
+      (sphereToCircle z).coe_ne_zero
+  have hnorm : ‖(r : ℂ) * (sphereToCircle z : ℂ)‖ = r := by
+    have hzNorm : ‖(sphereToCircle z : ℂ)‖ = 1 :=
+      Circle.norm_coe (sphereToCircle z)
+    rw [norm_mul, hzNorm, mul_one, Complex.norm_real]
+    exact Real.norm_of_nonneg hr.le
+  have hdirection : Circle.direction
+      ((r : ℂ) * (sphereToCircle z : ℂ)) hzne = sphereToCircle z := by
+    apply Circle.ext
+    rw [Circle.coe_direction, hnorm]
+    field_simp [hr.ne']
+  rw [ambientRadialHomeomorph]
+  change PolygonalCircle.planeComplexEquiv.symm
+      (Circle.radialMap hc
+        (PolygonalCircle.planeComplexEquiv (r • (z : Plane)))) = _
+  apply PolygonalCircle.planeComplexEquiv.injective
+  rw [PolygonalCircle.planeComplexEquiv.apply_symm_apply]
+  change Circle.radialMap hc
+      (PolygonalCircle.planeComplexEquiv (r • (z : Plane))) =
+    PolygonalCircle.planeComplexEquiv (r • (h z : Plane))
+  rw [hzComplex, Circle.radialMap_of_ne hc hzne, hnorm, hdirection]
+  change (r : ℂ) * (hc (sphereToCircle z) : ℂ) = _
+  have hhc : hc (sphereToCircle z) = sphereToCircle (h z) := by
+    simp only [hc, Homeomorph.trans_apply, Homeomorph.symm_apply_apply]
+  rw [hhc, map_smul]
+  rfl
+
+end PlaneAlexander
+
+namespace RadialBoundaryAdjustment
+
+/-- Scale the unit sphere to a positive-radius sphere. -/
+def sphereScale (r : ℝ) (hr : 0 < r) :
+    sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) r where
+  toFun z := ⟨r • (z : Plane), by
+    rw [mem_sphere, dist_zero_right, norm_smul,
+      Real.norm_of_nonneg hr.le]
+    have hz : ‖(z : Plane)‖ = 1 := by
+      simpa only [mem_sphere, dist_zero_right] using z.2
+    rw [hz, mul_one]⟩
+  invFun y := ⟨r⁻¹ • (y : Plane), by
+    rw [mem_sphere, dist_zero_right, norm_smul,
+      Real.norm_eq_abs, abs_inv, abs_of_pos hr]
+    have hy : ‖(y : Plane)‖ = r := by
+      simpa only [mem_sphere, dist_zero_right] using y.2
+    rw [hy, inv_mul_cancel₀ hr.ne']⟩
+  left_inv z := by
+    apply Subtype.ext
+    change r⁻¹ • (r • (z : Plane)) = (z : Plane)
+    rw [smul_smul, inv_mul_cancel₀ hr.ne', one_smul]
+  right_inv y := by
+    apply Subtype.ext
+    change r • (r⁻¹ • (y : Plane)) = (y : Plane)
+    rw [smul_smul, mul_inv_cancel₀ hr.ne', one_smul]
+  continuous_toFun := by fun_prop
+  continuous_invFun := by fun_prop
+
+@[simp] theorem sphereScale_apply (r : ℝ) (hr : 0 < r)
+    (z : sphere (0 : Plane) 1) :
+    (sphereScale r hr z : Plane) = r • (z : Plane) := rfl
+
+@[simp] theorem sphereScale_symm_apply (r : ℝ) (hr : 0 < r)
+    (y : sphere (0 : Plane) r) :
+    ((sphereScale r hr).symm y : Plane) = r⁻¹ • (y : Plane) := rfl
+
+/-- Extend a self-homeomorphism of one positive-radius sphere radially over
+the whole plane. -/
+def extendSphereHomeomorph (r : ℝ) (hr : 0 < r)
+    (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r) :
+    Plane ≃ₜ Plane :=
+  PlaneAlexander.ambientRadialHomeomorph <|
+    (sphereScale r hr).trans (h.trans (sphereScale r hr).symm)
+
+theorem extendSphereHomeomorph_apply
+    (r : ℝ) (hr : 0 < r)
+    (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r)
+    (y : sphere (0 : Plane) r) :
+    extendSphereHomeomorph r hr h y = h y := by
+  let z : sphere (0 : Plane) 1 := (sphereScale r hr).symm y
+  have hy : (y : Plane) = r • (z : Plane) := by
+    exact (congrArg Subtype.val
+      ((sphereScale r hr).apply_symm_apply y)).symm
+  rw [extendSphereHomeomorph, hy,
+    PlaneAlexander.ambientRadialHomeomorph_smul_ofSphere _ hr z]
+  change r • (((sphereScale r hr).trans
+    (h.trans (sphereScale r hr).symm)) z : Plane) = (h y : Plane)
+  simp only [Homeomorph.trans_apply, z,
+    Homeomorph.apply_symm_apply]
+  exact congrArg Subtype.val ((sphereScale r hr).apply_symm_apply (h y))
+
+theorem norm_extendSphereHomeomorph
+    (r : ℝ) (hr : 0 < r)
+    (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r)
+    (x : Plane) :
+    ‖extendSphereHomeomorph r hr h x‖ = ‖x‖ :=
+  PlaneAlexander.norm_ambientRadialHomeomorph _ x
+
+theorem image_roundClosedShell_extendSphereHomeomorph
+    (r : ℝ) (hr : 0 < r)
+    (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r)
+    (a b : ℝ) :
+    extendSphereHomeomorph r hr h ''
+        StandardPolygonalCollars.roundClosedShell a b =
+      StandardPolygonalCollars.roundClosedShell a b := by
+  apply Set.Subset.antisymm
+  · rintro y ⟨x, hx, rfl⟩
+    rcases hx with ⟨hxOuter, hxInner⟩
+    constructor
+    · rw [mem_closedBall, dist_zero_right,
+        norm_extendSphereHomeomorph]
+      simpa only [mem_closedBall, dist_zero_right] using hxOuter
+    · intro hyInner
+      apply hxInner
+      rw [mem_ball, dist_zero_right] at hyInner ⊢
+      rwa [norm_extendSphereHomeomorph] at hyInner
+  · intro y hy
+    let x : Plane := (extendSphereHomeomorph r hr h).symm y
+    have hnorm : ‖x‖ = ‖y‖ := by
+      have hnormForward := norm_extendSphereHomeomorph r hr h x
+      rw [(extendSphereHomeomorph r hr h).apply_symm_apply] at hnormForward
+      exact hnormForward.symm
+    refine ⟨x, ?_, (extendSphereHomeomorph r hr h).apply_symm_apply y⟩
+    rcases hy with ⟨hyOuter, hyInner⟩
+    constructor
+    · rw [mem_closedBall, dist_zero_right, hnorm]
+      simpa only [mem_closedBall, dist_zero_right] using hyOuter
+    · intro hxInner
+      apply hyInner
+      rw [mem_ball, dist_zero_right] at hxInner ⊢
+      rwa [hnorm] at hxInner
+
+/-- Restrict a radial sphere adjustment to any concentric closed annulus. -/
+def roundClosedShellHomeomorph
+    (r : ℝ) (hr : 0 < r)
+    (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r)
+    (a b : ℝ) :
+    StandardPolygonalCollars.roundClosedShell a b ≃ₜ
+      StandardPolygonalCollars.roundClosedShell a b :=
+  ((extendSphereHomeomorph r hr h).image
+      (StandardPolygonalCollars.roundClosedShell a b)).trans <|
+    Homeomorph.setCongr
+      (image_roundClosedShell_extendSphereHomeomorph r hr h a b)
+
+@[simp] theorem roundClosedShellHomeomorph_apply
+    (r : ℝ) (hr : 0 < r)
+    (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r)
+    (a b : ℝ)
+    (x : StandardPolygonalCollars.roundClosedShell a b) :
+    (roundClosedShellHomeomorph r hr h a b x : Plane) =
+      extendSphereHomeomorph r hr h x := by
+  rfl
+
+theorem roundClosedShellHomeomorph_apply_innerSphere
+    {r s : ℝ} (hr : 0 < r) (hrs : r ≤ s)
+    (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r)
+    (y : sphere (0 : Plane) r) :
+    (roundClosedShellHomeomorph r hr h r s
+        ⟨y, by
+          constructor
+          · rw [mem_closedBall, dist_zero_right]
+            have hy : ‖(y : Plane)‖ = r := by
+              simpa only [mem_sphere, dist_zero_right] using y.2
+            exact hy.le.trans hrs
+          · intro hyBall
+            rw [mem_ball, dist_zero_right] at hyBall
+            have hy : ‖(y : Plane)‖ = r := by
+              simpa only [mem_sphere, dist_zero_right] using y.2
+            exact (hy ▸ hyBall).false⟩ : Plane) = h y := by
+  rw [roundClosedShellHomeomorph_apply,
+    extendSphereHomeomorph_apply]
+
+end RadialBoundaryAdjustment
+
+namespace StandardPolygonalCollars
+
+/-- Regard the inner carrier of a standard shell as a subtype of that shell. -/
+def innerCarrierInClosedShell (n : ℕ) (x : (disk n).carrier) :
+    PolygonalCircle.closedShell (disk n) (disk (n + 1)) :=
+  ⟨x, PolygonalCircle.innerCarrier_subset_closedShell _ _
+    (disk_strictlyNested n) x.2⟩
+
+@[simp] theorem innerCarrierInClosedShell_val (n : ℕ)
+    (x : (disk n).carrier) :
+    (innerCarrierInClosedShell n x : Plane) = x := by
+  rfl
+
+/-- Extend an arbitrary self-homeomorphism of the inner standard polygonal
+carrier over the next standard shell.  The simultaneous gauge straightening
+conjugates the carrier map to a round sphere, where Alexander's radial
+construction preserves the whole annulus. -/
+def standardShellBoundaryAdjustment (n : ℕ)
+    (q : (disk n).carrier ≃ₜ (disk n).carrier) :
+    PolygonalCircle.closedShell (disk n) (disk (n + 1)) ≃ₜ
+      PolygonalCircle.closedShell (disk n) (disk (n + 1)) :=
+  (shellToRoundClosedShell n).trans <|
+    (RadialBoundaryAdjustment.roundClosedShellHomeomorph
+      (radius n) (radius_pos n)
+      ((diskCarrierToSphere n).symm.trans
+        (q.trans (diskCarrierToSphere n)))
+      (radius n) (radius (n + 1))).trans
+    (shellToRoundClosedShell n).symm
+
+/-- The standard-shell adjustment has exactly the prescribed value on the
+inner polygonal carrier. -/
+theorem standardShellBoundaryAdjustment_apply_innerCarrier
+    (n : ℕ) (q : (disk n).carrier ≃ₜ (disk n).carrier)
+    (x : (disk n).carrier) :
+    (standardShellBoundaryAdjustment n q
+        (innerCarrierInClosedShell n x) : Plane) = q x := by
+  rw [standardShellBoundaryAdjustment]
+  simp only [Homeomorph.trans_apply]
+  have hround :
+      RadialBoundaryAdjustment.roundClosedShellHomeomorph
+          (radius n) (radius_pos n)
+          ((diskCarrierToSphere n).symm.trans
+            (q.trans (diskCarrierToSphere n)))
+          (radius n) (radius (n + 1))
+          (shellToRoundClosedShell n (innerCarrierInClosedShell n x)) =
+        shellToRoundClosedShell n (innerCarrierInClosedShell n (q x)) := by
+    apply Subtype.ext
+    rw [RadialBoundaryAdjustment.roundClosedShellHomeomorph_apply]
+    let y : sphere (0 : Plane) (radius n) := diskCarrierToSphere n x
+    have hsource :
+        (shellToRoundClosedShell n (innerCarrierInClosedShell n x) : Plane) =
+          (y : Plane) := by
+      rfl
+    rw [hsource,
+      RadialBoundaryAdjustment.extendSphereHomeomorph_apply]
+    change (((diskCarrierToSphere n).symm.trans
+      (q.trans (diskCarrierToSphere n))) y : Plane) = _
+    simp only [y, Homeomorph.trans_apply, Homeomorph.symm_apply_apply]
+    rfl
+  rw [hround, Homeomorph.symm_apply_apply]
+  rfl
+
+end StandardPolygonalCollars
+
+end
+
+end Schoenflies

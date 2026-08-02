@@ -63,6 +63,7 @@ import Schoenflies.LocalizedAnnularOrder
 import Schoenflies.LocalizedCutFreeCells
 import Schoenflies.LocalizedCellCover
 import Schoenflies.LocalizedTargetCellCover
+import Schoenflies.CompatibleLocalizedCollars
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides
