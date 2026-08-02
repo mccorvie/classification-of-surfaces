@@ -20,7 +20,7 @@ If you are in the bay area, come to the [weekly meetup](https://luma.com/yi9idc1
 ## Documents
 
 - `ClassificationOfSurfaces/API.lean`: public Lean API map and preferred code entry point.
-- `docs/PROOF_DIGEST.md`: first-pass mathematical digestion of the complete proof spine.
+- [Proof digest](output/pdf/classification-of-surfaces-proof-digest.pdf): first-pass mathematical digestion of the complete proof spine.
 - `docs/ARCHITECTURE.md`: proof architecture and source-file map.
 - `docs/DESIGN_DECISIONS.md`: stable design choices behind the formalization.
 - `docs/AUTOFORMALIZATION_GUIDE.md`: definition-faithfulness and maintenance rules.

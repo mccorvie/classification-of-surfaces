@@ -2,6 +2,9 @@
 LeanEval/*/.lake/
 LeanEval/*/lake-manifest.json
 *pdf
+!output/
+!output/pdf/
+!output/pdf/classification-of-surfaces-proof-digest.pdf
 blueprint/lean_decls
 blueprint/print/
 blueprint/src/content-bak.tex
