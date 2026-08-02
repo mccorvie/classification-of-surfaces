@@ -336,6 +336,89 @@ theorem disjoint_separatorInteriors
     (S.outerArc₀_sdiff_circle₁_nonempty hPQ hAB)
     (S.outerArc₁_sdiff_circle₀_nonempty hPQ hAB)
 
+/-- The two separator carriers meet exactly in their common bridge. -/
+theorem separatorCarriers_inter
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hAB : Disjoint (range A.path) (range B.path)) :
+    (S.circle₀ hPQ hAB).carrier ∩ (S.circle₁ hPQ hAB).carrier =
+      range S.commonBridge := by
+  have houter :
+      range S.outerArc₀ ∩ range S.outerArc₁ =
+        ({A.outerPoint, B.outerPoint} : Set Plane) := by
+    simpa only [outerArc₀, outerArc₁, Path.symm_range, inter_comm] using
+      S.outerSplit.overlap
+  rw [S.carrier_circle₀ hPQ hAB, S.carrier_circle₁ hPQ hAB]
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxBridge | hxOuter₀, hxBridge' | hxOuter₁⟩
+    · exact hxBridge
+    · exact hxBridge
+    · exact hxBridge'
+    · have hxEnds : x ∈ ({A.outerPoint, B.outerPoint} : Set Plane) := by
+        rw [← houter]
+        exact ⟨hxOuter₀, hxOuter₁⟩
+      rcases hxEnds with hxA | hxB
+      · rw [hxA]
+        exact Path.source_mem_range S.commonBridge
+      · rw [Set.mem_singleton_iff.mp hxB]
+        exact Path.target_mem_range S.commonBridge
+  · intro x hx
+    exact ⟨Or.inl hx, Or.inl hx⟩
+
+/-- The closed separator disks overlap exactly along their common bridge.
+This is the compatibility locus for pasting their polygonal fillings. -/
+theorem closure_separatorInteriors_inter
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hAB : Disjoint (range A.path) (range B.path)) :
+    closure (S.circle₀ hPQ hAB).inside ∩
+        closure (S.circle₁ hPQ hAB).inside =
+      range S.commonBridge := by
+  let K₀ := S.circle₀ hPQ hAB
+  let K₁ := S.circle₁ hPQ hAB
+  have hinter : Disjoint K₀.inside K₁.inside :=
+    S.disjoint_separatorInteriors hPQ hAB
+  have hinside₀Carrier₁ : Disjoint K₀.inside K₁.carrier := by
+    rw [Set.disjoint_left]
+    intro x hxInside hxCarrier
+    have hxClosure : x ∈ closure K₁.inside := by
+      rw [K₁.closure_inside]
+      exact Or.inr hxCarrier
+    have hxInterClosure : x ∈ closure (K₀.inside ∩ K₁.inside) :=
+      K₀.inside_isOpen.inter_closure ⟨hxInside, hxClosure⟩
+    obtain ⟨y, hy₀, hy₁⟩ :=
+      Set.Nonempty.of_closure ⟨x, hxInterClosure⟩
+    exact Set.disjoint_left.mp hinter hy₀ hy₁
+  have hcarrier₀Inside₁ : Disjoint K₀.carrier K₁.inside := by
+    rw [Set.disjoint_left]
+    intro x hxCarrier hxInside
+    have hxClosure : x ∈ closure K₀.inside := by
+      rw [K₀.closure_inside]
+      exact Or.inr hxCarrier
+    have hxInterClosure : x ∈ closure (K₁.inside ∩ K₀.inside) :=
+      K₁.inside_isOpen.inter_closure ⟨hxInside, hxClosure⟩
+    obtain ⟨y, hy₁, hy₀⟩ :=
+      Set.Nonempty.of_closure ⟨x, hxInterClosure⟩
+    exact Set.disjoint_left.mp hinter hy₀ hy₁
+  apply Set.Subset.antisymm
+  · rintro x ⟨hx₀, hx₁⟩
+    rw [K₀.closure_inside] at hx₀
+    rw [K₁.closure_inside] at hx₁
+    rcases hx₀ with hxInside₀ | hxCarrier₀ <;>
+      rcases hx₁ with hxInside₁ | hxCarrier₁
+    · exact (Set.disjoint_left.mp hinter hxInside₀ hxInside₁).elim
+    · exact (Set.disjoint_left.mp hinside₀Carrier₁ hxInside₀ hxCarrier₁).elim
+    · exact (Set.disjoint_left.mp hcarrier₀Inside₁ hxCarrier₀ hxInside₁).elim
+    · rw [← S.separatorCarriers_inter hPQ hAB]
+      exact ⟨hxCarrier₀, hxCarrier₁⟩
+  · intro x hx
+    have hxCarriers : x ∈ K₀.carrier ∩ K₁.carrier := by
+      rw [S.separatorCarriers_inter hPQ hAB]
+      exact hx
+    constructor
+    · rw [K₀.closure_inside]
+      exact Or.inr hxCarriers.1
+    · rw [K₁.closure_inside]
+      exact Or.inr hxCarriers.2
+
 /-- Polygonal-annulus crosscut theorem: the two complementary separator
 regions exactly fill the outer polygonal disk. -/
 theorem closure_outerInterior_eq_union_separatorInteriors

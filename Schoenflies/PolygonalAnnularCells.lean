@@ -1,5 +1,6 @@
 import Schoenflies.AnnularSeparatorPairs
 import Schoenflies.PolygonalTwoArcCycle
+import Schoenflies.JordanCarrierInvariance
 
 /-!
 # Exact polygonal cells in a cut polygonal annulus
@@ -152,6 +153,106 @@ theorem exists_polygonalCircle_circle₁
     (S.joinedByBrokenLine_outerArc₁ hOuterPoints)
   refine ⟨R, ?_⟩
   rw [hR, S.carrier_circle₁ hPQ hAB]
+
+/-- A fixed exact polygonal presentation of the first separator. -/
+noncomputable def polygonalCircle₀
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hAB : Disjoint (range A.path) (range B.path))
+    (hOuterPoints : A.outerPoint ≠ B.outerPoint)
+    (hInnerPoints : A.innerPoint ≠ B.innerPoint)
+    (hAsegment : range A.path =
+      segment ℝ A.outerPoint A.innerPoint)
+    (hBsegment : range B.path =
+      segment ℝ B.outerPoint B.innerPoint) : PolygonalCircle :=
+  Classical.choose <| S.exists_polygonalCircle_circle₀ hPQ hAB
+    hOuterPoints hInnerPoints hAsegment hBsegment
+
+theorem polygonalCircle₀_carrier
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hAB : Disjoint (range A.path) (range B.path))
+    (hOuterPoints : A.outerPoint ≠ B.outerPoint)
+    (hInnerPoints : A.innerPoint ≠ B.innerPoint)
+    (hAsegment : range A.path =
+      segment ℝ A.outerPoint A.innerPoint)
+    (hBsegment : range B.path =
+      segment ℝ B.outerPoint B.innerPoint) :
+    (S.polygonalCircle₀ hPQ hAB hOuterPoints hInnerPoints
+      hAsegment hBsegment).carrier = (S.circle₀ hPQ hAB).carrier :=
+  Classical.choose_spec <| S.exists_polygonalCircle_circle₀ hPQ hAB
+    hOuterPoints hInnerPoints hAsegment hBsegment
+
+/-- A fixed exact polygonal presentation of the second separator. -/
+noncomputable def polygonalCircle₁
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hAB : Disjoint (range A.path) (range B.path))
+    (hOuterPoints : A.outerPoint ≠ B.outerPoint)
+    (hInnerPoints : A.innerPoint ≠ B.innerPoint)
+    (hAsegment : range A.path =
+      segment ℝ A.outerPoint A.innerPoint)
+    (hBsegment : range B.path =
+      segment ℝ B.outerPoint B.innerPoint) : PolygonalCircle :=
+  Classical.choose <| S.exists_polygonalCircle_circle₁ hPQ hAB
+    hOuterPoints hInnerPoints hAsegment hBsegment
+
+theorem polygonalCircle₁_carrier
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hAB : Disjoint (range A.path) (range B.path))
+    (hOuterPoints : A.outerPoint ≠ B.outerPoint)
+    (hInnerPoints : A.innerPoint ≠ B.innerPoint)
+    (hAsegment : range A.path =
+      segment ℝ A.outerPoint A.innerPoint)
+    (hBsegment : range B.path =
+      segment ℝ B.outerPoint B.innerPoint) :
+    (S.polygonalCircle₁ hPQ hAB hOuterPoints hInnerPoints
+      hAsegment hBsegment).carrier = (S.circle₁ hPQ hAB).carrier :=
+  Classical.choose_spec <| S.exists_polygonalCircle_circle₁ hPQ hAB
+    hOuterPoints hInnerPoints hAsegment hBsegment
+
+theorem polygonalCircle₀_closedRegion
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hAB : Disjoint (range A.path) (range B.path))
+    (hOuterPoints : A.outerPoint ≠ B.outerPoint)
+    (hInnerPoints : A.innerPoint ≠ B.innerPoint)
+    (hAsegment : range A.path =
+      segment ℝ A.outerPoint A.innerPoint)
+    (hBsegment : range B.path =
+      segment ℝ B.outerPoint B.innerPoint) :
+    (S.polygonalCircle₀ hPQ hAB hOuterPoints hInnerPoints
+      hAsegment hBsegment).closedRegion =
+      closure (S.circle₀ hPQ hAB).inside := by
+  let R := S.polygonalCircle₀ hPQ hAB hOuterPoints hInnerPoints
+    hAsegment hBsegment
+  let K := S.circle₀ hPQ hAB
+  change closure R.interiorRegion = closure K.inside
+  rw [← R.inside_toJordanCircle]
+  congr 1
+  apply R.toJordanCircle.inside_eq_of_carrier_eq K
+  simpa only [R.carrier_toJordanCircle] using
+    S.polygonalCircle₀_carrier hPQ hAB hOuterPoints hInnerPoints
+      hAsegment hBsegment
+
+theorem polygonalCircle₁_closedRegion
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hAB : Disjoint (range A.path) (range B.path))
+    (hOuterPoints : A.outerPoint ≠ B.outerPoint)
+    (hInnerPoints : A.innerPoint ≠ B.innerPoint)
+    (hAsegment : range A.path =
+      segment ℝ A.outerPoint A.innerPoint)
+    (hBsegment : range B.path =
+      segment ℝ B.outerPoint B.innerPoint) :
+    (S.polygonalCircle₁ hPQ hAB hOuterPoints hInnerPoints
+      hAsegment hBsegment).closedRegion =
+      closure (S.circle₁ hPQ hAB).inside := by
+  let R := S.polygonalCircle₁ hPQ hAB hOuterPoints hInnerPoints
+    hAsegment hBsegment
+  let K := S.circle₁ hPQ hAB
+  change closure R.interiorRegion = closure K.inside
+  rw [← R.inside_toJordanCircle]
+  congr 1
+  apply R.toJordanCircle.inside_eq_of_carrier_eq K
+  simpa only [R.carrier_toJordanCircle] using
+    S.polygonalCircle₁_carrier hPQ hAB hOuterPoints hInnerPoints
+      hAsegment hBsegment
 
 end AnnularCrosscut.SeparatorPair
 
