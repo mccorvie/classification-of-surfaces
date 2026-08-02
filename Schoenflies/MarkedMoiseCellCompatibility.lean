@@ -1,0 +1,197 @@
+import Schoenflies.CyclicTargetCellCompatibility
+import Schoenflies.MarkedMoiseCellHomeomorphisms
+import Schoenflies.MoiseBandCellNonadjacency
+
+/-!
+# Compatibility of the marked recursive Moise cell maps
+
+Under the outward-orientation equations supplied by the shrinking-band
+construction, the source cells have the same cyclic nerve as the canonical
+radial target cells.  The marked maps agree on every source overlap, and
+their inverses agree on every target overlap.
+-/
+
+namespace Schoenflies
+
+open Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
+
+variable {J : JordanCircle} {I : J.InitialAngularArcs}
+  {n : ℕ} {epsilon : ℝ}
+  {F : I.LevelAvoidingJoinFamily n epsilon} {hn : 1 ≤ n}
+  (L : RecursiveInsideCollarStep.Later F hn)
+
+/-- Distinct outward-oriented source cells overlap only on one of their two
+cyclic side seams. -/
+theorem moiseCells_closedRegion_overlap_cases
+    (houtward : ∀ c : LevelAddress n,
+      (F.synchronizedPolygonalCircle hn).closedRegion ∩
+          (L.moiseBandPolygonalCircle c).closedRegion =
+        range (F.synchronizedCrosscutPath c))
+    {a b : LevelAddress n} (hab : a ≠ b) {x : Plane}
+    (hxA : x ∈ (L.moiseBandPolygonalCircle a).closedRegion)
+    (hxB : x ∈ (L.moiseBandPolygonalCircle b).closedRegion) :
+    (b = nextLevelAddress n a ∧
+        x ∈ range (L.adjacentMoiseBandSideSeamPath a)) ∨
+      (a = nextLevelAddress n b ∧
+        x ∈ range (L.adjacentMoiseBandSideSeamPath b)) := by
+  by_cases hbnext : b = nextLevelAddress n a
+  · left
+    refine ⟨hbnext, ?_⟩
+    subst b
+    have hx : x ∈ (L.moiseBandPolygonalCircle a).closedRegion ∩
+        (L.moiseBandPolygonalCircle
+          (nextLevelAddress n a)).closedRegion := ⟨hxA, hxB⟩
+    rw [L.cellClosedRegion_inter_next a (houtward a)
+      (houtward (nextLevelAddress n a)),
+      ← L.range_adjacentMoiseBandSideSeamPath] at hx
+    exact hx
+  by_cases hanext : a = nextLevelAddress n b
+  · right
+    refine ⟨hanext, ?_⟩
+    subst a
+    have hx : x ∈ (L.moiseBandPolygonalCircle b).closedRegion ∩
+        (L.moiseBandPolygonalCircle
+          (nextLevelAddress n b)).closedRegion := ⟨hxB, hxA⟩
+    rw [L.cellClosedRegion_inter_next b (houtward b)
+      (houtward (nextLevelAddress n b)),
+      ← L.range_adjacentMoiseBandSideSeamPath] at hx
+    exact hx
+  exact False.elim <| Set.disjoint_left.mp
+    (L.disjoint_cellClosedRegion_of_nonadjacent
+      a b hab hbnext hanext (houtward a) (houtward b)) hxA hxB
+
+/-- The maps of two cyclicly adjacent cells have the same value at every
+native seam parameter. -/
+theorem markedMoiseCellHomeomorph_agree_on_next
+    (m : ℕ) (a : LevelAddress n) (t : unitInterval)
+    (hxA : L.adjacentMoiseBandSideSeamPath a t ∈
+      (L.moiseBandPolygonalCircle a).closedRegion)
+    (hxB : L.adjacentMoiseBandSideSeamPath a t ∈
+      (L.moiseBandPolygonalCircle
+        (nextLevelAddress n a)).closedRegion) :
+    (L.markedMoiseCellHomeomorph m a
+        ⟨L.adjacentMoiseBandSideSeamPath a t, hxA⟩ : Plane) =
+      (L.markedMoiseCellHomeomorph m (nextLevelAddress n a)
+        ⟨L.adjacentMoiseBandSideSeamPath a t, hxB⟩ : Plane) := by
+  calc
+    (L.markedMoiseCellHomeomorph m a
+        ⟨L.adjacentMoiseBandSideSeamPath a t, hxA⟩ : Plane) =
+        (I.indexedTargetAnnularCrosscut m
+          (nextLevelAddress n a)).path t := by
+      simpa only using L.markedMoiseCellHomeomorph_apply_outgoingSeam m a t
+    _ = (L.markedMoiseCellHomeomorph m (nextLevelAddress n a)
+        ⟨L.adjacentMoiseBandSideSeamPath a t, hxB⟩ : Plane) := by
+      symm
+      simpa only [L.incomingMoiseBandSideSeamPath_next_apply] using
+        L.markedMoiseCellHomeomorph_apply_incomingSeam
+          m (nextLevelAddress n a) t
+
+/-- The marked cell fillings agree on every pairwise source-cell overlap. -/
+theorem markedMoiseCellHomeomorph_agree
+    (m : ℕ)
+    (houtward : ∀ c : LevelAddress n,
+      (F.synchronizedPolygonalCircle hn).closedRegion ∩
+          (L.moiseBandPolygonalCircle c).closedRegion =
+        range (F.synchronizedCrosscutPath c))
+    (a b : LevelAddress n) {x : Plane}
+    (hxA : x ∈ (L.moiseBandPolygonalCircle a).closedRegion)
+    (hxB : x ∈ (L.moiseBandPolygonalCircle b).closedRegion) :
+    (L.markedMoiseCellHomeomorph m a ⟨x, hxA⟩ : Plane) =
+      (L.markedMoiseCellHomeomorph m b ⟨x, hxB⟩ : Plane) := by
+  by_cases hab : a = b
+  · subst b
+    rfl
+  rcases L.moiseCells_closedRegion_overlap_cases
+      houtward hab hxA hxB with hforward | hbackward
+  · rcases hforward with ⟨hforward, t, ht⟩
+    subst b
+    subst x
+    exact L.markedMoiseCellHomeomorph_agree_on_next m a t hxA hxB
+  · rcases hbackward with ⟨hbackward, t, ht⟩
+    subst a
+    subst x
+    symm
+    exact L.markedMoiseCellHomeomorph_agree_on_next m b t hxB hxA
+
+/-- On a common target radial side, both inverse cell maps return the same
+source seam point. -/
+theorem markedMoiseCellHomeomorph_symm_agree_on_next
+    (m : ℕ) (a : LevelAddress n) (t : unitInterval)
+    (hyA : (I.indexedTargetAnnularCrosscut m
+        (nextLevelAddress n a)).path t ∈
+      (I.cyclicTargetAttachmentPresentation m a).disk.closedRegion)
+    (hyB : (I.indexedTargetAnnularCrosscut m
+        (nextLevelAddress n a)).path t ∈
+      (I.cyclicTargetAttachmentPresentation m
+        (nextLevelAddress n a)).disk.closedRegion) :
+    ((L.markedMoiseCellHomeomorph m a).symm
+        ⟨(I.indexedTargetAnnularCrosscut m
+          (nextLevelAddress n a)).path t, hyA⟩ : Plane) =
+      ((L.markedMoiseCellHomeomorph m (nextLevelAddress n a)).symm
+        ⟨(I.indexedTargetAnnularCrosscut m
+          (nextLevelAddress n a)).path t, hyB⟩ : Plane) := by
+  have hxBoth := L.adjacentMoiseBandSideSeam_subset_closedRegion_inter a
+    (show L.adjacentMoiseBandSideSeamPath a t ∈
+        L.adjacentMoiseBandSideSeam a by
+      rw [← L.range_adjacentMoiseBandSideSeamPath]
+      exact ⟨t, rfl⟩)
+  have hmapA := L.markedMoiseCellHomeomorph_apply_outgoingSeam m a t
+  have hmapB := L.markedMoiseCellHomeomorph_apply_incomingSeam
+    m (nextLevelAddress n a) t
+  have hpreA : (L.markedMoiseCellHomeomorph m a).symm
+      ⟨(I.indexedTargetAnnularCrosscut m
+        (nextLevelAddress n a)).path t, hyA⟩ =
+      ⟨L.adjacentMoiseBandSideSeamPath a t, hxBoth.1⟩ := by
+    apply (L.markedMoiseCellHomeomorph m a).injective
+    rw [(L.markedMoiseCellHomeomorph m a).apply_symm_apply]
+    apply Subtype.ext
+    simpa only using hmapA.symm
+  have hpreB : (L.markedMoiseCellHomeomorph m
+      (nextLevelAddress n a)).symm
+      ⟨(I.indexedTargetAnnularCrosscut m
+        (nextLevelAddress n a)).path t, hyB⟩ =
+      ⟨L.adjacentMoiseBandSideSeamPath a t, hxBoth.2⟩ := by
+    apply (L.markedMoiseCellHomeomorph m
+      (nextLevelAddress n a)).injective
+    rw [(L.markedMoiseCellHomeomorph m
+      (nextLevelAddress n a)).apply_symm_apply]
+    apply Subtype.ext
+    simpa only [L.incomingMoiseBandSideSeamPath_next_apply] using hmapB.symm
+  exact congrArg Subtype.val hpreA |>.trans
+    (congrArg Subtype.val hpreB).symm
+
+/-- The inverses of the marked cell fillings agree on every pairwise target
+cell overlap. -/
+theorem markedMoiseCellHomeomorph_symm_agree
+    (m : ℕ) (a b : LevelAddress n) {y : Plane}
+    (hyA : y ∈
+      (I.cyclicTargetAttachmentPresentation m a).disk.closedRegion)
+    (hyB : y ∈
+      (I.cyclicTargetAttachmentPresentation m b).disk.closedRegion) :
+    ((L.markedMoiseCellHomeomorph m a).symm ⟨y, hyA⟩ : Plane) =
+      ((L.markedMoiseCellHomeomorph m b).symm ⟨y, hyB⟩ : Plane) := by
+  by_cases hab : a = b
+  · subst b
+    rfl
+  rcases I.cyclicTargetCells_closedRegion_overlap_cases
+      m hn hab hyA hyB with hforward | hbackward
+  · rcases hforward with ⟨hforward, t, ht⟩
+    subst b
+    subst y
+    exact L.markedMoiseCellHomeomorph_symm_agree_on_next m a t hyA hyB
+  · rcases hbackward with ⟨hbackward, t, ht⟩
+    subst a
+    subst y
+    symm
+    exact L.markedMoiseCellHomeomorph_symm_agree_on_next m b t hyB hyA
+
+end JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
+
+end
+
+end Schoenflies

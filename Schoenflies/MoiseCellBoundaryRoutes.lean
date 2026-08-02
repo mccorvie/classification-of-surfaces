@@ -136,6 +136,16 @@ theorem range_incomingMoiseBandSideSeamPath (a : LevelAddress n) :
     (prevLevelAddress n a)) = _
   exact L.range_adjacentMoiseBandSideSeamPath (prevLevelAddress n a)
 
+/-- The incoming parametrization of the successor cell is literally the
+outgoing parametrization of the current cell. -/
+@[simp] theorem incomingMoiseBandSideSeamPath_next_apply
+    (a : LevelAddress n) (t : unitInterval) :
+    L.incomingMoiseBandSideSeamPath (nextLevelAddress n a) t =
+      L.adjacentMoiseBandSideSeamPath a t := by
+  change L.adjacentMoiseBandSideSeamPath
+      (prevLevelAddress n (nextLevelAddress n a)) t = _
+  rw [prevLevelAddress_nextLevelAddress]
+
 theorem incomingMoiseBandSideSeamPath_injective
     (a : LevelAddress n) :
     Injective (L.incomingMoiseBandSideSeamPath a) := by

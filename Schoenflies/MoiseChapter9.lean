@@ -75,8 +75,11 @@ import Schoenflies.FiniteAnnularCrosscutOrder
 import Schoenflies.LevelBoundarySplits
 import Schoenflies.IndexedStandardCrosscuts
 import Schoenflies.CyclicTargetCells
+import Schoenflies.CyclicTargetCellGeometry
+import Schoenflies.CyclicTargetCellCompatibility
 import Schoenflies.MoiseCellBoundaryRoutes
 import Schoenflies.MarkedMoiseCellHomeomorphisms
+import Schoenflies.MarkedMoiseCellCompatibility
 import Schoenflies.LocalizedAnnularOrder
 import Schoenflies.LocalizedCutFreeCells
 import Schoenflies.LocalizedCellCover
