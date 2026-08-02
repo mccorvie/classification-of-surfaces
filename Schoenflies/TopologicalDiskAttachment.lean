@@ -1,5 +1,6 @@
 import Schoenflies.ClosedCoverHomeomorph
 import Schoenflies.TwoArcCarrierHomeomorph
+import Schoenflies.TwoBoundaryArcRigidity
 
 /-!
 # Attaching one polygonal disk relative to an existing homeomorphism
@@ -40,6 +41,98 @@ structure Presentation (A : Set Plane) where
 variable {A B : Set Plane}
 
 namespace Presentation
+
+/-- Turn an exact closed-disk intersection along an injective boundary arc
+into the relative attachment presentation used by the gluing API. -/
+noncomputable def ofClosedRegionInter
+    (P Q : PolygonalCircle) {x y : Plane} (p : Path x y)
+    (hp : Injective p) (hxy : x ≠ y)
+    (hpCarrier : range p ⊆ Q.carrier)
+    (hinter : P.closedRegion ∩ Q.closedRegion = range p) :
+    Presentation P.closedRegion := by
+  have hxCarrier : x ∈ Q.toJordanCircle.carrier := by
+    rw [Q.carrier_toJordanCircle]
+    exact hpCarrier (Path.source_mem_range p)
+  have hyCarrier : y ∈ Q.toJordanCircle.carrier := by
+    rw [Q.carrier_toJordanCircle]
+    exact hpCarrier (Path.target_mem_range p)
+  let S := Classical.choice <| Q.toJordanCircle.exists_twoBoundaryArcPaths
+    hxCarrier hyCarrier hxy
+  have hranges := S.range_eq_first_or_second_of_path p hp (by
+    rwa [Q.carrier_toJordanCircle])
+  by_cases hfirst : range p = range S.first
+  · exact {
+      disk := Q
+      startPoint := x
+      endPoint := y
+      shared := p
+      exposed := S.second
+      shared_injective := hp
+      exposed_injective := S.second_injective
+      boundary_overlap := by rw [hfirst, S.overlap]
+      carrier_eq := by
+        rw [← Q.carrier_toJordanCircle, ← S.cover, hfirst]
+      base_closed := P.isCompact_closedRegion.isClosed
+      base_inter_disk := hinter }
+  · have hsecond : range p = range S.second :=
+      hranges.resolve_left hfirst
+    exact {
+      disk := Q
+      startPoint := x
+      endPoint := y
+      shared := p
+      exposed := S.first.symm
+      shared_injective := hp
+      exposed_injective :=
+        S.first_injective.comp unitInterval.symm_bijective.injective
+      boundary_overlap := by
+        rw [Path.symm_range, hsecond, Set.inter_comm, S.overlap]
+      carrier_eq := by
+        rw [← Q.carrier_toJordanCircle, ← S.cover, hsecond,
+          Path.symm_range, Set.union_comm]
+      base_closed := P.isCompact_closedRegion.isClosed
+      base_inter_disk := hinter }
+
+@[simp] theorem ofClosedRegionInter_disk
+    (P Q : PolygonalCircle) {x y : Plane} (p : Path x y)
+    (hp : Injective p) (hxy : x ≠ y)
+    (hpCarrier : range p ⊆ Q.carrier)
+    (hinter : P.closedRegion ∩ Q.closedRegion = range p) :
+    (ofClosedRegionInter P Q p hp hxy hpCarrier hinter).disk = Q := by
+  simp only [ofClosedRegionInter]
+  split <;> rfl
+
+@[simp] theorem ofClosedRegionInter_startPoint
+    (P Q : PolygonalCircle) {x y : Plane} (p : Path x y)
+    (hp : Injective p) (hxy : x ≠ y)
+    (hpCarrier : range p ⊆ Q.carrier)
+    (hinter : P.closedRegion ∩ Q.closedRegion = range p) :
+    (ofClosedRegionInter P Q p hp hxy hpCarrier hinter).startPoint = x := by
+  simp only [ofClosedRegionInter]
+  split <;> rfl
+
+@[simp] theorem ofClosedRegionInter_endPoint
+    (P Q : PolygonalCircle) {x y : Plane} (p : Path x y)
+    (hp : Injective p) (hxy : x ≠ y)
+    (hpCarrier : range p ⊆ Q.carrier)
+    (hinter : P.closedRegion ∩ Q.closedRegion = range p) :
+    (ofClosedRegionInter P Q p hp hxy hpCarrier hinter).endPoint = y := by
+  simp only [ofClosedRegionInter]
+  split <;> rfl
+
+theorem range_ofClosedRegionInter_shared
+    (P Q : PolygonalCircle) {x y : Plane} (p : Path x y)
+    (hp : Injective p) (hxy : x ≠ y)
+    (hpCarrier : range p ⊆ Q.carrier)
+    (hinter : P.closedRegion ∩ Q.closedRegion = range p) :
+    range (ofClosedRegionInter P Q p hp hxy hpCarrier hinter).shared =
+      range p := by
+  let D := ofClosedRegionInter P Q p hp hxy hpCarrier hinter
+  calc
+    range D.shared = P.closedRegion ∩ D.disk.closedRegion :=
+      D.base_inter_disk.symm
+    _ = P.closedRegion ∩ Q.closedRegion := by rw [ofClosedRegionInter_disk]
+    _ = range p := hinter
 
 theorem shared_mem_base (D : Presentation A) (t : unitInterval) :
     D.shared t ∈ A := by

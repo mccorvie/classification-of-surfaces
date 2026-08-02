@@ -1,0 +1,235 @@
+import Schoenflies.MoiseBandCellNonadjacency
+import Schoenflies.TopologicalDiskAttachment
+import Schoenflies.JordanThetaRegions
+import Schoenflies.LocallyStraightSets
+
+/-!
+# Adjacent Moise cells as relative disk attachments
+
+The exact filled overlap of consecutive cells is a parametrized polygonal
+arc.  Consequently either cell can be viewed as attached to the other along
+that common side seam.  These two symmetric presentations are the local
+input for cancellation of internal seams in the finite band union.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
+
+variable {J : JordanCircle} {I : J.InitialAngularArcs}
+  {n : ℕ} {epsilon : ℝ}
+  {F : I.LevelAvoidingJoinFamily n epsilon} {hn : 1 ≤ n}
+  (L : RecursiveInsideCollarStep.Later F hn)
+
+/-- The successor cell attached to the current cell along their side seam. -/
+noncomputable def nextCellAttachmentPresentation
+    (a : LevelAddress n)
+    (hcurrent : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a))
+    (hnext : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle (nextLevelAddress n a)).closedRegion =
+      range (F.synchronizedCrosscutPath (nextLevelAddress n a))) :
+    PolygonalDiskAttachment.Presentation
+      (L.moiseBandPolygonalCircle a).closedRegion := by
+  let P := L.moiseBandPolygonalCircle a
+  let Q := L.moiseBandPolygonalCircle (nextLevelAddress n a)
+  let p := L.adjacentMoiseBandSideSeamPath a
+  apply PolygonalDiskAttachment.Presentation.ofClosedRegionInter
+    P Q p (L.adjacentMoiseBandSideSeamPath_injective a)
+      (L.adjacentMoiseBandInnerSeamPoint_ne_parent a)
+  · rw [L.range_adjacentMoiseBandSideSeamPath a,
+      L.moiseBandPolygonalCircle_carrier]
+    exact L.adjacentMoiseBandSideSeam_subset_right a
+  · simpa only [P, Q, p, L.range_adjacentMoiseBandSideSeamPath a] using
+      L.cellClosedRegion_inter_next a hcurrent hnext
+
+/-- Symmetrically, the current cell attached to its successor along the
+same oriented seam path. -/
+noncomputable def currentCellAttachmentPresentation
+    (a : LevelAddress n)
+    (hcurrent : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a))
+    (hnext : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle (nextLevelAddress n a)).closedRegion =
+      range (F.synchronizedCrosscutPath (nextLevelAddress n a))) :
+    PolygonalDiskAttachment.Presentation
+      (L.moiseBandPolygonalCircle
+        (nextLevelAddress n a)).closedRegion := by
+  let P := L.moiseBandPolygonalCircle a
+  let Q := L.moiseBandPolygonalCircle (nextLevelAddress n a)
+  let p := L.adjacentMoiseBandSideSeamPath a
+  apply PolygonalDiskAttachment.Presentation.ofClosedRegionInter
+    Q P p (L.adjacentMoiseBandSideSeamPath_injective a)
+      (L.adjacentMoiseBandInnerSeamPoint_ne_parent a)
+  · rw [L.range_adjacentMoiseBandSideSeamPath a,
+      L.moiseBandPolygonalCircle_carrier]
+    exact L.adjacentMoiseBandSideSeam_subset_left a
+  · simpa only [P, Q, p, Set.inter_comm,
+      L.range_adjacentMoiseBandSideSeamPath a] using
+      L.cellClosedRegion_inter_next a hcurrent hnext
+
+theorem range_nextCellAttachmentPresentation_shared
+    (a : LevelAddress n)
+    (hcurrent : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a))
+    (hnext : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle (nextLevelAddress n a)).closedRegion =
+      range (F.synchronizedCrosscutPath (nextLevelAddress n a))) :
+    range (L.nextCellAttachmentPresentation a hcurrent hnext).shared =
+      L.adjacentMoiseBandSideSeam a := by
+  unfold nextCellAttachmentPresentation
+  rw [PolygonalDiskAttachment.Presentation.range_ofClosedRegionInter_shared,
+    L.range_adjacentMoiseBandSideSeamPath a]
+
+theorem range_currentCellAttachmentPresentation_shared
+    (a : LevelAddress n)
+    (hcurrent : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a))
+    (hnext : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle (nextLevelAddress n a)).closedRegion =
+      range (F.synchronizedCrosscutPath (nextLevelAddress n a))) :
+    range (L.currentCellAttachmentPresentation a hcurrent hnext).shared =
+      L.adjacentMoiseBandSideSeam a := by
+  unfold currentCellAttachmentPresentation
+  rw [PolygonalDiskAttachment.Presentation.range_ofClosedRegionInter_shared,
+    L.range_adjacentMoiseBandSideSeamPath a]
+
+/-- Every relative-interior point of an adjacent side seam is swallowed by
+the union of the two closed cells.  Only the two seam endpoints can remain
+as possible frontier points. -/
+theorem openSideSeam_subset_interior_adjacentClosedRegions
+    (a : LevelAddress n)
+    (hcurrent : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a))
+    (hnext : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle (nextLevelAddress n a)).closedRegion =
+      range (F.synchronizedCrosscutPath (nextLevelAddress n a))) :
+    openSegment ℝ (L.adjacentMoiseBandInnerSeamPoint a : Plane)
+        (L.adjacentMoiseBandParentPoint a : Plane) ⊆
+      interior ((L.moiseBandPolygonalCircle a).closedRegion ∪
+        (L.moiseBandPolygonalCircle
+          (nextLevelAddress n a)).closedRegion) := by
+  let P := L.moiseBandPolygonalCircle a
+  let Q := L.moiseBandPolygonalCircle (nextLevelAddress n a)
+  let DQ := L.nextCellAttachmentPresentation a hcurrent hnext
+  let DP := L.currentCellAttachmentPresentation a hcurrent hnext
+  let u : Plane := L.adjacentMoiseBandInnerSeamPoint a
+  let v : Plane := L.adjacentMoiseBandParentPoint a
+  intro z hzOpen
+  change z ∈ openSegment ℝ u v at hzOpen
+  have huv : u ≠ v := L.adjacentMoiseBandInnerSeamPoint_ne_parent a
+  have hzNeU : z ≠ u := by
+    intro h
+    subst z
+    exact (endpoint_not_mem_openSegment_of_mem_segment
+      huv huv (left_mem_segment ℝ _ _) (right_mem_segment ℝ _ _)) hzOpen
+  have hzNeV : z ≠ v := by
+    intro h
+    subst z
+    exact (endpoint_not_mem_openSegment_of_mem_segment
+      huv.symm huv (right_mem_segment ℝ _ _) (left_mem_segment ℝ _ _)) hzOpen
+  have hsharedQ : range DQ.shared = segment ℝ u v := by
+    rw [L.range_nextCellAttachmentPresentation_shared a hcurrent hnext,
+      L.adjacentMoiseBandSideSeam_eq_segment a]
+  have hsharedP : range DP.shared = segment ℝ u v := by
+    rw [L.range_currentCellAttachmentPresentation_shared a hcurrent hnext,
+      L.adjacentMoiseBandSideSeam_eq_segment a]
+  have hzSegment : z ∈ segment ℝ u v := openSegment_subset_segment ℝ _ _ hzOpen
+  have hzSharedQ : z ∈ range DQ.shared := hsharedQ.symm.subset hzSegment
+  have hzSharedP : z ∈ range DP.shared := hsharedP.symm.subset hzSegment
+  have hzNotExposedQ : z ∉ range DQ.exposed := by
+    intro hzExposed
+    have hzEnds : z ∈ ({DQ.startPoint, DQ.endPoint} : Set Plane) := by
+      rw [← DQ.boundary_overlap]
+      exact ⟨hzSharedQ, hzExposed⟩
+    have hstart : DQ.startPoint = u := by
+      dsimp only [DQ, nextCellAttachmentPresentation, u]
+      simp
+    have hend : DQ.endPoint = v := by
+      dsimp only [DQ, nextCellAttachmentPresentation, v]
+      simp
+    rw [hstart, hend] at hzEnds
+    exact hzEnds.elim hzNeU hzNeV
+  have hzNotExposedP : z ∉ range DP.exposed := by
+    intro hzExposed
+    have hzEnds : z ∈ ({DP.startPoint, DP.endPoint} : Set Plane) := by
+      rw [← DP.boundary_overlap]
+      exact ⟨hzSharedP, hzExposed⟩
+    have hstart : DP.startPoint = u := by
+      dsimp only [DP, currentCellAttachmentPresentation, u]
+      simp
+    have hend : DP.endPoint = v := by
+      dsimp only [DP, currentCellAttachmentPresentation, v]
+      simp
+    rw [hstart, hend] at hzEnds
+    exact hzEnds.elim hzNeU hzNeV
+  have hlocalSegment := exists_local_determinantLine_segment huv hzOpen
+  have hlocalSharedQ : ∃ r : ℝ, 0 < r ∧
+      ball z r ∩ range DQ.shared =
+        ball z r ∩ determinantLine z (v - u) := by
+    simpa only [hsharedQ] using hlocalSegment
+  have hlocalSharedP : ∃ r : ℝ, 0 < r ∧
+      ball z r ∩ range DP.shared =
+        ball z r ∩ determinantLine z (v - u) := by
+    simpa only [hsharedP] using hlocalSegment
+  obtain ⟨rQ, hrQ, hlocalQ⟩ :=
+    exists_local_determinantLine_union_of_compact_avoid hlocalSharedQ
+      (isCompact_range DQ.exposed.continuous) hzNotExposedQ
+  obtain ⟨rP, hrP, hlocalP⟩ :=
+    exists_local_determinantLine_union_of_compact_avoid hlocalSharedP
+      (isCompact_range DP.exposed.continuous) hzNotExposedP
+  have hcarrierQ : ball z rQ ∩ Q.carrier =
+      ball z rQ ∩ determinantLine z (v - u) := by
+    have hdisk : DQ.disk = Q := by
+      dsimp only [DQ, nextCellAttachmentPresentation, Q]
+      simp
+    rw [← hdisk, DQ.carrier_eq]
+    exact hlocalQ
+  have hcarrierP : ball z rP ∩ P.carrier =
+      ball z rP ∩ determinantLine z (v - u) := by
+    have hdisk : DP.disk = P := by
+      dsimp only [DP, currentCellAttachmentPresentation, P]
+      simp
+    rw [← hdisk, DP.carrier_eq]
+    exact hlocalP
+  let r := min rP rQ
+  have hr : 0 < r := lt_min hrP hrQ
+  have hlocalP' : ball z r ∩ P.toJordanCircle.carrier =
+      ball z r ∩ determinantLine z (v - u) := by
+    rw [P.carrier_toJordanCircle]
+    exact restrict_local_set_equality (min_le_left _ _) hcarrierP
+  have hlocalQ' : ball z r ∩ Q.toJordanCircle.carrier =
+      ball z r ∩ determinantLine z (v - u) := by
+    rw [Q.carrier_toJordanCircle]
+    exact restrict_local_set_equality (min_le_right _ _) hcarrierQ
+  have hdisjoint : Disjoint P.toJordanCircle.inside
+      Q.toJordanCircle.inside := by
+    simpa only [P.inside_toJordanCircle, Q.inside_toJordanCircle] using
+      L.disjoint_cellInterior_next a hcurrent hnext
+  have hzCarrierP : z ∈ P.toJordanCircle.carrier := by
+    rw [P.carrier_toJordanCircle]
+    rw [L.moiseBandPolygonalCircle_carrier a]
+    exact L.adjacentMoiseBandSideSeam_subset_left a (by
+      rw [L.adjacentMoiseBandSideSeam_eq_segment a]
+      exact hzSegment)
+  have hzInterior :=
+    JordanThetaRegions.mem_interior_union_closure_inside_of_common_local_line
+      hdisjoint hr hzCarrierP hlocalP' hlocalQ'
+  change z ∈ interior (closure P.interiorRegion ∪ closure Q.interiorRegion)
+  simpa only [P.inside_toJordanCircle, Q.inside_toJordanCircle] using hzInterior
+
+end JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
+
+end
+
+end Schoenflies
