@@ -639,6 +639,75 @@ theorem parentClosedRegion_inter_moiseBandClosedRegion_of_carrier_avoidance
         L.moiseBandPolygonalCircle_carrier a]
       exact Or.inr (L.parentCrosscutRange_subset_moiseBandCarrier a hx)
 
+/-- A metric certificate for the missing orientation input.  If the parent
+disk has two points farther apart than the diameter of a ball containing the
+band cell, the cell cannot contain the parent disk.  One-way boundary
+avoidance then forces the parent carrier to avoid the cell interior. -/
+theorem parentCarrier_disjoint_moiseBandInterior_of_cell_ball
+    (a : LevelAddress n) {c : Plane} {rho : ℝ}
+    (hcell : (L.moiseBandPolygonalCircle a).closedRegion ⊆
+      closedBall c rho)
+    (hseparated : ∃ x ∈ L.parentDisk.closedRegion,
+      ∃ y ∈ L.parentDisk.closedRegion, 2 * rho < dist x y) :
+    Disjoint L.parentDisk.carrier
+      (L.moiseBandPolygonalCircle a).interiorRegion := by
+  let K := L.moiseBandPolygonalCircle a
+  have hKcarrier : Disjoint K.carrier L.parentDisk.interiorRegion := by
+    rw [L.moiseBandPolygonalCircle_carrier a]
+    exact L.moiseBandCarrier_disjoint_parentInterior a
+  have hnotContain : ¬ L.parentDisk.closedRegion ⊆ K.closedRegion := by
+    intro hcontain
+    obtain ⟨x, hxParent, y, hyParent, hxy⟩ := hseparated
+    have hxBall : x ∈ closedBall c rho := hcell (hcontain hxParent)
+    have hyBall : y ∈ closedBall c rho := hcell (hcontain hyParent)
+    rw [mem_closedBall] at hxBall hyBall
+    have hbound : dist x y ≤ 2 * rho := by
+      calc
+        dist x y ≤ dist x c + dist c y := dist_triangle _ _ _
+        _ ≤ rho + rho := by
+          exact add_le_add hxBall (by simpa [dist_comm] using hyBall)
+        _ = 2 * rho := by ring
+    exact (not_le_of_gt hxy) hbound
+  rw [Set.disjoint_left]
+  intro p hpParent hpKInterior
+  have hpClosure : p ∈ closure L.parentDisk.interiorRegion := by
+    change p ∈ L.parentDisk.closedRegion
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inr hpParent
+  have hpInterClosure : p ∈ closure
+      (K.interiorRegion ∩ L.parentDisk.interiorRegion) :=
+    K.isOpen_interiorRegion.inter_closure ⟨hpKInterior, hpClosure⟩
+  obtain ⟨q, hqKInterior, hqParentInterior⟩ :=
+    Set.Nonempty.of_closure ⟨p, hpInterClosure⟩
+  have hParentOff : L.parentDisk.interiorRegion ⊆ K.carrierᶜ := by
+    intro z hzParent hzKCarrier
+    exact Set.disjoint_left.mp hKcarrier hzKCarrier hzParent
+  have hParentRegions : L.parentDisk.interiorRegion ⊆
+      K.interiorRegion ∪ K.exteriorRegion := by
+    rw [K.interior_union_exterior]
+    exact hParentOff
+  have hParentInside : L.parentDisk.interiorRegion ⊆ K.interiorRegion :=
+    L.parentDisk.isConnected_interiorRegion.isPreconnected
+      |>.subset_left_of_subset_union
+        K.isOpen_interiorRegion K.isOpen_exteriorRegion
+        K.disjoint_interior_exterior hParentRegions
+        ⟨q, hqParentInterior, hqKInterior⟩
+  apply hnotContain
+  exact closure_mono hParentInside
+
+theorem parentClosedRegion_inter_moiseBandClosedRegion_of_cell_ball
+    (a : LevelAddress n) {c : Plane} {rho : ℝ}
+    (hcell : (L.moiseBandPolygonalCircle a).closedRegion ⊆
+      closedBall c rho)
+    (hseparated : ∃ x ∈ L.parentDisk.closedRegion,
+      ∃ y ∈ L.parentDisk.closedRegion, 2 * rho < dist x y) :
+    L.parentDisk.closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a) :=
+  L.parentClosedRegion_inter_moiseBandClosedRegion_of_carrier_avoidance a
+    (L.parentCarrier_disjoint_moiseBandInterior_of_cell_ball
+      a hcell hseparated)
+
 /-- The frontier of the filled union can only come from the old polygon or
 one of the finitely many cell polygons.  Later seam lemmas remove all of
 these candidates except the child polygon. -/
