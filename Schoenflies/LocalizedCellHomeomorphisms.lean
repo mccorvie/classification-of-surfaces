@@ -127,6 +127,120 @@ theorem cellHomeomorph_apply_successorCut (t : unitInterval) :
       (I.levelTargetAnnularCrosscut k C.next).path t := by
   exact C.cellHomeomorph_apply_secondPath t
 
+/-- On the part of a cell meeting the outer exhaustion polygon, the cell
+homeomorphism lands on the outer standard target polygon. -/
+theorem cellHomeomorph_mem_targetOuterCarrier_of_mem_outerCarrier
+    (hk : 1 ≤ k) {x : Plane} (hxCell : x ∈ C.disk.closedRegion)
+    (hxOuter : x ∈
+      (I.localizedMarkedPolygonalDisk (k + 2)).carrier) :
+    (C.cellHomeomorph ⟨x, hxCell⟩ : Plane) ∈
+      (StandardPolygonalCollars.disk (k + 2)).carrier := by
+  have hxCarrier : x ∈ C.disk.carrier := by
+    rw [C.disk.closedRegion_eq_union] at hxCell
+    rcases hxCell with hxInterior | hxCarrier
+    · exact False.elim <| Set.disjoint_left.mp
+        C.outerCarrier_disjoint_diskInterior hxOuter hxInterior
+    · exact hxCarrier
+  change x ∈ C.attachmentPresentation.disk.carrier at hxCarrier
+  rw [C.attachmentPresentation.carrier_eq,
+    C.range_attachmentPresentation_exposed] at hxCarrier
+  rcases hxCarrier with hxShared | hxSecond | hxOuterArc | hxFirst
+  · have hxInner : x ∈
+        (I.localizedMarkedPolygonalDisk (k + 1)).carrier := by
+      rw [C.range_attachmentPresentation_shared] at hxShared
+      exact C.separator.innerFirst_range_subset hxShared
+    exact False.elim <| Set.disjoint_left.mp
+      (PolygonalCircle.AnnularCrosscut.disjoint_inner_outer_carriers
+        (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1)))
+      hxInner hxOuter
+  · have hxMeet : x ∈
+        range C.decomposition.second.path ∩
+          (I.localizedMarkedPolygonalDisk (k + 2)).carrier :=
+      ⟨hxSecond, hxOuter⟩
+    change x ∈ range
+      (I.levelLocalizedAnnularCrosscut k C.next).path ∩
+        (I.localizedMarkedPolygonalDisk (k + 2)).carrier at hxMeet
+    rw [(I.levelLocalizedAnnularCrosscut k C.next).range_inter_outer] at hxMeet
+    have hxEq := Set.mem_singleton_iff.mp hxMeet
+    subst x
+    have hmap :
+        (C.cellHomeomorph
+          ⟨(I.levelLocalizedAnnularCrosscut k C.next).outerPoint,
+            hxCell⟩ : Plane) =
+          (I.levelTargetAnnularCrosscut k C.next).outerPoint := by
+      calc
+        (C.cellHomeomorph
+            ⟨(I.levelLocalizedAnnularCrosscut k C.next).outerPoint,
+              hxCell⟩ : Plane) =
+            (C.cellHomeomorph
+              ⟨(I.levelLocalizedAnnularCrosscut k C.next).path 0,
+                C.decomposition_secondPath_mem_disk_closedRegion 0⟩ :
+                  Plane) := by
+            apply congrArg (fun z => (C.cellHomeomorph z : Plane))
+            apply Subtype.ext
+            exact (I.levelLocalizedAnnularCrosscut k C.next).path.source.symm
+        _ = (I.levelTargetAnnularCrosscut k C.next).path 0 :=
+          C.cellHomeomorph_apply_successorCut 0
+        _ = (I.levelTargetAnnularCrosscut k C.next).outerPoint :=
+          (I.levelTargetAnnularCrosscut k C.next).path.source
+    rw [hmap]
+    exact (I.levelTargetAnnularCrosscut k C.next).outerPoint_mem
+  · obtain ⟨t, hsource⟩ :=
+      C.exists_attachmentPresentation_exposedOuterCoordinate_of_mem hxOuterArc
+    let u :=
+      PolygonalCircle.AnnularCellDecomposition.exposedOuterCoordinate t
+    have htarget : C.targetAttachmentPresentation.exposed u ∈
+        (StandardPolygonalCollars.disk (k + 2)).carrier := by
+      have htargetFirst := C.targetFirstAlternative_of_one_le hk
+      rw [targetAttachmentPresentation, dif_pos htargetFirst]
+      change (C.targetDecomposition.exposedPath
+        C.targetSeparator.outerArc₁) u ∈ _
+      rw [C.targetDecomposition.exposedPath_exposedOuterCoordinate]
+      exact C.targetSeparator.outerArc₁_range_subset ⟨t, rfl⟩
+    have hmap := C.cellHomeomorph_apply_exposed u
+    have hsame :
+        (C.cellHomeomorph ⟨x, hxCell⟩ : Plane) =
+          (C.cellHomeomorph
+            ⟨C.attachmentPresentation.exposed u,
+              C.attachmentPresentation.exposed_mem_closedRegion u⟩ :
+                Plane) := by
+      apply congrArg (fun z => (C.cellHomeomorph z : Plane))
+      exact Subtype.ext hsource.symm
+    rw [hsame, hmap]
+    exact htarget
+  · have hxMeet : x ∈
+        range C.decomposition.first.path ∩
+          (I.localizedMarkedPolygonalDisk (k + 2)).carrier :=
+      ⟨hxFirst, hxOuter⟩
+    change x ∈ range
+      (I.levelLocalizedAnnularCrosscut k a).path ∩
+        (I.localizedMarkedPolygonalDisk (k + 2)).carrier at hxMeet
+    rw [(I.levelLocalizedAnnularCrosscut k a).range_inter_outer] at hxMeet
+    have hxEq := Set.mem_singleton_iff.mp hxMeet
+    subst x
+    have hmap :
+        (C.cellHomeomorph
+          ⟨(I.levelLocalizedAnnularCrosscut k a).outerPoint,
+            hxCell⟩ : Plane) =
+          (I.levelTargetAnnularCrosscut k a).outerPoint := by
+      calc
+        (C.cellHomeomorph
+            ⟨(I.levelLocalizedAnnularCrosscut k a).outerPoint,
+              hxCell⟩ : Plane) =
+            (C.cellHomeomorph
+              ⟨(I.levelLocalizedAnnularCrosscut k a).path 0,
+                C.decomposition_firstPath_mem_disk_closedRegion 0⟩ :
+                  Plane) := by
+            apply congrArg (fun z => (C.cellHomeomorph z : Plane))
+            apply Subtype.ext
+            exact (I.levelLocalizedAnnularCrosscut k a).path.source.symm
+        _ = (I.levelTargetAnnularCrosscut k a).path 0 :=
+          C.cellHomeomorph_apply_initialCut 0
+        _ = (I.levelTargetAnnularCrosscut k a).outerPoint :=
+          (I.levelTargetAnnularCrosscut k a).path.source
+    rw [hmap]
+    exact (I.levelTargetAnnularCrosscut k a).outerPoint_mem
+
 end JordanCircle.InitialAngularArcs.LocalizedCutFreeCellData
 
 end

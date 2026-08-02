@@ -307,6 +307,33 @@ theorem range_attachmentPresentation_exposed :
   · rw [attachmentPresentation, exposedOuterArc, dif_neg h, if_neg h]
     exact C.decomposition.range_exposedPath _
 
+/-- Every point of the exposed outer polygonal arc occurs at the middle
+coordinate of the attachment's full exposed boundary route. -/
+theorem exists_attachmentPresentation_exposedOuterCoordinate_of_mem
+    {x : Plane} (hx : x ∈ C.exposedOuterArc) :
+    ∃ t : unitInterval,
+      C.attachmentPresentation.exposed
+          (PolygonalCircle.AnnularCellDecomposition.exposedOuterCoordinate t) =
+        x := by
+  classical
+  by_cases h : C.firstAlternative
+  · rw [exposedOuterArc, if_pos h] at hx
+    obtain ⟨t, ht⟩ := hx
+    refine ⟨t, ?_⟩
+    rw [attachmentPresentation, dif_pos h]
+    change (C.decomposition.exposedPath C.separator.outerArc₁)
+      (PolygonalCircle.AnnularCellDecomposition.exposedOuterCoordinate t) = x
+    rw [C.decomposition.exposedPath_exposedOuterCoordinate]
+    exact ht
+  · rw [exposedOuterArc, if_neg h] at hx
+    obtain ⟨t, ht⟩ := hx
+    refine ⟨t, ?_⟩
+    rw [attachmentPresentation, dif_neg h]
+    change (C.decomposition.exposedPath C.separator.outerArc₀)
+      (PolygonalCircle.AnnularCellDecomposition.exposedOuterCoordinate t) = x
+    rw [C.decomposition.exposedPath_exposedOuterCoordinate]
+    exact ht
+
 /-- No third retained outer endpoint lies on the exposed outer boundary arc
 of the cut-free cell. -/
 theorem other_outerPoint_not_mem_exposedOuterArc :
