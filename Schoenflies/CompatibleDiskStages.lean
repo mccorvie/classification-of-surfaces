@@ -1,0 +1,292 @@
+import Schoenflies.CompatibleLocalizedCollars
+import Schoenflies.ClosedCoverHomeomorph
+
+/-!
+# Recursive compatible closed-disk stages
+
+A finite stage consists of a homeomorphism of closed polygonal disks together
+with its exact boundary restriction.  This retained boundary datum is what
+makes the next localized shell glue without a choice or compatibility gap.
+-/
+
+namespace Schoenflies
+
+open Set
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace PolygonalCircle
+
+private theorem coe_homeomorph_setCongr
+    {A : Type*} [TopologicalSpace A] {s t : Set A}
+    (h : s = t) (x : s) :
+    ((Homeomorph.setCongr h x : t) : A) = x := by
+  rfl
+
+/-- A closed-disk homeomorphism with its boundary restriction retained as
+data and certified pointwise. -/
+structure CompatibleClosedDiskHomeomorph (P Q : PolygonalCircle) where
+  homeomorph : P.closedRegion ≃ₜ Q.closedRegion
+  boundaryHomeomorph : P.carrier ≃ₜ Q.carrier
+  apply_boundary : ∀ x : P.carrier,
+    (homeomorph ⟨x, by
+      rw [P.closedRegion_eq_union]
+      exact Or.inr x.2⟩ : Plane) = boundaryHomeomorph x
+
+/-- Extend boundary data across the first closed disk by the Alexander
+extension already available for arbitrary polygonal disks. -/
+def CompatibleClosedDiskHomeomorph.ofBoundary
+    (P Q : PolygonalCircle) (b : P.carrier ≃ₜ Q.carrier) :
+  CompatibleClosedDiskHomeomorph P Q where
+  homeomorph := Schoenflies.PolygonalCircle.extendBoundaryHomeomorph P Q b
+  boundaryHomeomorph := b
+  apply_boundary :=
+    Schoenflies.PolygonalCircle.extendBoundaryHomeomorph_apply P Q b
+
+variable {P Q R S : PolygonalCircle}
+
+/-- Glue a compatible closed-disk stage to one further shell.  Both forward
+and inverse compatibility are derived from the retained boundary
+homeomorphism, rather than assumed independently. -/
+def CompatibleClosedDiskHomeomorph.extendAcrossShell
+    (D : CompatibleClosedDiskHomeomorph P R)
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hRS : R.closedRegion ⊆ S.interiorRegion)
+    (E : closedShell P Q ≃ₜ closedShell R S)
+    (c : Q.carrier ≃ₜ S.carrier)
+    (hinner : ∀ x : P.carrier,
+      (E ⟨x, innerCarrier_subset_closedShell P Q hPQ x.2⟩ : Plane) =
+        D.boundaryHomeomorph x)
+    (houter : ∀ x : Q.carrier,
+      (E ⟨x, outerCarrier_subset_closedShell P Q hPQ x.2⟩ : Plane) =
+        c x) : CompatibleClosedDiskHomeomorph Q S := by
+  let hforward : ∀ x (hxDisk : x ∈ P.closedRegion)
+      (hxShell : x ∈ closedShell P Q),
+      (D.homeomorph ⟨x, hxDisk⟩ : Plane) = E ⟨x, hxShell⟩ := by
+    intro x hxDisk hxShell
+    have hxCarrier : x ∈ P.carrier := by
+      rw [← closedRegion_inter_closedShell P Q hPQ]
+      exact ⟨hxDisk, hxShell⟩
+    calc
+      (D.homeomorph ⟨x, hxDisk⟩ : Plane) =
+          D.boundaryHomeomorph ⟨x, hxCarrier⟩ := by
+        exact D.apply_boundary ⟨x, hxCarrier⟩
+      _ = (E ⟨x, hxShell⟩ : Plane) := by
+        symm
+        exact hinner ⟨x, hxCarrier⟩
+  let hbackward : ∀ y (hyDisk : y ∈ R.closedRegion)
+      (hyShell : y ∈ closedShell R S),
+      (D.homeomorph.symm ⟨y, hyDisk⟩ : Plane) =
+        E.symm ⟨y, hyShell⟩ := by
+    intro y hyDisk hyShell
+    have hyCarrier : y ∈ R.carrier := by
+      rw [← closedRegion_inter_closedShell R S hRS]
+      exact ⟨hyDisk, hyShell⟩
+    let x : P.carrier := D.boundaryHomeomorph.symm ⟨y, hyCarrier⟩
+    have hxDisk : (x : Plane) ∈ P.closedRegion := by
+      rw [P.closedRegion_eq_union]
+      exact Or.inr x.2
+    have hxShell : (x : Plane) ∈ closedShell P Q :=
+      innerCarrier_subset_closedShell P Q hPQ x.2
+    have hDmap : D.homeomorph ⟨x, hxDisk⟩ = ⟨y, hyDisk⟩ := by
+      apply Subtype.ext
+      rw [D.apply_boundary x]
+      exact congrArg Subtype.val
+        (D.boundaryHomeomorph.apply_symm_apply ⟨y, hyCarrier⟩)
+    have hEmap : E ⟨x, hxShell⟩ = ⟨y, hyShell⟩ := by
+      apply Subtype.ext
+      rw [hinner x]
+      exact congrArg Subtype.val
+        (D.boundaryHomeomorph.apply_symm_apply ⟨y, hyCarrier⟩)
+    calc
+      (D.homeomorph.symm ⟨y, hyDisk⟩ : Plane) = x := by
+        rw [← hDmap, D.homeomorph.symm_apply_apply]
+      _ = (E.symm ⟨y, hyShell⟩ : Plane) := by
+        rw [← hEmap, E.symm_apply_apply]
+  let G : (P.closedRegion ∪ closedShell P Q : Set Plane) ≃ₜ
+      (R.closedRegion ∪ closedShell R S : Set Plane) :=
+    ClosedCoverHomeomorph.glue
+      P.isCompact_closedRegion.isClosed
+      (isCompact_closedShell P Q).isClosed
+      R.isCompact_closedRegion.isClosed
+      (isCompact_closedShell R S).isClosed
+      D.homeomorph E hforward hbackward
+  let H : Q.closedRegion ≃ₜ S.closedRegion :=
+    (Homeomorph.setCongr
+      (closedRegion_union_closedShell P Q hPQ).symm).trans <|
+      G.trans (Homeomorph.setCongr
+        (closedRegion_union_closedShell R S hRS))
+  refine {
+    homeomorph := H
+    boundaryHomeomorph := c
+    apply_boundary := ?_
+  }
+  intro x
+  have hxShell : (x : Plane) ∈ closedShell P Q :=
+    outerCarrier_subset_closedShell P Q hPQ x.2
+  change (G ⟨x, Or.inr hxShell⟩ : Plane) = c x
+  rw [ClosedCoverHomeomorph.coe_glue_apply_of_mem_right
+    P.isCompact_closedRegion.isClosed
+    (isCompact_closedShell P Q).isClosed
+    R.isCompact_closedRegion.isClosed
+    (isCompact_closedShell R S).isClosed
+    D.homeomorph E hforward hbackward _ hxShell]
+  exact houter x
+
+/-- Extending across a shell leaves the preceding closed-disk map unchanged
+at every old point. -/
+theorem CompatibleClosedDiskHomeomorph.extendAcrossShell_apply_old
+    (D : CompatibleClosedDiskHomeomorph P R)
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hRS : R.closedRegion ⊆ S.interiorRegion)
+    (E : closedShell P Q ≃ₜ closedShell R S)
+    (c : Q.carrier ≃ₜ S.carrier)
+    (hinner : ∀ x : P.carrier,
+      (E ⟨x, innerCarrier_subset_closedShell P Q hPQ x.2⟩ : Plane) =
+        D.boundaryHomeomorph x)
+    (houter : ∀ x : Q.carrier,
+      (E ⟨x, outerCarrier_subset_closedShell P Q hPQ x.2⟩ : Plane) =
+        c x)
+    (x : P.closedRegion) :
+    ((D.extendAcrossShell hPQ hRS E c hinner houter).homeomorph
+        ⟨x, closedRegion_subset_closedRegion_of_strictlyNested
+          P Q hPQ x.2⟩ : Plane) = D.homeomorph x := by
+  rw [CompatibleClosedDiskHomeomorph.extendAcrossShell]
+  simp only [Homeomorph.trans_apply]
+  have hxUnion : (x : Plane) ∈ P.closedRegion ∪ closedShell P Q := by
+    exact Or.inl x.2
+  have hin :
+      Homeomorph.setCongr
+          (closedRegion_union_closedShell P Q hPQ).symm
+          ⟨(x : Plane),
+            closedRegion_subset_closedRegion_of_strictlyNested
+              P Q hPQ x.2⟩ =
+        ⟨(x : Plane), hxUnion⟩ := by
+    apply Subtype.ext
+    rfl
+  rw [hin]
+  rw [coe_homeomorph_setCongr]
+  rw [ClosedCoverHomeomorph.coe_glue_apply_of_mem_left]
+
+end PolygonalCircle
+
+namespace JordanCircle.InitialAngularArcs
+
+variable {J : JordanCircle} (I : J.InitialAngularArcs)
+
+private abbrev compatibleStageSourceDisk (n : ℕ) : PolygonalCircle :=
+  I.localizedMarkedPolygonalDisk (n + 2)
+
+private abbrev compatibleStageTargetDisk
+    (_I : J.InitialAngularArcs) (n : ℕ) : PolygonalCircle :=
+  StandardPolygonalCollars.disk (n + 2)
+
+/-- The first compatible disk stage.  Its boundary is chosen to be the raw
+inner restriction of shell level one and is extended over the disk by the
+Alexander construction. -/
+def initialCompatibleClosedDiskHomeomorph :
+    PolygonalCircle.CompatibleClosedDiskHomeomorph
+      (I.compatibleStageSourceDisk 0) (I.compatibleStageTargetDisk 0) :=
+  PolygonalCircle.CompatibleClosedDiskHomeomorph.ofBoundary _ _
+    (I.localizedRawInnerBoundaryHomeomorph 1 (by omega))
+
+/-- Add shell `n+1` to compatible disk stage `n`. -/
+def nextCompatibleClosedDiskHomeomorph (n : ℕ)
+    (D : PolygonalCircle.CompatibleClosedDiskHomeomorph
+      (I.compatibleStageSourceDisk n) (I.compatibleStageTargetDisk n)) :
+    PolygonalCircle.CompatibleClosedDiskHomeomorph
+      (I.compatibleStageSourceDisk (n + 1))
+      (I.compatibleStageTargetDisk (n + 1)) :=
+  D.extendAcrossShell
+    (I.localizedMarkedPolygonalDisk_strictly_nested (n + 2))
+    (StandardPolygonalCollars.disk_strictlyNested (n + 2))
+    (I.compatibleLocalizedShellHomeomorph (n + 1) (by omega)
+      D.boundaryHomeomorph)
+    (I.compatibleLocalizedOuterBoundaryHomeomorph (n + 1) (by omega)
+      D.boundaryHomeomorph)
+    (I.compatibleLocalizedShellHomeomorph_apply_innerCarrier
+      (n + 1) (by omega) D.boundaryHomeomorph)
+    (I.compatibleLocalizedShellHomeomorph_apply_outerCarrier
+      (n + 1) (by omega) D.boundaryHomeomorph)
+
+/-- The recursive sequence of mutually compatible homeomorphisms from the
+localized polygonal exhaustion disks to the standard polygonal exhaustion. -/
+def compatibleClosedDiskHomeomorphStage :
+    (n : ℕ) → PolygonalCircle.CompatibleClosedDiskHomeomorph
+      (I.compatibleStageSourceDisk n) (I.compatibleStageTargetDisk n)
+  | 0 => I.initialCompatibleClosedDiskHomeomorph
+  | n + 1 => I.nextCompatibleClosedDiskHomeomorph n
+      (compatibleClosedDiskHomeomorphStage n)
+
+/-- Consecutive recursive stages agree exactly on the preceding closed disk. -/
+theorem compatibleClosedDiskHomeomorphStage_succ_apply_old
+    (n : ℕ) (x : (I.compatibleStageSourceDisk n).closedRegion) :
+    ((I.compatibleClosedDiskHomeomorphStage (n + 1)).homeomorph
+        ⟨x, PolygonalCircle.closedRegion_subset_closedRegion_of_strictlyNested _ _
+          (I.localizedMarkedPolygonalDisk_strictly_nested (n + 2)) x.2⟩ :
+        Plane) =
+      (I.compatibleClosedDiskHomeomorphStage n).homeomorph x := by
+  change
+    ((I.nextCompatibleClosedDiskHomeomorph n
+        (I.compatibleClosedDiskHomeomorphStage n)).homeomorph
+      ⟨x, PolygonalCircle.closedRegion_subset_closedRegion_of_strictlyNested _ _
+        (I.localizedMarkedPolygonalDisk_strictly_nested (n + 2)) x.2⟩ :
+      Plane) = _
+  exact PolygonalCircle.CompatibleClosedDiskHomeomorph.extendAcrossShell_apply_old
+    (I.compatibleClosedDiskHomeomorphStage n)
+    (I.localizedMarkedPolygonalDisk_strictly_nested (n + 2))
+    (StandardPolygonalCollars.disk_strictlyNested (n + 2))
+    (I.compatibleLocalizedShellHomeomorph (n + 1) (by omega)
+      (I.compatibleClosedDiskHomeomorphStage n).boundaryHomeomorph)
+    (I.compatibleLocalizedOuterBoundaryHomeomorph (n + 1) (by omega)
+      (I.compatibleClosedDiskHomeomorphStage n).boundaryHomeomorph)
+    (I.compatibleLocalizedShellHomeomorph_apply_innerCarrier
+      (n + 1) (by omega)
+      (I.compatibleClosedDiskHomeomorphStage n).boundaryHomeomorph)
+    (I.compatibleLocalizedShellHomeomorph_apply_outerCarrier
+      (n + 1) (by omega)
+      (I.compatibleClosedDiskHomeomorphStage n).boundaryHomeomorph)
+    x
+
+/-- The localized source disks form an increasing sequence at the indexing
+used by the compatible stages. -/
+theorem compatibleStageSourceDisk_closedRegion_mono
+    {m n : ℕ} (hmn : m ≤ n) :
+    (I.compatibleStageSourceDisk m).closedRegion ⊆
+      (I.compatibleStageSourceDisk n).closedRegion := by
+  induction n, hmn using Nat.le_induction with
+  | base => exact Set.Subset.rfl
+  | succ n hmn ih =>
+      exact ih.trans <|
+        PolygonalCircle.closedRegion_subset_closedRegion_of_strictlyNested
+          _ _ (I.localizedMarkedPolygonalDisk_strictly_nested (n + 2))
+
+/-- Every later finite-stage homeomorphism agrees with an earlier one on the
+entire earlier closed disk. -/
+theorem compatibleClosedDiskHomeomorphStage_apply_of_le
+    {m n : ℕ} (hmn : m ≤ n)
+    (x : (I.compatibleStageSourceDisk m).closedRegion) :
+    ((I.compatibleClosedDiskHomeomorphStage n).homeomorph
+        ⟨x, I.compatibleStageSourceDisk_closedRegion_mono hmn x.2⟩ :
+      Plane) =
+      (I.compatibleClosedDiskHomeomorphStage m).homeomorph x := by
+  induction n, hmn using Nat.le_induction with
+  | base => rfl
+  | succ n hmn ih =>
+      let xn : (I.compatibleStageSourceDisk n).closedRegion :=
+        ⟨x, I.compatibleStageSourceDisk_closedRegion_mono hmn x.2⟩
+      calc
+        ((I.compatibleClosedDiskHomeomorphStage (n + 1)).homeomorph
+            ⟨x, I.compatibleStageSourceDisk_closedRegion_mono
+              (Nat.le.step hmn) x.2⟩ : Plane) =
+            (I.compatibleClosedDiskHomeomorphStage n).homeomorph xn := by
+          exact I.compatibleClosedDiskHomeomorphStage_succ_apply_old n xn
+        _ = (I.compatibleClosedDiskHomeomorphStage m).homeomorph x := ih
+
+end JordanCircle.InitialAngularArcs
+
+end
+
+
+end Schoenflies

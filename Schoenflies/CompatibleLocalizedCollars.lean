@@ -166,6 +166,127 @@ theorem compatibleLocalizedShellHomeomorph_apply_innerCarrier
     StandardPolygonalCollars.standardShellBoundaryAdjustment_apply_innerCarrier]
   simp only [Homeomorph.trans_apply, Homeomorph.symm_apply_apply]
 
+/-- Convert the source outer polygonal carrier to the carrier subtype of its
+associated Jordan circle. -/
+def localizedSourceOuterCarrierToJordanCarrier (k : ℕ) :
+    (I.sourceOuterDisk k).carrier →
+      (I.sourceOuterDisk k).toJordanCircle.carrier := fun x =>
+  ⟨x, by
+    simpa only [(I.sourceOuterDisk k).carrier_toJordanCircle] using x.2⟩
+
+theorem continuous_localizedSourceOuterCarrierToJordanCarrier (k : ℕ) :
+    Continuous (I.localizedSourceOuterCarrierToJordanCarrier k) := by
+  exact continuous_subtype_val.subtype_mk _
+
+/-- The raw localized shell map restricted to its outer carrier. -/
+def localizedRawOuterBoundaryMap (k : ℕ) (hk : 1 ≤ k) :
+    (I.sourceOuterDisk k).carrier → (I.targetOuterDisk k).carrier := fun x =>
+  let xJ := I.localizedSourceOuterCarrierToJordanCarrier k x
+  ⟨I.localizedOuterBoundaryEmbedding k hk xJ,
+    I.localizedOuterBoundaryEmbedding_mem_targetOuterCarrier k hk xJ⟩
+
+theorem continuous_localizedRawOuterBoundaryMap
+    (k : ℕ) (hk : 1 ≤ k) :
+    Continuous (I.localizedRawOuterBoundaryMap k hk) := by
+  apply continuous_induced_rng.mpr
+  exact (I.continuous_localizedOuterBoundaryEmbedding k hk).comp
+    (I.continuous_localizedSourceOuterCarrierToJordanCarrier k)
+
+theorem injective_localizedRawOuterBoundaryMap
+    (k : ℕ) (hk : 1 ≤ k) :
+    Function.Injective (I.localizedRawOuterBoundaryMap k hk) := by
+  intro x y hxy
+  have hembed :
+      I.localizedOuterBoundaryEmbedding k hk
+          (I.localizedSourceOuterCarrierToJordanCarrier k x) =
+        I.localizedOuterBoundaryEmbedding k hk
+          (I.localizedSourceOuterCarrierToJordanCarrier k y) :=
+    congrArg (fun z : (I.targetOuterDisk k).carrier => (z : Plane)) hxy
+  have hcast := I.injective_localizedOuterBoundaryEmbedding k hk hembed
+  exact Subtype.ext <|
+    congrArg (fun z : (I.sourceOuterDisk k).toJordanCircle.carrier =>
+      (z : Plane)) hcast
+
+theorem surjective_localizedRawOuterBoundaryMap
+    (k : ℕ) (hk : 1 ≤ k) :
+    Function.Surjective (I.localizedRawOuterBoundaryMap k hk) := by
+  intro y
+  have hyRange : (y : Plane) ∈
+      Set.range (I.localizedOuterBoundaryEmbedding k hk) := by
+    rw [I.range_localizedOuterBoundaryEmbedding k hk]
+    exact y.2
+  obtain ⟨x, hx⟩ := hyRange
+  let x' : (I.sourceOuterDisk k).carrier :=
+    ⟨x, by
+      simpa only [(I.sourceOuterDisk k).carrier_toJordanCircle] using x.2⟩
+  refine ⟨x', ?_⟩
+  apply Subtype.ext
+  change I.localizedOuterBoundaryEmbedding k hk
+      (I.localizedSourceOuterCarrierToJordanCarrier k x') = y
+  simpa only [x', localizedSourceOuterCarrierToJordanCarrier] using hx
+
+/-- The raw shell map's outer-boundary restriction as a homeomorphism. -/
+def localizedRawOuterBoundaryHomeomorph
+    (k : ℕ) (hk : 1 ≤ k) :
+    (I.sourceOuterDisk k).carrier ≃ₜ (I.targetOuterDisk k).carrier := by
+  letI : CompactSpace (I.sourceOuterDisk k).carrier :=
+    isCompact_iff_compactSpace.mp (I.sourceOuterDisk k).isCompact_carrier
+  let e : (I.sourceOuterDisk k).carrier ≃ (I.targetOuterDisk k).carrier :=
+    Equiv.ofBijective (I.localizedRawOuterBoundaryMap k hk)
+      ⟨I.injective_localizedRawOuterBoundaryMap k hk,
+        I.surjective_localizedRawOuterBoundaryMap k hk⟩
+  exact Continuous.homeoOfEquivCompactToT2
+    (f := e) (I.continuous_localizedRawOuterBoundaryMap k hk)
+
+@[simp] theorem localizedRawOuterBoundaryHomeomorph_apply
+    (k : ℕ) (hk : 1 ≤ k) (x : (I.sourceOuterDisk k).carrier) :
+    (I.localizedRawOuterBoundaryHomeomorph k hk x : Plane) =
+      I.localizedOuterBoundaryEmbedding k hk
+        (I.localizedSourceOuterCarrierToJordanCarrier k x) := by
+  rfl
+
+/-- The boundary homeomorphism induced on the outer edge of a compatible
+localized shell. -/
+def compatibleLocalizedOuterBoundaryHomeomorph
+    (k : ℕ) (hk : 1 ≤ k)
+    (b : (I.sourceInnerDisk k).carrier ≃ₜ
+      (I.targetInnerDisk k).carrier) :
+    (I.sourceOuterDisk k).carrier ≃ₜ
+      (I.targetOuterDisk k).carrier :=
+  (I.localizedRawOuterBoundaryHomeomorph k hk).trans <|
+    StandardPolygonalCollars.standardShellOuterBoundaryAdjustment (k + 1)
+      ((I.localizedRawInnerBoundaryHomeomorph k hk).symm.trans b)
+
+/-- Regard the source outer carrier as a subtype of its localized shell. -/
+def localizedSourceOuterCarrierInShell (k : ℕ)
+    (x : (I.sourceOuterDisk k).carrier) :
+    PolygonalCircle.closedShell
+      (I.sourceInnerDisk k) (I.sourceOuterDisk k) :=
+  ⟨x, PolygonalCircle.outerCarrier_subset_closedShell _ _
+    (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1)) x.2⟩
+
+/-- The corrected shell map restricts to its explicitly packaged outer
+boundary homeomorphism. -/
+theorem compatibleLocalizedShellHomeomorph_apply_outerCarrier
+    (k : ℕ) (hk : 1 ≤ k)
+    (b : (I.sourceInnerDisk k).carrier ≃ₜ
+      (I.targetInnerDisk k).carrier)
+    (x : (I.sourceOuterDisk k).carrier) :
+    (I.compatibleLocalizedShellHomeomorph k hk b
+        (I.localizedSourceOuterCarrierInShell k x) : Plane) =
+      I.compatibleLocalizedOuterBoundaryHomeomorph k hk b x := by
+  rw [compatibleLocalizedShellHomeomorph, Homeomorph.trans_apply]
+  have hraw :
+      I.localizedShellHomeomorph k hk
+          (I.localizedSourceOuterCarrierInShell k x) =
+        StandardPolygonalCollars.outerCarrierInClosedShell (k + 1)
+          (I.localizedRawOuterBoundaryHomeomorph k hk x) := by
+    apply Subtype.ext
+    rfl
+  rw [hraw,
+    StandardPolygonalCollars.standardShellBoundaryAdjustment_apply_outerCarrier]
+  rfl
+
 end JordanCircle.InitialAngularArcs
 
 end

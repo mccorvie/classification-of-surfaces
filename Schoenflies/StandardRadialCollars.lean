@@ -427,6 +427,39 @@ theorem norm_extendSphereHomeomorph
     ‖extendSphereHomeomorph r hr h x‖ = ‖x‖ :=
   PlaneAlexander.norm_ambientRadialHomeomorph _ x
 
+/-- The self-homeomorphism induced by a radial extension on any other
+positive-radius sphere. -/
+def inducedSphereHomeomorph
+    (r : ℝ) (hr : 0 < r)
+    (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r)
+    (s : ℝ) (hs : 0 < s) :
+    sphere (0 : Plane) s ≃ₜ sphere (0 : Plane) s :=
+  (sphereScale s hs).symm.trans <|
+    ((sphereScale r hr).trans
+      (h.trans (sphereScale r hr).symm)).trans
+    (sphereScale s hs)
+
+/-- On a positive-radius sphere, the ambient radial extension agrees with
+the corresponding induced sphere homeomorphism. -/
+theorem extendSphereHomeomorph_apply_ofSphere
+    (r : ℝ) (hr : 0 < r)
+    (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r)
+    (s : ℝ) (hs : 0 < s) (y : sphere (0 : Plane) s) :
+    extendSphereHomeomorph r hr h y =
+      inducedSphereHomeomorph r hr h s hs y := by
+  let z : sphere (0 : Plane) 1 := (sphereScale s hs).symm y
+  have hy : (y : Plane) = s • (z : Plane) := by
+    exact (congrArg Subtype.val
+      ((sphereScale s hs).apply_symm_apply y)).symm
+  rw [extendSphereHomeomorph, hy,
+    PlaneAlexander.ambientRadialHomeomorph_smul_ofSphere _ hs z]
+  change s • (((sphereScale r hr).trans
+      (h.trans (sphereScale r hr).symm)) z : Plane) =
+    (sphereScale s hs
+      (((sphereScale r hr).trans
+        (h.trans (sphereScale r hr).symm)) z) : Plane)
+  rfl
+
 theorem image_roundClosedShell_extendSphereHomeomorph
     (r : ℝ) (hr : 0 < r)
     (h : sphere (0 : Plane) r ≃ₜ sphere (0 : Plane) r)
@@ -516,6 +549,17 @@ def innerCarrierInClosedShell (n : ℕ) (x : (disk n).carrier) :
     (innerCarrierInClosedShell n x : Plane) = x := by
   rfl
 
+/-- Regard the outer carrier of a standard shell as a subtype of that shell. -/
+def outerCarrierInClosedShell (n : ℕ) (x : (disk (n + 1)).carrier) :
+    PolygonalCircle.closedShell (disk n) (disk (n + 1)) :=
+  ⟨x, PolygonalCircle.outerCarrier_subset_closedShell _ _
+    (disk_strictlyNested n) x.2⟩
+
+@[simp] theorem outerCarrierInClosedShell_val (n : ℕ)
+    (x : (disk (n + 1)).carrier) :
+    (outerCarrierInClosedShell n x : Plane) = x := by
+  rfl
+
 /-- Extend an arbitrary self-homeomorphism of the inner standard polygonal
 carrier over the next standard shell.  The simultaneous gauge straightening
 conjugates the carrier map to a round sphere, where Alexander's radial
@@ -531,6 +575,19 @@ def standardShellBoundaryAdjustment (n : ℕ)
         (q.trans (diskCarrierToSphere n)))
       (radius n) (radius (n + 1))).trans
     (shellToRoundClosedShell n).symm
+
+/-- The self-homeomorphism induced by the same standard-shell adjustment on
+the outer polygonal carrier. -/
+def standardShellOuterBoundaryAdjustment (n : ℕ)
+    (q : (disk n).carrier ≃ₜ (disk n).carrier) :
+    (disk (n + 1)).carrier ≃ₜ (disk (n + 1)).carrier :=
+  (diskCarrierToSphere (n + 1)).trans <|
+    (RadialBoundaryAdjustment.inducedSphereHomeomorph
+      (radius n) (radius_pos n)
+      ((diskCarrierToSphere n).symm.trans
+        (q.trans (diskCarrierToSphere n)))
+      (radius (n + 1)) (radius_pos (n + 1))).trans
+    (diskCarrierToSphere (n + 1)).symm
 
 /-- The standard-shell adjustment has exactly the prescribed value on the
 inner polygonal carrier. -/
@@ -562,6 +619,58 @@ theorem standardShellBoundaryAdjustment_apply_innerCarrier
       (q.trans (diskCarrierToSphere n))) y : Plane) = _
     simp only [y, Homeomorph.trans_apply, Homeomorph.symm_apply_apply]
     rfl
+  rw [hround, Homeomorph.symm_apply_apply]
+  rfl
+
+/-- The restriction of the standard-shell adjustment to the outer carrier
+is the explicitly induced outer-boundary homeomorphism. -/
+theorem standardShellBoundaryAdjustment_apply_outerCarrier
+    (n : ℕ) (q : (disk n).carrier ≃ₜ (disk n).carrier)
+    (x : (disk (n + 1)).carrier) :
+    (standardShellBoundaryAdjustment n q
+        (outerCarrierInClosedShell n x) : Plane) =
+      standardShellOuterBoundaryAdjustment n q x := by
+  rw [standardShellBoundaryAdjustment]
+  simp only [Homeomorph.trans_apply]
+  have hround :
+      RadialBoundaryAdjustment.roundClosedShellHomeomorph
+          (radius n) (radius_pos n)
+          ((diskCarrierToSphere n).symm.trans
+            (q.trans (diskCarrierToSphere n)))
+          (radius n) (radius (n + 1))
+          (shellToRoundClosedShell n (outerCarrierInClosedShell n x)) =
+        shellToRoundClosedShell n
+          (outerCarrierInClosedShell n
+            (standardShellOuterBoundaryAdjustment n q x)) := by
+    apply Subtype.ext
+    rw [RadialBoundaryAdjustment.roundClosedShellHomeomorph_apply]
+    let y : sphere (0 : Plane) (radius (n + 1)) :=
+      diskCarrierToSphere (n + 1) x
+    have hsource :
+        (shellToRoundClosedShell n
+          (outerCarrierInClosedShell n x) : Plane) = (y : Plane) := by
+      rfl
+    rw [hsource,
+      RadialBoundaryAdjustment.extendSphereHomeomorph_apply_ofSphere]
+    change
+      (RadialBoundaryAdjustment.inducedSphereHomeomorph
+        (radius n) (radius_pos n)
+        ((diskCarrierToSphere n).symm.trans
+          (q.trans (diskCarrierToSphere n)))
+        (radius (n + 1)) (radius_pos (n + 1)) y : Plane) = _
+    rw [standardShellOuterBoundaryAdjustment]
+    simp only [Homeomorph.trans_apply, y]
+    let z : sphere (0 : Plane) (radius (n + 1)) :=
+      RadialBoundaryAdjustment.inducedSphereHomeomorph
+        (radius n) (radius_pos n)
+        ((diskCarrierToSphere n).symm.trans
+          (q.trans (diskCarrierToSphere n)))
+        (radius (n + 1)) (radius_pos (n + 1))
+        (diskCarrierToSphere (n + 1) x)
+    change (z : Plane) =
+      triangleToBall ((diskCarrierToSphere (n + 1)).symm z)
+    exact (congrArg Subtype.val
+      ((diskCarrierToSphere (n + 1)).apply_symm_apply z)).symm
   rw [hround, Homeomorph.symm_apply_apply]
   rfl
 
