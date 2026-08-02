@@ -1,0 +1,159 @@
+import Schoenflies.LocalizedAnnularOrder
+import Schoenflies.AnnularCellAttachments
+
+/-!
+# Cut-free cells in a localized polygonal shell
+
+For every retained shell cut, cyclic order supplies its next neighbor on the
+inner polygonal boundary.  The corresponding separator on the outer boundary
+is cut-free as well.  This file turns that statement into the relative disk
+attachment consumed by the finite gluing construction.
+-/
+
+namespace Schoenflies
+
+open Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace JordanCircle.InitialAngularArcs
+
+variable {J : JordanCircle} (I : J.InitialAngularArcs)
+
+private abbrev innerDisk (k : ℕ) : PolygonalCircle :=
+  I.localizedMarkedPolygonalDisk (k + 1)
+
+private abbrev outerDisk (k : ℕ) : PolygonalCircle :=
+  I.localizedMarkedPolygonalDisk (k + 2)
+
+/-- The cut-free neighbor and separator selected from one prescribed cut. -/
+structure LocalizedCutFreeCellData (k : ℕ) (a : LevelAddress k) where
+  next : LevelAddress k
+  next_ne : a ≠ next
+  separator : PolygonalCircle.AnnularCrosscut.SeparatorPair
+    (I.levelLocalizedAnnularCrosscut k a)
+    (I.levelLocalizedAnnularCrosscut k next)
+  side :
+    ((I.innerDisk k).interiorRegion ⊆
+          (separator.circle₀
+            (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+            (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k next_ne)).inside ∧
+        ∀ c : LevelAddress k, c ≠ a → c ≠ next →
+          (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+            range separator.outerArc₁) ∨
+      ((I.innerDisk k).interiorRegion ⊆
+          (separator.circle₁
+            (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+            (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k next_ne)).inside ∧
+        ∀ c : LevelAddress k, c ≠ a → c ≠ next →
+          (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+            range separator.outerArc₀)
+
+theorem nonempty_localizedCutFreeCellData (k : ℕ)
+    (a : LevelAddress k) :
+    Nonempty (I.LocalizedCutFreeCellData k a) := by
+  obtain ⟨b, hab, S, hS⟩ :=
+    I.exists_levelLocalized_cutFreeArcFrom k a
+  exact ⟨⟨b, hab, S, hS⟩⟩
+
+/-- A canonical cut-free cell starting at the prescribed retained cut. -/
+noncomputable def localizedCutFreeCellData (k : ℕ)
+    (a : LevelAddress k) : I.LocalizedCutFreeCellData k a :=
+  Classical.choice (I.nonempty_localizedCutFreeCellData k a)
+
+namespace LocalizedCutFreeCellData
+
+variable {I : J.InitialAngularArcs} {k : ℕ} {a : LevelAddress k}
+  (C : I.LocalizedCutFreeCellData k a)
+
+/-- The two exact separator disks determined by the chosen cut-free pair. -/
+noncomputable def decomposition :
+    PolygonalCircle.AnnularCellDecomposition (I.innerDisk k) (I.outerDisk k) where
+  first := I.levelLocalizedAnnularCrosscut k a
+  second := I.levelLocalizedAnnularCrosscut k C.next
+  separator := C.separator
+  nested := I.localizedMarkedPolygonalDisk_strictly_nested (k + 1)
+  disjoint := I.pairwise_disjoint_levelLocalizedAnnularCrosscut k C.next_ne
+  outerPoints_ne := fun h =>
+    C.next_ne (I.levelLocalizedOuterBoundaryMark_injective k h)
+  innerPoints_ne := fun h =>
+    C.next_ne (I.levelLocalizedPolygonalBoundaryMark_injective k h)
+  first_segment := by
+    change range (Path.segment
+        (I.levelLocalizedOuterBoundaryMark k a)
+        (I.levelLocalizedPolygonalBoundaryMark k a)) = _
+    exact Path.range_segment _ _
+  second_segment := by
+    change range (Path.segment
+        (I.levelLocalizedOuterBoundaryMark k C.next)
+        (I.levelLocalizedPolygonalBoundaryMark k C.next)) = _
+    exact Path.range_segment _ _
+
+private def firstAlternative : Prop :=
+  (I.innerDisk k).interiorRegion ⊆
+      (C.separator.circle₀
+        (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+        (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k C.next_ne)).inside ∧
+    ∀ c : LevelAddress k, c ≠ a → c ≠ C.next →
+      (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+        range C.separator.outerArc₁
+
+private theorem secondAlternative_of_not_first
+    (h : ¬ C.firstAlternative) :
+    (I.innerDisk k).interiorRegion ⊆
+        (C.separator.circle₁
+          (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+          (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k C.next_ne)).inside ∧
+      ∀ c : LevelAddress k, c ≠ a → c ≠ C.next →
+        (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+          range C.separator.outerArc₀ :=
+  C.side.resolve_left h
+
+/-- The cut-free separator disk, presented as a disk attached to the inner
+polygonal disk along its selected boundary arc. -/
+noncomputable def attachmentPresentation :
+    PolygonalDiskAttachment.Presentation (I.innerDisk k).closedRegion := by
+  classical
+  exact if h : C.firstAlternative then
+      C.decomposition.attachmentPresentation₁ h.1
+    else
+      C.decomposition.attachmentPresentation₀
+        (C.secondAlternative_of_not_first h).1
+
+/-- The actual polygonal disk cut off from the localized shell. -/
+noncomputable def disk : PolygonalCircle :=
+  C.attachmentPresentation.disk
+
+theorem base_inter_disk :
+    (I.innerDisk k).closedRegion ∩ C.disk.closedRegion =
+      range C.attachmentPresentation.shared :=
+  C.attachmentPresentation.base_inter_disk
+
+private noncomputable def exposedOuterArc : Set Plane := by
+  classical
+  exact if C.firstAlternative then
+      range C.separator.outerArc₁
+    else
+      range C.separator.outerArc₀
+
+/-- No third retained outer endpoint lies on the exposed outer boundary arc
+of the cut-free cell. -/
+theorem other_outerPoint_not_mem_exposedOuterArc :
+    ∀ c : LevelAddress k, c ≠ a → c ≠ C.next →
+      (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+        C.exposedOuterArc := by
+  intro c hca hcnext
+  by_cases h : C.firstAlternative
+  · rw [exposedOuterArc, if_pos h]
+    exact h.2 c hca hcnext
+  · rw [exposedOuterArc, if_neg h]
+    exact (C.secondAlternative_of_not_first h).2 c hca hcnext
+
+end LocalizedCutFreeCellData
+
+end JordanCircle.InitialAngularArcs
+
+end
+
+end Schoenflies

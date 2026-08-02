@@ -80,25 +80,24 @@ theorem cyclicLift_lt_add_period {x y : J.carrier} (hxy : x ≠ y) :
         J.angularPoint_angularRepresentative]
     exact hyx.symm
 
-/-- A finite injective family of at least two points on a Jordan circle has a
-pair with a chosen complementary split whose first arc contains no other
-family point.  Equivalently, every remaining point lies on `second`. -/
-theorem exists_adjacent_twoBoundaryArcPaths
-    {ι : Type*} [Fintype ι] (F : ι → Plane)
+/-- Starting at any prescribed member of a finite injective family on a
+Jordan circle, there is a next member in the positive cyclic direction.  The
+first chosen boundary arc from `a` to that member contains no other family
+point; equivalently, every remaining point belongs to the complementary
+arc. -/
+theorem exists_next_twoBoundaryArcPaths
+    {iota : Type*} [Fintype iota] (F : iota → Plane)
     (hcarrier : ∀ i, F i ∈ J.carrier)
     (hinjective : Injective F)
-    (hcard : 2 ≤ Fintype.card ι) :
-    ∃ a b : ι, ∃ hab : a ≠ b,
+    (hcard : 2 ≤ Fintype.card iota) (a : iota) :
+    ∃ b : iota, ∃ hab : a ≠ b,
       ∃ S : J.TwoBoundaryArcPaths (F a) (F b),
-        ∀ c : ι, c ≠ a → c ≠ b → F c ∈ range S.second := by
+        ∀ c : iota, c ≠ a → c ≠ b → F c ∈ range S.second := by
   classical
-  have hnonempty : Nonempty ι :=
-    Fintype.card_pos_iff.mp (by omega)
-  let a : ι := Classical.choice hnonempty
-  let X : ι → J.carrier := fun i => ⟨F i, hcarrier i⟩
-  let beta : ι → ℝ := fun i => J.cyclicLift (X a) (X i)
+  let X : iota → J.carrier := fun i => ⟨F i, hcarrier i⟩
+  let beta : iota → ℝ := fun i => J.cyclicLift (X a) (X i)
   obtain ⟨b₀, hb₀a⟩ :=
-    Fintype.exists_ne_of_one_lt_card (by omega : 1 < Fintype.card ι) a
+    Fintype.exists_ne_of_one_lt_card (by omega : 1 < Fintype.card iota) a
   have herase : (Finset.univ.erase a).Nonempty := by
     exact ⟨b₀, Finset.mem_erase.mpr ⟨hb₀a, Finset.mem_univ _⟩⟩
   obtain ⟨b, hbmem, hbmin⟩ :=
@@ -121,17 +120,12 @@ theorem exists_adjacent_twoBoundaryArcPaths
     J.angularPoint_angularRepresentative (X a)
   have hbPoint : J.angularPoint (beta b) = F b :=
     J.angularPoint_cyclicLift (X a) (X b)
-  have hcontrolled :
-      ∃ S : J.TwoBoundaryArcPaths (F a) (F b),
-        range S.first = J.parametrization ''
-            (JordanCurve.Arcs.param '' Set.Icc alpha (beta b)) ∧
-          range S.second = J.parametrization ''
-            (JordanCurve.Arcs.param ''
-              Set.Icc (beta b) (alpha + 2 * Real.pi)) := by
-    let S := S₀.cast haPoint hbPoint
-    exact ⟨S, by simpa [S] using hfirst₀, by simpa [S] using hsecond₀⟩
-  obtain ⟨S, _hfirst, hsecond⟩ := hcontrolled
-  refine ⟨a, b, hab, S, ?_⟩
+  let S := S₀.cast haPoint hbPoint
+  have hsecond : range S.second = J.parametrization ''
+      (JordanCurve.Arcs.param ''
+        Set.Icc (beta b) (alpha + 2 * Real.pi)) := by
+    simpa [S] using hsecond₀
+  refine ⟨b, hab, S, ?_⟩
   intro c hca _hcb
   have hcmem : c ∈ Finset.univ.erase a :=
     Finset.mem_erase.mpr ⟨hca, Finset.mem_univ _⟩
@@ -139,8 +133,28 @@ theorem exists_adjacent_twoBoundaryArcPaths
   have hcUpper : beta c ≤ alpha + 2 * Real.pi :=
     (J.cyclicLift_mem_Ioc (X a) (X c)).2
   rw [hsecond]
-  refine ⟨JordanCurve.Arcs.param (beta c), ⟨beta c, ⟨hbc, hcUpper⟩, rfl⟩, ?_⟩
+  refine ⟨JordanCurve.Arcs.param (beta c),
+    ⟨beta c, ⟨hbc, hcUpper⟩, rfl⟩, ?_⟩
   exact J.angularPoint_cyclicLift (X a) (X c)
+
+/-- A finite injective family of at least two points on a Jordan circle has a
+pair with a chosen complementary split whose first arc contains no other
+family point.  Equivalently, every remaining point lies on `second`. -/
+theorem exists_adjacent_twoBoundaryArcPaths
+    {ι : Type*} [Fintype ι] (F : ι → Plane)
+    (hcarrier : ∀ i, F i ∈ J.carrier)
+    (hinjective : Injective F)
+    (hcard : 2 ≤ Fintype.card ι) :
+    ∃ a b : ι, ∃ hab : a ≠ b,
+      ∃ S : J.TwoBoundaryArcPaths (F a) (F b),
+        ∀ c : ι, c ≠ a → c ≠ b → F c ∈ range S.second := by
+  classical
+  have hnonempty : Nonempty ι :=
+    Fintype.card_pos_iff.mp (by omega)
+  let a : ι := Classical.choice hnonempty
+  obtain ⟨b, hab, S, hS⟩ :=
+    J.exists_next_twoBoundaryArcPaths F hcarrier hinjective hcard a
+  exact ⟨a, b, hab, S, hS⟩
 
 end JordanCircle
 

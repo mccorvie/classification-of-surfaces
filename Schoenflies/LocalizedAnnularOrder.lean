@@ -39,6 +39,14 @@ private theorem range_levelLocalizedAnnularCrosscut_eq_segment
       (I.levelLocalizedPolygonalBoundaryMark k a)
   exact Path.range_segment _ _
 
+private theorem two_le_card_levelAddress (k : ℕ) :
+    2 ≤ Fintype.card (LevelAddress k) := by
+  rw [levelAddress_card]
+  calc
+    2 = 2 ^ 1 := by norm_num
+    _ ≤ 2 ^ (k + 1) :=
+      pow_le_pow_right' (by norm_num) (by omega)
+
 /-- At a localized shell level, an endpoint-free inner arc has a matching
 endpoint-free outer arc.  The alternative in the conclusion says which of
 the two complementary separators contains the inner polygonal disk. -/
@@ -84,6 +92,39 @@ theorem levelLocalized_cutFreeArcs
     (I.range_levelLocalizedAnnularCrosscut_eq_segment k b)
     hinnerSecond
 
+/-- Every prescribed retained cut has a next neighbor on the inner polygon,
+and the two cuts bound a cell whose corresponding outer arc contains no
+other retained endpoint. -/
+theorem exists_levelLocalized_cutFreeArcFrom
+    (k : ℕ) (a : LevelAddress k) :
+    ∃ b : LevelAddress k, ∃ hab : a ≠ b,
+      ∃ S : PolygonalCircle.AnnularCrosscut.SeparatorPair
+          (I.levelLocalizedAnnularCrosscut k a)
+          (I.levelLocalizedAnnularCrosscut k b),
+        ((I.innerDisk k).interiorRegion ⊆
+              (S.circle₀
+                (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+                (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k hab)).inside ∧
+            ∀ c : LevelAddress k, c ≠ a → c ≠ b →
+              (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+                range S.outerArc₁) ∨
+          ((I.innerDisk k).interiorRegion ⊆
+              (S.circle₁
+                (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+                (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k hab)).inside ∧
+            ∀ c : LevelAddress k, c ≠ a → c ≠ b →
+              (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+                range S.outerArc₀) := by
+  let F := I.levelLocalizedAnnularCrosscut k
+  exact
+    PolygonalCircle.AnnularCrosscut.SeparatorPair.exists_cutFreeArcFrom F
+      (two_le_card_levelAddress k)
+      (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+      (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k)
+      (I.levelLocalizedPolygonalBoundaryMark_injective k)
+      (I.levelLocalizedOuterBoundaryMark_injective k)
+      (I.range_levelLocalizedAnnularCrosscut_eq_segment k) a
+
 /-- Every localized shell level has a pair of retained cuts bounding a
 cut-free cell.  No cyclic-order assumption remains: the inner pair and its
 controlled split are selected by the finite Jordan-circle theorem. -/
@@ -106,20 +147,14 @@ theorem exists_levelLocalized_cutFreeArcs (k : ℕ) :
             ∀ c : LevelAddress k, c ≠ a → c ≠ b →
               (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
                 range S.outerArc₀) := by
-  let F := I.levelLocalizedAnnularCrosscut k
-  have hcard : 2 ≤ Fintype.card (LevelAddress k) := by
-    rw [levelAddress_card]
-    calc
-      2 = 2 ^ 1 := by norm_num
-      _ ≤ 2 ^ (k + 1) :=
-        pow_le_pow_right' (by norm_num) (by omega)
-  exact PolygonalCircle.AnnularCrosscut.SeparatorPair.exists_cutFreeArcs F
-    hcard
-    (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
-    (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k)
-    (I.levelLocalizedPolygonalBoundaryMark_injective k)
-    (I.levelLocalizedOuterBoundaryMark_injective k)
-    (I.range_levelLocalizedAnnularCrosscut_eq_segment k)
+  classical
+  let a : LevelAddress k := Classical.choice <|
+    Fintype.card_pos_iff.mp (by
+      have := two_le_card_levelAddress k
+      omega)
+  obtain ⟨b, hab, S, hS⟩ :=
+    I.exists_levelLocalized_cutFreeArcFrom k a
+  exact ⟨a, b, hab, S, hS⟩
 
 end JordanCircle.InitialAngularArcs
 
