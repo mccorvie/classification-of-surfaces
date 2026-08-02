@@ -1,5 +1,5 @@
 import Schoenflies.MoiseBandCellBounds
-import Schoenflies.MoiseBandCellCover
+import Schoenflies.MoiseBandCellAttachments
 import Schoenflies.NestedCollarStages
 
 /-!
@@ -236,6 +236,28 @@ theorem shrinkingMoiseBand_parentClosedRegion_inter
         linarith
       have hkpos := successorBufferBound_pos k
       linarith
+
+/-- The same late-stage estimate, packaged in the exact form consumed by
+the relative disk-extension construction. -/
+noncomputable def shrinkingMoiseBandAttachmentPresentation
+    (k : ℕ)
+    (hsmall : successorBufferBound k <
+      dist (J.curvePoint I.first.left : Plane)
+        (J.curvePoint I.first.right : Plane) / 2)
+    (a : LevelAddress
+      (I.nextInsideCollarLater k
+        (I.shrinkingInsideCollarStage k)).next.level) :
+    let L₀ := I.nextInsideCollarLater k
+      (I.shrinkingInsideCollarStage k)
+    PolygonalDiskAttachment.Presentation
+      L₀.next.circle.closedRegion := by
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  exact L₁.moiseBandAttachmentPresentation a <|
+    I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall a
 
 /-- All sufficiently late recursive Moise cells therefore have the correct
 side choice, uniformly over the finite address set at each level. -/
