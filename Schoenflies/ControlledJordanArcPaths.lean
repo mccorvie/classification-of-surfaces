@@ -1,0 +1,242 @@
+import Schoenflies.JordanArcPaths
+
+/-!
+# Boundary arcs with a prescribed angular lift
+
+The generic two-arc theorem chooses an orientation noncomputably.  Finite
+annulus cells need a controlled choice: after lifting two endpoints to
+`alpha < beta < alpha + 2π`, the first path must be exactly the short angular
+arc `[alpha, beta]` and the second path its complement.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+
+noncomputable section
+
+namespace JordanCircle
+
+variable (J : JordanCircle)
+
+namespace TwoBoundaryArcPaths
+
+variable {J : JordanCircle} {x y x' y' : Plane}
+
+/-- Change the endpoint indices of a two-arc split along endpoint equalities. -/
+def cast (S : J.TwoBoundaryArcPaths x y) (hx : x = x') (hy : y = y') :
+    J.TwoBoundaryArcPaths x' y' where
+  first := S.first.cast hx.symm hy.symm
+  second := S.second.cast hy.symm hx.symm
+  first_injective := by
+    simpa only [Path.cast_coe] using S.first_injective
+  second_injective := by
+    simpa only [Path.cast_coe] using S.second_injective
+  cover := by
+    simpa only [Path.cast_coe] using S.cover
+  overlap := by
+    simpa only [Path.cast_coe, hx, hy] using S.overlap
+
+@[simp] theorem range_cast_first
+    (S : J.TwoBoundaryArcPaths x y) (hx : x = x') (hy : y = y') :
+    range (S.cast hx hy).first = range S.first := by
+  rfl
+
+@[simp] theorem range_cast_second
+    (S : J.TwoBoundaryArcPaths x y) (hx : x = x') (hy : y = y') :
+    range (S.cast hx hy).second = range S.second := by
+  rfl
+
+end TwoBoundaryArcPaths
+
+/-- The point of a Jordan circle with angular parameter `theta`. -/
+noncomputable def angularPoint (theta : ℝ) : Plane :=
+  J.parametrization (JordanCurve.Arcs.param theta)
+
+theorem continuous_angularPoint : Continuous J.angularPoint :=
+  J.continuous.comp JordanCurve.Arcs.continuous_param
+
+theorem angularPoint_periodic :
+    Function.Periodic J.angularPoint (2 * Real.pi) := by
+  intro theta
+  simp only [angularPoint]
+  rw [JordanCurve.Arcs.param_periodic]
+
+/-- Complementary boundary paths whose ranges are the prescribed angular
+intervals. -/
+theorem exists_twoBoundaryArcPaths_of_angles
+    {alpha beta : ℝ} (hab : alpha < beta)
+    (hbeta : beta < alpha + 2 * Real.pi) :
+    ∃ S : J.TwoBoundaryArcPaths
+        (J.angularPoint alpha) (J.angularPoint beta),
+      range S.first =
+          J.parametrization ''
+            (JordanCurve.Arcs.param '' Set.Icc alpha beta) ∧
+        range S.second =
+          J.parametrization ''
+            (JordanCurve.Arcs.param ''
+              Set.Icc beta (alpha + 2 * Real.pi)) := by
+  have hperiod : (0 : ℝ) < 2 * Real.pi := by positivity
+  have hlengthFirst : beta - alpha < 2 * Real.pi := by linarith
+  have hlengthSecond :
+      (alpha + 2 * Real.pi) - beta < 2 * Real.pi := by linarith
+  have hSphereCover :
+      (JordanCurve.Arcs.param '' Set.Icc alpha beta) ∪
+          (JordanCurve.Arcs.param ''
+            Set.Icc beta (alpha + 2 * Real.pi)) = Set.univ := by
+    rw [← Set.image_union,
+      Set.Icc_union_Icc_eq_Icc hab.le hbeta.le,
+      JordanCurve.Arcs.param_periodic.image_Icc hperiod alpha,
+      JordanCurve.Arcs.param_surjective.range_eq]
+  have hSphereOverlap :
+      (JordanCurve.Arcs.param '' Set.Icc alpha beta) ∩
+          (JordanCurve.Arcs.param ''
+            Set.Icc beta (alpha + 2 * Real.pi)) =
+        {JordanCurve.Arcs.param alpha, JordanCurve.Arcs.param beta} := by
+    ext z
+    simp only [Set.mem_inter_iff, Set.mem_image, Set.mem_insert_iff,
+      Set.mem_singleton_iff]
+    constructor
+    · rintro ⟨⟨s, hs, hsz⟩, ⟨t, ht, htz⟩⟩
+      have hst : JordanCurve.Arcs.param s =
+          JordanCurve.Arcs.param t := hsz.trans htz.symm
+      obtain ⟨m, hm⟩ := JordanCurve.Arcs.param_eq_iff.mp hst
+      have heq : s - t = (m : ℝ) * (2 * Real.pi) := by linarith
+      have hmUpper : (m : ℝ) ≤ 0 := by
+        have hmul : (m : ℝ) * (2 * Real.pi) ≤
+            0 * (2 * Real.pi) := by
+          rw [zero_mul, ← heq]
+          linarith [hs.2, ht.1]
+        exact le_of_mul_le_mul_right hmul hperiod
+      have hmLower : (-1 : ℝ) ≤ (m : ℝ) := by
+        have hmul : (-1 : ℝ) * (2 * Real.pi) ≤
+            (m : ℝ) * (2 * Real.pi) := by
+          rw [neg_one_mul, ← heq]
+          linarith [hs.1, ht.2]
+        exact le_of_mul_le_mul_right hmul hperiod
+      have hmCases : m = 0 ∨ m = -1 := by
+        have hm0 : m ≤ (0 : ℤ) := by exact_mod_cast hmUpper
+        have hm1 : (-1 : ℤ) ≤ m := by exact_mod_cast hmLower
+        omega
+      rcases hmCases with hmZero | hmNegOne
+      · right
+        have hstEq : s = t := by
+          rw [hmZero] at hm
+          push_cast at hm
+          linarith
+        have hsBeta : s = beta :=
+          le_antisymm hs.2 (by rw [hstEq]; exact ht.1)
+        rw [← hsz, hsBeta]
+      · left
+        have hstEq : s = t - 2 * Real.pi := by
+          rw [hmNegOne] at hm
+          push_cast at hm
+          linarith
+        have hsAlpha : s = alpha :=
+          le_antisymm (by rw [hstEq]; linarith [ht.2]) hs.1
+        rw [← hsz, hsAlpha]
+    · rintro (rfl | rfl)
+      · exact ⟨
+          ⟨alpha, ⟨le_rfl, hab.le⟩, rfl⟩,
+          ⟨alpha + 2 * Real.pi, ⟨hbeta.le, le_rfl⟩, by
+            rw [JordanCurve.Arcs.param_periodic]⟩⟩
+      · exact ⟨
+          ⟨beta, ⟨hab.le, le_rfl⟩, rfl⟩,
+          ⟨beta, ⟨le_rfl, hbeta.le⟩, rfl⟩⟩
+  let p : Path (J.angularPoint alpha) (J.angularPoint beta) :=
+    (Path.segment alpha beta).map J.continuous_angularPoint
+  let qRaw : Path (J.angularPoint beta)
+      (J.angularPoint (alpha + 2 * Real.pi)) :=
+    (Path.segment beta (alpha + 2 * Real.pi)).map
+      J.continuous_angularPoint
+  have hperiodPoint :
+      J.angularPoint (alpha + 2 * Real.pi) = J.angularPoint alpha :=
+    J.angularPoint_periodic alpha
+  let q : Path (J.angularPoint beta) (J.angularPoint alpha) :=
+    qRaw.cast rfl hperiodPoint.symm
+  have hpInjective : Injective p := by
+    intro s t hst
+    have hfst : J.angularPoint (Path.segment alpha beta s) =
+        J.angularPoint (Path.segment alpha beta t) := hst
+    have hparam : JordanCurve.Arcs.param
+          (Path.segment alpha beta s) =
+        JordanCurve.Arcs.param (Path.segment alpha beta t) :=
+      J.injective (by
+        change J.parametrization
+            (JordanCurve.Arcs.param (Path.segment alpha beta s)) =
+          J.parametrization
+            (JordanCurve.Arcs.param (Path.segment alpha beta t)) at hfst
+        exact hfst)
+    have hsMem : Path.segment alpha beta s ∈ Set.Icc alpha beta := by
+      rw [← segment_eq_Icc hab.le, ← Path.range_segment]
+      exact ⟨s, rfl⟩
+    have htMem : Path.segment alpha beta t ∈ Set.Icc alpha beta := by
+      rw [← segment_eq_Icc hab.le, ← Path.range_segment]
+      exact ⟨t, rfl⟩
+    exact Path.segment_injective_of_ne hab.ne <|
+      JordanCurve.Arcs.param_injOn hlengthFirst hsMem htMem hparam
+  have hqInjective : Injective q := by
+    intro s t hst
+    have hfst :
+        J.angularPoint (Path.segment beta (alpha + 2 * Real.pi) s) =
+          J.angularPoint
+            (Path.segment beta (alpha + 2 * Real.pi) t) := by
+      simpa only [q, qRaw, Path.cast_coe, Path.map_coe,
+        Function.comp_apply] using hst
+    have hparam : JordanCurve.Arcs.param
+          (Path.segment beta (alpha + 2 * Real.pi) s) =
+        JordanCurve.Arcs.param
+          (Path.segment beta (alpha + 2 * Real.pi) t) :=
+      J.injective (by
+        change J.parametrization (JordanCurve.Arcs.param
+            (Path.segment beta (alpha + 2 * Real.pi) s)) =
+          J.parametrization (JordanCurve.Arcs.param
+            (Path.segment beta (alpha + 2 * Real.pi) t)) at hfst
+        exact hfst)
+    have hsMem : Path.segment beta (alpha + 2 * Real.pi) s ∈
+        Set.Icc beta (alpha + 2 * Real.pi) := by
+      rw [← segment_eq_Icc hbeta.le, ← Path.range_segment]
+      exact ⟨s, rfl⟩
+    have htMem : Path.segment beta (alpha + 2 * Real.pi) t ∈
+        Set.Icc beta (alpha + 2 * Real.pi) := by
+      rw [← segment_eq_Icc hbeta.le, ← Path.range_segment]
+      exact ⟨t, rfl⟩
+    exact Path.segment_injective_of_ne hbeta.ne <|
+      JordanCurve.Arcs.param_injOn hlengthSecond hsMem htMem hparam
+  have hpRange : range p =
+      J.parametrization ''
+        (JordanCurve.Arcs.param '' Set.Icc alpha beta) := by
+    rw [show (p : unitInterval → Plane) =
+        J.angularPoint ∘ Path.segment alpha beta from Path.map_coe _ _]
+    rw [Set.range_comp, Path.range_segment,
+      segment_eq_Icc hab.le, ← Set.image_image]
+    simp only [angularPoint, Set.image_image]
+  have hqRange : range q =
+      J.parametrization '' (JordanCurve.Arcs.param ''
+        Set.Icc beta (alpha + 2 * Real.pi)) := by
+    change range qRaw = _
+    rw [show (qRaw : unitInterval → Plane) =
+        J.angularPoint ∘ Path.segment beta (alpha + 2 * Real.pi) from
+          Path.map_coe _ _]
+    rw [Set.range_comp, Path.range_segment,
+      segment_eq_Icc hbeta.le, ← Set.image_image]
+    simp only [angularPoint, Set.image_image]
+  refine ⟨{
+    first := p
+    second := q
+    first_injective := hpInjective
+    second_injective := hqInjective
+    cover := ?_
+    overlap := ?_ }, hpRange, hqRange⟩
+  · rw [hpRange, hqRange, ← Set.image_union, hSphereCover,
+      Set.image_univ]
+    rfl
+  · rw [hpRange, hqRange, ← Set.image_inter J.injective,
+      hSphereOverlap, Set.image_insert_eq, Set.image_singleton]
+    rfl
+
+end JordanCircle
+
+end
+
+end Schoenflies

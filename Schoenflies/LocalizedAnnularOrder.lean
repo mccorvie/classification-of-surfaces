@@ -84,6 +84,43 @@ theorem levelLocalized_cutFreeArcs
     (I.range_levelLocalizedAnnularCrosscut_eq_segment k b)
     hinnerSecond
 
+/-- Every localized shell level has a pair of retained cuts bounding a
+cut-free cell.  No cyclic-order assumption remains: the inner pair and its
+controlled split are selected by the finite Jordan-circle theorem. -/
+theorem exists_levelLocalized_cutFreeArcs (k : ℕ) :
+    ∃ a b : LevelAddress k, ∃ hab : a ≠ b,
+      ∃ S : PolygonalCircle.AnnularCrosscut.SeparatorPair
+          (I.levelLocalizedAnnularCrosscut k a)
+          (I.levelLocalizedAnnularCrosscut k b),
+        ((I.innerDisk k).interiorRegion ⊆
+              (S.circle₀
+                (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+                (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k hab)).inside ∧
+            ∀ c : LevelAddress k, c ≠ a → c ≠ b →
+              (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+                range S.outerArc₁) ∨
+          ((I.innerDisk k).interiorRegion ⊆
+              (S.circle₁
+                (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+                (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k hab)).inside ∧
+            ∀ c : LevelAddress k, c ≠ a → c ≠ b →
+              (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
+                range S.outerArc₀) := by
+  let F := I.levelLocalizedAnnularCrosscut k
+  have hcard : 2 ≤ Fintype.card (LevelAddress k) := by
+    rw [levelAddress_card]
+    calc
+      2 = 2 ^ 1 := by norm_num
+      _ ≤ 2 ^ (k + 1) :=
+        pow_le_pow_right' (by norm_num) (by omega)
+  exact PolygonalCircle.AnnularCrosscut.SeparatorPair.exists_cutFreeArcs F
+    hcard
+    (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
+    (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k)
+    (I.levelLocalizedPolygonalBoundaryMark_injective k)
+    (I.levelLocalizedOuterBoundaryMark_injective k)
+    (I.range_levelLocalizedAnnularCrosscut_eq_segment k)
+
 end JordanCircle.InitialAngularArcs
 
 end

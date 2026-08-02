@@ -1,4 +1,5 @@
 import Schoenflies.AnnularCrosscutOrder
+import Schoenflies.FiniteJordanArcOrder
 
 /-!
 # Cyclic compatibility for a family of annular crosscuts
@@ -129,6 +130,49 @@ theorem family_cutFreeArcs
     rcases hEnds with hEq | hEq
     · exact hca (houterInjective hEq)
     · exact hcb (houterInjective (Set.mem_singleton_iff.mp hEq))
+
+/-- A finite family with at least two crosscuts has a pair bounding a cut-free
+cell.  The inner split is chosen by finite cyclic order; the three-crosscut
+theorem forces the corresponding outer arc to be cut-free as well. -/
+theorem exists_cutFreeArcs
+    [Fintype ι]
+    (hcard : 2 ≤ Fintype.card ι)
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hpairwise : Pairwise fun i j : ι =>
+      Disjoint (range (F i).path) (range (F j).path))
+    (hinnerInjective : Injective fun i => (F i).innerPoint)
+    (houterInjective : Injective fun i => (F i).outerPoint)
+    (hsegment : ∀ i : ι, range (F i).path =
+      segment ℝ (F i).outerPoint (F i).innerPoint) :
+    ∃ a b : ι, ∃ hab : a ≠ b, ∃ S : SeparatorPair (F a) (F b),
+      (P.interiorRegion ⊆
+            (S.circle₀ hPQ (hpairwise hab)).inside ∧
+          ∀ c : ι, c ≠ a → c ≠ b →
+            (F c).outerPoint ∉ range S.outerArc₁) ∨
+        (P.interiorRegion ⊆
+            (S.circle₁ hPQ (hpairwise hab)).inside ∧
+          ∀ c : ι, c ≠ a → c ≠ b →
+            (F c).outerPoint ∉ range S.outerArc₀) := by
+  classical
+  obtain ⟨a, b, hab, innerSplit, hinnerSecond⟩ :=
+    P.toJordanCircle.exists_adjacent_twoBoundaryArcPaths
+      (fun i => (F i).innerPoint)
+      (fun i => by
+        simpa only [P.carrier_toJordanCircle] using (F i).innerPoint_mem)
+      hinnerInjective hcard
+  have hOuterNe : (F a).outerPoint ≠ (F b).outerPoint := by
+    intro h
+    exact hab (houterInjective h)
+  let outerSplit := Classical.choice <|
+    Q.toJordanCircle.exists_twoBoundaryArcPaths
+      (by simpa only [Q.carrier_toJordanCircle] using (F a).outerPoint_mem)
+      (by simpa only [Q.carrier_toJordanCircle] using (F b).outerPoint_mem)
+      hOuterNe
+  let S : SeparatorPair (F a) (F b) := ⟨innerSplit, outerSplit⟩
+  refine ⟨a, b, hab, S, ?_⟩
+  exact S.family_cutFreeArcs F hab hPQ hpairwise
+    hinnerInjective houterInjective (hsegment a) (hsegment b)
+    hinnerSecond
 
 end PolygonalCircle.AnnularCrosscut.SeparatorPair
 
