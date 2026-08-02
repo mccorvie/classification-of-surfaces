@@ -218,6 +218,28 @@ noncomputable def cyclicTargetAttachmentPresentation
       (I.cyclicTargetDecomposition m a).attachmentPresentation₀
         (I.cyclicTargetSecondAlternative_of_not_first m a h)
 
+@[simp] theorem cyclicTargetAttachmentPresentation_startPoint
+    (m : ℕ) {n : ℕ} (a : LevelAddress n) :
+    (I.cyclicTargetAttachmentPresentation m a).startPoint =
+      (I.cyclicTargetDecomposition m a).first.innerPoint := by
+  classical
+  by_cases h : I.CyclicTargetFirstAlternative m a
+  · rw [cyclicTargetAttachmentPresentation, dif_pos h]
+    rfl
+  · rw [cyclicTargetAttachmentPresentation, dif_neg h]
+    rfl
+
+@[simp] theorem cyclicTargetAttachmentPresentation_endPoint
+    (m : ℕ) {n : ℕ} (a : LevelAddress n) :
+    (I.cyclicTargetAttachmentPresentation m a).endPoint =
+      (I.cyclicTargetDecomposition m a).second.innerPoint := by
+  classical
+  by_cases h : I.CyclicTargetFirstAlternative m a
+  · rw [cyclicTargetAttachmentPresentation, dif_pos h]
+    rfl
+  · rw [cyclicTargetAttachmentPresentation, dif_neg h]
+    rfl
+
 theorem cyclicTargetAttachmentPresentation_exposedSecondCoordinate
     (m : ℕ) {n : ℕ} (a : LevelAddress n) (t : unitInterval) :
     (I.cyclicTargetAttachmentPresentation m a).exposed
