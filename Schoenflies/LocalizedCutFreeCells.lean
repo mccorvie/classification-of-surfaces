@@ -569,6 +569,42 @@ theorem disjoint_diskInterior {b : LevelAddress k}
 
 end LocalizedCutFreeCellData
 
+/-- A retained inner endpoint lies on the shared side of a canonical cell
+exactly when its label is one of that cell's two successor endpoints. -/
+theorem levelLocalizedInnerPoint_mem_canonicalCellShared_iff
+    (k : ℕ) (hk : 1 ≤ k) (a c : LevelAddress k) :
+    (I.levelLocalizedAnnularCrosscut k c).innerPoint ∈
+        range (I.localizedCutFreeCellData k a).attachmentPresentation.shared ↔
+      c = a ∨ c = I.levelLocalizedSuccessor k a := by
+  rw [LocalizedCutFreeCellData.range_attachmentPresentation_shared_eq_successorBoundarySplit
+    (I.localizedCutFreeCellData k a) hk]
+  exact JordanCircle.FiniteMarking.point_mem_successorBoundarySplit_first_iff
+    (I.levelLocalizedInnerMarking k) a c
+
+/-- A retained outer endpoint lies on the exposed outer side of a canonical
+cell exactly when its label is one of that cell's two successor endpoints. -/
+theorem levelLocalizedOuterPoint_mem_canonicalCellExposed_iff
+    (k : ℕ) (a c : LevelAddress k) :
+    (I.levelLocalizedAnnularCrosscut k c).outerPoint ∈
+        (I.localizedCutFreeCellData k a).exposedOuterArc ↔
+      c = a ∨ c = I.levelLocalizedSuccessor k a := by
+  let C := I.localizedCutFreeCellData k a
+  constructor
+  · intro hc
+    by_cases hca : c = a
+    · exact Or.inl hca
+    by_cases hcsuccessor : c = I.levelLocalizedSuccessor k a
+    · exact Or.inr hcsuccessor
+    exact False.elim <|
+      C.other_outerPoint_not_mem_exposedOuterArc c hca (by
+        intro h
+        exact hcsuccessor (h.trans C.next_eq)) hc
+  · intro hc
+    rw [← C.range_outerCellBoundarySplitToSuccessor_first]
+    rcases hc with rfl | rfl
+    · exact Path.source_mem_range C.outerCellBoundarySplitToSuccessor.first
+    · exact Path.target_mem_range C.outerCellBoundarySplitToSuccessor.first
+
 /-- At a genuine refinement level, the inner shared arcs of distinct
 canonical cells meet only at the two endpoints of the first arc. -/
 theorem localizedCutFreeCell_shared_inter_subset_endpoints
