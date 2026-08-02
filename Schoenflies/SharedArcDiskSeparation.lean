@@ -1,0 +1,161 @@
+import Schoenflies.PolygonalShells
+import Schoenflies.TwoBoundaryArcRigidity
+
+/-!
+# Separating polygonal disks along a shared boundary arc
+
+If two polygonal Jordan boundaries meet in exactly one embedded arc, the
+complementary arc of the first boundary cannot cross the second boundary.
+One exterior witness therefore fixes that whole complementary arc on the
+exterior side.  This packages the planar-side argument needed for adjacent
+Moise cells.
+-/
+
+namespace Schoenflies
+
+open Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace PolygonalCircle
+
+/-- A polygonal boundary sharing exactly an embedded arc with another
+polygonal boundary avoids the other's open disk as soon as one point of its
+complementary arc is known to be exterior. -/
+theorem carrier_disjoint_interiorRegion_of_inter_eq_arc
+    (P Q : PolygonalCircle) {x y : Plane} (p : Path x y)
+    (hp : Injective p)
+    (hinter : P.carrier ∩ Q.carrier = range p)
+    (hexterior : ∃ z ∈ P.carrier, z ∈ Q.exteriorRegion) :
+    Disjoint P.carrier Q.interiorRegion := by
+  have hpBoth : range p ⊆ P.carrier ∩ Q.carrier := by
+    rw [hinter]
+  have hxP : x ∈ P.toJordanCircle.carrier := by
+    rw [P.carrier_toJordanCircle]
+    exact (hpBoth (Path.source_mem_range p)).1
+  have hyP : y ∈ P.toJordanCircle.carrier := by
+    rw [P.carrier_toJordanCircle]
+    exact (hpBoth (Path.target_mem_range p)).1
+  have hxy : x ≠ y := by
+    intro h
+    have h01 : (0 : unitInterval) = 1 := hp (by
+      simpa only [p.source, p.target, h])
+    exact zero_ne_one h01
+  let S := Classical.choice <|
+    P.toJordanCircle.exists_twoBoundaryArcPaths hxP hyP hxy
+  have hpCarrier : range p ⊆ P.toJordanCircle.carrier := by
+    intro z hz
+    rw [P.carrier_toJordanCircle]
+    exact (hpBoth hz).1
+  have hranges := S.range_eq_first_or_second_of_path p hp hpCarrier
+  have hcomp : ∀ {u v : Plane} (r : Path u v),
+      Injective r → u ∈ Q.carrier → v ∈ Q.carrier →
+      ({u, v} : Set Plane) = {x, y} →
+      range p ∩ range r = ({x, y} : Set Plane) →
+      range p ∪ range r = P.carrier →
+      Disjoint (range r) Q.interiorRegion := by
+    intro u v r hr huQ hvQ hends hoverlap hcover
+    have hOpenOff : MapsTo r (Set.Ioo (0 : unitInterval) 1) Q.carrierᶜ := by
+      intro t ht htQ
+      have htP : r t ∈ P.carrier := by
+        rw [← hcover]
+        exact Or.inr ⟨t, rfl⟩
+      have htShared : r t ∈ range p := by
+        rw [← hinter]
+        exact ⟨htP, htQ⟩
+      have htEnds : r t ∈ ({x, y} : Set Plane) := by
+        rw [← hoverlap]
+        exact ⟨htShared, ⟨t, rfl⟩⟩
+      have htUV : r t ∈ ({u, v} : Set Plane) := by
+        rw [hends]
+        exact htEnds
+      rcases htUV with htu | htv
+      · have ht0 : t = 0 := hr (by simpa only [r.source] using htu)
+        exact (ne_of_gt ht.1) ht0
+      · rw [Set.mem_singleton_iff] at htv
+        have ht1 : t = 1 := hr (by simpa only [r.target] using htv)
+        exact (ne_of_lt ht.2) ht1
+    obtain ⟨z, hzP, hzExterior⟩ := hexterior
+    have hzNotQ : z ∉ Q.carrier := by
+      intro hzQ
+      exact Set.disjoint_left.mp Q.disjoint_closedRegion_exteriorRegion
+        (by
+          rw [Q.closedRegion_eq_union]
+          exact Or.inr hzQ)
+        hzExterior
+    have hzNotShared : z ∉ range p :=
+      fun hz => hzNotQ (hpBoth hz).2
+    have hzR : z ∈ range r := by
+      have hzUnion : z ∈ range p ∪ range r := by
+        rw [hcover]
+        exact hzP
+      exact hzUnion.resolve_left hzNotShared
+    obtain ⟨t, rfl⟩ := hzR
+    have ht0 : t ≠ 0 := by
+      intro ht
+      subst t
+      exact hzNotQ (by simpa only [r.source] using huQ)
+    have ht1 : t ≠ 1 := by
+      intro ht
+      subst t
+      exact hzNotQ (by simpa only [r.target] using hvQ)
+    have htIoo : t ∈ Set.Ioo (0 : unitInterval) 1 :=
+      ⟨bot_lt_iff_ne_bot.mpr ht0, lt_top_iff_ne_top.mpr ht1⟩
+    have hMaps : MapsTo r (Set.Ioo (0 : unitInterval) 1)
+        Q.exteriorRegion :=
+      Q.mapsTo_exteriorRegion_of_isPreconnected
+        isPreconnected_Ioo r.continuous.continuousOn hOpenOff
+        ⟨t, htIoo, hzExterior⟩
+    rw [Set.disjoint_left]
+    rintro w ⟨s, rfl⟩ hsInterior
+    by_cases hs0 : s = 0
+    · subst s
+      exact Set.disjoint_left.mp (carrier_disjoint_interiorRegion Q)
+        huQ (by simpa only [r.source] using hsInterior)
+    by_cases hs1 : s = 1
+    · subst s
+      exact Set.disjoint_left.mp (carrier_disjoint_interiorRegion Q)
+        hvQ (by simpa only [r.target] using hsInterior)
+    have hsExterior := hMaps ⟨bot_lt_iff_ne_bot.mpr hs0,
+      lt_top_iff_ne_top.mpr hs1⟩
+    exact Set.disjoint_left.mp Q.disjoint_interior_exterior
+      hsInterior hsExterior
+  have hfinish {r : Set Plane}
+      (hcover : range p ∪ r = P.carrier)
+      (hrDisjoint : Disjoint r Q.interiorRegion) :
+      Disjoint P.carrier Q.interiorRegion := by
+    rw [Set.disjoint_left]
+    intro z hzP hzInterior
+    have hzUnion : z ∈ range p ∪ r := by
+      rw [hcover]
+      exact hzP
+    rcases hzUnion with hzShared | hzR
+    · exact Set.disjoint_left.mp (carrier_disjoint_interiorRegion Q)
+        (hpBoth hzShared).2 hzInterior
+    · exact Set.disjoint_left.mp hrDisjoint hzR hzInterior
+  rcases hranges with hfirst | hsecond
+  · apply hfinish (r := range S.second)
+      (by simpa only [hfirst, P.carrier_toJordanCircle] using S.cover)
+    apply hcomp S.second S.second_injective
+    · exact (hpBoth (Path.target_mem_range p)).2
+    · exact (hpBoth (Path.source_mem_range p)).2
+    · exact Set.pair_comm _ _
+    · simpa only [hfirst] using S.overlap
+    · simpa only [hfirst, P.carrier_toJordanCircle] using S.cover
+  · apply hfinish (r := range S.first)
+      (by simpa only [hsecond, Set.union_comm,
+        P.carrier_toJordanCircle] using S.cover)
+    apply hcomp S.first S.first_injective
+    · exact (hpBoth (Path.source_mem_range p)).2
+    · exact (hpBoth (Path.target_mem_range p)).2
+    · rfl
+    · simpa only [hsecond, Set.inter_comm] using S.overlap
+    · simpa only [hsecond, Set.union_comm,
+        P.carrier_toJordanCircle] using S.cover
+
+end PolygonalCircle
+
+end
+
+end Schoenflies

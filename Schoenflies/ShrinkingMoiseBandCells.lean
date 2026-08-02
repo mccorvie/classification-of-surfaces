@@ -1,5 +1,6 @@
 import Schoenflies.MoiseBandCellBounds
 import Schoenflies.MoiseBandCellAttachments
+import Schoenflies.MoiseBandCellInteriors
 import Schoenflies.NestedCollarStages
 
 /-!
@@ -259,6 +260,35 @@ noncomputable def shrinkingMoiseBandAttachmentPresentation
   exact L₁.moiseBandAttachmentPresentation a <|
     I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall a
 
+/-- Under the same late-stage size hypothesis, consecutive closed cells in
+the cyclic Moise band meet in exactly their common side seam. -/
+theorem shrinkingMoiseBand_cellClosedRegion_inter_next
+    (k : ℕ)
+    (hsmall : successorBufferBound k <
+      dist (J.curvePoint I.first.left : Plane)
+        (J.curvePoint I.first.right : Plane) / 2)
+    (a : LevelAddress
+      (I.nextInsideCollarLater k
+        (I.shrinkingInsideCollarStage k)).next.level) :
+    let L₀ := I.nextInsideCollarLater k
+      (I.shrinkingInsideCollarStage k)
+    let S₁ := InsideCollarStage.ofLater I
+      (I.shrinkingInsideCollarStage k) L₀
+    let L₁ := I.nextInsideCollarLater (k + 1) S₁
+    (L₁.moiseBandPolygonalCircle a).closedRegion ∩
+        (L₁.moiseBandPolygonalCircle
+          (nextLevelAddress L₀.next.level a)).closedRegion =
+      L₁.adjacentMoiseBandSideSeam a := by
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  exact L₁.cellClosedRegion_inter_next a
+    (I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall a)
+    (I.shrinkingMoiseBand_parentClosedRegion_inter k hsmall
+      (nextLevelAddress L₀.next.level a))
+
 /-- All sufficiently late recursive Moise cells therefore have the correct
 side choice, uniformly over the finite address set at each level. -/
 theorem eventually_shrinkingMoiseBand_parentClosedRegion_inter :
@@ -294,6 +324,34 @@ theorem eventually_shrinkingMoiseBand_parentClosedRegion_inter :
         (J.curvePoint I.first.right : Plane) / 2 := by
     simpa [successorBufferBound, one_div] using hN
   exact hmonotone.trans_lt hsmall
+
+/-- Uniformly in every sufficiently late cyclic band, consecutive closed
+cells overlap precisely in their shared side seam. -/
+theorem eventually_shrinkingMoiseBand_cellClosedRegion_inter_next :
+    ∃ N : ℕ, ∀ k : ℕ, N ≤ k →
+      ∀ a : LevelAddress
+        (I.nextInsideCollarLater k
+          (I.shrinkingInsideCollarStage k)).next.level,
+      let L₀ := I.nextInsideCollarLater k
+        (I.shrinkingInsideCollarStage k)
+      let S₁ := InsideCollarStage.ofLater I
+        (I.shrinkingInsideCollarStage k) L₀
+      let L₁ := I.nextInsideCollarLater (k + 1) S₁
+      (L₁.moiseBandPolygonalCircle a).closedRegion ∩
+          (L₁.moiseBandPolygonalCircle
+            (nextLevelAddress L₀.next.level a)).closedRegion =
+        L₁.adjacentMoiseBandSideSeam a := by
+  obtain ⟨N, hN⟩ := I.eventually_shrinkingMoiseBand_parentClosedRegion_inter
+  refine ⟨N, ?_⟩
+  intro k hk a
+  dsimp only
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  exact L₁.cellClosedRegion_inter_next a
+    (hN k hk a)
+    (hN k hk (nextLevelAddress L₀.next.level a))
 
 end InitialAngularArcs
 end JordanCircle
