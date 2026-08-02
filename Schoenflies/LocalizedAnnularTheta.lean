@@ -1,5 +1,5 @@
 import Schoenflies.LocalizedAnnularCrosscuts
-import Schoenflies.PolygonalAnnularTheta
+import Schoenflies.PolygonalAnnularCellDecomposition
 
 /-!
 # The polygonal-annulus crosscut theorem for localized level cuts
@@ -56,6 +56,31 @@ noncomputable def levelLocalizedSeparatorCircle₁ (k : ℕ)
   (I.levelLocalizedSeparatorPair k hab).circle₁
     (I.localizedMarkedPolygonalDisk_strictly_nested (k + 1))
     (I.pairwise_disjoint_levelLocalizedAnnularCrosscut k hab)
+
+/-- The two selected localized cuts, with all the exact data needed by the
+polygonal two-cell filling theorem. -/
+noncomputable def levelLocalizedAnnularCellDecomposition (k : ℕ)
+    {a b : LevelAddress k} (hab : a ≠ b) :
+    PolygonalCircle.AnnularCellDecomposition (I.innerDisk k) (I.outerDisk k) where
+  first := I.levelLocalizedAnnularCrosscut k a
+  second := I.levelLocalizedAnnularCrosscut k b
+  separator := I.levelLocalizedSeparatorPair k hab
+  nested := I.localizedMarkedPolygonalDisk_strictly_nested (k + 1)
+  disjoint := I.pairwise_disjoint_levelLocalizedAnnularCrosscut k hab
+  outerPoints_ne := fun h =>
+    hab (I.levelLocalizedOuterBoundaryMark_injective k h)
+  innerPoints_ne := fun h =>
+    hab (I.levelLocalizedPolygonalBoundaryMark_injective k h)
+  first_segment := by
+    change range (Path.segment
+        (I.levelLocalizedOuterBoundaryMark k a)
+        (I.levelLocalizedPolygonalBoundaryMark k a)) = _
+    exact Path.range_segment _ _
+  second_segment := by
+    change range (Path.segment
+        (I.levelLocalizedOuterBoundaryMark k b)
+        (I.levelLocalizedPolygonalBoundaryMark k b)) = _
+    exact Path.range_segment _ _
 
 /-- The complementary localized separator regions fill the entire closed
 outer polygonal disk. -/
