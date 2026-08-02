@@ -61,6 +61,7 @@ import Schoenflies.StandardPolygonalCollars
 import Schoenflies.FiniteAnnularCrosscutOrder
 import Schoenflies.LocalizedAnnularOrder
 import Schoenflies.LocalizedCutFreeCells
+import Schoenflies.LocalizedCellCover
 import Schoenflies.ReturnPathParity
 import Schoenflies.RefinedSeparatorFrame
 import Schoenflies.RefinedEdgeSides

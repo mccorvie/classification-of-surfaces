@@ -28,7 +28,7 @@ private abbrev innerDisk (k : ℕ) : PolygonalCircle :=
 private abbrev outerDisk (k : ℕ) : PolygonalCircle :=
   I.localizedMarkedPolygonalDisk (k + 2)
 
-private theorem range_levelLocalizedAnnularCrosscut_eq_segment
+theorem range_levelLocalizedAnnularCrosscut_eq_segment
     (k : ℕ) (a : LevelAddress k) :
     range (I.levelLocalizedAnnularCrosscut k a).path =
       segment ℝ (I.levelLocalizedAnnularCrosscut k a).outerPoint
@@ -138,8 +138,9 @@ theorem exists_levelLocalized_cutFreeArcToSuccessor
             (I.levelLocalizedAnnularCrosscut k c).outerPoint ∉
               range S.outerArc₀)) := by
   let M := I.levelLocalizedInnerMarking k
-  obtain ⟨innerSplit, hinnerSecond⟩ :=
+  obtain ⟨innerSplit, hinnerSplit⟩ :=
     M.exists_successor_twoBoundaryArcPaths a
+  have hinnerSecond := hinnerSplit.2
   have hab : a ≠ I.levelLocalizedSuccessor k a :=
     (I.levelLocalizedSuccessor_ne k a).symm
   have hOuterNe :

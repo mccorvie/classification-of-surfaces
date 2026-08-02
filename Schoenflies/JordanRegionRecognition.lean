@@ -15,6 +15,36 @@ open Set Bornology
 
 namespace JordanCircle
 
+/-- A compact subset of a closed Jordan disk which has no frontier in the
+open bounded region is already the whole closed disk, provided it contains
+one interior neighborhood.  This subset form is useful when the outer
+boundary has not yet been shown pointwise to be covered. -/
+theorem eq_closure_inside_of_isCompact_frontier_subset
+    (J : JordanCircle) {S : Set Plane} (hS : IsCompact S)
+    (hsubset : S ⊆ closure J.inside)
+    (hfrontier : frontier S ⊆ J.carrier)
+    (hinterior : (interior S ∩ J.inside).Nonempty) :
+    S = closure J.inside := by
+  have hSclosed := hS.isClosed
+  have hinsideCover : J.inside ⊆ interior S ∪ Sᶜ := by
+    intro x hxInside
+    by_cases hxS : x ∈ S
+    · left
+      apply (mem_interior_iff_notMem_frontier hxS).mpr
+      intro hxFrontier
+      exact J.inside_subset_compl hxInside (hfrontier hxFrontier)
+    · exact Or.inr hxS
+  have hinsideSub : J.inside ⊆ interior S :=
+    J.inside_isConnected.isPreconnected.subset_left_of_subset_union
+      isOpen_interior hSclosed.isOpen_compl
+      (Set.disjoint_left.mpr fun _ hxInterior hxCompl =>
+        hxCompl (interior_subset hxInterior))
+      hinsideCover (by
+        obtain ⟨x, hxInterior, hxInside⟩ := hinterior
+        exact ⟨x, hxInside, hxInterior⟩)
+  apply Set.Subset.antisymm hsubset
+  exact closure_minimal (hinsideSub.trans interior_subset) hSclosed
+
 /-- A compact set with nonempty interior and Jordan-circle frontier is the
 closed bounded region determined by that circle. -/
 theorem eq_closure_inside_of_isCompact_frontier_eq

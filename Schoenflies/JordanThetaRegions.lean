@@ -115,18 +115,19 @@ theorem disjoint_inside
   exact Set.disjoint_left.mp K₁.inside_disjoint_outside
     hx₁ (hK₀Other hx₀)
 
-private theorem local_shared_arc_mem_interior_union
+/-- If two Jordan disks have disjoint open interiors and their boundaries
+agree locally with the same straight line at a common boundary point, their
+closed regions together contain a neighborhood of that point.  Thus a
+shared locally straight seam is not part of the frontier of the union. -/
+theorem mem_interior_union_closure_inside_of_common_local_line
     (hdisjoint : Disjoint K₀.inside K₁.inside)
-    (hcarrier₀ : K₀.carrier = B ∪ A₀)
-    {p d : Plane} {r : ℝ} (hr : 0 < r) (hpB : p ∈ B)
+    {p d : Plane} {r : ℝ} (hr : 0 < r)
+    (hpK₀ : p ∈ K₀.carrier)
     (hlocal₀ : ball p r ∩ K₀.carrier =
       ball p r ∩ determinantLine p d)
     (hlocal₁ : ball p r ∩ K₁.carrier =
       ball p r ∩ determinantLine p d) :
     p ∈ interior (closure K₀.inside ∪ closure K₁.inside) := by
-  have hpK₀ : p ∈ K₀.carrier := by
-    rw [hcarrier₀]
-    exact Or.inl hpB
   have hinsideWitness : (ball p r ∩ K₀.inside).Nonempty := by
     have hpClosure : p ∈ closure K₀.inside := by
       rw [K₀.closure_inside]
@@ -288,8 +289,10 @@ theorem closure_inside_eq_union
       · by_cases hxF : x ∈ F
         · exact Or.inr hxF
         · obtain ⟨d, r, hr, hlocal₀, hlocal₁⟩ := hlocal x ⟨hxB, hxF⟩
-          have hxInterior := local_shared_arc_mem_interior_union
-              hdisjoint hcarrier₀ hr hxB hlocal₀ hlocal₁
+          have hxInterior :=
+            mem_interior_union_closure_inside_of_common_local_line
+              hdisjoint hr (by rw [hcarrier₀]; exact Or.inl hxB)
+              hlocal₀ hlocal₁
           exact False.elim <| Set.disjoint_left.mp
             disjoint_interior_frontier hxInterior hxFrontier
       · left
@@ -300,8 +303,10 @@ theorem closure_inside_eq_union
       · by_cases hxF : x ∈ F
         · exact Or.inr hxF
         · obtain ⟨d, r, hr, hlocal₀, hlocal₁⟩ := hlocal x ⟨hxB, hxF⟩
-          have hxInterior := local_shared_arc_mem_interior_union
-            hdisjoint hcarrier₀ hr hxB hlocal₀ hlocal₁
+          have hxInterior :=
+            mem_interior_union_closure_inside_of_common_local_line
+              hdisjoint hr (by rw [hcarrier₀]; exact Or.inl hxB)
+              hlocal₀ hlocal₁
           exact False.elim <| Set.disjoint_left.mp
             disjoint_interior_frontier hxInterior hxFrontier
       · left

@@ -397,12 +397,15 @@ theorem successorEndAngle_lt_startAngle_add_period (a : ι) :
 arc therefore contains every remaining mark.  Unlike the earlier local
 choice theorem, these successor pairs come from one cyclic permutation. -/
 theorem exists_successor_twoBoundaryArcPaths (a : ι) :
-    ∃ S : J.TwoBoundaryArcPaths (M.point a) (M.point (M.successor a)),
-      ∀ c : ι, c ≠ a → c ≠ M.successor a →
-        M.point c ∈ range S.second := by
+  ∃ S : J.TwoBoundaryArcPaths (M.point a) (M.point (M.successor a)),
+      range S.first = J.parametrization ''
+          (JordanCurve.Arcs.param '' Set.Icc
+            (M.successorStartAngle a) (M.successorEndAngle a)) ∧
+        ∀ c : ι, c ≠ a → c ≠ M.successor a →
+          M.point c ∈ range S.second := by
   let alpha := M.successorStartAngle a
   let beta := M.successorEndAngle a
-  obtain ⟨S₀, _hfirst₀, hsecond₀⟩ :=
+  obtain ⟨S₀, hfirst₀, hsecond₀⟩ :=
     J.exists_twoBoundaryArcPaths_of_angles
       (M.successorStartAngle_lt_endAngle a)
       (M.successorEndAngle_lt_startAngle_add_period a)
@@ -412,7 +415,8 @@ theorem exists_successor_twoBoundaryArcPaths (a : ι) :
       (JordanCurve.Arcs.param '' Set.Icc beta
         (alpha + 2 * Real.pi)) := by
     simpa [S, alpha, beta] using hsecond₀
-  refine ⟨S, ?_⟩
+  refine ⟨S, ?_, ?_⟩
+  · simpa [S, alpha, beta] using hfirst₀
   intro c hca hcsucc
   rw [hsecond]
   by_cases ha : a = M.root
@@ -495,7 +499,87 @@ successor split. -/
 theorem other_point_mem_successorBoundarySplit_second (a : ι) :
     ∀ c : ι, c ≠ a → c ≠ M.successor a →
       M.point c ∈ range (M.successorBoundarySplit a).second :=
-  Classical.choose_spec (M.exists_successor_twoBoundaryArcPaths a)
+  (Classical.choose_spec (M.exists_successor_twoBoundaryArcPaths a)).2
+
+/-- The canonical successor path is the positive angular interval between a
+mark and its successor. -/
+theorem range_successorBoundarySplit_first (a : ι) :
+    range (M.successorBoundarySplit a).first = J.parametrization ''
+      (JordanCurve.Arcs.param '' Set.Icc
+        (M.successorStartAngle a) (M.successorEndAngle a)) :=
+  (Classical.choose_spec (M.exists_successor_twoBoundaryArcPaths a)).1
+
+/-- The positive arcs between cyclically consecutive marks cover the whole
+Jordan carrier. -/
+theorem carrier_subset_iUnion_successorBoundarySplit_first :
+    J.carrier ⊆ ⋃ a : ι, range (M.successorBoundarySplit a).first := by
+  classical
+  intro x hx
+  let X : J.carrier := ⟨x, hx⟩
+  let theta := J.cyclicLift (M.carrierPoint M.root) X
+  have hthetaLower :
+      J.angularRepresentative (M.carrierPoint M.root) < theta :=
+    (J.cyclicLift_mem_Ioc (M.carrierPoint M.root) X).1
+  have hthetaUpper : theta ≤ M.angleKey M.root := by
+    rw [M.angleKey_root]
+    exact (J.cyclicLift_mem_Ioc (M.carrierPoint M.root) X).2
+  have hthetaPoint : J.angularPoint theta = x := by
+    exact J.angularPoint_cyclicLift (M.carrierPoint M.root) X
+  have hfirstEq : M.enumeration M.firstIndex = M.successor M.root := by
+    apply M.enumeration.symm.injective
+    rw [M.enumeration_symm_successor_root]
+    simp only [Equiv.symm_apply_apply]
+  by_cases hfirst :
+      M.angleKey (M.enumeration M.firstIndex) ≤ theta
+  · let eligible : Finset ι :=
+        Finset.univ.filter fun a => M.angleKey a ≤ theta
+    have heligible : eligible.Nonempty := by
+      refine ⟨M.enumeration M.firstIndex, ?_⟩
+      simp only [eligible, Finset.mem_filter, Finset.mem_univ, true_and]
+      exact hfirst
+    obtain ⟨a, ha, hamax⟩ :=
+      Finset.exists_max_image eligible M.angleKey heligible
+    have hastart : M.successorStartAngle a ≤ theta := by
+      change M.angleKey a ≤ theta
+      exact (Finset.mem_filter.mp ha).2
+    have haend : theta ≤ M.successorEndAngle a := by
+      by_cases haroot : a = M.root
+      · subst a
+        exact hthetaUpper.trans
+          (M.successorStartAngle_lt_endAngle M.root).le
+      · rw [successorEndAngle, if_neg haroot]
+        by_contra hnot
+        have hsuccessorEligible : M.successor a ∈ eligible := by
+          simp only [eligible, Finset.mem_filter, Finset.mem_univ, true_and]
+          exact le_of_not_ge hnot
+        have hmax := hamax (M.successor a) hsuccessorEligible
+        exact (not_lt_of_ge hmax) (M.angleKey_lt_successor haroot)
+    apply Set.mem_iUnion.mpr
+    refine ⟨a, ?_⟩
+    rw [M.range_successorBoundarySplit_first]
+    refine ⟨JordanCurve.Arcs.param theta,
+      ⟨theta, ⟨hastart, haend⟩, rfl⟩, ?_⟩
+    exact hthetaPoint
+  · apply Set.mem_iUnion.mpr
+    refine ⟨M.root, ?_⟩
+    rw [M.range_successorBoundarySplit_first]
+    let theta' := theta + 2 * Real.pi
+    have hstart : M.successorStartAngle M.root ≤ theta' := by
+      dsimp only [successorStartAngle, theta']
+      rw [M.angleKey_root]
+      linarith
+    have hend : theta' ≤ M.successorEndAngle M.root := by
+      dsimp only [theta', successorEndAngle]
+      rw [if_pos rfl, ← hfirstEq]
+      have hlt : theta < M.angleKey (M.enumeration M.firstIndex) :=
+        lt_of_not_ge hfirst
+      linarith
+    refine ⟨JordanCurve.Arcs.param theta',
+      ⟨theta', ⟨hstart, hend⟩, rfl⟩, ?_⟩
+    change J.angularPoint theta' = x
+    dsimp only [theta']
+    rw [J.angularPoint_periodic]
+    exact hthetaPoint
 
 theorem point_mem_successorBoundarySplit_first_iff (a c : ι) :
     M.point c ∈ range (M.successorBoundarySplit a).first ↔

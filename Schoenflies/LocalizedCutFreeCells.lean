@@ -143,6 +143,24 @@ noncomputable def attachmentPresentation :
 noncomputable def disk : PolygonalCircle :=
   C.attachmentPresentation.disk
 
+@[simp] theorem attachmentPresentation_startPoint :
+    C.attachmentPresentation.startPoint = C.decomposition.first.innerPoint := by
+  classical
+  by_cases h : C.firstAlternative
+  · rw [attachmentPresentation, dif_pos h]
+    rfl
+  · rw [attachmentPresentation, dif_neg h]
+    rfl
+
+@[simp] theorem attachmentPresentation_endPoint :
+    C.attachmentPresentation.endPoint = C.decomposition.second.innerPoint := by
+  classical
+  by_cases h : C.firstAlternative
+  · rw [attachmentPresentation, dif_pos h]
+    rfl
+  · rw [attachmentPresentation, dif_neg h]
+    rfl
+
 theorem attachmentPresentation_exposedSecondCoordinate
     (t : unitInterval) :
     C.attachmentPresentation.exposed
