@@ -97,6 +97,7 @@ import Schoenflies.HierarchicalLevelHairs
 import Schoenflies.LevelArcCover
 import Schoenflies.LevelEndpointIncidence
 import Schoenflies.SynchronizedLevelReturns
+import Schoenflies.ExactSynchronizedCrosscutRanges
 import Schoenflies.ResolvedPolygonalArcs
 import Schoenflies.CyclicLevelEdges
 import Schoenflies.SynchronizedPolygonalCircle
