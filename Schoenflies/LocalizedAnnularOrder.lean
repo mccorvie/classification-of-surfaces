@@ -88,6 +88,20 @@ theorem levelLocalizedSuccessor_ne (k : ℕ) (a : LevelAddress k) :
     I.levelLocalizedSuccessor k a ≠ a :=
   (I.levelLocalizedInnerMarking k).successor_ne a
 
+/-- From the first genuine refinement onward there are at least four retained
+cuts, so advancing twice in their cyclic order cannot return to the starting
+cut.  The level-zero two-cut shell is intentionally handled separately. -/
+theorem levelLocalizedSuccessor_successor_ne (k : ℕ) (hk : 1 ≤ k)
+    (a : LevelAddress k) :
+    I.levelLocalizedSuccessor k (I.levelLocalizedSuccessor k a) ≠ a := by
+  apply (I.levelLocalizedInnerMarking k).successor_successor_ne
+  rw [levelAddress_card]
+  calc
+    3 ≤ 4 := by norm_num
+    _ = 2 ^ (1 + 1) := by norm_num
+    _ ≤ 2 ^ (k + 1) :=
+      pow_le_pow_right' (by norm_num) (by omega)
+
 /-- The canonical successor pair bounds a cut-free cell.  This is the
 coherent version of `exists_levelLocalized_cutFreeArcFrom`: all starting
 cuts use the same cyclic successor permutation. -/

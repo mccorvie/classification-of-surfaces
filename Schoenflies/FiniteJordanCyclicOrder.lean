@@ -287,11 +287,50 @@ private theorem finRotate_ne_of_two_le {N : ℕ} (hN : 2 ≤ N)
         omega
       · exact ne_of_gt ((lt_finRotate_iff_ne_last i).mpr hi)
 
+private theorem finRotate_sq_ne_of_three_le {N : ℕ} (hN : 3 ≤ N)
+    (i : Fin N) : finRotate N (finRotate N i) ≠ i := by
+  cases N with
+  | zero => omega
+  | succ n =>
+      have hn : 2 ≤ n := by
+        omega
+      by_cases hi : i = Fin.last n
+      · rw [hi, finRotate_last, finRotate_apply_zero]
+        intro h
+        have hval := congrArg Fin.val h
+        rw [Fin.val_one', Nat.mod_eq_of_lt (by omega), Fin.val_last] at hval
+        omega
+      · have hfirst : (finRotate (n + 1) i : ℕ) = i + 1 :=
+          coe_finRotate_of_ne_last hi
+        by_cases hnext : finRotate (n + 1) i = Fin.last n
+        · rw [hnext, finRotate_last]
+          intro h
+          have hval := congrArg Fin.val h
+          have hnextVal := congrArg Fin.val hnext
+          simp only [Fin.val_zero, Fin.val_last] at hval hnextVal
+          omega
+        · have hsecond :
+              (finRotate (n + 1) (finRotate (n + 1) i) : ℕ) =
+                (finRotate (n + 1) i : ℕ) + 1 :=
+            coe_finRotate_of_ne_last hnext
+          intro h
+          have hval := congrArg Fin.val h
+          omega
+
 theorem successor_ne (a : ι) : M.successor a ≠ a := by
   intro h
   have hindex := congrArg M.enumeration.symm h
   rw [M.enumeration_symm_successor] at hindex
   exact finRotate_ne_of_two_le M.two_le_card
+    (M.enumeration.symm a) hindex
+
+theorem successor_successor_ne (hcard : 3 ≤ Fintype.card ι)
+    (a : ι) : M.successor (M.successor a) ≠ a := by
+  intro h
+  have hindex := congrArg M.enumeration.symm h
+  rw [M.enumeration_symm_successor,
+    M.enumeration_symm_successor] at hindex
+  exact finRotate_sq_ne_of_three_le hcard
     (M.enumeration.symm a) hindex
 
 /-- The start angle for the positively oriented arc from a mark to its
