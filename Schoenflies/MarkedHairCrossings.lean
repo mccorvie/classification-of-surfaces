@@ -211,6 +211,21 @@ theorem range_prefixPath (C : H.FirstPolygonalCrossing P) :
   rw [Path.range_subpath_of_le _ _ _ bot_le]
   rfl
 
+/-- A first-crossing prefix is geometrically the straight segment from the
+hair base to the crossing point. -/
+theorem range_prefixPath_eq_segment (C : H.FirstPolygonalCrossing P) :
+    range C.prefixPath = segment ℝ q C.point := by
+  have hpath : C.prefixPath = Path.segment q C.point := by
+    apply Path.ext
+    funext t
+    change AffineMap.lineMap q H.tip
+        (Set.Icc.convexComb (⊥ : unitInterval) C.parameter t : ℝ) =
+      AffineMap.lineMap q
+        (AffineMap.lineMap q H.tip (C.parameter : ℝ)) (t : ℝ)
+    rw [AffineMap.lineMap_lineMap_right]
+    simp [Set.Icc.convexComb]
+  rw [hpath, Path.range_segment]
+
 /-- A positive first-crossing parameter makes the prefix path an embedded
 arc. -/
 theorem prefixPath_injective (C : H.FirstPolygonalCrossing P)
