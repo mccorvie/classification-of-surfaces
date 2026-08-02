@@ -20,6 +20,7 @@ If you are in the bay area, come to the [weekly meetup](https://luma.com/yi9idc1
 ## Documents
 
 - `ClassificationOfSurfaces/API.lean`: public Lean API map and preferred code entry point.
+- [Proof digest](output/pdf/classification-of-surfaces-proof-digest.pdf): first-pass mathematical digestion of the complete proof spine.
 - `docs/ARCHITECTURE.md`: proof architecture and source-file map.
 - `docs/DESIGN_DECISIONS.md`: stable design choices behind the formalization.
 - `docs/AUTOFORMALIZATION_GUIDE.md`: definition-faithfulness and maintenance rules.
@@ -59,6 +60,24 @@ Normal pull requests build only the development project.  Apply the
 `lean-eval-submission` label when a PR's generated payloads are ready for the
 standalone Lean Eval freshness and comparator checks; the same workflow can also
 be started manually for any revision.
+
+## Reusable API
+
+Import the package API module and use the indexed normal-form theorem when the exact nested
+Lean-Eval conclusion is not required:
+
+```lean
+import ClassificationOfSurfaces.API
+
+open LeanEval.Topology.ClassificationOfSurfaces
+
+#check exists_homeomorphic_normalForm
+#check classification_of_surfaces
+```
+
+`exists_homeomorphic_normalForm` returns an admissible `NormalForm` together with a homeomorphism
+to `NormalForm.Representative`. The original `classification_of_surfaces` statement remains
+available unchanged for Lean-Eval compatibility.
 
 ## Architecture
 

@@ -321,15 +321,12 @@ theorem polygonalPreMap_respects
     {x y : T.toFiniteCyclicPresentation.PolygonalPreRealization}
     (hxy : T.toFiniteCyclicPresentation.PolygonalGluingRel valid x y) :
     T.polygonalPreMap x = T.polygonalPreMap y := by
-  induction hxy with
-  | rel x y h =>
-      cases h with
-      | glue identification hidentification r =>
-          rcases hidentification with ⟨pairing, rfl⟩
-          exact T.polygonalPreMap_pairing_eq pairing r
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  apply eqvGen_map_of_generator_to_equiv T.polygonalPreMap ?_ hxy
+  intro _ _ h
+  cases h with
+  | glue identification hidentification r =>
+      rcases hidentification with ⟨pairing, rfl⟩
+      exact T.polygonalPreMap_pairing_eq pairing r
 
 /-- Descend the calibrated face maps through the cyclic polygonal quotient. -/
 noncomputable def polygonalRealizationMap

@@ -791,15 +791,13 @@ theorem positiveChildPairMap_respects
           cut.left.length cut.right.length) x y) :
     positiveChildPairMap P cut horientation validP x =
       positiveChildPairMap P cut horientation validP y := by
-  induction hxy with
-  | rel _ _ h =>
-      cases h with
-      | glue t =>
-          exact positiveChildPairMap_fresh_seam
-            P cut horientation validP t
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  apply eqvGen_map_of_generator_to_equiv
+    (positiveChildPairMap P cut horientation validP) ?_ hxy
+  intro _ _ h
+  cases h with
+  | glue t =>
+      exact positiveChildPairMap_fresh_seam
+        P cut horientation validP t
 
 /-- Include the locally glued pair of P2 children into the complete target realization. -/
 noncomputable def positiveChildGluingMap
@@ -1697,19 +1695,14 @@ theorem positivePreMap_respects
     (hxy : P.PolygonalGluingRel validP x y) :
     positivePreMap P cut horientation hl hr validP x =
       positivePreMap P cut horientation hl hr validP y := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      (P.polygonalIdentifications validP)) x y at hxy
-  induction hxy with
-  | rel _ _ hgenerator =>
-      cases hgenerator with
-      | glue identification hmem t =>
-          rcases hmem with ⟨pairing, rfl⟩
-          exact positivePreMap_pairing_eq
-            P cut horientation hl hr validP pairing t
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  apply eqvGen_map_of_generator_to_equiv
+    (positivePreMap P cut horientation hl hr validP) ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hmem t =>
+      rcases hmem with ⟨pairing, rfl⟩
+      exact positivePreMap_pairing_eq
+        P cut horientation hl hr validP pairing t
 
 /-! ### Local inverse maps for the two target children -/
 
@@ -2816,20 +2809,14 @@ theorem positiveInvPreMap_respects
         (split_isSurfaceValid P cut validP) x y) :
     positiveInvPreMap P cut horientation hl hr validP x =
       positiveInvPreMap P cut horientation hl hr validP y := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      ((split P cut).polygonalIdentifications
-        (split_isSurfaceValid P cut validP))) x y at hxy
-  induction hxy with
-  | rel _ _ hgenerator =>
-      cases hgenerator with
-      | glue identification hmem t =>
-          rcases hmem with ⟨pairing, rfl⟩
-          exact positiveInvPreMap_pairing_eq
-            P cut horientation hl hr validP pairing t
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  apply eqvGen_map_of_generator_to_equiv
+    (positiveInvPreMap P cut horientation hl hr validP) ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hmem t =>
+      rcases hmem with ⟨pairing, rfl⟩
+      exact positiveInvPreMap_pairing_eq
+        P cut horientation hl hr validP pairing t
 
 /-- Forward map after descent through the source polygonal quotient. -/
 noncomputable def positiveRealizationMap

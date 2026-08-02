@@ -128,9 +128,12 @@ The faithful polygonal quotient layer and the bottom API are complete:
   indexing. `CanonicalGeneratorMaps.lean` maps arbitrary polygon generators and every trusted
   relation constructor into the opposite equivalence closure, yielding homeomorphisms between both
   canonical polygonal realizations and the exact Eval quotients.
-- `FiniteCyclicPresentation.hasEvalRepresentative` composes normalization with the sphere,
-  orientable, and nonorientable canonical realization homeomorphisms. `classification_of_surfaces`
-  transports those endpoints across the geometric bridge to the input surface.
+- `NormalForm.Representative` packages the three concrete target families behind the normal-form
+  index, and `NormalForm.canonicalRealizationHomeomorph` gives their uniform endpoint bridge.
+- `FiniteCyclicPresentation.exists_homeomorphic_normalForm` composes normalization with that
+  bridge. The surface-level `exists_homeomorphic_normalForm` transports the result across the
+  geometric realization; `classification_of_surfaces` expands it to the exact Lean-Eval
+  disjunction for compatibility.
 
 ## File Map
 
@@ -149,8 +152,10 @@ The faithful polygonal quotient layer and the bottom API are complete:
   canonical-pairing-to-trusted-closure inclusions.
 - `ClassificationOfSurfaces/CanonicalGeneratorMaps.lean`: bidirectional generator maps and
   canonical polygonal-realization homeomorphisms to the Eval quotients.
+- `ClassificationOfSurfaces/EqvGenQuotient.lean`: generic generated-equivalence and quotient
+  transport helpers.
 - `ClassificationOfSurfaces/RepresentativeCarrier.lean`: the exact one-face disk carrier,
-  side-coordinate formulas, and raw/generated quotient bridges.
+  side-coordinate formulas, and bridges to the Eval quotient carriers.
 - `ClassificationOfSurfaces/SphereCarrierGeometry.lean`: compact disk carriers and the
   conjugation boundary identity used by the two-monogon sphere realization.
 - `ClassificationOfSurfaces/SphereHemisphere.lean`: continuous upper/lower hemisphere maps,

@@ -214,39 +214,13 @@ theorem zeroLeftChildPair_eqvGen_iff
         (DiskSquare.ParamChildSeamGenerator l r)
         (zeroLeftChildPairHomeomorph hl x)
         (zeroLeftChildPairHomeomorph hl y) := by
-  constructor
-  · intro hxy
-    induction hxy with
-    | rel _ _ h =>
-        exact Relation.EqvGen.rel _ _
-          (zeroLeftChildPair_generator_map hl h)
-    | refl => exact Relation.EqvGen.refl _
-    | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-    | trans _ _ _ _ _ ih₁ ih₂ =>
-        exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
-  · intro hxy
-    let e :
-        DiskSquare.ChildPair 0 r ≃ₜ
-          DiskSquare.ChildPair l r :=
-      zeroLeftChildPairHomeomorph hl
-    have hcomap :
-        ∀ {u v : DiskSquare.ChildPair l r},
-          Relation.EqvGen
-              (DiskSquare.ParamChildSeamGenerator l r) u v →
-            Relation.EqvGen
-              (DiskSquare.ParamChildSeamGenerator 0 r)
-              (e.symm u) (e.symm v) := by
-      intro u v huv
-      induction huv with
-      | rel _ _ h =>
-          exact Relation.EqvGen.rel _ _
-            (zeroLeftChildPair_generator_comap hl h)
-      | refl => exact Relation.EqvGen.refl _
-      | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-      | trans _ _ _ _ _ ih₁ ih₂ =>
-          exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
-    simpa only [e, Homeomorph.symm_apply_apply] using
-      hcomap hxy
+  exact eqvGen_iff_of_generator_maps
+    (zeroLeftChildPairHomeomorph hl).toEquiv
+    (fun _ _ h => Relation.EqvGen.rel _ _
+      (zeroLeftChildPair_generator_map hl h))
+    (fun _ _ h => Relation.EqvGen.rel _ _
+      (zeroLeftChildPair_generator_comap hl h))
+    x y
 
 noncomputable def zeroLeftChildGluingHomeomorph
     {l r : ℕ} (hl : l = 0) :
@@ -800,20 +774,14 @@ theorem rightDegeneratePreMap_respects
         P cut horientation hleft hr validP x =
       rightDegeneratePreMap
         P cut horientation hleft hr validP y := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      (P.polygonalIdentifications validP)) x y at hxy
-  induction hxy with
-  | rel _ _ hgenerator =>
-      cases hgenerator with
-      | glue identification hmem t =>
-          rcases hmem with ⟨pairing, rfl⟩
-          exact rightDegeneratePreMap_pairing_eq
-            P cut horientation hleft hr validP pairing t
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ =>
-      exact ih₁.trans ih₂
+  apply eqvGen_map_of_generator_to_equiv
+    (rightDegeneratePreMap P cut horientation hleft hr validP) ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hmem t =>
+      rcases hmem with ⟨pairing, rfl⟩
+      exact rightDegeneratePreMap_pairing_eq
+        P cut horientation hleft hr validP pairing t
 
 /-! ### Inverse map -/
 
@@ -1636,20 +1604,14 @@ theorem rightDegenerateInvPreMap_respects
     rightDegenerateInvPreMap P cut horientation hleft hr validP x =
       rightDegenerateInvPreMap
         P cut horientation hleft hr validP y := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      ((split P cut).polygonalIdentifications
-        (split_isSurfaceValid P cut validP))) x y at hxy
-  induction hxy with
-  | rel _ _ hgenerator =>
-      cases hgenerator with
-      | glue identification hmem t =>
-          rcases hmem with ⟨pairing, rfl⟩
-          exact rightDegenerateInvPreMap_pairing_eq
-            P cut horientation hleft hr validP pairing t
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  apply eqvGen_map_of_generator_to_equiv
+    (rightDegenerateInvPreMap P cut horientation hleft hr validP) ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hmem t =>
+      rcases hmem with ⟨pairing, rfl⟩
+      exact rightDegenerateInvPreMap_pairing_eq
+        P cut horientation hleft hr validP pairing t
 
 /-! ### Descended equivalence -/
 

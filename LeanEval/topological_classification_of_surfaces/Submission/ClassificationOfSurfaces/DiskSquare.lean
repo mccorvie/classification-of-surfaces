@@ -1097,11 +1097,8 @@ theorem squarePairMerge_eq_of_seamGenerator
 theorem squarePairMerge_respects
     {x y : SquarePair} (hxy : Relation.EqvGen SeamGenerator x y) :
     squarePairMerge x = squarePairMerge y := by
-  induction hxy with
-  | rel _ _ h => exact squarePairMerge_eq_of_seamGenerator h
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  exact eqvGen_map_of_generator_to_equiv squarePairMerge
+    (fun _ _ h => squarePairMerge_eq_of_seamGenerator h) hxy
 
 theorem square_re_le_one (z : square) :
     z.1.re ≤ 1 :=
@@ -1295,33 +1292,16 @@ theorem childSeam_eqvGen_iff
       Relation.EqvGen SeamGenerator
         (childPairSquarePairHomeomorph l r hl hr x)
         (childPairSquarePairHomeomorph l r hl hr y) := by
-  constructor
-  · intro hxy
-    induction hxy with
-    | rel _ _ h =>
-        exact Relation.EqvGen.rel _ _
-          (childSeamGenerator_map l r hl hr h)
-    | refl => exact Relation.EqvGen.refl _
-    | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-    | trans _ _ _ _ _ ih₁ ih₂ =>
-        exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
-  · intro hxy
-    let e := childPairSquarePairHomeomorph l r hl hr
-    have hcomap :
-        ∀ {u v : SquarePair}, Relation.EqvGen SeamGenerator u v →
-          Relation.EqvGen (ChildSeamGenerator l r hl hr)
-            (e.symm u) (e.symm v) := by
-      intro u v huv
-      induction huv with
-      | rel _ _ h =>
-          apply Relation.EqvGen.rel _ _
-          apply childSeamGenerator_comap l r hl hr
-          simpa only [e, Homeomorph.apply_symm_apply] using h
-      | refl => exact Relation.EqvGen.refl _
-      | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-      | trans _ _ _ _ _ ih₁ ih₂ =>
-          exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
-    simpa only [e, Homeomorph.symm_apply_apply] using hcomap hxy
+  let e := childPairSquarePairHomeomorph l r hl hr
+  apply eqvGen_iff_of_generator_maps e.toEquiv
+  · intro _ _ h
+    exact Relation.EqvGen.rel _ _
+      (childSeamGenerator_map l r hl hr h)
+  · intro u v h
+    apply Relation.EqvGen.rel _ _
+    have h' : SeamGenerator (e (e.symm u)) (e (e.symm v)) := by
+      simpa only [e, Homeomorph.apply_symm_apply] using h
+    exact childSeamGenerator_comap l r hl hr h'
 
 /-- The actual two-child polygon quotient of a nondegenerate P2 cut is a closed disk. -/
 noncomputable def childGluingHomeomorph
@@ -1465,24 +1445,11 @@ theorem paramChildSeam_eqvGen_iff
     (x y : ChildPair l r) :
     Relation.EqvGen (ParamChildSeamGenerator l r) x y ↔
       Relation.EqvGen (ChildSeamGenerator l r hl hr) x y := by
-  constructor
-  · intro hxy
-    induction hxy with
-    | rel _ _ h =>
-        exact Relation.EqvGen.rel _ _
-          (paramChildSeamGenerator_to_childSeam l r hl hr h)
-    | refl => exact Relation.EqvGen.refl _
-    | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-    | trans _ _ _ _ _ ih₁ ih₂ =>
-        exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
-  · intro hxy
-    induction hxy with
-    | rel _ _ h =>
-        exact childSeamGenerator_to_paramEqvGen l r hl hr h
-    | refl => exact Relation.EqvGen.refl _
-    | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-    | trans _ _ _ _ _ ih₁ ih₂ =>
-        exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  exact eqvGen_iff_of_generator_maps (Equiv.refl _)
+    (fun _ _ h => Relation.EqvGen.rel _ _
+      (paramChildSeamGenerator_to_childSeam l r hl hr h))
+    (fun _ _ h => childSeamGenerator_to_paramEqvGen l r hl hr h)
+    x y
 
 abbrev paramChildSeamSetoid (l r : ℕ) :
     Setoid (ChildPair l r) :=

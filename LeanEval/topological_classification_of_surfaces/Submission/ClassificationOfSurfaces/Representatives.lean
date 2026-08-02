@@ -46,6 +46,25 @@ def NormalForm.IsEvalAdmissible : NormalForm → Prop
       1 ≤ handles ∨ 1 ≤ boundaryComponents
   | NormalForm.nonOrientable crosscaps _boundaryComponents => 1 ≤ crosscaps
 
+namespace NormalForm
+
+/-- The topological representative selected by a normal-form index.
+
+This packages the three branches of the Lean-Eval conclusion into one dependent family, so
+clients can state and transport classification results without repeating the nested disjunction. -/
+@[simp]
+def Representative : NormalForm → Type
+  | .sphere => SphereRepresentative
+  | .orientable p n => Quot (OrientableRel p n)
+  | .nonOrientable p n => Quot (NonOrientableRel p n)
+
+/-- The topology on a normal-form representative is the topology of its concrete branch. -/
+noncomputable instance instTopologicalSpaceRepresentative (N : NormalForm) :
+    TopologicalSpace N.Representative := by
+  cases N <;> unfold Representative <;> infer_instance
+
+end NormalForm
+
 end ClassificationOfSurfaces
 end Topology
 end LeanEval

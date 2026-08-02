@@ -569,11 +569,8 @@ theorem baseChildPairMap_respects
       Relation.EqvGen
         (DiskSquare.ParamChildSeamGenerator 0 1) x y) :
     baseChildPairMap x = baseChildPairMap y := by
-  induction hxy with
-  | rel _ _ h => exact baseChildPairMap_eq_of_generator h
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+  exact eqvGen_map_of_generator_to_equiv baseChildPairMap
+    (fun _ _ h => baseChildPairMap_eq_of_generator h) hxy
 
 /-- The continuous analytic map induced on the one-sided-degenerate child quotient. -/
 noncomputable def baseChildGluingMap :
@@ -1826,37 +1823,13 @@ theorem childPairBase_eqvGen_iff
         (DiskSquare.ParamChildSeamGenerator 0 1)
         (childPairBaseHomeomorph r hr x)
         (childPairBaseHomeomorph r hr y) := by
-  constructor
-  · intro hxy
-    induction hxy with
-    | rel _ _ h =>
-        exact Relation.EqvGen.rel _ _
-          (childPairBase_generator_map r hr h)
-    | refl => exact Relation.EqvGen.refl _
-    | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-    | trans _ _ _ _ _ ih₁ ih₂ =>
-        exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
-  · intro hxy
-    let e := childPairBaseHomeomorph r hr
-    have hcomap :
-        ∀ {u v : BaseChildPair},
-          Relation.EqvGen
-              (DiskSquare.ParamChildSeamGenerator 0 1)
-              u v →
-            Relation.EqvGen
-              (DiskSquare.ParamChildSeamGenerator 0 r)
-              (e.symm u) (e.symm v) := by
-      intro u v huv
-      induction huv with
-      | rel _ _ h =>
-          exact Relation.EqvGen.rel _ _
-            (childPairBase_generator_comap r hr h)
-      | refl => exact Relation.EqvGen.refl _
-      | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-      | trans _ _ _ _ _ ih₁ ih₂ =>
-          exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
-    simpa only [e, Homeomorph.symm_apply_apply] using
-      hcomap hxy
+  exact eqvGen_iff_of_generator_maps
+    (childPairBaseHomeomorph r hr).toEquiv
+    (fun _ _ h => Relation.EqvGen.rel _ _
+      (childPairBase_generator_map r hr h))
+    (fun _ _ h => Relation.EqvGen.rel _ _
+      (childPairBase_generator_comap r hr h))
+    x y
 
 /-- The arbitrary one-sided-degenerate child quotient is identified with the base
 monogon--digon quotient. -/

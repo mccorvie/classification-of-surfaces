@@ -3,59 +3,9 @@ Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ClassificationOfSurfaces contributors
 -/
-import ClassificationOfSurfaces.CellComplexQuotient
-import ClassificationOfSurfaces.CanonicalCoordinates
-import ClassificationOfSurfaces.CanonicalGeneratorMaps
-import ClassificationOfSurfaces.CanonicalPairings
-import ClassificationOfSurfaces.CanonicalWords
 import ClassificationOfSurfaces.EvalStatement
 import ClassificationOfSurfaces.Examples
-import ClassificationOfSurfaces.FiniteCyclicCanonical
-import ClassificationOfSurfaces.FiniteCyclicCanonicalRealization
-import ClassificationOfSurfaces.FiniteCyclicCancellation
-import ClassificationOfSurfaces.FiniteCyclicCrosscap
-import ClassificationOfSurfaces.FiniteCyclicDerivedRewrites
-import ClassificationOfSurfaces.FiniteCyclicDyck
-import ClassificationOfSurfaces.FiniteCyclicFaceMerge
-import ClassificationOfSurfaces.FiniteCyclicMoveRealization
-import ClassificationOfSurfaces.FiniteCyclicMoves
-import ClassificationOfSurfaces.FiniteCyclicNormalization
-import ClassificationOfSurfaces.FiniteCyclicNormalizationResult
-import ClassificationOfSurfaces.FiniteCyclicP1
-import ClassificationOfSurfaces.FiniteCyclicP1Realization
-import ClassificationOfSurfaces.FiniteCyclicP2
-import ClassificationOfSurfaces.FiniteCyclicP2DegenerateRealization
-import ClassificationOfSurfaces.FiniteCyclicP2Realization
-import ClassificationOfSurfaces.FiniteCyclicPresentation
-import ClassificationOfSurfaces.FiniteCyclicRealization
-import ClassificationOfSurfaces.FiniteCyclicReduction
-import ClassificationOfSurfaces.FiniteCyclicSignedRealization
-import ClassificationOfSurfaces.FiniteCyclicSphereRealization
-import ClassificationOfSurfaces.FiniteCyclicTerminalNormalization
-import ClassificationOfSurfaces.FiniteCyclicTriangulation
-import ClassificationOfSurfaces.FiniteCyclicUnorientedRealization
-import ClassificationOfSurfaces.FiniteCyclicWordReduction
-import ClassificationOfSurfaces.GeometricTriangulationRealization
 import ClassificationOfSurfaces.LeanEval.RepresentativeSanity
-import ClassificationOfSurfaces.LeanEval.SpecAudit
-import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
-import ClassificationOfSurfaces.Moise.IntrinsicGraphPL
-import ClassificationOfSurfaces.Moise.IntrinsicFaceBoundary
-import ClassificationOfSurfaces.Moise.IntrinsicFaceExtension
-import ClassificationOfSurfaces.Moise.IntrinsicFaceFilling
-import ClassificationOfSurfaces.Moise.IntrinsicFaceModel
-import ClassificationOfSurfaces.Moise.IntrinsicFineSubdivision
-import ClassificationOfSurfaces.Moise.FrontierGlue
-import ClassificationOfSurfaces.Moise.PlaneCycle
-import ClassificationOfSurfaces.PolygonalQuotient
-import ClassificationOfSurfaces.PolygonCellRadial
-import ClassificationOfSurfaces.RepresentativeCarrier
-import ClassificationOfSurfaces.SignedPresentation
-import ClassificationOfSurfaces.SphereCarrierGeometry
-import ClassificationOfSurfaces.SphereHemisphere
-import ClassificationOfSurfaces.SphereQuotientHomeomorph
-import ClassificationOfSurfaces.StrongVertexStar
-import ClassificationOfSurfaces.TriangleCell
 
 /-!
 # Public API map
@@ -78,7 +28,8 @@ documents its main interfaces.
 * `TriangleFamily.FaceAdjacentAtVertex`, `TriangleFamily.IsStrongVertexStarConnected`, and
   the strong-to-legacy and strong-to-dual connectivity bridges
   (`Moise/GeometricTriangulation.lean`)
-* `PlaneComplex`, `IsPLOn`, `IsPLOnSet` (`Moise/PlaneComplex.lean`)
+* `PlaneComplex`, `PlaneComplex.cellCarrier_singleton`, `PlaneComplex.cellCarrier_pair`,
+  `IsPLOn`, `IsPLOnSet` (`Moise/PlaneComplex.lean`)
 * `IntrinsicTwoComplex`, its faithful `Subdivision`, `IsPLMap`, and `PLHomeomorph`
   (`Moise/IntrinsicComplex.lean`)
 * intrinsic one-skeleton polygonal replacement, exact finite edge complexes, and embedding
@@ -136,6 +87,8 @@ with the geometric triangulation.
 * `SurfaceCellComplex.FaceAdjacent`
 * `SurfaceCellComplex.IsConnected`
 * `SurfaceCellComplex.SignedDart`
+* `SurfaceCellComplex.SignedDart.edge`
+* `SurfaceCellComplex.orientedEdgeSignedDartEquiv`
 * `SurfaceCellComplex.oneFacePresentation`
 * `SurfaceCellComplex.EdgeOrbit`
 * `SurfaceCellComplex.edgeOrbit`
@@ -343,6 +296,8 @@ or at a pair-reduced valid one-face word.
 * `PolygonGluing.setoid`
 * `PolygonGluing.Realization`
 * `PolygonGluing.realizationCongr`
+* `PolygonGluing.realizationCongrOfMaps`
+* `PolygonGluing.realizationCongrOfGeneratorMaps`
 * `FiniteCyclicPresentation.edgeMultiplicity_eq_card_edgeOccurrences`
 * `FiniteCyclicPresentation.IsSurfaceValid.exists_unique_partner`
 * `FiniteCyclicPresentation.IsSurfaceValid.exists_identification_source`
@@ -364,6 +319,7 @@ or at a pair-reduced valid one-face word.
 * `SurfaceCellComplex.oppositeDirectionIdentification_mem_of_get_pos_neg`
 * `quotEqvGenHomeomorph`
 * `eqvGenQuotientCongrRaw`
+* `eqvGen_map_of_generator_to_equiv`
 * `eqvGen_map_of_generator_to_eqvGen`
 * `eqvGen_iff_of_generator_maps`
 * `eqvGenQuotientCongrRawOfGeneratorMaps`
@@ -432,6 +388,7 @@ resulting bijection to a homeomorphism with `SphereRepresentative`.
 * `NormalForm.canonicalSphereRealizationHomeomorph`
 * `NormalForm.canonicalOrientableRealizationHomeomorph`
 * `NormalForm.canonicalNonOrientableRealizationHomeomorph`
+* `NormalForm.canonicalRealizationHomeomorph`
 * `NormalForm.orientableCellComplex_isSurfaceValid`
 * `NormalForm.nonOrientableCellComplex_isSurfaceValid`
 * `NormalForm.orientableCellComplex_isConnected`
@@ -473,6 +430,9 @@ resulting bijection to a homeomorphism with `SphereRepresentative`.
 * `NormalForm.nonOrientableCellComplex`
 * `NormalForm.canonicalCellComplex`
 * `NormalForm.IsEvalAdmissible`
+* `NormalForm.Representative`
+* `FiniteCyclicPresentation.NormalizationResult.representativeHomeomorph`
+* `FiniteCyclicPresentation.exists_homeomorphic_normalForm`
 * `FiniteCyclicPresentation.hasEvalRepresentative`
 
 The canonical word families match the exact commutator, crosscap, and boundary-block patterns in
@@ -503,6 +463,7 @@ normalization layer does not mention manifold chart machinery.
 * `not_subsingleton_orientableQuot` and `not_subsingleton_nonOrientableQuot`
   (`LeanEval/RepresentativeSanity.lean`, project-owned consequences)
 * `SphereRepresentative` and `NormalForm` (project-owned abbreviations and indices)
+* `exists_homeomorphic_normalForm`
 * `classification_of_surfaces`
 * `topological_classification_of_surfaces`
 

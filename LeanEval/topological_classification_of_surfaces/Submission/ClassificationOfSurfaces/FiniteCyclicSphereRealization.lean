@@ -271,37 +271,25 @@ theorem twoMonogonPreHomeomorph_related
     SurfaceCellComplex.sphere.PolygonalGluingRel
       SurfaceCellComplex.sphere_occurrencePairingValid
       (twoMonogonPreHomeomorph x) (twoMonogonPreHomeomorph y) := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      (twoMonogonSphere.polygonalIdentifications
-        twoMonogonSphere_isSurfaceValid)) x y at hxy
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      (SurfaceCellComplex.sphere.polygonalIdentifications
-        SurfaceCellComplex.sphere_occurrencePairingValid))
-      (twoMonogonPreHomeomorph x) (twoMonogonPreHomeomorph y)
-  induction hxy with
-  | rel _ _ hgenerator =>
-      cases hgenerator with
-      | glue identification hidentification t =>
-          rw [mem_twoMonogon_polygonalIdentifications_iff] at hidentification
-          rcases hidentification with rfl | rfl
-          · rw [twoMonogonPreHomeomorph_boundaryPairing_source,
-              twoMonogonPreHomeomorph_boundaryPairing_target]
-            exact PolygonGluing.related_of_mem
-              SurfaceCellComplex.sphereBoundaryPairing.identification
-              SurfaceCellComplex.sphereBoundaryPairing_mem t
-          · rw [twoMonogonPreHomeomorph_reverseBoundaryPairing_source,
-              twoMonogonPreHomeomorph_reverseBoundaryPairing_target]
-            exact PolygonGluing.related_of_mem
-              (SurfaceCellComplex.swapIdentification
-                SurfaceCellComplex.sphereBoundaryPairing.identification)
-              (SurfaceCellComplex.swapIdentification_mem_polygonalIdentifications
-                SurfaceCellComplex.sphere_occurrencePairingValid
-                SurfaceCellComplex.sphereBoundaryPairing_mem) t
-  | refl => exact Relation.EqvGen.refl _
-  | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-  | trans _ _ _ _ _ ih₁ ih₂ => exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  apply eqvGen_map_of_generator_to_eqvGen twoMonogonPreHomeomorph ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hidentification t =>
+      rw [mem_twoMonogon_polygonalIdentifications_iff] at hidentification
+      rcases hidentification with rfl | rfl
+      · rw [twoMonogonPreHomeomorph_boundaryPairing_source,
+          twoMonogonPreHomeomorph_boundaryPairing_target]
+        exact PolygonGluing.related_of_mem
+          SurfaceCellComplex.sphereBoundaryPairing.identification
+          SurfaceCellComplex.sphereBoundaryPairing_mem t
+      · rw [twoMonogonPreHomeomorph_reverseBoundaryPairing_source,
+          twoMonogonPreHomeomorph_reverseBoundaryPairing_target]
+        exact PolygonGluing.related_of_mem
+          (SurfaceCellComplex.swapIdentification
+            SurfaceCellComplex.sphereBoundaryPairing.identification)
+          (SurfaceCellComplex.swapIdentification_mem_polygonalIdentifications
+            SurfaceCellComplex.sphere_occurrencePairingValid
+            SurfaceCellComplex.sphereBoundaryPairing_mem) t
 
 /-- The inverse face relabeling sends the typed sphere gluing relation back into the
 finite-cyclic gluing relation. -/
@@ -314,37 +302,24 @@ theorem twoMonogonPreHomeomorph_symm_related
       twoMonogonSphere_isSurfaceValid
       (twoMonogonPreHomeomorph.symm x)
       (twoMonogonPreHomeomorph.symm y) := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      (SurfaceCellComplex.sphere.polygonalIdentifications
-        SurfaceCellComplex.sphere_occurrencePairingValid)) x y at hxy
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      (twoMonogonSphere.polygonalIdentifications
-        twoMonogonSphere_isSurfaceValid))
-      (twoMonogonPreHomeomorph.symm x)
-      (twoMonogonPreHomeomorph.symm y)
-  induction hxy with
-  | rel _ _ hgenerator =>
-      cases hgenerator with
-      | glue identification hidentification t =>
-          rw [SurfaceCellComplex.mem_sphere_polygonalIdentifications_iff] at hidentification
-          rcases hidentification with rfl | rfl
-          · rw [← twoMonogonPreHomeomorph_boundaryPairing_source,
-              ← twoMonogonPreHomeomorph_boundaryPairing_target]
-            simp only [Homeomorph.symm_apply_apply]
-            exact PolygonGluing.related_of_mem
-              twoMonogonBoundaryPairing.identification
-              twoMonogonBoundaryPairing_mem t
-          · rw [← twoMonogonPreHomeomorph_reverseBoundaryPairing_source,
-              ← twoMonogonPreHomeomorph_reverseBoundaryPairing_target]
-            simp only [Homeomorph.symm_apply_apply]
-            exact PolygonGluing.related_of_mem
-              twoMonogonReverseBoundaryPairing.identification
-              twoMonogonReverseBoundaryPairing_mem t
-  | refl => exact Relation.EqvGen.refl _
-  | symm _ _ _ ih => exact Relation.EqvGen.symm _ _ ih
-  | trans _ _ _ _ _ ih₁ ih₂ => exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  apply eqvGen_map_of_generator_to_eqvGen twoMonogonPreHomeomorph.symm ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hidentification t =>
+      rw [SurfaceCellComplex.mem_sphere_polygonalIdentifications_iff] at hidentification
+      rcases hidentification with rfl | rfl
+      · rw [← twoMonogonPreHomeomorph_boundaryPairing_source,
+          ← twoMonogonPreHomeomorph_boundaryPairing_target]
+        simp only [Homeomorph.symm_apply_apply]
+        exact PolygonGluing.related_of_mem
+          twoMonogonBoundaryPairing.identification
+          twoMonogonBoundaryPairing_mem t
+      · rw [← twoMonogonPreHomeomorph_reverseBoundaryPairing_source,
+          ← twoMonogonPreHomeomorph_reverseBoundaryPairing_target]
+        simp only [Homeomorph.symm_apply_apply]
+        exact PolygonGluing.related_of_mem
+          twoMonogonReverseBoundaryPairing.identification
+          twoMonogonReverseBoundaryPairing_mem t
 
 /-- The face relabeling identifies the generated finite-cyclic and typed sphere relations
 exactly. -/
@@ -368,8 +343,10 @@ noncomputable def twoMonogonRealizationHomeomorph :
         twoMonogonSphere_isSurfaceValid ≃ₜ
       SurfaceCellComplex.sphere.PolygonalRealization
         SurfaceCellComplex.sphere_occurrencePairingValid :=
-  PolygonGluing.realizationCongr twoMonogonPreHomeomorph
-    twoMonogonPreHomeomorph_related_iff
+  PolygonGluing.realizationCongrOfMaps
+    twoMonogonPreHomeomorph
+    (fun _ _ hxy ↦ twoMonogonPreHomeomorph_related hxy)
+    (fun _ _ hxy ↦ twoMonogonPreHomeomorph_symm_related hxy)
 
 /-- The canonical finite-cyclic sphere presentation realizes the exact Eval sphere
 representative. -/

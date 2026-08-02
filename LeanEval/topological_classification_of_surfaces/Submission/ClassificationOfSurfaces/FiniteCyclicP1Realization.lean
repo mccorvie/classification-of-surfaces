@@ -1892,20 +1892,13 @@ theorem preHomeomorph_related
     (hxy : P.PolygonalGluingRel validP x y) :
     (expand P a).PolygonalGluingRel (expand_isSurfaceValid P a validP)
       (preHomeomorph P a validP x) (preHomeomorph P a validP y) := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator (P.polygonalIdentifications validP)) x y at hxy
-  induction hxy with
-  | rel _ _ hgenerator =>
-      cases hgenerator with
-      | glue identification hmem t =>
-          rcases hmem with ⟨pairing, rfl⟩
-          exact preHomeomorph_generator_related P a validP pairing t
-  | refl =>
-      exact Relation.EqvGen.refl _
-  | symm _ _ _ ih =>
-      exact Relation.EqvGen.symm _ _ ih
-  | trans _ _ _ _ _ ih₁ ih₂ =>
-      exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  apply eqvGen_map_of_generator_to_eqvGen
+    (preHomeomorph P a validP) ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hmem t =>
+      rcases hmem with ⟨pairing, rfl⟩
+      exact preHomeomorph_generator_related P a validP pairing t
 
 /-- The inverse facewise P1 homeomorphism preserves the complete target gluing relation. -/
 theorem preHomeomorph_symm_related
@@ -1917,22 +1910,13 @@ theorem preHomeomorph_symm_related
     P.PolygonalGluingRel validP
       ((preHomeomorph P a validP).symm x)
       ((preHomeomorph P a validP).symm y) := by
-  change Relation.EqvGen
-    (PolygonGluing.Generator
-      ((expand P a).polygonalIdentifications
-        (expand_isSurfaceValid P a validP))) x y at hxy
-  induction hxy with
-  | rel _ _ hgenerator =>
-      cases hgenerator with
-      | glue identification hmem t =>
-          rcases hmem with ⟨pairing, rfl⟩
-          exact preHomeomorph_symm_generator_related P a validP pairing t
-  | refl =>
-      exact Relation.EqvGen.refl _
-  | symm _ _ _ ih =>
-      exact Relation.EqvGen.symm _ _ ih
-  | trans _ _ _ _ _ ih₁ ih₂ =>
-      exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+  apply eqvGen_map_of_generator_to_eqvGen
+    (preHomeomorph P a validP).symm ?_ hxy
+  intro _ _ hgenerator
+  cases hgenerator with
+  | glue identification hmem t =>
+      rcases hmem with ⟨pairing, rfl⟩
+      exact preHomeomorph_symm_generator_related P a validP pairing t
 
 /-- The selected P1 pre-realization homeomorphism identifies the two generated gluing relations
 exactly. -/
@@ -1954,8 +1938,10 @@ noncomputable def realizationHomeomorph
     (validP : P.IsSurfaceValid) :
     P.PolygonalRealization validP ≃ₜ
       (expand P a).PolygonalRealization (expand_isSurfaceValid P a validP) :=
-  PolygonGluing.realizationCongr (preHomeomorph P a validP)
-    (preHomeomorph_related_iff P a validP)
+  PolygonGluing.realizationCongrOfMaps
+    (preHomeomorph P a validP)
+    (fun _ _ hxy ↦ preHomeomorph_related P a validP hxy)
+    (fun _ _ hxy ↦ preHomeomorph_symm_related P a validP hxy)
 
 /-- Propositional realization-invariance form for the canonical P1 expansion. -/
 theorem polygonallyEquivalent
