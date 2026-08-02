@@ -131,6 +131,91 @@ theorem target_separatorSide :
   · exact Or.inl h.1
   · exact Or.inr h.2
 
+/-- From the first genuine refinement level onward, the synchronized radial
+target splits select the first separator alternative.  A third retained
+mark lies on the second path at both radii, ruling out the alternative which
+would put it on the first outer path. -/
+theorem targetFirstAlternative_of_one_le (hk : 1 ≤ k) :
+    C.targetFirstAlternative := by
+  have hinnerInjective : Injective fun c : LevelAddress k =>
+      (I.levelTargetAnnularCrosscut k c).innerPoint := by
+    intro c d hcd
+    apply I.levelTargetBoundaryPoint_injective k
+    apply (homothetyHomeomorph (radius (k + 1))
+      (radius_pos (k + 1)).ne').injective
+    simpa only [homothetyHomeomorph_apply,
+      JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+      JordanCircle.InitialAngularArcs.levelTargetInnerMark] using hcd
+  have houterInjective : Injective fun c : LevelAddress k =>
+      (I.levelTargetAnnularCrosscut k c).outerPoint := by
+    intro c d hcd
+    apply I.levelTargetBoundaryPoint_injective k
+    apply (homothetyHomeomorph (radius (k + 2))
+      (radius_pos (k + 2)).ne').injective
+    simpa only [homothetyHomeomorph_apply,
+      JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+      JordanCircle.InitialAngularArcs.levelTargetOuterMark] using hcd
+  have hinnerSecond : ∀ c : LevelAddress k, c ≠ a → c ≠ C.next →
+      (I.levelTargetAnnularCrosscut k c).innerPoint ∈
+        range C.targetSeparator.innerSplit.second := by
+    intro c hca hcnext
+    exact C.other_levelTargetPoint_mem_boundarySplit_second
+      (k + 1) c hca hcnext
+  have hcyclic := C.targetSeparator.family_cyclicCompatibility
+    (I.levelTargetAnnularCrosscut k) C.next_ne
+    (disk_strictlyNested (k + 1))
+    (I.pairwise_disjoint_levelTargetAnnularCrosscut k)
+    hinnerInjective houterInjective
+    C.targetDecomposition.first_segment
+    C.targetDecomposition.second_segment hinnerSecond
+  rcases hcyclic with hfirst | hsecond
+  · exact hfirst.1
+  · have hpairCard :
+        ({a, C.next} : Finset (LevelAddress k)).card <
+          (Finset.univ : Finset (LevelAddress k)).card := by
+      rw [Finset.card_univ]
+      calc
+        ({a, C.next} : Finset (LevelAddress k)).card ≤
+            ({C.next} : Finset (LevelAddress k)).card + 1 :=
+          Finset.card_insert_le _ _
+        _ = 2 := by simp
+        _ < Fintype.card (LevelAddress k) :=
+          lt_of_lt_of_le (by norm_num)
+            (three_le_card_levelAddress k hk)
+    obtain ⟨c, _hcuniv, hc⟩ :=
+      Finset.exists_mem_notMem_of_card_lt_card hpairCard
+    have hc' : c ≠ a ∧ c ≠ C.next := by
+      simpa only [Finset.mem_insert, Finset.mem_singleton, not_or] using hc
+    have hcFirst :
+        (I.levelTargetAnnularCrosscut k c).outerPoint ∈
+          range (C.targetBoundarySplit (k + 2)).first := by
+      have h := hsecond.2 c hc'.1 hc'.2
+      change (I.levelTargetAnnularCrosscut k c).outerPoint ∈
+        range (C.targetBoundarySplit (k + 2)).first.symm at h
+      simpa only [Path.symm_range] using h
+    have hcSecond :
+        (I.levelTargetAnnularCrosscut k c).outerPoint ∈
+          range (C.targetBoundarySplit (k + 2)).second :=
+      C.other_levelTargetPoint_mem_boundarySplit_second
+        (k + 2) c hc'.1 hc'.2
+    have hcEnds :
+        (I.levelTargetAnnularCrosscut k c).outerPoint ∈
+          ({(I.levelTargetAnnularCrosscut k a).outerPoint,
+            (I.levelTargetAnnularCrosscut k C.next).outerPoint} :
+              Set Plane) := by
+      have hoverlap := (C.targetBoundarySplit (k + 2)).overlap
+      change range (C.targetBoundarySplit (k + 2)).first ∩
+          range (C.targetBoundarySplit (k + 2)).second =
+        ({(I.levelTargetAnnularCrosscut k a).outerPoint,
+          (I.levelTargetAnnularCrosscut k C.next).outerPoint} :
+            Set Plane) at hoverlap
+      rw [← hoverlap]
+      exact ⟨hcFirst, hcSecond⟩
+    rcases hcEnds with hca | hcnext
+    · exact False.elim (hc'.1 (houterInjective hca))
+    · exact False.elim
+        (hc'.2 (houterInjective (Set.mem_singleton_iff.mp hcnext)))
+
 theorem targetSecondAlternative_of_not_first
     (h : ¬ C.targetFirstAlternative) :
     (targetDisk (k + 1)).interiorRegion ⊆

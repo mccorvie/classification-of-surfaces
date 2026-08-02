@@ -200,6 +200,37 @@ theorem range_attachmentPresentation_shared :
   · rw [attachmentPresentation, dif_neg h]
     rfl
 
+/-- At a genuine refinement level, the shared side of a selected cell is
+the canonical positive successor arc on the inner polygonal boundary. -/
+theorem range_attachmentPresentation_shared_eq_successorBoundarySplit
+    (hk : 1 ≤ k) :
+    range C.attachmentPresentation.shared =
+      range ((I.levelLocalizedInnerMarking k).successorBoundarySplit a).first := by
+  rw [C.range_attachmentPresentation_shared]
+  have hnextPoint :=
+    congrArg
+      (fun c : LevelAddress k =>
+        (I.levelLocalizedAnnularCrosscut k c).innerPoint)
+      C.next_eq
+  let T := C.separator.innerSplit.cast rfl hnextPoint
+  have hTfirst : range T.first = range C.separator.innerSplit.first := by
+    dsimp only [T]
+    exact C.separator.innerSplit.range_cast_first rfl hnextPoint
+  have hTsecond : range T.second = range C.separator.innerSplit.second := by
+    dsimp only [T]
+    exact C.separator.innerSplit.range_cast_second rfl hnextPoint
+  have hother : ∀ c : LevelAddress k, c ≠ a →
+      c ≠ I.levelLocalizedSuccessor k a →
+      (I.levelLocalizedAnnularCrosscut k c).innerPoint ∈ range T.second := by
+    intro c hca hcsuccessor
+    have hcnext : c ≠ C.next := by
+      intro h
+      exact hcsuccessor (h.trans C.next_eq)
+    exact hTsecond.symm ▸ C.inner_second c hca hcnext
+  have hT := (I.levelLocalizedInnerMarking k).ranges_eq_successorBoundarySplit
+    (three_le_card_levelAddress k hk) a T hother
+  exact hTfirst.symm.trans hT.1
+
 /-- The outer-boundary portion selected by this cell, independent of which
 separator-side alternative realizes it. -/
 noncomputable def exposedOuterArc : Set Plane := by
@@ -208,6 +239,44 @@ noncomputable def exposedOuterArc : Set Plane := by
       range C.separator.outerArc₁
     else
       range C.separator.outerArc₀
+
+/-- Reorient the outer complementary split so its first path traverses the
+exposed cell arc from the starting cut to the successor cut. -/
+noncomputable def outerCellBoundarySplit :
+    (I.outerDisk k).toJordanCircle.TwoBoundaryArcPaths
+      (I.levelLocalizedAnnularCrosscut k a).outerPoint
+      (I.levelLocalizedAnnularCrosscut k C.next).outerPoint := by
+  classical
+  exact if C.firstAlternative then C.separator.outerSplit
+    else C.separator.outerSplit.swap
+
+theorem range_outerCellBoundarySplit_first :
+    range C.outerCellBoundarySplit.first = C.exposedOuterArc := by
+  classical
+  by_cases h : C.firstAlternative
+  · rw [outerCellBoundarySplit, if_pos h, exposedOuterArc, if_pos h]
+    exact (Path.symm_range C.separator.outerSplit.first).symm
+  · rw [outerCellBoundarySplit, if_neg h, exposedOuterArc, if_neg h]
+    exact Path.symm_range C.separator.outerSplit.second
+
+/-- The same outer split with its endpoint index rewritten to the canonical
+inner-boundary successor label. -/
+noncomputable def outerCellBoundarySplitToSuccessor :
+    (I.outerDisk k).toJordanCircle.TwoBoundaryArcPaths
+      (I.levelLocalizedAnnularCrosscut k a).outerPoint
+      (I.levelLocalizedAnnularCrosscut k
+        (I.levelLocalizedSuccessor k a)).outerPoint :=
+  C.outerCellBoundarySplit.cast rfl <|
+    congrArg
+      (fun c : LevelAddress k =>
+        (I.levelLocalizedAnnularCrosscut k c).outerPoint)
+      C.next_eq
+
+theorem range_outerCellBoundarySplitToSuccessor_first :
+    range C.outerCellBoundarySplitToSuccessor.first = C.exposedOuterArc := by
+  rw [outerCellBoundarySplitToSuccessor,
+    JordanCircle.TwoBoundaryArcPaths.range_cast_first,
+    C.range_outerCellBoundarySplit_first]
 
 theorem range_attachmentPresentation_exposed :
     range C.attachmentPresentation.exposed =
@@ -232,6 +301,34 @@ theorem other_outerPoint_not_mem_exposedOuterArc :
     exact h.2 c hca hcnext
   · rw [exposedOuterArc, if_neg h]
     exact (C.secondAlternative_of_not_first h).2 c hca hcnext
+
+theorem other_outerPoint_mem_outerCellBoundarySplit_second
+    (c : LevelAddress k) (hca : c ≠ a) (hcnext : c ≠ C.next) :
+    (I.levelLocalizedAnnularCrosscut k c).outerPoint ∈
+      range C.outerCellBoundarySplit.second := by
+  have hcarrier :
+      (I.levelLocalizedAnnularCrosscut k c).outerPoint ∈
+        (I.outerDisk k).toJordanCircle.carrier :=
+    by simpa only [(I.outerDisk k).carrier_toJordanCircle] using
+      (I.levelLocalizedAnnularCrosscut k c).outerPoint_mem
+  rw [← C.outerCellBoundarySplit.cover] at hcarrier
+  rcases hcarrier with hfirst | hsecond
+  · exact False.elim <|
+      C.other_outerPoint_not_mem_exposedOuterArc c hca hcnext <| by
+        rw [← C.range_outerCellBoundarySplit_first]
+        exact hfirst
+  · exact hsecond
+
+theorem other_outerPoint_mem_outerCellBoundarySplitToSuccessor_second
+    (c : LevelAddress k) (hca : c ≠ a)
+    (hcsuccessor : c ≠ I.levelLocalizedSuccessor k a) :
+    (I.levelLocalizedAnnularCrosscut k c).outerPoint ∈
+      range C.outerCellBoundarySplitToSuccessor.second := by
+  rw [outerCellBoundarySplitToSuccessor,
+    JordanCircle.TwoBoundaryArcPaths.range_cast_second]
+  apply C.other_outerPoint_mem_outerCellBoundarySplit_second c hca
+  intro h
+  exact hcsuccessor (h.trans C.next_eq)
 
 theorem exposedOuterArc_subset_outerCarrier :
     C.exposedOuterArc ⊆ (I.outerDisk k).carrier := by
@@ -471,6 +568,52 @@ theorem disjoint_diskInterior {b : LevelAddress k}
     (C.exists_diskCarrier_not_mem_diskCarrier hk D hab)
 
 end LocalizedCutFreeCellData
+
+/-- At a genuine refinement level, the inner shared arcs of distinct
+canonical cells meet only at the two endpoints of the first arc. -/
+theorem localizedCutFreeCell_shared_inter_subset_endpoints
+    (k : ℕ) (hk : 1 ≤ k) {a b : LevelAddress k} (hab : a ≠ b) :
+    range (I.localizedCutFreeCellData k a).attachmentPresentation.shared ∩
+        range (I.localizedCutFreeCellData k b).attachmentPresentation.shared ⊆
+      ({(I.levelLocalizedAnnularCrosscut k a).innerPoint,
+        (I.levelLocalizedAnnularCrosscut k
+          (I.levelLocalizedSuccessor k a)).innerPoint} : Set Plane) := by
+  rw [LocalizedCutFreeCellData.range_attachmentPresentation_shared_eq_successorBoundarySplit
+        (I.localizedCutFreeCellData k a) hk,
+    LocalizedCutFreeCellData.range_attachmentPresentation_shared_eq_successorBoundarySplit
+        (I.localizedCutFreeCellData k b) hk]
+  exact JordanCircle.FiniteMarking.successorBoundarySplit_first_inter_subset_endpoints
+      (I.levelLocalizedInnerMarking k)
+      (three_le_card_levelAddress k hk) hab
+
+/-- At a genuine refinement level, the exposed outer arcs of distinct
+canonical cells meet only at the two endpoints of the first arc. -/
+theorem localizedCutFreeCell_exposedOuterArc_inter_subset_endpoints
+    (k : ℕ) (hk : 1 ≤ k) {a b : LevelAddress k} (hab : a ≠ b) :
+    (I.localizedCutFreeCellData k a).exposedOuterArc ∩
+        (I.localizedCutFreeCellData k b).exposedOuterArc ⊆
+      ({(I.levelLocalizedAnnularCrosscut k a).outerPoint,
+        (I.levelLocalizedAnnularCrosscut k
+          (I.levelLocalizedSuccessor k a)).outerPoint} : Set Plane) := by
+  let T := fun c : LevelAddress k =>
+    (I.localizedCutFreeCellData k c).outerCellBoundarySplitToSuccessor
+  have hinter :=
+    JordanCircle.TwoBoundaryArcPaths.successorSplitFamily_first_inter_subset_endpoints
+        (J := (I.outerDisk k).toJordanCircle)
+        (fun c : LevelAddress k =>
+          (I.levelLocalizedAnnularCrosscut k c).outerPoint)
+        (I.levelLocalizedOuterBoundaryMark_injective k)
+        (I.levelLocalizedSuccessor k)
+        (I.levelLocalizedSuccessor_bijective k).injective
+        (I.levelLocalizedSuccessor_successor_ne k hk)
+        T
+        (fun c d hdc hdsuccessor =>
+          LocalizedCutFreeCellData.other_outerPoint_mem_outerCellBoundarySplitToSuccessor_second
+            (I.localizedCutFreeCellData k c) d hdc hdsuccessor)
+        hab
+  simpa only [T,
+    LocalizedCutFreeCellData.range_outerCellBoundarySplitToSuccessor_first]
+    using hinter
 
 end JordanCircle.InitialAngularArcs
 

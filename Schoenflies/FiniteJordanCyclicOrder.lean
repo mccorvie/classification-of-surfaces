@@ -1,4 +1,5 @@
 import Schoenflies.FiniteJordanArcOrder
+import Schoenflies.TwoBoundaryArcRigidity
 import Mathlib.Data.Finset.Sort
 import Mathlib.Logic.Equiv.Fin.Rotate
 
@@ -482,6 +483,182 @@ theorem exists_successor_twoBoundaryArcPaths (a : ι) :
         constructor <;> linarith
       refine ⟨JordanCurve.Arcs.param theta, ⟨theta, htheta, rfl⟩, ?_⟩
       exact M.angularPoint_angleKey_add_period c
+
+/-- A fixed complementary-arc presentation for each canonical successor
+pair. -/
+noncomputable def successorBoundarySplit (a : ι) :
+    J.TwoBoundaryArcPaths (M.point a) (M.point (M.successor a)) :=
+  Classical.choose (M.exists_successor_twoBoundaryArcPaths a)
+
+/-- Every third mark lies on the complementary side of the canonical
+successor split. -/
+theorem other_point_mem_successorBoundarySplit_second (a : ι) :
+    ∀ c : ι, c ≠ a → c ≠ M.successor a →
+      M.point c ∈ range (M.successorBoundarySplit a).second :=
+  Classical.choose_spec (M.exists_successor_twoBoundaryArcPaths a)
+
+theorem point_mem_successorBoundarySplit_first_iff (a c : ι) :
+    M.point c ∈ range (M.successorBoundarySplit a).first ↔
+      c = a ∨ c = M.successor a := by
+  constructor
+  · intro hc
+    by_cases hca : c = a
+    · exact Or.inl hca
+    by_cases hcsucc : c = M.successor a
+    · exact Or.inr hcsucc
+    have hcSecond := M.other_point_mem_successorBoundarySplit_second
+      a c hca hcsucc
+    have hcEnds : M.point c ∈
+        ({M.point a, M.point (M.successor a)} : Set Plane) := by
+      rw [← (M.successorBoundarySplit a).overlap]
+      exact ⟨hc, hcSecond⟩
+    rcases hcEnds with h | h
+    · exact False.elim (hca (M.point_injective h))
+    · exact False.elim
+        (hcsucc (M.point_injective (Set.mem_singleton_iff.mp h)))
+  · intro h
+    rcases h with h | h
+    · rw [h]
+      exact Path.source_mem_range (M.successorBoundarySplit a).first
+    · rw [h]
+      exact Path.target_mem_range (M.successorBoundarySplit a).first
+
+/-- Any coherently labelled family of endpoint-free successor arcs has
+pairwise overlaps only at endpoints of the first arc.  The paths themselves
+may have been chosen independently. -/
+theorem successorSplitFamily_first_inter_subset_endpoints
+    (hcard : 3 ≤ Fintype.card ι)
+    (T : ∀ a : ι,
+      J.TwoBoundaryArcPaths (M.point a) (M.point (M.successor a)))
+    (hother : ∀ a c : ι, c ≠ a → c ≠ M.successor a →
+      M.point c ∈ range (T a).second)
+    {a b : ι} (hab : a ≠ b) :
+    range (T a).first ∩ range (T b).first ⊆
+      ({M.point a, M.point (M.successor a)} : Set Plane) := by
+  have hpoint (q c : ι) :
+      M.point c ∈ range (T q).first ↔
+        c = q ∨ c = M.successor q := by
+    constructor
+    · intro hc
+      by_cases hcq : c = q
+      · exact Or.inl hcq
+      by_cases hcsucc : c = M.successor q
+      · exact Or.inr hcsucc
+      have hcEnds : M.point c ∈
+          ({M.point q, M.point (M.successor q)} : Set Plane) := by
+        rw [← (T q).overlap]
+        exact ⟨hc, hother q c hcq hcsucc⟩
+      rcases hcEnds with h | h
+      · exact False.elim (hcq (M.point_injective h))
+      · exact False.elim
+          (hcsucc (M.point_injective (Set.mem_singleton_iff.mp h)))
+    · intro h
+      rcases h with h | h
+      · rw [h]
+        exact Path.source_mem_range (T q).first
+      · rw [h]
+        exact Path.target_mem_range (T q).first
+  let Sa := T a
+  let Sb := T b
+  have hSbCarrier : range Sb.first ⊆ J.carrier :=
+    Sb.first_range_subset_carrier
+  have hAvoid : Disjoint
+      (Sb.first '' Set.Ioo (0 : unitInterval) 1)
+      ({M.point a, M.point (M.successor a)} : Set Plane) := by
+    apply Set.disjoint_left.mpr
+    rintro z ⟨t, ht, rfl⟩ (hza | hza)
+    · rcases (hpoint b a).mp ⟨t, hza⟩ with hab' | hab'
+      · have ht0 : t = 0 := Sb.first_injective (by
+          simpa only [Sa, Sb, Sb.first.source, hab'] using hza)
+        exact (ne_of_gt ht.1) ht0
+      · have ht1 : t = 1 := Sb.first_injective (by
+          simpa only [Sa, Sb, Sb.first.target, hab'] using hza)
+        exact (ne_of_lt ht.2) ht1
+    · rw [Set.mem_singleton_iff] at hza
+      rcases (hpoint b (M.successor a)).mp ⟨t, hza⟩ with hlabel | hlabel
+      · have ht0 : t = 0 := Sb.first_injective (by
+          simpa only [Sa, Sb, Sb.first.source, hlabel] using hza)
+        exact (ne_of_gt ht.1) ht0
+      · have ht1 : t = 1 := Sb.first_injective (by
+          simpa only [Sa, Sb, Sb.first.target, hlabel] using hza)
+        exact (ne_of_lt ht.2) ht1
+  have hside := Sa.range_subset_first_or_second_of_interior_disjoint
+    Sb.first hSbCarrier hAvoid
+  have hnotFirst : ¬ range Sb.first ⊆ range Sa.first := by
+    intro hsub
+    by_cases hbnext : b = M.successor a
+    · have hnextNotA : M.successor b ≠ a := by
+        rw [hbnext]
+        exact M.successor_successor_ne hcard a
+      have hnextNotNext : M.successor b ≠ M.successor a := by
+        intro h
+        exact hab (M.successor_injective h).symm
+      have hnotMem : M.point (M.successor b) ∉ range Sa.first :=
+        fun h => (not_or_intro hnextNotA hnextNotNext)
+          ((hpoint a (M.successor b)).mp h)
+      exact hnotMem <| hsub <| Path.target_mem_range Sb.first
+    · have hbNotA : b ≠ a := hab.symm
+      have hnotMem : M.point b ∉ range Sa.first :=
+        fun h => (not_or_intro hbNotA hbnext) ((hpoint a b).mp h)
+      exact hnotMem <| hsub <| Path.source_mem_range Sb.first
+  have hSbSecond : range Sb.first ⊆ range Sa.second :=
+    hside.resolve_left hnotFirst
+  intro z hz
+  change z ∈ range Sa.first ∩ range Sb.first at hz
+  rw [← Sa.overlap]
+  exact ⟨hz.1, hSbSecond hz.2⟩
+
+/-- Distinct canonical positive successor arcs meet only at endpoints of
+the first arc. -/
+theorem successorBoundarySplit_first_inter_subset_endpoints
+    (hcard : 3 ≤ Fintype.card ι) {a b : ι} (hab : a ≠ b) :
+    range (M.successorBoundarySplit a).first ∩
+        range (M.successorBoundarySplit b).first ⊆
+      ({M.point a, M.point (M.successor a)} : Set Plane) := by
+  exact M.successorSplitFamily_first_inter_subset_endpoints hcard
+    M.successorBoundarySplit
+    M.other_point_mem_successorBoundarySplit_second hab
+
+/-- With at least three marks, the condition that every third mark lies on
+the complementary path determines which of the two point-set arcs is the
+successor arc. -/
+theorem ranges_eq_successorBoundarySplit
+    (hcard : 3 ≤ Fintype.card ι) (a : ι)
+    (T : J.TwoBoundaryArcPaths (M.point a) (M.point (M.successor a)))
+    (hother : ∀ c : ι, c ≠ a → c ≠ M.successor a →
+      M.point c ∈ range T.second) :
+    range T.first = range (M.successorBoundarySplit a).first ∧
+      range T.second = range (M.successorBoundarySplit a).second := by
+  classical
+  rcases (M.successorBoundarySplit a).range_pair_eq_or_swap T with h | h
+  · exact h
+  · have hpairCard :
+      ({a, M.successor a} : Finset ι).card <
+        (Finset.univ : Finset ι).card := by
+      rw [Finset.card_univ]
+      calc
+        ({a, M.successor a} : Finset ι).card ≤
+            ({M.successor a} : Finset ι).card + 1 :=
+          Finset.card_insert_le _ _
+        _ = 2 := by simp
+        _ < Fintype.card ι := by omega
+    obtain ⟨c, _hcuniv, hc⟩ :=
+      Finset.exists_mem_notMem_of_card_lt_card hpairCard
+    have hc' : c ≠ a ∧ c ≠ M.successor a := by
+      simpa only [Finset.mem_insert, Finset.mem_singleton, not_or] using hc
+    have hcBoth : M.point c ∈
+        range (M.successorBoundarySplit a).first ∩
+          range (M.successorBoundarySplit a).second := by
+      constructor
+      · rw [← h.2]
+        exact hother c hc'.1 hc'.2
+      · exact M.other_point_mem_successorBoundarySplit_second a c
+          hc'.1 hc'.2
+    rw [(M.successorBoundarySplit a).overlap] at hcBoth
+    rcases hcBoth with hca | hcsucc
+    · exact False.elim (hc'.1 (M.point_injective hca))
+    · exact False.elim (hc'.2
+        (M.point_injective (Set.mem_singleton_iff.mp hcsucc)))
 
 end FiniteMarking
 
