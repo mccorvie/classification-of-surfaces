@@ -1,0 +1,296 @@
+import Schoenflies.MoiseBandCellInteriors
+
+/-!
+# Nonadjacent recursive Moise cells
+
+Adjacent cells meet along their retained-hair seam.  This file proves the
+complementary cyclic incidence statement: cells which are neither equal nor
+cyclic neighbors have disjoint polygonal carriers.  Under the same outward
+orientation hypotheses used for attachments, their filled closed disks are
+then disjoint as well.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
+
+variable {J : JordanCircle} {I : J.InitialAngularArcs}
+  {n : ℕ} {epsilon : ℝ}
+  {F : I.LevelAvoidingJoinFamily n epsilon} {hn : 1 ≤ n}
+  (L : RecursiveInsideCollarStep.Later F hn)
+
+theorem disjoint_parentMoiseCarrier_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hda : d ≠ nextLevelAddress n a)
+    (hadNext : a ≠ nextLevelAddress n d) :
+    Disjoint (L.parentMoiseCarrier a) (L.parentMoiseCarrier d) := by
+  rw [L.parentMoiseCarrier_eq_crosscutRange a,
+    L.parentMoiseCarrier_eq_crosscutRange d]
+  exact F.disjoint_range_synchronizedCrosscutPath_of_nonadjacent
+    a d had hda hadNext
+
+theorem disjoint_parentMoiseCarrier_leftSideCarrier_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hda : d ≠ nextLevelAddress n a)
+    (hadNext : a ≠ nextLevelAddress n d) :
+    Disjoint (L.parentMoiseCarrier a)
+      (L.moiseBandLeftSideCarrier d) := by
+  rw [Set.disjoint_left]
+  intro x hxParent hxSide
+  have hxEq : x = F.leftSynchronizedPoint d := mem_singleton_iff.mp <|
+    L.parentMoiseCarrier_inter_leftSideCarrier_subset a d
+      ⟨hxParent, hxSide⟩
+  have hxD : x ∈ L.parentMoiseCarrier d := by
+    rw [L.parentMoiseCarrier_eq_crosscutRange d, hxEq]
+    exact Path.source_mem_range (F.synchronizedCrosscutPath d)
+  exact Set.disjoint_left.mp
+    (L.disjoint_parentMoiseCarrier_of_nonadjacent a d had hda hadNext)
+    hxParent hxD
+
+theorem disjoint_parentMoiseCarrier_rightSideCarrier_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hda : d ≠ nextLevelAddress n a)
+    (hadNext : a ≠ nextLevelAddress n d) :
+    Disjoint (L.parentMoiseCarrier a)
+      (L.moiseBandRightSideCarrier d) := by
+  rw [Set.disjoint_left]
+  intro x hxParent hxSide
+  have hxEq : x = F.rightSynchronizedPoint d := mem_singleton_iff.mp <|
+    L.parentMoiseCarrier_inter_rightSideCarrier_subset a d
+      ⟨hxParent, hxSide⟩
+  have hxD : x ∈ L.parentMoiseCarrier d := by
+    rw [L.parentMoiseCarrier_eq_crosscutRange d, hxEq]
+    exact Path.target_mem_range (F.synchronizedCrosscutPath d)
+  exact Set.disjoint_left.mp
+    (L.disjoint_parentMoiseCarrier_of_nonadjacent a d had hda hadNext)
+    hxParent hxD
+
+theorem disjoint_leftSideCarrier_childMoiseCarrier_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hadNext : a ≠ nextLevelAddress n d) :
+    Disjoint (L.moiseBandLeftSideCarrier a)
+      (L.childMoiseCarrier d) := by
+  have hdPrev : d ≠ prevLevelAddress n a := by
+    intro h
+    apply hadNext
+    rw [h, nextLevelAddress_prevLevelAddress]
+  exact
+    (L.disjoint_parentLeftHair_childMoiseCarrier_of_nonincident
+      a d had hdPrev).mono
+        (L.moiseBandLeftSideCarrier_subset_leftHairCarrier a)
+        Set.Subset.rfl
+
+theorem disjoint_childMoiseCarrier_rightSideCarrier_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hadNext : a ≠ nextLevelAddress n d) :
+    Disjoint (L.childMoiseCarrier a)
+      (L.moiseBandRightSideCarrier d) :=
+  (L.disjoint_childMoiseCarrier_parentRightHair_of_nonincident
+    a d had hadNext).mono Set.Subset.rfl
+      (L.moiseBandRightSideCarrier_subset_rightHairCarrier d)
+
+/-- Complete boundary carriers of cyclically nonadjacent cells are disjoint.
+The sixteen cases are the four geometric carrier pieces on either side. -/
+theorem disjoint_moiseBandCarrier_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hda : d ≠ nextLevelAddress n a)
+    (hadNext : a ≠ nextLevelAddress n d) :
+    Disjoint (L.moiseBandCarrier a) (L.moiseBandCarrier d) := by
+  rw [Set.disjoint_left]
+  intro x hxa hxd
+  rw [L.moiseBandCarrier_eq_parent_leftSide_child_rightSide a] at hxa
+  rw [L.moiseBandCarrier_eq_parent_leftSide_child_rightSide d] at hxd
+  rcases hxa with hxP | hxL | hxC | hxR <;>
+    rcases hxd with hyP | hyL | hyC | hyR
+  · exact Set.disjoint_left.mp
+      (L.disjoint_parentMoiseCarrier_of_nonadjacent
+        a d had hda hadNext) hxP hyP
+  · exact Set.disjoint_left.mp
+      (L.disjoint_parentMoiseCarrier_leftSideCarrier_of_nonadjacent
+        a d had hda hadNext) hxP hyL
+  · exact Set.disjoint_left.mp
+      (L.disjoint_parentMoiseCarrier_childMoiseCarrier a d) hxP hyC
+  · exact Set.disjoint_left.mp
+      (L.disjoint_parentMoiseCarrier_rightSideCarrier_of_nonadjacent
+        a d had hda hadNext) hxP hyR
+  · exact Set.disjoint_left.mp
+      (L.disjoint_parentMoiseCarrier_leftSideCarrier_of_nonadjacent
+        d a had.symm hadNext hda).symm hxL hyP
+  · exact Set.disjoint_left.mp
+      ((I.disjoint_levelLeftHairs_of_ne a d had).mono
+        (L.moiseBandLeftSideCarrier_subset_leftHairCarrier a)
+        (L.moiseBandLeftSideCarrier_subset_leftHairCarrier d)) hxL hyL
+  · exact Set.disjoint_left.mp
+      (L.disjoint_leftSideCarrier_childMoiseCarrier_of_nonadjacent
+        a d had hadNext) hxL hyC
+  · exact Set.disjoint_left.mp
+      ((I.disjoint_levelRightHair_levelLeftHair_of_ne_next d a
+        hadNext).symm.mono
+          (L.moiseBandLeftSideCarrier_subset_leftHairCarrier a)
+          (L.moiseBandRightSideCarrier_subset_rightHairCarrier d)) hxL hyR
+  · exact Set.disjoint_left.mp
+      (L.disjoint_parentMoiseCarrier_childMoiseCarrier d a).symm hxC hyP
+  · exact Set.disjoint_left.mp
+      (L.disjoint_leftSideCarrier_childMoiseCarrier_of_nonadjacent
+        d a had.symm hda).symm hxC hyL
+  · exact Set.disjoint_left.mp
+      (L.childMoiseCarrier_disjoint_of_ne had) hxC hyC
+  · exact Set.disjoint_left.mp
+      (L.disjoint_childMoiseCarrier_rightSideCarrier_of_nonadjacent
+        a d had hadNext) hxC hyR
+  · exact Set.disjoint_left.mp
+      (L.disjoint_parentMoiseCarrier_rightSideCarrier_of_nonadjacent
+        d a had.symm hadNext hda).symm hxR hyP
+  · exact Set.disjoint_left.mp
+      ((I.disjoint_levelRightHair_levelLeftHair_of_ne_next a d hda).mono
+        (L.moiseBandRightSideCarrier_subset_rightHairCarrier a)
+        (L.moiseBandLeftSideCarrier_subset_leftHairCarrier d)) hxR hyL
+  · exact Set.disjoint_left.mp
+      (L.disjoint_childMoiseCarrier_rightSideCarrier_of_nonadjacent
+        d a had.symm hda).symm hxR hyC
+  · exact Set.disjoint_left.mp
+      ((I.disjoint_levelRightHairs_of_ne a d had).mono
+        (L.moiseBandRightSideCarrier_subset_rightHairCarrier a)
+        (L.moiseBandRightSideCarrier_subset_rightHairCarrier d)) hxR hyR
+
+/-- The old-crosscut midpoint of one cell lies on the exterior side of any
+nonadjacent outward-oriented cell. -/
+theorem exists_cellCarrier_mem_exterior_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hda : d ≠ nextLevelAddress n a)
+    (hadNext : a ≠ nextLevelAddress n d)
+    (hd : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle d).closedRegion =
+      range (F.synchronizedCrosscutPath d)) :
+    ∃ z ∈ (L.moiseBandPolygonalCircle a).carrier,
+      z ∈ (L.moiseBandPolygonalCircle d).exteriorRegion := by
+  let z := L.crosscutMidpoint a
+  let Q := L.moiseBandPolygonalCircle d
+  have hzParent := L.crosscutMidpoint_mem_parentClosedRegion a
+  have hzRangeA : z ∈ range (F.synchronizedCrosscutPath a) :=
+    ⟨⟨1 / 2, by norm_num⟩, rfl⟩
+  have hzNotClosed : z ∉ Q.closedRegion := by
+    intro hzQ
+    have hzRangeD : z ∈ range (F.synchronizedCrosscutPath d) := by
+      rw [← hd]
+      exact ⟨hzParent, hzQ⟩
+    exact Set.disjoint_left.mp
+      (F.disjoint_range_synchronizedCrosscutPath_of_nonadjacent
+        a d had hda hadNext) hzRangeA hzRangeD
+  have hzNotCarrier : z ∉ Q.carrier := by
+    intro hzQ
+    apply hzNotClosed
+    rw [Q.closedRegion_eq_union]
+    exact Or.inr hzQ
+  have hzNotInterior : z ∉ Q.interiorRegion := by
+    intro hzQ
+    apply hzNotClosed
+    rw [Q.closedRegion_eq_union]
+    exact Or.inl hzQ
+  refine ⟨z, L.crosscutMidpoint_mem_cellCarrier a, ?_⟩
+  have hzComplement : z ∈ Q.carrierᶜ := hzNotCarrier
+  rw [← Q.interior_union_exterior] at hzComplement
+  exact hzComplement.resolve_left hzNotInterior
+
+theorem cellCarrier_disjoint_interior_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hda : d ≠ nextLevelAddress n a)
+    (hadNext : a ≠ nextLevelAddress n d)
+    (hd : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle d).closedRegion =
+      range (F.synchronizedCrosscutPath d)) :
+    Disjoint (L.moiseBandPolygonalCircle a).carrier
+      (L.moiseBandPolygonalCircle d).interiorRegion := by
+  let P := L.moiseBandPolygonalCircle a
+  let Q := L.moiseBandPolygonalCircle d
+  have hcarriers : Disjoint P.carrier Q.carrier := by
+    simpa only [P, Q, L.moiseBandPolygonalCircle_carrier] using
+      L.disjoint_moiseBandCarrier_of_nonadjacent a d had hda hadNext
+  obtain ⟨z, hzP, hzExterior⟩ :=
+    L.exists_cellCarrier_mem_exterior_of_nonadjacent
+      a d had hda hadNext hd
+  have hMaps : MapsTo id P.carrier Q.exteriorRegion :=
+    Q.mapsTo_exteriorRegion_of_isPreconnected
+      P.isConnected_carrier.isPreconnected continuous_id.continuousOn
+      (by
+        intro x hxP hxQ
+        exact Set.disjoint_left.mp hcarriers hxP hxQ)
+      ⟨z, hzP, hzExterior⟩
+  rw [Set.disjoint_left]
+  intro x hxP hxInterior
+  exact Set.disjoint_left.mp Q.disjoint_interior_exterior
+    hxInterior (hMaps hxP)
+
+/-- Outward-oriented nonadjacent cells have disjoint open disks. -/
+theorem disjoint_cellInterior_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hda : d ≠ nextLevelAddress n a)
+    (hadNext : a ≠ nextLevelAddress n d)
+    (ha : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a))
+    (hd : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle d).closedRegion =
+      range (F.synchronizedCrosscutPath d)) :
+    Disjoint (L.moiseBandPolygonalCircle a).interiorRegion
+      (L.moiseBandPolygonalCircle d).interiorRegion := by
+  apply (L.moiseBandPolygonalCircle a)
+    |>.disjoint_interiorRegion_of_boundary_avoidance
+      (L.moiseBandPolygonalCircle d)
+  · exact L.cellCarrier_disjoint_interior_of_nonadjacent
+      a d had hda hadNext hd
+  · exact L.cellCarrier_disjoint_interior_of_nonadjacent
+      d a had.symm hadNext hda ha
+  · obtain ⟨z, hzD, hzExterior⟩ :=
+      L.exists_cellCarrier_mem_exterior_of_nonadjacent
+        d a had.symm hadNext hda ha
+    exact ⟨z, hzD, fun hzA =>
+      Set.disjoint_left.mp
+        (L.moiseBandPolygonalCircle a).disjoint_carrier_exteriorRegion
+        hzA hzExterior⟩
+
+/-- Exact filled incidence for nonadjacent cells: their closed polygonal
+disks are disjoint. -/
+theorem disjoint_cellClosedRegion_of_nonadjacent
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hda : d ≠ nextLevelAddress n a)
+    (hadNext : a ≠ nextLevelAddress n d)
+    (ha : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a))
+    (hd : (F.synchronizedPolygonalCircle hn).closedRegion ∩
+        (L.moiseBandPolygonalCircle d).closedRegion =
+      range (F.synchronizedCrosscutPath d)) :
+    Disjoint (L.moiseBandPolygonalCircle a).closedRegion
+      (L.moiseBandPolygonalCircle d).closedRegion := by
+  let P := L.moiseBandPolygonalCircle a
+  let Q := L.moiseBandPolygonalCircle d
+  have hII := L.disjoint_cellInterior_of_nonadjacent
+    a d had hda hadNext ha hd
+  have hPQ := L.cellCarrier_disjoint_interior_of_nonadjacent
+    a d had hda hadNext hd
+  have hQP := L.cellCarrier_disjoint_interior_of_nonadjacent
+    d a had.symm hadNext hda ha
+  have hCC : Disjoint P.carrier Q.carrier := by
+    simpa only [P, Q, L.moiseBandPolygonalCircle_carrier] using
+      L.disjoint_moiseBandCarrier_of_nonadjacent a d had hda hadNext
+  rw [Set.disjoint_left]
+  intro x hxP hxQ
+  rw [P.closedRegion_eq_union] at hxP
+  rw [Q.closedRegion_eq_union] at hxQ
+  rcases hxP with hxPI | hxPC <;> rcases hxQ with hxQI | hxQC
+  · exact Set.disjoint_left.mp hII hxPI hxQI
+  · exact Set.disjoint_left.mp hQP hxQC hxPI
+  · exact Set.disjoint_left.mp hPQ hxPC hxQI
+  · exact Set.disjoint_left.mp hCC hxPC hxQC
+
+end JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
+
+end
+
+end Schoenflies

@@ -1,0 +1,229 @@
+import Schoenflies.FiniteAvoidingCrosscuts
+import Schoenflies.LevelGenerationMarks
+import Schoenflies.PolygonalSubpathExtraction
+
+/-!
+# Pairwise-disjoint crosscuts at one finite subdivision level
+
+Apply the greedy avoidance theorem to every binary descendant at a fixed
+level.  The resulting paths lie in prescribed metric neighborhoods of their
+boundary arcs and have pairwise-disjoint ranges.  We also trim each path at
+its retained endpoint hairs while preserving both pairwise disjointness and
+an explicit finite broken-line carrier.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+namespace JordanCircle
+namespace InitialAngularArcs
+
+variable {J : JordanCircle}
+
+/-- The number of binary descendants of the two initial arcs at depth `n`. -/
+noncomputable abbrev levelAddressCount (n : ℕ) : ℕ :=
+  Fintype.card (LevelAddress n)
+
+/-- A fixed enumeration of all level addresses.  Its order is irrelevant for
+the greedy construction; cyclic order is imposed only when cells are glued. -/
+noncomputable def levelAddressAt (n : ℕ) :
+    Fin (levelAddressCount n) → LevelAddress n :=
+  (Fintype.equivFin (LevelAddress n)).symm
+
+/-- The inverse index of a level address in the fixed enumeration. -/
+noncomputable def levelIndexOf (n : ℕ) :
+    LevelAddress n → Fin (levelAddressCount n) :=
+  Fintype.equivFin (LevelAddress n)
+
+@[simp] theorem levelAddressAt_levelIndexOf (n : ℕ) (a : LevelAddress n) :
+    levelAddressAt n (levelIndexOf n a) = a :=
+  (Fintype.equivFin (LevelAddress n)).symm_apply_apply a
+
+@[simp] theorem levelIndexOf_levelAddressAt (n : ℕ)
+    (i : Fin (levelAddressCount n)) :
+    levelIndexOf n (levelAddressAt n i) = i :=
+  (Fintype.equivFin (LevelAddress n)).apply_symm_apply i
+
+theorem levelIndexOf_injective (n : ℕ) :
+    Injective (levelIndexOf n) :=
+  (Fintype.equivFin (LevelAddress n)).injective
+
+theorem levelAddressAt_injective (n : ℕ) :
+    Injective (levelAddressAt n) :=
+  (Fintype.equivFin (LevelAddress n)).symm.injective
+
+theorem levelAddressAt_surjective (n : ℕ) :
+    Surjective (levelAddressAt n) :=
+  (Fintype.equivFin (LevelAddress n)).symm.surjective
+
+/-- The specialization of a finite avoiding family to every arc at one
+binary subdivision level, with no initial obstacle. -/
+noncomputable abbrev LevelAvoidingJoinFamily
+    (I : J.InitialAngularArcs) (n : ℕ) (epsilon : ℝ) :=
+  J.FiniteAvoidingJoinFamily (levelAddressCount n)
+    (fun i => I.levelArc (levelAddressAt n i))
+    (fun i => I.levelLeftHair (levelAddressAt n i))
+    (fun i => I.levelRightHair (levelAddressAt n i))
+    (fun i => thickening epsilon
+        (I.levelArc (levelAddressAt n i)).curveArcPlane ∩
+      (I.nonEndpointHairCarrier (levelAddressAt n i))ᶜ)
+    ∅
+
+/-- All arcs at a fixed level admit simultaneously chosen, pairwise-disjoint
+inside PL crosscuts in their prescribed metric neighborhoods. -/
+theorem nonempty_levelAvoidingJoinFamily
+    (I : J.InitialAngularArcs) (n : ℕ) {epsilon : ℝ}
+    (hepsilon : 0 < epsilon) :
+    Nonempty (I.LevelAvoidingJoinFamily n epsilon) := by
+  apply J.nonempty_finiteAvoidingJoinFamily
+  · intro i
+    exact I.disjoint_levelEndpointHairs (levelAddressAt n i)
+  · intro i
+    exact Metric.isOpen_thickening.inter
+      (I.isClosed_nonEndpointHairCarrier
+        (levelAddressAt n i)).isOpen_compl
+  · intro i
+    intro x hx
+    exact ⟨self_subset_thickening hepsilon _ hx,
+      I.curveArcPlane_subset_compl_nonEndpointHairCarrier
+        (levelAddressAt n i) hx⟩
+  · exact isClosed_empty
+  · intro i
+    exact empty_disjoint _
+
+namespace LevelAvoidingJoinFamily
+
+variable {I : J.InitialAngularArcs} {n : ℕ} {epsilon : ℝ}
+  (F : I.LevelAvoidingJoinFamily n epsilon)
+
+/-- The original path, recovered from the exact source line retained by the
+finite greedy construction. -/
+noncomputable def sourcePath (i : Fin (levelAddressCount n)) :
+    Path (F.rightPoint i) (F.leftPoint i) :=
+  (F.sourceLine i).toPath (F.endpoint_ne i)
+
+theorem sourcePath_eq_path (i : Fin (levelAddressCount n)) :
+    F.sourcePath i = F.path i :=
+  (F.path_eq_sourceLine i).symm
+
+theorem sourcePath_injective (i : Fin (levelAddressCount n)) :
+    Injective (F.sourcePath i) :=
+  (F.sourceLine i).toPath_injective (F.endpoint_ne i)
+
+/-- Trim the selected line at its last right-hair visit and its first later
+left-hair visit. -/
+noncomputable def hairTrimData (i : Fin (levelAddressCount n)) :
+    Path.HairTrimData (F.sourcePath i)
+      (I.levelRightHair (levelAddressAt n i))
+      (I.levelLeftHair (levelAddressAt n i)) :=
+  Classical.choice <| Path.nonempty_hairTrimData (F.sourcePath i)
+    (I.levelRightHair (levelAddressAt n i))
+    (I.levelLeftHair (levelAddressAt n i))
+    (I.disjoint_levelEndpointHairs (levelAddressAt n i)).symm
+    (F.rightPoint_mem i) (F.leftPoint_mem i)
+
+noncomputable def trimmedRightPoint (i : Fin (levelAddressCount n)) : Plane :=
+  F.sourcePath i (F.hairTrimData i).rightTime
+
+noncomputable def trimmedLeftPoint (i : Fin (levelAddressCount n)) : Plane :=
+  F.sourcePath i (F.hairTrimData i).leftTime
+
+noncomputable def trimmedPath (i : Fin (levelAddressCount n)) :
+    Path (F.trimmedRightPoint i) (F.trimmedLeftPoint i) :=
+  (F.hairTrimData i).trimmedPath
+
+theorem trimmedPath_injective (i : Fin (levelAddressCount n)) :
+    Injective (F.trimmedPath i) :=
+  (F.hairTrimData i).trimmedPath_injective (F.sourcePath_injective i)
+
+theorem range_trimmedPath_subset_path (i : Fin (levelAddressCount n)) :
+    range (F.trimmedPath i) ⊆ range (F.path i) := by
+  rw [← F.sourcePath_eq_path i]
+  exact (F.hairTrimData i).range_trimmedPath_subset (Subset.rfl)
+
+theorem range_trimmedPath_subset_controlled
+    (i : Fin (levelAddressCount n)) :
+    range (F.trimmedPath i) ⊆
+      J.inside ∩ thickening epsilon
+        (I.levelArc (levelAddressAt n i)).curveArcPlane := by
+  intro x hx
+  have hxPath : x ∈ range (F.path i) :=
+    F.range_trimmedPath_subset_path i hx
+  have hxCarrier : x ∈ (F.carrierLine i).data.segmentCarrier := by
+    rw [F.segmentCarrier_carrierLine_eq_range i]
+    exact hxPath
+  exact ⟨JordanCircle.BrokenLineData.segmentCarrier_subset
+      (F.carrierLine i).data hxCarrier,
+    (F.controlled i hxPath).1⟩
+
+/-- Every selected path avoids every retained generation hair not incident
+to its own level arc. -/
+theorem range_path_disjoint_nonEndpointHairCarrier
+    (i : Fin (levelAddressCount n)) :
+    Disjoint (range (F.path i))
+      (I.nonEndpointHairCarrier (levelAddressAt n i)) := by
+  rw [Set.disjoint_left]
+  intro x hxPath hxHair
+  exact (F.controlled i hxPath).2 hxHair
+
+theorem range_trimmedPath_disjoint_nonEndpointHairCarrier
+    (i : Fin (levelAddressCount n)) :
+    Disjoint (range (F.trimmedPath i))
+      (I.nonEndpointHairCarrier (levelAddressAt n i)) :=
+  (F.range_path_disjoint_nonEndpointHairCarrier i).mono_left
+    (F.range_trimmedPath_subset_path i)
+
+/-- Trimming preserves the pairwise disjointness obtained by the greedy
+construction. -/
+theorem pairwise_disjoint_trimmedPath : Pairwise fun i j =>
+    Disjoint (range (F.trimmedPath i)) (range (F.trimmedPath j)) := by
+  intro i j hij
+  exact (F.pairwise_disjoint hij).mono
+    (F.range_trimmedPath_subset_path i)
+    (F.range_trimmedPath_subset_path j)
+
+theorem range_trimmedPath_inter_rightHair
+    (i : Fin (levelAddressCount n)) :
+    range (F.trimmedPath i) ∩
+        (I.levelRightHair (levelAddressAt n i)).carrier =
+      {F.trimmedRightPoint i} :=
+  (F.hairTrimData i).range_trimmedPath_inter_rightHair
+
+theorem range_trimmedPath_inter_leftHair
+    (i : Fin (levelAddressCount n)) :
+    range (F.trimmedPath i) ∩
+        (I.levelLeftHair (levelAddressAt n i)).carrier =
+      {F.trimmedLeftPoint i} :=
+  (F.hairTrimData i).range_trimmedPath_inter_leftHair
+
+/-- The retained subpath is still explicitly polygonal. -/
+noncomputable def trimmedLine (i : Fin (levelAddressCount n)) :
+    SimpleBrokenLine (range (F.trimmedPath i))
+      (F.trimmedRightPoint i) (F.trimmedLeftPoint i) := by
+  exact (F.sourceLine i).hairTrimmedSimpleBrokenLine
+    (F.endpoint_ne i) (F.hairTrimData i)
+
+theorem trimmedEndpoints_ne (i : Fin (levelAddressCount n)) :
+    F.trimmedRightPoint i ≠ F.trimmedLeftPoint i := by
+  exact (F.sourceLine i).hairTrimmedEndpoints_ne
+    (F.endpoint_ne i) (F.hairTrimData i)
+
+/-- The loop-erased finite line extracted from an already injective trimmed
+path still covers that whole path. -/
+theorem range_trimmedLine_toPath (i : Fin (levelAddressCount n)) :
+    range ((F.trimmedLine i).toPath (F.trimmedEndpoints_ne i)) =
+      range (F.trimmedPath i) := by
+  exact Path.range_eq_of_subset_of_injective
+    (F.trimmedPath i)
+    ((F.trimmedLine i).toPath (F.trimmedEndpoints_ne i))
+    (F.trimmedPath_injective i)
+    ((F.trimmedLine i).range_toPath_subset (F.trimmedEndpoints_ne i))
+
+end LevelAvoidingJoinFamily
+
+end InitialAngularArcs
+end JordanCircle
+
+end Schoenflies

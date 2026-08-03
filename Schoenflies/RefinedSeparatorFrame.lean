@@ -1,0 +1,89 @@
+import Schoenflies.ReturnPathCrossings
+import ClassificationOfSurfaces.Moise.PolygonalCrosscut
+
+/-!
+# Refining a separator frame at all return-path crossings
+
+Moise's cyclic pairing argument is most convenient when every intersection of
+the separator polygon with the return path is a polygon vertex.  The Chapter 2
+polygon-refinement API supplies exactly this operation without changing the
+polygon's carrier or either complementary region.
+-/
+
+namespace Schoenflies
+
+open Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+namespace JordanCircle
+namespace AccessibleAngularArc
+
+variable {J : JordanCircle}
+
+/-- Refine a polygonal separator at its finitely many return-path crossings.
+The geometric carrier and its inside/outside regions are unchanged, and every
+crossing point is a vertex in the refined cyclic presentation. -/
+theorem exists_intersectionVertexRefinement
+    (A : J.AccessibleAngularArc) (Q : PolygonalCircle)
+    (hfinite : (Q.carrier ∩ range A.returnPath).Finite) :
+    ∃ K : PolygonalCircle,
+      K.carrier = Q.carrier ∧
+      K.interiorRegion = Q.interiorRegion ∧
+      K.exteriorRegion = Q.exteriorRegion ∧
+      ∀ p ∈ Q.carrier ∩ range A.returnPath, K.IsVertexPoint p := by
+  classical
+  let F : Finset Plane := hfinite.toFinset
+  have hF : ∀ p ∈ F, p ∈ Q.carrier := by
+    intro p hp
+    have hp' : p ∈ Q.carrier ∩ range A.returnPath := by
+      simpa only [F, Set.Finite.mem_toFinset] using hp
+    exact hp'.1
+  obtain ⟨K, hcarrier, hvertices⟩ := Q.exists_refinement_vertices F hF
+  have hregions := PolygonalCircle.regions_eq_of_carrier_eq hcarrier
+  refine ⟨K, hcarrier, hregions.1, hregions.2, ?_⟩
+  intro p hp
+  apply hvertices p
+  simpa only [F, Set.Finite.mem_toFinset]
+
+/-- After all return-path intersections have been inserted as vertices, the
+relative interior of every refined polygon edge avoids the entire auxiliary
+Jordan circle.  The wild boundary arc cannot meet the frame because it lies
+strictly in the polygon interior; any remaining intersection is a return-path
+crossing and hence a vertex, which cannot lie in an open edge. -/
+theorem refined_openEdge_disjoint_auxiliaryCarrier
+    (A : J.AccessibleAngularArc) (Q K : PolygonalCircle)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    (hcarrier : K.carrier = Q.carrier)
+    (hvertices : ∀ p ∈ Q.carrier ∩ range A.returnPath,
+      K.IsVertexPoint p)
+    (i : ZMod K.n) :
+    Disjoint (openSegment ℝ (K.vertex i) (K.vertex (i + 1)))
+      A.auxiliaryJordanCircle.carrier := by
+  rw [Set.disjoint_left]
+  intro p hpOpen hpAuxiliary
+  have hpEdge : p ∈ K.edgeSegment i := by
+    change p ∈ segment ℝ (K.vertex i) (K.vertex (i + 1))
+    exact openSegment_subset_segment ℝ _ _ hpOpen
+  have hpKCarrier : p ∈ K.carrier := K.edgeSegment_subset_carrier i hpEdge
+  have hpQCarrier : p ∈ Q.carrier := by
+    rw [← hcarrier]
+    exact hpKCarrier
+  rw [A.carrier_auxiliaryJordanCircle] at hpAuxiliary
+  rcases hpAuxiliary with hpArc | hpReturn
+  · have hpInterior := hArcInside hpArc
+    have hpComplement : p ∈ Q.carrierᶜ := by
+      rw [← Q.interior_union_exterior]
+      exact Or.inl hpInterior
+    exact hpComplement hpQCarrier
+  · have hpVertex : K.IsVertexPoint p :=
+      hvertices p ⟨hpQCarrier, hpReturn⟩
+    rcases (hpVertex.mem_edgeSegment_iff i).mp hpEdge with hpLeft | hpRight
+    · subst p
+      exact K.adjacent_ne i ((left_mem_openSegment_iff.mp hpOpen))
+    · subst p
+      exact K.adjacent_ne i ((right_mem_openSegment_iff.mp hpOpen))
+
+end AccessibleAngularArc
+end JordanCircle
+
+end Schoenflies

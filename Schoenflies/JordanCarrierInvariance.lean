@@ -1,0 +1,115 @@
+import Schoenflies.JordanRegions
+
+/-!
+# Complementary regions depend only on the Jordan carrier
+
+The Jordan-curve input is parametrized, while polygonal cell fillings are
+indexed by a finite polygon having the same point-set carrier.  The bounded
+and unbounded complementary components are independent of that choice of
+parametrization.
+-/
+
+namespace Schoenflies
+
+open Set Function Bornology
+
+namespace JordanCircle
+
+/-- A Jordan-circle carrier cannot be a proper subset of another
+Jordan-circle carrier.  The bounded component of the smaller curve lies in
+the bounded component of the larger one; connectedness of the latter forces
+the reverse inclusion of bounded components, and equality of frontiers then
+gives equality of carriers. -/
+theorem carrier_eq_of_subset_carrier (J K : JordanCircle)
+    (hcarrier : K.carrier ⊆ J.carrier) :
+    K.carrier = J.carrier := by
+  have hKinsideJ : K.inside ⊆ J.inside :=
+    J.inside_subset_inside_of_carrier_subset K <| by
+      intro x hx
+      exact Or.inr (hcarrier hx)
+  have hJinsideComplK : J.inside ⊆ K.carrierᶜ := by
+    intro x hxInside hxK
+    exact J.inside_subset_compl hxInside (hcarrier hxK)
+  have hJinsideCover : J.inside ⊆ K.inside ∪ K.outside := by
+    rw [K.inside_union_outside]
+    exact hJinsideComplK
+  rcases J.inside_isConnected.isPreconnected.subset_or_subset
+      K.inside_isOpen K.outside_isOpen K.inside_disjoint_outside
+      hJinsideCover with hJinsideK | hJoutsideK
+  · rw [← K.frontier_inside, Set.Subset.antisymm hKinsideJ hJinsideK,
+      J.frontier_inside]
+  · exact False.elim <| Set.disjoint_left.mp K.inside_disjoint_outside
+      K.insidePoint_mem_inside
+      (hJoutsideK (hKinsideJ K.insidePoint_mem_inside))
+
+/-- A continuous injective image of one Jordan carrier inside another Jordan
+carrier is automatically onto the latter. -/
+theorem range_eq_carrier_of_continuous_injective
+    (J K : JordanCircle) (f : J.carrier → Plane)
+    (hcontinuous : Continuous f) (hinjective : Function.Injective f)
+    (hinto : ∀ x, f x ∈ K.carrier) :
+    Set.range f = K.carrier := by
+  let L : JordanCircle := {
+    parametrization := fun q => f (J.carrierHomeomorph q)
+    continuous := hcontinuous.comp J.carrierHomeomorph.continuous
+    injective := hinjective.comp J.carrierHomeomorph.injective }
+  have hLcarrier : L.carrier = Set.range f := by
+    apply Set.Subset.antisymm
+    · rintro x ⟨q, rfl⟩
+      exact ⟨J.carrierHomeomorph q, rfl⟩
+    · rintro x ⟨y, rfl⟩
+      refine ⟨J.carrierHomeomorph.symm y, ?_⟩
+      change f (J.carrierHomeomorph (J.carrierHomeomorph.symm y)) = f y
+      rw [J.carrierHomeomorph.apply_symm_apply]
+  have hsubset : L.carrier ⊆ K.carrier := by
+    rw [hLcarrier]
+    rintro _ ⟨x, rfl⟩
+    exact hinto x
+  exact hLcarrier.symm.trans (K.carrier_eq_of_subset_carrier L hsubset)
+
+/-- Two Jordan circles with the same carrier have the same bounded region. -/
+theorem inside_eq_of_carrier_eq (J K : JordanCircle)
+    (hcarrier : J.carrier = K.carrier) :
+    J.inside = K.inside := by
+  have hx : J.insidePoint ∈ K.carrierᶜ := by
+    rw [← hcarrier]
+    exact J.insidePoint_mem
+  have hbounded :
+      IsBounded (connectedComponentIn K.carrierᶜ J.insidePoint) := by
+    rw [← hcarrier]
+    exact J.inside_bounded
+  have hcomponents :=
+    JordanCurve.step_B_bounded_unique JordanCurve.Brouwer.brouwerFPT
+      K.continuous K.injective J.insidePoint hx
+      K.insidePoint K.insidePoint_mem hbounded K.inside_bounded
+  change connectedComponentIn J.carrierᶜ J.insidePoint =
+    connectedComponentIn K.carrierᶜ K.insidePoint
+  rw [hcarrier]
+  exact hcomponents
+
+/-- Two Jordan circles with the same carrier have the same unbounded region. -/
+theorem outside_eq_of_carrier_eq (J K : JordanCircle)
+    (hcarrier : J.carrier = K.carrier) :
+    J.outside = K.outside := by
+  have hinside := J.inside_eq_of_carrier_eq K hcarrier
+  apply Set.Subset.antisymm
+  · intro x hxJ
+    have hxCompl : x ∈ K.carrierᶜ := by
+      rw [← hcarrier]
+      exact J.outside_subset_compl hxJ
+    rcases K.mem_inside_or_outside hxCompl with hxK | hxK
+    · exact False.elim <| Set.disjoint_left.mp J.inside_disjoint_outside
+        (hinside ▸ hxK) hxJ
+    · exact hxK
+  · intro x hxK
+    have hxCompl : x ∈ J.carrierᶜ := by
+      rw [hcarrier]
+      exact K.outside_subset_compl hxK
+    rcases J.mem_inside_or_outside hxCompl with hxJ | hxJ
+    · exact False.elim <| Set.disjoint_left.mp K.inside_disjoint_outside
+        (hinside ▸ hxJ) hxK
+    · exact hxJ
+
+end JordanCircle
+
+end Schoenflies

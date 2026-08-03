@@ -1,0 +1,755 @@
+import Schoenflies.MoiseBandCellTopology
+import Schoenflies.JordanRegionRecognition
+import Schoenflies.PolygonalJordanNesting
+
+/-!
+# The finite filled region between two recursive Moise collars
+
+At one recursive step, Moise's prospective next disk is assembled from the
+old synchronized polygonal disk and the finitely many polygonal band cells.
+This file packages that union and establishes the point-set facts which do
+not yet use cancellation of the internal polygonal seams.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
+
+variable {J : JordanCircle} {I : J.InitialAngularArcs}
+  {n : ℕ} {epsilon : ℝ}
+  {F : I.LevelAvoidingJoinFamily n epsilon} {hn : 1 ≤ n}
+  (L : RecursiveInsideCollarStep.Later F hn)
+
+private abbrev parentDisk (_L : RecursiveInsideCollarStep.Later F hn) :
+    PolygonalCircle :=
+  F.synchronizedPolygonalCircle hn
+
+private abbrev childDisk : PolygonalCircle :=
+  L.next.family.forgetObstacle.synchronizedPolygonalCircle
+    L.next.one_le_level
+
+/-- The finite union of all closed polygonal cells in one recursive band. -/
+def moiseBandClosedCells : Set Plane :=
+  ⋃ a : LevelAddress n, (L.moiseBandPolygonalCircle a).closedRegion
+
+/-- The old closed disk together with all cells in the recursive band. -/
+def moiseFilledDisk : Set Plane :=
+  L.parentDisk.closedRegion ∪ L.moiseBandClosedCells
+
+theorem isCompact_moiseBandClosedCells :
+    IsCompact L.moiseBandClosedCells := by
+  exact isCompact_iUnion fun a =>
+    (L.moiseBandPolygonalCircle a).isCompact_closedRegion
+
+theorem isCompact_moiseFilledDisk : IsCompact L.moiseFilledDisk := by
+  exact L.parentDisk.isCompact_closedRegion.union
+    L.isCompact_moiseBandClosedCells
+
+theorem moiseBandClosedCells_subset_inside :
+    L.moiseBandClosedCells ⊆ J.inside := by
+  exact Set.iUnion_subset fun a => L.moiseBandClosedRegion_subset_inside a
+
+theorem moiseFilledDisk_subset_inside :
+    L.moiseFilledDisk ⊆ J.inside := by
+  exact Set.union_subset
+    (F.closedRegion_synchronizedPolygonalCircle_subset_inside hn)
+    L.moiseBandClosedCells_subset_inside
+
+/-- A finite union of closed disks is regular closed.  This form is used to
+discard the finitely many vertices after proving seam cancellation on open
+edges. -/
+theorem closure_interior_moiseFilledDisk :
+    closure (interior L.moiseFilledDisk) = L.moiseFilledDisk := by
+  apply Set.Subset.antisymm
+  · exact closure_minimal interior_subset L.isCompact_moiseFilledDisk.isClosed
+  · rintro x (hxParent | hxCells)
+    · change x ∈ closure L.parentDisk.interiorRegion at hxParent
+      apply closure_mono _ hxParent
+      apply interior_maximal
+      · intro y hy
+        left
+        rw [L.parentDisk.closedRegion_eq_union]
+        exact Or.inl hy
+      · exact L.parentDisk.isOpen_interiorRegion
+    · obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hxCells
+      change x ∈ closure (L.moiseBandPolygonalCircle a).interiorRegion at hxa
+      apply closure_mono _ hxa
+      apply interior_maximal
+      · intro y hy
+        right
+        apply Set.mem_iUnion.mpr
+        refine ⟨a, ?_⟩
+        rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union]
+        exact Or.inl hy
+      · exact (L.moiseBandPolygonalCircle a).isOpen_interiorRegion
+
+theorem parentCarrier_subset_moiseFilledDisk :
+    L.parentDisk.carrier ⊆ L.moiseFilledDisk := by
+  intro x hx
+  left
+  rw [L.parentDisk.closedRegion_eq_union]
+  exact Or.inr hx
+
+theorem moiseBandCarrier_subset_moiseFilledDisk
+    (a : LevelAddress n) :
+    L.moiseBandCarrier a ⊆ L.moiseFilledDisk := by
+  intro x hx
+  right
+  apply Set.mem_iUnion.mpr
+  refine ⟨a, ?_⟩
+  rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union,
+    L.moiseBandPolygonalCircle_carrier a]
+  exact Or.inr hx
+
+theorem childCarrier_subset_moiseFilledDisk :
+    L.childDisk.carrier ⊆ L.moiseFilledDisk := by
+  exact L.childCircle_carrier_subset_iUnion_moiseBandCarrier.trans <|
+    Set.iUnion_subset fun a => L.moiseBandCarrier_subset_moiseFilledDisk a
+
+/-- The boundary-side part of a retained left hair reaches the complete
+parent polygon only at the synchronized endpoint.  The point is that this
+excludes every other crosscut in the cyclic family, not only the crosscut
+indexed by `a`. -/
+theorem leftBaseSegment_inter_parentCarrier
+    (a : LevelAddress n) :
+    segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (F.leftSynchronizedPoint a) ∩ L.parentDisk.carrier =
+      {F.leftSynchronizedPoint a} := by
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxBase, hxParent⟩
+    rw [F.carrier_synchronizedPolygonalCircle hn] at hxParent
+    obtain ⟨b, hxb⟩ := Set.mem_iUnion.mp hxParent
+    have hxCross := F.range_synchronizedCrosscutPath_subset b hxb
+    have hxLeftHair : x ∈ (I.levelLeftHair a).carrier :=
+      (convex_segment
+        (J.curvePoint (I.levelArc a).left : Plane)
+        (I.levelLeftHair a).tip).segment_subset
+          (left_mem_segment ℝ _ _)
+          (F.leftSynchronizedPoint_mem_leftHair a) hxBase
+    rcases hxCross with (hxLeft | hxMiddle) | hxRight
+    · by_cases hba : b = a
+      · subst b
+        have hx : x ∈
+            segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+                (F.leftSynchronizedPoint a) ∩
+              segment ℝ (F.leftSynchronizedPoint a)
+                (F.trimmedLeftPoint (levelIndexOf n a)) :=
+          ⟨hxBase, hxLeft⟩
+        rw [F.leftBaseSegment_inter_leftExtension a] at hx
+        exact hx
+      · exact False.elim <| Set.disjoint_left.mp
+          (I.disjoint_levelLeftHairs_of_ne a b (Ne.symm hba))
+          hxLeftHair (F.leftExtension_subset_levelLeftHair b hxLeft)
+    · by_cases hba : b = a
+      · subst b
+        have hxTrim : x = F.trimmedLeftPoint (levelIndexOf n a) := by
+          apply mem_singleton_iff.mp
+          rw [← F.range_trimmedPath_inter_leftHair (levelIndexOf n a)]
+          refine ⟨hxMiddle, ?_⟩
+          rw [levelAddressAt_levelIndexOf]
+          exact hxLeftHair
+        have hxExtension : x ∈ segment ℝ (F.leftSynchronizedPoint a)
+            (F.trimmedLeftPoint (levelIndexOf n a)) := by
+          rw [hxTrim]
+          exact right_mem_segment ℝ _ _
+        have hx : x ∈
+            segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+                (F.leftSynchronizedPoint a) ∩
+              segment ℝ (F.leftSynchronizedPoint a)
+                (F.trimmedLeftPoint (levelIndexOf n a)) :=
+          ⟨hxBase, hxExtension⟩
+        rw [F.leftBaseSegment_inter_leftExtension a] at hx
+        exact hx
+      · by_cases hbprev : b = prevLevelAddress n a
+        · subst b
+          let p := prevLevelAddress n a
+          have hxRightHair : x ∈ (I.levelRightHair p).carrier := by
+            rw [I.levelRightHair_carrier_eq_levelLeftHair_of_eq p a
+              (I.levelAdjacent_prevLevelAddress n a)]
+            exact hxLeftHair
+          have hxTrim : x = F.trimmedRightPoint (levelIndexOf n p) := by
+            apply mem_singleton_iff.mp
+            rw [← F.range_trimmedPath_inter_rightHair (levelIndexOf n p)]
+            refine ⟨hxMiddle, ?_⟩
+            rw [levelAddressAt_levelIndexOf]
+            exact hxRightHair
+          have hxExtension : x ∈ segment ℝ
+              (F.rightSynchronizedPoint p)
+              (F.trimmedRightPoint (levelIndexOf n p)) := by
+            rw [hxTrim]
+            exact right_mem_segment ℝ _ _
+          have hxBase' : x ∈ segment ℝ
+              (J.curvePoint (I.levelArc p).right : Plane)
+              (F.rightSynchronizedPoint p) := by
+            have hsegments := F.rightBaseSegment_eq_leftBaseSegment_next p
+            have hnext : nextLevelAddress n p = a := by simp [p]
+            rw [hnext] at hsegments
+            rw [segment_symm, hsegments]
+            exact hxBase
+          have hx : x ∈
+              segment ℝ (J.curvePoint (I.levelArc p).right : Plane)
+                  (F.rightSynchronizedPoint p) ∩
+                segment ℝ (F.rightSynchronizedPoint p)
+                  (F.trimmedRightPoint (levelIndexOf n p)) :=
+            ⟨hxBase', hxExtension⟩
+          rw [F.rightBaseSegment_inter_rightExtension p] at hx
+          simpa [p] using hx
+        · let p := prevLevelAddress n a
+          have hdis := F.trimmedPath_disjoint_levelRightHair_of_not_incident
+            p b (by simpa [p] using hba)
+              (by simpa [p] using Ne.symm hbprev)
+          have hxRightHair : x ∈ (I.levelRightHair p).carrier := by
+            rw [I.levelRightHair_carrier_eq_levelLeftHair_of_eq p a
+              (I.levelAdjacent_prevLevelAddress n a)]
+            exact hxLeftHair
+          exact False.elim <| Set.disjoint_left.mp hdis hxMiddle hxRightHair
+    · by_cases hnext : nextLevelAddress n b = a
+      · have hb : b = prevLevelAddress n a := by
+          rw [← hnext]
+          simp
+        subst b
+        let p := prevLevelAddress n a
+        have hxBase' : x ∈ segment ℝ
+            (J.curvePoint (I.levelArc p).right : Plane)
+            (F.rightSynchronizedPoint p) := by
+          have hsegments := F.rightBaseSegment_eq_leftBaseSegment_next p
+          have hnext' : nextLevelAddress n p = a := by simp [p]
+          rw [hnext'] at hsegments
+          rw [segment_symm, hsegments]
+          exact hxBase
+        have hxExtension : x ∈ segment ℝ
+            (F.rightSynchronizedPoint p)
+            (F.trimmedRightPoint (levelIndexOf n p)) := by
+          simpa [p, segment_symm] using hxRight
+        have hx : x ∈
+            segment ℝ (J.curvePoint (I.levelArc p).right : Plane)
+                (F.rightSynchronizedPoint p) ∩
+              segment ℝ (F.rightSynchronizedPoint p)
+                (F.trimmedRightPoint (levelIndexOf n p)) :=
+          ⟨hxBase', hxExtension⟩
+        rw [F.rightBaseSegment_inter_rightExtension p] at hx
+        simpa [p] using hx
+      · exact False.elim <| Set.disjoint_left.mp
+          (I.disjoint_levelRightHair_levelLeftHair_of_ne_next b a (Ne.symm hnext))
+          (F.rightExtension_subset_levelRightHair b hxRight) hxLeftHair
+  · intro x hx
+    have hxEq : x = F.leftSynchronizedPoint a := mem_singleton_iff.mp hx
+    subst x
+    refine ⟨right_mem_segment ℝ _ _, ?_⟩
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr
+      ⟨a, Path.source_mem_range (F.synchronizedCrosscutPath a)⟩
+
+/-- The corresponding global intersection statement at the right endpoint
+is the left statement for the cyclic successor. -/
+theorem rightBaseSegment_inter_parentCarrier
+    (a : LevelAddress n) :
+    segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (F.rightSynchronizedPoint a) ∩ L.parentDisk.carrier =
+      {F.rightSynchronizedPoint a} := by
+  rw [segment_symm, F.rightBaseSegment_eq_leftBaseSegment_next a,
+    F.rightSynchronizedPoint_next_eq_leftSynchronizedPoint a]
+  exact L.leftBaseSegment_inter_parentCarrier (nextLevelAddress n a)
+
+/-- Except for its terminal synchronized point, the retained left base
+segment is on the exterior side of the parent polygon. -/
+theorem leftBaseSegment_subset_parentExterior_union
+    (a : LevelAddress n) :
+    segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (F.leftSynchronizedPoint a) ⊆
+      L.parentDisk.exteriorRegion ∪ {F.leftSynchronizedPoint a} := by
+  let q : Plane := J.curvePoint (I.levelArc a).left
+  let H := I.levelLeftHair a
+  let parent : H.carrier :=
+    ⟨F.leftSynchronizedPoint a,
+      F.leftSynchronizedPoint_mem_leftHair a⟩
+  intro x hxBase
+  by_cases hxp : x = F.leftSynchronizedPoint a
+  · exact Or.inr (mem_singleton_iff.mpr hxp)
+  · left
+    have hxHair : x ∈ H.carrier :=
+      (convex_segment q H.tip).segment_subset H.base_mem parent.2 hxBase
+    let x' : H.carrier := ⟨x, hxHair⟩
+    let q' : H.carrier := ⟨q, H.base_mem⟩
+    have hqparent : H.carrierParameter q' ≤
+        H.carrierParameter parent := by
+      rw [show H.carrierParameter q' = 0 by
+        exact H.carrierParameter_base]
+      exact (H.carrierParameter_mem_Icc parent).1
+    have hxle : H.carrierParameter x' ≤
+        H.carrierParameter parent :=
+      (H.carrierParameter_bounds_of_mem_segment q' parent hqparent hxBase).2
+    have hxlt : H.carrierParameter x' <
+        H.carrierParameter parent := hxle.lt_of_ne fun heq => by
+      apply hxp
+      exact congrArg Subtype.val (H.carrierParameter_injective heq)
+    have hsegmentSubset : segment ℝ q x ⊆
+        segment ℝ q (F.leftSynchronizedPoint a) :=
+      (convex_segment q (F.leftSynchronizedPoint a)).segment_subset
+        (left_mem_segment ℝ _ _) hxBase
+    have havoid : segment ℝ q x ⊆
+        L.parentDisk.toJordanCircle.carrierᶜ := by
+      intro y hy hyCarrier
+      have hyCarrier' : y ∈ L.parentDisk.carrier := by
+        rwa [L.parentDisk.carrier_toJordanCircle] at hyCarrier
+      have hyBase := hsegmentSubset hy
+      have hyEq : y = F.leftSynchronizedPoint a := by
+        apply mem_singleton_iff.mp
+        rw [← L.leftBaseSegment_inter_parentCarrier a]
+        exact ⟨hyBase, hyCarrier'⟩
+      have hyHair : y ∈ H.carrier :=
+        (convex_segment q H.tip).segment_subset H.base_mem x'.2 hy
+      let y' : H.carrier := ⟨y, hyHair⟩
+      have hqx : H.carrierParameter q' ≤ H.carrierParameter x' := by
+        rw [show H.carrierParameter q' = 0 by
+          exact H.carrierParameter_base]
+        exact (H.carrierParameter_mem_Icc x').1
+      have hyle : H.carrierParameter y' ≤ H.carrierParameter x' :=
+        (H.carrierParameter_bounds_of_mem_segment q' x' hqx hy).2
+      have hyParent : y' = parent := by
+        apply Subtype.ext
+        exact hyEq
+      rw [hyParent] at hyle
+      exact (not_le_of_gt hxlt) hyle
+    have hsides := L.parentDisk.toJordanCircle.preconnected_subset_same_side
+      (convex_segment q x).isPreconnected havoid
+      (left_mem_segment ℝ q x) (right_mem_segment ℝ q x)
+    have hqExterior : q ∈ L.parentDisk.exteriorRegion :=
+      J.carrier_subset_polygonalExterior_of_closedRegion_subset_inside
+        L.parentDisk
+        (F.closedRegion_synchronizedPolygonalCircle_subset_inside hn)
+        (J.curvePoint (I.levelArc a).left).2
+    have hqOutside : q ∈ L.parentDisk.toJordanCircle.outside := by
+      rw [L.parentDisk.outside_toJordanCircle]
+      exact hqExterior
+    rcases hsides with hinside | houtside
+    · exact False.elim <| Set.disjoint_left.mp
+        L.parentDisk.toJordanCircle.inside_disjoint_outside
+        hinside.1 hqOutside
+    · rw [← L.parentDisk.outside_toJordanCircle]
+      exact houtside.2
+
+/-- Therefore the parent closed disk meets the retained left base segment
+only at its boundary endpoint. -/
+theorem parentClosedRegion_inter_leftBaseSegment
+    (a : LevelAddress n) :
+    L.parentDisk.closedRegion ∩
+        segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+          (F.leftSynchronizedPoint a) =
+      {F.leftSynchronizedPoint a} := by
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxClosed, hxBase⟩
+    rcases L.leftBaseSegment_subset_parentExterior_union a hxBase with
+      hxExterior | hxPoint
+    · rw [L.parentDisk.closedRegion_eq_union] at hxClosed
+      rcases hxClosed with hxInterior | hxCarrier
+      · exact False.elim <| Set.disjoint_left.mp
+          L.parentDisk.toJordanCircle.inside_disjoint_outside
+          (by rwa [L.parentDisk.inside_toJordanCircle])
+          (by rwa [L.parentDisk.outside_toJordanCircle])
+      · exact False.elim <| L.parentDisk.toJordanCircle.outside_subset_compl
+          (by rwa [L.parentDisk.outside_toJordanCircle])
+          (by rwa [L.parentDisk.carrier_toJordanCircle])
+    · exact hxPoint
+  · intro x hx
+    have hxEq : x = F.leftSynchronizedPoint a := mem_singleton_iff.mp hx
+    subst x
+    refine ⟨?_, right_mem_segment ℝ _ _⟩
+    rw [L.parentDisk.closedRegion_eq_union]
+    apply Or.inr
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr
+      ⟨a, Path.source_mem_range (F.synchronizedCrosscutPath a)⟩
+
+theorem parentClosedRegion_inter_rightBaseSegment
+    (a : LevelAddress n) :
+    L.parentDisk.closedRegion ∩
+        segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) =
+      {F.rightSynchronizedPoint a} := by
+  rw [segment_symm, F.rightBaseSegment_eq_leftBaseSegment_next a,
+    F.rightSynchronizedPoint_next_eq_leftSynchronizedPoint a]
+  exact L.parentClosedRegion_inter_leftBaseSegment
+    (nextLevelAddress n a)
+
+/-- The corrected extreme sides leave the old disk immediately at their
+parent endpoints. -/
+theorem parentClosedRegion_inter_rawLeftSide
+    (a : LevelAddress n) :
+    L.parentDisk.closedRegion ∩
+        segment ℝ (F.leftSynchronizedPoint a)
+          (L.next.family.forgetObstacle.trimmedLeftPoint
+            (levelIndexOf L.next.level (L.leftmostAddress a))) =
+      {F.leftSynchronizedPoint a} := by
+  apply Set.Subset.antisymm
+  · intro x hx
+    have hx' : x ∈ L.parentDisk.closedRegion ∩
+        segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+          (F.leftSynchronizedPoint a) :=
+      ⟨hx.1, L.rawLeftSide_subset_parentBaseSegment a hx.2⟩
+    rwa [L.parentClosedRegion_inter_leftBaseSegment a] at hx'
+  · intro x hx
+    have hxEq : x = F.leftSynchronizedPoint a := mem_singleton_iff.mp hx
+    subst x
+    refine ⟨?_, left_mem_segment ℝ _ _⟩
+    rw [L.parentDisk.closedRegion_eq_union]
+    apply Or.inr
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr
+      ⟨a, Path.source_mem_range (F.synchronizedCrosscutPath a)⟩
+
+theorem parentClosedRegion_inter_rawRightSide
+    (a : LevelAddress n) :
+    L.parentDisk.closedRegion ∩
+        segment ℝ
+          (L.next.family.forgetObstacle.trimmedRightPoint
+            (levelIndexOf L.next.level (L.rightmostAddress a)))
+          (F.rightSynchronizedPoint a) =
+      {F.rightSynchronizedPoint a} := by
+  apply Set.Subset.antisymm
+  · intro x hx
+    have hx' : x ∈ L.parentDisk.closedRegion ∩
+        segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) :=
+      ⟨hx.1, L.rawRightSide_subset_parentBaseSegment a hx.2⟩
+    rwa [L.parentClosedRegion_inter_rightBaseSegment a] at hx'
+  · intro x hx
+    have hxEq : x = F.rightSynchronizedPoint a := mem_singleton_iff.mp hx
+    subst x
+    refine ⟨?_, right_mem_segment ℝ _ _⟩
+    rw [L.parentDisk.closedRegion_eq_union]
+    apply Or.inr
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr
+      ⟨a, Path.target_mem_range (F.synchronizedCrosscutPath a)⟩
+
+/-- A band boundary meets the old closed disk exactly in the old crosscut
+which it replaces. -/
+theorem parentClosedRegion_inter_moiseBandCarrier
+    (a : LevelAddress n) :
+    L.parentDisk.closedRegion ∩ L.moiseBandCarrier a =
+      range (F.synchronizedCrosscutPath a) := by
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxParent, hxBand⟩
+    rw [moiseBandCarrier] at hxBand
+    obtain ⟨j, hxj⟩ := Set.mem_iUnion.mp hxBand
+    obtain ⟨hj, hxSegment⟩ := Set.mem_iUnion.mp hxj
+    rw [moiseBandSegments, List.mem_append] at hj
+    rcases hj with hjOpen | hjRight
+    · rw [List.mem_append] at hjOpen
+      rcases hjOpen with hjParentLeft | hjChild
+      · rw [List.mem_append] at hjParentLeft
+        rcases hjParentLeft with hjParent | hjLeft
+        · obtain ⟨i, rfl⟩ := L.parent_index_of_mem_parentMoiseSegments hjParent
+          change x ∈ segment ℝ (F.edgeFinish ⟨a, i⟩)
+            (F.edgeStart ⟨a, i⟩) at hxSegment
+          apply F.edgeSegment_subset_crosscutRange ⟨a, i⟩
+          simpa [LevelAvoidingJoinFamily.edgeSegment, segment_symm]
+            using hxSegment
+        · have hjEq : j = MoiseBandSegmentAddress.leftSide L := by
+            simpa only [List.mem_singleton] using hjLeft
+          subst j
+          have hx : x ∈
+              L.parentDisk.closedRegion ∩
+                segment ℝ (F.leftSynchronizedPoint a)
+                  (L.next.family.forgetObstacle.trimmedLeftPoint
+                    (levelIndexOf L.next.level (L.leftmostAddress a))) :=
+            ⟨hxParent, hxSegment⟩
+          rw [L.parentClosedRegion_inter_rawLeftSide a] at hx
+          have hxEq : x = F.leftSynchronizedPoint a := mem_singleton_iff.mp hx
+          rw [hxEq]
+          exact Path.source_mem_range (F.synchronizedCrosscutPath a)
+      · rcases L.child_or_junction_with_addresses_of_mem
+            (L.addresses_isChain a) hjChild with hraw | hjunction
+        · obtain ⟨e, _he, rfl⟩ := hraw
+          change x ∈ segment ℝ
+            (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+            (L.next.family.forgetObstacle.trimmedEdgeStart e) at hxSegment
+          have hxEdge : x ∈
+              L.next.family.forgetObstacle.trimmedEdgeSegment e := by
+            simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment, segment_symm]
+              using hxSegment
+          have hxPath := L.next.family.forgetObstacle
+            |>.trimmedEdgeSegment_subset_trimmedPathRange e hxEdge
+          exact False.elim <| Set.disjoint_left.mp
+            (L.next.trimmed_path_disjoint
+              (levelIndexOf L.next.level e.1)).symm
+            hxParent hxPath
+        · obtain ⟨b, c, _hb, _hc, hbc, rfl⟩ := hjunction
+          exact False.elim <| Set.disjoint_left.mp
+            L.next.buffer_separation hxParent
+              (L.junctionSegment_subset_thickening hbc hxSegment)
+    · have hjEq : j = MoiseBandSegmentAddress.rightSide L := by
+        simpa only [List.mem_singleton] using hjRight
+      subst j
+      have hx : x ∈
+          L.parentDisk.closedRegion ∩
+            segment ℝ
+              (L.next.family.forgetObstacle.trimmedRightPoint
+                (levelIndexOf L.next.level (L.rightmostAddress a)))
+              (F.rightSynchronizedPoint a) :=
+        ⟨hxParent, hxSegment⟩
+      rw [L.parentClosedRegion_inter_rawRightSide a] at hx
+      have hxEq : x = F.rightSynchronizedPoint a := mem_singleton_iff.mp hx
+      rw [hxEq]
+      exact Path.target_mem_range (F.synchronizedCrosscutPath a)
+  · intro x hx
+    refine ⟨?_, L.parentCrosscutRange_subset_moiseBandCarrier a hx⟩
+    rw [L.parentDisk.closedRegion_eq_union]
+    apply Or.inr
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr ⟨a, hx⟩
+
+theorem parentCarrier_inter_moiseBandCarrier
+    (a : LevelAddress n) :
+    L.parentDisk.carrier ∩ L.moiseBandCarrier a =
+      range (F.synchronizedCrosscutPath a) := by
+  apply Set.Subset.antisymm
+  · intro x hx
+    apply (Set.Subset.antisymm_iff.mp
+      (L.parentClosedRegion_inter_moiseBandCarrier a)).1
+    refine ⟨?_, hx.2⟩
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inr hx.1
+  · intro x hx
+    refine ⟨?_, L.parentCrosscutRange_subset_moiseBandCarrier a hx⟩
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr ⟨a, hx⟩
+
+/-- In particular, no point of a Moise band boundary lies in the open old
+disk. -/
+theorem moiseBandCarrier_disjoint_parentInterior
+    (a : LevelAddress n) :
+    Disjoint (L.moiseBandCarrier a) L.parentDisk.interiorRegion := by
+  rw [Set.disjoint_left]
+  intro x hxBand hxInterior
+  have hxParent : x ∈ L.parentDisk.closedRegion := by
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inl hxInterior
+  have hxCross : x ∈ range (F.synchronizedCrosscutPath a) := by
+    rw [← L.parentClosedRegion_inter_moiseBandCarrier a]
+    exact ⟨hxParent, hxBand⟩
+  have hxCarrier : x ∈ L.parentDisk.carrier := by
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr ⟨a, hxCross⟩
+  exact L.parentDisk.toJordanCircle.inside_subset_compl
+    (by rwa [L.parentDisk.inside_toJordanCircle])
+    (by rwa [L.parentDisk.carrier_toJordanCircle])
+
+theorem moiseBandCarrier_subset_parentExterior_union_carrier
+    (a : LevelAddress n) :
+    L.moiseBandCarrier a ⊆
+      L.parentDisk.exteriorRegion ∪ L.parentDisk.carrier := by
+  intro x hxBand
+  by_cases hxCarrier : x ∈ L.parentDisk.carrier
+  · exact Or.inr hxCarrier
+  · left
+    rw [← L.parentDisk.outside_toJordanCircle]
+    rcases L.parentDisk.toJordanCircle.mem_inside_or_outside (by
+        rwa [L.parentDisk.carrier_toJordanCircle]) with hxInside | hxOutside
+    · have hxInterior : x ∈ L.parentDisk.interiorRegion := by
+        rwa [← L.parentDisk.inside_toJordanCircle]
+      exact False.elim <| Set.disjoint_left.mp
+        (L.moiseBandCarrier_disjoint_parentInterior a) hxBand hxInterior
+    · exact hxOutside
+
+/-- Every band genuinely leaves the parent polygon. -/
+theorem exists_moiseBandCarrier_not_parentCarrier
+    (a : LevelAddress n) :
+    ∃ p ∈ L.moiseBandCarrier a, p ∉ L.parentDisk.carrier := by
+  let p : Plane := L.next.family.forgetObstacle.trimmedLeftPoint
+    (levelIndexOf L.next.level (L.leftmostAddress a))
+  have hpBand : p ∈ L.moiseBandCarrier a :=
+    L.rawLeftSide_subset_moiseBandCarrier a (right_mem_segment ℝ _ _)
+  refine ⟨p, hpBand, ?_⟩
+  intro hpParent
+  have hpClosed : p ∈ L.parentDisk.closedRegion := by
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inr hpParent
+  have hpInter : p ∈ L.parentDisk.closedRegion ∩
+      segment ℝ (F.leftSynchronizedPoint a) p :=
+    ⟨hpClosed, right_mem_segment ℝ _ _⟩
+  rw [L.parentClosedRegion_inter_rawLeftSide a] at hpInter
+  have hpEq : p = F.leftSynchronizedPoint a := mem_singleton_iff.mp hpInter
+  exact L.leftSide_left_ne_right a hpEq.symm
+
+/-- Once the remaining side choice is known, the standard polygonal
+boundary-avoidance theorem gives disjoint open interiors.  This isolates the
+only geometric orientation input still needed for an honest attachment. -/
+theorem disjoint_parentInterior_moiseBandInterior_of_carrier_avoidance
+    (a : LevelAddress n)
+    (hparent : Disjoint L.parentDisk.carrier
+      (L.moiseBandPolygonalCircle a).interiorRegion) :
+    Disjoint L.parentDisk.interiorRegion
+      (L.moiseBandPolygonalCircle a).interiorRegion := by
+  apply L.parentDisk.disjoint_interiorRegion_of_boundary_avoidance
+    (L.moiseBandPolygonalCircle a)
+  · exact hparent
+  · rw [L.moiseBandPolygonalCircle_carrier a]
+    exact L.moiseBandCarrier_disjoint_parentInterior a
+  · obtain ⟨p, hpBand, hpNotParent⟩ :=
+      L.exists_moiseBandCarrier_not_parentCarrier a
+    exact ⟨p, by
+      rw [L.moiseBandPolygonalCircle_carrier a]
+      exact hpBand, hpNotParent⟩
+
+/-- Under that same explicit orientation hypothesis, the two closed disks
+meet in exactly the parent crosscut. -/
+theorem parentClosedRegion_inter_moiseBandClosedRegion_of_carrier_avoidance
+    (a : LevelAddress n)
+    (hparent : Disjoint L.parentDisk.carrier
+      (L.moiseBandPolygonalCircle a).interiorRegion) :
+    L.parentDisk.closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a) := by
+  have hinteriors :=
+    L.disjoint_parentInterior_moiseBandInterior_of_carrier_avoidance
+      a hparent
+  apply Set.Subset.antisymm
+  · rintro x ⟨hxParent, hxCell⟩
+    rw [L.parentDisk.closedRegion_eq_union] at hxParent
+    rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union] at hxCell
+    rcases hxParent with hxParentInterior | hxParentCarrier
+    · rcases hxCell with hxCellInterior | hxCellCarrier
+      · exact False.elim <| Set.disjoint_left.mp hinteriors
+          hxParentInterior hxCellInterior
+      · exact False.elim <| Set.disjoint_left.mp
+          (by
+            rw [L.moiseBandPolygonalCircle_carrier a]
+            exact L.moiseBandCarrier_disjoint_parentInterior a)
+          hxCellCarrier hxParentInterior
+    · rcases hxCell with hxCellInterior | hxCellCarrier
+      · exact False.elim <| Set.disjoint_left.mp hparent
+          hxParentCarrier hxCellInterior
+      · rw [L.moiseBandPolygonalCircle_carrier a] at hxCellCarrier
+        rw [← L.parentCarrier_inter_moiseBandCarrier a]
+        exact ⟨hxParentCarrier, hxCellCarrier⟩
+  · intro x hx
+    refine ⟨?_, ?_⟩
+    · rw [L.parentDisk.closedRegion_eq_union]
+      apply Or.inr
+      rw [F.carrier_synchronizedPolygonalCircle hn]
+      exact Set.mem_iUnion.mpr ⟨a, hx⟩
+    · rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union,
+        L.moiseBandPolygonalCircle_carrier a]
+      exact Or.inr (L.parentCrosscutRange_subset_moiseBandCarrier a hx)
+
+/-- A metric certificate for the missing orientation input.  If the parent
+disk has two points farther apart than the diameter of a ball containing the
+band cell, the cell cannot contain the parent disk.  One-way boundary
+avoidance then forces the parent carrier to avoid the cell interior. -/
+theorem parentCarrier_disjoint_moiseBandInterior_of_cell_ball
+    (a : LevelAddress n) {c : Plane} {rho : ℝ}
+    (hcell : (L.moiseBandPolygonalCircle a).closedRegion ⊆
+      closedBall c rho)
+    (hseparated : ∃ x ∈ L.parentDisk.closedRegion,
+      ∃ y ∈ L.parentDisk.closedRegion, 2 * rho < dist x y) :
+    Disjoint L.parentDisk.carrier
+      (L.moiseBandPolygonalCircle a).interiorRegion := by
+  let K := L.moiseBandPolygonalCircle a
+  have hKcarrier : Disjoint K.carrier L.parentDisk.interiorRegion := by
+    rw [L.moiseBandPolygonalCircle_carrier a]
+    exact L.moiseBandCarrier_disjoint_parentInterior a
+  have hnotContain : ¬ L.parentDisk.closedRegion ⊆ K.closedRegion := by
+    intro hcontain
+    obtain ⟨x, hxParent, y, hyParent, hxy⟩ := hseparated
+    have hxBall : x ∈ closedBall c rho := hcell (hcontain hxParent)
+    have hyBall : y ∈ closedBall c rho := hcell (hcontain hyParent)
+    rw [mem_closedBall] at hxBall hyBall
+    have hbound : dist x y ≤ 2 * rho := by
+      calc
+        dist x y ≤ dist x c + dist c y := dist_triangle _ _ _
+        _ ≤ rho + rho := by
+          exact add_le_add hxBall (by simpa [dist_comm] using hyBall)
+        _ = 2 * rho := by ring
+    exact (not_le_of_gt hxy) hbound
+  rw [Set.disjoint_left]
+  intro p hpParent hpKInterior
+  have hpClosure : p ∈ closure L.parentDisk.interiorRegion := by
+    change p ∈ L.parentDisk.closedRegion
+    rw [L.parentDisk.closedRegion_eq_union]
+    exact Or.inr hpParent
+  have hpInterClosure : p ∈ closure
+      (K.interiorRegion ∩ L.parentDisk.interiorRegion) :=
+    K.isOpen_interiorRegion.inter_closure ⟨hpKInterior, hpClosure⟩
+  obtain ⟨q, hqKInterior, hqParentInterior⟩ :=
+    Set.Nonempty.of_closure ⟨p, hpInterClosure⟩
+  have hParentOff : L.parentDisk.interiorRegion ⊆ K.carrierᶜ := by
+    intro z hzParent hzKCarrier
+    exact Set.disjoint_left.mp hKcarrier hzKCarrier hzParent
+  have hParentRegions : L.parentDisk.interiorRegion ⊆
+      K.interiorRegion ∪ K.exteriorRegion := by
+    rw [K.interior_union_exterior]
+    exact hParentOff
+  have hParentInside : L.parentDisk.interiorRegion ⊆ K.interiorRegion :=
+    L.parentDisk.isConnected_interiorRegion.isPreconnected
+      |>.subset_left_of_subset_union
+        K.isOpen_interiorRegion K.isOpen_exteriorRegion
+        K.disjoint_interior_exterior hParentRegions
+        ⟨q, hqParentInterior, hqKInterior⟩
+  apply hnotContain
+  exact closure_mono hParentInside
+
+theorem parentClosedRegion_inter_moiseBandClosedRegion_of_cell_ball
+    (a : LevelAddress n) {c : Plane} {rho : ℝ}
+    (hcell : (L.moiseBandPolygonalCircle a).closedRegion ⊆
+      closedBall c rho)
+    (hseparated : ∃ x ∈ L.parentDisk.closedRegion,
+      ∃ y ∈ L.parentDisk.closedRegion, 2 * rho < dist x y) :
+    L.parentDisk.closedRegion ∩
+        (L.moiseBandPolygonalCircle a).closedRegion =
+      range (F.synchronizedCrosscutPath a) :=
+  L.parentClosedRegion_inter_moiseBandClosedRegion_of_carrier_avoidance a
+    (L.parentCarrier_disjoint_moiseBandInterior_of_cell_ball
+      a hcell hseparated)
+
+/-- The frontier of the filled union can only come from the old polygon or
+one of the finitely many cell polygons.  Later seam lemmas remove all of
+these candidates except the child polygon. -/
+theorem frontier_moiseFilledDisk_subset_parent_union_cells :
+    frontier L.moiseFilledDisk ⊆
+      L.parentDisk.carrier ∪
+        ⋃ a : LevelAddress n, L.moiseBandCarrier a := by
+  let cells : LevelAddress n → Set Plane := fun a =>
+    (L.moiseBandPolygonalCircle a).closedRegion
+  have hfinite : frontier (⋃ a, cells a) ⊆
+      ⋃ a, frontier (cells a) := by
+    classical
+    have hfinset (s : Finset (LevelAddress n)) :
+        frontier (⋃ a ∈ s, cells a) ⊆
+          ⋃ a ∈ s, frontier (cells a) := by
+      induction s using Finset.induction_on with
+      | empty => simp
+      | @insert a s ha ih =>
+          simpa [ha] using
+            (frontier_union_subset (cells a) (⋃ b ∈ s, cells b)).trans
+              (Set.union_subset_union Set.inter_subset_left
+                (Set.inter_subset_right.trans ih))
+    simpa using hfinset Finset.univ
+  unfold moiseFilledDisk moiseBandClosedCells
+  apply (frontier_union_subset _ _).trans
+  apply Set.union_subset
+  · intro x hx
+    left
+    exact L.parentDisk.frontier_closedRegion ▸ hx.1
+  · intro x hx
+    right
+    have hx' : x ∈ ⋃ a, frontier (cells a) := hfinite hx.2
+    obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx'
+    apply Set.mem_iUnion.mpr
+    refine ⟨a, ?_⟩
+    change x ∈ frontier (L.moiseBandPolygonalCircle a).closedRegion at hxa
+    rw [(L.moiseBandPolygonalCircle a).frontier_closedRegion,
+      L.moiseBandPolygonalCircle_carrier a] at hxa
+    exact hxa
+
+end JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
+
+end
+
+end Schoenflies

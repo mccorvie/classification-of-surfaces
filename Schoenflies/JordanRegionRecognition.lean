@@ -1,0 +1,172 @@
+import Schoenflies.JordanRegionBounds
+
+/-!
+# Recognition of closed Jordan regions
+
+A compact planar set with nonempty interior and prescribed Jordan frontier is
+the closure of the bounded complementary component.  This is the
+non-polygonal form of the recognition lemma used by the Moise polygonal-disk
+shelling proof.
+-/
+
+namespace Schoenflies
+
+open Set Bornology
+
+namespace JordanCircle
+
+/-- A compact planar set whose frontier lies on a Jordan circle cannot meet
+the unbounded complementary component.  Consequently it lies in the closed
+bounded Jordan region. -/
+theorem subset_closure_inside_of_isCompact_frontier_subset
+    (J : JordanCircle) {S : Set Plane} (hS : IsCompact S)
+    (hfrontier : frontier S ⊆ J.carrier) :
+    S ⊆ closure J.inside := by
+  have hSclosed := hS.isClosed
+  have hOutsideCover : J.outside ⊆ interior S ∪ Sᶜ := by
+    intro p hpOutside
+    by_cases hpS : p ∈ S
+    · left
+      apply (mem_interior_iff_notMem_frontier hpS).mpr
+      intro hpFrontier
+      have hpCarrier : p ∈ J.carrier := hfrontier hpFrontier
+      have hpCompl : p ∈ J.carrierᶜ := by
+        rw [← J.inside_union_outside]
+        exact Or.inr hpOutside
+      exact hpCompl hpCarrier
+    · exact Or.inr hpS
+  have hOutsideNotS : (J.outside ∩ Sᶜ).Nonempty := by
+    by_contra h
+    have hOutsideSub : J.outside ⊆ S := by
+      intro p hpOutside
+      by_contra hpS
+      exact h ⟨p, hpOutside, hpS⟩
+    exact J.outside_unbounded (hS.isBounded.subset hOutsideSub)
+  have hOutsideSub : J.outside ⊆ Sᶜ :=
+    J.outside_isConnected.isPreconnected.subset_right_of_subset_union
+      isOpen_interior hSclosed.isOpen_compl
+      (Set.disjoint_left.mpr fun _ hpInterior hpCompl =>
+        hpCompl (interior_subset hpInterior))
+      hOutsideCover hOutsideNotS
+  intro p hpS
+  by_cases hpCarrier : p ∈ J.carrier
+  · rw [J.closure_inside]
+    exact Or.inr hpCarrier
+  · have hpSplit : p ∈ J.inside ∪ J.outside := by
+      rw [J.inside_union_outside]
+      exact hpCarrier
+    rcases hpSplit with hpInside | hpOutside
+    · exact subset_closure hpInside
+    · exact False.elim (hOutsideSub hpOutside hpS)
+
+/-- A compact subset of a closed Jordan disk which has no frontier in the
+open bounded region is already the whole closed disk, provided it contains
+one interior neighborhood.  This subset form is useful when the outer
+boundary has not yet been shown pointwise to be covered. -/
+theorem eq_closure_inside_of_isCompact_frontier_subset
+    (J : JordanCircle) {S : Set Plane} (hS : IsCompact S)
+    (hsubset : S ⊆ closure J.inside)
+    (hfrontier : frontier S ⊆ J.carrier)
+    (hinterior : (interior S ∩ J.inside).Nonempty) :
+    S = closure J.inside := by
+  have hSclosed := hS.isClosed
+  have hinsideCover : J.inside ⊆ interior S ∪ Sᶜ := by
+    intro x hxInside
+    by_cases hxS : x ∈ S
+    · left
+      apply (mem_interior_iff_notMem_frontier hxS).mpr
+      intro hxFrontier
+      exact J.inside_subset_compl hxInside (hfrontier hxFrontier)
+    · exact Or.inr hxS
+  have hinsideSub : J.inside ⊆ interior S :=
+    J.inside_isConnected.isPreconnected.subset_left_of_subset_union
+      isOpen_interior hSclosed.isOpen_compl
+      (Set.disjoint_left.mpr fun _ hxInterior hxCompl =>
+        hxCompl (interior_subset hxInterior))
+      hinsideCover (by
+        obtain ⟨x, hxInterior, hxInside⟩ := hinterior
+        exact ⟨x, hxInside, hxInterior⟩)
+  apply Set.Subset.antisymm hsubset
+  exact closure_minimal (hinsideSub.trans interior_subset) hSclosed
+
+/-- A compact set with nonempty interior and Jordan-circle frontier is the
+closed bounded region determined by that circle. -/
+theorem eq_closure_inside_of_isCompact_frontier_eq
+    (J : JordanCircle) {S : Set Plane} (hS : IsCompact S)
+    (hfrontier : frontier S = J.carrier)
+    (hinterior : (interior S).Nonempty) :
+    S = closure J.inside := by
+  have hSclosed := hS.isClosed
+  have hOutsideCover : J.outside ⊆ interior S ∪ Sᶜ := by
+    intro p hpOutside
+    by_cases hpS : p ∈ S
+    · left
+      apply (mem_interior_iff_notMem_frontier hpS).mpr
+      intro hpFrontier
+      have hpCarrier : p ∈ J.carrier := hfrontier ▸ hpFrontier
+      have hpCompl : p ∈ J.carrierᶜ := by
+        rw [← J.inside_union_outside]
+        exact Or.inr hpOutside
+      exact hpCompl hpCarrier
+    · exact Or.inr hpS
+  have hOutsideNotS : (J.outside ∩ Sᶜ).Nonempty := by
+    by_contra h
+    have hOutsideSub : J.outside ⊆ S := by
+      intro p hpOutside
+      by_contra hpS
+      exact h ⟨p, hpOutside, hpS⟩
+    exact J.outside_unbounded (hS.isBounded.subset hOutsideSub)
+  have hOutsideSub : J.outside ⊆ Sᶜ :=
+    J.outside_isConnected.isPreconnected.subset_right_of_subset_union
+      isOpen_interior hSclosed.isOpen_compl
+      (Set.disjoint_left.mpr fun _ hpInterior hpCompl =>
+        hpCompl (interior_subset hpInterior))
+      hOutsideCover hOutsideNotS
+  have hSSub : S ⊆ closure J.inside := by
+    intro p hpS
+    by_cases hpCarrier : p ∈ J.carrier
+    · rw [J.closure_inside]
+      exact Or.inr hpCarrier
+    · have hpSplit : p ∈ J.inside ∪ J.outside := by
+        rw [J.inside_union_outside]
+        exact hpCarrier
+      rcases hpSplit with hpInside | hpOutside
+      · exact subset_closure hpInside
+      · exact False.elim (hOutsideSub hpOutside hpS)
+  obtain ⟨p, hpInteriorS⟩ := hinterior
+  have hpNotCarrier : p ∉ J.carrier := by
+    rw [← hfrontier]
+    exact fun hpFrontier =>
+      Set.disjoint_left.mp disjoint_interior_frontier
+        hpInteriorS hpFrontier
+  have hpInside : p ∈ J.inside := by
+    have hpSplit : p ∈ J.inside ∪ J.outside := by
+      rw [J.inside_union_outside]
+      exact hpNotCarrier
+    exact hpSplit.resolve_right fun hpOutside =>
+      hOutsideSub hpOutside (interior_subset hpInteriorS)
+  have hInsideCover : J.inside ⊆ interior S ∪ Sᶜ := by
+    intro q hqInside
+    by_cases hqS : q ∈ S
+    · left
+      apply (mem_interior_iff_notMem_frontier hqS).mpr
+      intro hqFrontier
+      have hqCarrier : q ∈ J.carrier := hfrontier ▸ hqFrontier
+      exact J.inside_subset_compl hqInside hqCarrier
+    · exact Or.inr hqS
+  have hInsideSub : J.inside ⊆ interior S :=
+    J.inside_isConnected.isPreconnected.subset_left_of_subset_union
+      isOpen_interior hSclosed.isOpen_compl
+      (Set.disjoint_left.mpr fun _ hpInterior hpCompl =>
+        hpCompl (interior_subset hpInterior))
+      hInsideCover ⟨p, hpInside, hpInteriorS⟩
+  apply Set.Subset.antisymm hSSub
+  rw [J.closure_inside]
+  exact Set.union_subset (hInsideSub.trans interior_subset)
+    (by
+      rw [← hfrontier]
+      exact frontier_subset_closure.trans_eq hSclosed.closure_eq)
+
+end JordanCircle
+
+end Schoenflies

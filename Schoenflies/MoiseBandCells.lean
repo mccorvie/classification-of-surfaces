@@ -1,0 +1,2608 @@
+import Schoenflies.CollarBandSegments
+import Schoenflies.TrimmedLevelEdges
+
+/-!
+# The non-retracing polygonal cells in a recursive Moise band
+
+The synchronized crosscuts form each complete collar level, but an individual
+Chapter 9 cell uses the original trimmed crosscuts.  At an interior child
+junction the two trimmed endpoints are joined along their common retained
+hair.  At the two extremes they are joined directly to the parent collar.
+This omits the synchronization extensions that would otherwise be traversed
+twice along the extreme hairs.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace JordanCircle
+namespace InitialAngularArcs
+
+variable {J : JordanCircle} {I : J.InitialAngularArcs}
+  {n : ℕ} {epsilon : ℝ}
+  {F : I.LevelAvoidingJoinFamily n epsilon} {hn : 1 ≤ n}
+
+namespace RecursiveInsideCollarStep.Later
+
+variable (L : RecursiveInsideCollarStep.Later F hn)
+
+private noncomputable abbrev childIndex
+    (b : LevelAddress L.next.level) :
+    Fin (levelAddressCount L.next.level) :=
+  levelIndexOf L.next.level b
+
+/-- Labels for the non-retracing source segments of one Moise band cell. -/
+abbrev MoiseBandSegmentAddress :=
+  F.LevelEdgeAddress ⊕
+    (Unit ⊕
+      (L.next.family.forgetObstacle.TrimmedEdgeAddress ⊕
+        ((LevelAddress L.next.level × LevelAddress L.next.level) ⊕ Unit)))
+
+namespace MoiseBandSegmentAddress
+
+def parent (e : F.LevelEdgeAddress) : L.MoiseBandSegmentAddress :=
+  Sum.inl e
+
+def leftSide : L.MoiseBandSegmentAddress :=
+  Sum.inr (Sum.inl ())
+
+def child
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress) :
+    L.MoiseBandSegmentAddress :=
+  Sum.inr (Sum.inr (Sum.inl e))
+
+def junction (b c : LevelAddress L.next.level) :
+    L.MoiseBandSegmentAddress :=
+  Sum.inr (Sum.inr (Sum.inr (Sum.inl (b, c))))
+
+def rightSide : L.MoiseBandSegmentAddress :=
+  Sum.inr (Sum.inr (Sum.inr (Sum.inr ())))
+
+variable (a : LevelAddress n)
+
+/-- Initial endpoint in the positive orientation around the band cell. -/
+noncomputable def left : L.MoiseBandSegmentAddress → Plane
+  | .inl e => F.edgeFinish e
+  | .inr (.inl ()) => F.leftSynchronizedPoint a
+  | .inr (.inr (.inl e)) =>
+      L.next.family.forgetObstacle.trimmedEdgeFinish e
+  | .inr (.inr (.inr (.inl (b, _c)))) =>
+      L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b)
+  | .inr (.inr (.inr (.inr ()))) =>
+      L.next.family.forgetObstacle.trimmedRightPoint
+        (L.childIndex (L.rightmostAddress a))
+
+/-- Final endpoint in the positive orientation around the band cell. -/
+noncomputable def right : L.MoiseBandSegmentAddress → Plane
+  | .inl e => F.edgeStart e
+  | .inr (.inl ()) =>
+      L.next.family.forgetObstacle.trimmedLeftPoint
+        (L.childIndex (L.leftmostAddress a))
+  | .inr (.inr (.inl e)) =>
+      L.next.family.forgetObstacle.trimmedEdgeStart e
+  | .inr (.inr (.inr (.inl (_b, c)))) =>
+      L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)
+  | .inr (.inr (.inr (.inr ()))) => F.rightSynchronizedPoint a
+
+def Adjacent (x y : L.MoiseBandSegmentAddress) : Prop :=
+  right L a x = left L a y
+
+/-- The ordered intersection condition used to concatenate the source
+segments without repeating an arrangement vertex. -/
+def ForwardCompatible (x y : L.MoiseBandSegmentAddress) : Prop :=
+  segment ℝ (left L a x) (right L a x) ∩
+      segment ℝ (left L a y) (right L a y) ⊆
+    {right L a x}
+
+theorem forwardCompatible_of_disjoint
+    {x y : L.MoiseBandSegmentAddress}
+    (h : Disjoint
+      (segment ℝ (left L a x) (right L a x))
+      (segment ℝ (left L a y) (right L a y))) :
+    ForwardCompatible L a x y := by
+  intro z hz
+  exact (Set.disjoint_left.mp h hz.1 hz.2).elim
+
+end MoiseBandSegmentAddress
+
+/-- One child raw crosscut, traversed from its left endpoint to its right
+endpoint. -/
+noncomputable def reversedTrimmedBlock
+    (b : LevelAddress L.next.level) :
+    List L.MoiseBandSegmentAddress :=
+  (L.next.family.forgetObstacle.trimmedEdgeBlock b).reverse.map
+    (MoiseBandSegmentAddress.child L)
+
+theorem reversedTrimmedBlock_nonempty
+    (b : LevelAddress L.next.level) :
+    L.reversedTrimmedBlock b ≠ [] := by
+  intro h
+  have hrev :
+      (L.next.family.forgetObstacle.trimmedEdgeBlock b).reverse = [] :=
+    List.map_eq_nil_iff.mp h
+  exact L.next.family.forgetObstacle.trimmedEdgeBlock_nonempty b
+    (List.reverse_eq_nil_iff.mp hrev)
+
+theorem reversedTrimmedBlock_isChain (a : LevelAddress n)
+    (b : LevelAddress L.next.level) :
+    (L.reversedTrimmedBlock b).IsChain
+      (MoiseBandSegmentAddress.Adjacent L a) := by
+  rw [reversedTrimmedBlock, List.isChain_map, List.isChain_reverse]
+  exact (L.next.family.forgetObstacle.trimmedEdgeBlock_isChain b).imp
+    fun _ _ h => h.symm
+
+/-- The reversed raw edges of one child crosscut have precisely the ordered
+intersection behavior required by a simple segment chain. -/
+theorem reversedTrimmedBlock_pairwise (a : LevelAddress n)
+    (b : LevelAddress L.next.level) :
+    (L.reversedTrimmedBlock b).Pairwise
+      (MoiseBandSegmentAddress.ForwardCompatible L a) := by
+  let G := L.next.family.forgetObstacle
+  rw [reversedTrimmedBlock, List.pairwise_map, List.pairwise_reverse,
+    LevelAvoidingJoinFamily.trimmedEdgeBlock, List.pairwise_ofFn]
+  intro i j hij
+  change segment ℝ (G.trimmedEdgeFinish ⟨b, j⟩)
+        (G.trimmedEdgeStart ⟨b, j⟩) ∩
+      segment ℝ (G.trimmedEdgeFinish ⟨b, i⟩)
+        (G.trimmedEdgeStart ⟨b, i⟩) ⊆
+      {G.trimmedEdgeStart ⟨b, j⟩}
+  by_cases hsucc : i.val + 1 = j.val
+  · have hjoin : G.trimmedEdgeFinish ⟨b, i⟩ =
+        G.trimmedEdgeStart ⟨b, j⟩ := by
+      apply congrArg (G.trimmedCrosscutCarrierLine b).data.vertex
+      apply Fin.ext
+      exact hsucc
+    have hinter := G.trimmedEdgeSegment_inter_of_same_block_succ
+      b i j hsucc
+    rw [Set.inter_comm] at hinter
+    simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment, segment_symm,
+      hjoin] using hinter.le
+  · have hijNe : i ≠ j := by
+      intro h
+      subst j
+      omega
+    have hback : j.val + 1 ≠ i.val := by omega
+    have hdis := G.disjoint_trimmedEdgeSegment_of_same_block_nonadjacent
+      b i j hijNe hsucc hback
+    rw [Set.disjoint_iff_inter_eq_empty] at hdis
+    intro x hx
+    have hx' : x ∈ G.trimmedEdgeSegment ⟨b, i⟩ ∩
+        G.trimmedEdgeSegment ⟨b, j⟩ := by
+      simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment, segment_symm,
+        Set.inter_comm] using hx
+    rw [hdis] at hx'
+    exact hx'.elim
+
+theorem head_reversedTrimmedBlock
+    (b : LevelAddress L.next.level) :
+    (L.reversedTrimmedBlock b).head
+        (L.reversedTrimmedBlock_nonempty b) =
+      MoiseBandSegmentAddress.child L
+        ⟨b, L.next.family.forgetObstacle.lastTrimmedEdgeIndex b⟩ := by
+  unfold reversedTrimmedBlock
+  rw [List.head_map, List.head_reverse,
+    L.next.family.forgetObstacle.getLast_trimmedEdgeBlock]
+
+theorem getLast_reversedTrimmedBlock
+    (b : LevelAddress L.next.level) :
+    (L.reversedTrimmedBlock b).getLast
+        (L.reversedTrimmedBlock_nonempty b) =
+      MoiseBandSegmentAddress.child L
+        ⟨b, L.next.family.forgetObstacle.firstTrimmedEdgeIndex b⟩ := by
+  unfold reversedTrimmedBlock
+  rw [List.getLast_map, List.getLast_reverse,
+    L.next.family.forgetObstacle.head_trimmedEdgeBlock]
+
+theorem left_head_reversedTrimmedBlock (a : LevelAddress n)
+    (b : LevelAddress L.next.level) :
+    MoiseBandSegmentAddress.left L a
+        ((L.reversedTrimmedBlock b).head
+          (L.reversedTrimmedBlock_nonempty b)) =
+      L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex b) := by
+  rw [L.head_reversedTrimmedBlock b]
+  exact L.next.family.forgetObstacle.trimmedEdgeFinish_last b
+
+theorem right_getLast_reversedTrimmedBlock (a : LevelAddress n)
+    (b : LevelAddress L.next.level) :
+    MoiseBandSegmentAddress.right L a
+        ((L.reversedTrimmedBlock b).getLast
+          (L.reversedTrimmedBlock_nonempty b)) =
+      L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b) := by
+  rw [L.getLast_reversedTrimmedBlock b]
+  exact L.next.family.forgetObstacle.trimmedEdgeStart_first b
+
+/-- The raw child crosscuts joined successively along their common retained
+hairs. -/
+noncomputable def childMoiseSegments
+    (step : RecursiveInsideCollarStep.Later F hn) :
+    List (LevelAddress step.next.level) →
+      List step.MoiseBandSegmentAddress
+  | [] => []
+  | [b] => step.reversedTrimmedBlock b
+  | b :: c :: tail =>
+      step.reversedTrimmedBlock b ++
+        [MoiseBandSegmentAddress.junction step b c] ++
+        childMoiseSegments step (c :: tail)
+
+theorem childMoiseSegments_nonempty
+    {l : List (LevelAddress L.next.level)} (hl : l ≠ []) :
+    L.childMoiseSegments l ≠ [] := by
+  cases l with
+  | nil => exact (hl rfl).elim
+  | cons b tail =>
+      cases tail with
+      | nil => exact L.reversedTrimmedBlock_nonempty b
+      | cons c tail =>
+          simp only [childMoiseSegments]
+          intro h
+          have hleft := (List.append_eq_nil_iff.mp
+            (List.append_eq_nil_iff.mp h).1).1
+          exact L.reversedTrimmedBlock_nonempty b hleft
+
+theorem head_childMoiseSegments
+    {l : List (LevelAddress L.next.level)} (hl : l ≠ [])
+    (a : LevelAddress n) :
+    MoiseBandSegmentAddress.left L a
+        ((L.childMoiseSegments l).head
+          (L.childMoiseSegments_nonempty hl)) =
+      L.next.family.forgetObstacle.trimmedLeftPoint
+        (L.childIndex (l.head hl)) := by
+  cases l with
+  | nil => exact (hl rfl).elim
+  | cons b tail =>
+      cases tail with
+      | nil =>
+          change MoiseBandSegmentAddress.left L a
+              ((L.reversedTrimmedBlock b).head _) = _
+          simpa using L.left_head_reversedTrimmedBlock a b
+      | cons c tail =>
+          change MoiseBandSegmentAddress.left L a
+              (((L.reversedTrimmedBlock b ++
+                [MoiseBandSegmentAddress.junction L b c]) ++
+                L.childMoiseSegments (c :: tail)).head _) = _
+          rw [List.head_append_of_ne_nil (by
+                simp [L.reversedTrimmedBlock_nonempty b]),
+            List.head_append_of_ne_nil
+              (L.reversedTrimmedBlock_nonempty b)]
+          simpa using L.left_head_reversedTrimmedBlock a b
+
+theorem getLast_childMoiseSegments
+    {l : List (LevelAddress L.next.level)} (hl : l ≠ [])
+    (a : LevelAddress n) :
+    MoiseBandSegmentAddress.right L a
+        ((L.childMoiseSegments l).getLast
+          (L.childMoiseSegments_nonempty hl)) =
+      L.next.family.forgetObstacle.trimmedRightPoint
+        (L.childIndex (l.getLast hl)) := by
+  induction l with
+  | nil => exact (hl rfl).elim
+  | cons b tail ih =>
+      cases tail with
+      | nil =>
+          change MoiseBandSegmentAddress.right L a
+              ((L.reversedTrimmedBlock b).getLast _) = _
+          simpa using L.right_getLast_reversedTrimmedBlock a b
+      | cons c tail =>
+          have htail : (c :: tail) ≠ [] := by simp
+          change MoiseBandSegmentAddress.right L a
+              (((L.reversedTrimmedBlock b ++
+                [MoiseBandSegmentAddress.junction L b c]) ++
+                L.childMoiseSegments (c :: tail)).getLast _) = _
+          rw [List.getLast_append_of_right_ne_nil _ _
+            (L.childMoiseSegments_nonempty htail)]
+          simpa using ih htail
+
+theorem reversedTrimmedBlock_append_junction_isChain
+    (a : LevelAddress n) {b c : LevelAddress L.next.level}
+    (_hbc : I.LevelAdjacent b c) :
+    (L.reversedTrimmedBlock b ++
+      [MoiseBandSegmentAddress.junction L b c]).IsChain
+        (MoiseBandSegmentAddress.Adjacent L a) := by
+  apply (L.reversedTrimmedBlock_isChain a b).append (by simp)
+  intro x hx y hy
+  have hx' := List.getLast_of_mem_getLast? hx
+  rw [L.getLast_reversedTrimmedBlock b] at hx'
+  have hy' := List.head_of_mem_head? hy
+  change MoiseBandSegmentAddress.junction L b c = y at hy'
+  subst x
+  subst y
+  change L.next.family.forgetObstacle.trimmedEdgeStart
+      ⟨b, L.next.family.forgetObstacle.firstTrimmedEdgeIndex b⟩ =
+    L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b)
+  exact L.next.family.forgetObstacle.trimmedEdgeStart_first b
+
+theorem childMoiseSegments_isChain
+    (a : LevelAddress n) (l : List (LevelAddress L.next.level))
+    (hl : l.IsChain I.LevelAdjacent) :
+    (L.childMoiseSegments l).IsChain
+      (MoiseBandSegmentAddress.Adjacent L a) := by
+  induction l with
+  | nil => simp [childMoiseSegments]
+  | cons b tail ih =>
+      cases tail with
+      | nil => exact L.reversedTrimmedBlock_isChain a b
+      | cons c tail =>
+          have htail : (c :: tail) ≠ [] := by simp
+          change ((L.reversedTrimmedBlock b ++
+              [MoiseBandSegmentAddress.junction L b c]) ++
+            L.childMoiseSegments (c :: tail)).IsChain _
+          apply (L.reversedTrimmedBlock_append_junction_isChain a
+            hl.rel).append (ih hl.tail)
+          intro x hx y hy
+          have hx' := List.getLast_of_mem_getLast? hx
+          have hxlast : (L.reversedTrimmedBlock b ++
+              [MoiseBandSegmentAddress.junction L b c]).getLast (by
+                simp) = MoiseBandSegmentAddress.junction L b c := by simp
+          rw [hxlast] at hx'
+          have hy' := List.head_of_mem_head? hy
+          have hhead := L.head_childMoiseSegments htail a
+          subst x
+          change MoiseBandSegmentAddress.right L a
+              (MoiseBandSegmentAddress.junction L b c) =
+            MoiseBandSegmentAddress.left L a y
+          rw [← hy', hhead]
+          rfl
+
+/-- Parent crosscut edges in reverse list order and reverse orientation. -/
+noncomputable def parentMoiseSegments (a : LevelAddress n) :
+    List L.MoiseBandSegmentAddress :=
+  (F.edgeBlock a).reverse.map (MoiseBandSegmentAddress.parent L)
+
+/-- The complete non-retracing boundary route of the Moise cell associated
+to the parent level arc `a`. -/
+noncomputable def moiseBandSegments (a : LevelAddress n) :
+    List L.MoiseBandSegmentAddress :=
+  L.parentMoiseSegments a ++
+    [MoiseBandSegmentAddress.leftSide L] ++
+    L.childMoiseSegments (L.addresses a) ++
+    [MoiseBandSegmentAddress.rightSide L]
+
+theorem parentMoiseSegments_nonempty (a : LevelAddress n) :
+    L.parentMoiseSegments a ≠ [] := by
+  intro h
+  have hrev : (F.edgeBlock a).reverse = [] := List.map_eq_nil_iff.mp h
+  exact F.edgeBlock_nonempty a (List.reverse_eq_nil_iff.mp hrev)
+
+theorem parentMoiseSegments_isChain (a : LevelAddress n) :
+    (L.parentMoiseSegments a).IsChain
+      (MoiseBandSegmentAddress.Adjacent L a) := by
+  rw [parentMoiseSegments, List.isChain_map, List.isChain_reverse]
+  exact (F.edgeBlock_isChain a).imp fun _ _ h => h.symm
+
+/-- The reversed old-crosscut block also satisfies the ordered intersection
+condition for a simple segment chain. -/
+theorem parentMoiseSegments_pairwise (a : LevelAddress n) :
+    (L.parentMoiseSegments a).Pairwise
+      (MoiseBandSegmentAddress.ForwardCompatible L a) := by
+  rw [parentMoiseSegments, List.pairwise_map, List.pairwise_reverse,
+    LevelAvoidingJoinFamily.edgeBlock, List.pairwise_ofFn]
+  intro i j hij
+  change segment ℝ (F.edgeFinish ⟨a, j⟩) (F.edgeStart ⟨a, j⟩) ∩
+      segment ℝ (F.edgeFinish ⟨a, i⟩) (F.edgeStart ⟨a, i⟩) ⊆
+      {F.edgeStart ⟨a, j⟩}
+  by_cases hsucc : i.val + 1 = j.val
+  · have hjoin : F.edgeFinish ⟨a, i⟩ = F.edgeStart ⟨a, j⟩ := by
+      apply congrArg (F.synchronizedCrosscutCarrierLine a).data.vertex
+      apply Fin.ext
+      exact hsucc
+    have hinter := F.edgeSegment_inter_of_same_block_succ a i j hsucc
+    rw [Set.inter_comm] at hinter
+    simpa [LevelAvoidingJoinFamily.edgeSegment, segment_symm,
+      hjoin] using hinter.le
+  · have hijNe : i ≠ j := by
+      intro h
+      subst j
+      omega
+    have hback : j.val + 1 ≠ i.val := by omega
+    let B := (F.synchronizedCrosscutLine a).data
+    have hdis := B.resolvedSegment_disjoint_of_not_close
+      i j hijNe hsucc hback
+    have hdis' : Disjoint (F.edgeSegment ⟨a, i⟩)
+        (F.edgeSegment ⟨a, j⟩) := by
+      simpa [B, LevelAvoidingJoinFamily.edgeSegment,
+        LevelAvoidingJoinFamily.edgeStart,
+        LevelAvoidingJoinFamily.edgeFinish,
+        LevelAvoidingJoinFamily.synchronizedCrosscutCarrierLine,
+        SimpleBrokenLine.carrierBrokenLine,
+        BrokenLineData.resolvedBrokenLine] using hdis
+    rw [Set.disjoint_iff_inter_eq_empty] at hdis'
+    intro x hx
+    have hx' : x ∈ F.edgeSegment ⟨a, i⟩ ∩
+        F.edgeSegment ⟨a, j⟩ := by
+      simpa [LevelAvoidingJoinFamily.edgeSegment, segment_symm,
+        Set.inter_comm] using hx
+    rw [hdis'] at hx'
+    exact hx'.elim
+
+theorem head_parentMoiseSegments (a : LevelAddress n) :
+    (L.parentMoiseSegments a).head (L.parentMoiseSegments_nonempty a) =
+      MoiseBandSegmentAddress.parent L
+        ⟨a, F.lastEdgeIndex a⟩ := by
+  unfold parentMoiseSegments
+  rw [List.head_map, List.head_reverse, F.getLast_edgeBlock]
+
+theorem getLast_parentMoiseSegments (a : LevelAddress n) :
+    (L.parentMoiseSegments a).getLast
+        (L.parentMoiseSegments_nonempty a) =
+      MoiseBandSegmentAddress.parent L
+        ⟨a, F.firstEdgeIndex a⟩ := by
+  unfold parentMoiseSegments
+  rw [List.getLast_map, List.getLast_reverse, F.head_edgeBlock]
+
+theorem childMoiseSegments_addresses_nonempty (a : LevelAddress n) :
+    L.childMoiseSegments (L.addresses a) ≠ [] :=
+  L.childMoiseSegments_nonempty (L.addresses_nonempty a)
+
+theorem left_head_childMoiseSegments_addresses (a : LevelAddress n) :
+    MoiseBandSegmentAddress.left L a
+        ((L.childMoiseSegments (L.addresses a)).head
+          (L.childMoiseSegments_addresses_nonempty a)) =
+      L.next.family.forgetObstacle.trimmedLeftPoint
+        (L.childIndex (L.leftmostAddress a)) := by
+  rw [L.head_childMoiseSegments (L.addresses_nonempty a) a,
+    L.addresses_head a]
+
+theorem right_getLast_childMoiseSegments_addresses (a : LevelAddress n) :
+    MoiseBandSegmentAddress.right L a
+        ((L.childMoiseSegments (L.addresses a)).getLast
+          (L.childMoiseSegments_addresses_nonempty a)) =
+      L.next.family.forgetObstacle.trimmedRightPoint
+        (L.childIndex (L.rightmostAddress a)) := by
+  rw [L.getLast_childMoiseSegments (L.addresses_nonempty a) a,
+    L.addresses_getLast a]
+
+theorem parentMoiseSegments_append_leftSide_isChain
+    (a : LevelAddress n) :
+    (L.parentMoiseSegments a ++
+      [MoiseBandSegmentAddress.leftSide L]).IsChain
+        (MoiseBandSegmentAddress.Adjacent L a) := by
+  apply (L.parentMoiseSegments_isChain a).append (by simp)
+  intro x hx y hy
+  have hx' := List.getLast_of_mem_getLast? hx
+  rw [L.getLast_parentMoiseSegments a] at hx'
+  have hy' := List.head_of_mem_head? hy
+  change MoiseBandSegmentAddress.leftSide L = y at hy'
+  subst x
+  subst y
+  exact F.edgeStart_first a
+
+theorem parentLeftChildMoise_isChain (a : LevelAddress n) :
+    (L.parentMoiseSegments a ++
+      [MoiseBandSegmentAddress.leftSide L] ++
+      L.childMoiseSegments (L.addresses a)).IsChain
+        (MoiseBandSegmentAddress.Adjacent L a) := by
+  apply (L.parentMoiseSegments_append_leftSide_isChain a).append
+    (L.childMoiseSegments_isChain a (L.addresses a)
+      (L.addresses_isChain a))
+  intro x hx y hy
+  have hx' := List.getLast_of_mem_getLast? hx
+  have hxlast : (L.parentMoiseSegments a ++
+      [MoiseBandSegmentAddress.leftSide L]).getLast (by simp) =
+        MoiseBandSegmentAddress.leftSide L := by simp
+  rw [hxlast] at hx'
+  have hy' := List.head_of_mem_head? hy
+  have hhead := L.left_head_childMoiseSegments_addresses a
+  subst x
+  change MoiseBandSegmentAddress.right L a
+      (MoiseBandSegmentAddress.leftSide L) =
+    MoiseBandSegmentAddress.left L a y
+  rw [← hy', hhead]
+  rfl
+
+theorem moiseBandSegments_isChain (a : LevelAddress n) :
+    (L.moiseBandSegments a).IsChain
+      (MoiseBandSegmentAddress.Adjacent L a) := by
+  rw [moiseBandSegments]
+  apply (L.parentLeftChildMoise_isChain a).append (by simp)
+  intro x hx y hy
+  have hx' := List.getLast_of_mem_getLast? hx
+  have hxlast : (L.parentMoiseSegments a ++
+      [MoiseBandSegmentAddress.leftSide L] ++
+      L.childMoiseSegments (L.addresses a)).getLast (by simp) =
+      (L.childMoiseSegments (L.addresses a)).getLast
+        (L.childMoiseSegments_addresses_nonempty a) := by
+    exact List.getLast_append_of_right_ne_nil _ _
+      (L.childMoiseSegments_addresses_nonempty a)
+  rw [hxlast] at hx'
+  have hy' := List.head_of_mem_head? hy
+  change MoiseBandSegmentAddress.rightSide L = y at hy'
+  have hlast := L.right_getLast_childMoiseSegments_addresses a
+  subst x
+  subst y
+  exact hlast
+
+theorem moiseBandSegments_nonempty (a : LevelAddress n) :
+    L.moiseBandSegments a ≠ [] := by
+  rw [moiseBandSegments]
+  intro h
+  have h₁ := (List.append_eq_nil_iff.mp h).1
+  have h₂ := (List.append_eq_nil_iff.mp h₁).1
+  have h₃ := (List.append_eq_nil_iff.mp h₂).1
+  exact L.parentMoiseSegments_nonempty a h₃
+
+theorem moiseBandSegments_closes (a : LevelAddress n) :
+    MoiseBandSegmentAddress.Adjacent L a
+      ((L.moiseBandSegments a).getLast (L.moiseBandSegments_nonempty a))
+      ((L.moiseBandSegments a).head (L.moiseBandSegments_nonempty a)) := by
+  have hlast : (L.moiseBandSegments a).getLast
+      (L.moiseBandSegments_nonempty a) =
+        MoiseBandSegmentAddress.rightSide L := by
+    simp [moiseBandSegments]
+  have hhead : (L.moiseBandSegments a).head
+      (L.moiseBandSegments_nonempty a) =
+        MoiseBandSegmentAddress.parent L
+          ⟨a, F.lastEdgeIndex a⟩ := by
+    apply Option.some.inj
+    rw [← List.head?_eq_some_head (L.moiseBandSegments_nonempty a)]
+    calc
+      (L.moiseBandSegments a).head? =
+          (L.parentMoiseSegments a).head? := by
+        unfold moiseBandSegments
+        rw [List.head?_append_of_ne_nil _ (by
+              simp [L.parentMoiseSegments_nonempty a]),
+          List.head?_append_of_ne_nil _ (by
+              simp [L.parentMoiseSegments_nonempty a]),
+          List.head?_append_of_ne_nil _
+            (L.parentMoiseSegments_nonempty a)]
+      _ = some (MoiseBandSegmentAddress.parent L
+          ⟨a, F.lastEdgeIndex a⟩) := by
+        rw [List.head?_eq_some_head (L.parentMoiseSegments_nonempty a),
+          L.head_parentMoiseSegments a]
+  rw [hlast, hhead]
+  exact (F.edgeFinish_last a).symm
+
+theorem levelAdjacent_ne {b c : LevelAddress L.next.level}
+    (hbc : I.LevelAdjacent b c) : b ≠ c := by
+  have hc : c = nextLevelAddress L.next.level b :=
+    (I.levelRightPoint_eq_levelLeftPoint_iff b c).mp hbc
+  rw [hc]
+  exact (nextLevelAddress_ne L.next.level b).symm
+
+/-- No selected descendant's right endpoint wraps around to its parent
+arc's left endpoint. -/
+theorem child_rightPoint_ne_parent_left_of_mem_addresses
+    {a : LevelAddress n} {b : LevelAddress L.next.level}
+    (hb : b ∈ L.addresses a) :
+    (J.curvePoint (I.levelArc b).right : Plane) ≠
+      (J.curvePoint (I.levelArc a).left : Plane) := by
+  rw [addresses, List.mem_map] at hb
+  obtain ⟨b₀, hb₀, rfl⟩ := hb
+  rw [I.levelArc_cast L.parentLevel_add_depth]
+  exact I.levelArc_right_ne_parent_left_of_mem_descendantAddresses
+    a b₀ hb₀
+
+/-- No selected descendant's left endpoint wraps around to its parent
+arc's right endpoint. -/
+theorem child_leftPoint_ne_parent_right_of_mem_addresses
+    {a : LevelAddress n} {b : LevelAddress L.next.level}
+    (hb : b ∈ L.addresses a) :
+    (J.curvePoint (I.levelArc b).left : Plane) ≠
+      (J.curvePoint (I.levelArc a).right : Plane) := by
+  rw [addresses, List.mem_map] at hb
+  obtain ⟨b₀, hb₀, rfl⟩ := hb
+  rw [I.levelArc_cast L.parentLevel_add_depth]
+  exact I.levelArc_left_ne_parent_right_of_mem_descendantAddresses
+    a b₀ hb₀
+
+/-- Adjacent raw trimmed paths have distinct endpoints on their common
+retained hair. -/
+theorem trimmedRightPoint_ne_trimmedLeftPoint_of_levelAdjacent
+    {b c : LevelAddress L.next.level} (hbc : I.LevelAdjacent b c) :
+    L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b) ≠
+      L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c) := by
+  let G := L.next.family.forgetObstacle
+  have hbcNe : b ≠ c := L.levelAdjacent_ne hbc
+  have hindex : L.childIndex b ≠ L.childIndex c := by
+    intro h
+    exact hbcNe (levelIndexOf_injective L.next.level h)
+  have hdis := G.pairwise_disjoint_trimmedPath hindex
+  intro hpoints
+  exact Set.disjoint_left.mp hdis
+    (Path.source_mem_range (G.trimmedPath (L.childIndex b)))
+    (by
+      rw [hpoints]
+      exact Path.target_mem_range (G.trimmedPath (L.childIndex c)))
+
+theorem child_or_junction_of_mem_childMoiseSegments
+    {l : List (LevelAddress L.next.level)}
+    (hl : l.IsChain I.LevelAdjacent)
+    {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.childMoiseSegments l) :
+    (∃ e : L.next.family.forgetObstacle.TrimmedEdgeAddress,
+        j = MoiseBandSegmentAddress.child L e) ∨
+      ∃ b c : LevelAddress L.next.level,
+        I.LevelAdjacent b c ∧
+          j = MoiseBandSegmentAddress.junction L b c := by
+  induction l with
+  | nil => simp [childMoiseSegments] at hj
+  | cons b tail ih =>
+      cases tail with
+      | nil =>
+          left
+          rw [childMoiseSegments, reversedTrimmedBlock,
+            List.mem_map] at hj
+          obtain ⟨e, _he, rfl⟩ := hj
+          exact ⟨e, rfl⟩
+      | cons c tail =>
+          rw [childMoiseSegments, List.mem_append] at hj
+          rcases hj with hj | hj
+          · rw [List.mem_append] at hj
+            rcases hj with hj | hj
+            · left
+              rw [reversedTrimmedBlock, List.mem_map] at hj
+              obtain ⟨e, _he, rfl⟩ := hj
+              exact ⟨e, rfl⟩
+            · right
+              have hj' : j = MoiseBandSegmentAddress.junction L b c := by
+                simpa only [List.mem_singleton] using hj
+              exact ⟨b, c, hl.rel, hj'⟩
+          · exact ih hl.tail hj
+
+/-- Membership in the recursive child route retains the child addresses
+which support the corresponding raw edge or junction. -/
+theorem child_or_junction_with_addresses_of_mem
+    {l : List (LevelAddress L.next.level)}
+    (hl : l.IsChain I.LevelAdjacent)
+    {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.childMoiseSegments l) :
+    (∃ e : L.next.family.forgetObstacle.TrimmedEdgeAddress,
+        e.1 ∈ l ∧ j = MoiseBandSegmentAddress.child L e) ∨
+      ∃ b c : LevelAddress L.next.level,
+        b ∈ l ∧ c ∈ l ∧ I.LevelAdjacent b c ∧
+          j = MoiseBandSegmentAddress.junction L b c := by
+  induction l with
+  | nil => simp [childMoiseSegments] at hj
+  | cons b tail ih =>
+      cases tail with
+      | nil =>
+          left
+          rw [childMoiseSegments, reversedTrimmedBlock,
+            List.mem_map] at hj
+          obtain ⟨e, he, rfl⟩ := hj
+          rw [List.mem_reverse, LevelAvoidingJoinFamily.trimmedEdgeBlock,
+            List.mem_ofFn'] at he
+          obtain ⟨i, rfl⟩ := he
+          exact ⟨⟨b, i⟩, by simp, rfl⟩
+      | cons c tail =>
+          rw [childMoiseSegments, List.mem_append] at hj
+          rcases hj with hj | hj
+          · rw [List.mem_append] at hj
+            rcases hj with hj | hj
+            · left
+              rw [reversedTrimmedBlock, List.mem_map] at hj
+              obtain ⟨e, he, rfl⟩ := hj
+              rw [List.mem_reverse, LevelAvoidingJoinFamily.trimmedEdgeBlock,
+                List.mem_ofFn'] at he
+              obtain ⟨i, rfl⟩ := he
+              exact ⟨⟨b, i⟩, by simp, rfl⟩
+            · right
+              have hj' : j = MoiseBandSegmentAddress.junction L b c := by
+                simpa only [List.mem_singleton] using hj
+              exact ⟨b, c, by simp, by simp, hl.rel, hj'⟩
+          · rcases ih hl.tail hj with hraw | hjunction
+            · left
+              obtain ⟨e, he, rfl⟩ := hraw
+              exact ⟨e, by simp [he], rfl⟩
+            · right
+              obtain ⟨d, e, hd, he, hde, rfl⟩ := hjunction
+              exact ⟨d, e, by simp [hd], by simp [he], hde, rfl⟩
+
+theorem parent_of_mem_parentMoiseSegments
+    {a : LevelAddress n} {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.parentMoiseSegments a) :
+    ∃ e : F.LevelEdgeAddress,
+      j = MoiseBandSegmentAddress.parent L e := by
+  rw [parentMoiseSegments, List.mem_map] at hj
+  obtain ⟨e, _he, rfl⟩ := hj
+  exact ⟨e, rfl⟩
+
+/-- Every raw trimmed edge is nondegenerate. -/
+theorem childSegment_left_ne_right
+    (a : LevelAddress n)
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress) :
+    MoiseBandSegmentAddress.left L a
+        (MoiseBandSegmentAddress.child L e) ≠
+      MoiseBandSegmentAddress.right L a
+        (MoiseBandSegmentAddress.child L e) := by
+  change L.next.family.forgetObstacle.trimmedEdgeFinish e ≠
+    L.next.family.forgetObstacle.trimmedEdgeStart e
+  exact (L.next.family.forgetObstacle.trimmedEdgeStart_ne_finish e).symm
+
+/-- Both extreme retained-hair sides are nondegenerate. -/
+theorem leftSide_left_ne_right (a : LevelAddress n) :
+    MoiseBandSegmentAddress.left L a
+        (MoiseBandSegmentAddress.leftSide L) ≠
+      MoiseBandSegmentAddress.right L a
+        (MoiseBandSegmentAddress.leftSide L) := by
+  have hlt := L.next.dist_child_trimmedLeft_lt_parent_left F hn a
+    (L.leftmostAddress a)
+    (by simp [L.levelArc_leftmostAddress_left a])
+  intro h
+  change F.leftSynchronizedPoint a =
+    L.next.family.forgetObstacle.trimmedLeftPoint
+      (L.childIndex (L.leftmostAddress a)) at h
+  rw [← h] at hlt
+  exact (lt_irrefl _ hlt)
+
+theorem rightSide_left_ne_right (a : LevelAddress n) :
+    MoiseBandSegmentAddress.left L a
+        (MoiseBandSegmentAddress.rightSide L) ≠
+      MoiseBandSegmentAddress.right L a
+        (MoiseBandSegmentAddress.rightSide L) := by
+  have hlt := L.next.dist_child_trimmedRight_lt_parent_right F hn a
+    (L.rightmostAddress a)
+    (by simp [L.levelArc_rightmostAddress_right a])
+  intro h
+  change L.next.family.forgetObstacle.trimmedRightPoint
+      (L.childIndex (L.rightmostAddress a)) =
+        F.rightSynchronizedPoint a at h
+  rw [h] at hlt
+  exact (lt_irrefl _ hlt)
+
+/-- The corrected extreme left side, ending at the raw trimmed endpoint,
+lies in the old retained-hair base segment. -/
+theorem rawLeftSide_subset_parentBaseSegment (a : LevelAddress n) :
+    segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.trimmedLeftPoint
+          (L.childIndex (L.leftmostAddress a))) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (F.leftSynchronizedPoint a) := by
+  let H := I.levelLeftHair a
+  let child : H.carrier :=
+    ⟨L.next.family.forgetObstacle.trimmedLeftPoint
+        (L.childIndex (L.leftmostAddress a)), by
+      rw [← L.leftmostAddress_leftHair_carrier a]
+      exact (L.next.family.forgetObstacle.leftHairPoint
+        (L.leftmostAddress a)).2⟩
+  let parent : H.carrier :=
+    ⟨F.leftSynchronizedPoint a,
+      F.leftSynchronizedPoint_mem_leftHair a⟩
+  have hparameter : H.carrierParameter child ≤
+      H.carrierParameter parent :=
+    (L.leftmost_trimmed_carrierParameter_lt_parent a).le
+  have hbase : segment ℝ
+      (J.curvePoint (I.levelArc a).left : Plane) (child : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (parent : Plane) :=
+    H.baseSegment_subset_of_parameter_le child parent hparameter
+  have hchild : (child : Plane) ∈
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (parent : Plane) :=
+    hbase (right_mem_segment ℝ _ _)
+  have hsegment : segment ℝ (parent : Plane) (child : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (parent : Plane) :=
+    (convex_segment _ _).segment_subset
+      (right_mem_segment ℝ _ _) hchild
+  simpa [H, child, parent] using hsegment
+
+/-- The corrected raw right side has the analogous containment. -/
+theorem rawRightSide_subset_parentBaseSegment (a : LevelAddress n) :
+    segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint
+          (L.childIndex (L.rightmostAddress a)))
+        (F.rightSynchronizedPoint a) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (F.rightSynchronizedPoint a) := by
+  let H := I.levelRightHair a
+  let child : H.carrier :=
+    ⟨L.next.family.forgetObstacle.trimmedRightPoint
+        (L.childIndex (L.rightmostAddress a)), by
+      rw [← L.rightmostAddress_rightHair_carrier a]
+      exact (L.next.family.forgetObstacle.rightHairPoint
+        (L.rightmostAddress a)).2⟩
+  let parent : H.carrier :=
+    ⟨F.rightSynchronizedPoint a,
+      F.rightSynchronizedPoint_mem_rightHair a⟩
+  have hparameter : H.carrierParameter child ≤
+      H.carrierParameter parent :=
+    (L.rightmost_trimmed_carrierParameter_lt_parent a).le
+  have hbase : segment ℝ
+      (J.curvePoint (I.levelArc a).right : Plane) (child : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (parent : Plane) :=
+    H.baseSegment_subset_of_parameter_le child parent hparameter
+  have hchild : (child : Plane) ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (parent : Plane) :=
+    hbase (right_mem_segment ℝ _ _)
+  have hsegment : segment ℝ (child : Plane) (parent : Plane) ⊆
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+        (parent : Plane) :=
+    (convex_segment _ _).segment_subset hchild
+      (right_mem_segment ℝ _ _)
+  simpa [H, child, parent] using hsegment
+
+/-- An old parent edge and a raw child-crosscut edge are disjoint. -/
+theorem parentEdge_disjoint_rawChildEdge
+    (e : F.LevelEdgeAddress)
+    (f : L.next.family.forgetObstacle.TrimmedEdgeAddress) :
+    Disjoint (F.edgeSegment e)
+      (L.next.family.forgetObstacle.trimmedEdgeSegment f) := by
+  apply (L.next.trimmed_path_disjoint (L.childIndex f.1)).symm.mono
+  · intro x hx
+    rw [(F.synchronizedPolygonalCircle hn).closedRegion_eq_union]
+    apply Or.inr
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr
+      ⟨e.1, F.edgeSegment_subset_crosscutRange e hx⟩
+  · exact L.next.family.forgetObstacle
+      |>.trimmedEdgeSegment_subset_trimmedPathRange f
+
+/-- Every internal raw-hair junction remains in the separating neighborhood
+of the original Jordan curve. -/
+theorem junctionSegment_subset_thickening
+    {b c : LevelAddress L.next.level} (hbc : I.LevelAdjacent b c) :
+    segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)) ⊆
+      thickening L.next.buffer J.carrier := by
+  let G := L.next.family.forgetObstacle
+  let q : Plane := J.curvePoint (I.levelArc c).left
+  have hqCarrier : q ∈ J.carrier :=
+    (J.curvePoint (I.levelArc c).left).2
+  have hrightReturn : G.trimmedRightPoint (L.childIndex b) ∈
+      G.synchronizedReturnSet b := by
+    apply Or.inl
+    apply Or.inr
+    apply Or.inl
+    exact Or.inr (Path.source_mem_range
+      (G.trimmedPath (L.childIndex b)))
+  have hleftReturn : G.trimmedLeftPoint (L.childIndex c) ∈
+      G.synchronizedReturnSet c := by
+    apply Or.inl
+    apply Or.inr
+    apply Or.inl
+    exact Or.inr (Path.target_mem_range
+      (G.trimmedPath (L.childIndex c)))
+  have hrightNearLeft := L.next.return_near b hrightReturn
+  have hleftNear : G.trimmedLeftPoint (L.childIndex c) ∈
+      ball q (L.next.buffer / 4) := by
+    simpa [q] using L.next.return_near c hleftReturn
+  have hboundary := L.next.rightBoundaryPoint_mem_cellClosedBall b
+  have hboundary' : dist
+      (J.curvePoint (I.levelArc b).left : Plane)
+      (J.curvePoint (I.levelArc b).right : Plane) ≤
+        L.next.buffer / 4 := by
+    simpa [mem_closedBall, dist_comm] using hboundary
+  have hrightNear : G.trimmedRightPoint (L.childIndex b) ∈
+      ball q (L.next.buffer / 2) := by
+    rw [mem_ball] at hrightNearLeft ⊢
+    have hq : q = (J.curvePoint (I.levelArc b).right : Plane) :=
+      hbc.symm
+    rw [hq]
+    calc
+      dist (G.trimmedRightPoint (L.childIndex b))
+          (J.curvePoint (I.levelArc b).right : Plane) ≤
+          dist (G.trimmedRightPoint (L.childIndex b))
+              (J.curvePoint (I.levelArc b).left : Plane) +
+            dist (J.curvePoint (I.levelArc b).left : Plane)
+              (J.curvePoint (I.levelArc b).right : Plane) :=
+        dist_triangle _ _ _
+      _ < L.next.buffer / 2 := by
+        nlinarith [L.next.buffer_pos, hboundary']
+  have hleftNearHalf : G.trimmedLeftPoint (L.childIndex c) ∈
+      ball q (L.next.buffer / 2) := by
+    exact (Metric.ball_subset_ball (by linarith [L.next.buffer_pos] :
+      L.next.buffer / 4 ≤ L.next.buffer / 2)) hleftNear
+  have hsegment : segment ℝ
+      (G.trimmedRightPoint (L.childIndex b))
+      (G.trimmedLeftPoint (L.childIndex c)) ⊆
+      ball q (L.next.buffer / 2) :=
+    (convex_ball q (L.next.buffer / 2)).segment_subset
+      hrightNear hleftNearHalf
+  exact hsegment.trans <|
+    (Metric.ball_subset_ball (by linarith [L.next.buffer_pos] :
+      L.next.buffer / 2 ≤ L.next.buffer)).trans
+        (ball_subset_thickening hqCarrier L.next.buffer)
+
+/-- An old parent edge is disjoint from every internal raw-hair junction. -/
+theorem parentEdge_disjoint_junction
+    (e : F.LevelEdgeAddress)
+    {b c : LevelAddress L.next.level} (hbc : I.LevelAdjacent b c) :
+    Disjoint (F.edgeSegment e)
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c))) := by
+  apply L.next.buffer_separation.mono
+  · intro x hx
+    rw [(F.synchronizedPolygonalCircle hn).closedRegion_eq_union]
+    apply Or.inr
+    rw [F.carrier_synchronizedPolygonalCircle hn]
+    exact Set.mem_iUnion.mpr
+      ⟨e.1, F.edgeSegment_subset_crosscutRange e hx⟩
+  · exact L.junctionSegment_subset_thickening hbc
+
+/-- A corrected junction is a subsegment of the retained hair common to
+the two adjacent child arcs. -/
+theorem junctionSegment_subset_rightHairCarrier
+    {b c : LevelAddress L.next.level} (hbc : I.LevelAdjacent b c) :
+    segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)) ⊆
+      (I.levelRightHair b).carrier := by
+  let G := L.next.family.forgetObstacle
+  have hb : G.trimmedRightPoint (L.childIndex b) ∈
+      (I.levelRightHair b).carrier :=
+    (G.rightHairPoint b).2
+  have hc : G.trimmedLeftPoint (L.childIndex c) ∈
+      (I.levelRightHair b).carrier := by
+    rw [I.levelRightHair_carrier_eq_levelLeftHair_of_eq b c hbc]
+    exact (G.leftHairPoint c).2
+  exact (convex_segment _ _).segment_subset hb hc
+
+theorem junctionSegment_subset_leftHairCarrier
+    {b c : LevelAddress L.next.level} (hbc : I.LevelAdjacent b c) :
+    segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)) ⊆
+      (I.levelLeftHair c).carrier := by
+  rw [← I.levelRightHair_carrier_eq_levelLeftHair_of_eq b c hbc]
+  exact L.junctionSegment_subset_rightHairCarrier hbc
+
+/-- The extreme corrected sides lie on the corresponding retained hairs. -/
+theorem rawLeftSide_subset_leftHairCarrier (a : LevelAddress n) :
+    segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.trimmedLeftPoint
+          (L.childIndex (L.leftmostAddress a))) ⊆
+      (I.levelLeftHair a).carrier := by
+  have hparent : F.leftSynchronizedPoint a ∈
+      (I.levelLeftHair a).carrier :=
+    F.leftSynchronizedPoint_mem_leftHair a
+  have hchild : L.next.family.forgetObstacle.trimmedLeftPoint
+        (L.childIndex (L.leftmostAddress a)) ∈
+      (I.levelLeftHair a).carrier := by
+    rw [← L.leftmostAddress_leftHair_carrier a]
+    exact (L.next.family.forgetObstacle.leftHairPoint
+      (L.leftmostAddress a)).2
+  exact (convex_segment _ _).segment_subset hparent hchild
+
+theorem rawRightSide_subset_rightHairCarrier (a : LevelAddress n) :
+    segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint
+          (L.childIndex (L.rightmostAddress a)))
+        (F.rightSynchronizedPoint a) ⊆
+      (I.levelRightHair a).carrier := by
+  have hchild : L.next.family.forgetObstacle.trimmedRightPoint
+        (L.childIndex (L.rightmostAddress a)) ∈
+      (I.levelRightHair a).carrier := by
+    rw [← L.rightmostAddress_rightHair_carrier a]
+    exact (L.next.family.forgetObstacle.rightHairPoint
+      (L.rightmostAddress a)).2
+  have hparent : F.rightSynchronizedPoint a ∈
+      (I.levelRightHair a).carrier :=
+    F.rightSynchronizedPoint_mem_rightHair a
+  exact (convex_segment _ _).segment_subset hchild hparent
+
+/-- A reversed raw edge meets its own right endpoint hair only at the edge's
+route-final endpoint (and is disjoint from it unless it is the final route
+edge of that child block). -/
+theorem rawChildEdge_inter_rightHair_subset_routeRight
+    (a : LevelAddress n)
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress) :
+    segment ℝ
+        (MoiseBandSegmentAddress.left L a
+          (MoiseBandSegmentAddress.child L e))
+        (MoiseBandSegmentAddress.right L a
+          (MoiseBandSegmentAddress.child L e)) ∩
+      (I.levelRightHair e.1).carrier ⊆
+        {MoiseBandSegmentAddress.right L a
+          (MoiseBandSegmentAddress.child L e)} := by
+  let G := L.next.family.forgetObstacle
+  intro x hx
+  change x ∈ segment ℝ (G.trimmedEdgeFinish e)
+      (G.trimmedEdgeStart e) ∩ (I.levelRightHair e.1).carrier at hx
+  have hxEdge : x ∈ G.trimmedEdgeSegment e := by
+    change x ∈ segment ℝ (G.trimmedEdgeStart e)
+      (G.trimmedEdgeFinish e)
+    simpa only [segment_symm] using hx.1
+  have hxPath : x ∈ range (G.trimmedPath (L.childIndex e.1)) :=
+    G.trimmedEdgeSegment_subset_trimmedPathRange e hxEdge
+  have hxInter : x ∈ range (G.trimmedPath (L.childIndex e.1)) ∩
+      (I.levelRightHair
+        (levelAddressAt L.next.level (L.childIndex e.1))).carrier := by
+    refine ⟨hxPath, ?_⟩
+    change x ∈ (I.levelRightHair
+      (levelAddressAt L.next.level (levelIndexOf L.next.level e.1))).carrier
+    rw [levelAddressAt_levelIndexOf]
+    exact hx.2
+  rw [G.range_trimmedPath_inter_rightHair] at hxInter
+  have hxEq : x = G.trimmedRightPoint (L.childIndex e.1) :=
+    mem_singleton_iff.mp hxInter
+  have hzero : e.2.val = 0 :=
+    (G.trimmedRightPoint_mem_trimmedEdgeSegment_iff e.1 e.2).mp (by
+      rw [← hxEq]
+      exact hxEdge)
+  have heFirst : e.2 = G.firstTrimmedEdgeIndex e.1 :=
+    Fin.ext (by simpa [LevelAvoidingJoinFamily.firstTrimmedEdgeIndex]
+      using hzero)
+  rw [mem_singleton_iff, hxEq]
+  change G.trimmedRightPoint (L.childIndex e.1) = G.trimmedEdgeStart e
+  rcases e with ⟨b, i⟩
+  simp only at heFirst
+  subst i
+  exact (G.trimmedEdgeStart_first b).symm
+
+/-- A raw edge meets its own left endpoint hair only at the common trimmed
+left endpoint. -/
+theorem leftHair_inter_rawChildEdge_subset_trimmedLeft
+    (a : LevelAddress n)
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress) :
+    (I.levelLeftHair e.1).carrier ∩
+      segment ℝ
+        (MoiseBandSegmentAddress.left L a
+          (MoiseBandSegmentAddress.child L e))
+        (MoiseBandSegmentAddress.right L a
+          (MoiseBandSegmentAddress.child L e)) ⊆
+      {L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex e.1)} := by
+  let G := L.next.family.forgetObstacle
+  intro x hx
+  change x ∈ (I.levelLeftHair e.1).carrier ∩
+      segment ℝ (G.trimmedEdgeFinish e) (G.trimmedEdgeStart e) at hx
+  have hxEdge : x ∈ G.trimmedEdgeSegment e := by
+    change x ∈ segment ℝ (G.trimmedEdgeStart e)
+      (G.trimmedEdgeFinish e)
+    simpa only [segment_symm] using hx.2
+  have hxPath : x ∈ range (G.trimmedPath (L.childIndex e.1)) :=
+    G.trimmedEdgeSegment_subset_trimmedPathRange e hxEdge
+  have hxInter : x ∈ range (G.trimmedPath (L.childIndex e.1)) ∩
+      (I.levelLeftHair
+        (levelAddressAt L.next.level (L.childIndex e.1))).carrier := by
+    refine ⟨hxPath, ?_⟩
+    change x ∈ (I.levelLeftHair
+      (levelAddressAt L.next.level (levelIndexOf L.next.level e.1))).carrier
+    rw [levelAddressAt_levelIndexOf]
+    exact hx.1
+  rw [G.range_trimmedPath_inter_leftHair] at hxInter
+  exact hxInter
+
+/-- A raw child edge followed by the junction at the right end of its own
+child block is forward-compatible. -/
+theorem rawChildEdge_forward_junction
+    (a : LevelAddress n) {b c : LevelAddress L.next.level}
+    (hbc : I.LevelAdjacent b c)
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress)
+    (he : e.1 = b) :
+    MoiseBandSegmentAddress.ForwardCompatible L a
+      (MoiseBandSegmentAddress.child L e)
+      (MoiseBandSegmentAddress.junction L b c) := by
+  subst b
+  intro x hx
+  apply L.rawChildEdge_inter_rightHair_subset_routeRight a e
+  exact ⟨hx.1, L.junctionSegment_subset_rightHairCarrier hbc hx.2⟩
+
+/-- The junction at the left end of a child block is forward-compatible
+with every raw edge in that block. -/
+theorem junction_forward_rawChildEdge
+    (a : LevelAddress n) {b c : LevelAddress L.next.level}
+    (hbc : I.LevelAdjacent b c)
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress)
+    (he : e.1 = c) :
+    MoiseBandSegmentAddress.ForwardCompatible L a
+      (MoiseBandSegmentAddress.junction L b c)
+      (MoiseBandSegmentAddress.child L e) := by
+  subst c
+  intro x hx
+  have hx' := L.leftHair_inter_rawChildEdge_subset_trimmedLeft a e
+    ⟨L.junctionSegment_subset_leftHairCarrier hbc hx.1, hx.2⟩
+  exact hx'
+
+/-- Raw edges belonging to distinct child crosscuts are disjoint. -/
+theorem rawChildEdge_disjoint_of_address_ne
+    (e f : L.next.family.forgetObstacle.TrimmedEdgeAddress)
+    (hef : e.1 ≠ f.1) :
+    Disjoint (L.next.family.forgetObstacle.trimmedEdgeSegment e)
+      (L.next.family.forgetObstacle.trimmedEdgeSegment f) := by
+  let G := L.next.family.forgetObstacle
+  have hindex : L.childIndex e.1 ≠ L.childIndex f.1 := by
+    intro h
+    exact hef (levelIndexOf_injective L.next.level h)
+  exact (G.pairwise_disjoint_trimmedPath hindex).mono
+    (G.trimmedEdgeSegment_subset_trimmedPathRange e)
+    (G.trimmedEdgeSegment_subset_trimmedPathRange f)
+
+/-- A raw child edge is disjoint from a junction carried by neither of its
+endpoint hairs. -/
+theorem rawChildEdge_disjoint_junction_of_nonincident
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress)
+    {b c : LevelAddress L.next.level} (hbc : I.LevelAdjacent b c)
+    (heb : e.1 ≠ b) (hec : e.1 ≠ c) :
+    Disjoint (L.next.family.forgetObstacle.trimmedEdgeSegment e)
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c))) := by
+  let G := L.next.family.forgetObstacle
+  have hcNext : c = nextLevelAddress L.next.level b :=
+    (I.levelRightPoint_eq_levelLeftPoint_iff b c).mp hbc
+  have hLeft : (J.curvePoint (I.levelArc b).right : Plane) ≠
+      (J.curvePoint (I.levelArc e.1).left : Plane) := by
+    apply I.levelRightPoint_ne_levelLeftPoint_of_ne_next b e.1
+    intro h
+    apply hec
+    rw [h, hcNext]
+  have hRight : (J.curvePoint (I.levelArc b).right : Plane) ≠
+      (J.curvePoint (I.levelArc e.1).right : Plane) :=
+    I.levelRightPoint_ne_levelRightPoint_of_ne b e.1 heb.symm
+  have hhair : (I.levelRightHair b).carrier ⊆
+      I.nonEndpointHairCarrier e.1 :=
+    I.levelRightHair_carrier_subset_nonEndpointHairCarrier b e.1
+      hLeft hRight
+  have hdis : Disjoint
+      (range (G.trimmedPath (levelIndexOf L.next.level e.1)))
+      (I.nonEndpointHairCarrier e.1) := by
+    simpa using G.range_trimmedPath_disjoint_nonEndpointHairCarrier
+      (levelIndexOf L.next.level e.1)
+  exact hdis.mono
+    (G.trimmedEdgeSegment_subset_trimmedPathRange e)
+    ((L.junctionSegment_subset_rightHairCarrier hbc).trans hhair)
+
+/-- Junctions on distinct retained right hairs are disjoint. -/
+theorem junction_disjoint_junction_of_left_ne
+    {b c d e : LevelAddress L.next.level}
+    (hbc : I.LevelAdjacent b c) (hde : I.LevelAdjacent d e)
+    (hbd : b ≠ d) :
+    Disjoint
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex d))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex e))) :=
+  (I.disjoint_levelRightHairs_of_ne b d hbd).mono
+    (L.junctionSegment_subset_rightHairCarrier hbc)
+    (L.junctionSegment_subset_rightHairCarrier hde)
+
+/-- Child-route segments assigned to distinct parent cells are disjoint.
+This is the geometric form of the fact that the two cells use disjoint
+blocks of descendant crosscuts. -/
+theorem childMoiseSegment_disjoint_of_parent_ne
+    {a d : LevelAddress n} (had : a ≠ d)
+    {j k : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.childMoiseSegments (L.addresses a))
+    (hk : k ∈ L.childMoiseSegments (L.addresses d)) :
+    Disjoint
+      (segment ℝ (MoiseBandSegmentAddress.left L a j)
+        (MoiseBandSegmentAddress.right L a j))
+      (segment ℝ (MoiseBandSegmentAddress.left L d k)
+        (MoiseBandSegmentAddress.right L d k)) := by
+  have hblocks := L.addresses_disjoint_of_ne had
+  have hne_of_mem :
+      ∀ {b c : LevelAddress L.next.level},
+        b ∈ L.addresses a → c ∈ L.addresses d → b ≠ c := by
+    intro b c hb hc hbc
+    subst c
+    exact List.disjoint_left.mp hblocks hb hc
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain a) hj with hjRaw | hjunction
+  · obtain ⟨e, heMem, rfl⟩ := hjRaw
+    rcases L.child_or_junction_with_addresses_of_mem
+        (L.addresses_isChain d) hk with hkRaw | hkJunction
+    · obtain ⟨f, hfMem, rfl⟩ := hkRaw
+      change Disjoint
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+          (L.next.family.forgetObstacle.trimmedEdgeStart e))
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+          (L.next.family.forgetObstacle.trimmedEdgeStart f))
+      rw [segment_symm ℝ
+        (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+        (L.next.family.forgetObstacle.trimmedEdgeStart e),
+        segment_symm ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+          (L.next.family.forgetObstacle.trimmedEdgeStart f)]
+      exact L.rawChildEdge_disjoint_of_address_ne e f
+        (hne_of_mem heMem hfMem)
+    · obtain ⟨b, c, hbMem, hcMem, hbc, rfl⟩ := hkJunction
+      change Disjoint
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+          (L.next.family.forgetObstacle.trimmedEdgeStart e))
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+          (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+      rw [segment_symm ℝ
+        (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+        (L.next.family.forgetObstacle.trimmedEdgeStart e)]
+      exact L.rawChildEdge_disjoint_junction_of_nonincident e hbc
+        (hne_of_mem heMem hbMem) (hne_of_mem heMem hcMem)
+  · obtain ⟨b, c, hbMem, hcMem, hbc, rfl⟩ := hjunction
+    rcases L.child_or_junction_with_addresses_of_mem
+        (L.addresses_isChain d) hk with hkRaw | hkJunction
+    · obtain ⟨f, hfMem, rfl⟩ := hkRaw
+      change Disjoint
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+          (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+        (segment ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+          (L.next.family.forgetObstacle.trimmedEdgeStart f))
+      rw [segment_symm ℝ
+        (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+        (L.next.family.forgetObstacle.trimmedEdgeStart f)]
+      exact (L.rawChildEdge_disjoint_junction_of_nonincident f hbc
+        (hne_of_mem hbMem hfMem).symm
+        (hne_of_mem hcMem hfMem).symm).symm
+    · obtain ⟨e, f, heMem, hfMem, hef, rfl⟩ := hkJunction
+      exact L.junction_disjoint_junction_of_left_ne hbc hef
+        (hne_of_mem hbMem heMem)
+
+theorem child_with_address_of_mem_reversedTrimmedBlock
+    {b : LevelAddress L.next.level} {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.reversedTrimmedBlock b) :
+    ∃ e : L.next.family.forgetObstacle.TrimmedEdgeAddress,
+      e.1 = b ∧ j = MoiseBandSegmentAddress.child L e := by
+  rw [reversedTrimmedBlock, List.mem_map] at hj
+  obtain ⟨e, he, rfl⟩ := hj
+  rw [List.mem_reverse, LevelAvoidingJoinFamily.trimmedEdgeBlock,
+    List.mem_ofFn'] at he
+  obtain ⟨i, rfl⟩ := he
+  exact ⟨⟨b, i⟩, rfl, rfl⟩
+
+/-- The complete raw child side, including every intervening retained-hair
+junction, is an ordered simple segment chain. -/
+theorem childMoiseSegments_pairwise
+    (a : LevelAddress n) {l : List (LevelAddress L.next.level)}
+    (hl : l.IsChain I.LevelAdjacent) (hnd : l.Nodup) :
+    (L.childMoiseSegments l).Pairwise
+      (MoiseBandSegmentAddress.ForwardCompatible L a) := by
+  induction l with
+  | nil => simp [childMoiseSegments]
+  | cons b tail ih =>
+      cases tail with
+      | nil => exact L.reversedTrimmedBlock_pairwise a b
+      | cons c tail =>
+          have hndParts := List.nodup_cons.mp hnd
+          have hbNot : b ∉ c :: tail := hndParts.1
+          have htailNodup : (c :: tail).Nodup := hndParts.2
+          have hprefix : (L.reversedTrimmedBlock b ++
+              [MoiseBandSegmentAddress.junction L b c]).Pairwise
+                (MoiseBandSegmentAddress.ForwardCompatible L a) := by
+            rw [List.pairwise_append]
+            refine ⟨L.reversedTrimmedBlock_pairwise a b, by simp, ?_⟩
+            intro x hx y hy
+            have hyEq : y = MoiseBandSegmentAddress.junction L b c := by
+              simpa only [List.mem_singleton] using hy
+            subst y
+            obtain ⟨e, he, rfl⟩ :=
+              L.child_with_address_of_mem_reversedTrimmedBlock hx
+            exact L.rawChildEdge_forward_junction a hl.rel e he
+          have htailPairwise := ih hl.tail htailNodup
+          have hcross : ∀ x ∈ L.reversedTrimmedBlock b ++
+                [MoiseBandSegmentAddress.junction L b c],
+              ∀ y ∈ L.childMoiseSegments (c :: tail),
+                MoiseBandSegmentAddress.ForwardCompatible L a x y := by
+            intro x hx y hy
+            rcases L.child_or_junction_with_addresses_of_mem
+                hl.tail hy with hyRaw | hyJunction
+            · obtain ⟨f, hfMem, rfl⟩ := hyRaw
+              rw [List.mem_append] at hx
+              rcases hx with hxBlock | hxJunction
+              · obtain ⟨e, he, rfl⟩ :=
+                  L.child_with_address_of_mem_reversedTrimmedBlock hxBlock
+                have hbf : b ≠ f.1 := by
+                  intro h
+                  apply hbNot
+                  rw [h]
+                  exact hfMem
+                apply MoiseBandSegmentAddress.forwardCompatible_of_disjoint
+                change Disjoint
+                  (segment ℝ
+                    (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+                    (L.next.family.forgetObstacle.trimmedEdgeStart e))
+                  (segment ℝ
+                    (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+                    (L.next.family.forgetObstacle.trimmedEdgeStart f))
+                have hdis := L.rawChildEdge_disjoint_of_address_ne e f
+                  (by simpa [he] using hbf)
+                simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment,
+                  segment_symm] using hdis
+              · have hxEq : x =
+                    MoiseBandSegmentAddress.junction L b c := by
+                  simpa only [List.mem_singleton] using hxJunction
+                subst x
+                by_cases hfc : f.1 = c
+                · exact L.junction_forward_rawChildEdge a hl.rel f hfc
+                · have hfb : f.1 ≠ b := by
+                    intro h
+                    apply hbNot
+                    rw [← h]
+                    exact hfMem
+                  apply MoiseBandSegmentAddress.forwardCompatible_of_disjoint
+                  change Disjoint
+                    (segment ℝ
+                      (L.next.family.forgetObstacle.trimmedRightPoint
+                        (L.childIndex b))
+                      (L.next.family.forgetObstacle.trimmedLeftPoint
+                        (L.childIndex c)))
+                    (segment ℝ
+                      (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+                      (L.next.family.forgetObstacle.trimmedEdgeStart f))
+                  have hdis := L.rawChildEdge_disjoint_junction_of_nonincident
+                    f hl.rel hfb hfc
+                  simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment,
+                    segment_symm] using hdis.symm
+            · obtain ⟨d, e, hdMem, heMem, hde, rfl⟩ := hyJunction
+              rw [List.mem_append] at hx
+              rcases hx with hxBlock | hxJunction
+              · obtain ⟨f, hf, rfl⟩ :=
+                  L.child_with_address_of_mem_reversedTrimmedBlock hxBlock
+                have hbd : b ≠ d := fun h => hbNot (h ▸ hdMem)
+                have hbe : b ≠ e := fun h => hbNot (h ▸ heMem)
+                apply MoiseBandSegmentAddress.forwardCompatible_of_disjoint
+                change Disjoint
+                  (segment ℝ
+                    (L.next.family.forgetObstacle.trimmedEdgeFinish f)
+                    (L.next.family.forgetObstacle.trimmedEdgeStart f))
+                  (segment ℝ
+                    (L.next.family.forgetObstacle.trimmedRightPoint
+                      (L.childIndex d))
+                    (L.next.family.forgetObstacle.trimmedLeftPoint
+                      (L.childIndex e)))
+                have hdis := L.rawChildEdge_disjoint_junction_of_nonincident
+                  f hde (by simpa [hf] using hbd) (by simpa [hf] using hbe)
+                simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment,
+                  segment_symm] using hdis
+              · have hxEq : x =
+                    MoiseBandSegmentAddress.junction L b c := by
+                  simpa only [List.mem_singleton] using hxJunction
+                subst x
+                have hbd : b ≠ d := fun h => hbNot (h ▸ hdMem)
+                apply MoiseBandSegmentAddress.forwardCompatible_of_disjoint
+                exact L.junction_disjoint_junction_of_left_ne hl.rel hde hbd
+          change ((L.reversedTrimmedBlock b ++
+              [MoiseBandSegmentAddress.junction L b c]) ++
+            L.childMoiseSegments (c :: tail)).Pairwise _
+          rw [List.pairwise_append]
+          exact ⟨hprefix, htailPairwise, hcross⟩
+
+/-- In the reversed parent block, every edge is forward-compatible with the
+following corrected left side. -/
+theorem parentEdge_forward_rawLeftSide
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n) :
+    MoiseBandSegmentAddress.ForwardCompatible L a
+      (MoiseBandSegmentAddress.parent L ⟨a, i⟩)
+      (MoiseBandSegmentAddress.leftSide L) := by
+  intro x hx
+  change x ∈ segment ℝ (F.edgeFinish ⟨a, i⟩)
+        (F.edgeStart ⟨a, i⟩) ∩
+      segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.trimmedLeftPoint
+          (L.childIndex (L.leftmostAddress a))) at hx
+  have hxBase : x = F.leftSynchronizedPoint a := by
+    have hx' : x ∈
+        segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+            (F.leftSynchronizedPoint a) ∩
+          range (F.synchronizedCrosscutPath a) :=
+      ⟨L.rawLeftSide_subset_parentBaseSegment a hx.2,
+        F.edgeSegment_subset_crosscutRange ⟨a, i⟩ (by
+          simpa [LevelAvoidingJoinFamily.edgeSegment, segment_symm]
+            using hx.1)⟩
+    rw [F.leftBaseSegment_inter_range_synchronizedCrosscutPath a] at hx'
+    exact mem_singleton_iff.mp hx'
+  have hi : i.val = 0 :=
+    (F.leftSynchronizedPoint_mem_edgeSegment_iff a i).mp (by
+      rw [← hxBase]
+      simpa [LevelAvoidingJoinFamily.edgeSegment, segment_symm]
+        using hx.1)
+  have hiFirst : i = F.firstEdgeIndex a :=
+    Fin.ext (by simpa [LevelAvoidingJoinFamily.firstEdgeIndex] using hi)
+  rw [mem_singleton_iff, hxBase, hiFirst]
+  change F.leftSynchronizedPoint a =
+    F.edgeStart ⟨a, F.firstEdgeIndex a⟩
+  exact (F.edgeStart_first a).symm
+
+/-- A raw child edge can meet its parent arc's retained left hair only at
+the trimmed endpoint of the extreme-left child. -/
+theorem rawChildEdge_inter_parentLeftHair_subset_trimmedLeft
+    (a : LevelAddress n)
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress)
+    (heMem : e.1 ∈ L.addresses a) :
+    segment ℝ
+        (MoiseBandSegmentAddress.left L a
+          (MoiseBandSegmentAddress.child L e))
+        (MoiseBandSegmentAddress.right L a
+          (MoiseBandSegmentAddress.child L e)) ∩
+      (I.levelLeftHair a).carrier ⊆
+      {L.next.family.forgetObstacle.trimmedLeftPoint
+        (L.childIndex (L.leftmostAddress a))} := by
+  let G := L.next.family.forgetObstacle
+  intro x hx
+  change x ∈ segment ℝ (G.trimmedEdgeFinish e)
+      (G.trimmedEdgeStart e) ∩ (I.levelLeftHair a).carrier at hx
+  by_cases heLeft : e.1 = L.leftmostAddress a
+  · have hxHair : x ∈ (I.levelLeftHair e.1).carrier := by
+      rw [heLeft, L.leftmostAddress_leftHair_carrier a]
+      exact hx.2
+    have hres := L.leftHair_inter_rawChildEdge_subset_trimmedLeft a e
+      ⟨hxHair, hx.1⟩
+    change x ∈ {G.trimmedLeftPoint
+      (L.childIndex (L.leftmostAddress a))}
+    rw [← heLeft]
+    exact hres
+  · have hLeft : (J.curvePoint
+        (I.levelArc (L.leftmostAddress a)).left : Plane) ≠
+      (J.curvePoint (I.levelArc e.1).left : Plane) := by
+      intro h
+      apply heLeft
+      exact (I.levelLeftPoint_injective h).symm
+    have hRight : (J.curvePoint
+        (I.levelArc (L.leftmostAddress a)).left : Plane) ≠
+      (J.curvePoint (I.levelArc e.1).right : Plane) := by
+      rw [L.levelArc_leftmostAddress_left a]
+      exact (L.child_rightPoint_ne_parent_left_of_mem_addresses heMem).symm
+    have hhair : (I.levelLeftHair (L.leftmostAddress a)).carrier ⊆
+        I.nonEndpointHairCarrier e.1 :=
+      I.levelLeftHair_carrier_subset_nonEndpointHairCarrier
+        (L.leftmostAddress a) e.1 hLeft hRight
+    have hside : x ∈ I.nonEndpointHairCarrier e.1 :=
+      hhair (by
+        rw [L.leftmostAddress_leftHair_carrier a]
+        exact hx.2)
+    have hxEdge : x ∈ G.trimmedEdgeSegment e := by
+      simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment, segment_symm]
+        using hx.1
+    have hxPath := G.trimmedEdgeSegment_subset_trimmedPathRange e hxEdge
+    have hdis : Disjoint
+        (range (G.trimmedPath (levelIndexOf L.next.level e.1)))
+        (I.nonEndpointHairCarrier e.1) := by
+      simpa using G.range_trimmedPath_disjoint_nonEndpointHairCarrier
+        (levelIndexOf L.next.level e.1)
+    exact (Set.disjoint_left.mp hdis hxPath hside).elim
+
+/-- The corrected left side is forward-compatible with every raw edge in
+the descendant block. -/
+theorem rawLeftSide_forward_rawChildEdge
+    (a : LevelAddress n)
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress)
+    (heMem : e.1 ∈ L.addresses a) :
+    MoiseBandSegmentAddress.ForwardCompatible L a
+      (MoiseBandSegmentAddress.leftSide L)
+      (MoiseBandSegmentAddress.child L e) := by
+  let G := L.next.family.forgetObstacle
+  by_cases heLeft : e.1 = L.leftmostAddress a
+  · intro x hx
+    change x ∈ segment ℝ (F.leftSynchronizedPoint a)
+          (G.trimmedLeftPoint (L.childIndex (L.leftmostAddress a))) ∩
+        segment ℝ (G.trimmedEdgeFinish e) (G.trimmedEdgeStart e) at hx
+    have hxHair : x ∈ (I.levelLeftHair e.1).carrier := by
+      rw [heLeft, L.leftmostAddress_leftHair_carrier a]
+      exact L.rawLeftSide_subset_leftHairCarrier a hx.1
+    have hres := L.leftHair_inter_rawChildEdge_subset_trimmedLeft a e
+      ⟨hxHair, hx.2⟩
+    change x ∈ {G.trimmedLeftPoint
+      (L.childIndex (L.leftmostAddress a))}
+    rw [← heLeft]
+    exact hres
+  · intro x hx
+    change x ∈ segment ℝ (F.leftSynchronizedPoint a)
+          (G.trimmedLeftPoint (L.childIndex (L.leftmostAddress a))) ∩
+        segment ℝ (G.trimmedEdgeFinish e) (G.trimmedEdgeStart e) at hx
+    have hLeft : (J.curvePoint
+          (I.levelArc (L.leftmostAddress a)).left : Plane) ≠
+        (J.curvePoint (I.levelArc e.1).left : Plane) := by
+      intro h
+      apply heLeft
+      exact (I.levelLeftPoint_injective h).symm
+    have hRight : (J.curvePoint
+          (I.levelArc (L.leftmostAddress a)).left : Plane) ≠
+        (J.curvePoint (I.levelArc e.1).right : Plane) := by
+      rw [L.levelArc_leftmostAddress_left a]
+      exact (L.child_rightPoint_ne_parent_left_of_mem_addresses heMem).symm
+    have hhair : (I.levelLeftHair (L.leftmostAddress a)).carrier ⊆
+        I.nonEndpointHairCarrier e.1 :=
+      I.levelLeftHair_carrier_subset_nonEndpointHairCarrier
+        (L.leftmostAddress a) e.1 hLeft hRight
+    have hside : x ∈ I.nonEndpointHairCarrier e.1 :=
+      hhair (by
+        rw [L.leftmostAddress_leftHair_carrier a]
+        exact L.rawLeftSide_subset_leftHairCarrier a hx.1)
+    have hxEdge : x ∈ G.trimmedEdgeSegment e := by
+      simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment, segment_symm]
+        using hx.2
+    have hxPath := G.trimmedEdgeSegment_subset_trimmedPathRange e hxEdge
+    have hdis : Disjoint
+        (range (G.trimmedPath (levelIndexOf L.next.level e.1)))
+        (I.nonEndpointHairCarrier e.1) := by
+      simpa using G.range_trimmedPath_disjoint_nonEndpointHairCarrier
+        (levelIndexOf L.next.level e.1)
+    exact (Set.disjoint_left.mp hdis hxPath hside).elim
+
+/-- Every internal child junction is disjoint from the parent arc's retained
+left hair. -/
+theorem junction_disjoint_parentLeftHair
+    (a : LevelAddress n) {b c : LevelAddress L.next.level}
+    (hbMem : b ∈ L.addresses a) (hbc : I.LevelAdjacent b c) :
+    Disjoint
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+      (I.levelLeftHair a).carrier := by
+  have hneNext : L.leftmostAddress a ≠
+      nextLevelAddress L.next.level b := by
+    intro h
+    have hpoint := I.levelAdjacent_nextLevelAddress L.next.level b
+    rw [← h] at hpoint
+    unfold InitialAngularArcs.LevelAdjacent at hpoint
+    rw [L.levelArc_leftmostAddress_left a] at hpoint
+    exact L.child_rightPoint_ne_parent_left_of_mem_addresses hbMem hpoint
+  apply (I.disjoint_levelRightHair_levelLeftHair_of_ne_next
+    b (L.leftmostAddress a) hneNext).mono
+  · exact L.junctionSegment_subset_rightHairCarrier hbc
+  · rw [L.leftmostAddress_leftHair_carrier a]
+
+/-- The corrected left side is disjoint from every internal child
+junction. -/
+theorem rawLeftSide_disjoint_junction
+    (a : LevelAddress n) {b c : LevelAddress L.next.level}
+    (hbMem : b ∈ L.addresses a) (hbc : I.LevelAdjacent b c) :
+    Disjoint
+      (segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.trimmedLeftPoint
+          (L.childIndex (L.leftmostAddress a))))
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c))) :=
+  (L.junction_disjoint_parentLeftHair a hbMem hbc).symm.mono_left
+    (L.rawLeftSide_subset_leftHairCarrier a)
+
+theorem parent_index_of_mem_parentMoiseSegments
+    {a : LevelAddress n} {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.parentMoiseSegments a) :
+    ∃ i : Fin (F.synchronizedCrosscutCarrierLine a).data.n,
+      j = MoiseBandSegmentAddress.parent L ⟨a, i⟩ := by
+  rw [parentMoiseSegments, List.mem_map] at hj
+  obtain ⟨e, he, rfl⟩ := hj
+  rw [List.mem_reverse, LevelAvoidingJoinFamily.edgeBlock,
+    List.mem_ofFn'] at he
+  obtain ⟨i, rfl⟩ := he
+  exact ⟨i, rfl⟩
+
+/-- Every old parent edge is forward-compatible with every segment on the
+raw child side. -/
+theorem parentEdge_forward_childMoiseSegment
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n)
+    {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.childMoiseSegments (L.addresses a)) :
+    MoiseBandSegmentAddress.ForwardCompatible L a
+      (MoiseBandSegmentAddress.parent L ⟨a, i⟩) j := by
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain a) hj with hjRaw | hjunction
+  · obtain ⟨e, _heMem, rfl⟩ := hjRaw
+    apply MoiseBandSegmentAddress.forwardCompatible_of_disjoint
+    change Disjoint
+      (segment ℝ (F.edgeFinish ⟨a, i⟩) (F.edgeStart ⟨a, i⟩))
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+        (L.next.family.forgetObstacle.trimmedEdgeStart e))
+    have hdis := L.parentEdge_disjoint_rawChildEdge ⟨a, i⟩ e
+    simpa [LevelAvoidingJoinFamily.edgeSegment,
+      LevelAvoidingJoinFamily.trimmedEdgeSegment, segment_symm] using hdis
+  · obtain ⟨b, c, _hb, _hc, hbc, rfl⟩ := hjunction
+    apply MoiseBandSegmentAddress.forwardCompatible_of_disjoint
+    change Disjoint
+      (segment ℝ (F.edgeFinish ⟨a, i⟩) (F.edgeStart ⟨a, i⟩))
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+    have hdis := L.parentEdge_disjoint_junction ⟨a, i⟩ hbc
+    simpa [LevelAvoidingJoinFamily.edgeSegment, segment_symm] using hdis
+
+/-- The corrected left side is forward-compatible with the entire raw
+child route. -/
+theorem rawLeftSide_forward_childMoiseSegment
+    (a : LevelAddress n) {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.childMoiseSegments (L.addresses a)) :
+    MoiseBandSegmentAddress.ForwardCompatible L a
+      (MoiseBandSegmentAddress.leftSide L) j := by
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain a) hj with hjRaw | hjunction
+  · obtain ⟨e, heMem, rfl⟩ := hjRaw
+    exact L.rawLeftSide_forward_rawChildEdge a e heMem
+  · obtain ⟨b, c, hbMem, _hcMem, hbc, rfl⟩ := hjunction
+    apply MoiseBandSegmentAddress.forwardCompatible_of_disjoint
+    change Disjoint
+      (segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.trimmedLeftPoint
+          (L.childIndex (L.leftmostAddress a))))
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+    exact L.rawLeftSide_disjoint_junction a hbMem hbc
+
+/-- The entire open part of the Moise boundary—from the reversed parent
+crosscut through the left side and all raw child segments—is a simple
+ordered segment chain. -/
+theorem parentLeftChildMoise_pairwise (a : LevelAddress n) :
+    (L.parentMoiseSegments a ++
+      [MoiseBandSegmentAddress.leftSide L] ++
+      L.childMoiseSegments (L.addresses a)).Pairwise
+        (MoiseBandSegmentAddress.ForwardCompatible L a) := by
+  have hparentLeft : (L.parentMoiseSegments a ++
+      [MoiseBandSegmentAddress.leftSide L]).Pairwise
+        (MoiseBandSegmentAddress.ForwardCompatible L a) := by
+    rw [List.pairwise_append]
+    refine ⟨L.parentMoiseSegments_pairwise a, by simp, ?_⟩
+    intro x hx y hy
+    have hyEq : y = MoiseBandSegmentAddress.leftSide L := by
+      simpa only [List.mem_singleton] using hy
+    subst y
+    obtain ⟨i, rfl⟩ := L.parent_index_of_mem_parentMoiseSegments hx
+    exact L.parentEdge_forward_rawLeftSide a i
+  have hchild := L.childMoiseSegments_pairwise a
+    (L.addresses_isChain a) (L.addresses_nodup a)
+  rw [List.pairwise_append]
+  refine ⟨hparentLeft, hchild, ?_⟩
+  intro x hx y hy
+  rw [List.mem_append] at hx
+  rcases hx with hxParent | hxLeft
+  · obtain ⟨i, rfl⟩ := L.parent_index_of_mem_parentMoiseSegments hxParent
+    exact L.parentEdge_forward_childMoiseSegment a i hy
+  · have hxEq : x = MoiseBandSegmentAddress.leftSide L := by
+      simpa only [List.mem_singleton] using hxLeft
+    subst x
+    exact L.rawLeftSide_forward_childMoiseSegment a hy
+
+/-- An old parent edge meets the corrected left side in at most its old
+left endpoint. -/
+theorem parentEdge_inter_rawLeftSide_subsingleton
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n) :
+    (F.edgeSegment ⟨a, i⟩ ∩
+      segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.trimmedLeftPoint
+          (L.childIndex (L.leftmostAddress a)))).Subsingleton := by
+  intro x hx y hy
+  have hx' : x ∈
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+          (F.leftSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rawLeftSide_subset_parentBaseSegment a hx.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hx.1⟩
+  have hy' : y ∈
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+          (F.leftSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rawLeftSide_subset_parentBaseSegment a hy.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hy.1⟩
+  rw [F.leftBaseSegment_inter_range_synchronizedCrosscutPath a] at hx' hy'
+  exact (mem_singleton_iff.mp hx').trans
+    (mem_singleton_iff.mp hy').symm
+
+/-- An old parent edge meets the corrected right side in at most its old
+right endpoint. -/
+theorem parentEdge_inter_rawRightSide_subsingleton
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n) :
+    (F.edgeSegment ⟨a, i⟩ ∩
+      segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint
+          (L.childIndex (L.rightmostAddress a)))
+        (F.rightSynchronizedPoint a)).Subsingleton := by
+  intro x hx y hy
+  have hx' : x ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rawRightSide_subset_parentBaseSegment a hx.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hx.1⟩
+  have hy' : y ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rawRightSide_subset_parentBaseSegment a hy.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hy.1⟩
+  rw [F.rightBaseSegment_inter_range_synchronizedCrosscutPath a] at hx' hy'
+  exact (mem_singleton_iff.mp hx').trans
+    (mem_singleton_iff.mp hy').symm
+
+/-- An old parent edge can meet the closing side only at the old right
+endpoint of the parent crosscut. -/
+theorem parentEdge_inter_rawRightSide_subset_parentRight
+    (a : LevelAddress n)
+    (i : Fin (F.synchronizedCrosscutCarrierLine a).data.n) :
+    F.edgeSegment ⟨a, i⟩ ∩
+        segment ℝ
+          (L.next.family.forgetObstacle.trimmedRightPoint
+            (L.childIndex (L.rightmostAddress a)))
+          (F.rightSynchronizedPoint a) ⊆
+      {F.rightSynchronizedPoint a} := by
+  intro x hx
+  have hx' : x ∈
+      segment ℝ (J.curvePoint (I.levelArc a).right : Plane)
+          (F.rightSynchronizedPoint a) ∩
+        range (F.synchronizedCrosscutPath a) :=
+    ⟨L.rawRightSide_subset_parentBaseSegment a hx.2,
+      F.edgeSegment_subset_crosscutRange ⟨a, i⟩ hx.1⟩
+  rw [F.rightBaseSegment_inter_range_synchronizedCrosscutPath a] at hx'
+  exact hx'
+
+/-- A raw child edge can meet its parent arc's retained right hair only at
+the trimmed endpoint of the extreme-right child. -/
+theorem rawChildEdge_inter_parentRightHair_subset_trimmedRight
+    (a : LevelAddress n)
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress)
+    (heMem : e.1 ∈ L.addresses a) :
+    segment ℝ
+        (MoiseBandSegmentAddress.left L a
+          (MoiseBandSegmentAddress.child L e))
+        (MoiseBandSegmentAddress.right L a
+          (MoiseBandSegmentAddress.child L e)) ∩
+      (I.levelRightHair a).carrier ⊆
+      {L.next.family.forgetObstacle.trimmedRightPoint
+        (L.childIndex (L.rightmostAddress a))} := by
+  let G := L.next.family.forgetObstacle
+  intro x hx
+  change x ∈ segment ℝ (G.trimmedEdgeFinish e) (G.trimmedEdgeStart e) ∩
+    (I.levelRightHair a).carrier at hx
+  have hxEdge : x ∈ G.trimmedEdgeSegment e := by
+    change x ∈ segment ℝ (G.trimmedEdgeStart e)
+      (G.trimmedEdgeFinish e)
+    simpa only [segment_symm] using hx.1
+  have hxPath : x ∈ range (G.trimmedPath (L.childIndex e.1)) :=
+    G.trimmedEdgeSegment_subset_trimmedPathRange e hxEdge
+  by_cases heRight : e.1 = L.rightmostAddress a
+  · have hxInter : x ∈ range (G.trimmedPath (L.childIndex e.1)) ∩
+        (I.levelRightHair
+          (levelAddressAt L.next.level (L.childIndex e.1))).carrier := by
+      refine ⟨hxPath, ?_⟩
+      change x ∈ (I.levelRightHair
+        (levelAddressAt L.next.level (levelIndexOf L.next.level e.1))).carrier
+      rw [levelAddressAt_levelIndexOf, heRight,
+        L.rightmostAddress_rightHair_carrier a]
+      exact hx.2
+    rw [G.range_trimmedPath_inter_rightHair] at hxInter
+    have hxEq : x = G.trimmedRightPoint (L.childIndex e.1) :=
+      mem_singleton_iff.mp hxInter
+    rw [mem_singleton_iff, hxEq, heRight]
+  · have hLeft :
+        (J.curvePoint (I.levelArc (L.rightmostAddress a)).right : Plane) ≠
+          (J.curvePoint (I.levelArc e.1).left : Plane) := by
+      rw [L.levelArc_rightmostAddress_right a]
+      exact (L.child_leftPoint_ne_parent_right_of_mem_addresses heMem).symm
+    have hRight :
+        (J.curvePoint (I.levelArc (L.rightmostAddress a)).right : Plane) ≠
+          (J.curvePoint (I.levelArc e.1).right : Plane) :=
+      I.levelRightPoint_ne_levelRightPoint_of_ne
+        (L.rightmostAddress a) e.1 (Ne.symm heRight)
+    have hhair : (I.levelRightHair (L.rightmostAddress a)).carrier ⊆
+        I.nonEndpointHairCarrier e.1 :=
+      I.levelRightHair_carrier_subset_nonEndpointHairCarrier
+        (L.rightmostAddress a) e.1 hLeft hRight
+    have hside : x ∈ I.nonEndpointHairCarrier e.1 :=
+      hhair (by
+        rw [L.rightmostAddress_rightHair_carrier a]
+        exact hx.2)
+    have hdis : Disjoint
+        (range (G.trimmedPath (levelIndexOf L.next.level e.1)))
+        (I.nonEndpointHairCarrier e.1) := by
+      simpa using G.range_trimmedPath_disjoint_nonEndpointHairCarrier
+        (levelIndexOf L.next.level e.1)
+    exact (Set.disjoint_left.mp hdis hxPath hside).elim
+
+/-- A raw child edge can meet the closing side only at the trimmed endpoint
+of the extreme-right child. -/
+theorem rawChildEdge_inter_rawRightSide_subset_trimmedRight
+    (a : LevelAddress n)
+    (e : L.next.family.forgetObstacle.TrimmedEdgeAddress)
+    (heMem : e.1 ∈ L.addresses a) :
+    segment ℝ
+        (MoiseBandSegmentAddress.left L a
+          (MoiseBandSegmentAddress.child L e))
+        (MoiseBandSegmentAddress.right L a
+          (MoiseBandSegmentAddress.child L e)) ∩
+      segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint
+          (L.childIndex (L.rightmostAddress a)))
+        (F.rightSynchronizedPoint a) ⊆
+      {L.next.family.forgetObstacle.trimmedRightPoint
+        (L.childIndex (L.rightmostAddress a))} := by
+  intro x hx
+  apply L.rawChildEdge_inter_parentRightHair_subset_trimmedRight a e heMem
+  exact ⟨hx.1, L.rawRightSide_subset_rightHairCarrier a hx.2⟩
+
+/-- The two extreme sides of a band cell are disjoint. -/
+theorem rawLeftSide_disjoint_rawRightSide (a : LevelAddress n) :
+    Disjoint
+      (segment ℝ (F.leftSynchronizedPoint a)
+        (L.next.family.forgetObstacle.trimmedLeftPoint
+          (L.childIndex (L.leftmostAddress a))))
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint
+          (L.childIndex (L.rightmostAddress a)))
+        (F.rightSynchronizedPoint a)) :=
+  (I.disjoint_levelEndpointHairs a).mono
+    (L.rawLeftSide_subset_leftHairCarrier a)
+    (L.rawRightSide_subset_rightHairCarrier a)
+
+/-- An internal child junction is disjoint from the parent arc's retained
+right hair. -/
+theorem junction_disjoint_parentRightHair
+    (a : LevelAddress n) {b c : LevelAddress L.next.level}
+    (hbMem : b ∈ L.addresses a) (hcMem : c ∈ L.addresses a)
+    (hbc : I.LevelAdjacent b c) :
+    Disjoint
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+      (I.levelRightHair a).carrier := by
+  have hbRight : b ≠ L.rightmostAddress a := by
+    intro hb
+    subst b
+    have hpoint := hbc
+    unfold InitialAngularArcs.LevelAdjacent at hpoint
+    rw [L.levelArc_rightmostAddress_right a] at hpoint
+    exact L.child_leftPoint_ne_parent_right_of_mem_addresses hcMem hpoint.symm
+  exact (I.disjoint_levelRightHairs_of_ne b (L.rightmostAddress a) hbRight).mono
+    (L.junctionSegment_subset_rightHairCarrier hbc)
+    (by rw [L.rightmostAddress_rightHair_carrier a])
+
+/-- An internal child junction is disjoint from the closing side. -/
+theorem junction_disjoint_rawRightSide
+    (a : LevelAddress n) {b c : LevelAddress L.next.level}
+    (hbMem : b ∈ L.addresses a) (hcMem : c ∈ L.addresses a)
+    (hbc : I.LevelAdjacent b c) :
+    Disjoint
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint (L.childIndex b))
+        (L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)))
+      (segment ℝ
+        (L.next.family.forgetObstacle.trimmedRightPoint
+          (L.childIndex (L.rightmostAddress a)))
+        (F.rightSynchronizedPoint a)) :=
+  (L.junction_disjoint_parentRightHair a hbMem hcMem hbc).mono_right
+    (L.rawRightSide_subset_rightHairCarrier a)
+
+/-- Every segment which actually occurs in the corrected Moise route is
+nondegenerate. -/
+theorem moiseBandSegment_left_ne_right_of_mem
+    (a : LevelAddress n) {j : L.MoiseBandSegmentAddress}
+    (hj : j ∈ L.moiseBandSegments a) :
+    MoiseBandSegmentAddress.left L a j ≠
+      MoiseBandSegmentAddress.right L a j := by
+  rw [moiseBandSegments, List.mem_append] at hj
+  rcases hj with hj | hj
+  · rw [List.mem_append] at hj
+    rcases hj with hj | hj
+    · rw [List.mem_append] at hj
+      rcases hj with hj | hj
+      · obtain ⟨e, rfl⟩ := L.parent_of_mem_parentMoiseSegments hj
+        change F.edgeFinish e ≠ F.edgeStart e
+        exact (edgeStart_ne_edgeFinish (F := F) e).symm
+      · have hj' : j = MoiseBandSegmentAddress.leftSide L := by
+          simpa only [List.mem_singleton] using hj
+        subst j
+        exact L.leftSide_left_ne_right a
+    · rcases L.child_or_junction_of_mem_childMoiseSegments
+          (L.addresses_isChain a) hj with hchild | hjunction
+      · obtain ⟨e, rfl⟩ := hchild
+        exact L.childSegment_left_ne_right a e
+      · obtain ⟨b, c, hbc, rfl⟩ := hjunction
+        exact L.trimmedRightPoint_ne_trimmedLeftPoint_of_levelAdjacent hbc
+  · have hj' : j = MoiseBandSegmentAddress.rightSide L := by
+      simpa only [List.mem_singleton] using hj
+    subst j
+    exact L.rightSide_left_ne_right a
+
+/-- The open part of the boundary route, with the extreme-right side held
+back as the closing segment. -/
+noncomputable def moiseBandOpenSegments (a : LevelAddress n) :
+    List L.MoiseBandSegmentAddress :=
+  L.parentMoiseSegments a ++
+    [MoiseBandSegmentAddress.leftSide L] ++
+    L.childMoiseSegments (L.addresses a)
+
+theorem moiseBandSegments_eq_open_append_right (a : LevelAddress n) :
+    L.moiseBandSegments a = L.moiseBandOpenSegments a ++
+      [MoiseBandSegmentAddress.rightSide L] := by
+  rfl
+
+theorem moiseBandOpenSegments_nonempty (a : LevelAddress n) :
+    L.moiseBandOpenSegments a ≠ [] := by
+  rw [moiseBandOpenSegments]
+  intro h
+  have h₁ := (List.append_eq_nil_iff.mp h).1
+  have h₂ := (List.append_eq_nil_iff.mp h₁).1
+  exact L.parentMoiseSegments_nonempty a h₂
+
+noncomputable def moiseBandOpenFirst (a : LevelAddress n) :
+    L.MoiseBandSegmentAddress :=
+  (L.moiseBandOpenSegments a).head (L.moiseBandOpenSegments_nonempty a)
+
+noncomputable def moiseBandOpenTail (a : LevelAddress n) :
+    List L.MoiseBandSegmentAddress :=
+  (L.moiseBandOpenSegments a).tail
+
+theorem moiseBandOpenFirst_cons_tail (a : LevelAddress n) :
+    L.moiseBandOpenFirst a :: L.moiseBandOpenTail a =
+      L.moiseBandOpenSegments a :=
+  List.cons_head_tail (L.moiseBandOpenSegments_nonempty a)
+
+theorem moiseBandOpenTail_nonempty (a : LevelAddress n) :
+    L.moiseBandOpenTail a ≠ [] := by
+  unfold moiseBandOpenTail moiseBandOpenSegments
+  cases hparent : L.parentMoiseSegments a with
+  | nil => exact (L.parentMoiseSegments_nonempty a hparent).elim
+  | cons p ps => simp
+
+theorem moiseBandOpen_isChain (a : LevelAddress n) :
+    (L.moiseBandOpenFirst a :: L.moiseBandOpenTail a).IsChain
+      (MoiseBandSegmentAddress.Adjacent L a) := by
+  rw [L.moiseBandOpenFirst_cons_tail a]
+  exact L.parentLeftChildMoise_isChain a
+
+theorem moiseBandOpen_pairwise (a : LevelAddress n) :
+    (L.moiseBandOpenFirst a :: L.moiseBandOpenTail a).Pairwise
+      (MoiseBandSegmentAddress.ForwardCompatible L a) := by
+  rw [L.moiseBandOpenFirst_cons_tail a]
+  exact L.parentLeftChildMoise_pairwise a
+
+theorem left_moiseBandOpenFirst (a : LevelAddress n) :
+    MoiseBandSegmentAddress.left L a (L.moiseBandOpenFirst a) =
+      F.rightSynchronizedPoint a := by
+  have hhead : (L.moiseBandOpenSegments a).head
+      (L.moiseBandOpenSegments_nonempty a) =
+        MoiseBandSegmentAddress.parent L ⟨a, F.lastEdgeIndex a⟩ := by
+    apply Option.some.inj
+    rw [← List.head?_eq_some_head (L.moiseBandOpenSegments_nonempty a)]
+    calc
+      (L.moiseBandOpenSegments a).head? =
+          (L.parentMoiseSegments a).head? := by
+        unfold moiseBandOpenSegments
+        rw [List.head?_append_of_ne_nil _ (by
+              simp [L.parentMoiseSegments_nonempty a]),
+          List.head?_append_of_ne_nil _
+            (L.parentMoiseSegments_nonempty a)]
+      _ = some (MoiseBandSegmentAddress.parent L
+          ⟨a, F.lastEdgeIndex a⟩) := by
+        rw [List.head?_eq_some_head (L.parentMoiseSegments_nonempty a),
+          L.head_parentMoiseSegments a]
+  unfold moiseBandOpenFirst
+  rw [hhead]
+  exact F.edgeFinish_last a
+
+theorem moiseBandOpen_joins_rightSide (a : LevelAddress n) :
+    MoiseBandSegmentAddress.right L a
+        ((L.moiseBandOpenFirst a :: L.moiseBandOpenTail a).getLast (by simp)) =
+      MoiseBandSegmentAddress.left L a
+        (MoiseBandSegmentAddress.rightSide L) := by
+  have hlist := L.moiseBandOpenFirst_cons_tail a
+  have hrouteLast :
+      (L.moiseBandOpenFirst a :: L.moiseBandOpenTail a).getLast (by simp) =
+        (L.moiseBandOpenSegments a).getLast
+          (L.moiseBandOpenSegments_nonempty a) := by
+    apply List.getLast_congr
+    exact hlist
+  have hlast : (L.moiseBandOpenSegments a).getLast
+      (L.moiseBandOpenSegments_nonempty a) =
+      (L.childMoiseSegments (L.addresses a)).getLast
+        (L.childMoiseSegments_addresses_nonempty a) := by
+    unfold moiseBandOpenSegments
+    exact List.getLast_append_of_right_ne_nil _ _
+      (L.childMoiseSegments_addresses_nonempty a)
+  rw [hrouteLast, hlast, L.right_getLast_childMoiseSegments_addresses a]
+  rfl
+
+theorem rightSide_closes_moiseBandOpen (a : LevelAddress n) :
+    MoiseBandSegmentAddress.right L a
+        (MoiseBandSegmentAddress.rightSide L) =
+      MoiseBandSegmentAddress.left L a (L.moiseBandOpenFirst a) := by
+  rw [L.left_moiseBandOpenFirst a]
+  rfl
+
+theorem moiseBandOpen_left_ne_right (a : LevelAddress n) :
+    ∀ j ∈ L.moiseBandOpenFirst a :: L.moiseBandOpenTail a,
+      MoiseBandSegmentAddress.left L a j ≠
+        MoiseBandSegmentAddress.right L a j := by
+  intro j hj
+  apply L.moiseBandSegment_left_ne_right_of_mem a
+  rw [L.moiseBandSegments_eq_open_append_right a,
+    ← L.moiseBandOpenFirst_cons_tail a]
+  exact List.mem_append_left _ hj
+
+/-- The closing side meets the whole open boundary route only at the two
+endpoints which it is meant to join. -/
+theorem moiseBandOpen_inter_rightSide_subset_endpoints
+    (a : LevelAddress n) :
+    ((⋃ j ∈ L.moiseBandOpenFirst a :: L.moiseBandOpenTail a,
+        segment ℝ (MoiseBandSegmentAddress.left L a j)
+          (MoiseBandSegmentAddress.right L a j)) ∩
+      segment ℝ
+        (MoiseBandSegmentAddress.left L a
+          (MoiseBandSegmentAddress.rightSide L))
+        (MoiseBandSegmentAddress.right L a
+          (MoiseBandSegmentAddress.rightSide L))) ⊆
+      {MoiseBandSegmentAddress.left L a (L.moiseBandOpenFirst a),
+        MoiseBandSegmentAddress.left L a
+          (MoiseBandSegmentAddress.rightSide L)} := by
+  intro x hx
+  rcases Set.mem_iUnion.mp hx.1 with ⟨j, hxj⟩
+  rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+  have hjOpen : j ∈ L.moiseBandOpenSegments a := by
+    rw [← L.moiseBandOpenFirst_cons_tail a]
+    exact hj
+  rw [moiseBandOpenSegments, List.mem_append] at hjOpen
+  rw [L.left_moiseBandOpenFirst a]
+  change x ∈ {F.rightSynchronizedPoint a,
+    L.next.family.forgetObstacle.trimmedRightPoint
+      (L.childIndex (L.rightmostAddress a))}
+  rw [Set.mem_insert_iff, mem_singleton_iff]
+  rcases hjOpen with hjParentLeft | hjChild
+  · rw [List.mem_append] at hjParentLeft
+    rcases hjParentLeft with hjParent | hjLeft
+    · obtain ⟨i, rfl⟩ := L.parent_index_of_mem_parentMoiseSegments hjParent
+      change x ∈ segment ℝ (F.edgeFinish ⟨a, i⟩)
+        (F.edgeStart ⟨a, i⟩) at hxSegment
+      have hxParent : x ∈ F.edgeSegment ⟨a, i⟩ ∩
+          segment ℝ
+            (L.next.family.forgetObstacle.trimmedRightPoint
+              (L.childIndex (L.rightmostAddress a)))
+            (F.rightSynchronizedPoint a) := by
+        refine ⟨?_, hx.2⟩
+        simpa [LevelAvoidingJoinFamily.edgeSegment, segment_symm]
+          using hxSegment
+      exact Or.inl (mem_singleton_iff.mp
+        (L.parentEdge_inter_rawRightSide_subset_parentRight a i hxParent))
+    · have hjEq : j = MoiseBandSegmentAddress.leftSide L := by
+        simpa only [List.mem_singleton] using hjLeft
+      subst j
+      exact (Set.disjoint_left.mp (L.rawLeftSide_disjoint_rawRightSide a)
+        hxSegment hx.2).elim
+  · rcases L.child_or_junction_with_addresses_of_mem
+        (L.addresses_isChain a) hjChild with hjRaw | hjunction
+    · obtain ⟨e, heMem, rfl⟩ := hjRaw
+      exact Or.inr (mem_singleton_iff.mp
+        (L.rawChildEdge_inter_rawRightSide_subset_trimmedRight
+          a e heMem ⟨hxSegment, hx.2⟩))
+    · obtain ⟨b, c, hbMem, hcMem, hbc, rfl⟩ := hjunction
+      exact (Set.disjoint_left.mp
+        (L.junction_disjoint_rawRightSide a hbMem hcMem hbc)
+        hxSegment hx.2).elim
+
+/-- Point-set union of the reversed old crosscut edges belonging to one
+parent cell. -/
+noncomputable def parentMoiseCarrier (a : LevelAddress n) : Set Plane :=
+  ⋃ j ∈ L.parentMoiseSegments a,
+    segment ℝ (MoiseBandSegmentAddress.left L a j)
+      (MoiseBandSegmentAddress.right L a j)
+
+/-- The old-crosscut part of a Moise cell is exactly the synchronized parent
+crosscut, independently of its edge subdivision and reverse traversal. -/
+theorem parentMoiseCarrier_eq_crosscutRange (a : LevelAddress n) :
+    L.parentMoiseCarrier a = range (F.synchronizedCrosscutPath a) := by
+  apply Set.Subset.antisymm
+  · intro x hx
+    rcases Set.mem_iUnion.mp hx with ⟨j, hxj⟩
+    rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+    obtain ⟨i, rfl⟩ := L.parent_index_of_mem_parentMoiseSegments hj
+    change x ∈ segment ℝ (F.edgeFinish ⟨a, i⟩)
+      (F.edgeStart ⟨a, i⟩) at hxSegment
+    apply F.edgeSegment_subset_crosscutRange ⟨a, i⟩
+    change x ∈ segment ℝ (F.edgeStart ⟨a, i⟩)
+      (F.edgeFinish ⟨a, i⟩)
+    rw [segment_symm ℝ (F.edgeStart ⟨a, i⟩) (F.edgeFinish ⟨a, i⟩)]
+    exact hxSegment
+  · intro x hx
+    have hxCarrier : x ∈
+        (F.synchronizedCrosscutCarrierLine a).data.segmentCarrier := by
+      rw [F.segmentCarrier_synchronizedCrosscutCarrierLine_eq_range a]
+      exact hx
+    obtain ⟨i, hxi⟩ := Set.mem_iUnion.mp hxCarrier
+    apply Set.mem_iUnion.mpr
+    refine ⟨MoiseBandSegmentAddress.parent L ⟨a, i⟩, ?_⟩
+    apply Set.mem_iUnion.mpr
+    refine ⟨?_, ?_⟩
+    · unfold parentMoiseSegments
+      rw [List.mem_map]
+      refine ⟨⟨a, i⟩, ?_, rfl⟩
+      simp [LevelAvoidingJoinFamily.edgeBlock]
+    · change x ∈ segment ℝ (F.edgeFinish ⟨a, i⟩)
+        (F.edgeStart ⟨a, i⟩)
+      change x ∈ segment ℝ (F.edgeStart ⟨a, i⟩)
+        (F.edgeFinish ⟨a, i⟩) at hxi
+      rw [segment_symm ℝ (F.edgeFinish ⟨a, i⟩) (F.edgeStart ⟨a, i⟩)]
+      exact hxi
+
+/-- Point-set union of the finer-level crosscuts and their internal retained-
+hair junctions belonging to one parent cell. -/
+noncomputable def childMoiseCarrier (a : LevelAddress n) : Set Plane :=
+  ⋃ j ∈ L.childMoiseSegments (L.addresses a),
+    segment ℝ (MoiseBandSegmentAddress.left L a j)
+      (MoiseBandSegmentAddress.right L a j)
+
+/-- Distinct parent cells have disjoint finer-level boundary routes. -/
+theorem childMoiseCarrier_disjoint_of_ne
+    {a d : LevelAddress n} (had : a ≠ d) :
+    Disjoint (L.childMoiseCarrier a) (L.childMoiseCarrier d) := by
+  rw [Set.disjoint_left]
+  intro x hxa hxd
+  rcases Set.mem_iUnion.mp hxa with ⟨j, hxj⟩
+  rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+  rcases Set.mem_iUnion.mp hxd with ⟨k, hxk⟩
+  rcases Set.mem_iUnion.mp hxk with ⟨hk, hxSegment'⟩
+  exact Set.disjoint_left.mp
+    (L.childMoiseSegment_disjoint_of_parent_ne had hj hk)
+    hxSegment hxSegment'
+
+/-- A descendant route stays away from a nonincident parent left hair.  The
+two hypotheses exclude the block based at that hair and the block immediately
+preceding it, whose right endpoint uses the same retained hair. -/
+theorem disjoint_parentLeftHair_childMoiseCarrier_of_nonincident
+    (a d : LevelAddress n) (had : a ≠ d)
+    (hdPrev : d ≠ prevLevelAddress n a) :
+    Disjoint (I.levelLeftHair a).carrier
+      (L.childMoiseCarrier d) := by
+  let G := L.next.family.forgetObstacle
+  have hblocksDA := L.addresses_disjoint_of_ne had
+  have hblocks := L.addresses_disjoint_of_ne hdPrev
+  have hleftMem := L.leftmostAddress_mem_addresses a
+  have hprevRightMem :=
+    L.rightmostAddress_mem_addresses (prevLevelAddress n a)
+  rw [Set.disjoint_left]
+  intro x hxHair hxChild
+  rcases Set.mem_iUnion.mp hxChild with ⟨j, hxj⟩
+  rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain d) hj with hjRaw | hjunction
+  · obtain ⟨e, heMem, rfl⟩ := hjRaw
+    have heLeft : L.leftmostAddress a ≠ e.1 := by
+      intro h
+      exact List.disjoint_left.mp hblocksDA hleftMem (by
+        rw [h]
+        exact heMem)
+    have heNext : nextLevelAddress L.next.level e.1 ≠
+        L.leftmostAddress a := by
+      intro hnext
+      have hboundary : nextLevelAddress L.next.level
+          (L.rightmostAddress (prevLevelAddress n a)) =
+            L.leftmostAddress a := by
+        simpa using L.nextLevelAddress_rightmostAddress
+          (prevLevelAddress n a)
+      have heq : e.1 = L.rightmostAddress (prevLevelAddress n a) :=
+        nextLevelAddress_injective L.next.level
+          (hnext.trans hboundary.symm)
+      exact List.disjoint_left.mp hblocks heMem (by
+        simpa [heq] using hprevRightMem)
+    have hLeft : (J.curvePoint
+          (I.levelArc (L.leftmostAddress a)).left : Plane) ≠
+        (J.curvePoint (I.levelArc e.1).left : Plane) :=
+      fun h => heLeft (I.levelLeftPoint_injective h)
+    have hRight : (J.curvePoint
+          (I.levelArc (L.leftmostAddress a)).left : Plane) ≠
+        (J.curvePoint (I.levelArc e.1).right : Plane) := by
+      intro h
+      have haddress :=
+        (I.levelRightPoint_eq_levelLeftPoint_iff e.1
+          (L.leftmostAddress a)).mp h.symm
+      exact heNext haddress.symm
+    have hhair : (I.levelLeftHair (L.leftmostAddress a)).carrier ⊆
+        I.nonEndpointHairCarrier e.1 :=
+      I.levelLeftHair_carrier_subset_nonEndpointHairCarrier
+        (L.leftmostAddress a) e.1 hLeft hRight
+    have hxNonEndpoint : x ∈ I.nonEndpointHairCarrier e.1 :=
+      hhair (by
+        rw [L.leftmostAddress_leftHair_carrier a]
+        exact hxHair)
+    have hxEdge : x ∈ G.trimmedEdgeSegment e := by
+      change x ∈ segment ℝ (G.trimmedEdgeFinish e)
+        (G.trimmedEdgeStart e) at hxSegment
+      simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment, segment_symm]
+        using hxSegment
+    have hxPath := G.trimmedEdgeSegment_subset_trimmedPathRange e hxEdge
+    have hdis : Disjoint
+        (range (G.trimmedPath (levelIndexOf L.next.level e.1)))
+        (I.nonEndpointHairCarrier e.1) := by
+      simpa using G.range_trimmedPath_disjoint_nonEndpointHairCarrier
+        (levelIndexOf L.next.level e.1)
+    exact Set.disjoint_left.mp hdis hxPath hxNonEndpoint
+  · obtain ⟨b, c, hbMem, _hcMem, hbc, rfl⟩ := hjunction
+    have hbNext : L.leftmostAddress a ≠
+        nextLevelAddress L.next.level b := by
+      intro hnext
+      have hboundary : nextLevelAddress L.next.level
+          (L.rightmostAddress (prevLevelAddress n a)) =
+            L.leftmostAddress a := by
+        simpa using L.nextLevelAddress_rightmostAddress
+          (prevLevelAddress n a)
+      have hbEq : b = L.rightmostAddress (prevLevelAddress n a) :=
+        nextLevelAddress_injective L.next.level
+          (hnext.symm.trans hboundary.symm)
+      exact List.disjoint_left.mp hblocks hbMem (by
+        simpa [hbEq] using hprevRightMem)
+    exact Set.disjoint_left.mp
+      ((I.disjoint_levelRightHair_levelLeftHair_of_ne_next
+          b (L.leftmostAddress a) hbNext).symm.mono
+        (by rw [L.leftmostAddress_leftHair_carrier a])
+        (L.junctionSegment_subset_rightHairCarrier hbc))
+      hxHair hxSegment
+
+/-- The descendant route of the next parent block stays away from the far
+left retained hair of the current block. -/
+theorem disjoint_parentLeftHair_childMoiseCarrier_next
+    (a : LevelAddress n) :
+    Disjoint (I.levelLeftHair a).carrier
+      (L.childMoiseCarrier (nextLevelAddress n a)) := by
+  apply L.disjoint_parentLeftHair_childMoiseCarrier_of_nonincident
+    a (nextLevelAddress n a) (nextLevelAddress_ne n a).symm
+  intro h
+  have h' := congrArg (nextLevelAddress n) h
+  rw [nextLevelAddress_prevLevelAddress] at h'
+  exact nextLevelAddress_next_ne n hn a h'
+
+/-- Symmetrically, a descendant route stays away from a nonincident parent
+right hair.  The second hypothesis excludes the block immediately following
+that hair, whose left endpoint uses the same retained hair. -/
+theorem disjoint_childMoiseCarrier_parentRightHair_of_nonincident
+    (a d : LevelAddress n) (had : a ≠ d)
+    (haNext : a ≠ nextLevelAddress n d) :
+    Disjoint (L.childMoiseCarrier a) (I.levelRightHair d).carrier := by
+  let q := nextLevelAddress n d
+  let G := L.next.family.forgetObstacle
+  have hblocksAD := L.addresses_disjoint_of_ne had
+  have hblocksAQ := L.addresses_disjoint_of_ne haNext
+  have hrightMem := L.rightmostAddress_mem_addresses d
+  have hqLeftMem := L.leftmostAddress_mem_addresses q
+  rw [Set.disjoint_left]
+  intro x hxChild hxHair
+  rcases Set.mem_iUnion.mp hxChild with ⟨j, hxj⟩
+  rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain a) hj with hjRaw | hjunction
+  · obtain ⟨e, heMem, rfl⟩ := hjRaw
+    have heRight : e.1 ≠ L.rightmostAddress d := by
+      intro h
+      exact List.disjoint_left.mp hblocksAD heMem (by
+        simpa [h] using hrightMem)
+    have heNext : e.1 ≠ nextLevelAddress L.next.level
+        (L.rightmostAddress d) := by
+      intro h
+      have hboundary : nextLevelAddress L.next.level
+          (L.rightmostAddress d) = L.leftmostAddress q := by
+        dsimp only [q]
+        exact L.nextLevelAddress_rightmostAddress d
+      exact List.disjoint_left.mp hblocksAQ heMem (by
+        rw [h, hboundary]
+        exact hqLeftMem)
+    have hLeft : (J.curvePoint
+          (I.levelArc (L.rightmostAddress d)).right : Plane) ≠
+        (J.curvePoint (I.levelArc e.1).left : Plane) :=
+      I.levelRightPoint_ne_levelLeftPoint_of_ne_next
+        (L.rightmostAddress d) e.1 heNext
+    have hRight : (J.curvePoint
+          (I.levelArc (L.rightmostAddress d)).right : Plane) ≠
+        (J.curvePoint (I.levelArc e.1).right : Plane) :=
+      I.levelRightPoint_ne_levelRightPoint_of_ne
+        (L.rightmostAddress d) e.1 heRight.symm
+    have hhair : (I.levelRightHair (L.rightmostAddress d)).carrier ⊆
+        I.nonEndpointHairCarrier e.1 :=
+      I.levelRightHair_carrier_subset_nonEndpointHairCarrier
+        (L.rightmostAddress d) e.1 hLeft hRight
+    have hxNonEndpoint : x ∈ I.nonEndpointHairCarrier e.1 :=
+      hhair (by
+        rw [L.rightmostAddress_rightHair_carrier d]
+        exact hxHair)
+    have hxEdge : x ∈ G.trimmedEdgeSegment e := by
+      change x ∈ segment ℝ (G.trimmedEdgeFinish e)
+        (G.trimmedEdgeStart e) at hxSegment
+      simpa [LevelAvoidingJoinFamily.trimmedEdgeSegment, segment_symm]
+        using hxSegment
+    have hxPath := G.trimmedEdgeSegment_subset_trimmedPathRange e hxEdge
+    have hdis : Disjoint
+        (range (G.trimmedPath (levelIndexOf L.next.level e.1)))
+        (I.nonEndpointHairCarrier e.1) := by
+      simpa using G.range_trimmedPath_disjoint_nonEndpointHairCarrier
+        (levelIndexOf L.next.level e.1)
+    exact Set.disjoint_left.mp hdis hxPath hxNonEndpoint
+  · obtain ⟨b, c, hbMem, _hcMem, hbc, rfl⟩ := hjunction
+    have hbRight : b ≠ L.rightmostAddress d := by
+      intro h
+      exact List.disjoint_left.mp hblocksAD hbMem (by
+        simpa [h] using hrightMem)
+    exact Set.disjoint_left.mp
+      ((I.disjoint_levelRightHairs_of_ne b
+          (L.rightmostAddress d) hbRight).mono
+        (L.junctionSegment_subset_rightHairCarrier hbc)
+        (by rw [L.rightmostAddress_rightHair_carrier d]))
+      hxSegment hxHair
+
+/-- The descendant route of the current block stays away from the far right
+retained hair of its successor. -/
+theorem disjoint_childMoiseCarrier_parentRightHair_next
+    (a : LevelAddress n) :
+    Disjoint (L.childMoiseCarrier a)
+      (I.levelRightHair (nextLevelAddress n a)).carrier := by
+  apply L.disjoint_childMoiseCarrier_parentRightHair_of_nonincident
+    a (nextLevelAddress n a) (nextLevelAddress_ne n a).symm
+  exact (nextLevelAddress_next_ne n hn a).symm
+
+/-- Every old-crosscut portion is disjoint from every finer-level route,
+even when the two portions are assigned to different parent cells. -/
+theorem disjoint_parentMoiseCarrier_childMoiseCarrier
+    (a d : LevelAddress n) :
+    Disjoint (L.parentMoiseCarrier a) (L.childMoiseCarrier d) := by
+  rw [Set.disjoint_left]
+  intro x hxParent hxChild
+  rcases Set.mem_iUnion.mp hxParent with ⟨j, hxj⟩
+  rcases Set.mem_iUnion.mp hxj with ⟨hj, hxParentSegment⟩
+  obtain ⟨i, rfl⟩ := L.parent_index_of_mem_parentMoiseSegments hj
+  rcases Set.mem_iUnion.mp hxChild with ⟨k, hxk⟩
+  rcases Set.mem_iUnion.mp hxk with ⟨hk, hxChildSegment⟩
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain d) hk with hkRaw | hkJunction
+  · obtain ⟨e, _heMem, rfl⟩ := hkRaw
+    have hdis := L.parentEdge_disjoint_rawChildEdge ⟨a, i⟩ e
+    apply Set.disjoint_left.mp hdis
+    · change x ∈ segment ℝ (F.edgeFinish ⟨a, i⟩)
+        (F.edgeStart ⟨a, i⟩) at hxParentSegment
+      change x ∈ F.edgeSegment ⟨a, i⟩
+      rw [LevelAvoidingJoinFamily.edgeSegment,
+        segment_symm ℝ (F.edgeStart ⟨a, i⟩) (F.edgeFinish ⟨a, i⟩)]
+      exact hxParentSegment
+    · change x ∈ segment ℝ
+        (L.next.family.forgetObstacle.trimmedEdgeFinish e)
+        (L.next.family.forgetObstacle.trimmedEdgeStart e) at hxChildSegment
+      change x ∈ L.next.family.forgetObstacle.trimmedEdgeSegment e
+      rw [LevelAvoidingJoinFamily.trimmedEdgeSegment,
+        segment_symm ℝ
+          (L.next.family.forgetObstacle.trimmedEdgeStart e)
+          (L.next.family.forgetObstacle.trimmedEdgeFinish e)]
+      exact hxChildSegment
+  · obtain ⟨b, c, _hbMem, _hcMem, hbc, rfl⟩ := hkJunction
+    have hdis := L.parentEdge_disjoint_junction ⟨a, i⟩ hbc
+    apply Set.disjoint_left.mp hdis
+    · change x ∈ segment ℝ (F.edgeFinish ⟨a, i⟩)
+        (F.edgeStart ⟨a, i⟩) at hxParentSegment
+      change x ∈ F.edgeSegment ⟨a, i⟩
+      rw [LevelAvoidingJoinFamily.edgeSegment,
+        segment_symm ℝ (F.edgeStart ⟨a, i⟩) (F.edgeFinish ⟨a, i⟩)]
+      exact hxParentSegment
+    · exact hxChildSegment
+
+/-- The complete finer-level route of a parent cell can meet the parent's
+right retained hair only at its extreme raw endpoint. -/
+theorem childMoiseCarrier_inter_parentRightHair_subset
+    (a : LevelAddress n) :
+    L.childMoiseCarrier a ∩ (I.levelRightHair a).carrier ⊆
+      {L.next.family.forgetObstacle.trimmedRightPoint
+        (L.childIndex (L.rightmostAddress a))} := by
+  intro x hx
+  rcases Set.mem_iUnion.mp hx.1 with ⟨j, hxj⟩
+  rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain a) hj with hjRaw | hjunction
+  · obtain ⟨e, heMem, rfl⟩ := hjRaw
+    exact L.rawChildEdge_inter_parentRightHair_subset_trimmedRight
+      a e heMem ⟨hxSegment, hx.2⟩
+  · obtain ⟨b, c, hbMem, hcMem, hbc, rfl⟩ := hjunction
+    exact False.elim <| Set.disjoint_left.mp
+      (L.junction_disjoint_parentRightHair a hbMem hcMem hbc)
+      hxSegment hx.2
+
+/-- The complete finer-level route of a parent cell can meet the parent's
+left retained hair only at its extreme raw endpoint. -/
+theorem childMoiseCarrier_inter_parentLeftHair_subset
+    (a : LevelAddress n) :
+    L.childMoiseCarrier a ∩ (I.levelLeftHair a).carrier ⊆
+      {L.next.family.forgetObstacle.trimmedLeftPoint
+        (L.childIndex (L.leftmostAddress a))} := by
+  intro x hx
+  rcases Set.mem_iUnion.mp hx.1 with ⟨j, hxj⟩
+  rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain a) hj with hjRaw | hjunction
+  · obtain ⟨e, heMem, rfl⟩ := hjRaw
+    exact L.rawChildEdge_inter_parentLeftHair_subset_trimmedLeft
+      a e heMem ⟨hxSegment, hx.2⟩
+  · obtain ⟨b, c, hbMem, _hcMem, hbc, rfl⟩ := hjunction
+    exact False.elim <| Set.disjoint_left.mp
+      (L.junction_disjoint_parentLeftHair a hbMem hbc)
+      hxSegment hx.2
+
+/-- Point-set union of the non-retracing source segments. -/
+noncomputable def moiseBandCarrier (a : LevelAddress n) : Set Plane :=
+  ⋃ j ∈ L.moiseBandSegments a,
+    segment ℝ (MoiseBandSegmentAddress.left L a j)
+      (MoiseBandSegmentAddress.right L a j)
+
+/-- Exact four-piece decomposition of a Moise cell boundary. -/
+theorem moiseBandCarrier_eq_parent_left_child_right
+    (a : LevelAddress n) :
+    L.moiseBandCarrier a =
+      L.parentMoiseCarrier a ∪ (
+        segment ℝ (F.leftSynchronizedPoint a)
+          (L.next.family.forgetObstacle.trimmedLeftPoint
+            (L.childIndex (L.leftmostAddress a))) ∪ (
+        L.childMoiseCarrier a ∪
+        segment ℝ
+          (L.next.family.forgetObstacle.trimmedRightPoint
+            (L.childIndex (L.rightmostAddress a)))
+          (F.rightSynchronizedPoint a))) := by
+  apply Set.Subset.antisymm
+  · intro x hx
+    rw [moiseBandCarrier] at hx
+    rcases Set.mem_iUnion.mp hx with ⟨j, hxj⟩
+    rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+    rw [moiseBandSegments, List.mem_append] at hj
+    rcases hj with hjOpen | hjRight
+    · rw [List.mem_append] at hjOpen
+      rcases hjOpen with hjParentLeft | hjChild
+      · rw [List.mem_append] at hjParentLeft
+        rcases hjParentLeft with hjParent | hjLeft
+        · exact Or.inl <| Set.mem_iUnion.mpr
+            ⟨j, Set.mem_iUnion.mpr ⟨hjParent, hxSegment⟩⟩
+        · have hjEq : j = MoiseBandSegmentAddress.leftSide L := by
+            simpa only [List.mem_singleton] using hjLeft
+          subst j
+          exact Or.inr <| Or.inl hxSegment
+      · exact Or.inr <| Or.inr <| Or.inl <| Set.mem_iUnion.mpr
+          ⟨j, Set.mem_iUnion.mpr ⟨hjChild, hxSegment⟩⟩
+    · have hjEq : j = MoiseBandSegmentAddress.rightSide L := by
+        simpa only [List.mem_singleton] using hjRight
+      subst j
+      exact Or.inr <| Or.inr <| Or.inr hxSegment
+  · intro x hx
+    rw [moiseBandCarrier]
+    rcases hx with hxParent | hxLeft | hxChild | hxRight
+    · rcases Set.mem_iUnion.mp hxParent with ⟨j, hxj⟩
+      rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+      exact Set.mem_iUnion.mpr ⟨j, Set.mem_iUnion.mpr
+        ⟨by simp [moiseBandSegments, hj], hxSegment⟩⟩
+    · exact Set.mem_iUnion.mpr
+        ⟨MoiseBandSegmentAddress.leftSide L, Set.mem_iUnion.mpr
+          ⟨by simp [moiseBandSegments], hxLeft⟩⟩
+    · rcases Set.mem_iUnion.mp hxChild with ⟨j, hxj⟩
+      rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+      exact Set.mem_iUnion.mpr ⟨j, Set.mem_iUnion.mpr
+        ⟨by simp [moiseBandSegments, hj], hxSegment⟩⟩
+    · exact Set.mem_iUnion.mpr
+        ⟨MoiseBandSegmentAddress.rightSide L, Set.mem_iUnion.mpr
+          ⟨by simp [moiseBandSegments], hxRight⟩⟩
+
+/-- The chosen simple common-arrangement cycle carried by the exact Moise
+band boundary. -/
+noncomputable def moiseBandCycleData (a : LevelAddress n) :
+    BrokenLineData.SimpleSegmentFamilyCycleData
+      (MoiseBandSegmentAddress.left L a)
+      (MoiseBandSegmentAddress.right L a)
+      (L.moiseBandOpenFirst a) (L.moiseBandOpenTail a)
+      (MoiseBandSegmentAddress.rightSide L) :=
+  BrokenLineData.simpleSegmentFamilyCycleData
+    (MoiseBandSegmentAddress.left L a)
+    (MoiseBandSegmentAddress.right L a)
+    (L.moiseBandOpenFirst a) (L.moiseBandOpenTail a)
+    (MoiseBandSegmentAddress.rightSide L)
+    (L.moiseBandOpenTail_nonempty a)
+    (L.moiseBandOpen_isChain a)
+    (L.moiseBandOpen_joins_rightSide a)
+    (L.rightSide_closes_moiseBandOpen a)
+    (L.moiseBandOpen_left_ne_right a)
+    (L.rightSide_left_ne_right a)
+    (L.moiseBandOpen_pairwise a)
+    (L.moiseBandOpen_inter_rightSide_subset_endpoints a)
+
+/-- The exact polygonal circle bounding one corrected Moise band cell. -/
+noncomputable def moiseBandPolygonalCircle (a : LevelAddress n) :
+    LeanEval.Topology.ClassificationOfSurfaces.Moise.PolygonalCircle := by
+  let K := BrokenLineData.segmentFamilyComplex
+    (MoiseBandSegmentAddress.left L a)
+    (MoiseBandSegmentAddress.right L a)
+  let D := L.moiseBandCycleData a
+  exact K.polygonalCircleOfCycle D.cycle D.isCycle
+
+theorem moiseBandPolygonalCircle_carrier (a : LevelAddress n) :
+    (L.moiseBandPolygonalCircle a).carrier = L.moiseBandCarrier a := by
+  let K := BrokenLineData.segmentFamilyComplex
+    (MoiseBandSegmentAddress.left L a)
+    (MoiseBandSegmentAddress.right L a)
+  let D := L.moiseBandCycleData a
+  change (K.polygonalCircleOfCycle D.cycle D.isCycle).carrier = _
+  rw [K.polygonalCircleOfCycle_carrier_eq_range_walkGeometricPath,
+    D.range_eq]
+  unfold moiseBandCarrier
+  rw [L.moiseBandSegments_eq_open_append_right a]
+  apply Set.Subset.antisymm
+  · intro x hx
+    rcases hx with hxOpen | hxRight
+    · rcases Set.mem_iUnion.mp hxOpen with ⟨j, hxj⟩
+      rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+      refine Set.mem_iUnion.mpr ⟨j, Set.mem_iUnion.mpr ⟨?_, hxSegment⟩⟩
+      rw [List.mem_append]
+      apply Or.inl
+      rw [← L.moiseBandOpenFirst_cons_tail a]
+      exact hj
+    · refine Set.mem_iUnion.mpr
+        ⟨MoiseBandSegmentAddress.rightSide L, Set.mem_iUnion.mpr ⟨?_, hxRight⟩⟩
+      simp
+  · intro x hx
+    rcases Set.mem_iUnion.mp hx with ⟨j, hxj⟩
+    rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+    rw [List.mem_append] at hj
+    rcases hj with hjOpen | hjRight
+    · apply Or.inl
+      refine Set.mem_iUnion.mpr ⟨j, Set.mem_iUnion.mpr ⟨?_, hxSegment⟩⟩
+      rw [L.moiseBandOpenFirst_cons_tail a]
+      exact hjOpen
+    · have hjEq : j = MoiseBandSegmentAddress.rightSide L := by
+        simpa only [List.mem_singleton] using hjRight
+      subst j
+      exact Or.inr hxSegment
+
+/-- Canonical first label and remaining labels of the corrected route. -/
+noncomputable def moiseBandFirst (a : LevelAddress n) :
+    L.MoiseBandSegmentAddress :=
+  (L.moiseBandSegments a).head (L.moiseBandSegments_nonempty a)
+
+noncomputable def moiseBandTail (a : LevelAddress n) :
+    List L.MoiseBandSegmentAddress :=
+  (L.moiseBandSegments a).tail
+
+theorem moiseBandFirst_cons_tail (a : LevelAddress n) :
+    L.moiseBandFirst a :: L.moiseBandTail a =
+      L.moiseBandSegments a :=
+  List.cons_head_tail (L.moiseBandSegments_nonempty a)
+
+theorem moiseBandRoute_isChain (a : LevelAddress n) :
+    (L.moiseBandFirst a :: L.moiseBandTail a).IsChain
+      (MoiseBandSegmentAddress.Adjacent L a) := by
+  rw [L.moiseBandFirst_cons_tail a]
+  exact L.moiseBandSegments_isChain a
+
+theorem moiseBandRoute_closes (a : LevelAddress n) :
+    MoiseBandSegmentAddress.right L a
+        ((L.moiseBandFirst a :: L.moiseBandTail a).getLast (by simp)) =
+      MoiseBandSegmentAddress.left L a (L.moiseBandFirst a) := by
+  have hlist := L.moiseBandFirst_cons_tail a
+  have hlast : (L.moiseBandFirst a :: L.moiseBandTail a).getLast
+      (by simp) =
+      (L.moiseBandSegments a).getLast
+        (L.moiseBandSegments_nonempty a) := by
+    apply List.getLast_congr
+    exact hlist
+  rw [hlast]
+  change MoiseBandSegmentAddress.right L a
+      ((L.moiseBandSegments a).getLast
+        (L.moiseBandSegments_nonempty a)) =
+    MoiseBandSegmentAddress.left L a
+      ((L.moiseBandSegments a).head
+        (L.moiseBandSegments_nonempty a))
+  exact L.moiseBandSegments_closes a
+
+/-- The common-arrangement closed walk of the corrected Moise boundary. -/
+noncomputable def moiseBandClosedWalk (a : LevelAddress n) :=
+  BrokenLineData.segmentFamilyClosedWalk
+    (MoiseBandSegmentAddress.left L a)
+    (MoiseBandSegmentAddress.right L a)
+    (L.moiseBandFirst a) (L.moiseBandTail a)
+    (L.moiseBandRoute_isChain a) (L.moiseBandRoute_closes a)
+
+/-- The canonical common-arrangement walk traces exactly the corrected
+Moise cell boundary. -/
+theorem range_moiseBandClosedWalk (a : LevelAddress n) :
+    range ((BrokenLineData.segmentFamilyComplex
+        (MoiseBandSegmentAddress.left L a)
+        (MoiseBandSegmentAddress.right L a)).walkGeometricPath
+      (L.moiseBandClosedWalk a)) = L.moiseBandCarrier a := by
+  have h := BrokenLineData.range_segmentFamilyClosedWalk
+    (MoiseBandSegmentAddress.left L a)
+    (MoiseBandSegmentAddress.right L a)
+    (L.moiseBandFirst a) (L.moiseBandTail a)
+    (L.moiseBandRoute_isChain a) (L.moiseBandRoute_closes a)
+    (fun j hj => L.moiseBandSegment_left_ne_right_of_mem a (by
+      rw [← L.moiseBandFirst_cons_tail a]
+      exact hj))
+  rw [L.moiseBandFirst_cons_tail a] at h
+  exact h
+
+end RecursiveInsideCollarStep.Later
+end InitialAngularArcs
+end JordanCircle
+
+end
+
+end Schoenflies

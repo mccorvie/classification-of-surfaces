@@ -1,0 +1,134 @@
+import Schoenflies.TopologicalDiskBoundaryExtension
+import Schoenflies.TwoArcJordan
+
+/-!
+# Canonical homeomorphisms between two-arc carriers
+
+The `TwoArcJordan` parametrization uses the first half of `AddCircle 2` for
+its first path.  Consequently, carrier homeomorphisms built from that
+parametrization agree pointwise on a first path shared by two Jordan cycles.
+This is the compatibility needed to fill and glue the two cells of an
+annular theta decomposition.
+-/
+
+namespace Schoenflies
+
+open Set Function
+
+noncomputable section
+
+namespace TwoArcJordan
+
+variable {a b a' b' : Plane}
+
+local instance : Fact (0 < (2 : ℝ)) := ⟨by norm_num⟩
+
+/-- The two-arc parametrization as a homeomorphism onto its exact carrier. -/
+def carrierHomeomorph (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b}) :
+    AddCircle (2 : ℝ) ≃ₜ (range p ∪ range q : Set Plane) :=
+  let J := toJordanCircle p q hp hq hinter
+  (circleHomeomorph.trans J.carrierHomeomorph).trans
+    (Homeomorph.setCongr (carrier_toJordanCircle p q hp hq hinter))
+
+@[simp] theorem coe_carrierHomeomorph_apply
+    (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b})
+    (z : AddCircle (2 : ℝ)) :
+    (carrierHomeomorph p q hp hq hinter z : Plane) = circleMap p q z := by
+  change sphereMap p q (circleHomeomorph z) = circleMap p q z
+  simp [sphereMap]
+
+theorem carrierHomeomorph_firstCoordinate
+    (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b})
+    (t : unitInterval) :
+    carrierHomeomorph p q hp hq hinter (firstCoordinate t) =
+      ⟨p t, Or.inl ⟨t, rfl⟩⟩ := by
+  apply Subtype.ext
+  rw [coe_carrierHomeomorph_apply, circleMap_firstCoordinate]
+
+theorem carrierHomeomorph_secondCoordinate
+    (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b})
+    (t : unitInterval) :
+    carrierHomeomorph p q hp hq hinter (secondCoordinate t) =
+      ⟨q t, Or.inr ⟨t, rfl⟩⟩ := by
+  apply Subtype.ext
+  rw [coe_carrierHomeomorph_apply, circleMap_secondCoordinate]
+
+/-- The canonical correspondence between two carriers presented as unions
+of two oppositely oriented arcs. -/
+def carrierCorrespondence
+    (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b})
+    (p' : Path a' b') (q' : Path b' a')
+    (hp' : Injective p') (hq' : Injective q')
+    (hinter' : range p' ∩ range q' = {a', b'}) :
+    (range p ∪ range q : Set Plane) ≃ₜ
+      (range p' ∪ range q' : Set Plane) :=
+  (carrierHomeomorph p q hp hq hinter).symm.trans
+    (carrierHomeomorph p' q' hp' hq' hinter')
+
+/-- The correspondence uses the same unit-interval parameter on both first
+paths. -/
+theorem carrierCorrespondence_apply_first
+    (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b})
+    (p' : Path a' b') (q' : Path b' a')
+    (hp' : Injective p') (hq' : Injective q')
+    (hinter' : range p' ∩ range q' = {a', b'})
+    (t : unitInterval) :
+    carrierCorrespondence p q hp hq hinter p' q' hp' hq' hinter'
+        ⟨p t, Or.inl ⟨t, rfl⟩⟩ =
+      ⟨p' t, Or.inl ⟨t, rfl⟩⟩ := by
+  rw [carrierCorrespondence, ← carrierHomeomorph_firstCoordinate
+      p q hp hq hinter t,
+    Homeomorph.trans_apply, Homeomorph.symm_apply_apply,
+    carrierHomeomorph_firstCoordinate]
+
+/-- The canonical correspondence uses the same parameter on both second
+paths as well. -/
+theorem carrierCorrespondence_apply_second
+    (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b})
+    (p' : Path a' b') (q' : Path b' a')
+    (hp' : Injective p') (hq' : Injective q')
+    (hinter' : range p' ∩ range q' = {a', b'})
+    (t : unitInterval) :
+    carrierCorrespondence p q hp hq hinter p' q' hp' hq' hinter'
+        ⟨q t, Or.inr ⟨t, rfl⟩⟩ =
+      ⟨q' t, Or.inr ⟨t, rfl⟩⟩ := by
+  rw [carrierCorrespondence, ← carrierHomeomorph_secondCoordinate
+      p q hp hq hinter t,
+    Homeomorph.trans_apply, Homeomorph.symm_apply_apply,
+    carrierHomeomorph_secondCoordinate]
+
+/-- The inverse correspondence has the matching first-path formula. -/
+theorem carrierCorrespondence_symm_apply_first
+    (p : Path a b) (q : Path b a)
+    (hp : Injective p) (hq : Injective q)
+    (hinter : range p ∩ range q = {a, b})
+    (p' : Path a' b') (q' : Path b' a')
+    (hp' : Injective p') (hq' : Injective q')
+    (hinter' : range p' ∩ range q' = {a', b'})
+    (t : unitInterval) :
+    (carrierCorrespondence p q hp hq hinter p' q' hp' hq' hinter').symm
+        ⟨p' t, Or.inl ⟨t, rfl⟩⟩ =
+      ⟨p t, Or.inl ⟨t, rfl⟩⟩ := by
+  apply (carrierCorrespondence p q hp hq hinter p' q' hp' hq' hinter').injective
+  rw [Homeomorph.apply_symm_apply,
+    carrierCorrespondence_apply_first]
+
+end TwoArcJordan
+
+end
+
+end Schoenflies

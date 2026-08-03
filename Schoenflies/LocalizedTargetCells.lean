@@ -1,0 +1,663 @@
+import Schoenflies.LocalizedJordanAnnularOrder
+import Schoenflies.StandardPolygonalCollars
+
+/-!
+# Standard target cells carrying the original boundary labels
+
+The cut-free arc selected on the original Jordan curve is transported to
+two consecutive homothetic target boundaries.  Radial segments at its
+endpoints then give a standard polygonal annular cell with exactly the same
+labels as the localized source cell.
+-/
+
+namespace Schoenflies
+
+open Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+open StandardPolygonalCollars
+
+noncomputable section
+
+namespace JordanCircle.InitialAngularArcs.LocalizedCutFreeCellData
+
+variable {J : JordanCircle} {I : J.InitialAngularArcs}
+  {k : ℕ} {a : LevelAddress k}
+  (C : I.LocalizedCutFreeCellData k a)
+
+private abbrev targetDisk (n : ℕ) : PolygonalCircle :=
+  StandardPolygonalCollars.disk n
+
+/-- Transport the cell's oriented original-Jordan split to target boundary
+`n`. -/
+noncomputable def targetBoundarySplit (n : ℕ) :
+    (targetDisk n).toJordanCircle.TwoBoundaryArcPaths
+      (homothetyPoint (radius n) (I.levelTargetBoundaryPoint a))
+      (homothetyPoint (radius n)
+        (I.levelTargetBoundaryPoint C.next)) :=
+  (C.jordanCellBoundarySplit.mapCarrier
+      (jordanToDiskBoundaryHomeomorph J n)).cast
+    (by
+      simp only [jordanToDiskBoundaryHomeomorph_apply]
+      rfl)
+    (by
+      simp only [jordanToDiskBoundaryHomeomorph_apply]
+      rfl)
+
+theorem other_levelTargetPoint_mem_boundarySplit_second
+    (n : ℕ) (c : LevelAddress k) (hca : c ≠ a)
+    (hcnext : c ≠ C.next) :
+    homothetyPoint (radius n) (I.levelTargetBoundaryPoint c) ∈
+      range (C.targetBoundarySplit n).second := by
+  obtain ⟨t, ht⟩ :=
+    C.other_jordanOuterPoint_mem_cellBoundarySplit_second c hca hcnext
+  refine ⟨t, ?_⟩
+  change (jordanToDiskBoundaryHomeomorph J n
+      ⟨C.jordanCellBoundarySplit.second t, _⟩ : Plane) = _
+  rw [jordanToDiskBoundaryHomeomorph_apply]
+  congr 1
+  have hsub :
+      (⟨C.jordanCellBoundarySplit.second t,
+        C.jordanCellBoundarySplit.second_range_subset_carrier
+          ⟨t, rfl⟩⟩ : J.carrier) =
+        ⟨(I.levelLocalizedJordanAnnularCrosscut k c).outerPoint,
+          (I.levelLocalizedJordanAnnularCrosscut k c).outerPoint_mem⟩ :=
+    Subtype.ext ht
+  rw [hsub]
+  rfl
+
+/-- The synchronized target separator pair at source shell level `k`. -/
+noncomputable def targetSeparator :
+    PolygonalCircle.AnnularCrosscut.SeparatorPair
+      (I.levelTargetAnnularCrosscut k a)
+      (I.levelTargetAnnularCrosscut k C.next) where
+  innerSplit := C.targetBoundarySplit (k + 1)
+  outerSplit := C.targetBoundarySplit (k + 2)
+
+/-- The target radial annulus equipped with the transported complementary
+boundary paths. -/
+noncomputable def targetDecomposition :
+    PolygonalCircle.AnnularCellDecomposition
+      (targetDisk (k + 1)) (targetDisk (k + 2)) where
+  first := I.levelTargetAnnularCrosscut k a
+  second := I.levelTargetAnnularCrosscut k C.next
+  separator := C.targetSeparator
+  nested := disk_strictlyNested (k + 1)
+  disjoint := I.pairwise_disjoint_levelTargetAnnularCrosscut k C.next_ne
+  outerPoints_ne := by
+    intro h
+    exact C.next_ne <| I.levelTargetBoundaryPoint_injective k <|
+      (homothetyHomeomorph (radius (k + 2))
+        (radius_pos (k + 2)).ne').injective <| by
+          simpa only [homothetyHomeomorph_apply,
+            JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+            JordanCircle.InitialAngularArcs.levelTargetOuterMark] using h
+  innerPoints_ne := by
+    intro h
+    exact C.next_ne <| I.levelTargetBoundaryPoint_injective k <|
+      (homothetyHomeomorph (radius (k + 1))
+        (radius_pos (k + 1)).ne').injective <| by
+          simpa only [homothetyHomeomorph_apply,
+            JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+            JordanCircle.InitialAngularArcs.levelTargetInnerMark] using h
+  first_segment := by
+    change range (Path.segment
+      (I.levelTargetOuterMark k a) (I.levelTargetInnerMark k a)) = _
+    exact Path.range_segment _ _
+  second_segment := by
+    change range (Path.segment
+      (I.levelTargetOuterMark k C.next)
+      (I.levelTargetInnerMark k C.next)) = _
+    exact Path.range_segment _ _
+
+def targetFirstAlternative : Prop :=
+  (targetDisk (k + 1)).interiorRegion ⊆
+    (C.targetSeparator.circle₀
+      (disk_strictlyNested (k + 1))
+      (I.pairwise_disjoint_levelTargetAnnularCrosscut k
+        C.next_ne)).inside
+
+theorem target_separatorSide :
+    C.targetFirstAlternative ∨
+      (targetDisk (k + 1)).interiorRegion ⊆
+        (C.targetSeparator.circle₁
+          (disk_strictlyNested (k + 1))
+          (I.pairwise_disjoint_levelTargetAnnularCrosscut k
+            C.next_ne)).inside := by
+  rcases C.targetSeparator.innerInterior_separatorSide_dichotomy
+      (disk_strictlyNested (k + 1))
+      (I.pairwise_disjoint_levelTargetAnnularCrosscut k C.next_ne)
+      (C.targetDecomposition.first_segment)
+      (C.targetDecomposition.second_segment) with h | h
+  · exact Or.inl h.1
+  · exact Or.inr h.2
+
+/-- From the first genuine refinement level onward, the synchronized radial
+target splits select the first separator alternative.  A third retained
+mark lies on the second path at both radii, ruling out the alternative which
+would put it on the first outer path. -/
+theorem targetFirstAlternative_of_one_le (hk : 1 ≤ k) :
+    C.targetFirstAlternative := by
+  have hinnerInjective : Injective fun c : LevelAddress k =>
+      (I.levelTargetAnnularCrosscut k c).innerPoint := by
+    intro c d hcd
+    apply I.levelTargetBoundaryPoint_injective k
+    apply (homothetyHomeomorph (radius (k + 1))
+      (radius_pos (k + 1)).ne').injective
+    simpa only [homothetyHomeomorph_apply,
+      JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+      JordanCircle.InitialAngularArcs.levelTargetInnerMark] using hcd
+  have houterInjective : Injective fun c : LevelAddress k =>
+      (I.levelTargetAnnularCrosscut k c).outerPoint := by
+    intro c d hcd
+    apply I.levelTargetBoundaryPoint_injective k
+    apply (homothetyHomeomorph (radius (k + 2))
+      (radius_pos (k + 2)).ne').injective
+    simpa only [homothetyHomeomorph_apply,
+      JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+      JordanCircle.InitialAngularArcs.levelTargetOuterMark] using hcd
+  have hinnerSecond : ∀ c : LevelAddress k, c ≠ a → c ≠ C.next →
+      (I.levelTargetAnnularCrosscut k c).innerPoint ∈
+        range C.targetSeparator.innerSplit.second := by
+    intro c hca hcnext
+    exact C.other_levelTargetPoint_mem_boundarySplit_second
+      (k + 1) c hca hcnext
+  have hcyclic := C.targetSeparator.family_cyclicCompatibility
+    (I.levelTargetAnnularCrosscut k) C.next_ne
+    (disk_strictlyNested (k + 1))
+    (I.pairwise_disjoint_levelTargetAnnularCrosscut k)
+    hinnerInjective houterInjective
+    C.targetDecomposition.first_segment
+    C.targetDecomposition.second_segment hinnerSecond
+  rcases hcyclic with hfirst | hsecond
+  · exact hfirst.1
+  · have hpairCard :
+        ({a, C.next} : Finset (LevelAddress k)).card <
+          (Finset.univ : Finset (LevelAddress k)).card := by
+      rw [Finset.card_univ]
+      calc
+        ({a, C.next} : Finset (LevelAddress k)).card ≤
+            ({C.next} : Finset (LevelAddress k)).card + 1 :=
+          Finset.card_insert_le _ _
+        _ = 2 := by simp
+        _ < Fintype.card (LevelAddress k) :=
+          lt_of_lt_of_le (by norm_num)
+            (three_le_card_levelAddress k hk)
+    obtain ⟨c, _hcuniv, hc⟩ :=
+      Finset.exists_mem_notMem_of_card_lt_card hpairCard
+    have hc' : c ≠ a ∧ c ≠ C.next := by
+      simpa only [Finset.mem_insert, Finset.mem_singleton, not_or] using hc
+    have hcFirst :
+        (I.levelTargetAnnularCrosscut k c).outerPoint ∈
+          range (C.targetBoundarySplit (k + 2)).first := by
+      have h := hsecond.2 c hc'.1 hc'.2
+      change (I.levelTargetAnnularCrosscut k c).outerPoint ∈
+        range (C.targetBoundarySplit (k + 2)).first.symm at h
+      simpa only [Path.symm_range] using h
+    have hcSecond :
+        (I.levelTargetAnnularCrosscut k c).outerPoint ∈
+          range (C.targetBoundarySplit (k + 2)).second :=
+      C.other_levelTargetPoint_mem_boundarySplit_second
+        (k + 2) c hc'.1 hc'.2
+    have hcEnds :
+        (I.levelTargetAnnularCrosscut k c).outerPoint ∈
+          ({(I.levelTargetAnnularCrosscut k a).outerPoint,
+            (I.levelTargetAnnularCrosscut k C.next).outerPoint} :
+              Set Plane) := by
+      have hoverlap := (C.targetBoundarySplit (k + 2)).overlap
+      change range (C.targetBoundarySplit (k + 2)).first ∩
+          range (C.targetBoundarySplit (k + 2)).second =
+        ({(I.levelTargetAnnularCrosscut k a).outerPoint,
+          (I.levelTargetAnnularCrosscut k C.next).outerPoint} :
+            Set Plane) at hoverlap
+      rw [← hoverlap]
+      exact ⟨hcFirst, hcSecond⟩
+    rcases hcEnds with hca | hcnext
+    · exact False.elim (hc'.1 (houterInjective hca))
+    · exact False.elim
+        (hc'.2 (houterInjective (Set.mem_singleton_iff.mp hcnext)))
+
+theorem targetSecondAlternative_of_not_first
+    (h : ¬ C.targetFirstAlternative) :
+    (targetDisk (k + 1)).interiorRegion ⊆
+      (C.targetSeparator.circle₁
+        (disk_strictlyNested (k + 1))
+        (I.pairwise_disjoint_levelTargetAnnularCrosscut k
+          C.next_ne)).inside :=
+  C.target_separatorSide.resolve_left h
+
+/-- The radially transported target cell, attached to target disk `k + 1`
+along the image of the selected original Jordan arc. -/
+noncomputable def targetAttachmentPresentation :
+    PolygonalDiskAttachment.Presentation
+      (targetDisk (k + 1)).closedRegion := by
+  classical
+  exact if h : C.targetFirstAlternative then
+      C.targetDecomposition.attachmentPresentation₁ h
+    else C.targetDecomposition.attachmentPresentation₀
+      (C.targetSecondAlternative_of_not_first h)
+
+theorem targetAttachmentPresentation_exposedSecondCoordinate
+    (t : unitInterval) :
+    C.targetAttachmentPresentation.exposed
+        (PolygonalCircle.AnnularCellDecomposition.exposedSecondCoordinate t) =
+      C.targetDecomposition.second.path.symm t := by
+  classical
+  by_cases h : C.targetFirstAlternative
+  · rw [targetAttachmentPresentation, dif_pos h]
+    exact C.targetDecomposition.exposedPath_exposedSecondCoordinate _ t
+  · rw [targetAttachmentPresentation, dif_neg h]
+    exact C.targetDecomposition.exposedPath_exposedSecondCoordinate _ t
+
+theorem targetAttachmentPresentation_exposedFirstCoordinate
+    (t : unitInterval) :
+    C.targetAttachmentPresentation.exposed
+        (PolygonalCircle.AnnularCellDecomposition.exposedFirstCoordinate t) =
+      C.targetDecomposition.first.path t := by
+  classical
+  by_cases h : C.targetFirstAlternative
+  · rw [targetAttachmentPresentation, dif_pos h]
+    exact C.targetDecomposition.exposedPath_exposedFirstCoordinate _ t
+  · rw [targetAttachmentPresentation, dif_neg h]
+    exact C.targetDecomposition.exposedPath_exposedFirstCoordinate _ t
+
+theorem range_targetAttachmentPresentation_shared :
+    range C.targetAttachmentPresentation.shared =
+      range (C.targetBoundarySplit (k + 1)).first := by
+  classical
+  by_cases h : C.targetFirstAlternative
+  · rw [targetAttachmentPresentation, dif_pos h]
+    rfl
+  · rw [targetAttachmentPresentation, dif_neg h]
+    rfl
+
+/-- At a genuine refinement level, the target cell's complementary boundary
+is its successor radial cut, the transported outer successor arc, and its
+initial radial cut. -/
+theorem range_targetAttachmentPresentation_exposed (hk : 1 ≤ k) :
+    range C.targetAttachmentPresentation.exposed =
+      range C.targetDecomposition.second.path ∪
+        (range (C.targetBoundarySplit (k + 2)).first ∪
+          range C.targetDecomposition.first.path) := by
+  classical
+  by_cases h : C.targetFirstAlternative
+  · rw [targetAttachmentPresentation, dif_pos h]
+    change range (C.targetDecomposition.exposedPath
+        C.targetSeparator.outerArc₁) = _
+    rw [C.targetDecomposition.range_exposedPath]
+    change range C.targetDecomposition.second.path ∪
+        (range (C.targetBoundarySplit (k + 2)).first.symm ∪
+          range C.targetDecomposition.first.path) = _
+    rw [Path.symm_range]
+  · exact False.elim (h (C.targetFirstAlternative_of_one_le hk))
+
+/-- Every third target radial cut misses the boundary of the canonical
+target cell. -/
+theorem other_targetCrosscut_disjoint_targetDiskCarrier
+    (hk : 1 ≤ k) (c : LevelAddress k) (hca : c ≠ a)
+    (hcnext : c ≠ C.next) :
+    Disjoint (range (I.levelTargetAnnularCrosscut k c).path)
+      C.targetAttachmentPresentation.disk.carrier := by
+  apply Set.disjoint_left.mpr
+  intro x hxCut hxCell
+  rw [C.targetAttachmentPresentation.carrier_eq,
+    C.range_targetAttachmentPresentation_shared,
+    C.range_targetAttachmentPresentation_exposed hk] at hxCell
+  rcases hxCell with hxInner | hxSecond | hxOuter | hxFirst
+  · have hxMeet : x ∈
+        range (I.levelTargetAnnularCrosscut k c).path ∩
+          (targetDisk (k + 1)).carrier :=
+      ⟨hxCut, C.targetSeparator.innerFirst_range_subset hxInner⟩
+    rw [(I.levelTargetAnnularCrosscut k c).range_inter_inner] at hxMeet
+    have hxEq := Set.mem_singleton_iff.mp hxMeet
+    subst x
+    have hxSecondSplit :=
+      C.other_levelTargetPoint_mem_boundarySplit_second
+        (k + 1) c hca hcnext
+    have hxEnds :
+        (I.levelTargetAnnularCrosscut k c).innerPoint ∈
+          ({(I.levelTargetAnnularCrosscut k a).innerPoint,
+            (I.levelTargetAnnularCrosscut k C.next).innerPoint} :
+              Set Plane) := by
+      have hoverlap := (C.targetBoundarySplit (k + 1)).overlap
+      change range (C.targetBoundarySplit (k + 1)).first ∩
+          range (C.targetBoundarySplit (k + 1)).second =
+        ({(I.levelTargetAnnularCrosscut k a).innerPoint,
+          (I.levelTargetAnnularCrosscut k C.next).innerPoint} :
+            Set Plane) at hoverlap
+      rw [← hoverlap]
+      exact ⟨hxInner, hxSecondSplit⟩
+    rcases hxEnds with hEq | hEq
+    · exact hca (I.levelTargetBoundaryPoint_injective k <| by
+        apply (homothetyHomeomorph (radius (k + 1))
+          (radius_pos (k + 1)).ne').injective
+        simpa only [homothetyHomeomorph_apply,
+          JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+          JordanCircle.InitialAngularArcs.levelTargetInnerMark] using hEq)
+    · exact hcnext (I.levelTargetBoundaryPoint_injective k <| by
+        apply (homothetyHomeomorph (radius (k + 1))
+          (radius_pos (k + 1)).ne').injective
+        simpa only [homothetyHomeomorph_apply,
+          JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+          JordanCircle.InitialAngularArcs.levelTargetInnerMark] using
+            (Set.mem_singleton_iff.mp hEq))
+  · exact Set.disjoint_left.mp
+      (I.pairwise_disjoint_levelTargetAnnularCrosscut k hcnext)
+      hxCut hxSecond
+  · have hxMeet : x ∈
+        range (I.levelTargetAnnularCrosscut k c).path ∩
+          (targetDisk (k + 2)).carrier := by
+      refine ⟨hxCut, ?_⟩
+      rw [← (targetDisk (k + 2)).carrier_toJordanCircle,
+        ← (C.targetBoundarySplit (k + 2)).cover]
+      exact Or.inl hxOuter
+    rw [(I.levelTargetAnnularCrosscut k c).range_inter_outer] at hxMeet
+    have hxEq := Set.mem_singleton_iff.mp hxMeet
+    subst x
+    have hxSecondSplit :=
+      C.other_levelTargetPoint_mem_boundarySplit_second
+        (k + 2) c hca hcnext
+    have hxEnds :
+        (I.levelTargetAnnularCrosscut k c).outerPoint ∈
+          ({(I.levelTargetAnnularCrosscut k a).outerPoint,
+            (I.levelTargetAnnularCrosscut k C.next).outerPoint} :
+              Set Plane) := by
+      have hoverlap := (C.targetBoundarySplit (k + 2)).overlap
+      change range (C.targetBoundarySplit (k + 2)).first ∩
+          range (C.targetBoundarySplit (k + 2)).second =
+        ({(I.levelTargetAnnularCrosscut k a).outerPoint,
+          (I.levelTargetAnnularCrosscut k C.next).outerPoint} :
+            Set Plane) at hoverlap
+      rw [← hoverlap]
+      exact ⟨hxOuter, hxSecondSplit⟩
+    rcases hxEnds with hEq | hEq
+    · exact hca (I.levelTargetBoundaryPoint_injective k <| by
+        apply (homothetyHomeomorph (radius (k + 2))
+          (radius_pos (k + 2)).ne').injective
+        simpa only [homothetyHomeomorph_apply,
+          JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+          JordanCircle.InitialAngularArcs.levelTargetOuterMark] using hEq)
+    · exact hcnext (I.levelTargetBoundaryPoint_injective k <| by
+        apply (homothetyHomeomorph (radius (k + 2))
+          (radius_pos (k + 2)).ne').injective
+        simpa only [homothetyHomeomorph_apply,
+          JordanCircle.InitialAngularArcs.levelTargetAnnularCrosscut,
+          JordanCircle.InitialAngularArcs.levelTargetOuterMark] using
+            (Set.mem_singleton_iff.mp hEq))
+  · exact Set.disjoint_left.mp
+      (I.pairwise_disjoint_levelTargetAnnularCrosscut k hca)
+      hxCut hxFirst
+
+theorem targetFirstCrosscut_range_subset_targetDiskCarrier (hk : 1 ≤ k) :
+    range C.targetDecomposition.first.path ⊆
+      C.targetAttachmentPresentation.disk.carrier := by
+  intro x hx
+  rw [C.targetAttachmentPresentation.carrier_eq,
+    C.range_targetAttachmentPresentation_exposed hk]
+  exact Or.inr (Or.inr (Or.inr hx))
+
+theorem targetSecondCrosscut_range_subset_targetDiskCarrier (hk : 1 ≤ k) :
+    range C.targetDecomposition.second.path ⊆
+      C.targetAttachmentPresentation.disk.carrier := by
+  intro x hx
+  rw [C.targetAttachmentPresentation.carrier_eq,
+    C.range_targetAttachmentPresentation_exposed hk]
+  exact Or.inr (Or.inl hx)
+
+theorem targetDisk_closedRegion_subset_outerDisk (hk : 1 ≤ k) :
+    C.targetAttachmentPresentation.disk.closedRegion ⊆
+      (targetDisk (k + 2)).closedRegion := by
+  intro x hx
+  rw [← C.targetDecomposition.cellClosedRegions_union]
+  by_cases h : C.targetFirstAlternative
+  · right
+    rw [targetAttachmentPresentation, dif_pos h] at hx
+    exact hx
+  · exact False.elim (h (C.targetFirstAlternative_of_one_le hk))
+
+theorem targetInnerDisk_disjoint_targetDiskInterior (hk : 1 ≤ k) :
+    Disjoint (targetDisk (k + 1)).closedRegion
+      C.targetAttachmentPresentation.disk.interiorRegion := by
+  rw [Set.disjoint_left]
+  intro x hxInner hxCellInterior
+  have hxCellClosed :
+      x ∈ C.targetAttachmentPresentation.disk.closedRegion := by
+    rw [C.targetAttachmentPresentation.disk.closedRegion_eq_union]
+    exact Or.inl hxCellInterior
+  have hxShared : x ∈ range C.targetAttachmentPresentation.shared := by
+    rw [← C.targetAttachmentPresentation.base_inter_disk]
+    exact ⟨hxInner, hxCellClosed⟩
+  have hxCarrier :
+      x ∈ C.targetAttachmentPresentation.disk.carrier := by
+    rw [C.targetAttachmentPresentation.carrier_eq]
+    exact Or.inl hxShared
+  exact Set.disjoint_left.mp
+    (PolygonalCircle.carrier_disjoint_interiorRegion _)
+    hxCarrier hxCellInterior
+
+theorem targetOuterCarrier_disjoint_targetDiskInterior (hk : 1 ≤ k) :
+    Disjoint (targetDisk (k + 2)).carrier
+      C.targetAttachmentPresentation.disk.interiorRegion := by
+  apply Set.disjoint_left.mpr
+  intro x hxOuter hxCell
+  have hxSubset : C.targetAttachmentPresentation.disk.interiorRegion ⊆
+      (targetDisk (k + 2)).interiorRegion := by
+    rw [← C.targetAttachmentPresentation.disk.interior_closedRegion,
+      ← (targetDisk (k + 2)).interior_closedRegion]
+    exact interior_mono (C.targetDisk_closedRegion_subset_outerDisk hk)
+  exact Set.disjoint_left.mp
+    (PolygonalCircle.carrier_disjoint_interiorRegion (targetDisk (k + 2)))
+    hxOuter (hxSubset hxCell)
+
+theorem targetCrosscut_disjoint_targetDiskInterior
+    (hk : 1 ≤ k) (c : LevelAddress k) :
+    Disjoint (range (I.levelTargetAnnularCrosscut k c).path)
+      C.targetAttachmentPresentation.disk.interiorRegion := by
+  by_cases hca : c = a
+  · subst c
+    exact (PolygonalCircle.carrier_disjoint_interiorRegion
+      C.targetAttachmentPresentation.disk).mono_left
+        (C.targetFirstCrosscut_range_subset_targetDiskCarrier hk)
+  by_cases hcnext : c = C.next
+  · subst c
+    exact (PolygonalCircle.carrier_disjoint_interiorRegion
+      C.targetAttachmentPresentation.disk).mono_left
+        (C.targetSecondCrosscut_range_subset_targetDiskCarrier hk)
+  have hOff := C.other_targetCrosscut_disjoint_targetDiskCarrier
+    hk c hca hcnext
+  have hInnerClosed :
+      (I.levelTargetAnnularCrosscut k c).innerPoint ∈
+        (targetDisk (k + 1)).closedRegion := by
+    rw [(targetDisk (k + 1)).closedRegion_eq_union]
+    exact Or.inr (I.levelTargetAnnularCrosscut k c).innerPoint_mem
+  have hInnerNotInterior :
+      (I.levelTargetAnnularCrosscut k c).innerPoint ∉
+        C.targetAttachmentPresentation.disk.interiorRegion :=
+    Set.disjoint_left.mp (C.targetInnerDisk_disjoint_targetDiskInterior hk)
+      hInnerClosed
+  have hInnerNotCarrier :
+      (I.levelTargetAnnularCrosscut k c).innerPoint ∉
+        C.targetAttachmentPresentation.disk.carrier :=
+    Set.disjoint_left.mp hOff
+      (Path.target_mem_range (I.levelTargetAnnularCrosscut k c).path)
+  have hInnerExterior :
+      (I.levelTargetAnnularCrosscut k c).innerPoint ∈
+        C.targetAttachmentPresentation.disk.exteriorRegion := by
+    have hSplit :
+        (I.levelTargetAnnularCrosscut k c).innerPoint ∈
+          C.targetAttachmentPresentation.disk.interiorRegion ∪
+            C.targetAttachmentPresentation.disk.exteriorRegion := by
+      rw [C.targetAttachmentPresentation.disk.interior_union_exterior]
+      exact hInnerNotCarrier
+    exact hSplit.resolve_left hInnerNotInterior
+  have hMaps : Set.MapsTo
+      (I.levelTargetAnnularCrosscut k c).path Set.univ
+        C.targetAttachmentPresentation.disk.exteriorRegion :=
+    C.targetAttachmentPresentation.disk.mapsTo_exteriorRegion_of_isPreconnected
+      isPreconnected_univ
+      (I.levelTargetAnnularCrosscut k c).path.continuous.continuousOn
+      (by
+        intro t _ htCarrier
+        exact Set.disjoint_left.mp hOff ⟨t, rfl⟩ htCarrier)
+      ⟨1, Set.mem_univ _, by
+        simpa only [Path.target] using hInnerExterior⟩
+  apply Set.disjoint_left.mpr
+  rintro x ⟨t, rfl⟩ hxInterior
+  exact Set.disjoint_left.mp
+    C.targetAttachmentPresentation.disk.disjoint_interior_exterior
+      hxInterior (hMaps (Set.mem_univ t))
+
+theorem targetDiskCarrier_disjoint_targetDiskInterior
+    (hk : 1 ≤ k) {b : LevelAddress k}
+    (D : I.LocalizedCutFreeCellData k b) :
+    Disjoint D.targetAttachmentPresentation.disk.carrier
+      C.targetAttachmentPresentation.disk.interiorRegion := by
+  apply Set.disjoint_left.mpr
+  intro x hxD hxC
+  rw [D.targetAttachmentPresentation.carrier_eq,
+    D.range_targetAttachmentPresentation_shared,
+    D.range_targetAttachmentPresentation_exposed hk] at hxD
+  rcases hxD with hxInner | hxSecond | hxOuter | hxFirst
+  · have hxInnerClosed : x ∈ (targetDisk (k + 1)).closedRegion := by
+      rw [(targetDisk (k + 1)).closedRegion_eq_union]
+      exact Or.inr (D.targetSeparator.innerFirst_range_subset hxInner)
+    exact Set.disjoint_left.mp
+      (C.targetInnerDisk_disjoint_targetDiskInterior hk)
+      hxInnerClosed hxC
+  · exact Set.disjoint_left.mp
+      (C.targetCrosscut_disjoint_targetDiskInterior hk D.next)
+      hxSecond hxC
+  · have hxOuterCarrier : x ∈ (targetDisk (k + 2)).carrier := by
+      rw [← (targetDisk (k + 2)).carrier_toJordanCircle,
+        ← (D.targetBoundarySplit (k + 2)).cover]
+      exact Or.inl hxOuter
+    exact Set.disjoint_left.mp
+      (C.targetOuterCarrier_disjoint_targetDiskInterior hk)
+      hxOuterCarrier hxC
+  · exact Set.disjoint_left.mp
+      (C.targetCrosscut_disjoint_targetDiskInterior hk b)
+      hxFirst hxC
+
+theorem exists_targetDiskCarrier_not_mem_targetDiskCarrier
+    (hk : 1 ≤ k) {b : LevelAddress k}
+    (D : I.LocalizedCutFreeCellData k b) (hab : a ≠ b) :
+    ∃ x, x ∈ D.targetAttachmentPresentation.disk.carrier ∧
+      x ∉ C.targetAttachmentPresentation.disk.carrier := by
+  by_cases hbnext : b = C.next
+  · have hb : b = I.levelLocalizedSuccessor k a :=
+      hbnext.trans C.next_eq
+    have hDnexta : D.next ≠ a := by
+      intro hDnext
+      apply I.levelLocalizedSuccessor_successor_ne k hk a
+      rw [← hb, ← D.next_eq]
+      exact hDnext
+    have hDnextCnext : D.next ≠ C.next := by
+      intro h
+      exact D.next_ne (hbnext.trans h.symm)
+    refine ⟨(I.levelTargetAnnularCrosscut k D.next).innerPoint,
+      D.targetSecondCrosscut_range_subset_targetDiskCarrier hk
+        (Path.target_mem_range _), ?_⟩
+    exact Set.disjoint_left.mp
+      (C.other_targetCrosscut_disjoint_targetDiskCarrier
+        hk D.next hDnexta hDnextCnext)
+      (Path.target_mem_range _)
+  · refine ⟨(I.levelTargetAnnularCrosscut k b).innerPoint,
+      D.targetFirstCrosscut_range_subset_targetDiskCarrier hk
+        (Path.target_mem_range _), ?_⟩
+    exact Set.disjoint_left.mp
+      (C.other_targetCrosscut_disjoint_targetDiskCarrier
+        hk b hab.symm hbnext)
+      (Path.target_mem_range _)
+
+theorem disjoint_targetDiskInterior
+    (hk : 1 ≤ k) {b : LevelAddress k}
+    (D : I.LocalizedCutFreeCellData k b) (hab : a ≠ b) :
+    Disjoint C.targetAttachmentPresentation.disk.interiorRegion
+      D.targetAttachmentPresentation.disk.interiorRegion := by
+  exact C.targetAttachmentPresentation.disk.disjoint_interiorRegion_of_boundary_avoidance
+      D.targetAttachmentPresentation.disk
+      (D.targetDiskCarrier_disjoint_targetDiskInterior hk C)
+      (C.targetDiskCarrier_disjoint_targetDiskInterior hk D)
+      (C.exists_targetDiskCarrier_not_mem_targetDiskCarrier hk D hab)
+
+end JordanCircle.InitialAngularArcs.LocalizedCutFreeCellData
+
+namespace JordanCircle.InitialAngularArcs
+
+variable {J : JordanCircle} (I : J.InitialAngularArcs)
+
+/-- At either target radius, the transported boundary arcs of distinct
+canonical cells meet only at the endpoints of the first cell. -/
+theorem canonicalTargetBoundarySplit_first_inter_subset_endpoints
+    (k n : ℕ) (hk : 1 ≤ k) {a b : LevelAddress k} (hab : a ≠ b) :
+    range ((I.localizedCutFreeCellData k a).targetBoundarySplit n).first ∩
+        range ((I.localizedCutFreeCellData k b).targetBoundarySplit n).first ⊆
+      ({homothetyPoint (radius n) (I.levelTargetBoundaryPoint a),
+        homothetyPoint (radius n)
+          (I.levelTargetBoundaryPoint
+            (I.localizedCutFreeCellData k a).next)} : Set Plane) := by
+  have hpoint : Injective fun c : LevelAddress k =>
+      homothetyPoint (radius n) (I.levelTargetBoundaryPoint c) := by
+    intro c d hcd
+    apply I.levelTargetBoundaryPoint_injective k
+    apply (homothetyHomeomorph (radius n) (radius_pos n).ne').injective
+    simpa only [homothetyHomeomorph_apply] using hcd
+  have hnextNext : ∀ c : LevelAddress k,
+      (I.localizedCutFreeCellData k
+        (I.localizedCutFreeCellData k c).next).next ≠ c := by
+    intro c
+    simpa only [I.localizedCutFreeCellData_next] using
+      I.levelLocalizedSuccessor_successor_ne k hk c
+  exact JordanCircle.TwoBoundaryArcPaths.successorSplitFamily_first_inter_subset_endpoints
+      (J := (StandardPolygonalCollars.disk n).toJordanCircle)
+      (fun c : LevelAddress k =>
+        homothetyPoint (radius n) (I.levelTargetBoundaryPoint c))
+      hpoint
+      (fun c : LevelAddress k => (I.localizedCutFreeCellData k c).next)
+      (I.localizedCutFreeCellData_next_bijective k).injective
+      hnextNext
+      (fun c => (I.localizedCutFreeCellData k c).targetBoundarySplit n)
+      (fun c d hdc hdnext =>
+        LocalizedCutFreeCellData.other_levelTargetPoint_mem_boundarySplit_second
+          (I.localizedCutFreeCellData k c) n d hdc hdnext)
+      hab
+
+/-- A retained target boundary point lies on the first transported arc of a
+canonical cell exactly at one of its two endpoint labels. -/
+theorem levelTargetPoint_mem_canonicalBoundarySplit_first_iff
+    (k n : ℕ) (a c : LevelAddress k) :
+    homothetyPoint (radius n) (I.levelTargetBoundaryPoint c) ∈
+        range ((I.localizedCutFreeCellData k a).targetBoundarySplit n).first ↔
+      c = a ∨ c = (I.localizedCutFreeCellData k a).next := by
+  let C := I.localizedCutFreeCellData k a
+  constructor
+  · intro hc
+    by_cases hca : c = a
+    · exact Or.inl hca
+    by_cases hcnext : c = C.next
+    · exact Or.inr hcnext
+    have hcSecond := C.other_levelTargetPoint_mem_boundarySplit_second
+      n c hca hcnext
+    have hcEnds :
+        homothetyPoint (radius n) (I.levelTargetBoundaryPoint c) ∈
+          ({homothetyPoint (radius n) (I.levelTargetBoundaryPoint a),
+            homothetyPoint (radius n)
+              (I.levelTargetBoundaryPoint C.next)} : Set Plane) := by
+      rw [← (C.targetBoundarySplit n).overlap]
+      exact ⟨hc, hcSecond⟩
+    rcases hcEnds with h | h
+    · exact False.elim (hca <| I.levelTargetBoundaryPoint_injective k <| by
+        apply (homothetyHomeomorph (radius n) (radius_pos n).ne').injective
+        simpa only [homothetyHomeomorph_apply] using h)
+    · exact False.elim (hcnext <| I.levelTargetBoundaryPoint_injective k <| by
+        apply (homothetyHomeomorph (radius n) (radius_pos n).ne').injective
+        simpa only [homothetyHomeomorph_apply] using
+          (Set.mem_singleton_iff.mp h))
+  · rintro (rfl | rfl)
+    · exact Path.source_mem_range (C.targetBoundarySplit n).first
+    · exact Path.target_mem_range (C.targetBoundarySplit n).first
+
+end JordanCircle.InitialAngularArcs
+
+end
+
+end Schoenflies

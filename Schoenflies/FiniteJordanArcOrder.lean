@@ -1,0 +1,163 @@
+import Schoenflies.ControlledJordanArcPaths
+
+/-!
+# Adjacent points in a finite subset of a Jordan circle
+
+Cut the angular circle at one marked point and choose the least positive lift
+of every other marked point.  The minimizing point is its cyclic successor, so
+the short boundary arc between the pair contains no other mark.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+
+noncomputable section
+
+namespace JordanCircle
+
+variable (J : JordanCircle)
+
+/-- An arbitrary real angular representative of a point on the carrier. -/
+noncomputable def angularRepresentative (x : J.carrier) : ℝ :=
+  Classical.choose <|
+    JordanCurve.Arcs.param_surjective (J.carrierHomeomorph.symm x)
+
+theorem param_angularRepresentative (x : J.carrier) :
+    JordanCurve.Arcs.param (J.angularRepresentative x) =
+      J.carrierHomeomorph.symm x :=
+  Classical.choose_spec <|
+    JordanCurve.Arcs.param_surjective (J.carrierHomeomorph.symm x)
+
+theorem angularPoint_angularRepresentative (x : J.carrier) :
+    J.angularPoint (J.angularRepresentative x) = (x : Plane) := by
+  change (J.carrierHomeomorph
+    (JordanCurve.Arcs.param (J.angularRepresentative x)) : Plane) = x
+  rw [J.param_angularRepresentative x,
+    J.carrierHomeomorph.apply_symm_apply]
+
+/-- The lift of `y` in the positive one-turn interval starting at `x`. -/
+noncomputable def cyclicLift (x y : J.carrier) : ℝ :=
+  toIocMod (by positivity : (0 : ℝ) < 2 * Real.pi)
+    (J.angularRepresentative x) (J.angularRepresentative y)
+
+theorem cyclicLift_mem_Ioc (x y : J.carrier) :
+    J.cyclicLift x y ∈ Set.Ioc (J.angularRepresentative x)
+      (J.angularRepresentative x + 2 * Real.pi) := by
+  exact toIocMod_mem_Ioc (by positivity)
+    (J.angularRepresentative x) (J.angularRepresentative y)
+
+theorem angularPoint_cyclicLift (x y : J.carrier) :
+    J.angularPoint (J.cyclicLift x y) = (y : Plane) := by
+  have hperiod : (0 : ℝ) < 2 * Real.pi := by positivity
+  have hz : J.angularRepresentative y - J.cyclicLift x y =
+      (toIocDiv hperiod (J.angularRepresentative x)
+        (J.angularRepresentative y) : ℤ) • (2 * Real.pi) :=
+    self_sub_toIocMod hperiod (J.angularRepresentative x)
+      (J.angularRepresentative y)
+  rw [zsmul_eq_mul] at hz
+  have hsame : JordanCurve.Arcs.param (J.cyclicLift x y) =
+      JordanCurve.Arcs.param (J.angularRepresentative y) := by
+    rw [JordanCurve.Arcs.param_eq_iff]
+    exact ⟨-(toIocDiv hperiod (J.angularRepresentative x)
+      (J.angularRepresentative y)), by
+        push_cast
+        linarith⟩
+  change J.parametrization (JordanCurve.Arcs.param (J.cyclicLift x y)) = y
+  rw [hsame]
+  exact J.angularPoint_angularRepresentative y
+
+theorem cyclicLift_lt_add_period {x y : J.carrier} (hxy : x ≠ y) :
+    J.cyclicLift x y < J.angularRepresentative x + 2 * Real.pi := by
+  rcases lt_or_eq_of_le (J.cyclicLift_mem_Ioc x y).2 with hlt | heq
+  · exact hlt
+  · exfalso
+    apply hxy
+    apply Subtype.ext
+    have hyx : (y : Plane) = (x : Plane) := by
+      rw [← J.angularPoint_cyclicLift x y, heq,
+        J.angularPoint_periodic,
+        J.angularPoint_angularRepresentative]
+    exact hyx.symm
+
+/-- Starting at any prescribed member of a finite injective family on a
+Jordan circle, there is a next member in the positive cyclic direction.  The
+first chosen boundary arc from `a` to that member contains no other family
+point; equivalently, every remaining point belongs to the complementary
+arc. -/
+theorem exists_next_twoBoundaryArcPaths
+    {iota : Type*} [Fintype iota] (F : iota → Plane)
+    (hcarrier : ∀ i, F i ∈ J.carrier)
+    (hinjective : Injective F)
+    (hcard : 2 ≤ Fintype.card iota) (a : iota) :
+    ∃ b : iota, ∃ hab : a ≠ b,
+      ∃ S : J.TwoBoundaryArcPaths (F a) (F b),
+        ∀ c : iota, c ≠ a → c ≠ b → F c ∈ range S.second := by
+  classical
+  let X : iota → J.carrier := fun i => ⟨F i, hcarrier i⟩
+  let beta : iota → ℝ := fun i => J.cyclicLift (X a) (X i)
+  obtain ⟨b₀, hb₀a⟩ :=
+    Fintype.exists_ne_of_one_lt_card (by omega : 1 < Fintype.card iota) a
+  have herase : (Finset.univ.erase a).Nonempty := by
+    exact ⟨b₀, Finset.mem_erase.mpr ⟨hb₀a, Finset.mem_univ _⟩⟩
+  obtain ⟨b, hbmem, hbmin⟩ :=
+    Finset.exists_min_image (Finset.univ.erase a) beta herase
+  have hba : b ≠ a := (Finset.mem_erase.mp hbmem).1
+  have hab : a ≠ b := hba.symm
+  have hXab : X a ≠ X b := by
+    intro h
+    apply hab
+    apply hinjective
+    exact congrArg Subtype.val h
+  let alpha : ℝ := J.angularRepresentative (X a)
+  have halphaBeta : alpha < beta b :=
+    (J.cyclicLift_mem_Ioc (X a) (X b)).1
+  have hbetaUpper : beta b < alpha + 2 * Real.pi := by
+    exact J.cyclicLift_lt_add_period hXab
+  obtain ⟨S₀, hfirst₀, hsecond₀⟩ :=
+    J.exists_twoBoundaryArcPaths_of_angles halphaBeta hbetaUpper
+  have haPoint : J.angularPoint alpha = F a :=
+    J.angularPoint_angularRepresentative (X a)
+  have hbPoint : J.angularPoint (beta b) = F b :=
+    J.angularPoint_cyclicLift (X a) (X b)
+  let S := S₀.cast haPoint hbPoint
+  have hsecond : range S.second = J.parametrization ''
+      (JordanCurve.Arcs.param ''
+        Set.Icc (beta b) (alpha + 2 * Real.pi)) := by
+    simpa [S] using hsecond₀
+  refine ⟨b, hab, S, ?_⟩
+  intro c hca _hcb
+  have hcmem : c ∈ Finset.univ.erase a :=
+    Finset.mem_erase.mpr ⟨hca, Finset.mem_univ _⟩
+  have hbc : beta b ≤ beta c := hbmin c hcmem
+  have hcUpper : beta c ≤ alpha + 2 * Real.pi :=
+    (J.cyclicLift_mem_Ioc (X a) (X c)).2
+  rw [hsecond]
+  refine ⟨JordanCurve.Arcs.param (beta c),
+    ⟨beta c, ⟨hbc, hcUpper⟩, rfl⟩, ?_⟩
+  exact J.angularPoint_cyclicLift (X a) (X c)
+
+/-- A finite injective family of at least two points on a Jordan circle has a
+pair with a chosen complementary split whose first arc contains no other
+family point.  Equivalently, every remaining point lies on `second`. -/
+theorem exists_adjacent_twoBoundaryArcPaths
+    {ι : Type*} [Fintype ι] (F : ι → Plane)
+    (hcarrier : ∀ i, F i ∈ J.carrier)
+    (hinjective : Injective F)
+    (hcard : 2 ≤ Fintype.card ι) :
+    ∃ a b : ι, ∃ hab : a ≠ b,
+      ∃ S : J.TwoBoundaryArcPaths (F a) (F b),
+        ∀ c : ι, c ≠ a → c ≠ b → F c ∈ range S.second := by
+  classical
+  have hnonempty : Nonempty ι :=
+    Fintype.card_pos_iff.mp (by omega)
+  let a : ι := Classical.choice hnonempty
+  obtain ⟨b, hab, S, hS⟩ :=
+    J.exists_next_twoBoundaryArcPaths F hcarrier hinjective hcard a
+  exact ⟨a, b, hab, S, hS⟩
+
+end JordanCircle
+
+end
+
+end Schoenflies

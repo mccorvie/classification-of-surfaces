@@ -1,0 +1,259 @@
+import Schoenflies.FiniteLevelCrosscuts
+import Schoenflies.ResolvedPolygonalArcs
+
+/-!
+# Resolved edges of the raw trimmed level crosscuts
+
+Moise's individual Chapter 9 cells use the original trimmed broken lines,
+not the synchronized crosscuts used to assemble a complete polygonal collar.
+This file exposes their straight resolved edges with exact carrier and endpoint
+bookkeeping.
+-/
+
+namespace Schoenflies
+
+open Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace JordanCircle
+namespace InitialAngularArcs
+namespace LevelAvoidingJoinFamily
+
+variable {J : JordanCircle} {I : J.InitialAngularArcs}
+  {n : ℕ} {epsilon : ℝ}
+  (F : I.LevelAvoidingJoinFamily n epsilon)
+
+private noncomputable abbrev index (a : LevelAddress n) :
+    Fin (levelAddressCount n) :=
+  levelIndexOf n a
+
+/-- Resolve the raw trimmed line once more so its listed segment carrier is
+literally the range of the trimmed path. -/
+noncomputable def trimmedCrosscutCarrierLine (a : LevelAddress n) :
+    SimpleBrokenLine (range (F.trimmedPath (index a)))
+      (F.trimmedRightPoint (index a))
+      (F.trimmedLeftPoint (index a)) :=
+  (F.trimmedLine (index a)).carrierBrokenLine
+    (F.trimmedEndpoints_ne (index a))
+
+theorem segmentCarrier_trimmedCrosscutCarrierLine_eq_range
+    (a : LevelAddress n) :
+    (F.trimmedCrosscutCarrierLine a).data.segmentCarrier =
+      range (F.trimmedPath (index a)) := by
+  rw [trimmedCrosscutCarrierLine,
+    (F.trimmedLine (index a)).segmentCarrier_carrierBrokenLine,
+    F.range_trimmedLine_toPath]
+
+theorem trimmedCrosscutCarrierLine_edgeCount_pos
+    (a : LevelAddress n) :
+    0 < (F.trimmedCrosscutCarrierLine a).data.n := by
+  apply JordanCircle.BrokenLineData.n_pos_of_start_ne_finish
+  intro h
+  exact F.trimmedEndpoints_ne (index a)
+    ((F.trimmedCrosscutCarrierLine a).start_eq.symm.trans
+      (h.trans (F.trimmedCrosscutCarrierLine a).finish_eq))
+
+/-- A resolved edge of a raw trimmed crosscut.  Its natural orientation is
+from the right retained hair to the left retained hair. -/
+abbrev TrimmedEdgeAddress :=
+  Σ a : LevelAddress n, Fin (F.trimmedCrosscutCarrierLine a).data.n
+
+noncomputable def trimmedEdgeStart (e : F.TrimmedEdgeAddress) : Plane :=
+  (F.trimmedCrosscutCarrierLine e.1).data.vertex e.2.castSucc
+
+noncomputable def trimmedEdgeFinish (e : F.TrimmedEdgeAddress) : Plane :=
+  (F.trimmedCrosscutCarrierLine e.1).data.vertex e.2.succ
+
+noncomputable def trimmedEdgeSegment
+    (e : F.TrimmedEdgeAddress) : Set Plane :=
+  segment ℝ (F.trimmedEdgeStart e) (F.trimmedEdgeFinish e)
+
+def TrimmedEdgeAdjacent
+    (e f : F.TrimmedEdgeAddress) : Prop :=
+  F.trimmedEdgeFinish e = F.trimmedEdgeStart f
+
+theorem trimmedEdgeSegment_subset_trimmedPathRange
+    (e : F.TrimmedEdgeAddress) :
+    F.trimmedEdgeSegment e ⊆
+      range (F.trimmedPath (index e.1)) := by
+  rw [← F.segmentCarrier_trimmedCrosscutCarrierLine_eq_range e.1]
+  exact Set.subset_iUnion_of_subset e.2 Set.Subset.rfl
+
+/-- The resolved edges in the natural right-to-left order. -/
+noncomputable def trimmedEdgeBlock (a : LevelAddress n) :
+    List F.TrimmedEdgeAddress :=
+  List.ofFn fun i => ⟨a, i⟩
+
+theorem trimmedEdgeBlock_nonempty (a : LevelAddress n) :
+    F.trimmedEdgeBlock a ≠ [] := by
+  rw [← List.length_pos_iff_ne_nil, trimmedEdgeBlock, List.length_ofFn]
+  exact F.trimmedCrosscutCarrierLine_edgeCount_pos a
+
+theorem trimmedEdgeBlock_nodup (a : LevelAddress n) :
+    (F.trimmedEdgeBlock a).Nodup := by
+  rw [trimmedEdgeBlock, List.nodup_ofFn]
+  intro i j h
+  cases h
+  rfl
+
+theorem trimmedEdgeBlock_isChain (a : LevelAddress n) :
+    (F.trimmedEdgeBlock a).IsChain F.TrimmedEdgeAdjacent := by
+  rw [trimmedEdgeBlock, List.isChain_ofFn]
+  intro i hi
+  apply congrArg (F.trimmedCrosscutCarrierLine a).data.vertex
+  apply Fin.ext
+  rfl
+
+noncomputable def firstTrimmedEdgeIndex (a : LevelAddress n) :
+    Fin (F.trimmedCrosscutCarrierLine a).data.n :=
+  ⟨0, F.trimmedCrosscutCarrierLine_edgeCount_pos a⟩
+
+noncomputable def lastTrimmedEdgeIndex (a : LevelAddress n) :
+    Fin (F.trimmedCrosscutCarrierLine a).data.n :=
+  ⟨(F.trimmedCrosscutCarrierLine a).data.n - 1,
+    Nat.sub_lt (F.trimmedCrosscutCarrierLine_edgeCount_pos a) (by omega)⟩
+
+theorem trimmedEdgeStart_first (a : LevelAddress n) :
+    F.trimmedEdgeStart ⟨a, F.firstTrimmedEdgeIndex a⟩ =
+      F.trimmedRightPoint (index a) := by
+  change (F.trimmedCrosscutCarrierLine a).data.vertex
+      (F.firstTrimmedEdgeIndex a).castSucc = _
+  calc
+    _ = (F.trimmedCrosscutCarrierLine a).data.start := by
+      apply congrArg (F.trimmedCrosscutCarrierLine a).data.vertex
+      apply Fin.ext
+      rfl
+    _ = _ := (F.trimmedCrosscutCarrierLine a).start_eq
+
+theorem trimmedEdgeFinish_last (a : LevelAddress n) :
+    F.trimmedEdgeFinish ⟨a, F.lastTrimmedEdgeIndex a⟩ =
+      F.trimmedLeftPoint (index a) := by
+  change (F.trimmedCrosscutCarrierLine a).data.vertex
+      (F.lastTrimmedEdgeIndex a).succ = _
+  calc
+    _ = (F.trimmedCrosscutCarrierLine a).data.finish := by
+      apply congrArg (F.trimmedCrosscutCarrierLine a).data.vertex
+      apply Fin.ext
+      simp [lastTrimmedEdgeIndex]
+      exact Nat.sub_add_cancel
+        (F.trimmedCrosscutCarrierLine_edgeCount_pos a)
+    _ = _ := (F.trimmedCrosscutCarrierLine a).finish_eq
+
+theorem head_trimmedEdgeBlock (a : LevelAddress n) :
+    (F.trimmedEdgeBlock a).head (F.trimmedEdgeBlock_nonempty a) =
+      ⟨a, F.firstTrimmedEdgeIndex a⟩ := by
+  unfold trimmedEdgeBlock
+  rw [List.head_eq_getElem_zero]
+  simp only [List.getElem_ofFn]
+  apply Sigma.ext rfl
+  rfl
+
+theorem getLast_trimmedEdgeBlock (a : LevelAddress n) :
+    (F.trimmedEdgeBlock a).getLast (F.trimmedEdgeBlock_nonempty a) =
+      ⟨a, F.lastTrimmedEdgeIndex a⟩ := by
+  unfold trimmedEdgeBlock
+  rw [← List.get_length_sub_one]
+  · simp only [List.length_ofFn, List.get_ofFn]
+    apply Sigma.ext rfl
+    rfl
+    simpa using F.trimmedCrosscutCarrierLine_edgeCount_pos a
+
+theorem trimmedEdgeStart_ne_finish (e : F.TrimmedEdgeAddress) :
+    F.trimmedEdgeStart e ≠ F.trimmedEdgeFinish e := by
+  intro h
+  have hv := (F.trimmedCrosscutCarrierLine e.1).vertex_injective h
+  have hval := congrArg Fin.val hv
+  simp at hval
+
+theorem trimmedEdgeSegment_inter_of_same_block_succ
+    (a : LevelAddress n)
+    (i j : Fin (F.trimmedCrosscutCarrierLine a).data.n)
+    (hij : i.val + 1 = j.val) :
+    F.trimmedEdgeSegment ⟨a, i⟩ ∩
+        F.trimmedEdgeSegment ⟨a, j⟩ =
+      {F.trimmedEdgeFinish ⟨a, i⟩} := by
+  let B := (F.trimmedLine (index a)).data
+  have hi : i.val + 1 < B.resolvedWalk.length := by
+    have := j.isLt
+    simpa [B, trimmedCrosscutCarrierLine,
+      SimpleBrokenLine.carrierBrokenLine] using (hij.symm ▸ this)
+  have h := B.resolvedSegment_consecutive_inter i hi
+  have hj : (⟨i.val + 1, hi⟩ : Fin B.resolvedWalk.length) = j :=
+    Fin.ext hij
+  subst j
+  simpa [B, trimmedEdgeSegment, trimmedEdgeStart, trimmedEdgeFinish,
+    trimmedCrosscutCarrierLine, SimpleBrokenLine.carrierBrokenLine,
+    BrokenLineData.resolvedBrokenLine] using h
+
+theorem trimmedRightPoint_mem_trimmedEdgeSegment_iff
+    (a : LevelAddress n)
+    (i : Fin (F.trimmedCrosscutCarrierLine a).data.n) :
+    F.trimmedRightPoint (index a) ∈ F.trimmedEdgeSegment ⟨a, i⟩ ↔
+      i.val = 0 := by
+  let B := (F.trimmedLine (index a)).data
+  have h := B.resolvedVertex_zero_mem_segment_iff i
+  have h' : (F.trimmedCrosscutCarrierLine a).data.vertex 0 ∈
+      F.trimmedEdgeSegment ⟨a, i⟩ ↔ i.val = 0 := by
+    convert h using 1
+    all_goals simp [B, trimmedEdgeSegment, trimmedEdgeStart,
+      trimmedEdgeFinish, trimmedCrosscutCarrierLine,
+      SimpleBrokenLine.carrierBrokenLine,
+      BrokenLineData.resolvedBrokenLine]
+    all_goals rfl
+  constructor
+  · intro hx
+    apply h'.mp
+    convert hx using 1
+    exact (F.trimmedCrosscutCarrierLine a).start_eq
+  · intro hi
+    convert h'.mpr hi using 1
+    exact (F.trimmedCrosscutCarrierLine a).start_eq.symm
+
+theorem trimmedLeftPoint_mem_trimmedEdgeSegment_iff
+    (a : LevelAddress n)
+    (i : Fin (F.trimmedCrosscutCarrierLine a).data.n) :
+    F.trimmedLeftPoint (index a) ∈ F.trimmedEdgeSegment ⟨a, i⟩ ↔
+      i.val + 1 = (F.trimmedCrosscutCarrierLine a).data.n := by
+  let B := (F.trimmedLine (index a)).data
+  have h := B.resolvedVertex_last_mem_segment_iff i
+  have h' : (F.trimmedCrosscutCarrierLine a).data.vertex
+        (Fin.last (F.trimmedCrosscutCarrierLine a).data.n) ∈
+      F.trimmedEdgeSegment ⟨a, i⟩ ↔
+        i.val + 1 = (F.trimmedCrosscutCarrierLine a).data.n := by
+    convert h using 1
+    all_goals simp [B, trimmedEdgeSegment, trimmedEdgeStart,
+      trimmedEdgeFinish, trimmedCrosscutCarrierLine,
+      SimpleBrokenLine.carrierBrokenLine,
+      BrokenLineData.resolvedBrokenLine]
+  constructor
+  · intro hx
+    apply h'.mp
+    convert hx using 1
+    exact (F.trimmedCrosscutCarrierLine a).finish_eq
+  · intro hi
+    convert h'.mpr hi using 1
+    exact (F.trimmedCrosscutCarrierLine a).finish_eq.symm
+
+theorem disjoint_trimmedEdgeSegment_of_same_block_nonadjacent
+    (a : LevelAddress n)
+    (i j : Fin (F.trimmedCrosscutCarrierLine a).data.n)
+    (hij : i ≠ j) (hijSucc : i.val + 1 ≠ j.val)
+    (hjiSucc : j.val + 1 ≠ i.val) :
+    Disjoint (F.trimmedEdgeSegment ⟨a, i⟩)
+      (F.trimmedEdgeSegment ⟨a, j⟩) := by
+  let B := (F.trimmedLine (index a)).data
+  have h := B.resolvedSegment_disjoint_of_not_close
+    i j hij hijSucc hjiSucc
+  simpa [B, trimmedEdgeSegment, trimmedEdgeStart, trimmedEdgeFinish,
+    trimmedCrosscutCarrierLine, SimpleBrokenLine.carrierBrokenLine,
+    BrokenLineData.resolvedBrokenLine] using h
+
+end LevelAvoidingJoinFamily
+end InitialAngularArcs
+end JordanCircle
+
+end
+
+end Schoenflies

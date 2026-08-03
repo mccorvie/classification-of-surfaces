@@ -1,0 +1,303 @@
+import Schoenflies.ClosedCoverHomeomorph
+import Schoenflies.PolygonalAnnularCellDecomposition
+import Schoenflies.TwoArcCarrierHomeomorph
+
+/-!
+# Canonical topological filling of a two-cell annular decomposition
+
+The two separator disks are parametrized by the same first path, namely
+their common bridge.  The canonical two-arc carrier correspondences
+therefore agree on the overlap.  Alexander extension fills both polygonal
+cells, and closed-cover gluing produces a homeomorphism of the outer disks.
+-/
+
+namespace Schoenflies
+
+open Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace PolygonalCircle.AnnularCellDecomposition
+
+variable {P Q P' Q' : PolygonalCircle}
+
+private def rawBoundary₀
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    (range D.separator.commonBridge ∪ range D.separator.outerArc₀ :
+        Set Plane) ≃ₜ
+      (range E.separator.commonBridge ∪ range E.separator.outerArc₀ :
+        Set Plane) :=
+  TwoArcJordan.carrierCorrespondence
+    D.separator.commonBridge D.separator.outerArc₀
+    (D.separator.commonBridge_injective D.nested D.disjoint)
+    D.separator.outerSplit.second_injective
+    (D.separator.commonBridge_inter_outerArc₀ D.nested)
+    E.separator.commonBridge E.separator.outerArc₀
+    (E.separator.commonBridge_injective E.nested E.disjoint)
+    E.separator.outerSplit.second_injective
+    (E.separator.commonBridge_inter_outerArc₀ E.nested)
+
+private def rawBoundary₁
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    (range D.separator.commonBridge ∪ range D.separator.outerArc₁ :
+        Set Plane) ≃ₜ
+      (range E.separator.commonBridge ∪ range E.separator.outerArc₁ :
+        Set Plane) :=
+  TwoArcJordan.carrierCorrespondence
+    D.separator.commonBridge D.separator.outerArc₁
+    (D.separator.commonBridge_injective D.nested D.disjoint)
+    (D.separator.outerSplit.first_injective.comp
+      unitInterval.symm_bijective.injective)
+    (D.separator.commonBridge_inter_outerArc₁ D.nested)
+    E.separator.commonBridge E.separator.outerArc₁
+    (E.separator.commonBridge_injective E.nested E.disjoint)
+    (E.separator.outerSplit.first_injective.comp
+      unitInterval.symm_bijective.injective)
+    (E.separator.commonBridge_inter_outerArc₁ E.nested)
+
+private theorem cell₀_carrier_eq_twoArcs
+    (D : AnnularCellDecomposition P Q) :
+    D.cell₀.carrier =
+      range D.separator.commonBridge ∪ range D.separator.outerArc₀ :=
+  D.cell₀_carrier.trans
+    (D.separator.carrier_circle₀ D.nested D.disjoint)
+
+private theorem cell₁_carrier_eq_twoArcs
+    (D : AnnularCellDecomposition P Q) :
+    D.cell₁.carrier =
+      range D.separator.commonBridge ∪ range D.separator.outerArc₁ :=
+  D.cell₁_carrier.trans
+    (D.separator.carrier_circle₁ D.nested D.disjoint)
+
+/-- Canonical boundary correspondence for the first separator cell. -/
+def boundaryHomeomorph₀
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    D.cell₀.carrier ≃ₜ E.cell₀.carrier :=
+  (Homeomorph.setCongr (cell₀_carrier_eq_twoArcs D)).trans
+    ((rawBoundary₀ D E).trans
+      (Homeomorph.setCongr (cell₀_carrier_eq_twoArcs E).symm))
+
+/-- Canonical boundary correspondence for the second separator cell. -/
+def boundaryHomeomorph₁
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    D.cell₁.carrier ≃ₜ E.cell₁.carrier :=
+  (Homeomorph.setCongr (cell₁_carrier_eq_twoArcs D)).trans
+    ((rawBoundary₁ D E).trans
+      (Homeomorph.setCongr (cell₁_carrier_eq_twoArcs E).symm))
+
+theorem boundaryHomeomorph₀_apply_commonBridge
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') (t : unitInterval) :
+    boundaryHomeomorph₀ D E
+        ⟨D.separator.commonBridge t, by
+          rw [cell₀_carrier_eq_twoArcs D]
+          exact Or.inl ⟨t, rfl⟩⟩ =
+      ⟨E.separator.commonBridge t, by
+        rw [cell₀_carrier_eq_twoArcs E]
+        exact Or.inl ⟨t, rfl⟩⟩ := by
+  apply Subtype.ext
+  change ((rawBoundary₀ D E)
+      ⟨D.separator.commonBridge t, Or.inl ⟨t, rfl⟩⟩ : Plane) = _
+  exact congrArg Subtype.val <|
+    TwoArcJordan.carrierCorrespondence_apply_first
+      D.separator.commonBridge D.separator.outerArc₀
+      (D.separator.commonBridge_injective D.nested D.disjoint)
+      D.separator.outerSplit.second_injective
+      (D.separator.commonBridge_inter_outerArc₀ D.nested)
+      E.separator.commonBridge E.separator.outerArc₀
+      (E.separator.commonBridge_injective E.nested E.disjoint)
+      E.separator.outerSplit.second_injective
+      (E.separator.commonBridge_inter_outerArc₀ E.nested) t
+
+theorem boundaryHomeomorph₁_apply_commonBridge
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') (t : unitInterval) :
+    boundaryHomeomorph₁ D E
+        ⟨D.separator.commonBridge t, by
+          rw [cell₁_carrier_eq_twoArcs D]
+          exact Or.inl ⟨t, rfl⟩⟩ =
+      ⟨E.separator.commonBridge t, by
+        rw [cell₁_carrier_eq_twoArcs E]
+        exact Or.inl ⟨t, rfl⟩⟩ := by
+  apply Subtype.ext
+  change ((rawBoundary₁ D E)
+      ⟨D.separator.commonBridge t, Or.inl ⟨t, rfl⟩⟩ : Plane) = _
+  exact congrArg Subtype.val <|
+    TwoArcJordan.carrierCorrespondence_apply_first
+      D.separator.commonBridge D.separator.outerArc₁
+      (D.separator.commonBridge_injective D.nested D.disjoint)
+      (D.separator.outerSplit.first_injective.comp
+        unitInterval.symm_bijective.injective)
+      (D.separator.commonBridge_inter_outerArc₁ D.nested)
+      E.separator.commonBridge E.separator.outerArc₁
+      (E.separator.commonBridge_injective E.nested E.disjoint)
+      (E.separator.outerSplit.first_injective.comp
+        unitInterval.symm_bijective.injective)
+      (E.separator.commonBridge_inter_outerArc₁ E.nested) t
+
+/-- Alexander-fill the first separator cell. -/
+def cellHomeomorph₀
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    D.cell₀.closedRegion ≃ₜ E.cell₀.closedRegion :=
+  PolygonalCircle.extendBoundaryHomeomorph D.cell₀ E.cell₀
+    (boundaryHomeomorph₀ D E)
+
+/-- Alexander-fill the second separator cell. -/
+def cellHomeomorph₁
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    D.cell₁.closedRegion ≃ₜ E.cell₁.closedRegion :=
+  PolygonalCircle.extendBoundaryHomeomorph D.cell₁ E.cell₁
+    (boundaryHomeomorph₁ D E)
+
+private theorem commonBridge_mem_cell₀_carrier
+    (D : AnnularCellDecomposition P Q) (t : unitInterval) :
+    D.separator.commonBridge t ∈ D.cell₀.carrier := by
+  rw [cell₀_carrier_eq_twoArcs D]
+  exact Or.inl ⟨t, rfl⟩
+
+private theorem commonBridge_mem_cell₁_carrier
+    (D : AnnularCellDecomposition P Q) (t : unitInterval) :
+    D.separator.commonBridge t ∈ D.cell₁.carrier := by
+  rw [cell₁_carrier_eq_twoArcs D]
+  exact Or.inl ⟨t, rfl⟩
+
+private theorem commonBridge_mem_cell₀_closedRegion
+    (D : AnnularCellDecomposition P Q) (t : unitInterval) :
+    D.separator.commonBridge t ∈ D.cell₀.closedRegion := by
+  rw [D.cell₀.closedRegion_eq_union]
+  exact Or.inr (commonBridge_mem_cell₀_carrier D t)
+
+private theorem commonBridge_mem_cell₁_closedRegion
+    (D : AnnularCellDecomposition P Q) (t : unitInterval) :
+    D.separator.commonBridge t ∈ D.cell₁.closedRegion := by
+  rw [D.cell₁.closedRegion_eq_union]
+  exact Or.inr (commonBridge_mem_cell₁_carrier D t)
+
+theorem cellHomeomorph₀_apply_commonBridge
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') (t : unitInterval) :
+    (cellHomeomorph₀ D E
+        ⟨D.separator.commonBridge t,
+          commonBridge_mem_cell₀_closedRegion D t⟩ : Plane) =
+      E.separator.commonBridge t := by
+  calc
+    (cellHomeomorph₀ D E
+        ⟨D.separator.commonBridge t,
+          commonBridge_mem_cell₀_closedRegion D t⟩ : Plane) =
+        (boundaryHomeomorph₀ D E
+          ⟨D.separator.commonBridge t,
+            commonBridge_mem_cell₀_carrier D t⟩ : Plane) :=
+      PolygonalCircle.extendBoundaryHomeomorph_apply
+        D.cell₀ E.cell₀ (boundaryHomeomorph₀ D E)
+          ⟨D.separator.commonBridge t,
+            commonBridge_mem_cell₀_carrier D t⟩
+    _ = E.separator.commonBridge t :=
+      congrArg Subtype.val (boundaryHomeomorph₀_apply_commonBridge D E t)
+
+theorem cellHomeomorph₁_apply_commonBridge
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') (t : unitInterval) :
+    (cellHomeomorph₁ D E
+        ⟨D.separator.commonBridge t,
+          commonBridge_mem_cell₁_closedRegion D t⟩ : Plane) =
+      E.separator.commonBridge t := by
+  calc
+    (cellHomeomorph₁ D E
+        ⟨D.separator.commonBridge t,
+          commonBridge_mem_cell₁_closedRegion D t⟩ : Plane) =
+        (boundaryHomeomorph₁ D E
+          ⟨D.separator.commonBridge t,
+            commonBridge_mem_cell₁_carrier D t⟩ : Plane) :=
+      PolygonalCircle.extendBoundaryHomeomorph_apply
+        D.cell₁ E.cell₁ (boundaryHomeomorph₁ D E)
+          ⟨D.separator.commonBridge t,
+            commonBridge_mem_cell₁_carrier D t⟩
+    _ = E.separator.commonBridge t :=
+      congrArg Subtype.val (boundaryHomeomorph₁_apply_commonBridge D E t)
+
+private theorem cellHomeomorph_forward_agree
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    ∀ x (hx₀ : x ∈ D.cell₀.closedRegion)
+      (hx₁ : x ∈ D.cell₁.closedRegion),
+      (cellHomeomorph₀ D E ⟨x, hx₀⟩ : Plane) =
+        cellHomeomorph₁ D E ⟨x, hx₁⟩ := by
+  intro x hx₀ hx₁
+  have hxBridge : x ∈ range D.separator.commonBridge := by
+    rw [← D.separator.closure_separatorInteriors_inter D.nested D.disjoint]
+    rw [← D.cell₀_closedRegion, ← D.cell₁_closedRegion]
+    exact ⟨hx₀, hx₁⟩
+  obtain ⟨t, rfl⟩ := hxBridge
+  rw [cellHomeomorph₀_apply_commonBridge,
+    cellHomeomorph₁_apply_commonBridge]
+
+private theorem cellHomeomorph_backward_agree
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    ∀ y (hy₀ : y ∈ E.cell₀.closedRegion)
+      (hy₁ : y ∈ E.cell₁.closedRegion),
+      ((cellHomeomorph₀ D E).symm ⟨y, hy₀⟩ : Plane) =
+        (cellHomeomorph₁ D E).symm ⟨y, hy₁⟩ := by
+  intro y hy₀ hy₁
+  have hyBridge : y ∈ range E.separator.commonBridge := by
+    rw [← E.separator.closure_separatorInteriors_inter E.nested E.disjoint]
+    rw [← E.cell₀_closedRegion, ← E.cell₁_closedRegion]
+    exact ⟨hy₀, hy₁⟩
+  obtain ⟨t, rfl⟩ := hyBridge
+  let x₀ : D.cell₀.closedRegion :=
+    ⟨D.separator.commonBridge t,
+      commonBridge_mem_cell₀_closedRegion D t⟩
+  let x₁ : D.cell₁.closedRegion :=
+    ⟨D.separator.commonBridge t,
+      commonBridge_mem_cell₁_closedRegion D t⟩
+  have h₀ : cellHomeomorph₀ D E x₀ =
+      ⟨E.separator.commonBridge t,
+        commonBridge_mem_cell₀_closedRegion E t⟩ := by
+    apply Subtype.ext
+    exact cellHomeomorph₀_apply_commonBridge D E t
+  have h₁ : cellHomeomorph₁ D E x₁ =
+      ⟨E.separator.commonBridge t,
+        commonBridge_mem_cell₁_closedRegion E t⟩ := by
+    apply Subtype.ext
+    exact cellHomeomorph₁_apply_commonBridge D E t
+  rw [← h₀, ← h₁,
+    (cellHomeomorph₀ D E).symm_apply_apply,
+    (cellHomeomorph₁ D E).symm_apply_apply]
+
+/-- The canonical cell fillings glued on their common bridge. -/
+def cellUnionHomeomorph
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    (D.cell₀.closedRegion ∪ D.cell₁.closedRegion : Set Plane) ≃ₜ
+      (E.cell₀.closedRegion ∪ E.cell₁.closedRegion : Set Plane) :=
+  ClosedCoverHomeomorph.glue
+    D.cell₀.isCompact_closedRegion.isClosed
+    D.cell₁.isCompact_closedRegion.isClosed
+    E.cell₀.isCompact_closedRegion.isClosed
+    E.cell₁.isCompact_closedRegion.isClosed
+    (cellHomeomorph₀ D E) (cellHomeomorph₁ D E)
+    (cellHomeomorph_forward_agree D E)
+    (cellHomeomorph_backward_agree D E)
+
+/-- Canonical homeomorphism of the two closed outer polygonal disks obtained
+by filling and gluing the synchronized separator cells. -/
+def outerClosedRegionHomeomorph
+    (D : AnnularCellDecomposition P Q)
+    (E : AnnularCellDecomposition P' Q') :
+    Q.closedRegion ≃ₜ Q'.closedRegion :=
+  (Homeomorph.setCongr D.cellClosedRegions_union.symm).trans
+    ((cellUnionHomeomorph D E).trans
+      (Homeomorph.setCongr E.cellClosedRegions_union))
+
+end PolygonalCircle.AnnularCellDecomposition
+
+end
+
+end Schoenflies

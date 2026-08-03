@@ -1,0 +1,144 @@
+import Mathlib.Combinatorics.SimpleGraph.Trails
+import Mathlib.Algebra.BigOperators.Ring.Nat
+import Schoenflies.FiniteBoundaryGraph
+
+/-!
+# Cancelling repeated edges of a closed walk
+
+When a finite family of polygonal arcs is resolved in a common plane
+complex, overlaps can make the evident closed route fail to be a simple
+polygon.  The edges traversed an odd number of times form an even-degree
+subgraph.  Thus, as soon as one edge survives cancellation, that subgraph
+contains a simple cycle.  This is the finite graph-theoretic content of
+Moise's assertion that the union of the relevant crosscuts and retained
+hairs "contains a polygon."
+-/
+
+namespace Schoenflies
+
+open SimpleGraph
+
+variable {V : Type*} {G : SimpleGraph V} [DecidableEq V]
+  {u v : V}
+
+/-- The parity of the number of traversed edges incident to a vertex depends
+only on whether that vertex is an endpoint.  Unlike the corresponding trail
+lemma in Mathlib, repeated edges are allowed here. -/
+theorem even_countP_edges_iff_endpoints (p : G.Walk u v) (x : V) :
+    Even (p.edges.countP fun e => x ∈ e) ↔
+      u ≠ v → x ≠ u ∧ x ≠ v := by
+  induction p with
+  | nil => simp
+  | cons huv p ih =>
+    simp only [List.countP_cons, Ne, SimpleGraph.Walk.edges_cons, Sym2.mem_iff]
+    split_ifs with h
+    · rw [decide_eq_true_eq] at h
+      obtain (rfl | rfl) := h
+      · rw [Nat.even_add_one, ih]
+        simp only [huv.ne, imp_false, Ne, not_false_iff, true_and, not_forall,
+          Classical.not_not, exists_prop, not_true, false_and,
+          and_iff_right_iff_imp]
+        rintro rfl rfl
+        exact G.loopless.irrefl _ huv
+      · have := huv.ne
+        grind
+    · grind
+
+/-- The spanning graph whose edges are precisely those traversed an odd
+number of times by `p`. -/
+def oddEdgeGraph (p : G.Walk u v) : SimpleGraph V :=
+  SimpleGraph.fromEdgeSet {e | Odd (p.edges.count e)}
+
+instance instDecidableRelOddEdgeGraph (p : G.Walk u v) :
+    DecidableRel (oddEdgeGraph p).Adj := by
+  intro x y
+  change Decidable (Odd (p.edges.count s(x, y)) ∧ x ≠ y)
+  infer_instance
+
+theorem oddEdgeGraph_adj_iff (p : G.Walk u v) {x y : V} :
+    (oddEdgeGraph p).Adj x y ↔
+      Odd (p.edges.count s(x, y)) ∧ x ≠ y := by
+  rfl
+
+/-- Every odd-support edge was traversed by the original walk. -/
+theorem oddEdgeGraph_le (p : G.Walk u v) : oddEdgeGraph p ≤ G := by
+  intro x y hxy
+  rw [oddEdgeGraph_adj_iff p] at hxy
+  have hpos : 0 < p.edges.count s(x, y) := hxy.1.pos
+  exact p.adj_of_mem_edges (List.count_pos_iff.mp hpos)
+
+variable [Fintype V]
+
+/-- The incidence finset of the odd-support graph is the set of incident
+walk edges having odd multiplicity. -/
+theorem incidenceFinset_oddEdgeGraph (p : G.Walk u v) (x : V) :
+    (oddEdgeGraph p).incidenceFinset x =
+      {e ∈ p.edges.toFinset | x ∈ e ∧ Odd (p.edges.count e)} := by
+  classical
+  ext e
+  rw [SimpleGraph.mem_incidenceFinset]
+  change (e ∈ (oddEdgeGraph p).edgeSet ∧ x ∈ e) ↔ _
+  rw [show (oddEdgeGraph p).edgeSet =
+      {e | Odd (p.edges.count e)} \ Sym2.diagSet by
+    exact SimpleGraph.edgeSet_fromEdgeSet _]
+  simp only [Set.mem_sdiff, Set.mem_setOf_eq, Finset.mem_filter,
+    List.mem_toFinset]
+  constructor
+  · rintro ⟨⟨hodd, _⟩, hxe⟩
+    exact ⟨List.count_pos_iff.mp hodd.pos, hxe, hodd⟩
+  · rintro ⟨hemem, hxe, hodd⟩
+    have hedge : e ∈ G.edgeSet := p.edges_subset_edgeSet hemem
+    exact ⟨⟨hodd, G.edgeSet_subset_compl_diagSet hedge⟩, hxe⟩
+
+/-- Degree parity in the odd-support graph agrees with incidence-count
+parity in the original walk. -/
+theorem even_degree_oddEdgeGraph_iff (p : G.Walk u v) (x : V) :
+    Even ((oddEdgeGraph p).degree x) ↔
+      Even (p.edges.countP fun e => x ∈ e) := by
+  classical
+  rw [← SimpleGraph.card_incidenceFinset_eq_degree,
+    incidenceFinset_oddEdgeGraph p x]
+  rw [← Finset.sum_filter_count_eq_countP (fun e : Sym2 V => x ∈ e) p.edges]
+  rw [Finset.even_sum_iff_even_card_odd]
+  simp only [Finset.filter_filter]
+
+/-- A closed walk has even odd-support degree at every vertex. -/
+theorem even_degree_oddEdgeGraph_of_closed (p : G.Walk u u) (x : V) :
+    Even ((oddEdgeGraph p).degree x) := by
+  rw [even_degree_oddEdgeGraph_iff p]
+  exact (even_countP_edges_iff_endpoints p x).2 (by simp)
+
+/-- If a closed walk traverses a specified edge an odd number of times,
+then its edge union contains a simple cycle through that edge. -/
+theorem exists_isCycle_containing_of_odd_count
+    (p : G.Walk u u) {v w : V}
+    (hodd : Odd (p.edges.count s(v, w))) :
+    ∃ (z : V) (c : G.Walk z z),
+      c.IsCycle ∧ s(v, w) ∈ c.edges ∧ c.edges.toFinset ⊆ p.edges.toFinset := by
+  classical
+  have hadj : (oddEdgeGraph p).Adj v w := by
+    rw [oddEdgeGraph_adj_iff p]
+    refine ⟨hodd, ?_⟩
+    intro hvw
+    subst w
+    have hedge : s(v, v) ∈ G.edgeSet :=
+      p.edges_subset_edgeSet (List.count_pos_iff.mp hodd.pos)
+    exact (G.edgeSet_subset_compl_diagSet hedge) (by simp)
+  obtain ⟨z, c, hc, hec⟩ :=
+    SimpleGraph.exists_isCycle_containing_of_even_degree_of_adj
+      (oddEdgeGraph p) (even_degree_oddEdgeGraph_of_closed p) hadj
+  let c' : G.Walk z z := c.mapLe (oddEdgeGraph_le p)
+  have hc' : c'.IsCycle := by
+    exact (SimpleGraph.Walk.isCycle_mapLe (oddEdgeGraph_le p)).2 hc
+  refine ⟨z, c', hc', ?_, ?_⟩
+  · simpa [c', SimpleGraph.Walk.edges_mapLe_eq_edges] using hec
+  · intro e he
+    have he' : e ∈ c.edges := by
+      simpa [c', SimpleGraph.Walk.edges_mapLe_eq_edges] using he
+    have hOddEdge : e ∈ (oddEdgeGraph p).edgeSet :=
+      c.edges_subset_edgeSet he'
+    rw [oddEdgeGraph, SimpleGraph.edgeSet_fromEdgeSet] at hOddEdge
+    exact List.mem_toFinset.mpr
+      (List.count_pos_iff.mp hOddEdge.1.pos)
+
+end Schoenflies

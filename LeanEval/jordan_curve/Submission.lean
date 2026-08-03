@@ -1,4 +1,4 @@
-import Submission.JordanCurve
+import Submission.JordanCurve.Main
 
 /-!
 # `jordan_curve` submission shim
@@ -14,6 +14,6 @@ theorem jordan_curve (r : Metric.sphere (0 : EuclideanSpace ℝ (Fin 2)) 1 → E
     Nat.card
         (ConnectedComponents ((Set.range r)ᶜ : Set (EuclideanSpace ℝ (Fin 2)))) =
       2 :=
-  _root_.JordanCurve.jordan_curve r _hcont _hinj
+  JordanCurve.jordan_curve r _hcont _hinj
 
 end Submission

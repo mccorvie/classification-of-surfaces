@@ -1,0 +1,522 @@
+import Schoenflies.FiniteSeparatorSetup
+import Schoenflies.RefinedCyclicCuts
+import Schoenflies.ReturnPathParity
+
+/-!
+# A controlled inside join between the two return-path tails
+
+This is the geometric output of Moise's finite separator and cyclic pairing
+argument.  It hides the translated polygon, its generic-position hypotheses,
+the intersection-vertex refinement, and the parity bookkeeping behind one
+neighborhood-scale statement.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function AffineMap
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+/-- Shorten a nondegenerate segment so that its initial part lies in a
+prescribed open neighborhood of its initial endpoint. -/
+theorem exists_short_initialSegment_subset_open {a b : Plane} (hab : a ≠ b)
+    {U : Set Plane} (hU : IsOpen U) (haU : a ∈ U) :
+    ∃ w : Plane, w ≠ a ∧ segment ℝ a w ⊆ U ∧
+      segment ℝ a w ⊆ segment ℝ a b := by
+  obtain ⟨r, hr, hball⟩ := Metric.isOpen_iff.mp hU a haU
+  have hd : 0 < dist a b := dist_pos.mpr hab
+  let c : ℝ := min (1 / 2) (r / (2 * dist a b))
+  have hcpos : 0 < c := by
+    dsimp [c]
+    exact lt_min (by norm_num) (div_pos hr (mul_pos two_pos hd))
+  have hclt : c < 1 :=
+    lt_of_le_of_lt (min_le_left _ _) (by norm_num)
+  have hcdist : c * dist a b < r := by
+    have hcbound : c ≤ r / (2 * dist a b) := min_le_right _ _
+    calc
+      c * dist a b ≤ (r / (2 * dist a b)) * dist a b :=
+        mul_le_mul_of_nonneg_right hcbound dist_nonneg
+      _ = r / 2 := by field_simp [hd.ne']
+      _ < r := by linarith
+  let w : Plane := lineMap a b c
+  have hwBall : w ∈ ball a r := by
+    rw [mem_ball, show w = lineMap a b c from rfl,
+      dist_lineMap_left, Real.norm_eq_abs, abs_of_pos hcpos]
+    exact hcdist
+  have hwne : w ≠ a := by
+    intro hwa
+    have hzero : dist w a = 0 := by rw [hwa, dist_self]
+    rw [show w = lineMap a b c from rfl, dist_lineMap_left,
+      Real.norm_eq_abs, abs_of_pos hcpos] at hzero
+    nlinarith [hd]
+  have hsegBall : segment ℝ a w ⊆ ball a r :=
+    (convex_ball a r).segment_subset (mem_ball_self hr) hwBall
+  have hwOriginal : w ∈ segment ℝ a b :=
+    lineMap_mem_segment ℝ a b ⟨hcpos.le, hclt.le⟩
+  exact ⟨w, hwne, hsegBall.trans hball,
+    (convex_segment a b).segment_subset (left_mem_segment ℝ a b) hwOriginal⟩
+
+/-- A path contained in an open planar set can be replaced by a finite broken
+line in the same open set. -/
+theorem joinedByBrokenLine_of_path_range_subset_open {U : Set Plane}
+    {a b : Plane} (gamma : Path a b) (hU : IsOpen U)
+    (hgamma : range gamma ⊆ U) : JoinedByBrokenLine U a b := by
+  have hcompact : IsCompact (range gamma) := isCompact_range gamma.continuous
+  obtain ⟨delta, hdelta, hthick⟩ :=
+    hcompact.exists_thickening_subset_open hU hgamma
+  exact (brokenLine_in_thickening_of_preconnected
+    (isPreconnected_range gamma.continuous)
+    (Path.source_mem_range gamma) (Path.target_mem_range gamma) hdelta).mono hthick
+
+namespace JordanCircle
+namespace AccessibleAngularArc
+
+variable {J : JordanCircle}
+
+namespace InsideReturnArc
+
+/-- At every scale, the two short endpoint tails of an explicit return arc
+can be joined through the original Jordan inside while remaining in that
+scale's neighborhood of the selected boundary arc. -/
+theorem exists_controlled_inside_join_between_tails
+    {A : J.AccessibleAngularArc} (R : A.InsideReturnArc)
+    {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    ∃ (s t : unitInterval) (p q : Plane),
+      (0 : ℝ) < s ∧ (s : ℝ) < t ∧ (t : ℝ) < 1 ∧
+        R.path '' Icc (0 : unitInterval) s ⊆
+          thickening epsilon A.curveArcPlane ∧
+        R.path '' Icc t (1 : unitInterval) ⊆
+          thickening epsilon A.curveArcPlane ∧
+        p ∈ R.path '' Icc (0 : unitInterval) s ∧
+        q ∈ R.path '' Icc t (1 : unitInterval) ∧
+        p ∈ J.inside ∧ q ∈ J.inside ∧
+        JoinedByBrokenLine
+          (J.inside ∩ thickening epsilon A.curveArcPlane) p q := by
+  obtain ⟨s, t, Q, hspos, hst, htone, hfirstSmall, hlastSmall,
+      hQsmall, hArcInside, hMiddleExterior, _hMiddleCompact,
+      _hMiddlePreconnected, _hMiddleDisjoint, hfinite, hfirstMeet,
+      _hlastMeet, hintersections, hpolygonVertices, hbrokenVertices⟩ :=
+    R.exists_finiteSeparatorFrame hepsilon
+  obtain ⟨K, hcarrier, _hinterior, _hexterior, hvertices⟩ :=
+    R.exists_intersectionVertexRefinement Q hfinite
+  have hmeets : (Q.carrier ∩ range R.path).Nonempty := by
+    obtain ⟨x, hxQ, u, _hu, hux⟩ := hfirstMeet
+    exact ⟨x, hxQ, ⟨u, hux⟩⟩
+  obtain ⟨start, hstartPrev, hstart⟩ :=
+    R.exists_refined_false_true_transition Q K hArcInside hcarrier
+      hvertices hpolygonVertices hbrokenVertices hmeets
+  obtain ⟨T, hT, hordered⟩ :=
+    R.exists_ordered_path_crossingTimes Q hArcInside hfinite
+      hpolygonVertices hbrokenVertices
+  have hodd := R.odd_firstTail_crossingTimes Q hspos hst hArcInside
+    hMiddleExterior T hT hordered
+  let n := K.n - 1
+  have hsize : n + 1 = K.n := by
+    dsimp [n]
+    have hnpos : 0 < K.n := lt_of_lt_of_le (by omega : 0 < 3) K.three_le
+    omega
+  obtain ⟨p, q, hpFirst, hqLast, hpK, hqK, hjoin⟩ :=
+    R.exists_inside_brokenLine_between_returnTails (n := n) Q K hsize
+      hArcInside hcarrier hvertices hpolygonVertices hbrokenVertices
+      start hstartPrev hstart T hst hMiddleExterior hT hodd hintersections
+  have hpQ : p ∈ Q.carrier := by rwa [← hcarrier]
+  have hqQ : q ∈ Q.carrier := by rwa [← hcarrier]
+  have hpInside : p ∈ J.inside := by
+    have hpRange : p ∈ range R.path := by
+      obtain ⟨u, _hu, hup⟩ := hpFirst
+      exact ⟨u, hup⟩
+    rcases R.range_subset_insideCrosscutSet hpRange with hpI | hpEnds
+    · exact hpI
+    · exfalso
+      have hpArc : p ∈ A.curveArcPlane := by
+        rcases hpEnds with hpLeft | hpRight
+        · simpa [hpLeft] using A.left_mem_curveArcPlane
+        · have hpRight' : p = (J.curvePoint A.right : Plane) :=
+            mem_singleton_iff.mp hpRight
+          simpa [hpRight'] using A.right_mem_curveArcPlane
+      have hpCompl : p ∈ Q.carrierᶜ := by
+        rw [← Q.interior_union_exterior]
+        exact Or.inl (hArcInside hpArc)
+      exact hpCompl hpQ
+  have hqInside : q ∈ J.inside := by
+    have hqRange : q ∈ range R.path := by
+      obtain ⟨u, _hu, huq⟩ := hqLast
+      exact ⟨u, huq⟩
+    rcases R.range_subset_insideCrosscutSet hqRange with hqI | hqEnds
+    · exact hqI
+    · exfalso
+      have hqArc : q ∈ A.curveArcPlane := by
+        rcases hqEnds with hqLeft | hqRight
+        · simpa [hqLeft] using A.left_mem_curveArcPlane
+        · have hqRight' : q = (J.curvePoint A.right : Plane) :=
+            mem_singleton_iff.mp hqRight
+          simpa [hqRight'] using A.right_mem_curveArcPlane
+      have hqCompl : q ∈ Q.carrierᶜ := by
+        rw [← Q.interior_union_exterior]
+        exact Or.inl (hArcInside hqArc)
+      exact hqCompl hqQ
+  have hjoinControlled : JoinedByBrokenLine
+      (J.inside ∩ thickening epsilon A.curveArcPlane) p q := by
+    apply hjoin.mono
+    rintro x (⟨hxAuxInside, hxK⟩ | hxEndpoint)
+    · have hxQ : x ∈ Q.carrier := by
+        rw [← hcarrier]
+        exact hxK
+      exact ⟨R.inside_auxiliaryJordanCircle_subset hxAuxInside,
+        hQsmall hxQ⟩
+    · rcases hxEndpoint with hxP | hxQ
+      · have hxP' : x = p := hxP
+        subst x
+        exact ⟨hpInside, hfirstSmall hpFirst⟩
+      · have hxQ' : x = q := mem_singleton_iff.mp hxQ
+        subst x
+        exact ⟨hqInside, hlastSmall hqLast⟩
+  exact ⟨s, t, p, q, hspos, hst, htone, hfirstSmall, hlastSmall,
+    hpFirst, hqLast, hpInside, hqInside, hjoinControlled⟩
+
+end InsideReturnArc
+
+/-- Every non-endpoint parameter of the polygonal return path lies in the
+open inside of the original Jordan circle. -/
+theorem returnPath_mem_inside_of_pos_of_lt_one
+    (A : J.AccessibleAngularArc) {u : unitInterval}
+    (hu0 : (⊥ : unitInterval) < u) (hu1 : u < (⊤ : unitInterval)) :
+    A.returnPath u ∈ J.inside := by
+  simpa only [insideReturnArc_path] using
+    A.insideReturnArc.path_mem_inside_of_pos_of_lt_one hu0 hu1
+
+/-- At every scale, the two short endpoint tails of the polygonal return path
+can be joined through the original Jordan inside while remaining in that
+scale's neighborhood of the selected boundary arc. -/
+theorem exists_controlled_inside_join_between_returnTails
+    (A : J.AccessibleAngularArc) {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    ∃ (s t : unitInterval) (p q : Plane),
+      (0 : ℝ) < s ∧ (s : ℝ) < t ∧ (t : ℝ) < 1 ∧
+        A.returnPath '' Icc (0 : unitInterval) s ⊆
+          thickening epsilon A.curveArcPlane ∧
+        A.returnPath '' Icc t (1 : unitInterval) ⊆
+          thickening epsilon A.curveArcPlane ∧
+        p ∈ A.returnPath '' Icc (0 : unitInterval) s ∧
+        q ∈ A.returnPath '' Icc t (1 : unitInterval) ∧
+        p ∈ J.inside ∧ q ∈ J.inside ∧
+        JoinedByBrokenLine
+          (J.inside ∩ thickening epsilon A.curveArcPlane) p q := by
+  simpa only [insideReturnArc_path] using
+    A.insideReturnArc.exists_controlled_inside_join_between_tails hepsilon
+
+/-- A point on the first short return tail can be joined to the right
+boundary endpoint through the controlled inside-crosscut set. -/
+theorem joinedByBrokenLine_firstReturnTail_to_right
+    (A : J.AccessibleAngularArc) {epsilon : ℝ} (hepsilon : 0 < epsilon)
+    {s : unitInterval} (hspos : (⊥ : unitInterval) < s)
+    (hsone : s < (⊤ : unitInterval))
+    {p : Plane}
+    (hfirstSmall : A.returnPath '' Icc (⊥ : unitInterval) s ⊆
+      thickening epsilon A.curveArcPlane)
+    (hpFirst : p ∈ A.returnPath '' Icc (⊥ : unitInterval) s)
+    (hpInside : p ∈ J.inside) :
+    JoinedByBrokenLine
+      (AccessibleAngularArc.controlledInsideCrosscutSet J A epsilon)
+      p (J.curvePoint A.right : Plane) := by
+  let U : Set Plane := J.inside ∩ thickening epsilon A.curveArcPlane
+  let B := A.returnCarrierBrokenLine
+  have hdataNe : B.data.start ≠ B.data.finish := by
+    rw [B.start_eq, B.finish_eq]
+    exact A.endpoint_ne
+  have hnpos : 0 < B.data.n :=
+    Schoenflies.JordanCircle.BrokenLineData.n_pos_of_start_ne_finish
+      B.data hdataNe
+  let i : Fin B.data.n :=
+    ⟨B.data.n - 1, Nat.sub_lt hnpos (by omega)⟩
+  have hisucc : i.succ = Fin.last B.data.n := by
+    apply Fin.ext
+    change B.data.n - 1 + 1 = B.data.n
+    omega
+  have hrightVertex : B.data.vertex i.succ =
+      (J.curvePoint A.right : Plane) := by
+    rw [hisucc]
+    exact B.finish_eq
+  have hrightNePrev : (J.curvePoint A.right : Plane) ≠
+      B.data.vertex i.castSucc := by
+    intro hrightPrev
+    have hvertices : B.data.vertex i.castSucc = B.data.vertex i.succ :=
+      hrightPrev.symm.trans hrightVertex.symm
+    exact (Fin.ne_of_lt i.castSucc_lt_succ)
+      (B.vertex_injective hvertices)
+  let C : Set Plane := A.returnPath '' Icc s (⊤ : unitInterval)
+  have hCcompact : IsCompact C := by
+    exact isCompact_Icc.image A.returnPath.continuous
+  have hrightNotC : (J.curvePoint A.right : Plane) ∉ C := by
+    rintro ⟨u, hu, huRight⟩
+    have huZero : u = (⊥ : unitInterval) :=
+      A.returnPath_injective (huRight.trans A.returnPath.source.symm)
+    subst u
+    exact (not_le_of_gt hspos) hu.1
+  let V : Set Plane := Cᶜ ∩ thickening epsilon A.curveArcPlane
+  have hVopen : IsOpen V :=
+    hCcompact.isClosed.isOpen_compl.inter Metric.isOpen_thickening
+  have hrightV : (J.curvePoint A.right : Plane) ∈ V := by
+    exact ⟨hrightNotC,
+      self_subset_thickening hepsilon _ A.right_mem_curveArcPlane⟩
+  obtain ⟨w, hwNeRight, hwV, hwLastEdge⟩ :=
+    exists_short_initialSegment_subset_open hrightNePrev hVopen hrightV
+  have hlastEdgeRange0 : segment ℝ (B.data.vertex i.castSucc)
+      (B.data.vertex i.succ) ⊆ range A.returnPath := by
+    rw [← A.segmentCarrier_returnCarrierBrokenLine]
+    intro x hx
+    exact Set.mem_iUnion_of_mem i hx
+  have hlastEdgeRange : segment ℝ (B.data.vertex i.castSucc)
+      (J.curvePoint A.right : Plane) ⊆ range A.returnPath := by
+    simpa only [hrightVertex] using hlastEdgeRange0
+  have hrightLastEdgeRange : segment ℝ (J.curvePoint A.right : Plane)
+      (B.data.vertex i.castSucc) ⊆ range A.returnPath := by
+    rw [segment_symm]
+    exact hlastEdgeRange
+  have hwRange : w ∈ range A.returnPath :=
+    hrightLastEdgeRange (hwLastEdge (right_mem_segment ℝ _ _))
+  obtain ⟨u, hu⟩ := hwRange
+  have hwInV : w ∈ V := hwV (right_mem_segment ℝ _ _)
+  have huLtS : u < s := by
+    apply lt_of_not_ge
+    intro hsu
+    exact hwInV.1 ⟨u, ⟨hsu, le_top⟩, hu⟩
+  have huPos : (⊥ : unitInterval) < u := by
+    have huNe : u ≠ (⊥ : unitInterval) := by
+      intro huZero
+      subst u
+      have : w = (J.curvePoint A.right : Plane) := by
+        exact hu.symm.trans A.returnPath.source
+      exact hwNeRight this
+    exact lt_of_le_of_ne bot_le (Ne.symm huNe)
+  obtain ⟨v, hv, hvp⟩ := hpFirst
+  have hpNeRight : p ≠ (J.curvePoint A.right : Plane) := by
+    intro hpRight
+    exact (J.inside_subset_compl hpInside)
+      (hpRight ▸ (J.curvePoint A.right).2)
+  have hvPos : (⊥ : unitInterval) < v := by
+    have hvNe : v ≠ (⊥ : unitInterval) := by
+      intro hvZero
+      subst v
+      apply hpNeRight
+      exact hvp.symm.trans A.returnPath.source
+    exact lt_of_le_of_ne bot_le (Ne.symm hvNe)
+  let gamma : Path (A.returnPath v) (A.returnPath u) :=
+    A.returnPath.subpath v u
+  have hgammaU : range gamma ⊆ U := by
+    rw [Path.range_subpath]
+    rintro x ⟨k, hk, rfl⟩
+    have hkBounds : k ∈ Icc (⊥ : unitInterval) s :=
+      uIcc_subset_Icc ⟨bot_le, hv.2⟩ ⟨bot_le, huLtS.le⟩ hk
+    have hkPos : (⊥ : unitInterval) < k := by
+      rcases Set.mem_uIcc.mp hk with hk' | hk'
+      · exact hvPos.trans_le hk'.1
+      · exact huPos.trans_le hk'.1
+    have hkOne : k < (⊤ : unitInterval) := hkBounds.2.trans_lt hsone
+    exact ⟨A.returnPath_mem_inside_of_pos_of_lt_one hkPos hkOne,
+      hfirstSmall ⟨k, hkBounds, rfl⟩⟩
+  have hUopen : IsOpen U :=
+    J.inside_isOpen.inter Metric.isOpen_thickening
+  have hmiddle0 : JoinedByBrokenLine U (A.returnPath v) (A.returnPath u) :=
+    joinedByBrokenLine_of_path_range_subset_open gamma hUopen hgammaU
+  have hmiddle : JoinedByBrokenLine U p w := by
+    simpa only [hvp, hu] using hmiddle0
+  have hsegmentControlled : segment ℝ w (J.curvePoint A.right : Plane) ⊆
+      AccessibleAngularArc.controlledInsideCrosscutSet J A epsilon := by
+    rw [segment_symm]
+    intro x hx
+    by_cases hxRight : x = (J.curvePoint A.right : Plane)
+    · right
+      simp [hxRight]
+    · left
+      have hxV := hwV hx
+      have hxRange := hrightLastEdgeRange (hwLastEdge hx)
+      obtain ⟨k, hk⟩ := hxRange
+      have hkLtS : k < s := by
+        apply lt_of_not_ge
+        intro hsk
+        exact hxV.1 ⟨k, ⟨hsk, le_top⟩, hk⟩
+      have hkPos : (⊥ : unitInterval) < k := by
+        have hkNe : k ≠ (⊥ : unitInterval) := by
+          intro hkZero
+          subst k
+          apply hxRight
+          exact hk.symm.trans A.returnPath.source
+        exact lt_of_le_of_ne bot_le (Ne.symm hkNe)
+      refine ⟨?_, hxV.2⟩
+      rw [← hk]
+      exact A.returnPath_mem_inside_of_pos_of_lt_one
+        hkPos (hkLtS.trans hsone)
+  have hmiddleControlled : JoinedByBrokenLine
+      (AccessibleAngularArc.controlledInsideCrosscutSet J A epsilon) p w :=
+    hmiddle.mono subset_union_left
+  exact hmiddleControlled.trans
+    (JoinedByBrokenLine.of_segment hsegmentControlled)
+
+/-- The left boundary endpoint can be joined to a point on the last short
+return tail through the controlled inside-crosscut set. -/
+theorem joinedByBrokenLine_left_to_lastReturnTail
+    (A : J.AccessibleAngularArc) {epsilon : ℝ} (hepsilon : 0 < epsilon)
+    {t : unitInterval} (htpos : (⊥ : unitInterval) < t)
+    (htone : t < (⊤ : unitInterval))
+    {q : Plane}
+    (hlastSmall : A.returnPath '' Icc t (⊤ : unitInterval) ⊆
+      thickening epsilon A.curveArcPlane)
+    (hqLast : q ∈ A.returnPath '' Icc t (⊤ : unitInterval))
+    (hqInside : q ∈ J.inside) :
+    JoinedByBrokenLine
+      (AccessibleAngularArc.controlledInsideCrosscutSet J A epsilon)
+      (J.curvePoint A.left : Plane) q := by
+  let U : Set Plane := J.inside ∩ thickening epsilon A.curveArcPlane
+  let B := A.returnCarrierBrokenLine
+  have hdataNe : B.data.start ≠ B.data.finish := by
+    rw [B.start_eq, B.finish_eq]
+    exact A.endpoint_ne
+  have hnpos : 0 < B.data.n :=
+    Schoenflies.JordanCircle.BrokenLineData.n_pos_of_start_ne_finish
+      B.data hdataNe
+  let i : Fin B.data.n := ⟨0, hnpos⟩
+  have hleftVertex : B.data.vertex i.castSucc =
+      (J.curvePoint A.left : Plane) := by
+    change B.data.start = (J.curvePoint A.left : Plane)
+    exact B.start_eq
+  have hleftNeNext : (J.curvePoint A.left : Plane) ≠
+      B.data.vertex i.succ := by
+    intro hleftNext
+    have hvertices : B.data.vertex i.castSucc = B.data.vertex i.succ :=
+      hleftVertex.trans hleftNext
+    exact (Fin.ne_of_lt i.castSucc_lt_succ)
+      (B.vertex_injective hvertices)
+  let C : Set Plane := A.returnPath '' Icc (⊥ : unitInterval) t
+  have hCcompact : IsCompact C := by
+    exact isCompact_Icc.image A.returnPath.continuous
+  have hleftNotC : (J.curvePoint A.left : Plane) ∉ C := by
+    rintro ⟨u, hu, huLeft⟩
+    have huOne : u = (⊤ : unitInterval) :=
+      A.returnPath_injective (huLeft.trans A.returnPath.target.symm)
+    subst u
+    exact (not_le_of_gt htone) hu.2
+  let V : Set Plane := Cᶜ ∩ thickening epsilon A.curveArcPlane
+  have hVopen : IsOpen V :=
+    hCcompact.isClosed.isOpen_compl.inter Metric.isOpen_thickening
+  have hleftV : (J.curvePoint A.left : Plane) ∈ V := by
+    exact ⟨hleftNotC,
+      self_subset_thickening hepsilon _ A.left_mem_curveArcPlane⟩
+  obtain ⟨w, hwNeLeft, hwV, hwFirstEdge⟩ :=
+    exists_short_initialSegment_subset_open hleftNeNext hVopen hleftV
+  have hfirstEdgeRange0 : segment ℝ (B.data.vertex i.castSucc)
+      (B.data.vertex i.succ) ⊆ range A.returnPath := by
+    rw [← A.segmentCarrier_returnCarrierBrokenLine]
+    intro x hx
+    exact Set.mem_iUnion_of_mem i hx
+  have hfirstEdgeRange : segment ℝ (J.curvePoint A.left : Plane)
+      (B.data.vertex i.succ) ⊆ range A.returnPath := by
+    simpa only [hleftVertex] using hfirstEdgeRange0
+  have hwRange : w ∈ range A.returnPath :=
+    hfirstEdgeRange (hwFirstEdge (right_mem_segment ℝ _ _))
+  obtain ⟨u, hu⟩ := hwRange
+  have hwInV : w ∈ V := hwV (right_mem_segment ℝ _ _)
+  have htLtU : t < u := by
+    apply lt_of_not_ge
+    intro hut
+    exact hwInV.1 ⟨u, ⟨bot_le, hut⟩, hu⟩
+  have huOne : u < (⊤ : unitInterval) := by
+    have huNe : u ≠ (⊤ : unitInterval) := by
+      intro huTop
+      subst u
+      have : w = (J.curvePoint A.left : Plane) :=
+        hu.symm.trans A.returnPath.target
+      exact hwNeLeft this
+    exact lt_of_le_of_ne le_top huNe
+  obtain ⟨v, hv, hvq⟩ := hqLast
+  have hqNeLeft : q ≠ (J.curvePoint A.left : Plane) := by
+    intro hqLeft
+    exact (J.inside_subset_compl hqInside)
+      (hqLeft ▸ (J.curvePoint A.left).2)
+  have hvOne : v < (⊤ : unitInterval) := by
+    have hvNe : v ≠ (⊤ : unitInterval) := by
+      intro hvTop
+      subst v
+      apply hqNeLeft
+      exact hvq.symm.trans A.returnPath.target
+    exact lt_of_le_of_ne le_top hvNe
+  let gamma : Path (A.returnPath u) (A.returnPath v) :=
+    A.returnPath.subpath u v
+  have hgammaU : range gamma ⊆ U := by
+    rw [Path.range_subpath]
+    rintro x ⟨k, hk, rfl⟩
+    have hkBounds : k ∈ Icc t (⊤ : unitInterval) :=
+      uIcc_subset_Icc ⟨htLtU.le, le_top⟩ ⟨hv.1, le_top⟩ hk
+    have hkOne : k < (⊤ : unitInterval) := by
+      rcases Set.mem_uIcc.mp hk with hk' | hk'
+      · exact hk'.2.trans_lt hvOne
+      · exact hk'.2.trans_lt huOne
+    have hkPos : (⊥ : unitInterval) < k :=
+      htpos.trans_le hkBounds.1
+    exact ⟨A.returnPath_mem_inside_of_pos_of_lt_one hkPos hkOne,
+      hlastSmall ⟨k, hkBounds, rfl⟩⟩
+  have hUopen : IsOpen U :=
+    J.inside_isOpen.inter Metric.isOpen_thickening
+  have hmiddle0 : JoinedByBrokenLine U (A.returnPath u) (A.returnPath v) :=
+    joinedByBrokenLine_of_path_range_subset_open gamma hUopen hgammaU
+  have hmiddle : JoinedByBrokenLine U w q := by
+    simpa only [hu, hvq] using hmiddle0
+  have hsegmentControlled : segment ℝ (J.curvePoint A.left : Plane) w ⊆
+      AccessibleAngularArc.controlledInsideCrosscutSet J A epsilon := by
+    intro x hx
+    by_cases hxLeft : x = (J.curvePoint A.left : Plane)
+    · right
+      simp [hxLeft]
+    · left
+      have hxV := hwV hx
+      have hxRange := hfirstEdgeRange (hwFirstEdge hx)
+      obtain ⟨k, hk⟩ := hxRange
+      have htLtK : t < k := by
+        apply lt_of_not_ge
+        intro hkt
+        exact hxV.1 ⟨k, ⟨bot_le, hkt⟩, hk⟩
+      have hkOne : k < (⊤ : unitInterval) := by
+        have hkNe : k ≠ (⊤ : unitInterval) := by
+          intro hkTop
+          subst k
+          apply hxLeft
+          exact hk.symm.trans A.returnPath.target
+        exact lt_of_le_of_ne le_top hkNe
+      refine ⟨?_, hxV.2⟩
+      rw [← hk]
+      exact A.returnPath_mem_inside_of_pos_of_lt_one
+        (htpos.trans htLtK) hkOne
+  have hmiddleControlled : JoinedByBrokenLine
+      (AccessibleAngularArc.controlledInsideCrosscutSet J A epsilon) w q :=
+    hmiddle.mono subset_union_left
+  exact (JoinedByBrokenLine.of_segment hsegmentControlled).trans
+    hmiddleControlled
+
+/-- Moise's finite separator and cyclic pairing argument supplies the exact
+controlled inside crosscut required by the later nested-cell construction. -/
+theorem hasControlledInsideCrosscut
+    (A : J.AccessibleAngularArc) {epsilon : ℝ} (hepsilon : 0 < epsilon) :
+    AccessibleAngularArc.HasControlledInsideCrosscut J A epsilon := by
+  obtain ⟨s, t, p, q, hspos, hst, htone, hfirstSmall, hlastSmall,
+      hpFirst, hqLast, hpInside, hqInside, hjoin⟩ :=
+    A.exists_controlled_inside_join_between_returnTails hepsilon
+  have hspos' : (⊥ : unitInterval) < s := hspos
+  have hst' : s < t := hst
+  have htone' : t < (⊤ : unitInterval) := htone
+  have hsone : s < (⊤ : unitInterval) := hst'.trans htone'
+  have htpos : (⊥ : unitInterval) < t := hspos'.trans hst'
+  have hleft := A.joinedByBrokenLine_left_to_lastReturnTail
+    hepsilon htpos htone' hlastSmall hqLast hqInside
+  have hright := A.joinedByBrokenLine_firstReturnTail_to_right
+    hepsilon hspos' hsone hfirstSmall hpFirst hpInside
+  have hjoinControlled : JoinedByBrokenLine
+      (AccessibleAngularArc.controlledInsideCrosscutSet J A epsilon) p q :=
+    hjoin.mono subset_union_left
+  have hchain : JoinedByBrokenLine
+      (AccessibleAngularArc.controlledInsideCrosscutSet J A epsilon)
+      (J.curvePoint A.left : Plane) (J.curvePoint A.right : Plane) :=
+    (hleft.trans hjoinControlled.symm).trans hright
+  exact ⟨simpleBrokenLineOfJoined hchain⟩
+
+end AccessibleAngularArc
+end JordanCircle
+
+end Schoenflies

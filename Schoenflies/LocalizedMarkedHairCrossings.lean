@@ -1,0 +1,190 @@
+import Schoenflies.LocalizedPolygonalDiskExhaustion
+import Schoenflies.MarkedHairCrossings
+
+/-!
+# First retained-hair crossings of localized polygonal disks
+
+`MarkedHairCrossings` proves the first-crossing theory for an arbitrary
+polygonal disk and then specializes it to the original metric exhaustion.
+This file supplies the corresponding specialization for the localized
+exhaustion.  The generic geometric proofs are reused verbatim: only the disk
+sequence and its two defining certificates change.
+-/
+
+namespace Schoenflies
+
+open Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace JordanCircle.InitialAngularArcs
+
+variable {J : JordanCircle} (I : J.InitialAngularArcs)
+
+/-- The first crossing of a level-`k` left access hair with localized disk
+`k + 1`. -/
+noncomputable def levelLocalizedFirstPolygonalCrossing (k : ℕ)
+    (a : LevelAddress k) :
+    (I.levelLeftHair a).FirstPolygonalCrossing
+      (I.localizedMarkedPolygonalDisk (k + 1)) :=
+  Classical.choice <| (I.levelLeftHair a).nonempty_firstPolygonalCrossing
+    (I.localizedMarkedPolygonalDisk (k + 1))
+    (I.localizedMarkedPolygonalDisk_closedRegion_subset_inside (k + 1))
+    (J.curvePoint (I.levelArc a).left).2
+    (I.levelLeftHairTips_subset_localizedMarkedPolygonalDisk_succ k
+      ⟨a, rfl⟩)
+
+/-- The retained-hair mark on the localized polygonal boundary. -/
+noncomputable def levelLocalizedPolygonalBoundaryMark (k : ℕ)
+    (a : LevelAddress k) : Plane :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).point
+
+theorem levelLocalizedPolygonalBoundaryMark_mem_carrier (k : ℕ)
+    (a : LevelAddress k) :
+    I.levelLocalizedPolygonalBoundaryMark k a ∈
+      (I.localizedMarkedPolygonalDisk (k + 1)).carrier :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).point_mem_polygonalCarrier
+
+theorem levelLocalizedPolygonalBoundaryMark_mem_leftHair (k : ℕ)
+    (a : LevelAddress k) :
+    I.levelLocalizedPolygonalBoundaryMark k a ∈
+      (I.levelLeftHair a).carrier :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).point_mem_hair
+
+/-- A localized mark can only occur in the necklace pieces incident to its
+Jordan anchor.  For the left endpoint of `a`, these are exactly `a` and its
+cyclic predecessor. -/
+theorem levelLocalizedPolygonalBoundaryMark_mem_incident_necklace
+    (k : ℕ) (a : LevelAddress k) :
+    I.levelLocalizedPolygonalBoundaryMark k a ∈
+      Metric.thickening (polygonalDiskBoundaryScale k)
+          (I.levelArc a).curveArcPlane ∪
+        Metric.thickening (polygonalDiskBoundaryScale k)
+          (I.levelArc (prevLevelAddress k a)).curveArcPlane := by
+  have hxNeighborhood :=
+    I.localizedMarkedPolygonalDisk_succ_carrier_subset_neighborhood k
+      (I.levelLocalizedPolygonalBoundaryMark_mem_carrier k a)
+  obtain ⟨b, hxb⟩ := Set.mem_iUnion.mp hxNeighborhood
+  have hbaseEndpoint :
+      (J.curvePoint (I.levelArc a).left : Plane) =
+          (J.curvePoint (I.levelArc b).left : Plane) ∨
+        (J.curvePoint (I.levelArc a).left : Plane) =
+          (J.curvePoint (I.levelArc b).right : Plane) := by
+    by_contra h
+    push Not at h
+    have hxForbidden : I.levelLocalizedPolygonalBoundaryMark k a ∈
+        I.nonEndpointHairCarrier b :=
+      I.levelLeftHair_carrier_subset_nonEndpointHairCarrier a b h.1 h.2
+        (I.levelLocalizedPolygonalBoundaryMark_mem_leftHair k a)
+    exact hxb.2 hxForbidden
+  rcases hbaseEndpoint with hleft | hright
+  · left
+    have hab : a = b := I.levelLeftPoint_injective hleft
+    simpa [hab] using hxb.1
+  · right
+    have haNext : a = nextLevelAddress k b :=
+      (I.levelRightPoint_eq_levelLeftPoint_iff b a).mp hright.symm
+    have hbPrev : b = prevLevelAddress k a := by
+      rw [haNext]
+      simp
+    simpa [hbPrev] using hxb.1
+
+/-- Distinct retained hairs give distinct marks on the localized polygon. -/
+theorem levelLocalizedPolygonalBoundaryMark_injective (k : ℕ) :
+    Injective (I.levelLocalizedPolygonalBoundaryMark k) := by
+  intro a b hab
+  by_contra hne
+  exact Set.disjoint_left.mp
+    (I.disjoint_levelLeftHairs_of_ne a b hne)
+    (I.levelLocalizedPolygonalBoundaryMark_mem_leftHair k a)
+    (hab ▸ I.levelLocalizedPolygonalBoundaryMark_mem_leftHair k b)
+
+theorem levelLocalizedPolygonalBoundaryMark_parameter_pos (k : ℕ)
+    (a : LevelAddress k) :
+    (⊥ : unitInterval) <
+      (I.levelLocalizedFirstPolygonalCrossing k a).parameter :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).parameter_pos
+    (I.localizedMarkedPolygonalDisk_closedRegion_subset_inside (k + 1))
+    (J.curvePoint (I.levelArc a).left).2
+
+theorem levelLeftHair_beforeLocalizedBoundaryMark_mem_exterior (k : ℕ)
+    (a : LevelAddress k) {t : unitInterval}
+    (ht : t < (I.levelLocalizedFirstPolygonalCrossing k a).parameter) :
+    Path.segment (J.curvePoint (I.levelArc a).left : Plane)
+        (I.levelLeftHair a).tip t ∈
+      (I.localizedMarkedPolygonalDisk (k + 1)).exteriorRegion :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).before_mem_exterior
+    (I.localizedMarkedPolygonalDisk_closedRegion_subset_inside (k + 1))
+    (J.curvePoint (I.levelArc a).left).2 ht
+
+/-- The initial retained-hair segment from the Jordan anchor to its first
+localized polygonal crossing. -/
+noncomputable def levelLocalizedExteriorHairPrefix (k : ℕ)
+    (a : LevelAddress k) : Set Plane :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).prefixCarrier
+
+noncomputable def levelLocalizedExteriorHairPrefixPath (k : ℕ)
+    (a : LevelAddress k) :
+    Path (J.curvePoint (I.levelArc a).left : Plane)
+      (I.levelLocalizedPolygonalBoundaryMark k a) :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).prefixPath
+
+theorem range_levelLocalizedExteriorHairPrefixPath (k : ℕ)
+    (a : LevelAddress k) :
+    range (I.levelLocalizedExteriorHairPrefixPath k a) =
+      I.levelLocalizedExteriorHairPrefix k a :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).range_prefixPath
+
+theorem range_levelLocalizedExteriorHairPrefixPath_eq_segment (k : ℕ)
+    (a : LevelAddress k) :
+    range (I.levelLocalizedExteriorHairPrefixPath k a) =
+      segment ℝ (J.curvePoint (I.levelArc a).left : Plane)
+        (I.levelLocalizedPolygonalBoundaryMark k a) :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).range_prefixPath_eq_segment
+
+theorem levelLocalizedExteriorHairPrefixPath_injective (k : ℕ)
+    (a : LevelAddress k) :
+    Injective (I.levelLocalizedExteriorHairPrefixPath k a) :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).prefixPath_injective
+    (I.localizedMarkedPolygonalDisk_closedRegion_subset_inside (k + 1))
+    (J.curvePoint (I.levelArc a).left).2
+
+theorem levelLocalizedExteriorHairPrefix_subset_leftHair (k : ℕ)
+    (a : LevelAddress k) :
+    I.levelLocalizedExteriorHairPrefix k a ⊆
+      (I.levelLeftHair a).carrier :=
+  (I.levelLocalizedFirstPolygonalCrossing k a).prefixCarrier_subset_hair
+
+theorem levelLocalizedExteriorHairPrefix_inter_polygonalCarrier (k : ℕ)
+    (a : LevelAddress k) :
+    I.levelLocalizedExteriorHairPrefix k a ∩
+        (I.localizedMarkedPolygonalDisk (k + 1)).carrier =
+      {I.levelLocalizedPolygonalBoundaryMark k a} :=
+  (I.levelLocalizedFirstPolygonalCrossing k a)
+    |>.prefixCarrier_inter_polygonalCarrier
+
+theorem levelLocalizedExteriorHairPrefix_subset_exterior_union_mark
+    (k : ℕ) (a : LevelAddress k) :
+    I.levelLocalizedExteriorHairPrefix k a ⊆
+      (I.localizedMarkedPolygonalDisk (k + 1)).exteriorRegion ∪
+        {I.levelLocalizedPolygonalBoundaryMark k a} :=
+  (I.levelLocalizedFirstPolygonalCrossing k a)
+    |>.prefixCarrier_subset_exterior_union_point
+      (I.localizedMarkedPolygonalDisk_closedRegion_subset_inside (k + 1))
+      (J.curvePoint (I.levelArc a).left).2
+
+theorem pairwise_disjoint_levelLocalizedExteriorHairPrefix (k : ℕ) :
+    Pairwise fun a b : LevelAddress k =>
+      Disjoint (I.levelLocalizedExteriorHairPrefix k a)
+        (I.levelLocalizedExteriorHairPrefix k b) := by
+  intro a b hab
+  exact (I.disjoint_levelLeftHairs_of_ne a b hab).mono
+    (I.levelLocalizedExteriorHairPrefix_subset_leftHair k a)
+    (I.levelLocalizedExteriorHairPrefix_subset_leftHair k b)
+
+end JordanCircle.InitialAngularArcs
+
+end
+
+end Schoenflies

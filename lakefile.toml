@@ -1,7 +1,7 @@
 name = "ClassificationOfSurfaces"
 version = "0.2.0"
 keywords = ["math", "topology", "lean-eval"]
-defaultTargets = ["ClassificationOfSurfaces", "JordanCurve"]
+defaultTargets = ["ClassificationOfSurfaces", "JordanCurve", "Schoenflies"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -27,3 +27,6 @@ name = "ClassificationOfSurfaces"
 
 [[lean_lib]]
 name = "JordanCurve"
+
+[[lean_lib]]
+name = "Schoenflies"

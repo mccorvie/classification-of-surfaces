@@ -30,9 +30,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Add schoenflies when its source root and shim are complete.
         problem:
           - jordan_curve
+          - schoenflies
           - topological_classification_of_surfaces
 
     steps:

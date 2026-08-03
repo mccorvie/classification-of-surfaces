@@ -1,0 +1,110 @@
+import Schoenflies.FiniteSeparatorSetup
+import Schoenflies.AuxiliaryTransverseIntersections
+
+/-!
+# Ordered finite crossings on the return path
+
+This file packages the geometric generic-position hypotheses into the exact
+one-dimensional object used by Moise's parity argument: a finite set of
+interior parameter values, each of which changes polygonal side.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+namespace JordanCircle
+namespace AccessibleAngularArc
+
+variable {J : JordanCircle}
+
+/-- A generic finite-position frame cuts the return path at finitely many
+interior parameter values, and every such value is an ordered side change. -/
+theorem exists_ordered_returnPath_crossingTimes
+    (A : J.AccessibleAngularArc) (Q : PolygonalCircle)
+    (hArcInside : A.curveArcPlane ⊆ Q.interiorRegion)
+    (hfinite : (Q.carrier ∩ range A.returnPath).Finite)
+    (hpolygonVertices : ∀ (i : ZMod Q.n)
+        (j : Fin A.returnCarrierBrokenLine.data.n),
+      planeDet
+        (A.returnCarrierBrokenLine.data.vertex j.castSucc - Q.vertex i)
+        (A.returnCarrierBrokenLine.data.vertex j.succ -
+          A.returnCarrierBrokenLine.data.vertex j.castSucc) ≠ 0)
+    (hbrokenVertices : ∀ (i : ZMod Q.n)
+        (j : Fin (A.returnCarrierBrokenLine.data.n + 1)),
+      planeDet
+        (A.returnCarrierBrokenLine.data.vertex j - Q.vertex i)
+        (Q.vertex (i + 1) - Q.vertex i) ≠ 0) :
+    ∃ T : Finset unitInterval,
+      (∀ t, t ∈ T ↔ A.returnPath t ∈ Q.carrier) ∧
+      ∀ t ∈ T,
+        (⊥ : unitInterval) < t ∧ t < (⊤ : unitInterval) ∧
+        ∀ a b : unitInterval, a < t → t < b →
+          ∃ l u : unitInterval,
+            a < l ∧ l < t ∧ t < u ∧ u < b ∧
+            (((A.returnPath l ∈ Q.interiorRegion) ∧
+                (A.returnPath u ∈ Q.exteriorRegion)) ∨
+              ((A.returnPath l ∈ Q.exteriorRegion) ∧
+                (A.returnPath u ∈ Q.interiorRegion))) := by
+  let crossingTimes : Set unitInterval :=
+    A.returnPath ⁻¹' Q.carrier
+  have hpreimageEq : crossingTimes =
+      A.returnPath ⁻¹' (Q.carrier ∩ range A.returnPath) := by
+    ext t
+    simp only [crossingTimes, mem_preimage, mem_inter_iff, mem_range]
+    constructor
+    · intro ht
+      exact ⟨ht, t, rfl⟩
+    · exact fun ht ↦ ht.1
+  have hcrossingTimesFinite : crossingTimes.Finite := by
+    rw [hpreimageEq]
+    exact hfinite.preimage A.returnPath_injective.injOn
+  let T : Finset unitInterval := hcrossingTimesFinite.toFinset
+  refine ⟨T, ?_, ?_⟩
+  · intro t
+    simp only [T, Set.Finite.mem_toFinset, crossingTimes, mem_preimage]
+  · intro t htT
+    have htCarrier : A.returnPath t ∈ Q.carrier := by
+      simpa only [T, Set.Finite.mem_toFinset, crossingTimes, mem_preimage]
+        using htT
+    have htBroken : A.returnPath t ∈
+        A.returnCarrierBrokenLine.data.segmentCarrier := by
+      rw [A.segmentCarrier_returnCarrierBrokenLine]
+      exact ⟨t, rfl⟩
+    obtain ⟨X⟩ :=
+      A.returnCarrierBrokenLine.exists_transverseIntersection_of_generic
+        Q hpolygonVertices hbrokenVertices ⟨htCarrier, htBroken⟩
+    have htNotArc : A.returnPath t ∉ A.curveArcPlane := by
+      intro htArc
+      have htInterior := hArcInside htArc
+      have htCompl : A.returnPath t ∈ Q.carrierᶜ := by
+        rw [← Q.interior_union_exterior]
+        exact Or.inl htInterior
+      exact htCompl htCarrier
+    have htLower : (⊥ : unitInterval) < t := by
+      rw [bot_lt_iff_ne_bot]
+      intro ht
+      apply htNotArc
+      rw [ht]
+      change A.returnPath (0 : unitInterval) ∈ A.curveArcPlane
+      rw [A.returnPath.source]
+      exact A.right_mem_curveArcPlane
+    have htUpper : t < (⊤ : unitInterval) := by
+      rw [lt_top_iff_ne_top]
+      intro ht
+      apply htNotArc
+      rw [ht]
+      change A.returnPath (1 : unitInterval) ∈ A.curveArcPlane
+      rw [A.returnPath.target]
+      exact A.left_mem_curveArcPlane
+    refine ⟨htLower, htUpper, ?_⟩
+    intro a b hat htb
+    exact
+      Schoenflies.JordanCircle.AccessibleAngularArc.SimpleBrokenLine.TransverseIntersection.exists_returnPath_parameters_opposite_polygonSides_between
+        A Q X rfl hat htb
+
+end AccessibleAngularArc
+end JordanCircle
+
+end Schoenflies

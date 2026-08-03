@@ -1,13 +1,10 @@
-import Mathlib
-import Submission.Helpers
+import Submission.Schoenflies.Main
 
 /-!
-# `schoenflies` submission scaffold
+# `schoenflies` submission shim
 
-This workspace already has the exact lean-eval shape, but the repository does
-not yet contain a proof of the full Schoenflies theorem.  Once a source root is
-available, add it to `PROBLEMS` in `port_submission.py` and replace this body
-with the same kind of thin delegation used by the other two workspaces.
+The proof development is maintained at the repository root.  Run
+`python3 port_submission.py` to refresh the generated copy under `Submission/`.
 -/
 
 namespace Submission
@@ -16,6 +13,6 @@ theorem schoenflies (r : Metric.sphere (0 : EuclideanSpace ℝ (Fin 2)) 1 → Eu
     (_hcont : Continuous r) (_hinj : Function.Injective r) :
     ∃ h : EuclideanSpace ℝ (Fin 2) ≃ₜ EuclideanSpace ℝ (Fin 2),
       h '' Set.range r = Metric.sphere (0 : EuclideanSpace ℝ (Fin 2)) 1 := by
-  sorry
+  exact Schoenflies.schoenflies r _hcont _hinj
 
 end Submission

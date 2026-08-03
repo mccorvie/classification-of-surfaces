@@ -1,0 +1,228 @@
+import Schoenflies.HierarchicalLevelHairs
+import Schoenflies.PolygonalDiskExhaustion
+import Schoenflies.PolygonalJordanNesting
+
+/-!
+# Nested polygonal disks containing retained hair tips
+
+For boundary control we need more than an abstract exhaustion: the boundary
+of each polygonal disk must be reachable along the finite ordered family of
+retained access hairs.  At successor `k + 1` we therefore require the disk to
+contain every left-hair tip at subdivision level `k`.  The preceding disk and
+the compact-depth core are retained as before, so strict nesting, exhaustion,
+and convergence of the carriers are unchanged.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace JordanCircle
+namespace InitialAngularArcs
+
+variable {J : JordanCircle} (I : J.InitialAngularArcs)
+
+/-- The finite set of tips of the retained left endpoint hairs at level `n`.
+Every cyclic level endpoint occurs once in this family. -/
+def levelLeftHairTips (n : ℕ) : Set Plane :=
+  range fun a : LevelAddress n => (I.levelLeftHair a).tip
+
+theorem finite_levelLeftHairTips (n : ℕ) :
+    (I.levelLeftHairTips n).Finite :=
+  Set.finite_range _
+
+theorem isCompact_levelLeftHairTips (n : ℕ) :
+    IsCompact (I.levelLeftHairTips n) :=
+  (I.finite_levelLeftHairTips n).isCompact
+
+theorem levelLeftHairTips_subset_inside (n : ℕ) :
+    I.levelLeftHairTips n ⊆ J.inside := by
+  rintro x ⟨a, rfl⟩
+  exact (I.levelLeftHair a).tip_mem_inside
+
+/-- A marked successor disk: besides the old disk and the depth core, it
+contains all level-`k` retained left-hair tips in its open interior. -/
+noncomputable def nextMarkedPolygonalDisk (k : ℕ)
+    (P : PolygonalCircle) (hPinside : P.closedRegion ⊆ J.inside) :
+    PolygonalCircle :=
+  Classical.choose <|
+    J.exists_nestedPolygonalDisk_near_containing_compact P hPinside
+      (I.isCompact_levelLeftHairTips k)
+      (I.levelLeftHairTips_subset_inside k)
+      (polygonalDiskBoundaryScale_pos k)
+
+theorem closedRegion_subset_interior_nextMarkedPolygonalDisk
+    (k : ℕ) (P : PolygonalCircle)
+    (hPinside : P.closedRegion ⊆ J.inside) :
+    P.closedRegion ⊆
+      (I.nextMarkedPolygonalDisk k P hPinside).interiorRegion :=
+  (Classical.choose_spec <|
+    J.exists_nestedPolygonalDisk_near_containing_compact P hPinside
+      (I.isCompact_levelLeftHairTips k)
+      (I.levelLeftHairTips_subset_inside k)
+      (polygonalDiskBoundaryScale_pos k)).1
+
+theorem deepInsideCore_subset_interior_nextMarkedPolygonalDisk
+    (k : ℕ) (P : PolygonalCircle)
+    (hPinside : P.closedRegion ⊆ J.inside) :
+    J.deepInsideCore (polygonalDiskBoundaryScale k) ⊆
+      (I.nextMarkedPolygonalDisk k P hPinside).interiorRegion :=
+  (Classical.choose_spec <|
+    J.exists_nestedPolygonalDisk_near_containing_compact P hPinside
+      (I.isCompact_levelLeftHairTips k)
+      (I.levelLeftHairTips_subset_inside k)
+      (polygonalDiskBoundaryScale_pos k)).2.1
+
+theorem levelLeftHairTips_subset_interior_nextMarkedPolygonalDisk
+    (k : ℕ) (P : PolygonalCircle)
+    (hPinside : P.closedRegion ⊆ J.inside) :
+    I.levelLeftHairTips k ⊆
+      (I.nextMarkedPolygonalDisk k P hPinside).interiorRegion :=
+  (Classical.choose_spec <|
+    J.exists_nestedPolygonalDisk_near_containing_compact P hPinside
+      (I.isCompact_levelLeftHairTips k)
+      (I.levelLeftHairTips_subset_inside k)
+      (polygonalDiskBoundaryScale_pos k)).2.2.1
+
+theorem nextMarkedPolygonalDisk_closedRegion_subset_inside
+    (k : ℕ) (P : PolygonalCircle)
+    (hPinside : P.closedRegion ⊆ J.inside) :
+    (I.nextMarkedPolygonalDisk k P hPinside).closedRegion ⊆ J.inside :=
+  (Classical.choose_spec <|
+    J.exists_nestedPolygonalDisk_near_containing_compact P hPinside
+      (I.isCompact_levelLeftHairTips k)
+      (I.levelLeftHairTips_subset_inside k)
+      (polygonalDiskBoundaryScale_pos k)).2.2.2.1
+
+theorem nextMarkedPolygonalDisk_carrier_subset_thickening
+    (k : ℕ) (P : PolygonalCircle)
+    (hPinside : P.closedRegion ⊆ J.inside) :
+    (I.nextMarkedPolygonalDisk k P hPinside).carrier ⊆
+      thickening (polygonalDiskBoundaryScale k) J.carrier :=
+  (Classical.choose_spec <|
+    J.exists_nestedPolygonalDisk_near_containing_compact P hPinside
+      (I.isCompact_levelLeftHairTips k)
+      (I.levelLeftHairTips_subset_inside k)
+      (polygonalDiskBoundaryScale_pos k)).2.2.2.2
+
+/-- The recursively selected marked exhaustion, with its inside invariant in
+the codomain. -/
+noncomputable def markedPolygonalDiskExhaustionStage
+    (I : J.InitialAngularArcs) :
+    ℕ → J.InsidePolygonalDisk
+  | 0 => ⟨J.initialPolygonalDisk,
+      J.initialPolygonalDisk_closedRegion_subset_inside⟩
+  | k + 1 =>
+      let P := I.markedPolygonalDiskExhaustionStage k
+      ⟨I.nextMarkedPolygonalDisk k P P.2,
+        I.nextMarkedPolygonalDisk_closedRegion_subset_inside k P P.2⟩
+
+/-- The polygonal circle underlying marked exhaustion stage `k`. -/
+noncomputable def markedPolygonalDiskExhaustion (k : ℕ) :
+    PolygonalCircle :=
+  (I.markedPolygonalDiskExhaustionStage k).1
+
+theorem markedPolygonalDiskExhaustion_closedRegion_subset_inside (k : ℕ) :
+    (I.markedPolygonalDiskExhaustion k).closedRegion ⊆ J.inside :=
+  (I.markedPolygonalDiskExhaustionStage k).2
+
+@[simp] theorem markedPolygonalDiskExhaustion_zero :
+    I.markedPolygonalDiskExhaustion 0 = J.initialPolygonalDisk := rfl
+
+@[simp] theorem markedPolygonalDiskExhaustion_succ (k : ℕ) :
+    I.markedPolygonalDiskExhaustion (k + 1) =
+      I.nextMarkedPolygonalDisk k (I.markedPolygonalDiskExhaustion k)
+        (I.markedPolygonalDiskExhaustion_closedRegion_subset_inside k) := rfl
+
+theorem markedPolygonalDiskExhaustion_strictly_nested (k : ℕ) :
+    (I.markedPolygonalDiskExhaustion k).closedRegion ⊆
+      (I.markedPolygonalDiskExhaustion (k + 1)).interiorRegion := by
+  rw [I.markedPolygonalDiskExhaustion_succ k]
+  exact I.closedRegion_subset_interior_nextMarkedPolygonalDisk k _ _
+
+/-- Every level-`k` retained left-hair tip lies inside successor `k + 1`. -/
+theorem levelLeftHairTips_subset_markedPolygonalDiskExhaustion_succ
+    (k : ℕ) :
+    I.levelLeftHairTips k ⊆
+      (I.markedPolygonalDiskExhaustion (k + 1)).interiorRegion := by
+  rw [I.markedPolygonalDiskExhaustion_succ k]
+  exact I.levelLeftHairTips_subset_interior_nextMarkedPolygonalDisk k _ _
+
+theorem deepInsideCore_subset_markedPolygonalDiskExhaustion_succ
+    (k : ℕ) :
+    J.deepInsideCore (polygonalDiskBoundaryScale k) ⊆
+      (I.markedPolygonalDiskExhaustion (k + 1)).interiorRegion := by
+  rw [I.markedPolygonalDiskExhaustion_succ k]
+  exact I.deepInsideCore_subset_interior_nextMarkedPolygonalDisk k _ _
+
+theorem markedPolygonalDiskExhaustion_succ_carrier_subset_thickening
+    (k : ℕ) :
+    (I.markedPolygonalDiskExhaustion (k + 1)).carrier ⊆
+      thickening (polygonalDiskBoundaryScale k) J.carrier := by
+  rw [I.markedPolygonalDiskExhaustion_succ k]
+  exact I.nextMarkedPolygonalDisk_carrier_subset_thickening k _ _
+
+/-- The marked disks still exhaust the whole open Jordan inside. -/
+theorem eventually_mem_markedPolygonalDiskExhaustion_interior
+    {x : Plane} (hx : x ∈ J.inside) :
+    ∃ N : ℕ, ∀ k : ℕ, N ≤ k →
+      x ∈ (I.markedPolygonalDiskExhaustion (k + 1)).interiorRegion := by
+  obtain ⟨epsilon, hepsilon, hball⟩ :=
+    (Metric.isOpen_iff.mp J.inside_isOpen) x hx
+  have hxNotNear : x ∉ thickening (epsilon / 2) J.carrier := by
+    intro hxNear
+    rw [Metric.mem_thickening_iff] at hxNear
+    obtain ⟨q, hqCarrier, hxq⟩ := hxNear
+    have hqBall : q ∈ ball x epsilon := by
+      rw [Metric.mem_ball, dist_comm]
+      nlinarith
+    exact J.inside_subset_compl (hball hqBall) hqCarrier
+  obtain ⟨N, hN⟩ := exists_nat_one_div_lt (half_pos hepsilon)
+  refine ⟨N, ?_⟩
+  intro k hk
+  have hscale : polygonalDiskBoundaryScale k ≤ epsilon / 2 := by
+    have hmono : polygonalDiskBoundaryScale k ≤
+        polygonalDiskBoundaryScale N := by
+      unfold polygonalDiskBoundaryScale
+      apply (inv_le_inv₀ (by positivity) (by positivity)).mpr
+      exact_mod_cast Nat.add_le_add_right hk 1
+    have hsmall : polygonalDiskBoundaryScale N < epsilon / 2 := by
+      simpa [polygonalDiskBoundaryScale, one_div] using hN
+    exact hmono.trans hsmall.le
+  have hxNotScale : x ∉
+      thickening (polygonalDiskBoundaryScale k) J.carrier := by
+    intro hxScale
+    exact hxNotNear (thickening_mono hscale J.carrier hxScale)
+  have hxDeep : x ∈ J.deepInsideCore (polygonalDiskBoundaryScale k) :=
+    ⟨subset_closure hx, hxNotScale⟩
+  exact I.deepInsideCore_subset_markedPolygonalDiskExhaustion_succ k hxDeep
+
+/-- The marked successor carriers converge to the original Jordan carrier. -/
+theorem eventually_markedPolygonalDiskExhaustion_carrier_subset_thickening
+    {delta : ℝ} (hdelta : 0 < delta) :
+    ∃ N : ℕ, ∀ k : ℕ, N ≤ k →
+      (I.markedPolygonalDiskExhaustion (k + 1)).carrier ⊆
+        thickening delta J.carrier := by
+  obtain ⟨N, hN⟩ := exists_nat_one_div_lt hdelta
+  refine ⟨N, ?_⟩
+  intro k hk
+  have hmono : polygonalDiskBoundaryScale k ≤
+      polygonalDiskBoundaryScale N := by
+    unfold polygonalDiskBoundaryScale
+    apply (inv_le_inv₀ (by positivity) (by positivity)).mpr
+    exact_mod_cast Nat.add_le_add_right hk 1
+  have hsmall : polygonalDiskBoundaryScale N < delta := by
+    simpa [polygonalDiskBoundaryScale, one_div] using hN
+  exact
+    (I.markedPolygonalDiskExhaustion_succ_carrier_subset_thickening k).trans
+      (thickening_mono (hmono.trans hsmall.le) J.carrier)
+
+end InitialAngularArcs
+end JordanCircle
+
+end
+
+end Schoenflies

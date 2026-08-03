@@ -28,7 +28,6 @@ import sys
 import tomllib
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent
 WORKSPACES_ROOT = REPO_ROOT / "LeanEval"
 GENERATED_HEADER = """/-
@@ -58,21 +57,22 @@ class Problem:
 # transitive closure it needs.
 PROBLEMS: dict[str, Problem] = {
     "jordan_curve": Problem(
-        roots=("JordanCurve",),
+        roots=("JordanCurve.Main",),
         local_prefixes=("JordanCurve",),
     ),
     "schoenflies": Problem(
-        roots=(),
-        local_prefixes=("Schoenflies", "JordanCurve"),
-        note="workspace scaffold only; no full Schoenflies source theorem exists yet",
+        roots=("Schoenflies.Main",),
+        local_prefixes=("Schoenflies", "JordanCurve", "ClassificationOfSurfaces"),
     ),
     "topological_classification_of_surfaces": Problem(
         roots=("ClassificationOfSurfaces.EvalStatement",),
         local_prefixes=("ClassificationOfSurfaces",),
-        trusted_imports=((
-            "ClassificationOfSurfaces.LeanEval.ChallengeDeps",
-            "ChallengeDeps",
-        ),),
+        trusted_imports=(
+            (
+                "ClassificationOfSurfaces.LeanEval.ChallengeDeps",
+                "ChallengeDeps",
+            ),
+        ),
     ),
 }
 
@@ -93,7 +93,9 @@ def module_path(module: str) -> Path:
 
 
 def is_local_module(module: str, prefixes: tuple[str, ...]) -> bool:
-    return any(module == prefix or module.startswith(prefix + ".") for prefix in prefixes)
+    return any(
+        module == prefix or module.startswith(prefix + ".") for prefix in prefixes
+    )
 
 
 def imports(text: str) -> list[str]:
@@ -120,20 +122,26 @@ def compute_closure(problem_id: str, problem: Problem) -> tuple[str, ...]:
 
         source = module_path(module)
         if not source.is_file():
-            raise PackagingError(f"{problem_id}: local module {module!r} has no file at {source}")
+            raise PackagingError(
+                f"{problem_id}: local module {module!r} has no file at {source}"
+            )
 
         seen.add(module)
         for imported in imports(source.read_text(encoding="utf-8")):
             if imported in trusted:
                 continue
-            if is_local_module(imported, problem.local_prefixes) and imported not in seen:
+            if (
+                is_local_module(imported, problem.local_prefixes)
+                and imported not in seen
+            ):
                 pending.append(imported)
 
     return tuple(sorted(seen))
 
 
-def rewrite_module(problem_id: str, problem: Problem, module: str,
-                   closure: set[str]) -> str:
+def rewrite_module(
+    problem_id: str, problem: Problem, module: str, closure: set[str]
+) -> str:
     trusted = dict(problem.trusted_imports)
     source = module_path(module)
     output: list[str] = []
@@ -172,8 +180,9 @@ def expected_payload(problem_id: str, problem: Problem) -> dict[Path, str]:
     closure = compute_closure(problem_id, problem)
     closure_set = set(closure)
     return {
-        Path(*module.split(".")).with_suffix(".lean"):
-            rewrite_module(problem_id, problem, module, closure_set)
+        Path(*module.split(".")).with_suffix(".lean"): rewrite_module(
+            problem_id, problem, module, closure_set
+        )
         for module in closure
     }
 
@@ -190,7 +199,9 @@ def workspace_for(problem_id: str) -> Path:
             f"{problem_id}: {lakefile} has name={lake_name!r}; lean-eval will not discover it"
         )
     if not (workspace / "Submission.lean").is_file():
-        raise PackagingError(f"{problem_id}: missing solver shim {workspace / 'Submission.lean'}")
+        raise PackagingError(
+            f"{problem_id}: missing solver shim {workspace / 'Submission.lean'}"
+        )
     return workspace
 
 
@@ -199,7 +210,9 @@ def write_payload(problem_id: str, expected: dict[Path, str], dry_run: bool) -> 
     destination = workspace / "Submission"
 
     if destination.is_symlink():
-        raise PackagingError(f"refusing to replace symlinked submission directory: {destination}")
+        raise PackagingError(
+            f"refusing to replace symlinked submission directory: {destination}"
+        )
     if dry_run:
         print(f"{problem_id}: would write {len(expected)} generated modules")
         return
@@ -216,10 +229,11 @@ def write_payload(problem_id: str, expected: dict[Path, str], dry_run: bool) -> 
 
 def check_payload(problem_id: str, expected: dict[Path, str]) -> bool:
     destination = workspace_for(problem_id) / "Submission"
-    actual_paths = {
-        path.relative_to(destination)
-        for path in destination.rglob("*.lean")
-    } if destination.is_dir() else set()
+    actual_paths = (
+        {path.relative_to(destination) for path in destination.rglob("*.lean")}
+        if destination.is_dir()
+        else set()
+    )
     expected_paths = set(expected)
     clean = True
 
@@ -247,7 +261,9 @@ def selected_problems(requested: list[str] | None) -> list[tuple[str, Problem]]:
         problem = PROBLEMS[problem_id]
         if not problem.ready:
             if requested:
-                raise PackagingError(f"{problem_id}: {problem.note or 'no source roots configured'}")
+                raise PackagingError(
+                    f"{problem_id}: {problem.note or 'no source roots configured'}"
+                )
             print(f"{problem_id}: skipped ({problem.note or 'not ready'})")
             continue
         selected.append((problem_id, problem))
@@ -257,14 +273,23 @@ def selected_problems(requested: list[str] | None) -> list[tuple[str, Problem]]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--problem", action="append", choices=sorted(PROBLEMS),
+        "--problem",
+        action="append",
+        choices=sorted(PROBLEMS),
         help="package only this problem (repeatable; defaults to every ready problem)",
     )
-    parser.add_argument("--check", action="store_true", help="fail if generated files are stale")
-    parser.add_argument("--dry-run", action="store_true", help="compute payloads without writing")
-    parser.add_argument("--list", action="store_true", help="show configured problem status and exit")
     parser.add_argument(
-        "--list-closure", action="store_true",
+        "--check", action="store_true", help="fail if generated files are stale"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="compute payloads without writing"
+    )
+    parser.add_argument(
+        "--list", action="store_true", help="show configured problem status and exit"
+    )
+    parser.add_argument(
+        "--list-closure",
+        action="store_true",
         help="print the source module closure instead of generating files",
     )
     args = parser.parse_args()

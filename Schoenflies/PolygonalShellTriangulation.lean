@@ -1,0 +1,161 @@
+import Schoenflies.PolygonalShells
+import ClassificationOfSurfaces.Moise.PolygonalFamilyPolyhedron
+
+/-!
+# A finite common-arrangement mesh of a polygonal shell
+
+Two polygonal boundaries need not share a triangulation.  We cut one
+enclosing triangle by all edge lines of both polygons and retain exactly the
+two-dimensional chambers lying between them.  Strict nesting then identifies
+the support of the retained finite mesh with the closed shell exactly.
+-/
+
+namespace Schoenflies
+
+open Set
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+noncomputable section
+
+namespace PolygonalShell
+
+/-- The two-member polygonal family used by the common arrangement. -/
+def boundaryFamily (P Q : PolygonalCircle) : Bool → PolygonalCircle
+  | false => P
+  | true => Q
+
+@[simp] theorem boundaryFamily_false (P Q : PolygonalCircle) :
+    boundaryFamily P Q false = P := rfl
+
+@[simp] theorem boundaryFamily_true (P Q : PolygonalCircle) :
+    boundaryFamily P Q true = Q := rfl
+
+/-- A common-arrangement chamber belongs to the shell precisely when its
+open triangle lies in the open shell stratum. -/
+def IsShellArrangementTriangle (P Q : PolygonalCircle)
+    (t : Finset (PolygonalFamily.arrangementMesh
+      (boundaryFamily P Q)).Vertex) : Prop :=
+  interior (PolygonalFamily.arrangementTriangleCarrier
+    (boundaryFamily P Q) t) ⊆ PolygonalCircle.openShell P Q
+
+/-- The finite triangle mesh obtained by retaining the shell chambers. -/
+noncomputable def mesh (P Q : PolygonalCircle) : TriangleMesh := by
+  classical
+  exact (PolygonalFamily.arrangementMesh (boundaryFamily P Q)).restrictTriangles
+    (IsShellArrangementTriangle P Q)
+
+theorem mesh_triangle_mem (P Q : PolygonalCircle)
+    {t : Finset (mesh P Q).Vertex} :
+    t ∈ (mesh P Q).triangles ↔
+      t ∈ (PolygonalFamily.arrangementMesh
+        (boundaryFamily P Q)).triangles ∧
+      IsShellArrangementTriangle P Q t := by
+  classical
+  exact (PolygonalFamily.arrangementMesh (boundaryFamily P Q))
+    |>.mem_restrictTriangles_triangles (IsShellArrangementTriangle P Q)
+
+theorem arrangementTriangleCarrier_subset_closedShell
+    (P Q : PolygonalCircle)
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    {t : Finset (PolygonalFamily.arrangementMesh
+      (boundaryFamily P Q)).Vertex}
+    (ht : t ∈ (PolygonalFamily.arrangementMesh
+      (boundaryFamily P Q)).triangles)
+    (hShell : IsShellArrangementTriangle P Q t) :
+    PolygonalFamily.arrangementTriangleCarrier
+        (boundaryFamily P Q) t ⊆
+      PolygonalCircle.closedShell P Q := by
+  rw [← PolygonalCircle.closure_openShell P Q hPQ,
+    ← PolygonalFamily.closure_interior_arrangementTriangleCarrier
+      (boundaryFamily P Q) ht]
+  exact closure_mono hShell
+
+theorem mesh_support_subset_closedShell (P Q : PolygonalCircle)
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion) :
+    (mesh P Q).toPlaneComplex.support ⊆
+      PolygonalCircle.closedShell P Q := by
+  rw [TriangleMesh.toPlaneComplex_support]
+  intro x hx
+  simp only [Set.mem_iUnion] at hx
+  obtain ⟨t, ht, hxt⟩ := hx
+  obtain ⟨htArrangement, htShell⟩ := (mesh_triangle_mem P Q).mp ht
+  exact arrangementTriangleCarrier_subset_closedShell P Q hPQ
+    htArrangement htShell hxt
+
+theorem openShell_subset_mesh_support (P Q : PolygonalCircle) :
+    PolygonalCircle.openShell P Q ⊆
+      (mesh P Q).toPlaneComplex.support := by
+  intro x hxShell
+  let F := boundaryFamily P Q
+  have hxFamily : x ∈ PolygonalFamily.closedRegion F := by
+    apply Set.mem_iUnion.mpr
+    refine ⟨true, ?_⟩
+    change x ∈ Q.closedRegion
+    rw [Q.closedRegion_eq_union]
+    exact Or.inl hxShell.1
+  have hxArrangement :=
+    PolygonalFamily.closedRegion_subset_arrangementMesh_support F hxFamily
+  rw [TriangleMesh.toPlaneComplex_support] at hxArrangement
+  simp only [Set.mem_iUnion] at hxArrangement
+  obtain ⟨t, ht, hxt⟩ := hxArrangement
+  have hxClosure : x ∈ closure
+      (interior (PolygonalFamily.arrangementTriangleCarrier F t)) := by
+    rw [PolygonalFamily.closure_interior_arrangementTriangleCarrier F ht]
+    exact hxt
+  have hxInterClosure : x ∈ closure
+      (PolygonalCircle.openShell P Q ∩
+        interior (PolygonalFamily.arrangementTriangleCarrier F t)) :=
+    (PolygonalCircle.isOpen_openShell P Q).inter_closure
+      ⟨hxShell, hxClosure⟩
+  obtain ⟨y, hyShell, hyTriangle⟩ :=
+    Set.Nonempty.of_closure ⟨x, hxInterClosure⟩
+  have hQSide := PolygonalFamily.arrangementTriangle_interior_side
+    F true ht
+  have hQInside :
+      interior (PolygonalFamily.arrangementTriangleCarrier F t) ⊆
+        Q.interiorRegion := by
+    rcases hQSide with hinside | hexterior
+    · simpa only [F, boundaryFamily_true] using hinside
+    · have hyExterior : y ∈ Q.exteriorRegion := by
+        simpa only [F, boundaryFamily_true] using hexterior hyTriangle
+      exact False.elim <| Set.disjoint_left.mp Q.disjoint_interior_exterior
+        hyShell.1 hyExterior
+  have hPSide := PolygonalFamily.arrangementTriangle_interior_side
+    F false ht
+  have hPExterior :
+      interior (PolygonalFamily.arrangementTriangleCarrier F t) ⊆
+        P.exteriorRegion := by
+    rcases hPSide with hinside | hexterior
+    · have hyInside : y ∈ P.interiorRegion := by
+        simpa only [F, boundaryFamily_false] using hinside hyTriangle
+      exact False.elim <| hyShell.2 <| by
+        rw [P.closedRegion_eq_union]
+        exact Or.inl hyInside
+    · simpa only [F, boundaryFamily_false] using hexterior
+  have htShell : IsShellArrangementTriangle P Q t := by
+    intro z hz
+    refine ⟨hQInside hz, ?_⟩
+    intro hzClosed
+    exact Set.disjoint_left.mp P.disjoint_closedRegion_exteriorRegion
+      hzClosed (hPExterior hz)
+  rw [TriangleMesh.toPlaneComplex_support]
+  simp only [Set.mem_iUnion]
+  exact ⟨t, (mesh_triangle_mem P Q).mpr ⟨ht, htShell⟩, hxt⟩
+
+/-- Exact finite triangulation of the region between strictly nested
+polygonal disks. -/
+theorem mesh_support (P Q : PolygonalCircle)
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion) :
+    (mesh P Q).toPlaneComplex.support =
+      PolygonalCircle.closedShell P Q := by
+  apply Set.Subset.antisymm
+  · exact mesh_support_subset_closedShell P Q hPQ
+  · rw [← PolygonalCircle.closure_openShell P Q hPQ]
+    exact closure_minimal (openShell_subset_mesh_support P Q)
+      (mesh P Q).toPlaneComplex.isCompact_support.isClosed
+
+end PolygonalShell
+
+end
+
+end Schoenflies

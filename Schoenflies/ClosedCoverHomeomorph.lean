@@ -1,0 +1,221 @@
+import Mathlib.Topology.Homeomorph.Lemmas
+import Mathlib.Topology.ContinuousOn
+
+/-!
+# Gluing homeomorphisms on a two-member closed cover
+
+Finite Chapter 9 stages are assembled from closed polygonal cells.  This file
+isolates the purely topological pasting step: two homeomorphisms which agree
+on the source overlap, and whose inverses agree on the target overlap, glue to
+a homeomorphism of the two unions.
+-/
+
+namespace Schoenflies
+
+open Set Function
+
+noncomputable section
+
+namespace ClosedCoverHomeomorph
+
+variable {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+  {s₀ s₁ : Set X} {t₀ t₁ : Set Y}
+
+private noncomputable def forward
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁) :
+    (s₀ ∪ s₁ : Set X) → (t₀ ∪ t₁ : Set Y) := fun x => by
+  classical
+  by_cases hx : (x : X) ∈ s₀
+  · exact ⟨e₀ ⟨x, hx⟩, Or.inl (e₀ ⟨x, hx⟩).2⟩
+  · have hx₁ : (x : X) ∈ s₁ := x.2.resolve_left hx
+    exact ⟨e₁ ⟨x, hx₁⟩, Or.inr (e₁ ⟨x, hx₁⟩).2⟩
+
+private noncomputable def backward
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁) :
+    (t₀ ∪ t₁ : Set Y) → (s₀ ∪ s₁ : Set X) := fun y => by
+  classical
+  by_cases hy : (y : Y) ∈ t₀
+  · exact ⟨e₀.symm ⟨y, hy⟩, Or.inl (e₀.symm ⟨y, hy⟩).2⟩
+  · have hy₁ : (y : Y) ∈ t₁ := y.2.resolve_left hy
+    exact ⟨e₁.symm ⟨y, hy₁⟩, Or.inr (e₁.symm ⟨y, hy₁⟩).2⟩
+
+private theorem forward_eq_left
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁)
+    (x : (s₀ ∪ s₁ : Set X)) (hx : (x : X) ∈ s₀) :
+    (forward e₀ e₁ x : Y) = e₀ ⟨x, hx⟩ := by
+  classical
+  simp only [forward, dif_pos hx]
+
+private theorem forward_eq_right
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁)
+    (hcompat : ∀ x (hx₀ : x ∈ s₀) (hx₁ : x ∈ s₁),
+      (e₀ ⟨x, hx₀⟩ : Y) = e₁ ⟨x, hx₁⟩)
+    (x : (s₀ ∪ s₁ : Set X)) (hx : (x : X) ∈ s₁) :
+    (forward e₀ e₁ x : Y) = e₁ ⟨x, hx⟩ := by
+  classical
+  by_cases hx₀ : (x : X) ∈ s₀
+  · rw [forward_eq_left e₀ e₁ x hx₀]
+    exact hcompat x hx₀ hx
+  · simp only [forward, dif_neg hx₀]
+
+private theorem backward_eq_left
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁)
+    (y : (t₀ ∪ t₁ : Set Y)) (hy : (y : Y) ∈ t₀) :
+    (backward e₀ e₁ y : X) = e₀.symm ⟨y, hy⟩ := by
+  classical
+  simp only [backward, dif_pos hy]
+
+private theorem backward_eq_right
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁)
+    (hcompat : ∀ y (hy₀ : y ∈ t₀) (hy₁ : y ∈ t₁),
+      (e₀.symm ⟨y, hy₀⟩ : X) = e₁.symm ⟨y, hy₁⟩)
+    (y : (t₀ ∪ t₁ : Set Y)) (hy : (y : Y) ∈ t₁) :
+    (backward e₀ e₁ y : X) = e₁.symm ⟨y, hy⟩ := by
+  classical
+  by_cases hy₀ : (y : Y) ∈ t₀
+  · rw [backward_eq_left e₀ e₁ y hy₀]
+    exact hcompat y hy₀ hy
+  · simp only [backward, dif_neg hy₀]
+
+private theorem continuous_forward
+    (hs₀ : IsClosed s₀) (hs₁ : IsClosed s₁)
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁)
+    (hcompat : ∀ x (hx₀ : x ∈ s₀) (hx₁ : x ∈ s₁),
+      (e₀ ⟨x, hx₀⟩ : Y) = e₁ ⟨x, hx₁⟩) :
+    Continuous (forward e₀ e₁) := by
+  let S₀ : Set (s₀ ∪ s₁ : Set X) := Subtype.val ⁻¹' s₀
+  let S₁ : Set (s₀ ∪ s₁ : Set X) := Subtype.val ⁻¹' s₁
+  have hS₀ : IsClosed S₀ := hs₀.preimage continuous_subtype_val
+  have hS₁ : IsClosed S₁ := hs₁.preimage continuous_subtype_val
+  have hleft : ContinuousOn (forward e₀ e₁) S₀ := by
+    rw [continuousOn_iff_continuous_restrict]
+    let g : S₀ → (t₀ ∪ t₁ : Set Y) := fun x =>
+      ⟨e₀ ⟨x.1, x.2⟩, Or.inl (e₀ ⟨x.1, x.2⟩).2⟩
+    have hg : Continuous g := by
+      have hsource : Continuous (fun x : S₀ => (⟨x.1, x.2⟩ : s₀)) :=
+        (continuous_subtype_val.comp continuous_subtype_val).subtype_mk _
+      exact (continuous_subtype_val.comp (e₀.continuous.comp hsource)).subtype_mk _
+    apply hg.congr
+    intro x
+    apply Subtype.ext
+    exact (forward_eq_left e₀ e₁ x.1 x.2).symm
+  have hright : ContinuousOn (forward e₀ e₁) S₁ := by
+    rw [continuousOn_iff_continuous_restrict]
+    let g : S₁ → (t₀ ∪ t₁ : Set Y) := fun x =>
+      ⟨e₁ ⟨x.1, x.2⟩, Or.inr (e₁ ⟨x.1, x.2⟩).2⟩
+    have hg : Continuous g := by
+      have hsource : Continuous (fun x : S₁ => (⟨x.1, x.2⟩ : s₁)) :=
+        (continuous_subtype_val.comp continuous_subtype_val).subtype_mk _
+      exact (continuous_subtype_val.comp (e₁.continuous.comp hsource)).subtype_mk _
+    apply hg.congr
+    intro x
+    apply Subtype.ext
+    exact (forward_eq_right e₀ e₁ hcompat x.1 x.2).symm
+  rw [← continuousOn_univ]
+  have hcover : S₀ ∪ S₁ = Set.univ := by
+    ext x
+    simp only [S₀, S₁, mem_union, mem_preimage, mem_univ, iff_true]
+    exact x.2
+  rw [← hcover]
+  exact hleft.union_of_isClosed hright hS₀ hS₁
+
+private theorem continuous_backward
+    (ht₀ : IsClosed t₀) (ht₁ : IsClosed t₁)
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁)
+    (hcompat : ∀ y (hy₀ : y ∈ t₀) (hy₁ : y ∈ t₁),
+      (e₀.symm ⟨y, hy₀⟩ : X) = e₁.symm ⟨y, hy₁⟩) :
+    Continuous (backward e₀ e₁) := by
+  exact continuous_forward (s₀ := t₀) (s₁ := t₁)
+    (t₀ := s₀) (t₁ := s₁) ht₀ ht₁ e₀.symm e₁.symm
+    hcompat
+
+/-- Glue two compatible homeomorphisms across closed two-member covers. -/
+noncomputable def glue
+    (hs₀ : IsClosed s₀) (hs₁ : IsClosed s₁)
+    (ht₀ : IsClosed t₀) (ht₁ : IsClosed t₁)
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁)
+    (hforward : ∀ x (hx₀ : x ∈ s₀) (hx₁ : x ∈ s₁),
+      (e₀ ⟨x, hx₀⟩ : Y) = e₁ ⟨x, hx₁⟩)
+    (hbackward : ∀ y (hy₀ : y ∈ t₀) (hy₁ : y ∈ t₁),
+      (e₀.symm ⟨y, hy₀⟩ : X) = e₁.symm ⟨y, hy₁⟩) :
+    (s₀ ∪ s₁ : Set X) ≃ₜ (t₀ ∪ t₁ : Set Y) where
+  toFun := forward e₀ e₁
+  invFun := backward e₀ e₁
+  left_inv := by
+    intro x
+    apply Subtype.ext
+    rcases x.2 with hx₀ | hx₁
+    · have hy₀ : (forward e₀ e₁ x : Y) ∈ t₀ := by
+        rw [forward_eq_left e₀ e₁ x hx₀]
+        exact (e₀ ⟨x, hx₀⟩).2
+      rw [backward_eq_left e₀ e₁ _ hy₀]
+      have harg : (⟨forward e₀ e₁ x, hy₀⟩ : t₀) =
+          e₀ ⟨x, hx₀⟩ :=
+        Subtype.ext (forward_eq_left e₀ e₁ x hx₀)
+      rw [harg]
+      exact congrArg Subtype.val (e₀.symm_apply_apply ⟨x, hx₀⟩)
+    · have hy₁ : (forward e₀ e₁ x : Y) ∈ t₁ := by
+        rw [forward_eq_right e₀ e₁ hforward x hx₁]
+        exact (e₁ ⟨x, hx₁⟩).2
+      rw [backward_eq_right e₀ e₁ hbackward _ hy₁]
+      have harg : (⟨forward e₀ e₁ x, hy₁⟩ : t₁) =
+          e₁ ⟨x, hx₁⟩ :=
+        Subtype.ext (forward_eq_right e₀ e₁ hforward x hx₁)
+      rw [harg]
+      exact congrArg Subtype.val (e₁.symm_apply_apply ⟨x, hx₁⟩)
+  right_inv := by
+    intro y
+    apply Subtype.ext
+    rcases y.2 with hy₀ | hy₁
+    · have hx₀ : (backward e₀ e₁ y : X) ∈ s₀ := by
+        rw [backward_eq_left e₀ e₁ y hy₀]
+        exact (e₀.symm ⟨y, hy₀⟩).2
+      rw [forward_eq_left e₀ e₁ _ hx₀]
+      have harg : (⟨backward e₀ e₁ y, hx₀⟩ : s₀) =
+          e₀.symm ⟨y, hy₀⟩ :=
+        Subtype.ext (backward_eq_left e₀ e₁ y hy₀)
+      rw [harg]
+      exact congrArg Subtype.val (e₀.apply_symm_apply ⟨y, hy₀⟩)
+    · have hx₁ : (backward e₀ e₁ y : X) ∈ s₁ := by
+        rw [backward_eq_right e₀ e₁ hbackward y hy₁]
+        exact (e₁.symm ⟨y, hy₁⟩).2
+      rw [forward_eq_right e₀ e₁ hforward _ hx₁]
+      have harg : (⟨backward e₀ e₁ y, hx₁⟩ : s₁) =
+          e₁.symm ⟨y, hy₁⟩ :=
+        Subtype.ext (backward_eq_right e₀ e₁ hbackward y hy₁)
+      rw [harg]
+      exact congrArg Subtype.val (e₁.apply_symm_apply ⟨y, hy₁⟩)
+  continuous_toFun := continuous_forward hs₀ hs₁ e₀ e₁ hforward
+  continuous_invFun := continuous_backward ht₀ ht₁ e₀ e₁ hbackward
+
+theorem coe_glue_apply_of_mem_left
+    (hs₀ : IsClosed s₀) (hs₁ : IsClosed s₁)
+    (ht₀ : IsClosed t₀) (ht₁ : IsClosed t₁)
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁)
+    (hforward : ∀ x (hx₀ : x ∈ s₀) (hx₁ : x ∈ s₁),
+      (e₀ ⟨x, hx₀⟩ : Y) = e₁ ⟨x, hx₁⟩)
+    (hbackward : ∀ y (hy₀ : y ∈ t₀) (hy₁ : y ∈ t₁),
+      (e₀.symm ⟨y, hy₀⟩ : X) = e₁.symm ⟨y, hy₁⟩)
+    (x : (s₀ ∪ s₁ : Set X)) (hx : (x : X) ∈ s₀) :
+    (glue hs₀ hs₁ ht₀ ht₁ e₀ e₁ hforward hbackward x : Y) =
+      e₀ ⟨x, hx⟩ :=
+  forward_eq_left e₀ e₁ x hx
+
+theorem coe_glue_apply_of_mem_right
+    (hs₀ : IsClosed s₀) (hs₁ : IsClosed s₁)
+    (ht₀ : IsClosed t₀) (ht₁ : IsClosed t₁)
+    (e₀ : s₀ ≃ₜ t₀) (e₁ : s₁ ≃ₜ t₁)
+    (hforward : ∀ x (hx₀ : x ∈ s₀) (hx₁ : x ∈ s₁),
+      (e₀ ⟨x, hx₀⟩ : Y) = e₁ ⟨x, hx₁⟩)
+    (hbackward : ∀ y (hy₀ : y ∈ t₀) (hy₁ : y ∈ t₁),
+      (e₀.symm ⟨y, hy₀⟩ : X) = e₁.symm ⟨y, hy₁⟩)
+    (x : (s₀ ∪ s₁ : Set X)) (hx : (x : X) ∈ s₁) :
+    (glue hs₀ hs₁ ht₀ ht₁ e₀ e₁ hforward hbackward x : Y) =
+      e₁ ⟨x, hx⟩ :=
+  forward_eq_right e₀ e₁ hforward x hx
+
+end ClosedCoverHomeomorph
+
+end
+
+end Schoenflies

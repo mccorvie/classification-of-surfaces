@@ -1,0 +1,119 @@
+import Schoenflies.OpenControlledCrosscuts
+
+/-!
+# Controlled crosscuts avoiding finite earlier carriers
+
+The carrier of every finite broken line is compact.  Since it lies in the
+Jordan inside, it is disjoint from every boundary arc.  Consequently the
+arbitrary-open form of Moise 9.5 can choose each later crosscut in the
+complement of all earlier carriers.  This is the greedy step used to build a
+pairwise-disjoint finite level.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+namespace JordanCircle
+namespace AccessibleAngularArc
+
+variable {J : JordanCircle}
+
+/-- A prescribed-hair controlled join can avoid any closed set disjoint from
+the selected wild boundary arc. -/
+theorem exists_simple_inside_join_avoiding_closed
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right))
+    (hHairs : Disjoint HL.carrier HR.carrier)
+    (K : Set Plane) (hKclosed : IsClosed K)
+    (hKarc : Disjoint K A.curveArcPlane) :
+    ∃ (p q : Plane) (B : SimpleBrokenLine J.inside p q),
+      p ∈ HR.carrier ∧ q ∈ HL.carrier ∧
+        p ∈ J.inside ∧ q ∈ J.inside ∧
+        Disjoint B.data.segmentCarrier K := by
+  have hArcCompl : A.curveArcPlane ⊆ Kᶜ := by
+    intro x hxArc hxK
+    exact Set.disjoint_left.mp hKarc hxK hxArc
+  obtain ⟨epsilon, hepsilon, p, q, B, _hthick,
+      hpShort, hqShort, hpInside, hqInside⟩ :=
+    A.exists_simple_inside_join_between_prescribedHairs_in_open
+      HL HR hHairs hKclosed.isOpen_compl hArcCompl
+  let B' : SimpleBrokenLine J.inside p q := B.mono inter_subset_left
+  have hp : p ∈ HR.carrier :=
+    (HR.shortenToOpen_carrier_subset Metric.isOpen_thickening
+      (self_subset_thickening hepsilon _ A.right_mem_curveArcPlane)) hpShort
+  have hq : q ∈ HL.carrier :=
+    (HL.shortenToOpen_carrier_subset Metric.isOpen_thickening
+      (self_subset_thickening hepsilon _ A.left_mem_curveArcPlane)) hqShort
+  refine ⟨p, q, B', hp, hq, hpInside, hqInside, ?_⟩
+  rw [Set.disjoint_left]
+  intro x hxB hxK
+  have hxAmbient : x ∈ J.inside ∩ Kᶜ :=
+    JordanCircle.BrokenLineData.segmentCarrier_subset B.data hxB
+  exact hxAmbient.2 hxK
+
+/-- Simultaneously impose an arbitrary open neighborhood and a closed
+avoidance condition. -/
+theorem exists_simple_inside_join_in_open_avoiding_closed
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right))
+    (hHairs : Disjoint HL.carrier HR.carrier)
+    (V : Set Plane) (hVopen : IsOpen V)
+    (hArcV : A.curveArcPlane ⊆ V)
+    (K : Set Plane) (hKclosed : IsClosed K)
+    (hKarc : Disjoint K A.curveArcPlane) :
+    ∃ (p q : Plane)
+        (B : SimpleBrokenLine (J.inside ∩ (V ∩ Kᶜ)) p q),
+      p ∈ HR.carrier ∧ q ∈ HL.carrier ∧
+        p ∈ J.inside ∧ q ∈ J.inside ∧
+        Disjoint B.data.segmentCarrier K := by
+  let W : Set Plane := V ∩ Kᶜ
+  have hWopen : IsOpen W := hVopen.inter hKclosed.isOpen_compl
+  have hArcW : A.curveArcPlane ⊆ W := by
+    intro x hx
+    exact ⟨hArcV hx, fun hxK =>
+      Set.disjoint_left.mp hKarc hxK hx⟩
+  obtain ⟨epsilon, hepsilon, p, q, B, _hthick,
+      hpShort, hqShort, hpInside, hqInside⟩ :=
+    A.exists_simple_inside_join_between_prescribedHairs_in_open
+      HL HR hHairs hWopen hArcW
+  have hp : p ∈ HR.carrier :=
+    (HR.shortenToOpen_carrier_subset Metric.isOpen_thickening
+      (self_subset_thickening hepsilon _ A.right_mem_curveArcPlane)) hpShort
+  have hq : q ∈ HL.carrier :=
+    (HL.shortenToOpen_carrier_subset Metric.isOpen_thickening
+      (self_subset_thickening hepsilon _ A.left_mem_curveArcPlane)) hqShort
+  refine ⟨p, q, ?_, hp, hq, hpInside, hqInside, ?_⟩
+  · simpa only [W] using B
+  rw [Set.disjoint_left]
+  intro x hxB hxK
+  have hxAmbient : x ∈ J.inside ∩ W :=
+    JordanCircle.BrokenLineData.segmentCarrier_subset B.data hxB
+  exact hxAmbient.2.2 hxK
+
+/-- A finite line carrier is a closed avoidable set for the next greedy
+choice. -/
+theorem isClosed_segmentCarrier {p q : Plane}
+    (B : SimpleBrokenLine J.inside p q) :
+    IsClosed B.data.segmentCarrier :=
+  (JordanCircle.BrokenLineData.isCompact_segmentCarrier B.data).isClosed
+
+/-- Every finite inside line carrier is disjoint from every Jordan boundary
+subarc. -/
+theorem segmentCarrier_disjoint_curveArcPlane
+    (A : J.AccessibleAngularArc) {p q : Plane}
+    (B : SimpleBrokenLine J.inside p q) :
+    Disjoint B.data.segmentCarrier A.curveArcPlane := by
+  rw [Set.disjoint_left]
+  intro x hxB hxArc
+  exact (J.inside_subset_compl
+    (JordanCircle.BrokenLineData.segmentCarrier_subset B.data hxB))
+    (A.curveArcPlane_subset_carrier J hxArc)
+
+end AccessibleAngularArc
+end JordanCircle
+
+end Schoenflies

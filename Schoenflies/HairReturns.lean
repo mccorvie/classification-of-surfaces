@@ -1,0 +1,345 @@
+import Schoenflies.AuxiliaryJordan
+import Schoenflies.ControlledCrosscuts
+
+/-!
+# Polygonal return arcs with prescribed endpoint hairs
+
+Moise 9.5 must use the access hairs retained by the recursive construction,
+not freshly chosen hairs for each boundary arc.  This file constructs a
+simple polygonal return arc from two prescribed disjoint hairs.  Its carrier
+is kept inside the union of those hairs and one finite middle broken line;
+that tight carrier control implies that nontrivial endpoint tails of the
+resolved path still lie on the prescribed hairs.
+-/
+
+namespace Schoenflies
+
+open Metric Set Function
+open LeanEval.Topology.ClassificationOfSurfaces.Moise
+
+namespace JordanCircle
+namespace AccessibleAngularArc
+
+variable {J : JordanCircle}
+
+private abbrev MoiseBL :=
+  LeanEval.Topology.ClassificationOfSurfaces.Moise.BrokenLineData
+
+/-- A finite middle chain joining the tips of two prescribed access hairs. -/
+noncomputable def hairMiddleBrokenLine (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    MoiseBL J.inside :=
+  Classical.choose (BrokenLineData.exists_data_of_joined
+    (LeanEval.Topology.ClassificationOfSurfaces.Moise.IsPreconnected.joinedByBrokenLine
+      J.inside_isOpen J.inside_isConnected.isPreconnected
+      HL.tip_mem_inside HR.tip_mem_inside))
+
+theorem hairMiddleBrokenLine_start (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    (A.hairMiddleBrokenLine HL HR).start = HL.tip :=
+  (Classical.choose_spec (BrokenLineData.exists_data_of_joined
+    (LeanEval.Topology.ClassificationOfSurfaces.Moise.IsPreconnected.joinedByBrokenLine
+      J.inside_isOpen J.inside_isConnected.isPreconnected
+      HL.tip_mem_inside HR.tip_mem_inside))).1
+
+theorem hairMiddleBrokenLine_finish (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    (A.hairMiddleBrokenLine HL HR).finish = HR.tip :=
+  (Classical.choose_spec (BrokenLineData.exists_data_of_joined
+    (LeanEval.Topology.ClassificationOfSurfaces.Moise.IsPreconnected.joinedByBrokenLine
+      J.inside_isOpen J.inside_isConnected.isPreconnected
+      HL.tip_mem_inside HR.tip_mem_inside))).2
+
+/-- The tight finite carrier used before loop erasure. -/
+noncomputable def hairReturnSet (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) : Set Plane :=
+  HL.carrier ∪ (A.hairMiddleBrokenLine HL HR).segmentCarrier ∪ HR.carrier
+
+theorem joinedByBrokenLine_hairReturnSet (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    JoinedByBrokenLine (A.hairReturnSet HL HR)
+      (J.curvePoint A.left) (J.curvePoint A.right) := by
+  let B := A.hairMiddleBrokenLine HL HR
+  have hleft : JoinedByBrokenLine (A.hairReturnSet HL HR)
+      (J.curvePoint A.left) HL.tip := by
+    apply JoinedByBrokenLine.of_segment
+    intro x hx
+    exact Or.inl (Or.inl hx)
+  have hmiddle : JoinedByBrokenLine (A.hairReturnSet HL HR)
+      HL.tip HR.tip := by
+    refine ⟨B.n, B.vertex, A.hairMiddleBrokenLine_start HL HR,
+      A.hairMiddleBrokenLine_finish HL HR, ?_⟩
+    intro i x hx
+    exact Or.inl (Or.inr (Set.mem_iUnion_of_mem i hx))
+  have hright : JoinedByBrokenLine (A.hairReturnSet HL HR)
+      HR.tip (J.curvePoint A.right) := by
+    apply JoinedByBrokenLine.of_segment
+    rw [segment_symm]
+    intro x hx
+    exact Or.inr hx
+  exact (hleft.trans hmiddle).trans hright
+
+/-- Loop erase the tight prescribed-hair chain. -/
+noncomputable def hairReturnBrokenLine (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    SimpleBrokenLine (A.hairReturnSet HL HR)
+      (J.curvePoint A.left) (J.curvePoint A.right) :=
+  simpleBrokenLineOfJoined (A.joinedByBrokenLine_hairReturnSet HL HR)
+
+/-- Orient the prescribed-hair return from the right boundary endpoint to
+the left boundary endpoint, matching the Chapter 9 separator convention. -/
+noncomputable def hairReturnPath (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    Path (J.curvePoint A.right : Plane) (J.curvePoint A.left : Plane) :=
+  (A.hairReturnBrokenLine HL HR).toPath A.endpoint_ne |>.symm
+
+theorem hairReturnPath_injective (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    Injective (A.hairReturnPath HL HR) := by
+  intro s t hst
+  apply unitInterval.symm_bijective.injective
+  exact (A.hairReturnBrokenLine HL HR).toPath_injective A.endpoint_ne hst
+
+theorem range_hairReturnPath_subset (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    range (A.hairReturnPath HL HR) ⊆ A.hairReturnSet HL HR := by
+  rw [hairReturnPath, Path.symm_range]
+  exact (A.hairReturnBrokenLine HL HR).range_toPath_subset A.endpoint_ne
+
+/-- The resolved finite carrier of the prescribed-hair return path. -/
+noncomputable def hairReturnCarrierBrokenLine
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    SimpleBrokenLine (A.hairReturnSet HL HR)
+      (J.curvePoint A.left : Plane) (J.curvePoint A.right : Plane) :=
+  (A.hairReturnBrokenLine HL HR).carrierBrokenLine A.endpoint_ne
+
+theorem segmentCarrier_hairReturnCarrierBrokenLine
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    (A.hairReturnCarrierBrokenLine HL HR).data.segmentCarrier =
+      range (A.hairReturnPath HL HR) := by
+  rw [hairReturnCarrierBrokenLine,
+    (A.hairReturnBrokenLine HL HR).segmentCarrier_carrierBrokenLine
+      A.endpoint_ne,
+    hairReturnPath, Path.symm_range]
+
+theorem hairMiddle_segmentCarrier_subset_inside
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    (A.hairMiddleBrokenLine HL HR).segmentCarrier ⊆ J.inside := by
+  intro x hx
+  rw [BrokenLineData.segmentCarrier, mem_iUnion] at hx
+  obtain ⟨i, hi⟩ := hx
+  exact (A.hairMiddleBrokenLine HL HR).segment_subset i hi
+
+/-- The prescribed-hair construction is a valid input to the same separator
+pipeline as the original arbitrary inside crosscut. -/
+noncomputable def prescribedInsideReturnArc
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    A.InsideReturnArc where
+  permittedSet := A.hairReturnSet HL HR
+  path := A.hairReturnPath HL HR
+  sourceBrokenLine := A.hairReturnBrokenLine HL HR
+  path_injective := A.hairReturnPath_injective HL HR
+  segmentCarrier_eq_range :=
+    A.segmentCarrier_hairReturnCarrierBrokenLine HL HR
+  range_subset_insideCrosscutSet := by
+    intro x hx
+    rcases A.range_hairReturnPath_subset HL HR hx with
+      (hxLeft | hxMiddle) | hxRight
+    · rcases HL.carrier_subset hxLeft with hxInside | hxBase
+      · exact Or.inl hxInside
+      · exact Or.inr (Or.inl (mem_singleton_iff.mp hxBase))
+    · exact Or.inl (A.hairMiddle_segmentCarrier_subset_inside HL HR hxMiddle)
+    · rcases HR.carrier_subset hxRight with hxInside | hxBase
+      · exact Or.inl hxInside
+      · exact Or.inr (Or.inr hxBase)
+
+@[simp] theorem prescribedInsideReturnArc_path
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    (A.prescribedInsideReturnArc HL HR).path = A.hairReturnPath HL HR := rfl
+
+@[simp] theorem prescribedInsideReturnArc_carrierBrokenLine
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    (A.prescribedInsideReturnArc HL HR).carrierBrokenLine =
+      A.hairReturnCarrierBrokenLine HL HR := rfl
+
+/-- The prescribed-hair return meets the original Jordan carrier only at the
+two boundary endpoints. -/
+theorem range_hairReturnPath_inter_carrier
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right)) :
+    range (A.hairReturnPath HL HR) ∩ J.carrier =
+      {(J.curvePoint A.left : Plane), (J.curvePoint A.right : Plane)} := by
+  ext x
+  constructor
+  · rintro ⟨hxPath, hxCarrier⟩
+    rcases A.range_hairReturnPath_subset HL HR hxPath with
+      (hxLeft | hxMiddle) | hxRight
+    · have hx := HL.carrier_inter_curve (J.curvePoint A.left).2
+      have : x ∈ HL.carrier ∩ J.carrier := ⟨hxLeft, hxCarrier⟩
+      rw [hx] at this
+      exact Or.inl (mem_singleton_iff.mp this)
+    · exact False.elim <| (J.inside_subset_compl
+        (A.hairMiddle_segmentCarrier_subset_inside HL HR hxMiddle)) hxCarrier
+    · have hx := HR.carrier_inter_curve (J.curvePoint A.right).2
+      have : x ∈ HR.carrier ∩ J.carrier := ⟨hxRight, hxCarrier⟩
+      rw [hx] at this
+      exact Or.inr (mem_singleton_iff.mpr (mem_singleton_iff.mp this))
+  · intro hx
+    rcases hx with hleft | hright
+    · have hx : x = (J.curvePoint A.left : Plane) := hleft
+      subst x
+      exact ⟨Path.target_mem_range (A.hairReturnPath HL HR),
+        (J.curvePoint A.left).2⟩
+    · have hx : x = (J.curvePoint A.right : Plane) :=
+        mem_singleton_iff.mp hright
+      subst x
+      exact ⟨Path.source_mem_range (A.hairReturnPath HL HR),
+        (J.curvePoint A.right).2⟩
+
+/-- A nontrivial initial part of the loop-erased return still runs along the
+prescribed right hair.  Compact separation from the left hair and the middle
+broken line makes this independent of the details of loop erasure. -/
+theorem exists_initial_hairReturnPath_tail
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right))
+    (hdisjoint : Disjoint HL.carrier HR.carrier) :
+    ∃ s : unitInterval, (⊥ : unitInterval) < s ∧
+      A.hairReturnPath HL HR '' Icc (⊥ : unitInterval) s ⊆ HR.carrier := by
+  let K : Set Plane :=
+    HL.carrier ∪ (A.hairMiddleBrokenLine HL HR).segmentCarrier
+  have hKcompact : IsCompact K :=
+    HL.isCompact_carrier.union
+      (JordanCircle.BrokenLineData.isCompact_segmentCarrier
+        (A.hairMiddleBrokenLine HL HR))
+  have hrightNotK : (J.curvePoint A.right : Plane) ∉ K := by
+    rintro (hleft | hmiddle)
+    · exact Set.disjoint_left.mp hdisjoint hleft HR.base_mem
+    · exact (J.inside_subset_compl
+        (A.hairMiddle_segmentCarrier_subset_inside HL HR hmiddle))
+        (J.curvePoint A.right).2
+  have hopen : IsOpen Kᶜ := hKcompact.isClosed.isOpen_compl
+  have hpreOpen : IsOpen ((A.hairReturnPath HL HR) ⁻¹' Kᶜ) :=
+    hopen.preimage (A.hairReturnPath HL HR).continuous
+  have hsource : (⊥ : unitInterval) ∈
+      (A.hairReturnPath HL HR) ⁻¹' Kᶜ := by
+    change A.hairReturnPath HL HR (⊥ : unitInterval) ∉ K
+    rw [show (⊥ : unitInterval) = 0 by rfl,
+      (A.hairReturnPath HL HR).source]
+    exact hrightNotK
+  obtain ⟨delta, hdelta, hball⟩ :=
+    Metric.isOpen_iff.mp hpreOpen (⊥ : unitInterval) hsource
+  let eta : ℝ := min (delta / 2) (1 / 2)
+  have hetaPos : 0 < eta := by
+    dsimp [eta]
+    exact lt_min (half_pos hdelta) (by norm_num)
+  have hetaDelta : eta < delta := by
+    calc
+      eta ≤ delta / 2 := min_le_left _ _
+      _ < delta := half_lt_self hdelta
+  have hetaOne : eta < 1 :=
+    (min_le_right _ _).trans_lt (by norm_num)
+  let s : unitInterval := ⟨eta, hetaPos.le, hetaOne.le⟩
+  refine ⟨s, ?_, ?_⟩
+  · change (0 : ℝ) < eta
+    exact hetaPos
+  · rintro x ⟨u, hu, rfl⟩
+    have hdist : dist u (⊥ : unitInterval) < delta := by
+      change |(u : ℝ) - 0| < delta
+      rw [sub_zero, abs_of_nonneg u.2.1]
+      have huS : (u : ℝ) ≤ (s : ℝ) := hu.2
+      have huEta : (u : ℝ) ≤ eta := by simpa [s] using huS
+      exact huEta.trans_lt hetaDelta
+    have huOutside : A.hairReturnPath HL HR u ∈ Kᶜ :=
+      hball (by simpa only [mem_ball] using hdist)
+    rcases A.range_hairReturnPath_subset HL HR ⟨u, rfl⟩ with
+      (hleft | hmiddle) | hright
+    · exact False.elim (huOutside (Or.inl hleft))
+    · exact False.elim (huOutside (Or.inr hmiddle))
+    · exact hright
+
+/-- A nontrivial final part of the loop-erased return still runs along the
+prescribed left hair. -/
+theorem exists_final_hairReturnPath_tail
+    (A : J.AccessibleAngularArc)
+    (HL : J.InsideAccessHair (J.curvePoint A.left))
+    (HR : J.InsideAccessHair (J.curvePoint A.right))
+    (hdisjoint : Disjoint HL.carrier HR.carrier) :
+    ∃ t : unitInterval, t < (⊤ : unitInterval) ∧
+      A.hairReturnPath HL HR '' Icc t (⊤ : unitInterval) ⊆ HL.carrier := by
+  let K : Set Plane :=
+    (A.hairMiddleBrokenLine HL HR).segmentCarrier ∪ HR.carrier
+  have hKcompact : IsCompact K :=
+    (JordanCircle.BrokenLineData.isCompact_segmentCarrier
+      (A.hairMiddleBrokenLine HL HR)).union HR.isCompact_carrier
+  have hleftNotK : (J.curvePoint A.left : Plane) ∉ K := by
+    rintro (hmiddle | hright)
+    · exact (J.inside_subset_compl
+        (A.hairMiddle_segmentCarrier_subset_inside HL HR hmiddle))
+        (J.curvePoint A.left).2
+    · exact Set.disjoint_left.mp hdisjoint HL.base_mem hright
+  have hopen : IsOpen Kᶜ := hKcompact.isClosed.isOpen_compl
+  have hpreOpen : IsOpen ((A.hairReturnPath HL HR) ⁻¹' Kᶜ) :=
+    hopen.preimage (A.hairReturnPath HL HR).continuous
+  have htarget : (⊤ : unitInterval) ∈
+      (A.hairReturnPath HL HR) ⁻¹' Kᶜ := by
+    change A.hairReturnPath HL HR (⊤ : unitInterval) ∉ K
+    rw [show (⊤ : unitInterval) = 1 by rfl,
+      (A.hairReturnPath HL HR).target]
+    exact hleftNotK
+  obtain ⟨delta, hdelta, hball⟩ :=
+    Metric.isOpen_iff.mp hpreOpen (⊤ : unitInterval) htarget
+  let eta : ℝ := min (delta / 2) (1 / 2)
+  have hetaPos : 0 < eta := by
+    dsimp [eta]
+    exact lt_min (half_pos hdelta) (by norm_num)
+  have hetaDelta : eta < delta := by
+    calc
+      eta ≤ delta / 2 := min_le_left _ _
+      _ < delta := half_lt_self hdelta
+  have hetaOne : eta < 1 :=
+    (min_le_right _ _).trans_lt (by norm_num)
+  let t : unitInterval := ⟨1 - eta, by linarith, by linarith⟩
+  refine ⟨t, ?_, ?_⟩
+  · change 1 - eta < (1 : ℝ)
+    linarith
+  · rintro x ⟨u, hu, rfl⟩
+    have hdist : dist u (⊤ : unitInterval) < delta := by
+      change |(u : ℝ) - 1| < delta
+      rw [abs_of_nonpos (sub_nonpos.mpr u.2.2)]
+      have htU : (t : ℝ) ≤ (u : ℝ) := hu.1
+      have huEta : 1 - eta ≤ (u : ℝ) := by simpa [t] using htU
+      linarith
+    have huOutside : A.hairReturnPath HL HR u ∈ Kᶜ :=
+      hball (by simpa only [mem_ball] using hdist)
+    rcases A.range_hairReturnPath_subset HL HR ⟨u, rfl⟩ with
+      (hleft | hmiddle) | hright
+    · exact hleft
+    · exact False.elim (huOutside (Or.inl hmiddle))
+    · exact False.elim (huOutside (Or.inr hright))
+
+end AccessibleAngularArc
+end JordanCircle
+end Schoenflies
