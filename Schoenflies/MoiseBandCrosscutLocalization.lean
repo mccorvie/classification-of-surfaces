@@ -1,5 +1,6 @@
 import Schoenflies.MoiseBandChildCarrier
 import Schoenflies.CollarBandSegments
+import Schoenflies.MarkedMoiseBandBoundaries
 
 /-!
 # Coarse-window localization of finer crosscuts on a Moise cell
@@ -168,6 +169,71 @@ theorem crosscut_block_near_of_mem_moiseBandCarrier
         have := congrArg (prevLevelAddress L.next.level) hlm
         simpa using this.symm
       exact Or.inr (Or.inl (hc ▸ L.rightmostAddress_mem_addresses a))
+
+/-- **Adjacent-window agreement of consecutive raw parametrizations.**  At
+every point of the shared polygon between two consecutive Moise bands, the
+raw outer restriction of the earlier band and the raw inner restriction of
+the later band land in scaled master windows that are equal or cyclically
+adjacent at the earlier level. -/
+theorem rawBoundary_mem_masterArcImage_tripled
+    (L₁ : RecursiveInsideCollarStep.Later (L.G) L.next.one_le_level)
+    (m : ℕ)
+    (houtward₀ : ∀ c : LevelAddress n,
+      (F.synchronizedPolygonalCircle hn).closedRegion ∩
+          (L.moiseBandPolygonalCircle c).closedRegion =
+        range (F.synchronizedCrosscutPath c))
+    (houtward₁ : ∀ c : LevelAddress L.next.level,
+      ((L.G).synchronizedPolygonalCircle
+            L.next.one_le_level).closedRegion ∩
+          (L₁.moiseBandPolygonalCircle c).closedRegion =
+        range ((L.G).synchronizedCrosscutPath c))
+    (x : ((L.G).synchronizedPolygonalCircle L.next.one_le_level).carrier) :
+    ∃ a : LevelAddress n,
+      (L.markedMoiseRawOuterBoundaryMap m houtward₀ x : Plane) ∈
+        I.masterArcImage (m + 1) a ∧
+      (L₁.markedMoiseRawInnerBoundaryMap (m + 1) houtward₁ x : Plane) ∈
+        I.masterArcImage (m + 1) (prevLevelAddress n a) ∪
+          (I.masterArcImage (m + 1) a ∪
+            I.masterArcImage (m + 1) (nextLevelAddress n a)) := by
+  have hxCells := L.childCircle_carrier_subset_iUnion_moiseBandCarrier x.2
+  obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hxCells
+  have hxCellCarrier : (x : Plane) ∈
+      (L.moiseBandPolygonalCircle a).carrier := by
+    rw [L.moiseBandPolygonalCircle_carrier]
+    exact hxa
+  refine ⟨a, ?_, ?_⟩
+  · exact I.range_indexedTargetBoundarySplit_first_subset_masterArcImage
+      (m + 1) a
+      (L.markedMoiseRawOuterBoundaryMap_mem_targetArc m houtward₀ a
+        x hxCellCarrier)
+  · have hxUnion : (x : Plane) ∈
+        ⋃ c : LevelAddress L.next.level,
+          range ((L.G).synchronizedCrosscutPath c) := by
+      rw [← (L.G).carrier_synchronizedPolygonalCircle L.next.one_le_level]
+      exact x.2
+    obtain ⟨c, t, ht⟩ := Set.mem_iUnion.mp hxUnion
+    have hxEq : x = ⟨(L.G).synchronizedCrosscutPath c t, by
+        rw [ht]
+        exact x.2⟩ :=
+      Subtype.ext ht.symm
+    have hvmem : (L₁.markedMoiseRawInnerBoundaryMap (m + 1) houtward₁ x :
+        Plane) ∈ range (I.indexedTargetBoundarySplit (m + 1) c).first := by
+      rw [hxEq, L₁.markedMoiseRawInnerBoundaryMap_apply_crosscut (m + 1)
+        houtward₁ c t]
+      exact ⟨t, rfl⟩
+    have hxSet : (x : Plane) ∈ (L.G).synchronizedCrosscutSet c := by
+      rw [← (L.G).range_synchronizedCrosscutPath_eq_set c]
+      exact ⟨t, ht⟩
+    have hcmem := I.range_indexedTargetBoundarySplit_first_subset_masterArcImage
+      (m + 1) c hvmem
+    rcases L.crosscut_block_near_of_mem_moiseBandCarrier c a hxSet hxa
+      with hc | hc | hc
+    · exact Or.inl (I.masterArcImage_mono (m + 1)
+        (L.levelArc_curveArcPlane_subset_of_mem_addresses hc) hcmem)
+    · exact Or.inr (Or.inl (I.masterArcImage_mono (m + 1)
+        (L.levelArc_curveArcPlane_subset_of_mem_addresses hc) hcmem))
+    · exact Or.inr (Or.inr (I.masterArcImage_mono (m + 1)
+        (L.levelArc_curveArcPlane_subset_of_mem_addresses hc) hcmem))
 
 end RecursiveInsideCollarStep.Later
 
