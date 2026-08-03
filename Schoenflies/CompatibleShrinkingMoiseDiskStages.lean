@@ -13,7 +13,7 @@ earlier closed polygonal disk.
 
 namespace Schoenflies
 
-open Set
+open Metric Set
 open LeanEval.Topology.ClassificationOfSurfaces.Moise
 open StandardPolygonalCollars
 
@@ -251,6 +251,33 @@ theorem shrinkingCompatibleClosedDiskHomeomorphStage_symm_apply_of_le
       (I.shrinkingCompatibleClosedDiskHomeomorphStage m).homeomorph.apply_symm_apply y
   rw [← hmap,
     (I.shrinkingCompatibleClosedDiskHomeomorphStage n).homeomorph.symm_apply_apply]
+
+private theorem le_shrinkingCompatibleBandIndex (n : ℕ) :
+    n ≤ I.shrinkingCompatibleBandIndex n := by
+  induction n with
+  | zero => exact Nat.zero_le _
+  | succ n ih =>
+      simpa only [shrinkingCompatibleBandIndex] using Nat.succ_le_succ ih
+
+/-- Every retained source disk stays inside the original Jordan region. -/
+theorem shrinkingCompatibleStageSourceDisk_closedRegion_subset_inside
+    (n : ℕ) :
+    (I.shrinkingCompatibleStageSourceDisk n).closedRegion ⊆ J.inside :=
+  I.shrinkingInsideCollarStage_closedRegion_subset_inside _
+
+/-- The retained source carriers eventually lie in every prescribed closed
+neighborhood of the Jordan curve.  This is the metric half of the source
+exhaustion argument. -/
+theorem eventually_shrinkingCompatibleStageSourceDisk_carrier_subset_cthickening
+    {δ : ℝ} (hδ : 0 < δ) :
+    ∃ N : ℕ, ∀ n : ℕ, N ≤ n →
+      (I.shrinkingCompatibleStageSourceDisk n).carrier ⊆
+        cthickening δ J.carrier := by
+  obtain ⟨N, hN⟩ :=
+    I.eventually_shrinkingInsideCollarStage_next_carrier_subset_cthickening hδ
+  refine ⟨N, fun n hn => ?_⟩
+  exact hN (I.shrinkingCompatibleBandIndex n)
+    (hn.trans (I.le_shrinkingCompatibleBandIndex n))
 
 end JordanCircle.InitialAngularArcs
 
