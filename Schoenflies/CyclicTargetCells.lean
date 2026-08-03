@@ -300,6 +300,39 @@ theorem range_cyclicTargetAttachmentPresentation_exposed
     rw [Path.symm_range]
   · exact False.elim (h (I.cyclicTargetFirstAlternative_of_one_le m hn a))
 
+/-- The plane image of one master boundary window at one radial scale. -/
+def masterArcImage (m : ℕ) {k : ℕ} (a : LevelAddress k) : Set Plane :=
+  (fun z : J.carrier =>
+      homothetyPoint (radius m) (boundaryPoint J z)) ''
+    {z : J.carrier | (z : Plane) ∈ (I.levelArc a).curveArcPlane}
+
+theorem masterArcImage_mono (m : ℕ) {k l : ℕ}
+    {a : LevelAddress k} {b : LevelAddress l}
+    (hab : (I.levelArc a).curveArcPlane ⊆ (I.levelArc b).curveArcPlane) :
+    I.masterArcImage m a ⊆ I.masterArcImage m b :=
+  Set.image_mono fun _ hz => hab hz
+
+/-- Every point of a canonically transported target arc is the scaled master
+image of a point of the corresponding Jordan window. -/
+theorem range_indexedTargetBoundarySplit_first_subset_masterArcImage
+    (m : ℕ) {k : ℕ} (a : LevelAddress k) :
+    range (I.indexedTargetBoundarySplit m a).first ⊆
+      I.masterArcImage m a := by
+  rintro y ⟨t, rfl⟩
+  have hmem : (I.levelBoundarySplit a).first t ∈
+      (I.levelArc a).curveArcPlane := by
+    rw [← I.range_levelBoundarySplit_first a]
+    exact ⟨t, rfl⟩
+  refine ⟨⟨(I.levelBoundarySplit a).first t,
+    (I.levelBoundarySplit a).first_range_subset_carrier ⟨t, rfl⟩⟩,
+    hmem, ?_⟩
+  rw [show ((I.indexedTargetBoundarySplit m a).first t : Plane) =
+      (jordanToDiskBoundaryHomeomorph J m
+        ⟨(I.levelBoundarySplit a).first t,
+          (I.levelBoundarySplit a).first_range_subset_carrier
+            ⟨t, rfl⟩⟩ : Plane) from rfl,
+    jordanToDiskBoundaryHomeomorph_apply]
+
 end JordanCircle.InitialAngularArcs
 
 end
