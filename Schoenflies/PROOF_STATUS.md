@@ -170,14 +170,18 @@ infinite boundary passage remains.
 
 ### Tasks remaining for the full theorem
 
-1. **Prove source exhaustion for the shrinking sequence.**  Show every point
-   of `J.inside` lies in the interior of some retained source disk.  The
-   planned proof uses path connectedness of `J.inside`, convergence of the
-   polygonal carriers to `J.carrier`, and eventual strict nesting.
-2. **Build the shrinking-sequence open direct limit.**  Reuse the proof shape
-   of `CompatibleInteriorHomeomorphism.lean` with the new finite stages and
-   prove a homeomorphism from `J.inside` to the open standard triangle.
-3. **Prove marked boundary control survives compatibility corrections.**  A
+1. **DONE (2026-08-02, `ShrinkingSourceExhaustion.lean`).**  Source
+   exhaustion for the shrinking sequence: every point of `J.inside` lies in
+   the interior of some (eventually every) retained source disk.
+2. **DONE (2026-08-02, `ShrinkingInteriorHomeomorphism.lean`).**  The
+   shrinking-sequence open direct limit `shrinkingInsideHomeomorph :
+   J.inside ≃ₜ interior triangleBody`, clean axioms.
+3. **Prove marked boundary control survives compatibility corrections.**
+   The target-side half is DONE (2026-08-02, `RadialSectorTransport.lean`):
+   the shell adjustment keeps homothety scale and applies one master angular
+   map (`masterShellAdjustment`) at every radius.  Remaining: the source-side
+   arc-preservation of the stage mismatches and the drift-limit layer, per
+   the §5 design.  A
    corrected shell map must still send points in a source cell assigned to a
    level arc into a target sector whose diameter tends to zero at the
    corresponding parameter point.
