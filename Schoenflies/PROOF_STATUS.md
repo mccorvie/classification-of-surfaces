@@ -388,11 +388,32 @@ polygon (`childDisk L_n = parentDisk L_{n+1}`); the `Q_n` factor uses
 `.second` complementary arcs is harmless, and no mark-fixing is required.
 `E`-into splits as:
 
-- (b1) source hierarchy: each level-`λ(n+1)` synchronized crosscut range on
-  the shared polygon lies in the child edge (`childCarrier ∩ old cell
-  carrier`) of the level-`λ(n)` cell whose window contains its address.
-  New marks refine old seam points — look in `MoiseBandCellParentSeams.lean`
-  / `HierarchicalLevelHairs.lean` / `MoiseBandChildCarrier.lean`.
+- (b1) source hierarchy, VERIFIED PROOF SHAPE (2026-08-02 late): prove the
+  membership form — `y ∈ range (L.next.family.forgetObstacle.
+  synchronizedCrosscutPath c) → y ∈ L.moiseBandCarrier a → c ∈ L.addresses
+  (prevLevelAddress n a) ∨ c ∈ L.addresses a ∨ c ∈ L.addresses
+  (nextLevelAddress n a)`.  Case on the four sides of `moiseBandCarrier a`
+  (`moiseBandPolygonalCircle_carrier`, MoiseBandCells:2498):
+  parent-crosscut side impossible (crosscut range ⊆ `childDisk.carrier`,
+  disjoint from `parentDisk.closedRegion` by `L.next.carrier_disjoint`);
+  seam sides meet the child polygon only at the inner seam point
+  (`adjacentMoiseBandSideSeam_inter_childCarrier`), which is the trimmed
+  point interior to the crosscut of `rightmostAddress`, forcing
+  `c = rightmostAddress a` (crosscut pairwise-intersection control from
+  `ExactSynchronizedCrosscutRanges.lean`); child side: `childMoiseCarrier a`
+  pieces are `reversedTrimmedBlock b ⊆ crosscut b` for `b ∈ L.addresses a`
+  and junctions ⊆ crosscut `b` ∪ crosscut `next b` (see
+  `childMoiseCarrier_subset_childCarrier` proof), and crosscut/crosscut
+  intersections are shared endpoints, so `c` is in the block of `a` or a
+  cyclic neighbor.  Block machinery: `CollarBandSegments.lean` (`addresses`,
+  `addresses_disjoint_of_ne`, `addresses_head/getLast`,
+  `nextLevelAddress_rightmostAddress`), `HierarchicalCollarStages.lean`
+  (`leftmostAddress/rightmostAddress`, endpoint-preservation simps).
+  Arc nesting then comes from
+  `levelArc_curveArcPlane_subset_of_mem_descendantAddresses`
+  (HierarchicalLevelHairs:208) transported through the `addresses` cast
+  (`levelArc_cast`), and master-arc nesting by `boundaryPoint` image
+  monotonicity.
 - (b2) outer edge formula (set level): on the child edge of cell `a`,
   `markedMoiseRawOuterBoundaryMap` lands in
   `range ((indexedTargetBoundarySplit (m+1) a).first)`.  Proof: the child
