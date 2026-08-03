@@ -1,5 +1,6 @@
 import Schoenflies.ShortCircleIsotopy
 import Schoenflies.AngularDriftBounds
+import Schoenflies.RadialSectorTransport
 
 /-!
 # A boundary correction damped across one standard shell
@@ -41,6 +42,21 @@ theorem circleHomeoSphere_neg (z : Circle) :
   apply Subtype.ext
   simp only [JordanCurve.Arcs.circleHomeoSphere_coe, antipode_val]
   exact JordanCurve.Arcs.complexLIE.map_neg (z : ℂ)
+
+/-- The fixed complex-to-real circle bridge preserves chord distance. -/
+theorem dist_circleHomeoSphere (z w : Circle) :
+    dist (JordanCurve.Arcs.circleHomeoSphere z)
+        (JordanCurve.Arcs.circleHomeoSphere w) = dist z w := by
+  calc
+    dist (JordanCurve.Arcs.circleHomeoSphere z)
+        (JordanCurve.Arcs.circleHomeoSphere w) =
+        dist (JordanCurve.Arcs.complexLIE z)
+          (JordanCurve.Arcs.complexLIE w) := Subtype.dist_eq _ _
+    _ = dist (z : ℂ) (w : ℂ) := by
+      rw [dist_eq_norm, dist_eq_norm,
+        ← JordanCurve.Arcs.complexLIE.map_sub,
+        JordanCurve.Arcs.complexLIE.norm_map]
+    _ = dist z w := (Subtype.dist_eq _ _).symm
 
 theorem toCircle_ne_neg
     (q : sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1)
@@ -104,6 +120,31 @@ theorem continuous_interpolation_apply
     (toCircle_ne_neg q hshort)]
   rw [Circle.shortInterpolation_one]
   simp
+
+/-- Quantitative control survives transport from the complex circle to the
+Euclidean unit sphere. -/
+theorem dist_interpolation_self_le
+    (q : sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1)
+    (hshort : ∀ u, q u ≠ antipode u) (t : unitInterval)
+    (u : sphere (0 : Plane) 1) :
+    dist (interpolation q hshort t u) u ≤
+      Real.pi / 2 * dist (q u) u := by
+  let z := JordanCurve.Arcs.circleHomeoSphere.symm u
+  have hu : JordanCurve.Arcs.circleHomeoSphere z = u := by
+    exact JordanCurve.Arcs.circleHomeoSphere.apply_symm_apply u
+  have hq :
+      JordanCurve.Arcs.circleHomeoSphere (toCircle q z) = q u := by
+    simp only [toCircle, Homeomorph.trans_apply,
+      Homeomorph.apply_symm_apply, hu]
+  calc
+    dist (interpolation q hshort t u) u =
+        dist (Circle.shortInterpolationMap (toCircle q) t z) z := by
+      rw [interpolation_apply, ← hu, dist_circleHomeoSphere]
+      simp only [Homeomorph.symm_apply_apply]
+    _ ≤ Real.pi / 2 * dist (toCircle q z) z :=
+      Circle.dist_shortInterpolationMap_self_le (toCircle q) t z
+    _ = Real.pi / 2 * dist (q u) u := by
+      rw [← dist_circleHomeoSphere, hq, hu]
 
 theorem dist_antipode_self (u : sphere (0 : Plane) 1) :
     dist (antipode u) u = 2 := by
@@ -446,6 +487,34 @@ def gaugeToAngular (n : ℕ) :
       (diskBoundaryHomeomorph n).symm.trans
         JordanCircle.InitialAngularArcs.sphereToMasterHomeomorph.symm
 
+/-- The inverse angular gauge is independent of the shell level: it sends a
+master angular coordinate to the Euclidean gauge direction of the
+corresponding point of the standard triangle. -/
+theorem gaugeToAngular_symm_apply (n : ℕ)
+    (u : sphere (0 : Plane) 1) :
+    ((gaugeToAngular n).symm u : Plane) =
+      triangleToBall
+        (JordanCircle.InitialAngularArcs.sphereToMasterHomeomorph u : Plane) := by
+  let p : standardTriangleCircle.carrier :=
+    JordanCircle.InitialAngularArcs.sphereToMasterHomeomorph u
+  let v : sphere (0 : Plane) 1 :=
+    ⟨triangleToBall (p : Plane), triangleToBall_mem_unitSphere p.2⟩
+  have hscaled :
+      RadialBoundaryAdjustment.sphereScale (radius n) (radius_pos n) v =
+        diskCarrierToSphere n (diskBoundaryHomeomorph n p) := by
+    apply Subtype.ext
+    simp only [RadialBoundaryAdjustment.sphereScale_apply,
+      diskCarrierToSphere_apply, diskBoundaryHomeomorph_apply, v]
+    rw [triangleToBall_homothetyPoint (radius_pos n).le]
+  have hv : gaugeToAngular n v = u := by
+    rw [gaugeToAngular]
+    simp only [Homeomorph.trans_apply]
+    rw [hscaled]
+    simp [p]
+  have hinv : (gaugeToAngular n).symm u = v := by
+    rw [← hv, Homeomorph.symm_apply_apply]
+  exact congrArg Subtype.val hinv
+
 /-- Polar coordinates on a standard polygonal shell whose angular component
 is exactly the master coordinate used by the boundary-drift theorem. -/
 def shellToAngularPolar (n : ℕ) :
@@ -455,6 +524,33 @@ def shellToAngularPolar (n : ℕ) :
     (DampedAnnulus.polarHomeomorph
       (radius n) (radius (n + 1)) (radius_pos n) (radius_lt_succ n).le).trans <|
       (gaugeToAngular n).prodCongr (Homeomorph.refl _)
+
+/-- Inverting master polar coordinates is the expected homothetic point of
+the standard triangle. -/
+theorem shellToAngularPolar_symm_apply (n : ℕ)
+    (p : sphere (0 : Plane) 1 × Icc (radius n) (radius (n + 1))) :
+    ((shellToAngularPolar n).symm p : Plane) =
+      homothetyPoint (p.2 : ℝ)
+        (JordanCircle.InitialAngularArcs.sphereToMasterHomeomorph p.1 : Plane) := by
+  rw [shellToAngularPolar]
+  simp only [Homeomorph.symm_trans_apply]
+  have hprod :
+      ((gaugeToAngular n).prodCongr
+          (Homeomorph.refl (Icc (radius n) (radius (n + 1))))).symm p =
+        ((gaugeToAngular n).symm p.1, p.2) := by
+    rw [Homeomorph.prodCongr_symm]
+    rfl
+  rw [hprod]
+  rw [shellToRoundClosedShell_symm_apply]
+  have hpolar :
+      ((DampedAnnulus.polarHomeomorph
+          (radius n) (radius (n + 1)) (radius_pos n)
+          (radius_lt_succ n).le).symm
+        ((gaugeToAngular n).symm p.1, p.2) : Plane) =
+          (p.2 : ℝ) • ((gaugeToAngular n).symm p.1 : Plane) := rfl
+  rw [hpolar, gaugeToAngular_symm_apply,
+    ← triangleToBall_homothetyPoint
+      ((radius_pos n).le.trans p.2.2.1), Homeomorph.symm_apply_apply]
 
 theorem shellToAngularPolar_apply_innerCarrier (n : ℕ)
     (x : (disk n).carrier) :
@@ -510,6 +606,37 @@ def dampedStandardShellBoundaryAdjustment (n : ℕ)
       (angularBoundaryCorrection n q) hshort
       (radius n) (radius (n + 1)) (radius_lt_succ n)).trans
     (shellToAngularPolar n).symm
+
+/-- Pointwise master-polar formula for the damped adjustment.  It preserves
+the homothety radius and applies the short interpolation only to the master
+angular coordinate. -/
+theorem dampedStandardShellBoundaryAdjustment_apply (n : ℕ)
+    (q : (disk n).carrier ≃ₜ (disk n).carrier)
+    (hshort : ∀ u, angularBoundaryCorrection n q u ≠
+      SphereShortIsotopy.antipode u)
+    (x : PolygonalCircle.closedShell (disk n) (disk (n + 1))) :
+    (dampedStandardShellBoundaryAdjustment n q hshort x : Plane) =
+      let p := shellToAngularPolar n x
+      homothetyPoint (p.2 : ℝ)
+        (JordanCircle.InitialAngularArcs.sphereToMasterHomeomorph
+          (SphereShortIsotopy.interpolation (angularBoundaryCorrection n q)
+            hshort
+            (DampedAnnulus.shellTime (radius n) (radius (n + 1))
+              (radius_lt_succ n) p.2) p.1) : Plane) := by
+  let p := shellToAngularPolar n x
+  have hEq : dampedStandardShellBoundaryAdjustment n q hshort x =
+      (shellToAngularPolar n).symm
+        (SphereShortIsotopy.interpolation (angularBoundaryCorrection n q)
+            hshort
+            (DampedAnnulus.shellTime (radius n) (radius (n + 1))
+              (radius_lt_succ n) p.2) p.1,
+          p.2) := by
+    apply (shellToAngularPolar n).injective
+    simp only [dampedStandardShellBoundaryAdjustment, Homeomorph.trans_apply,
+      Homeomorph.apply_symm_apply,
+      DampedAnnulus.polarHomeomorphAdjustment_apply,
+      DampedAnnulus.polarMap, p]
+  rw [hEq, shellToAngularPolar_symm_apply]
 
 /-- The damped standard-shell adjustment realizes the requested map exactly
 on its inner polygonal carrier. -/

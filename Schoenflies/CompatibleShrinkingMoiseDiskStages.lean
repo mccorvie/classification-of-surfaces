@@ -91,6 +91,23 @@ theorem six_le_shrinkingCompatibleBandParentStage_level (n : ℕ) :
   change 6 ≤ (I.shrinkingInsideCollarStage (k + 1)).level
   omega
 
+/-- The subdivision level used by compatible band `n` is at least the
+recursive band index `n`. -/
+theorem le_shrinkingCompatibleBandParentStage_level (n : ℕ) :
+    n ≤ (I.shrinkingCompatibleBandParentStage n).level := by
+  have hnk : n ≤ I.shrinkingCompatibleBandIndex n := by
+    induction n with
+    | zero => exact Nat.zero_le _
+    | succ n ih =>
+        simpa only [shrinkingCompatibleBandIndex] using Nat.succ_le_succ ih
+  let k := I.shrinkingCompatibleBandIndex n
+  have hk := I.succ_le_shrinkingInsideCollarStage_level (k + 1)
+  change n ≤
+    (InsideCollarStage.ofLater I (I.shrinkingInsideCollarStage k)
+      (I.nextInsideCollarLater k (I.shrinkingInsideCollarStage k))).level
+  change n ≤ (I.shrinkingInsideCollarStage (k + 1)).level
+  omega
+
 /-- Every named compatible band has the eventual outward orientation needed
 by marked-cell gluing. -/
 theorem shrinkingCompatibleBand_outward (n : ℕ) :
@@ -169,6 +186,23 @@ theorem dist_angularBoundaryCorrection_rawMismatch_lt_two
     (I.shrinkingCompatibleBand_outward (n + 1)) u).trans_lt <|
       I.angularDriftBound_lt_two
         (I.six_le_shrinkingCompatibleBandParentStage_level n)
+
+/-- The correction mismatch retains the full geometric drift estimate, not
+only the coarse `< 2` consequence used to build the short isotopy. -/
+theorem dist_angularBoundaryCorrection_rawMismatch_le
+    (n : ℕ) (u : sphere (0 : Plane) 1) :
+    dist
+        (angularBoundaryCorrection (n + 1)
+          ((I.shrinkingCompatibleRawInnerBoundaryHomeomorph (n + 1)).symm.trans
+            (I.shrinkingCompatibleRawOuterBoundaryHomeomorph n)) u) u ≤
+      2 * ((2 / 3 : ℝ) ^
+        (I.shrinkingCompatibleBandParentStage n).level *
+          max I.first.width I.second.width) := by
+  rw [I.angularBoundaryCorrection_rawMismatch n]
+  exact dist_rawAngularBoundaryMismatch_apply_le
+    (I.shrinkingCompatibleBand n) (I.shrinkingCompatibleBand (n + 1)) n
+    (I.shrinkingCompatibleBand_outward n)
+    (I.shrinkingCompatibleBand_outward (n + 1)) u
 
 /-- Boundary parametrization retained after stage `n`: initially the raw
 inner map, and thereafter the raw outer map of the preceding band. -/
@@ -335,6 +369,94 @@ noncomputable def shrinkingCompatibleClosedDiskHomeomorphStage :
       (I.shrinkingCompatibleStageSourceDisk n)
       (I.shrinkingCompatibleStageTargetDisk n)
   | n => (I.shrinkingCompatibleClosedDiskStage n).diskHomeomorph
+
+/-- The actual corrected shell map attached by recursive stage `n + 1`.
+Naming this map exposes the geometric content of the recursive constructor
+without duplicating any of its Moise-band choices. -/
+noncomputable def shrinkingCompatibleActualBandHomeomorph (n : ℕ) :
+    PolygonalCircle.closedShell
+        (I.shrinkingCompatibleStageSourceDisk n)
+        (I.shrinkingCompatibleStageSourceDisk (n + 1)) ≃ₜ
+      PolygonalCircle.closedShell
+        (I.shrinkingCompatibleStageTargetDisk n)
+        (I.shrinkingCompatibleStageTargetDisk (n + 1)) := by
+  let D := I.shrinkingCompatibleClosedDiskHomeomorphStage n
+  have hshort : ∀ u,
+      angularBoundaryCorrection n
+          ((I.shrinkingCompatibleRawInnerBoundaryHomeomorph n).symm.trans
+            D.boundaryHomeomorph) u ≠
+        SphereShortIsotopy.antipode u := by
+    change ∀ u,
+      angularBoundaryCorrection n
+          ((I.shrinkingCompatibleRawInnerBoundaryHomeomorph n).symm.trans
+            (I.shrinkingCompatibleClosedDiskHomeomorphStage n).boundaryHomeomorph)
+          u ≠ SphereShortIsotopy.antipode u
+    have hboundary :
+        (I.shrinkingCompatibleClosedDiskHomeomorphStage n).boundaryHomeomorph =
+          I.shrinkingCompatibleExpectedBoundaryHomeomorph n := by
+      exact (I.shrinkingCompatibleClosedDiskStage n).boundary_eq
+    rw [hboundary]
+    exact I.shrinkingCompatibleExpectedBoundaryCorrection_short n
+  exact (I.shrinkingCompatibleBand n)
+    |>.dampedCompatibleMarkedMoiseBandHomeomorph n
+      (I.shrinkingCompatibleBand_outward n) D.boundaryHomeomorph hshort
+
+set_option maxRecDepth 2000 in
+/-- On the newly attached source shell, recursive stage `n + 1` is exactly
+the actual damped Moise-band map. -/
+theorem shrinkingCompatibleClosedDiskHomeomorphStage_succ_apply_shell
+    (n : ℕ)
+    (x : PolygonalCircle.closedShell
+      (I.shrinkingCompatibleStageSourceDisk n)
+      (I.shrinkingCompatibleStageSourceDisk (n + 1))) :
+    ((I.shrinkingCompatibleClosedDiskHomeomorphStage (n + 1)).homeomorph
+        ⟨x, x.2.1⟩ : Plane) =
+      I.shrinkingCompatibleActualBandHomeomorph n x := by
+  change
+    ((I.nextShrinkingCompatibleClosedDiskHomeomorph n
+        (I.shrinkingCompatibleClosedDiskStage n).diskHomeomorph _).homeomorph
+        ⟨x, x.2.1⟩ : Plane) = _
+  unfold nextShrinkingCompatibleClosedDiskHomeomorph
+  rw [PolygonalCircle.CompatibleClosedDiskHomeomorph.extendAcrossShell_apply_shell]
+  rfl
+
+/-- The actual damped correction used at stage `n` tends uniformly to the
+identity on the master unit sphere. -/
+theorem eventually_shrinkingCompatibleBoundaryCorrection_dist_lt
+    {delta : ℝ} (hdelta : 0 < delta) :
+    ∃ N : ℕ, ∀ n : ℕ, N ≤ n → ∀ u : sphere (0 : Plane) 1,
+      dist
+        (angularBoundaryCorrection n
+          ((I.shrinkingCompatibleRawInnerBoundaryHomeomorph n).symm.trans
+            (I.shrinkingCompatibleClosedDiskHomeomorphStage n).boundaryHomeomorph) u) u <
+        delta := by
+  have hpow : Filter.Tendsto
+      (fun k : ℕ => 2 * ((2 / 3 : ℝ) ^ k *
+        max I.first.width I.second.width)) Filter.atTop (nhds 0) := by
+    simpa using (Filter.Tendsto.const_mul 2 <|
+      Filter.Tendsto.mul_const (max I.first.width I.second.width)
+        (tendsto_pow_atTop_nhds_zero_of_lt_one
+          (show (0 : ℝ) ≤ 2 / 3 by norm_num)
+          (show (2 / 3 : ℝ) < 1 by norm_num)))
+  have heventually : ∀ᶠ k : ℕ in Filter.atTop,
+      2 * ((2 / 3 : ℝ) ^ k * max I.first.width I.second.width) < delta :=
+    hpow.eventually_lt_const hdelta
+  obtain ⟨N₀, hN₀⟩ := Filter.eventually_atTop.mp heventually
+  refine ⟨N₀ + 1, fun n hn u => ?_⟩
+  cases n with
+  | zero => omega
+  | succ j =>
+      have hNj : N₀ ≤ j := by omega
+      have hlevel : N₀ ≤
+          (I.shrinkingCompatibleBandParentStage j).level :=
+        hNj.trans (I.le_shrinkingCompatibleBandParentStage_level j)
+      have hbound := I.dist_angularBoundaryCorrection_rawMismatch_le j u
+      have hboundary :
+          (I.shrinkingCompatibleClosedDiskHomeomorphStage (j + 1)).boundaryHomeomorph =
+            I.shrinkingCompatibleExpectedBoundaryHomeomorph (j + 1) :=
+        (I.shrinkingCompatibleClosedDiskStage (j + 1)).boundary_eq
+      rw [hboundary]
+      exact hbound.trans_lt (hN₀ _ hlevel)
 
 /-- Consecutive recursive stages agree exactly on the preceding closed
 source disk. -/

@@ -1,6 +1,7 @@
 import Schoenflies.StandardRadialCollars
 import Mathlib.Analysis.Normed.Module.Ball.RadialEquiv
 import Mathlib.Analysis.SpecialFunctions.Complex.Circle
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.Topology.Order.IntermediateValue
 
 /-!
@@ -43,6 +44,100 @@ def interpolatedLift (q : Circle ≃ₜ Circle) (t : unitInterval) (x : ℝ) : �
 def shortInterpolationMap (q : Circle ≃ₜ Circle)
     (t : unitInterval) (z : Circle) : Circle :=
   z * Circle.exp ((1 - (t : ℝ)) * shortDisplacement q z)
+
+/-- The principal angular displacement is controlled by chord distance.  The
+factor `π / 2` is the elementary comparison between arc and chord length on a
+semicircle. -/
+theorem abs_shortDisplacement_le (q : Circle ≃ₜ Circle) (z : Circle) :
+    |shortDisplacement q z| ≤ Real.pi / 2 * dist (q z) z := by
+  have harg : |Complex.arg (angularDifference q z : ℂ)| ≤ Real.pi :=
+    Complex.abs_arg_le_pi _
+  have hhalf : |Complex.arg (angularDifference q z : ℂ) / 2| ≤
+      Real.pi / 2 := by
+    rw [abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+    exact div_le_div_of_nonneg_right harg (by norm_num)
+  have hsin := Real.mul_abs_le_abs_sin hhalf
+  have hdist : dist (q z) z =
+      2 * |Real.sin (Complex.arg (angularDifference q z : ℂ) / 2)| := by
+    rw [show dist (q z) z = dist (q z : ℂ) (z : ℂ) from Subtype.dist_eq _ _]
+    rw [dist_eq_norm]
+    have hq : (q z : ℂ) = (z : ℂ) * (angularDifference q z : ℂ) := by
+      simp [angularDifference]
+    rw [hq]
+    have hfactor :
+        (z : ℂ) * (angularDifference q z : ℂ) - (z : ℂ) =
+          (z : ℂ) * ((angularDifference q z : ℂ) - 1) := by ring
+    rw [hfactor, norm_mul]
+    have hznorm : ‖(z : ℂ)‖ = 1 := Circle.norm_coe z
+    rw [hznorm, one_mul]
+    have hexp : Complex.exp
+        (Complex.I * (Complex.arg (angularDifference q z : ℂ) : ℂ)) =
+          (angularDifference q z : ℂ) := by
+      rw [mul_comm]
+      simpa only [Circle.coe_exp] using
+        congrArg Subtype.val (Circle.exp_arg (angularDifference q z))
+    calc
+      ‖(angularDifference q z : ℂ) - 1‖ =
+          ‖Complex.exp
+              (Complex.I * (Complex.arg (angularDifference q z : ℂ) : ℂ)) - 1‖ :=
+        congrArg norm (congrArg (fun v : ℂ => v - 1) hexp.symm)
+      _ = ‖2 * Real.sin (Complex.arg (angularDifference q z : ℂ) / 2)‖ :=
+        Complex.norm_exp_I_mul_ofReal_sub_one _
+      _ = 2 * |Real.sin (Complex.arg (angularDifference q z : ℂ) / 2)| := by
+        simp
+  unfold shortDisplacement
+  rw [hdist]
+  have hpi : 0 < Real.pi := Real.pi_pos
+  calc
+    |Complex.arg (angularDifference q z : ℂ)| =
+        Real.pi * (2 / Real.pi *
+          |Complex.arg (angularDifference q z : ℂ) / 2|) := by
+          rw [abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+          field_simp
+    _ ≤ Real.pi *
+        |Real.sin (Complex.arg (angularDifference q z : ℂ) / 2)| := by
+      gcongr
+    _ = Real.pi / 2 *
+        (2 * |Real.sin (Complex.arg (angularDifference q z : ℂ) / 2)|) := by ring
+
+/-- Every intermediate point of the short isotopy moves no farther than a
+fixed multiple of the original boundary correction. -/
+theorem dist_shortInterpolationMap_self_le
+    (q : Circle ≃ₜ Circle) (t : unitInterval) (z : Circle) :
+    dist (shortInterpolationMap q t z) z ≤
+      Real.pi / 2 * dist (q z) z := by
+  have hangular :
+      dist (shortInterpolationMap q t z) z ≤
+        |(1 - (t : ℝ)) * shortDisplacement q z| := by
+    rw [show dist (shortInterpolationMap q t z) z =
+        dist (shortInterpolationMap q t z : ℂ) (z : ℂ) from
+      Subtype.dist_eq _ _]
+    rw [dist_eq_norm]
+    unfold shortInterpolationMap
+    change ‖(z : ℂ) *
+        (Circle.exp ((1 - (t : ℝ)) * shortDisplacement q z) : ℂ) -
+          (z : ℂ)‖ ≤ _
+    have hfactor :
+        (z : ℂ) *
+            (Circle.exp ((1 - (t : ℝ)) * shortDisplacement q z) : ℂ) -
+          (z : ℂ) =
+        (z : ℂ) *
+          ((Circle.exp ((1 - (t : ℝ)) * shortDisplacement q z) : ℂ) - 1) := by
+      ring
+    rw [hfactor, norm_mul, Circle.norm_coe, one_mul, Circle.coe_exp]
+    simpa [Real.norm_eq_abs, mul_comm] using
+      (Real.norm_exp_I_mul_ofReal_sub_one_le
+        (x := (1 - (t : ℝ)) * shortDisplacement q z))
+  calc
+    dist (shortInterpolationMap q t z) z ≤
+        |(1 - (t : ℝ)) * shortDisplacement q z| := hangular
+    _ = |1 - (t : ℝ)| * |shortDisplacement q z| := abs_mul _ _
+    _ ≤ |shortDisplacement q z| := by
+      have ht : |1 - (t : ℝ)| ≤ 1 := by
+        rw [abs_of_nonneg (sub_nonneg.mpr t.2.2)]
+        linarith [t.2.1]
+      exact mul_le_of_le_one_left (abs_nonneg _) ht
+    _ ≤ Real.pi / 2 * dist (q z) z := abs_shortDisplacement_le q z
 
 variable (q : Circle ≃ₜ Circle)
   (hshort : ∀ z : Circle, q z ≠ -z)

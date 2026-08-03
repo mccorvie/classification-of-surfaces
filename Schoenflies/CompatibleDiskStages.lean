@@ -169,6 +169,37 @@ theorem CompatibleClosedDiskHomeomorph.extendAcrossShell_apply_old
   rw [coe_homeomorph_setCongr]
   rw [ClosedCoverHomeomorph.coe_glue_apply_of_mem_left]
 
+/-- On the newly attached shell, the extended disk map is exactly the shell
+homeomorphism used in the gluing construction. -/
+theorem CompatibleClosedDiskHomeomorph.extendAcrossShell_apply_shell
+    (D : CompatibleClosedDiskHomeomorph P R)
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hRS : R.closedRegion ⊆ S.interiorRegion)
+    (E : closedShell P Q ≃ₜ closedShell R S)
+    (c : Q.carrier ≃ₜ S.carrier)
+    (hinner : ∀ x : P.carrier,
+      (E ⟨x, innerCarrier_subset_closedShell P Q hPQ x.2⟩ : Plane) =
+        D.boundaryHomeomorph x)
+    (houter : ∀ x : Q.carrier,
+      (E ⟨x, outerCarrier_subset_closedShell P Q hPQ x.2⟩ : Plane) =
+        c x)
+    (x : closedShell P Q) :
+    ((D.extendAcrossShell hPQ hRS E c hinner houter).homeomorph
+        ⟨x, x.2.1⟩ : Plane) = E x := by
+  rw [CompatibleClosedDiskHomeomorph.extendAcrossShell]
+  simp only [Homeomorph.trans_apply]
+  have hxUnion : (x : Plane) ∈ P.closedRegion ∪ closedShell P Q :=
+    Or.inr x.2
+  have hin :
+      Homeomorph.setCongr
+          (closedRegion_union_closedShell P Q hPQ).symm
+          ⟨(x : Plane), x.2.1⟩ =
+        ⟨(x : Plane), hxUnion⟩ := by
+    apply Subtype.ext
+    rfl
+  rw [hin, coe_homeomorph_setCongr]
+  rw [ClosedCoverHomeomorph.coe_glue_apply_of_mem_right]
+
 end PolygonalCircle
 
 namespace JordanCircle.InitialAngularArcs
