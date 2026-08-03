@@ -989,6 +989,18 @@ theorem exists_bandPolygonalCircle (a : LevelAddress n) :
   rw [K.polygonalCircleOfCycle_carrier_eq_range_walkGeometricPath c hc]
   exact hrange
 
+/-- Every transported descendant arc is contained in its parent boundary
+arc.  This is the source half of the coarse-window nesting used by the
+boundary-continuity drift estimate. -/
+theorem levelArc_curveArcPlane_subset_of_mem_addresses
+    {c : LevelAddress L.next.level} {a : LevelAddress n}
+    (hc : c ∈ L.addresses a) :
+    (I.levelArc c).curveArcPlane ⊆ (I.levelArc a).curveArcPlane := by
+  rw [addresses, List.mem_map] at hc
+  obtain ⟨b, hbMem, rfl⟩ := hc
+  rw [I.levelArc_cast L.parentLevel_add_depth]
+  exact I.levelArc_curveArcPlane_subset_of_mem_descendantAddresses a b hbMem
+
 end RecursiveInsideCollarStep.Later
 
 end InitialAngularArcs
