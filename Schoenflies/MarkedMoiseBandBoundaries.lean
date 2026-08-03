@@ -1,6 +1,7 @@
 import Schoenflies.MarkedMoiseBandGluing
 import Schoenflies.MarkedMoiseCellOuterBoundaries
 import Schoenflies.StandardRadialCollars
+import Schoenflies.DampedShellAdjustment
 
 /-!
 # Boundary restrictions of marked Moise band maps
@@ -487,6 +488,78 @@ theorem compatibleMarkedMoiseBandHomeomorph_apply_outerCarrier
     exact (L.markedMoiseRawOuterBoundaryHomeomorph_apply m houtward x).symm
   rw [hraw, standardShellBoundaryAdjustment_apply_outerCarrier]
   rfl
+
+/-- Correct a marked Moise band by a short boundary mismatch, damping the
+correction to the identity before reaching the child carrier. -/
+def dampedCompatibleMarkedMoiseBandHomeomorph
+    (m : ℕ)
+    (houtward : ∀ c : LevelAddress n,
+      L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle c).closedRegion =
+        range (F.synchronizedCrosscutPath c))
+    (b : L.parentDisk.carrier ≃ₜ (disk m).carrier)
+    (hshort : ∀ u,
+      angularBoundaryCorrection m
+          ((L.markedMoiseRawInnerBoundaryHomeomorph m houtward).symm.trans b) u ≠
+        SphereShortIsotopy.antipode u) :
+    PolygonalCircle.closedShell L.parentDisk L.childDisk ≃ₜ
+      PolygonalCircle.closedShell (disk m) (disk (m + 1)) :=
+  (L.markedMoiseBandHomeomorph m houtward).trans <|
+    dampedStandardShellBoundaryAdjustment m
+      ((L.markedMoiseRawInnerBoundaryHomeomorph m houtward).symm.trans b)
+      hshort
+
+theorem dampedCompatibleMarkedMoiseBandHomeomorph_apply_innerCarrier
+    (m : ℕ)
+    (houtward : ∀ c : LevelAddress n,
+      L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle c).closedRegion =
+        range (F.synchronizedCrosscutPath c))
+    (b : L.parentDisk.carrier ≃ₜ (disk m).carrier)
+    (hshort : ∀ u,
+      angularBoundaryCorrection m
+          ((L.markedMoiseRawInnerBoundaryHomeomorph m houtward).symm.trans b) u ≠
+        SphereShortIsotopy.antipode u)
+    (x : L.parentDisk.carrier) :
+    (L.dampedCompatibleMarkedMoiseBandHomeomorph m houtward b hshort
+        (L.markedMoiseParentCarrierInShell houtward x) : Plane) = b x := by
+  rw [dampedCompatibleMarkedMoiseBandHomeomorph, Homeomorph.trans_apply]
+  have hraw :
+      L.markedMoiseBandHomeomorph m houtward
+          (L.markedMoiseParentCarrierInShell houtward x) =
+        innerCarrierInClosedShell m
+          (L.markedMoiseRawInnerBoundaryHomeomorph m houtward x) := by
+    apply Subtype.ext
+    exact (L.markedMoiseRawInnerBoundaryHomeomorph_apply m houtward x).symm
+  rw [hraw, dampedStandardShellBoundaryAdjustment_apply_innerCarrier]
+  simp only [Homeomorph.trans_apply, Homeomorph.symm_apply_apply]
+
+/-- Because the correction is fully damped, the child-boundary map of a
+damped band is exactly its raw outer parametrization. -/
+theorem dampedCompatibleMarkedMoiseBandHomeomorph_apply_outerCarrier
+    (m : ℕ)
+    (houtward : ∀ c : LevelAddress n,
+      L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle c).closedRegion =
+        range (F.synchronizedCrosscutPath c))
+    (b : L.parentDisk.carrier ≃ₜ (disk m).carrier)
+    (hshort : ∀ u,
+      angularBoundaryCorrection m
+          ((L.markedMoiseRawInnerBoundaryHomeomorph m houtward).symm.trans b) u ≠
+        SphereShortIsotopy.antipode u)
+    (x : L.childDisk.carrier) :
+    (L.dampedCompatibleMarkedMoiseBandHomeomorph m houtward b hshort
+        (L.markedMoiseChildCarrierInShell houtward x) : Plane) =
+      L.markedMoiseRawOuterBoundaryHomeomorph m houtward x := by
+  rw [dampedCompatibleMarkedMoiseBandHomeomorph, Homeomorph.trans_apply]
+  have hraw :
+      L.markedMoiseBandHomeomorph m houtward
+          (L.markedMoiseChildCarrierInShell houtward x) =
+        outerCarrierInClosedShell m
+          (L.markedMoiseRawOuterBoundaryHomeomorph m houtward x) := by
+    apply Subtype.ext
+    exact (L.markedMoiseRawOuterBoundaryHomeomorph_apply m houtward x).symm
+  rw [hraw, dampedStandardShellBoundaryAdjustment_apply_outerCarrier]
 
 /-- The raw inner boundary map transports each synchronized parent crosscut
 with its native parameter onto the corresponding canonical target arc. -/

@@ -1,4 +1,5 @@
 import Schoenflies.ShortCircleIsotopy
+import Schoenflies.AngularDriftBounds
 
 /-!
 # A boundary correction damped across one standard shell
@@ -229,7 +230,7 @@ def polarMap
   (SphereShortIsotopy.interpolation q hshort (shellTime r s hrs p.2) p.1,
     p.2)
 
-set_option maxHeartbeats 1600000 in
+set_option maxHeartbeats 800000 in
 theorem continuous_polarMap
     (q : sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1)
     (hshort : ∀ u, q u ≠ SphereShortIsotopy.antipode u)
@@ -239,9 +240,17 @@ theorem continuous_polarMap
     (SphereShortIsotopy.interpolation q hshort
       (shellTime r s hrs p.2) p.1, p.2))
   apply Continuous.prodMk
-  · have h := SphereShortIsotopy.continuous_interpolation_apply q hshort
-    exact h.comp <|
-      ((continuous_shellTime r s hrs).comp continuous_snd).prodMk continuous_fst
+  · have ht : Continuous (fun p : sphere (0 : Plane) 1 × Icc r s =>
+        shellTime r s hrs p.2) :=
+      (continuous_shellTime r s hrs).comp continuous_snd
+    have hp : Continuous (fun p : sphere (0 : Plane) 1 × Icc r s =>
+        (shellTime r s hrs p.2, p.1)) := ht.prodMk continuous_fst
+    change Continuous
+      ((fun p : unitInterval × sphere (0 : Plane) 1 =>
+          SphereShortIsotopy.interpolation q hshort p.1 p.2) ∘
+        (fun p : sphere (0 : Plane) 1 × Icc r s =>
+          (shellTime r s hrs p.2, p.1)))
+    exact (SphereShortIsotopy.continuous_interpolation_apply q hshort).comp hp
   · exact continuous_snd
 
 theorem bijective_polarMap
@@ -417,31 +426,42 @@ def unitBoundaryCorrection (n : ℕ)
         (RadialBoundaryAdjustment.sphereScale
           (radius n) (radius_pos n)).symm)
 
-/-- Extend a short inner-carrier correction across one standard polygonal
-shell while damping it to the identity on the outer carrier. -/
-def dampedStandardShellBoundaryAdjustment (n : ℕ)
-    (q : (disk n).carrier ≃ₜ (disk n).carrier)
-    (hshort : ∀ u, unitBoundaryCorrection n q u ≠
-      SphereShortIsotopy.antipode u) :
-    PolygonalCircle.closedShell (disk n) (disk (n + 1)) ≃ₜ
-      PolygonalCircle.closedShell (disk n) (disk (n + 1)) :=
-  (shellToRoundClosedShell n).trans <|
-    (DampedAnnulus.roundShellAdjustment
-      (unitBoundaryCorrection n q) hshort
-      (radius n) (radius (n + 1)) (radius_pos n)
-      (radius_lt_succ n)).trans
-    (shellToRoundClosedShell n).symm
+/-- The same carrier correction in the master angular coordinate used by the
+Moise drift estimates. -/
+def angularBoundaryCorrection (n : ℕ)
+    (q : (disk n).carrier ≃ₜ (disk n).carrier) :
+    sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1 :=
+  JordanCircle.InitialAngularArcs.sphereToMasterHomeomorph.trans <|
+    (diskBoundaryHomeomorph n).trans <|
+      q.trans <|
+        (diskBoundaryHomeomorph n).symm.trans
+          JordanCircle.InitialAngularArcs.sphereToMasterHomeomorph.symm
 
-/-- The damped standard-shell adjustment realizes the requested map exactly
-on its inner polygonal carrier. -/
-theorem dampedStandardShellBoundaryAdjustment_apply_innerCarrier
-    (n : ℕ) (q : (disk n).carrier ≃ₜ (disk n).carrier)
-    (hshort : ∀ u, unitBoundaryCorrection n q u ≠
-      SphereShortIsotopy.antipode u)
+/-- Convert the gauge-rescaling direction used by `shellToRoundClosedShell`
+to the master angular coordinate. -/
+def gaugeToAngular (n : ℕ) :
+    sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1 :=
+  (RadialBoundaryAdjustment.sphereScale (radius n) (radius_pos n)).trans <|
+    (diskCarrierToSphere n).symm.trans <|
+      (diskBoundaryHomeomorph n).symm.trans
+        JordanCircle.InitialAngularArcs.sphereToMasterHomeomorph.symm
+
+/-- Polar coordinates on a standard polygonal shell whose angular component
+is exactly the master coordinate used by the boundary-drift theorem. -/
+def shellToAngularPolar (n : ℕ) :
+    PolygonalCircle.closedShell (disk n) (disk (n + 1)) ≃ₜ
+      sphere (0 : Plane) 1 × Icc (radius n) (radius (n + 1)) :=
+  (shellToRoundClosedShell n).trans <|
+    (DampedAnnulus.polarHomeomorph
+      (radius n) (radius (n + 1)) (radius_pos n) (radius_lt_succ n).le).trans <|
+      (gaugeToAngular n).prodCongr (Homeomorph.refl _)
+
+theorem shellToAngularPolar_apply_innerCarrier (n : ℕ)
     (x : (disk n).carrier) :
-    (dampedStandardShellBoundaryAdjustment n q hshort
-        (innerCarrierInClosedShell n x) : Plane) = q x := by
-  rw [dampedStandardShellBoundaryAdjustment]
+    shellToAngularPolar n (innerCarrierInClosedShell n x) =
+      (JordanCircle.InitialAngularArcs.normalizedTargetBoundaryPoint n x,
+        ⟨radius n, le_rfl, (radius_lt_succ n).le⟩) := by
+  rw [shellToAngularPolar]
   simp only [Homeomorph.trans_apply]
   let y : sphere (0 : Plane) (radius n) := diskCarrierToSphere n x
   have hsource :
@@ -450,29 +470,22 @@ theorem dampedStandardShellBoundaryAdjustment_apply_innerCarrier
           (radius n) (radius (n + 1)) (radius_lt_succ n).le y := by
     apply Subtype.ext
     rfl
-  rw [hsource, DampedAnnulus.roundShellAdjustment_apply_inner]
-  apply congrArg Subtype.val
-  apply (shellToRoundClosedShell n).injective
-  apply Subtype.ext
-  simp only [shellToRoundClosedShell_apply, innerCarrierInClosedShell_val,
-    unitBoundaryCorrection, Homeomorph.trans_apply,
-    Homeomorph.apply_symm_apply, y]
-  exact congrArg Subtype.val
-    ((RadialBoundaryAdjustment.sphereScale
-      (radius n) (radius_pos n)).apply_symm_apply
-        (diskCarrierToSphere n (q x)))
+  rw [hsource, DampedAnnulus.polarHomeomorph_apply_inner]
+  apply Prod.ext
+  · apply Subtype.ext
+    simp only [Homeomorph.coe_prodCongr, Prod.map_apply, Homeomorph.refl_apply,
+      gaugeToAngular, JordanCircle.InitialAngularArcs.normalizedTargetBoundaryPoint,
+      Homeomorph.trans_apply, Homeomorph.apply_symm_apply, y]
+    rw [(diskCarrierToSphere n).symm_apply_apply]
+  · rfl
 
-/-- The damped standard-shell adjustment is exactly the identity on its
-outer polygonal carrier. -/
-theorem dampedStandardShellBoundaryAdjustment_apply_outerCarrier
-    (n : ℕ) (q : (disk n).carrier ≃ₜ (disk n).carrier)
-    (hshort : ∀ u, unitBoundaryCorrection n q u ≠
-      SphereShortIsotopy.antipode u)
+theorem shellToAngularPolar_apply_outerCarrier (n : ℕ)
     (x : (disk (n + 1)).carrier) :
-    (dampedStandardShellBoundaryAdjustment n q hshort
-        (outerCarrierInClosedShell n x) : Plane) = x := by
-  rw [dampedStandardShellBoundaryAdjustment]
-  simp only [Homeomorph.trans_apply]
+    (shellToAngularPolar n (outerCarrierInClosedShell n x)).2 =
+      ⟨radius (n + 1), (radius_lt_succ n).le, le_rfl⟩ := by
+  rw [shellToAngularPolar]
+  simp only [Homeomorph.trans_apply, Homeomorph.coe_prodCongr, Prod.map_apply,
+    Homeomorph.refl_apply]
   let y : sphere (0 : Plane) (radius (n + 1)) :=
     diskCarrierToSphere (n + 1) x
   have hsource :
@@ -481,10 +494,73 @@ theorem dampedStandardShellBoundaryAdjustment_apply_outerCarrier
           (radius n) (radius (n + 1)) (radius_lt_succ n).le y := by
     apply Subtype.ext
     rfl
-  rw [hsource, DampedAnnulus.roundShellAdjustment_apply_outer]
-  rw [Homeomorph.symm_apply_eq]
-  apply Subtype.ext
+  rw [hsource, DampedAnnulus.polarHomeomorph_apply_outer]
   rfl
+
+/-- Extend a short inner-carrier correction across one standard polygonal
+shell while damping it to the identity on the outer carrier. -/
+def dampedStandardShellBoundaryAdjustment (n : ℕ)
+    (q : (disk n).carrier ≃ₜ (disk n).carrier)
+    (hshort : ∀ u, angularBoundaryCorrection n q u ≠
+      SphereShortIsotopy.antipode u) :
+    PolygonalCircle.closedShell (disk n) (disk (n + 1)) ≃ₜ
+      PolygonalCircle.closedShell (disk n) (disk (n + 1)) :=
+  (shellToAngularPolar n).trans <|
+    (DampedAnnulus.polarHomeomorphAdjustment
+      (angularBoundaryCorrection n q) hshort
+      (radius n) (radius (n + 1)) (radius_lt_succ n)).trans
+    (shellToAngularPolar n).symm
+
+/-- The damped standard-shell adjustment realizes the requested map exactly
+on its inner polygonal carrier. -/
+theorem dampedStandardShellBoundaryAdjustment_apply_innerCarrier
+    (n : ℕ) (q : (disk n).carrier ≃ₜ (disk n).carrier)
+    (hshort : ∀ u, angularBoundaryCorrection n q u ≠
+      SphereShortIsotopy.antipode u)
+    (x : (disk n).carrier) :
+    (dampedStandardShellBoundaryAdjustment n q hshort
+        (innerCarrierInClosedShell n x) : Plane) = q x := by
+  have hEq :
+      dampedStandardShellBoundaryAdjustment n q hshort
+          (innerCarrierInClosedShell n x) =
+        innerCarrierInClosedShell n (q x) := by
+    apply (shellToAngularPolar n).injective
+    rw [dampedStandardShellBoundaryAdjustment]
+    simp only [Homeomorph.trans_apply, Homeomorph.apply_symm_apply,
+      DampedAnnulus.polarHomeomorphAdjustment_apply,
+      DampedAnnulus.polarMap, shellToAngularPolar_apply_innerCarrier,
+      DampedAnnulus.shellTime_left, SphereShortIsotopy.interpolation_zero]
+    apply Prod.ext
+    · simp only [angularBoundaryCorrection,
+        JordanCircle.InitialAngularArcs.normalizedTargetBoundaryPoint,
+        Homeomorph.trans_apply, Homeomorph.apply_symm_apply]
+    · rfl
+  exact congrArg Subtype.val hEq
+
+/-- The damped standard-shell adjustment is exactly the identity on its
+outer polygonal carrier. -/
+theorem dampedStandardShellBoundaryAdjustment_apply_outerCarrier
+    (n : ℕ) (q : (disk n).carrier ≃ₜ (disk n).carrier)
+    (hshort : ∀ u, angularBoundaryCorrection n q u ≠
+      SphereShortIsotopy.antipode u)
+    (x : (disk (n + 1)).carrier) :
+    (dampedStandardShellBoundaryAdjustment n q hshort
+        (outerCarrierInClosedShell n x) : Plane) = x := by
+  have hEq :
+      dampedStandardShellBoundaryAdjustment n q hshort
+          (outerCarrierInClosedShell n x) =
+        outerCarrierInClosedShell n x := by
+    apply (shellToAngularPolar n).injective
+    rw [dampedStandardShellBoundaryAdjustment]
+    simp only [Homeomorph.trans_apply, Homeomorph.apply_symm_apply,
+      DampedAnnulus.polarHomeomorphAdjustment_apply, DampedAnnulus.polarMap]
+    have hr := shellToAngularPolar_apply_outerCarrier n x
+    rw [hr, DampedAnnulus.shellTime_right,
+      SphereShortIsotopy.interpolation_one]
+    apply Prod.ext
+    · rfl
+    · exact hr.symm
+  exact congrArg Subtype.val hEq
 
 end StandardPolygonalCollars
 

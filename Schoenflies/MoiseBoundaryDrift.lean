@@ -33,7 +33,7 @@ private abbrev G (M : RecursiveInsideCollarStep.Later F hn) :
   M.next.family.forgetObstacle
 
 variable
-  (L₁ : RecursiveInsideCollarStep.Later (L.G) L.next.one_le_level)
+  (L₁ : RecursiveInsideCollarStep.Later (G L) L.next.one_le_level)
 
 /-- The angular discrepancy between the raw outer boundary map of `L` and
 the raw inner boundary map of the next band `L₁`. -/
@@ -44,10 +44,10 @@ def rawAngularBoundaryMismatch
           (L.moiseBandPolygonalCircle c).closedRegion =
         range (F.synchronizedCrosscutPath c))
     (houtward₁ : ∀ c : LevelAddress L.next.level,
-      ((L.G).synchronizedPolygonalCircle
+      ((G L).synchronizedPolygonalCircle
             L.next.one_le_level).closedRegion ∩
           (L₁.moiseBandPolygonalCircle c).closedRegion =
-        range ((L.G).synchronizedCrosscutPath c)) :
+        range ((G L).synchronizedCrosscutPath c)) :
     sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1 :=
   sphereToMasterHomeomorph.trans <|
     (diskBoundaryHomeomorph (m + 1)).trans <|
@@ -64,12 +64,12 @@ theorem rawAngularBoundaryMismatch_apply
           (L.moiseBandPolygonalCircle c).closedRegion =
         range (F.synchronizedCrosscutPath c))
     (houtward₁ : ∀ c : LevelAddress L.next.level,
-      ((L.G).synchronizedPolygonalCircle
+      ((G L).synchronizedPolygonalCircle
             L.next.one_le_level).closedRegion ∩
           (L₁.moiseBandPolygonalCircle c).closedRegion =
-        range ((L.G).synchronizedCrosscutPath c))
+        range ((G L).synchronizedCrosscutPath c))
     (u : sphere (0 : Plane) 1) :
-    L.rawAngularBoundaryMismatch L₁ m houtward₀ houtward₁ u =
+    rawAngularBoundaryMismatch L L₁ m houtward₀ houtward₁ u =
       normalizedTargetBoundaryPoint (m + 1)
         (L.markedMoiseRawOuterBoundaryHomeomorph m houtward₀
           ((L₁.markedMoiseRawInnerBoundaryHomeomorph (m + 1)
@@ -88,16 +88,16 @@ theorem dist_rawAngularBoundaryMismatch_apply_le
           (L.moiseBandPolygonalCircle c).closedRegion =
         range (F.synchronizedCrosscutPath c))
     (houtward₁ : ∀ c : LevelAddress L.next.level,
-      ((L.G).synchronizedPolygonalCircle
+      ((G L).synchronizedPolygonalCircle
             L.next.one_le_level).closedRegion ∩
           (L₁.moiseBandPolygonalCircle c).closedRegion =
-        range ((L.G).synchronizedCrosscutPath c))
+        range ((G L).synchronizedCrosscutPath c))
     (u : sphere (0 : Plane) 1) :
-    dist (L.rawAngularBoundaryMismatch L₁ m houtward₀ houtward₁ u) u ≤
+    dist (rawAngularBoundaryMismatch L L₁ m houtward₀ houtward₁ u) u ≤
       2 * ((2 / 3 : ℝ) ^ n * max I.first.width I.second.width) := by
   let y : (disk (m + 1)).carrier :=
     diskBoundaryHomeomorph (m + 1) (sphereToMasterHomeomorph u)
-  let x : ((L.G).synchronizedPolygonalCircle
+  let x : ((G L).synchronizedPolygonalCircle
       L.next.one_le_level).carrier :=
     (L₁.markedMoiseRawInnerBoundaryHomeomorph (m + 1) houtward₁).symm y
   obtain ⟨a, hOuter, hInner⟩ :=
@@ -106,9 +106,14 @@ theorem dist_rawAngularBoundaryMismatch_apply_le
     (m + 1) a
     (L.markedMoiseRawOuterBoundaryHomeomorph m houtward₀ x)
     (L₁.markedMoiseRawInnerBoundaryHomeomorph (m + 1) houtward₁ x)
-    (by simpa only [markedMoiseRawOuterBoundaryHomeomorph_apply] using hOuter)
-    (by simpa only [markedMoiseRawInnerBoundaryHomeomorph_apply] using hInner)
-  rw [L.rawAngularBoundaryMismatch_apply L₁ m houtward₀ houtward₁]
+    (by
+      change (L.markedMoiseRawOuterBoundaryHomeomorph m houtward₀ x : Plane) ∈ _
+      exact hOuter)
+    (by
+      change (L₁.markedMoiseRawInnerBoundaryHomeomorph
+        (m + 1) houtward₁ x : Plane) ∈ _
+      exact hInner)
+  rw [rawAngularBoundaryMismatch_apply L L₁ m houtward₀ houtward₁]
   change dist
     (normalizedTargetBoundaryPoint (m + 1)
       (L.markedMoiseRawOuterBoundaryHomeomorph m houtward₀ x)) u ≤ _
@@ -127,15 +132,15 @@ theorem dist_rawAngularBoundaryMismatch_symm_apply_le
           (L.moiseBandPolygonalCircle c).closedRegion =
         range (F.synchronizedCrosscutPath c))
     (houtward₁ : ∀ c : LevelAddress L.next.level,
-      ((L.G).synchronizedPolygonalCircle
+      ((G L).synchronizedPolygonalCircle
             L.next.one_le_level).closedRegion ∩
           (L₁.moiseBandPolygonalCircle c).closedRegion =
-        range ((L.G).synchronizedCrosscutPath c))
+        range ((G L).synchronizedCrosscutPath c))
     (u : sphere (0 : Plane) 1) :
-    dist ((L.rawAngularBoundaryMismatch L₁ m houtward₀ houtward₁).symm u) u ≤
+    dist ((rawAngularBoundaryMismatch L L₁ m houtward₀ houtward₁).symm u) u ≤
       2 * ((2 / 3 : ℝ) ^ n * max I.first.width I.second.width) := by
-  let v := (L.rawAngularBoundaryMismatch L₁ m houtward₀ houtward₁).symm u
-  have h := L.dist_rawAngularBoundaryMismatch_apply_le L₁ m
+  let v := (rawAngularBoundaryMismatch L L₁ m houtward₀ houtward₁).symm u
+  have h := dist_rawAngularBoundaryMismatch_apply_le L L₁ m
     houtward₀ houtward₁ v
   rw [Homeomorph.apply_symm_apply, dist_comm] at h
   exact h
