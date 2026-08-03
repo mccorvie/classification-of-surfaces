@@ -1,6 +1,6 @@
 # Schoenflies proof strategy and status
 
-Status date: 2026-08-02
+Status date: 2026-08-02 (evening update: Risk 1 resolved at design level, see §5)
 
 This document describes the current Schoenflies branch modulo the Jordan
 curve theorem (JCT).  It distinguishes Lean theorems that already compile
@@ -316,6 +316,65 @@ When the collaborator moves the Moise material into a shared module, import
 paths or namespaces may break.  Because the dependency is through theorem
 names rather than copied proofs, this should be a mechanical migration, but
 it will still require an aggregate build and likely import/name fixes.
+
+## 5. Resolution of Risk 1 (2026-08-02 design analysis)
+
+A close reading of the actual construction shows the marked-sector question
+resolves positively, but with a twist: the limit boundary values are not the
+raw prescription; they are the prescription composed with a limit circle
+homeomorphism, and the discrepancy is repaired at the very end by one radial
+composition.  The facts:
+
+1. **The J-dependence cancels in the master marks.**
+   `boundaryPoint J (J.curvePoint t) = sphereStraightening.symm (Arcs.param t)`
+   because `curvePoint t = carrierHomeomorph (Arcs.param t)`.  Hence
+   `levelTargetBoundaryPoint a` is the standard-triangle boundary point at the
+   binary angular parameter of `a`, and the master target arcs are angular
+   arcs whose parameter widths decay like `(2/3)^k`
+   (`AccessibleAngularArc.descendant_width_le`).  Working in parameter space
+   makes the decay exactly geometric with no Lipschitz analysis needed.
+
+2. **The adjustment is angular, not an interpolation.**
+   `standardShellBoundaryAdjustment` is the Alexander radial extension
+   conjugated by the homogeneous gauge `triangleToBall`; it applies the same
+   angular map at every radius (`ambientRadialHomeomorph_smul_ofSphere`), and
+   therefore maps each radial sector over an arc `B` exactly onto the sector
+   over the image arc.  In gauge coordinates every canonical target cell IS an
+   annular sector (both circular sides are homothetic copies of one master
+   arc), so sector control is purely an angular statement on the master
+   circle.
+
+3. **Stage recursion in angular terms.**  With `q_n` the accumulated inner
+   discrepancy at stage `n` (`q_0 = id`), one has
+   `q_{n+1} = induced(q_n) ∘ e_{n+1}⁻¹` where
+   `e_{n+1} = rawInner_{n+1} ∘ rawOuter_n⁻¹` is the mismatch between the two
+   canonical parametrizations of the shared polygon.  Both parametrizations
+   send each retained level-`λ(n)` hair mark to the same target mark and each
+   level-`λ(n)` sub-arc onto the same target arc, so `e_{n+1}` **fixes the
+   coarse marks and preserves each coarse arc exactly**.  (This is the one
+   substantial combinatorial lemma still to prove in Lean.)
+
+4. **Summable drift and the limit twist.**  Arc preservation bounds the
+   pointwise angular drift of `e_j` by the level-`(j-1)` window size, which is
+   geometrically summable by (1).  Hence the accumulated angular maps
+   converge uniformly (with uniformly convergent inverses) to a limit circle
+   homeomorphism `q_∞`, and for any fixed tail cutoff `k` the stage-`n` cell
+   image lies in the sector over `q̂_k(ball(θ_P, tail_k))`, whose diameter is
+   controlled by continuity of the FIXED map `q_∞` plus `2·tail_k`.  This
+   yields boundary continuity of the limit disk map with boundary values
+   `q_∞`-twisted.
+
+5. **Final repair.**  Compose the limit closed-disk homeomorphism with the
+   Alexander radial extension of `q_∞⁻¹` (already available:
+   `extendSphereHomeomorph` / `ambientRadialHomeomorph`).  This restores the
+   exact prescribed boundary values required by `InsideRegionalExtensionData`
+   without disturbing interior bijectivity.
+
+Implementation order: (a) `RadialSectorTransport.lean` — polygonal sectors,
+sector-transport under `standardShellBoundaryAdjustment`, sector diameter
+estimates near the outer radius; (b) the `e_j` arc-preservation lemma from
+the marked cell maps; (c) the parameter-space drift/uniform-limit layer;
+(d) boundary continuity + final repair.  (a) and (c) are self-contained.
 
 ## Bottom line
 
