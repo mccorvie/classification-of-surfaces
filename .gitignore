@@ -1,6 +1,9 @@
 /.lake
 LeanEval/*/.lake/
-LeanEval/*/lake-manifest.json
+# The standalone LeanEval workspaces are built directly in CI.  Their locked
+# dependency manifests are required by `lean-action` before it can configure
+# the workspace and restore Mathlib's cache.
+!LeanEval/*/lake-manifest.json
 *pdf
 blueprint/lean_decls
 blueprint/print/
