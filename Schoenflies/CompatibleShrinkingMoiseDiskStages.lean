@@ -26,7 +26,7 @@ variable {J : JordanCircle} (I : J.InitialAngularArcs)
 /-- Absolute shrinking-collar band used at recursive disk stage `n`.
 The recursive presentation is deliberate: its successor equation aligns
 definitionally with the dependent successor collar record. -/
-private def shrinkingCompatibleBandIndex (I : J.InitialAngularArcs) : ℕ → ℕ
+def shrinkingCompatibleBandIndex (I : J.InitialAngularArcs) : ℕ → ℕ
   | 0 => I.shrinkingMoiseBandStartIndex
   | n + 1 => shrinkingCompatibleBandIndex I n + 1
 
@@ -42,7 +42,7 @@ abbrev shrinkingCompatibleStageTargetDisk
     (_I : J.InitialAngularArcs) (n : ℕ) : PolygonalCircle :=
   disk n
 
-private theorem shrinkingCompatibleBandIndex_ge (n : ℕ) :
+theorem shrinkingCompatibleBandIndex_ge (n : ℕ) :
     I.shrinkingMoiseBandStartIndex ≤ I.shrinkingCompatibleBandIndex n := by
   induction n with
   | zero => exact le_rfl
@@ -252,7 +252,7 @@ theorem shrinkingCompatibleClosedDiskHomeomorphStage_symm_apply_of_le
   rw [← hmap,
     (I.shrinkingCompatibleClosedDiskHomeomorphStage n).homeomorph.symm_apply_apply]
 
-private theorem le_shrinkingCompatibleBandIndex (n : ℕ) :
+theorem le_shrinkingCompatibleBandIndex (n : ℕ) :
     n ≤ I.shrinkingCompatibleBandIndex n := by
   induction n with
   | zero => exact Nat.zero_le _
