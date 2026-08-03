@@ -989,6 +989,93 @@ theorem exists_bandPolygonalCircle (a : LevelAddress n) :
   rw [K.polygonalCircleOfCycle_carrier_eq_range_walkGeometricPath c hc]
   exact hrange
 
+private theorem exists_chain_next_of_mem {α : Type*} {R : α → α → Prop} :
+    ∀ {l : List α}, l.IsChain R → ∀ {b : α}, b ∈ l →
+      ∀ hne : l ≠ [], (∃ c ∈ l, R b c) ∨ b = l.getLast hne
+  | [], _, b, hb, _ => absurd hb (List.not_mem_nil)
+  | [x], _, b, hb, _ => by
+      right
+      rw [List.mem_singleton] at hb
+      simpa [List.getLast] using hb
+  | x :: y :: tail, hl, b, hb, _ => by
+      rcases List.mem_cons.mp hb with rfl | hbTail
+      · left
+        exact ⟨y, List.mem_cons_of_mem _ List.mem_cons_self,
+          (List.isChain_cons_cons.mp hl).1⟩
+      · rcases exists_chain_next_of_mem
+            (List.isChain_cons_cons.mp hl).2 hbTail
+            (List.cons_ne_nil y tail) with ⟨c, hc, hRc⟩ | hlast
+        · exact Or.inl ⟨c, List.mem_cons_of_mem _ hc, hRc⟩
+        · right
+          rw [hlast, List.getLast_cons (List.cons_ne_nil y tail)]
+
+private theorem exists_chain_prev_of_mem {α : Type*} {R : α → α → Prop} :
+    ∀ {l : List α}, l.IsChain R → ∀ {b : α}, b ∈ l →
+      ∀ hne : l ≠ [], (∃ c ∈ l, R c b) ∨ b = l.head hne
+  | [], _, b, hb, _ => absurd hb (List.not_mem_nil)
+  | [x], _, b, hb, _ => by
+      right
+      rw [List.mem_singleton] at hb
+      simpa [List.head] using hb
+  | x :: y :: tail, hl, b, hb, _ => by
+      rcases List.mem_cons.mp hb with rfl | hbTail
+      · right
+        rfl
+      · rcases exists_chain_prev_of_mem
+            (List.isChain_cons_cons.mp hl).2 hbTail
+            (List.cons_ne_nil y tail) with ⟨c, hc, hRc⟩ | hhead
+        · exact Or.inl ⟨c, List.mem_cons_of_mem _ hc, hRc⟩
+        · left
+          refine ⟨x, List.mem_cons_self, ?_⟩
+          rw [hhead]
+          exact (List.isChain_cons_cons.mp hl).1
+
+/-- The cyclic successor of a transported descendant stays in the same
+parent block unless the descendant is the block's rightmost element. -/
+theorem nextLevelAddress_mem_addresses_or
+    {b : LevelAddress L.next.level} {a : LevelAddress n}
+    (hb : b ∈ L.addresses a) :
+    nextLevelAddress L.next.level b ∈ L.addresses a ∨
+      b = L.rightmostAddress a := by
+  rcases exists_chain_next_of_mem (L.addresses_isChain a) hb
+      (L.addresses_nonempty a) with ⟨c, hc, hR⟩ | hlast
+  · left
+    have hcNext : c = nextLevelAddress L.next.level b :=
+      (I.levelRightPoint_eq_levelLeftPoint_iff b c).mp hR
+    rwa [← hcNext]
+  · right
+    rw [hlast, L.addresses_getLast]
+
+/-- The cyclic predecessor of a transported descendant stays in the same
+parent block unless the descendant is the block's leftmost element. -/
+theorem prevLevelAddress_mem_addresses_or
+    {b : LevelAddress L.next.level} {a : LevelAddress n}
+    (hb : b ∈ L.addresses a) :
+    prevLevelAddress L.next.level b ∈ L.addresses a ∨
+      b = L.leftmostAddress a := by
+  rcases exists_chain_prev_of_mem (L.addresses_isChain a) hb
+      (L.addresses_nonempty a) with ⟨c, hc, hR⟩ | hhead
+  · left
+    have hbNext : b = nextLevelAddress L.next.level c :=
+      (I.levelRightPoint_eq_levelLeftPoint_iff c b).mp hR
+    have hcPrev : c = prevLevelAddress L.next.level b := by
+      rw [hbNext]
+      simp
+    rwa [← hcPrev]
+  · right
+    rw [hhead, L.addresses_head]
+
+/-- The cyclic predecessor of a block's leftmost element is the rightmost
+element of the preceding block. -/
+theorem prevLevelAddress_leftmostAddress (a : LevelAddress n) :
+    prevLevelAddress L.next.level (L.leftmostAddress a) =
+      L.rightmostAddress (prevLevelAddress n a) := by
+  have h := L.nextLevelAddress_rightmostAddress (prevLevelAddress n a)
+  have hnp : nextLevelAddress n (prevLevelAddress n a) = a := by simp
+  rw [hnp] at h
+  rw [← h]
+  simp
+
 /-- Every transported descendant arc is contained in its parent boundary
 arc.  This is the source half of the coarse-window nesting used by the
 boundary-continuity drift estimate. -/
