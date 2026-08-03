@@ -88,6 +88,19 @@ theorem masterArcImage_eq_image_Icc (m : ℕ) {k : ℕ}
     · simp only [boundaryPoint_curvePoint_eq_masterPoint]
       rfl
 
+/-- The angular width of every level arc decays geometrically with the
+subdivision depth. -/
+theorem levelArc_width_le {k : ℕ} (a : LevelAddress k) :
+    (I.levelArc a).width ≤
+      (2 / 3 : ℝ) ^ k * max I.first.width I.second.width := by
+  have h := (I.rootArc a.1).descendant_width_le (List.ofFn a.2)
+  rw [List.length_ofFn] at h
+  refine h.trans ?_
+  refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+  cases a.1
+  · exact le_max_left _ _
+  · exact le_max_right _ _
+
 end JordanCircle.InitialAngularArcs
 
 end
