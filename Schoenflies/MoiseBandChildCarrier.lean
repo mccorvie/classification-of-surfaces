@@ -251,6 +251,60 @@ theorem moiseBandLeftSideCarrier_next_subset_childCarrier_union_sideSeam
       exact H.segment_subset_segment_of_parameter_le x z' p
         (le_of_not_ge hzx) hzbounds.2 (right_mem_segment ℝ _ _)
 
+/-- Every point of the retained child route of one Moise cell lies on the
+synchronized child crosscut of one of the supporting transported descendant
+addresses.  This refines the child-carrier containment by remembering the
+address, which is what the coarse-window drift estimate consumes. -/
+theorem exists_mem_crosscutSet_of_mem_childMoiseCarrier
+    (a : LevelAddress n) {x : Plane} (hx : x ∈ L.childMoiseCarrier a) :
+    ∃ b ∈ L.addresses a,
+      x ∈ L.next.family.forgetObstacle.synchronizedCrosscutSet b := by
+  let G := L.next.family.forgetObstacle
+  rcases Set.mem_iUnion.mp hx with ⟨j, hxj⟩
+  rcases Set.mem_iUnion.mp hxj with ⟨hj, hxSegment⟩
+  rcases L.child_or_junction_with_addresses_of_mem
+      (L.addresses_isChain a) hj with
+    ⟨e, heMem, rfl⟩ | ⟨b, c, hbMem, hcMem, hbc, rfl⟩
+  · refine ⟨e.1, heMem, ?_⟩
+    have hxEdge : x ∈ G.trimmedEdgeSegment e := by
+      change x ∈ segment ℝ (G.trimmedEdgeFinish e)
+        (G.trimmedEdgeStart e) at hxSegment
+      simpa only [LevelAvoidingJoinFamily.trimmedEdgeSegment, segment_symm]
+        using hxSegment
+    exact Or.inl (Or.inr
+      (G.trimmedEdgeSegment_subset_trimmedPathRange e hxEdge))
+  · have hc : c = nextLevelAddress L.next.level b :=
+      (I.levelRightPoint_eq_levelLeftPoint_iff b c).mp hbc
+    subst c
+    have hsync : G.rightSynchronizedPoint b =
+          G.trimmedRightPoint (L.childIndex b) ∨
+        G.rightSynchronizedPoint b =
+          G.trimmedLeftPoint
+            (L.childIndex (nextLevelAddress L.next.level b)) := by
+      simpa [LevelAvoidingJoinFamily.rightSynchronizedPoint] using
+        G.synchronizedPoint_eq_right_or_left b
+          (nextLevelAddress L.next.level b) hbc
+    change x ∈ segment ℝ (G.trimmedRightPoint (L.childIndex b))
+      (G.trimmedLeftPoint
+        (L.childIndex (nextLevelAddress L.next.level b))) at hxSegment
+    rcases hsync with hright | hleft
+    · refine ⟨nextLevelAddress L.next.level b, hcMem, ?_⟩
+      have hxLeft : x ∈ segment ℝ
+          (G.leftSynchronizedPoint (nextLevelAddress L.next.level b))
+          (G.trimmedLeftPoint
+            (L.childIndex (nextLevelAddress L.next.level b))) := by
+        rw [← G.rightSynchronizedPoint_next_eq_leftSynchronizedPoint b,
+          hright]
+        exact hxSegment
+      exact Or.inl (Or.inl hxLeft)
+    · refine ⟨b, hbMem, ?_⟩
+      have hxRight : x ∈ segment ℝ
+          (G.trimmedRightPoint (L.childIndex b))
+          (G.rightSynchronizedPoint b) := by
+        rw [hleft]
+        exact hxSegment
+      exact Or.inr hxRight
+
 end JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
 
 end
