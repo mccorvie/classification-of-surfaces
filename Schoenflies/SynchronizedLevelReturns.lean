@@ -764,6 +764,41 @@ noncomputable def synchronizedInsideReturnArc (a : LevelAddress n) :
     (F.range_synchronizedReturnPath_subset a).trans
       (F.synchronizedReturnSet_subset_insideCrosscutSet a)
 
+/-- A synchronized crosscut meets a retained left hair only when the hair is
+anchored at one of the crosscut's own two endpoint marks. -/
+theorem crosscutSet_incident_of_mem_levelLeftHair
+    (c d : LevelAddress n) {x : Plane}
+    (hxc : x ∈ F.synchronizedCrosscutSet c)
+    (hxd : x ∈ (I.levelLeftHair d).carrier) :
+    d = c ∨ d = nextLevelAddress n c := by
+  by_contra hboth
+  push Not at hboth
+  obtain ⟨hdc, hdnext⟩ := hboth
+  rcases hxc with (hxLeft | hxMiddle) | hxRight
+  · exact Set.disjoint_left.mp
+      (I.disjoint_levelLeftHairs_of_ne c d fun h => hdc h.symm)
+      (F.leftExtension_subset_levelLeftHair c hxLeft) hxd
+  · have hshared :
+        (J.curvePoint (I.levelArc (prevLevelAddress n d)).right : Plane) =
+          (J.curvePoint (I.levelArc d).left : Plane) := by
+      have h := I.levelAdjacent_prevLevelAddress n d
+      unfold InitialAngularArcs.LevelAdjacent at h
+      exact h
+    have hcarrier := I.levelRightHair_carrier_eq_levelLeftHair_of_eq
+      (prevLevelAddress n d) d hshared
+    rw [← hcarrier] at hxd
+    refine Set.disjoint_left.mp
+      (F.trimmedPath_disjoint_levelRightHair_of_not_incident
+        (prevLevelAddress n d) c ?_ ?_) hxMiddle hxd
+    · simpa using fun h => hdc h.symm
+    · intro h
+      apply hdnext
+      rw [← h]
+      simp
+  · exact Set.disjoint_left.mp
+      (I.disjoint_levelRightHair_levelLeftHair_of_ne_next c d hdnext)
+      (F.rightExtension_subset_levelRightHair c hxRight) hxd
+
 end LevelAvoidingJoinFamily
 end InitialAngularArcs
 end JordanCircle
