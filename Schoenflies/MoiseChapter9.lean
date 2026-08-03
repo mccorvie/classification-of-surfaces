@@ -36,6 +36,7 @@ import Schoenflies.MoiseBandCellInteriors
 import Schoenflies.MoiseBandCellNonadjacency
 import Schoenflies.MoiseBandChildCarrier
 import Schoenflies.MoiseBandCrosscutLocalization
+import Schoenflies.MasterParameters
 import Schoenflies.MoiseBandCellAttachments
 import Schoenflies.MoiseBandCellCyclicAttachments
 import Schoenflies.MoiseBandCellParentSeams
