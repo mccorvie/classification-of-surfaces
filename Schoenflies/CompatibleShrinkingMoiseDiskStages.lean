@@ -42,12 +42,61 @@ abbrev shrinkingCompatibleStageTargetDisk
     (_I : J.InitialAngularArcs) (n : ℕ) : PolygonalCircle :=
   disk n
 
+/-- The actual dependent `Later` record whose marked band is used at
+recursive stage `n`.  Naming it once keeps subsequent boundary-drift
+statements independent of the implementation lets used to construct it. -/
+noncomputable abbrev shrinkingCompatibleBandParentStage (n : ℕ) :=
+  let k := I.shrinkingCompatibleBandIndex n
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  InsideCollarStage.ofLater I S₀ L₀
+
+noncomputable abbrev shrinkingCompatibleBand (n : ℕ) :=
+  let k := I.shrinkingCompatibleBandIndex n
+  I.nextInsideCollarLater (k + 1)
+    (I.shrinkingCompatibleBandParentStage n)
+
 theorem shrinkingCompatibleBandIndex_ge (n : ℕ) :
     I.shrinkingMoiseBandStartIndex ≤ I.shrinkingCompatibleBandIndex n := by
   induction n with
   | zero => exact le_rfl
   | succ n ih =>
       simpa only [shrinkingCompatibleBandIndex] using ih.trans (Nat.le_succ _)
+
+/-- Every named compatible band has the eventual outward orientation needed
+by marked-cell gluing. -/
+theorem shrinkingCompatibleBand_outward (n : ℕ) :
+    ∀ c : LevelAddress (I.shrinkingCompatibleBandParentStage n).level,
+      (I.shrinkingCompatibleBandParentStage n).circle.closedRegion ∩
+          ((I.shrinkingCompatibleBand n).moiseBandPolygonalCircle c).closedRegion =
+        Set.range
+          ((I.shrinkingCompatibleBandParentStage n).family
+            |>.synchronizedCrosscutPath c) := by
+  let k := I.shrinkingCompatibleBandIndex n
+  let S₀ := I.shrinkingInsideCollarStage k
+  let L₀ := I.nextInsideCollarLater k S₀
+  let S₁ := InsideCollarStage.ofLater I S₀ L₀
+  let L₁ := I.nextInsideCollarLater (k + 1) S₁
+  change ∀ c : LevelAddress L₀.next.level,
+    L₀.next.circle.closedRegion ∩
+        (L₁.moiseBandPolygonalCircle c).closedRegion =
+      Set.range (L₀.next.family.forgetObstacle.synchronizedCrosscutPath c)
+  exact I.shrinkingMoiseBandStartIndex_spec k
+    (I.shrinkingCompatibleBandIndex_ge n)
+
+/-- Raw inner boundary parametrization of compatible band `n`. -/
+noncomputable def shrinkingCompatibleRawInnerBoundaryHomeomorph (n : ℕ) :
+    (I.shrinkingCompatibleStageSourceDisk n).carrier ≃ₜ
+      (I.shrinkingCompatibleStageTargetDisk n).carrier :=
+  (I.shrinkingCompatibleBand n).markedMoiseRawInnerBoundaryHomeomorph n
+    (I.shrinkingCompatibleBand_outward n)
+
+/-- Raw outer boundary parametrization of compatible band `n`. -/
+noncomputable def shrinkingCompatibleRawOuterBoundaryHomeomorph (n : ℕ) :
+    (I.shrinkingCompatibleStageSourceDisk (n + 1)).carrier ≃ₜ
+      (I.shrinkingCompatibleStageTargetDisk (n + 1)).carrier :=
+  (I.shrinkingCompatibleBand n).markedMoiseRawOuterBoundaryHomeomorph n
+    (I.shrinkingCompatibleBand_outward n)
 
 /-- Consecutive source disks are strictly nested after the chosen eventual
 orientation threshold. -/
