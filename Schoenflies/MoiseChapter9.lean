@@ -139,6 +139,7 @@ import Schoenflies.HairReturns
 import Schoenflies.ReturnArcFrames
 import Schoenflies.ReturnArcParity
 import Schoenflies.RegionalExtensions
+import Schoenflies.CompleteRegionalExtension
 import ClassificationOfSurfaces.Moise.BrokenLine
 import ClassificationOfSurfaces.Moise.PolygonalSchoenflies
 import ClassificationOfSurfaces.Moise.PLApproximation
@@ -229,6 +230,18 @@ def HasMoiseInsideDiskExtension (J : JordanCircle) : Prop :=
 theorem HasMoiseDiskExtensions.inside {J : JordanCircle}
     (h : HasMoiseDiskExtensions J) : HasMoiseInsideDiskExtension J :=
   ⟨h.some.insideData⟩
+
+/-- The shrinking-cell construction, followed by inversion for the unbounded
+component, supplies the complete Chapter 9 output for every Jordan circle. -/
+theorem hasMoiseDiskExtensions (J : JordanCircle) :
+    HasMoiseDiskExtensions J :=
+  ⟨J.regionalExtensionData⟩
+
+/-- Moise's first (bounded-side) form, extracted from the completed regional
+construction. -/
+theorem hasMoiseInsideDiskExtension (J : JordanCircle) :
+    HasMoiseInsideDiskExtension J :=
+  (hasMoiseDiskExtensions J).inside
 
 end MoiseChapter9
 

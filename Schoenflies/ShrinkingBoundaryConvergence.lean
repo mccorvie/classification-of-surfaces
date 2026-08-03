@@ -39,6 +39,66 @@ theorem eventually_shrinkingCompatibleBandClosedRegion_subset_closedBall
   have hNk : N ≤ k := hn.trans (I.le_shrinkingCompatibleBandIndex n)
   exact hN k hNk a
 
+/-- An inside point lying beyond retained disk `N` belongs to a cell of a
+later compatible band.  The chosen direct-limit stage index supplies the
+first disk interior containing the point. -/
+theorem exists_shrinkingCompatibleBandCell_of_not_mem_closedRegion
+    (N : ℕ) (x : J.inside)
+    (hxN : (x : Plane) ∉
+      (I.shrinkingCompatibleStageSourceDisk N).closedRegion) :
+    ∃ (n : ℕ), N ≤ n ∧
+      ∃ a : LevelAddress
+          (I.shrinkingCompatibleBandParentStage n).level,
+        (x : Plane) ∈ PolygonalCircle.closedShell
+            (I.shrinkingCompatibleStageSourceDisk n)
+            (I.shrinkingCompatibleStageSourceDisk (n + 1)) ∧
+          (x : Plane) ∈ ((I.shrinkingCompatibleBand n)
+            |>.moiseBandPolygonalCircle a).closedRegion := by
+  classical
+  let m := I.shrinkingSourceStageIndex x
+  have hNm : N < m := by
+    apply lt_of_not_ge
+    intro hmN
+    apply hxN
+    apply I.shrinkingCompatibleStageSourceDisk_closedRegion_mono hmN
+    rw [(I.shrinkingCompatibleStageSourceDisk m).closedRegion_eq_union]
+    exact Or.inl (I.shrinkingSourceStageIndex_mem_interior x)
+  obtain ⟨n, hm⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : m ≠ 0)
+  have hmIndex : I.shrinkingSourceStageIndex x = n + 1 := by
+    simpa only [Nat.succ_eq_add_one] using hm
+  have hNn : N ≤ n := by omega
+  have hxNotParent : (x : Plane) ∉
+      (I.shrinkingCompatibleStageSourceDisk n).interiorRegion := by
+    let hex := I.exists_mem_shrinkingCompatibleStageSourceDisk_interiorRegion x.2
+    have hnlt : n < I.shrinkingSourceStageIndex x := by omega
+    change ¬(x : Plane) ∈
+      (I.shrinkingCompatibleStageSourceDisk n).interiorRegion
+    exact Nat.find_min hex (by
+      change n < Nat.find hex at hnlt
+      exact hnlt)
+  have hxChild : (x : Plane) ∈
+      (I.shrinkingCompatibleStageSourceDisk (n + 1)).closedRegion := by
+    rw [(I.shrinkingCompatibleStageSourceDisk (n + 1)).closedRegion_eq_union]
+    have hxInterior := I.shrinkingSourceStageIndex_mem_interior x
+    rw [hmIndex] at hxInterior
+    exact Or.inl hxInterior
+  have hxShell : (x : Plane) ∈ PolygonalCircle.closedShell
+      (I.shrinkingCompatibleStageSourceDisk n)
+      (I.shrinkingCompatibleStageSourceDisk (n + 1)) :=
+    ⟨hxChild, hxNotParent⟩
+  have hxUnion : (x : Plane) ∈
+      ⋃ a : LevelAddress
+          (I.shrinkingCompatibleBandParentStage n).level,
+        ((I.shrinkingCompatibleBand n)
+          |>.moiseBandPolygonalCircle a).closedRegion := by
+    change (x : Plane) ∈
+      (I.shrinkingCompatibleBand n).moiseBandClosedCells
+    rw [(I.shrinkingCompatibleBand n).moiseBandClosedCells_eq_closedShell
+      (I.shrinkingCompatibleBand_outward n)]
+    exact hxShell
+  obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hxUnion
+  exact ⟨n, hNn, a, hxShell, hxa⟩
+
 /-- On every sufficiently late compatible cell, the open direct-limit map
 is close to the corresponding limiting master boundary point. -/
 theorem eventually_shrinkingInsideMap_apply_cell_dist_lt

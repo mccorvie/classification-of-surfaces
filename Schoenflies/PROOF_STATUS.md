@@ -1,448 +1,167 @@
 # Schoenflies proof strategy and status
 
-Status date: 2026-08-02 (evening update: Risk 1 resolved at design level, see §5)
+Status date: 2026-08-02
 
-This document describes the current Schoenflies branch modulo the Jordan
-curve theorem (JCT).  It distinguishes Lean theorems that already compile
-from intended later steps.  In particular, the final theorem is **not yet
-proved unconditionally**: `Schoenflies.schoenflies_of_moise` still assumes
-`MoiseChapter9.HasMoiseDiskExtensions J`.
+The full strong planar Schoenflies theorem is now proved.  The maintained
+endpoint is `Schoenflies.schoenflies` in `Schoenflies/Main.lean`; it has the
+exact statement required by the LeanEval challenge.  The proof contains no
+`sorry`, `admit`, or project-specific axioms.  Its axiom audit reports only
+Lean's standard `propext`, `Classical.choice`, and `Quot.sound`.
 
 ## 1. Overall proof strategy
 
-Given a continuous injective map
+Given a continuous injective parametrization
 
 ```lean
 r : sphere (0 : Plane) 1 → Plane
 ```
 
-form its `JordanCircle` `J`.  The assumed JCT supplies the two complementary
-components `J.inside` and `J.outside`, their openness and connectedness, and
-the usual closure/frontier identities.
+form the corresponding `JordanCircle` `J`.  The vendored Jordan curve theorem
+provides its bounded and unbounded complementary components, together with
+their connectedness, frontier, closure, and boundedness properties.
 
-The intended proof then follows Moise Chapter 9 in four layers.
+### A. Construct shrinking polygonal collars
 
-### A. Build shrinking polygonal collars inside the Jordan curve
+Following Moise Chapter 9, repeatedly subdivide the parameter circle, choose
+compatible access hairs and polygonal crosscuts, and build nested polygonal
+Jordan curves in `J.inside` converging to `J.carrier`.  Cut each successive
+collar band into a finite cyclic family of marked disk cells.  The construction
+records parent and child boundary arcs, side seams, cyclic incidence, and
+quantitative diameter bounds relative to the corresponding carrier arc.
 
-1. Subdivide the parameter circle into finite cyclic families of angular
-   arcs.
-2. Construct disjoint access hairs and synchronized polygonal crosscuts near
-   those arcs.
-3. Recursively choose polygonal Jordan curves contained in `J.inside`, with
-   carriers converging to `J.carrier` and, after a finite threshold, strictly
-   nested closed regions.
-4. Cut every band between consecutive polygonal curves into finitely many
-   marked topological cells.  Each cell has:
+This layer reuses the current declarations under
+`ClassificationOfSurfaces.Moise`, notably broken-line connectivity, finite
+polygonal complexes, polygonal disk filling, and polygonal Schoenflies.  Those
+files are referenced directly and are not duplicated or modified in the
+maintained source tree.
 
-   - a parent-boundary arc;
-   - a child-boundary arc;
-   - two side seams;
-   - a quantitative bound keeping it close to the corresponding arc of
-     `J.carrier`.
+### B. Map finite collars to standard radial shells
 
-The existing Moise and triangulation work is reused here.  In particular,
-the proof calls the existing `ClassificationOfSurfaces.Moise` polygonal
-Jordan, finite-complex, triangulation, and polygonal Schoenflies APIs without
-changing those files.
+Decompose each shell between two homothetic standard triangles into matching
+cyclic target cells.  Extend the marked boundary map of every source cell over
+its disk, prove equality on common seams, and glue the finite cell maps into a
+band homeomorphism.  A radial correction makes each new band agree exactly
+with the preceding disk stage while retaining quantitative angular and radial
+control.
 
-### B. Map each finite collar band to a standard radial shell
+This produces a compatible sequence of homeomorphisms from nested closed
+polygonal disks to nested standard triangle disks.
 
-1. Define a matching cyclic cell decomposition of a shell between two
-   homothetic standard triangles.
-2. Construct a boundary homeomorphism for each source cell, respecting the
-   four marked sides.
-3. Extend each boundary map across the closed cell by the disk-extension
-   theorem.
-4. Prove adjacent cell maps agree on their common seam and glue the finite
-   family into a homeomorphism of the entire closed band.
-5. Restrict the band map to both its inner and outer polygonal boundaries.
-6. Correct the band map on the standard shell so that its inner restriction
-   agrees exactly with the preceding closed-disk stage.  Retain the induced
-   outer-boundary homeomorphism for the next recursion step.
+### C. Pass to the limit and add the Jordan boundary
 
-### C. Take the direct limit and add the Jordan boundary
+The source disks exhaust `J.inside`, and the target disks exhaust the open
+standard triangle.  Compatible finite maps therefore define mutually inverse
+continuous direct-limit maps on the open regions.  The source-cell and
+target-cell shrinking estimates prove convergence to the prescribed carrier
+correspondence from both directions.  Adding those boundary values gives a
+homeomorphism
 
-1. Start with an Alexander extension of the first retained boundary map.
-2. Recursively extend it across every later collar band.  The resulting
-   finite closed-disk homeomorphisms agree exactly on all earlier disks.
-3. Prove the shrinking source disks exhaust `J.inside`; the standard target
-   disks exhaust the open standard triangle.
-4. Use the compatible finite maps to define mutually inverse continuous maps
-   on the two open exhaustions.
-5. Use the marked-cell diameter estimates to prove that the open map and its
-   inverse converge to the prescribed boundary correspondence.  Extend them
-   to a homeomorphism
+```lean
+closure J.inside ≃ₜ closedBall (0 : Plane) 1
+```
 
-   ```lean
-   closure J.inside ≃ₜ closedBall (0 : Plane) 1
-   ```
+whose value at every carrier point `x` is exactly
+`J.carrierHomeomorph.symm x`.
 
-   whose value on `J.carrier` is exactly `J.carrierHomeomorph.symm`.
+### D. Recover the unbounded side by Euclidean inversion
 
-This is Moise's bounded-side or “first form” of Schoenflies, represented by
-`InsideRegionalExtensionData J`.
+Invert the plane about a chosen point of `J.inside`.  Inversion identifies the
+original closed outside with the bounded side of the inverted Jordan curve
+with the inversion center removed; the filled center represents infinity.
+Apply the bounded-side theorem to the inverted curve, use a normalized
+closed-ball recentering that sends the missing interior point to zero while
+fixing the sphere pointwise, and use Mathlib's Euclidean inversion to identify
+the punctured closed ball with the standard closed exterior.
 
-### D. Treat the outside and paste the two regional maps
-
-Construct the analogous homeomorphism
+The result is
 
 ```lean
 closure J.outside ≃ₜ ((ball (0 : Plane) 1)ᶜ : Set Plane)
 ```
 
-with the same boundary values.  Package the two maps as
-`RegionalExtensionData J`.  The existing `RegionalExtensions` code converts
-this to `DiskExtensionData J`, and the existing `AmbientGluing` code pastes
-the regional maps into an ambient homeomorphism of the plane.  `Main.lean`
-then gives the required image equality for `Set.range r`.
+with exactly the same boundary values as the bounded-side map.
 
-## 2. Progress so far
+### E. Glue the regional maps
 
-### Completed and compiling
+Package the two regional homeomorphisms as `RegionalExtensionData J`.
+`RegionalExtensions` turns them into the whole-plane maps expected by
+`DiskExtensionData`; values away from the relevant closed regions are supplied
+by Tietze extension and play no mathematical role.  `AmbientGluing` pastes the
+inside and outside maps along their identical carrier values, proves that the
+forward and inverse pasted maps are continuous and mutually inverse, and
+obtains the ambient plane homeomorphism.  Its carrier image is the unit sphere,
+which is the required LeanEval conclusion.
 
-The following parts are implemented without `sorry` or new axioms.
+## 2. Progress
 
-- The JCT-facing Jordan-region API and the Chapter 1--5 polygonal and
-  finite-complex infrastructure are available and reused.
-- The angular subdivision, access-hair, crosscut, auxiliary-Jordan-curve,
-  separator, and nested polygonal-collar constructions are implemented.
-- The shrinking recursive collar sequence has quantitative carrier and cell
-  bounds.  Its sufficiently late bands are proved to have the required
-  outward orientation and strict nesting.
-- A source Moise band is proved to be exactly the finite union of its closed
-  marked cells.  Adjacent intersections are exactly their shared seams, and
-  nonadjacent cells are disjoint.
-- The matching standard radial cells are constructed and proved to cover the
-  complete target shell.
-- Marked source-cell boundary maps are extended across their closed disks,
-  proved compatible on seams, and glued into homeomorphisms of whole closed
-  bands.
-- The raw band homeomorphism has been restricted to genuine homeomorphisms
-  on both the parent and child polygonal carriers.  The formerly arbitrary
-  complementary cell boundary path is proved to be exactly the child edge;
-  this avoids assuming a general boundary-invariance theorem.
-- A band can be corrected to realize any prescribed inner-boundary
-  homeomorphism, and its exact induced outer-boundary homeomorphism is
-  retained.
-- The generic operation that glues a compatible closed-disk map to one more
-  shell was already implemented in `CompatibleDiskStages.lean`.
-- The new shrinking-Moise specialization now constructs a recursive sequence
-  of compatible closed-disk homeomorphisms.  It proves forward and inverse
-  agreement between arbitrary earlier and later stages.  This work is in
-  `CompatibleShrinkingMoiseDiskStages.lean` and compiles independently.
-- The final regional-to-ambient pasting layer is implemented.  Given
-  `RegionalExtensionData J`, it produces the exact LeanEval Schoenflies
-  conclusion.
+The proof is complete end to end.
 
-Recent committed checkpoints are:
+- `ShrinkingInteriorHomeomorphism.lean` constructs the open direct-limit
+  homeomorphism.
+- `ShrinkingBoundaryConvergence.lean` proves source and target cell convergence
+  and localization at every carrier point.
+- `InsideBoundaryExtension.lean` adds the boundary, proves continuity,
+  bijectivity, and the exact sphere parametrization, and packages Moise's
+  bounded-side theorem.
+- `InvertedJordanRegions.lean` proves the needed component identities under
+  Euclidean inversion and identifies the punctured regional spaces.
+- `BallPunctureExterior.lean` constructs the sphere-fixing recentering and the
+  punctured-ball-to-exterior homeomorphism.
+- `OutsideBoundaryExtension.lean` constructs the closed outside homeomorphism
+  and proves its exact boundary formula.
+- `CompleteRegionalExtension.lean` pairs the two maps.
+- `MoiseChapter9.hasMoiseDiskExtensions` now discharges the formerly
+  conditional Chapter 9 interface for every Jordan circle.
+- `Schoenflies.schoenflies` closes the unconditional strong theorem.
+- The generated LeanEval payload contains the 219-module transitive closure.
+  Its pristine-shaped `lake build Submission Solution` completes successfully,
+  including the exact trusted `Solution.lean` statement.
 
-```text
-c55d03c control both boundaries of recursive Moise bands
-a57fd69 glue recursive Moise bands to radial shells
-5d59430 prove cyclic Moise cell compatibility
-242575f construct seam-compatible Moise cell maps
-0d81de5 build canonical radial target cells
-e511ed5 identify recursive Moise band shells
-d66261e prove eventual strict nesting of Moise collars
-```
+The final work did not require any changes to the existing
+`ClassificationOfSurfaces/Moise` sources.  Moving those files into a future
+shared module should therefore be an import/name migration, not a duplication
+or proof rewrite, provided their public API remains recognizable.
 
-At this snapshot, `CompatibleShrinkingMoiseDiskStages.lean` and its import in
-`MoiseChapter9.lean` are working-tree changes not yet included in one of the
-listed commits.
+## 3. Known weak areas
 
-### What “stripped-down end-to-end” currently means
+There are no known mathematical holes in the compiled theorem.  The remaining
+weaknesses are engineering and maintainability concerns.
 
-There are two nearby but importantly different results:
+- The construction is spread across a large dependency graph.  Many files are
+  deliberately narrow proof layers, but discovering the controlling invariant
+  can still require following several modules.
+- The cell-localization part is sensitive to the exact marked-arc and seam APIs.
+  Refactors of the collaborator-owned Moise modules may require mechanical
+  theorem-name and namespace repairs.
+- The outside proof contains a dense chain of subtype homeomorphisms.  It is
+  fully checked, but could benefit from a higher-level reusable API for
+  compactifying an unbounded complementary component.
+- The standalone benchmark sets `autoImplicit = false`.  One older helper had
+  relied on an implicit type variable; that binder is now explicit.  Keeping
+  the standalone build in CI is important for catching similar portability
+  issues.
+- The tree still emits pre-existing linter warnings.  They do not affect the
+  theorem or its axiom closure.
 
-1. `CompatibleInteriorHomeomorphism.lean` already gives a complete
-   homeomorphism from `J.inside` to the interior of the standard triangle.
-   It uses the older localized polygonal exhaustion.  This is an end-to-end
-   result only for the **open interior stratum**; it does not extend to
-   `J.carrier` and therefore does not prove Schoenflies.
-2. The new shrinking-Moise route now reaches compatible homeomorphisms at
-   **every finite closed-disk stage**.  It has not yet been taken through its
-   own open direct limit, boundary extension, outside construction, and
-   ambient pasting.
+## 4. Risks and difficulties
 
-Thus, the stripped-down full Schoenflies proof is **not finished**.  The
-finite combinatorial/topological core is substantially complete, but the
-infinite boundary passage remains.
-
-### Tasks remaining for the full theorem
-
-1. **DONE (2026-08-02, `ShrinkingSourceExhaustion.lean`).**  Source
-   exhaustion for the shrinking sequence: every point of `J.inside` lies in
-   the interior of some (eventually every) retained source disk.
-2. **DONE (2026-08-02, `ShrinkingInteriorHomeomorphism.lean`).**  The
-   shrinking-sequence open direct limit `shrinkingInsideHomeomorph :
-   J.inside ≃ₜ interior triangleBody`, clean axioms.
-3. **Prove marked boundary control survives compatibility corrections.**
-   The target-side half is DONE (2026-08-02, `RadialSectorTransport.lean`):
-   the shell adjustment keeps homothety scale and applies one master angular
-   map (`masterShellAdjustment`) at every radius.  Remaining: the source-side
-   arc-preservation of the stage mismatches and the drift-limit layer, per
-   the §5 design.  A
-   corrected shell map must still send points in a source cell assigned to a
-   level arc into a target sector whose diameter tends to zero at the
-   corresponding parameter point.
-4. **Extend across `J.carrier`.**  Define the boundary values, prove forward
-   and inverse continuity at every boundary point, prove the two maps are
-   inverse on the closed regions, and compose the standard triangle
-   straightening with the unit disk.
-5. **Construct the outside regional homeomorphism.**  Either transport the
-   bounded-side theorem through a rigorously implemented inversion/compactified
-   argument, or implement the outside collar construction directly.
-6. **Assemble `RegionalExtensionData J` and discharge
-   `HasMoiseDiskExtensions J`.**  The existing regional extension and ambient
-   gluing code should then close the precise LeanEval theorem.
-7. **Run the aggregate build and commit the new recursive-stage checkpoint.**
-
-## 3. Known weak areas in the current proof
-
-These are not `sorry`s; they are places where the current proved API is weaker
-than the next theorem needs.
-
-### Boundary control after shell correction
-
-The raw marked band map has an exact formula on every cell.  The compatible
-band map is obtained by postcomposing it with a radial shell adjustment that
-forces agreement with the preceding stage.  The code currently proves exact
-inner- and outer-boundary restrictions, but it does **not yet prove** that the
-adjustment preserves each marked target sector, or an equivalent shrinking
-diameter estimate.
-
-This is the most important weak area.  The recursive maps are topologically
-compatible, but topological compatibility alone does not imply continuity at
-the limiting Jordan boundary.
-
-The desired strengthening is one of:
-
-- prove inductively that every retained boundary homeomorphism preserves the
-  cyclic marked arcs, then show the radial adjustment preserves their
-  sectors; or
-- prove a direct uniform diameter estimate for each corrected band image.
-
-The first route is preferable because it exposes the combinatorial invariant
-that Moise's argument uses.
-
-### Exhaustion of the Jordan inside by the shrinking collars
-
-Carrier convergence and strict nesting are proved, but their combination has
-not yet been packaged as an exhaustion theorem.  The claim is mathematically
-standard, but its Lean proof must explicitly keep a path from an old interior
-point to the requested point away from a sufficiently late polygonal
-carrier, then use connectedness to select the bounded side.
-
-This appears to be a contained lemma rather than a conceptual gap, but it is
-a prerequisite for the direct limit.
-
-### The older open-interior result is not yet reusable verbatim
-
-The existing `compatibleInsideHomeomorph` is based on
-`localizedMarkedPolygonalDisk`, whereas the quantitative shrinking estimates
-belong to `shrinkingInsideCollarStage`.  The direct-limit argument can be
-reused structurally, but the theorem itself cannot simply be cited for the
-new finite maps.
-
-### No closed-boundary extension yet
-
-The repository has the needed source-cell shrink estimates and standard
-radial geometry, but it does not yet contain the theorem that combines them
-to prove continuity of the limit map at `J.carrier`.  Neither the forward nor
-inverse boundary-continuity proof has been completed.
-
-### Outside reduction is specified but not implemented
-
-`RegionalExtensionData` requires both complementary regions.  Only the
-inside construction is currently being developed.  The code does not yet
-contain a verified inversion or compactification theorem that turns the
-inside result into the required unbounded-side homeomorphism.
-
-## 4. Risks and difficulties in the current approach
-
-### Risk 1: the compatibility adjustment may erase localization
-
-This is the main mathematical risk.  An arbitrary homeomorphism of a circle
-can move a very small marked arc across a large part of the target boundary.
-If the recursively accumulated boundary correction is controlled only as a
-homeomorphism, the raw cell-diameter estimates are insufficient for boundary
-continuity.  The proof must establish the stronger marked-arc invariant
-before relying on those estimates.
-
-If that invariant fails for the current correction, the finite-stage maps
-remain valid, but the construction of the compatible maps must be changed.
-The likely repair would be to choose boundary parameterizations coherently
-from the outset or replace the unrestricted radial adjustment with a
-cell-preserving one.
-
-### Risk 2: the last infinite-limit theorem may be comparable in difficulty
-to much of the finite construction
-
-The finite cell-gluing results give genuine homeomorphisms at every stage,
-but a limit of compatible homeomorphisms need not extend continuously to the
-frontier without uniform control.  Proving both forward and inverse
-continuity, with the exact prescribed parametrization, is the nonformal heart
-of the remaining bounded-side proof.  It should not be treated as a routine
-pasting lemma.
-
-### Risk 3: inversion of the outside is subtle in the plane
-
-Euclidean inversion is naturally a homeomorphism of a punctured plane and
-exchanges a point with infinity only after one-point compactification.  A
-casual “apply the inside theorem after inversion” argument does not directly
-produce the exact subtype homeomorphism required by
-`RegionalExtensionData`.  This step may require additional compactification
-infrastructure or a separate outside exhaustion.
-
-### Risk 4: dependent indexing remains an engineering cost
-
-The shrinking collars package successor stages in dependent `Later` records.
-The new wrapper has isolated the current coercions and index equalities, but
-future cell-level limit theorems must still relate absolute collar indices,
-recursive stage indices, and cyclic `LevelAddress` types.  This is manageable
-but can make otherwise simple estimates expensive to express.
-
-### Risk 5: duplicated proof branches can drift
-
-There is an older localized-exhaustion branch with a complete open-interior
-homeomorphism and a newer shrinking-Moise branch with the correct metric cell
-control.  Reusing theorem patterns is valuable, but mixing the two source
-disk sequences would create false compatibility claims.  New direct-limit
-and boundary theorems should consistently use the shrinking sequence; the
-older branch should serve as a template, not as an interchangeable source of
-facts.
-
-### Risk 6: upstream API movement
-
-The new top-level `Schoenflies` files deliberately cite current theorem names
-under `ClassificationOfSurfaces.Moise` and do not modify that directory.
-When the collaborator moves the Moise material into a shared module, import
-paths or namespaces may break.  Because the dependency is through theorem
-names rather than copied proofs, this should be a mechanical migration, but
-it will still require an aggregate build and likely import/name fixes.
-
-## 5. Resolution of Risk 1 (2026-08-02 design analysis)
-
-A close reading of the actual construction shows the marked-sector question
-resolves positively, but with a twist: the limit boundary values are not the
-raw prescription; they are the prescription composed with a limit circle
-homeomorphism, and the discrepancy is repaired at the very end by one radial
-composition.  The facts:
-
-1. **The J-dependence cancels in the master marks.**
-   `boundaryPoint J (J.curvePoint t) = sphereStraightening.symm (Arcs.param t)`
-   because `curvePoint t = carrierHomeomorph (Arcs.param t)`.  Hence
-   `levelTargetBoundaryPoint a` is the standard-triangle boundary point at the
-   binary angular parameter of `a`, and the master target arcs are angular
-   arcs whose parameter widths decay like `(2/3)^k`
-   (`AccessibleAngularArc.descendant_width_le`).  Working in parameter space
-   makes the decay exactly geometric with no Lipschitz analysis needed.
-
-2. **The adjustment is angular, not an interpolation.**
-   `standardShellBoundaryAdjustment` is the Alexander radial extension
-   conjugated by the homogeneous gauge `triangleToBall`; it applies the same
-   angular map at every radius (`ambientRadialHomeomorph_smul_ofSphere`), and
-   therefore maps each radial sector over an arc `B` exactly onto the sector
-   over the image arc.  In gauge coordinates every canonical target cell IS an
-   annular sector (both circular sides are homothetic copies of one master
-   arc), so sector control is purely an angular statement on the master
-   circle.
-
-3. **Stage recursion in angular terms.**  With `q_n` the accumulated inner
-   discrepancy at stage `n` (`q_0 = id`), one has
-   `q_{n+1} = induced(q_n) ∘ e_{n+1}⁻¹` where
-   `e_{n+1} = rawInner_{n+1} ∘ rawOuter_n⁻¹` is the mismatch between the two
-   canonical parametrizations of the shared polygon.  Both parametrizations
-   send each retained level-`λ(n)` hair mark to the same target mark and each
-   level-`λ(n)` sub-arc onto the same target arc, so `e_{n+1}` **fixes the
-   coarse marks and preserves each coarse arc exactly**.  (This is the one
-   substantial combinatorial lemma still to prove in Lean.)
-
-4. **Summable drift and the limit twist.**  Arc preservation bounds the
-   pointwise angular drift of `e_j` by the level-`(j-1)` window size, which is
-   geometrically summable by (1).  Hence the accumulated angular maps
-   converge uniformly (with uniformly convergent inverses) to a limit circle
-   homeomorphism `q_∞`, and for any fixed tail cutoff `k` the stage-`n` cell
-   image lies in the sector over `q̂_k(ball(θ_P, tail_k))`, whose diameter is
-   controlled by continuity of the FIXED map `q_∞` plus `2·tail_k`.  This
-   yields boundary continuity of the limit disk map with boundary values
-   `q_∞`-twisted.
-
-5. **Final repair.**  Compose the limit closed-disk homeomorphism with the
-   Alexander radial extension of `q_∞⁻¹` (already available:
-   `extendSphereHomeomorph` / `ambientRadialHomeomorph`).  This restores the
-   exact prescribed boundary values required by `InsideRegionalExtensionData`
-   without disturbing interior bijectivity.
-
-Implementation order: (a) `RadialSectorTransport.lean` — DONE; (b) the `e_j`
-arc-preservation lemma from the marked cell maps; (c) the parameter-space
-drift/uniform-limit layer; (d) boundary continuity + final repair.
-
-**Refined plan for (b), 2026-08-02 late session.**  In master coordinates the
-accumulated discrepancy satisfies `Q_{n+1} = Q_n ∘ E_{n+1}` with `Q_0 = id`
-(initial boundary IS the raw inner restriction), where
-`E_{n+1}` = master conjugate of `rawOuter_n ∘ rawInner_{n+1}⁻¹` on the shared
-polygon (`childDisk L_n = parentDisk L_{n+1}`); the `Q_n` factor uses
-`standardShellOuterBoundaryAdjustment_apply_homothetyPoint`.  Only SET-level
-"into" preservation is needed — the Classical.choose parametrization of the
-`.second` complementary arcs is harmless, and no mark-fixing is required.
-`E`-into splits as:
-
-- (b1) source hierarchy, VERIFIED PROOF SHAPE (2026-08-02 late): prove the
-  membership form — `y ∈ range (L.next.family.forgetObstacle.
-  synchronizedCrosscutPath c) → y ∈ L.moiseBandCarrier a → c ∈ L.addresses
-  (prevLevelAddress n a) ∨ c ∈ L.addresses a ∨ c ∈ L.addresses
-  (nextLevelAddress n a)`.  Case on the four sides of `moiseBandCarrier a`
-  (`moiseBandPolygonalCircle_carrier`, MoiseBandCells:2498):
-  parent-crosscut side impossible (crosscut range ⊆ `childDisk.carrier`,
-  disjoint from `parentDisk.closedRegion` by `L.next.carrier_disjoint`);
-  seam sides meet the child polygon only at the inner seam point
-  (`adjacentMoiseBandSideSeam_inter_childCarrier`), which is the trimmed
-  point interior to the crosscut of `rightmostAddress`, forcing
-  `c = rightmostAddress a` (crosscut pairwise-intersection control from
-  `ExactSynchronizedCrosscutRanges.lean`); child side: `childMoiseCarrier a`
-  pieces are `reversedTrimmedBlock b ⊆ crosscut b` for `b ∈ L.addresses a`
-  and junctions ⊆ crosscut `b` ∪ crosscut `next b` (see
-  `childMoiseCarrier_subset_childCarrier` proof), and crosscut/crosscut
-  intersections are shared endpoints, so `c` is in the block of `a` or a
-  cyclic neighbor.  Block machinery: `CollarBandSegments.lean` (`addresses`,
-  `addresses_disjoint_of_ne`, `addresses_head/getLast`,
-  `nextLevelAddress_rightmostAddress`), `HierarchicalCollarStages.lean`
-  (`leftmostAddress/rightmostAddress`, endpoint-preservation simps).
-  Arc nesting then comes from
-  `levelArc_curveArcPlane_subset_of_mem_descendantAddresses`
-  (HierarchicalLevelHairs:208) transported through the `addresses` cast
-  (`levelArc_cast`), and master-arc nesting by `boundaryPoint` image
-  monotonicity.
-- (b2) outer edge formula (set level): on the child edge of cell `a`,
-  `markedMoiseRawOuterBoundaryMap` lands in
-  `range ((indexedTargetBoundarySplit (m+1) a).first)`.  Proof: the child
-  edge point is `(moiseCellBoundarySplit a).second t`
-  (`childCarrier_inter_moiseBandCellCarrier_subset_boundarySplitSecond`),
-  the cell map sends it to `(indexedTargetCellBoundarySplit m a).second t`
-  (`markedMoiseCellHomeomorph_apply_outerBoundaryPath` via
-  `markedMoiseBandHomeomorph_apply`), and the target `.second` range is the
-  exposed outer circular side
-  (`range_cyclicTargetAttachmentPresentation_exposed`, CyclicTargetCells).
-- (b2') inner formula: `markedMoiseRawInnerBoundaryMap` sends
-  `synchronizedCrosscutPath a t` to `(indexedTargetBoundarySplit m a).first t`
-  — extract the `hyEq` computation inside the definition as a standalone
-  lemma.
-- (b3) target hierarchy: master arcs refine — union of children's arcs is
-  the parent's arc, from the `levelArc` binary subdivision plus injectivity
-  of `boundaryPoint`.
-
-Then `E_{n+1}` maps each scaled level-`λ(n)` master arc into itself, so its
-pointwise drift is at most the level-`λ(n)` master arc diameter, which is
-geometrically summable; (c) and (d) proceed as designed above.
-
-## Bottom line
-
-The work has passed the stage where the principal uncertainty is whether the
-finite Moise cells really form compatible annular homeomorphisms: that part is
-now proved.  The project has **not** yet passed the principal infinite-limit
-uncertainty.  The next go/no-go checkpoint should be a proof that the
-recursive boundary corrections preserve marked sectors (or satisfy an
-equivalent shrinking estimate).  Once that is established, the inside
-exhaustion and open direct limit are mostly reuse; the closed-boundary limit
-and outside reduction remain the two substantial end-to-end tasks.
+- The generated evaluator payload is large: it vendors 219 local modules
+  because the proof genuinely reuses JordanCurve, the Schoenflies development,
+  and part of `ClassificationOfSurfaces.Moise`.  Fresh standalone builds are
+  consequently more expensive than compiling the final wrapper in the root
+  project.
+- A shared-module reorganization could temporarily break imports or qualified
+  theorem names.  Since the proof does not alter the reused Moise sources, the
+  repair should be mechanical unless the collaborator changes theorem
+  statements rather than locations.
+- The most delicate mathematics remains the limiting boundary-control layer:
+  compatibility corrections must preserve enough angular localization for
+  cell diameters to converge.  This invariant is now proved quantitatively,
+  but future simplification of the finite-stage construction must preserve it.
+- The inversion proof depends on distinguishing the filled inversion center
+  (the point representing infinity) from the punctured regional space.  Any
+  future abstraction should retain these types explicitly; treating inversion
+  as an ordinary whole-plane homeomorphism would be incorrect.
+- The elaboration and exact-statement build have passed.  The external
+  comparator/kernel replay is a separate infrastructure check and requires the
+  pinned comparator tools in `PATH`.

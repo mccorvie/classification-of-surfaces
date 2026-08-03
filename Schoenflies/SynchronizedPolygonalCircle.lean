@@ -305,7 +305,7 @@ theorem zmod_add_one_val {m : ℕ} [NeZero m] (hm : 3 ≤ m)
     rw [heq, Nat.mod_self]
 
 theorem zmod_add_one_fin_eq_cyclicSuccIndex
-    (l : List α) [NeZero l.length]
+    {α : Type*} (l : List α) [NeZero l.length]
     (hne : l ≠ []) (hm : 3 ≤ l.length) (i : ZMod l.length) :
     (⟨(i + 1).val, (i + 1).val_lt⟩ : Fin l.length) =
       cyclicSuccIndex l hne ⟨i.val, i.val_lt⟩ := by

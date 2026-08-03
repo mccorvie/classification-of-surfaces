@@ -62,9 +62,8 @@ PROBLEMS: dict[str, Problem] = {
         local_prefixes=("JordanCurve",),
     ),
     "schoenflies": Problem(
-        roots=(),
-        local_prefixes=("Schoenflies", "JordanCurve"),
-        note="workspace scaffold only; no full Schoenflies source theorem exists yet",
+        roots=("Schoenflies.Main",),
+        local_prefixes=("Schoenflies", "JordanCurve", "ClassificationOfSurfaces"),
     ),
     "topological_classification_of_surfaces": Problem(
         roots=("ClassificationOfSurfaces.EvalStatement",),

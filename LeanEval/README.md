@@ -21,7 +21,7 @@ The trusted files in all three directories were byte-for-byte checked against
 | Problem | Source root | Status |
 | --- | --- | --- |
 | `jordan_curve` | `JordanCurve.lean` | ready; generated payload builds through `Solution.lean` |
-| `schoenflies` | not yet present | workspace scaffold only; its shim still contains `sorry` |
+| `schoenflies` | `Schoenflies.Main` | ready; generated payload builds through `Solution.lean` |
 | `topological_classification_of_surfaces` | `ClassificationOfSurfaces.EvalStatement` | ready; generated payload builds through `Solution.lean` |
 
 The Jordan proof and its three dependency modules were ported from the
@@ -111,8 +111,7 @@ the label opts the PR out again.  A maintainer can also run the workflow against
 any branch or commit using **Actions → Lean Eval Submissions → Run
 workflow**; manual runs do not require a label.
 
-Schoenflies is excluded from the comparator matrix until it has a complete
-proof.
+All three completed problems are included in the comparator matrix.
 
 ## Adding the Schoenflies solution or another problem
 
