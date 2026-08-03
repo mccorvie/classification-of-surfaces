@@ -212,6 +212,44 @@ theorem standardShellOuterBoundaryAdjustment_apply_homothetyPoint
   rw [hx_eq, ← hshell, hcarrier]
   exact standardShellBoundaryAdjustment_apply_homothetyPoint n q hsMem hp
 
+/-- Every point of a standard closed shell is the homothety of a master
+boundary point at a scale within the shell interval.  This inverts the
+containment of homothetic sectors and lets every shell point be tracked in
+master coordinates. -/
+theorem exists_homothetyPoint_of_mem_closedShell (n : ℕ) {x : Plane}
+    (hx : x ∈ PolygonalCircle.closedShell (disk n) (disk (n + 1))) :
+    ∃ s ∈ Icc (radius n) (radius (n + 1)),
+      ∃ p ∈ standardTriangleCircle.carrier, x = homothetyPoint s p := by
+  have hy : triangleToBall x ∈
+      roundClosedShell (radius n) (radius (n + 1)) := by
+    rw [← triangleToBall_image_closedShell n]
+    exact mem_image_of_mem _ hx
+  obtain ⟨hyOuter, hyInner⟩ := hy
+  set r := ‖triangleToBall x‖ with hr_def
+  have hrIcc : r ∈ Icc (radius n) (radius (n + 1)) := by
+    constructor
+    · exact le_of_not_gt fun h => hyInner (by
+        rwa [mem_ball, dist_zero_right])
+    · rwa [mem_closedBall, dist_zero_right] at hyOuter
+  have hrpos : 0 < r := lt_of_lt_of_le (radius_pos n) hrIcc.1
+  set u : Plane := r⁻¹ • triangleToBall x with hu_def
+  have hu : u ∈ sphere (0 : Plane) 1 := by
+    rw [mem_sphere, dist_zero_right, hu_def, norm_smul,
+      Real.norm_eq_abs, abs_inv, abs_of_pos hrpos, ← hr_def,
+      inv_mul_cancel₀ hrpos.ne']
+  have hpCarrier : triangleToBall.symm u ∈
+      standardTriangleCircle.carrier := by
+    have humem := hu
+    rw [← triangleToBall_image_standardCarrier] at humem
+    obtain ⟨q, hq, hqu⟩ := humem
+    rw [← hqu, Homeomorph.symm_apply_apply]
+    exact hq
+  refine ⟨r, hrIcc, triangleToBall.symm u, hpCarrier, ?_⟩
+  apply triangleToBall.injective
+  rw [triangleToBall_homothetyPoint hrpos.le,
+    Homeomorph.apply_symm_apply, hu_def, smul_smul,
+    mul_inv_cancel₀ hrpos.ne', one_smul]
+
 /-- Distance between homothetic points, split into an angular and a radial
 contribution.  Combined with the transport theorem this bounds the diameter
 of any adjusted sector by the master arc diameter plus the shell width. -/
