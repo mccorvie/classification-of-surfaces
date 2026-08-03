@@ -88,6 +88,7 @@ import Schoenflies.ShrinkingMoiseBandHomeomorphisms
 import Schoenflies.RadialSectorTransport
 import Schoenflies.CompatibleShrinkingMoiseDiskStages
 import Schoenflies.ShrinkingSourceExhaustion
+import Schoenflies.ShrinkingInteriorHomeomorphism
 import Schoenflies.LocalizedAnnularOrder
 import Schoenflies.LocalizedCutFreeCells
 import Schoenflies.LocalizedCellCover
