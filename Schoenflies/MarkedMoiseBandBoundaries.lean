@@ -488,6 +488,91 @@ theorem compatibleMarkedMoiseBandHomeomorph_apply_outerCarrier
   rw [hraw, standardShellBoundaryAdjustment_apply_outerCarrier]
   rfl
 
+/-- The raw inner boundary map transports each synchronized parent crosscut
+with its native parameter onto the corresponding canonical target arc. -/
+theorem markedMoiseRawInnerBoundaryMap_apply_crosscut
+    (m : ℕ)
+    (houtward : ∀ c : LevelAddress n,
+      L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle c).closedRegion =
+        range (F.synchronizedCrosscutPath c))
+    (a : LevelAddress n) (t : unitInterval)
+    (hmem : F.synchronizedCrosscutPath a t ∈ L.parentDisk.carrier) :
+    (L.markedMoiseRawInnerBoundaryMap m houtward
+        ⟨F.synchronizedCrosscutPath a t, hmem⟩ : Plane) =
+      (I.indexedTargetBoundarySplit m a).first t := by
+  have hxCell : F.synchronizedCrosscutPath a t ∈
+      (L.moiseBandPolygonalCircle a).closedRegion := by
+    have hxBoth : F.synchronizedCrosscutPath a t ∈
+        L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle a).closedRegion := by
+      rw [houtward a]
+      exact ⟨t, rfl⟩
+    exact hxBoth.2
+  have hshell : F.synchronizedCrosscutPath a t ∈
+      PolygonalCircle.closedShell L.parentDisk L.childDisk :=
+    (L.markedMoiseParentCarrierInShell houtward
+      ⟨F.synchronizedCrosscutPath a t, hmem⟩).2
+  have hcongr : L.markedMoiseParentCarrierInShell houtward
+      ⟨F.synchronizedCrosscutPath a t, hmem⟩ =
+      ⟨F.synchronizedCrosscutPath a t, hshell⟩ := by
+    apply Subtype.ext
+    rfl
+  rw [L.markedMoiseRawInnerBoundaryMap_val m houtward, hcongr,
+    L.markedMoiseBandHomeomorph_apply m houtward a hshell hxCell]
+  exact L.markedMoiseCellHomeomorph_apply_parentCrosscut m a t
+
+/-- **Coarse-arc localization of the raw outer boundary map.**  On the child
+edge of the marked cell labelled `a`, the raw outer restriction lands in the
+canonical target arc of `a` on the outer standard polygon.  Together with
+the crosscut transport above, this makes the inner/outer parametrization
+mismatch of consecutive stages preserve every coarse target arc. -/
+theorem markedMoiseRawOuterBoundaryMap_mem_targetArc
+    (m : ℕ)
+    (houtward : ∀ c : LevelAddress n,
+      L.parentDisk.closedRegion ∩
+          (L.moiseBandPolygonalCircle c).closedRegion =
+        range (F.synchronizedCrosscutPath c))
+    (a : LevelAddress n) (x : L.childDisk.carrier)
+    (hx : (x : Plane) ∈ (L.moiseBandPolygonalCircle a).carrier) :
+    (L.markedMoiseRawOuterBoundaryMap m houtward x : Plane) ∈
+      range (I.indexedTargetBoundarySplit (m + 1) a).first := by
+  obtain ⟨t, ht⟩ :=
+    L.childCarrier_inter_moiseBandCellCarrier_subset_boundarySplitSecond
+      houtward a ⟨x.2, hx⟩
+  have hxCell : (x : Plane) ∈
+      (L.moiseBandPolygonalCircle a).closedRegion := by
+    rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union]
+    exact Or.inr hx
+  have hsecondMem : (L.moiseCellBoundarySplit a).second t ∈
+      (L.moiseBandPolygonalCircle a).closedRegion := by
+    rw [(L.moiseBandPolygonalCircle a).closedRegion_eq_union]
+    exact Or.inr <| by
+      rw [← (L.moiseBandPolygonalCircle a).carrier_toJordanCircle,
+        ← (L.moiseCellBoundarySplit a).cover]
+      exact Or.inr ⟨t, rfl⟩
+  have hshell : (x : Plane) ∈
+      PolygonalCircle.closedShell L.parentDisk L.childDisk :=
+    (L.markedMoiseChildCarrierInShell houtward x).2
+  have hcongr : L.markedMoiseChildCarrierInShell houtward x =
+      ⟨(x : Plane), hshell⟩ := by
+    apply Subtype.ext
+    rfl
+  have harg :
+      (⟨(x : Plane), hxCell⟩ :
+        (L.moiseBandPolygonalCircle a).closedRegion) =
+      ⟨(L.moiseCellBoundarySplit a).second t, hsecondMem⟩ := by
+    apply Subtype.ext
+    exact ht.symm
+  have hcellval :
+      (L.markedMoiseRawOuterBoundaryMap m houtward x : Plane) =
+        (I.indexedTargetCellBoundarySplit m a).second t := by
+    rw [L.markedMoiseRawOuterBoundaryMap_val m houtward, hcongr,
+      L.markedMoiseBandHomeomorph_apply m houtward a hshell hxCell, harg]
+    exact L.markedMoiseCellHomeomorph_apply_outerBoundaryPath m a t
+  rw [hcellval, ← I.range_indexedTargetCellBoundarySplit_second m hn a]
+  exact ⟨t, rfl⟩
+
 end JordanCircle.InitialAngularArcs.RecursiveInsideCollarStep.Later
 
 end

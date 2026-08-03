@@ -374,11 +374,46 @@ composition.  The facts:
    exact prescribed boundary values required by `InsideRegionalExtensionData`
    without disturbing interior bijectivity.
 
-Implementation order: (a) `RadialSectorTransport.lean` — polygonal sectors,
-sector-transport under `standardShellBoundaryAdjustment`, sector diameter
-estimates near the outer radius; (b) the `e_j` arc-preservation lemma from
-the marked cell maps; (c) the parameter-space drift/uniform-limit layer;
-(d) boundary continuity + final repair.  (a) and (c) are self-contained.
+Implementation order: (a) `RadialSectorTransport.lean` — DONE; (b) the `e_j`
+arc-preservation lemma from the marked cell maps; (c) the parameter-space
+drift/uniform-limit layer; (d) boundary continuity + final repair.
+
+**Refined plan for (b), 2026-08-02 late session.**  In master coordinates the
+accumulated discrepancy satisfies `Q_{n+1} = Q_n ∘ E_{n+1}` with `Q_0 = id`
+(initial boundary IS the raw inner restriction), where
+`E_{n+1}` = master conjugate of `rawOuter_n ∘ rawInner_{n+1}⁻¹` on the shared
+polygon (`childDisk L_n = parentDisk L_{n+1}`); the `Q_n` factor uses
+`standardShellOuterBoundaryAdjustment_apply_homothetyPoint`.  Only SET-level
+"into" preservation is needed — the Classical.choose parametrization of the
+`.second` complementary arcs is harmless, and no mark-fixing is required.
+`E`-into splits as:
+
+- (b1) source hierarchy: each level-`λ(n+1)` synchronized crosscut range on
+  the shared polygon lies in the child edge (`childCarrier ∩ old cell
+  carrier`) of the level-`λ(n)` cell whose window contains its address.
+  New marks refine old seam points — look in `MoiseBandCellParentSeams.lean`
+  / `HierarchicalLevelHairs.lean` / `MoiseBandChildCarrier.lean`.
+- (b2) outer edge formula (set level): on the child edge of cell `a`,
+  `markedMoiseRawOuterBoundaryMap` lands in
+  `range ((indexedTargetBoundarySplit (m+1) a).first)`.  Proof: the child
+  edge point is `(moiseCellBoundarySplit a).second t`
+  (`childCarrier_inter_moiseBandCellCarrier_subset_boundarySplitSecond`),
+  the cell map sends it to `(indexedTargetCellBoundarySplit m a).second t`
+  (`markedMoiseCellHomeomorph_apply_outerBoundaryPath` via
+  `markedMoiseBandHomeomorph_apply`), and the target `.second` range is the
+  exposed outer circular side
+  (`range_cyclicTargetAttachmentPresentation_exposed`, CyclicTargetCells).
+- (b2') inner formula: `markedMoiseRawInnerBoundaryMap` sends
+  `synchronizedCrosscutPath a t` to `(indexedTargetBoundarySplit m a).first t`
+  — extract the `hyEq` computation inside the definition as a standalone
+  lemma.
+- (b3) target hierarchy: master arcs refine — union of children's arcs is
+  the parent's arc, from the `levelArc` binary subdivision plus injectivity
+  of `boundaryPoint`.
+
+Then `E_{n+1}` maps each scaled level-`λ(n)` master arc into itself, so its
+pointwise drift is at most the level-`λ(n)` master arc diameter, which is
+geometrically summable; (c) and (d) proceed as designed above.
 
 ## Bottom line
 
