@@ -385,8 +385,10 @@ abbrev ActiveVertex := {v : K.Vertex // K.position v ∈ K.support}
 
 noncomputable instance activeVertexFintype : Fintype K.ActiveVertex := Fintype.ofFinite _
 
+/-- The `activeEmbedding` declaration. -/
 def activeEmbedding : K.ActiveVertex ↪ K.Vertex := Function.Embedding.subtype _
 
+/-- The `activeSimplexes` declaration. -/
 noncomputable def activeSimplexes : Finset (Finset K.ActiveVertex) :=
   Finset.univ.filter fun s => s.map K.activeEmbedding ∈ K.simplexes
 
@@ -535,8 +537,10 @@ abbrev UsedVertex := {v : K.Vertex // ∃ s ∈ K.simplexes, v ∈ s}
 
 noncomputable instance usedVertexFintype : Fintype K.UsedVertex := Fintype.ofFinite _
 
+/-- The `usedEmbedding` declaration. -/
 def usedEmbedding : K.UsedVertex ↪ K.Vertex := Function.Embedding.subtype _
 
+/-- The `usedSimplexes` declaration. -/
 noncomputable def usedSimplexes : Finset (Finset K.UsedVertex) :=
   Finset.univ.filter fun s => s.map K.usedEmbedding ∈ K.simplexes
 
@@ -1056,6 +1060,7 @@ def conePosition (c : Plane) : Option K.Vertex → Plane
   | none => c
   | some v => K.position v
 
+/-- The `coneWeights` declaration. -/
 def coneWeights (z : K.Vertex → ℝ) : Option K.Vertex → ℝ
   | none => 0
   | some v => z v

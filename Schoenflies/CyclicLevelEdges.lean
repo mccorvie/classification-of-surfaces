@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.SynchronizedLevelReturns
 import Schoenflies.ResolvedPolygonalArcs
 import Mathlib.Data.List.ChainOfFn
@@ -54,12 +59,15 @@ abbrev LevelEdgeAddress :=
   Σ a : LevelAddress n,
     Fin (F.synchronizedCrosscutCarrierLine a).data.n
 
+/-- The `edgeStart` declaration. -/
 noncomputable def edgeStart (e : F.LevelEdgeAddress) : Plane :=
   (F.synchronizedCrosscutCarrierLine e.1).data.vertex e.2.castSucc
 
+/-- The `edgeFinish` declaration. -/
 noncomputable def edgeFinish (e : F.LevelEdgeAddress) : Plane :=
   (F.synchronizedCrosscutCarrierLine e.1).data.vertex e.2.succ
 
+/-- The `edgeSegment` declaration. -/
 noncomputable def edgeSegment (e : F.LevelEdgeAddress) : Set Plane :=
   segment ℝ (F.edgeStart e) (F.edgeFinish e)
 
@@ -69,6 +77,7 @@ theorem edgeSegment_subset_crosscutRange (e : F.LevelEdgeAddress) :
   intro x hx
   exact Set.mem_iUnion.mpr ⟨e.2, hx⟩
 
+/-- The `EdgeAdjacent` declaration. -/
 def EdgeAdjacent (e f : F.LevelEdgeAddress) : Prop :=
   F.edgeFinish e = F.edgeStart f
 

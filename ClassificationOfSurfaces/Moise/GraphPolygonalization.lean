@@ -44,6 +44,7 @@ theorem exists_pos_uniform_fintype' {I : Type*} [Fintype I] [Nonempty I]
 
 /-- The last parameter at which an arc lies in a closed disk. -/
 structure LastExitData (γ : ℝ → Plane) (center : Plane) (radius : ℝ) where
+  /-- The `parameter` declaration. -/
   parameter : ℝ
   parameter_mem : parameter ∈ Set.Icc (0 : ℝ) 1
   parameter_pos : 0 < parameter
@@ -147,6 +148,7 @@ theorem exists_lastExitData {γ : ℝ → Plane} {center : Plane} {radius : ℝ}
 
 /-- A last exit which may occur at the initial endpoint when the arc starts on the sphere. -/
 structure WeakLastExitData (γ : ℝ → Plane) (center : Plane) (radius : ℝ) where
+  /-- The `parameter` declaration. -/
   parameter : ℝ
   parameter_mem : parameter ∈ Set.Icc (0 : ℝ) 1
   parameter_lt_one : parameter < 1
@@ -227,7 +229,9 @@ theorem exists_weakLastExitData {γ : ℝ → Plane} {center : Plane} {radius : 
 
 /-- Ordered exits of an arc from two disjoint endpoint disks. -/
 structure TwoSidedExitData (γ : ℝ → Plane) (first second : Plane) (radius : ℝ) where
+  /-- The `left` declaration. -/
   left : ℝ
+  /-- The `right` declaration. -/
   right : ℝ
   left_pos : 0 < left
   left_lt_right : left < right
@@ -319,7 +323,9 @@ theorem exists_twoSidedExitData {γ : ℝ → Plane} {first second : Plane} {rad
 
 /-- Ordered exits for an arc whose endpoints already lie on the two boundary circles. -/
 structure BoundaryExitData (γ : ℝ → Plane) (first second : Plane) (radius : ℝ) where
+  /-- The `left` declaration. -/
   left : ℝ
+  /-- The `right` declaration. -/
   right : ℝ
   left_nonneg : 0 ≤ left
   left_lt_right : left < right
@@ -559,6 +565,7 @@ private theorem exists_disjoint_image_face_thickenings {h : Plane → Plane}
 /-- Moise's pairwise-disjoint circular vertex regions, also disjoint from every nonincident
 embedded edge. -/
 structure VertexDiskControl (h : Plane → Plane) where
+  /-- The `radius` declaration. -/
   radius : ℝ
   radius_pos : 0 < radius
   vertices_disjoint : ∀ v w : K.Vertex, v ≠ w →
@@ -568,6 +575,7 @@ structure VertexDiskControl (h : Plane → Plane) where
     Disjoint (Metric.closedBall (h (K.position v)) radius)
       (Metric.cthickening radius (h '' K.cellCarrier e.1))
 
+/-- The `edgeCurve` declaration. -/
 noncomputable def edgeCurve (h : Plane → Plane)
     (i : Fin (Fintype.card K.EdgeFace)) (t : ℝ) : Plane :=
   h (AffineMap.lineMap (K.position (K.edgeFirst i)) (K.position (K.edgeSecond i)) t)
@@ -606,7 +614,9 @@ theorem edgeCurve_continuousOn {h : Plane → Plane} (hcont : ContinuousOn h K.s
 /-- The two ordered circle crossings which delimit the central part of an embedded edge. -/
 structure EdgeTrimData (h : Plane → Plane) (D : K.VertexDiskControl h)
     (i : Fin (Fintype.card K.EdgeFace)) where
+  /-- The `left` declaration. -/
   left : ℝ
+  /-- The `right` declaration. -/
   right : ℝ
   left_pos : 0 < left
   left_lt_right : left < right
@@ -919,6 +929,7 @@ namespace EdgeTrimData
 variable {K : PlaneComplex} {h : Plane → Plane}
   {D : K.VertexDiskControl h} {i : Fin (Fintype.card K.EdgeFace)}
 
+/-- The `centralCarrier` declaration. -/
 def centralCarrier (T : K.EdgeTrimData h D i) : Set Plane :=
   K.edgeCurve h i '' Set.Icc T.left T.right
 
@@ -970,6 +981,7 @@ theorem disjoint_centralCarrier {j : Fin (Fintype.card K.EdgeFace)}
 
 end EdgeTrimData
 
+/-- The `edgeTrim` declaration. -/
 noncomputable def edgeTrim {h : Plane → Plane} (hcont : ContinuousOn h K.support)
     (D : K.VertexDiskControl h) (i : Fin (Fintype.card K.EdgeFace)) :
     K.EdgeTrimData h D i :=
@@ -978,6 +990,7 @@ noncomputable def edgeTrim {h : Plane → Plane} (hcont : ContinuousOn h K.suppo
 /-- Pairwise-disjoint closed tubes around all trimmed central arcs. -/
 structure CentralTubeControl {h : Plane → Plane} (hcont : ContinuousOn h K.support)
     (D : K.VertexDiskControl h) where
+  /-- The `radius` declaration. -/
   radius : ℝ
   radius_pos : 0 < radius
   radius_lt_vertex : radius < D.radius
@@ -1060,6 +1073,7 @@ end EdgeTrimData
 structure CentralPolygonalArc {h : Plane → Plane} (hcont : ContinuousOn h K.support)
     (D : K.VertexDiskControl h) (C : K.CentralTubeControl hcont D)
     (i : Fin (Fintype.card K.EdgeFace)) where
+  /-- The `data` declaration. -/
   data : BrokenLineData
     (Metric.thickening C.radius (K.edgeTrim hcont D i).centralCarrier ∩
       convexHull ℝ (h '' K.cellCarrier (K.edgeAt i).1))
@@ -1103,6 +1117,7 @@ theorem exists_centralPolygonalArc {h : Plane → Plane}
     start_eq := hstart
     finish_eq := hfinish }⟩
 
+/-- The `centralPolygonalArc` declaration. -/
 noncomputable def centralPolygonalArc {h : Plane → Plane}
     (hcont : ContinuousOn h K.support) (D : K.VertexDiskControl h)
     (C : K.CentralTubeControl hcont D) (i : Fin (Fintype.card K.EdgeFace)) :
@@ -1173,8 +1188,11 @@ theorem disjoint_resolvedCarrier {j : Fin (Fintype.card K.EdgeFace)}
 
 /-- A simple parameterization of the polygonal replacement, normalized to the unit interval. -/
 structure Parameterization (A : K.CentralPolygonalArc hcont D C i) where
+  /-- The `source` declaration. -/
   source : PlaneComplex
+  /-- The `map` declaration. -/
   map : Plane → Plane
+  /-- The `curve` declaration. -/
   curve : ℝ → Plane
   source_support : source.support =
     segment ℝ (planePoint 0 0) (planePoint A.data.resolvedWalk.length 0)
@@ -1287,6 +1305,7 @@ theorem exists_parameterization (A : K.CentralPolygonalArc hcont D C i) :
   · simpa [curve, axis, n] using hstart
   · simpa [curve, axis, n] using hfinish
 
+/-- The `parameterization` declaration. -/
 noncomputable def parameterization (A : K.CentralPolygonalArc hcont D C i) :
     A.Parameterization :=
   Classical.choice A.exists_parameterization
@@ -1303,6 +1322,7 @@ noncomputable def exitData (A : K.CentralPolygonalArc hcont D C i) :
     exact (K.edgeTrim hcont D i).right_on_sphere
   · exact D.vertices_disjoint _ _ (K.edgeFirst_ne_edgeSecond i)
 
+/-- The `trimmedCarrier` declaration. -/
 def trimmedCarrier (A : K.CentralPolygonalArc hcont D C i) : Set Plane :=
   A.parameterization.curve '' Set.Icc A.exitData.left A.exitData.right
 
@@ -1369,15 +1389,19 @@ theorem trimmedCarrier_avoids_nonincident
   rw [himage, convexHull_pair]
   exact openSegment_subset_segment ℝ _ _
 
+/-- The `leftEndpoint` declaration. -/
 noncomputable def leftEndpoint (A : K.CentralPolygonalArc hcont D C i) : Plane :=
   A.parameterization.curve A.exitData.left
 
+/-- The `rightEndpoint` declaration. -/
 noncomputable def rightEndpoint (A : K.CentralPolygonalArc hcont D C i) : Plane :=
   A.parameterization.curve A.exitData.right
 
+/-- The `leftSpoke` declaration. -/
 noncomputable def leftSpoke (A : K.CentralPolygonalArc hcont D C i) : Set Plane :=
   segment ℝ (h (K.position (K.edgeFirst i))) A.leftEndpoint
 
+/-- The `rightSpoke` declaration. -/
 noncomputable def rightSpoke (A : K.CentralPolygonalArc hcont D C i) : Set Plane :=
   segment ℝ A.rightEndpoint (h (K.position (K.edgeSecond i)))
 
@@ -1424,9 +1448,11 @@ theorem completeCarrier_subset_edgeConvexHull
       (A.trimmedCarrier_subset_resolvedCarrier hx)
   · exact hconvex.segment_subset hright hsecond hx
 
+/-- The `leftOpenSpoke` declaration. -/
 noncomputable def leftOpenSpoke (A : K.CentralPolygonalArc hcont D C i) : Set Plane :=
   A.leftSpoke \ {h (K.position (K.edgeFirst i))}
 
+/-- The `rightOpenSpoke` declaration. -/
 noncomputable def rightOpenSpoke (A : K.CentralPolygonalArc hcont D C i) : Set Plane :=
   A.rightSpoke \ {h (K.position (K.edgeSecond i))}
 
@@ -1901,6 +1927,7 @@ noncomputable def replacementArc {h : Plane → Plane} (hcont : ContinuousOn h K
     (i : Fin (Fintype.card K.EdgeFace)) : K.CentralPolygonalArc hcont D C i :=
   K.centralPolygonalArc hcont D C i
 
+/-- The `rawMiddleBreakpoint` declaration. -/
 noncomputable def rawMiddleBreakpoint
     {h : Plane → Plane} {hcont : ContinuousOn h K.support}
     {D : K.VertexDiskControl h} {C : K.CentralTubeControl hcont D}
@@ -1910,6 +1937,7 @@ noncomputable def rawMiddleBreakpoint
       A.data.resolvedWalk.length - A.exitData.left) /
       (A.exitData.right - A.exitData.left) + 2) / 4
 
+/-- The `middleSourceScalarMap` declaration. -/
 noncomputable def middleSourceScalarMap
     {h : Plane → Plane} {hcont : ContinuousOn h K.support}
     {D : K.VertexDiskControl h} {C : K.CentralTubeControl hcont D}
@@ -1920,6 +1948,7 @@ noncomputable def middleSourceScalarMap
       (A.exitData.right - A.exitData.left) •
         ((4 : ℝ) • K.edgeParameter i - AffineMap.const ℝ Plane 2))
 
+/-- The `middleSourceMap` declaration. -/
 noncomputable def middleSourceMap
     {h : Plane → Plane} {hcont : ContinuousOn h K.support}
     {D : K.VertexDiskControl h} {C : K.CentralTubeControl hcont D}
@@ -1938,6 +1967,7 @@ noncomputable def middleSourceMap
           (4 * K.edgeParameter i x - 2))) 0 := by
   rfl
 
+/-- The `middleBreakpoint` declaration. -/
 noncomputable def middleBreakpoint
     {h : Plane → Plane} {hcont : ContinuousOn h K.support}
     {D : K.VertexDiskControl h} {C : K.CentralTubeControl hcont D}
@@ -2013,6 +2043,7 @@ abbrev GraphBreakpoint {h : Plane → Plane} (hcont : ContinuousOn h K.support)
   Σ i : Fin (Fintype.card K.EdgeFace),
     Option (Option (K.replacementArc hcont D C i).parameterization.source.Vertex)
 
+/-- The `graphBreakpointParameter` declaration. -/
 noncomputable def graphBreakpointParameter {h : Plane → Plane}
     (hcont : ContinuousOn h K.support) (D : K.VertexDiskControl h)
     (C : K.CentralTubeControl hcont D) (b : K.GraphBreakpoint hcont D C) : ℝ :=
@@ -2032,6 +2063,7 @@ theorem graphBreakpointParameter_mem {h : Plane → Plane}
     change middleBreakpoint K (K.replacementArc hcont D C i) v ∈ Set.Icc (0 : ℝ) 1
     constructor <;> linarith [hb.1, hb.2]
 
+/-- The `graphBreakpointPoint` declaration. -/
 noncomputable def graphBreakpointPoint {h : Plane → Plane}
     (hcont : ContinuousOn h K.support) (D : K.VertexDiskControl h)
     (C : K.CentralTubeControl hcont D) (b : K.GraphBreakpoint hcont D C) : Plane :=
@@ -2174,9 +2206,11 @@ theorem edgeReplacementMap_image_cellCarrier {h : Plane → Plane}
     rw [hparam]
     exact Path.extend_apply _ t.2
 
+/-- The `IsGraphVertexPoint` declaration. -/
 def IsGraphVertexPoint (x : Plane) : Prop :=
   ∃ v : K.Vertex, ({v} : Finset K.Vertex) ∈ K.simplexes ∧ x = K.position v
 
+/-- The `edgeIndexAt` declaration. -/
 noncomputable def edgeIndexAt (x : Plane)
     (hx : ∃ i : Fin (Fintype.card K.EdgeFace), x ∈ K.cellCarrier (K.edgeAt i).1) :
     Fin (Fintype.card K.EdgeFace) :=

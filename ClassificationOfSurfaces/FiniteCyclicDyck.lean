@@ -34,7 +34,6 @@ def oneFace {n : ℕ} (word : List (SignedDart (Fin n))) :
   edgeCount := n
   faces := [word]
 
-@[simp]
 theorem oneFace_boundary_zero {n : ℕ} (word : List (SignedDart (Fin n))) :
     (oneFace word).boundary 0 = word :=
   rfl
@@ -183,7 +182,6 @@ theorem commonFaceEquiv_selected {n : ℕ} (a : Fin n)
       P2.oldFace (source a U V X) (sourceCut a U V X) 0 :=
   rfl
 
-@[simp]
 theorem commonFaceEquiv_right {n : ℕ} (a : Fin n)
     (U V X : List (SignedDart (Fin n))) :
     commonFaceEquiv a U V X
@@ -191,7 +189,6 @@ theorem commonFaceEquiv_right {n : ℕ} (a : Fin n)
       P2.rightFace (source a U V X) (sourceCut a U V X) :=
   rfl
 
-@[simp]
 theorem split_target_boundary_selected {n : ℕ} (a : Fin n)
     (U V X : List (SignedDart (Fin n))) :
     (P2.split (target a U V X) (targetCut a U V X)).boundary
@@ -204,7 +201,6 @@ theorem split_target_boundary_selected {n : ℕ} (a : Fin n)
       P2.selectedBoundary (target a U V X) (targetCut a U V X)
   exact P2.split_boundary_selected (target a U V X) (targetCut a U V X)
 
-@[simp]
 theorem split_source_boundary_selected {n : ℕ} (a : Fin n)
     (U V X : List (SignedDart (Fin n))) :
     (P2.split (source a U V X) (sourceCut a U V X)).boundary
@@ -217,7 +213,6 @@ theorem split_source_boundary_selected {n : ℕ} (a : Fin n)
       P2.selectedBoundary (source a U V X) (sourceCut a U V X)
   exact P2.split_boundary_selected (source a U V X) (sourceCut a U V X)
 
-@[simp]
 theorem split_target_boundary_right {n : ℕ} (a : Fin n)
     (U V X : List (SignedDart (Fin n))) :
     (P2.split (target a U V X) (targetCut a U V X)).boundary
@@ -225,7 +220,6 @@ theorem split_target_boundary_right {n : ℕ} (a : Fin n)
       P2.rightBoundary (target a U V X) (targetCut a U V X) :=
   P2.split_boundary_right (target a U V X) (targetCut a U V X)
 
-@[simp]
 theorem split_source_boundary_right {n : ℕ} (a : Fin n)
     (U V X : List (SignedDart (Fin n))) :
     (P2.split (source a U V X) (sourceCut a U V X)).boundary

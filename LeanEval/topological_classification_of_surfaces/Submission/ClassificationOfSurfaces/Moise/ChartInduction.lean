@@ -498,7 +498,7 @@ theorem TriangleMesh.boundaryFacewiseRegularEmbedding_chart
 theorem boundaryFacewiseRegularEmbedding_congr
     {S : Type*} [TopologicalSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    {V : Type*} [Fintype V] [DecidableEq V]
+    {V : Type*} [Fintype V]
     {F : Finset (Finset V)}
     {e e' : GeometricRealization V F → S}
     (h : BoundaryFacewiseRegularEmbedding F e)
@@ -506,6 +506,7 @@ theorem boundaryFacewiseRegularEmbedding_congr
       (e' x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S ↔
         e x ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S)) :
     BoundaryFacewiseRegularEmbedding F e' := by
+  classical
   intro t ht
   obtain ⟨b, hbt, hbcard, hb⟩ := h t ht
   refine ⟨b, hbt, hbcard, ?_⟩
@@ -516,7 +517,7 @@ theorem boundaryFacewiseRegularEmbedding_congr
 theorem boundaryFacewiseRegularEmbedding_relabel
     {S : Type*} [TopologicalSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
-    {A B : Type*} [Fintype A] [Fintype B] [DecidableEq A] [DecidableEq B]
+    {A B : Type*} [Fintype A] [Fintype B] [DecidableEq B]
     (ι : A ↪ B) (F : Finset (Finset A))
     (e : GeometricRealization A F → S)
     (h : BoundaryFacewiseRegularEmbedding F e) :
@@ -1941,8 +1942,11 @@ polygonal closed disk.  Keeping this witness exposed is what the final Radó con
 needs in order to take a finite arrangement near the compact chart patch. -/
 structure PolygonalReplacementPresentation
     (X : Type*) [TopologicalSpace X] (V : Set Plane) where
+  /-- The `complex` declaration. -/
   complex : LocallyFiniteTriangleComplex V
+  /-- The `sourceHomeomorph` declaration. -/
   sourceHomeomorph : X ≃ₜ complex.support
+  /-- The `facePolygon` declaration. -/
   facePolygon : complex.Face → PolygonalCircle
   /-- The plane map used to fill each abstract source triangle. -/
   faceFillingMap : complex.Face → Plane → Plane
@@ -1976,11 +1980,15 @@ from the coordinate presentation lets the finite arrangement machinery remain ge
 structure PolygonalReplacementSourceAtlas
     (K : IntrinsicTwoComplex) (U : Set K.realization) (V : Set Plane)
     (Q : PolygonalReplacementPresentation U V) where
+  /-- The `Tile` declaration. -/
   Tile : Type
   tileDecidableEq : DecidableEq Tile
+  /-- The `tile` declaration. -/
   tile : Q.complex.Face → Tile
+  /-- The `tileFaces` declaration. -/
   tileFaces : Tile → Finset Q.complex.Face
   mem_tileFaces : ∀ t f, f ∈ tileFaces t ↔ tile f = t
+  /-- The `sourceTileCarrier` declaration. -/
   sourceTileCarrier : Tile → Set K.realization
   sourceTileCarrier_subset_open : ∀ t, sourceTileCarrier t ⊆ U
   sourceTileCarrier_locallyFinite :
@@ -2002,7 +2010,9 @@ structure PolygonalReplacementSourceAtlas
           (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
             (K := Q.complex) f x)).1.1 =
           a (Q.complex.facePlaneHomeomorph f x).1
+  /-- The `commonLevel` declaration. -/
   commonLevel : Finset Tile → ℕ
+  /-- The `levelFaces` declaration. -/
   levelFaces : (F : Finset Tile) → Finset (K.LevelFace (commonLevel F))
   sourceTiles_eq_levelFaces : ∀ F : Finset Tile,
     (⋃ t : {t : Tile // t ∈ F}, sourceTileCarrier t.1) =
@@ -2042,7 +2052,7 @@ theorem isEmbedding_sourceFaceMap [T2Space V]
 /-- Two canonical source-face points agree exactly when their zero-extended barycentric
 coordinates agree.  This is the source-side face-to-face law inherited from the retained
 replacement complex. -/
-theorem sourceFaceMap_eq_iff [T2Space V]
+theorem sourceFaceMap_eq_iff
     (Q : PolygonalReplacementPresentation X V)
     {f g : Q.complex.Face}
     {x : Q.complex.ClosedFace f} {y : Q.complex.ClosedFace g} :
@@ -2173,6 +2183,7 @@ noncomputable def tileFaceFinsetMeeting
     Finset Q.complex.Face :=
   (A.tilesMeeting C hC).biUnion A.tileFaces
 
+/-- The `TileFacesMeeting` declaration. -/
 abbrev TileFacesMeeting
     {K : IntrinsicTwoComplex} {U : Set K.realization} {V : Set Plane}
     {Q : PolygonalReplacementPresentation U V}
@@ -2308,6 +2319,7 @@ noncomputable def patchTileFaceFinset
     Finset Q.complex.Face :=
   A.patchTiles.biUnion A.tileFaces
 
+/-- The `PatchTileFaces` declaration. -/
 abbrev PatchTileFaces
     {K : IntrinsicTwoComplex} {U : Set K.realization} {k : ChartKind}
     {Q : PolygonalReplacementPresentation U k.perturbationRegion}
@@ -3383,6 +3395,7 @@ theorem meshes_coordinateEmbed_eq_iff
   · intro hxy
     exact congrArg (fun z ↦ R.toPlaneComplex.baryEval z) hxy
 
+/-- The `oldSurfaceEmbed` declaration. -/
 noncomputable def oldSurfaceEmbed
     {S : Type*} [TopologicalSpace S] (c : MoiseChart S)
     (J : ι → PolygonalCircle) (N : TriangleMesh)
@@ -3395,6 +3408,7 @@ noncomputable def oldSurfaceEmbed
       rw [oldMesh_support]
       exact hmodel) x)).1
 
+/-- The `newSurfaceEmbed` declaration. -/
 noncomputable def newSurfaceEmbed
     {S : Type*} [TopologicalSpace S] (c : MoiseChart S)
     (J : ι → PolygonalCircle) (N : TriangleMesh)
@@ -6768,6 +6782,8 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
     (hstraight :
       PartialTriangulation.BoundaryPreservingStraightening S T c) :
+    let _ := (inferInstance : ConnectedSpace S)
+    let _ := (inferInstance : IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S)
     ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
       (F₁ F₂ : Finset (Finset V))
       (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S),
@@ -6780,6 +6796,7 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       PartialTriangulation.BoundaryFacewiseRegularEmbedding F₁ e₁ ∧
       PartialTriangulation.BoundaryFacewiseRegularEmbedding F₂ e₂ ∧
       A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) := by
+  dsimp
   classical
   letI : SecondCountableTopology S := moise_secondCountableTopology S
   -- Protect a genuine closed neighborhood of the old cores, not merely the cores pointwise.

@@ -74,7 +74,6 @@ def edgeToLast
     finCongr (edgeCountAfterDelete_add_one P e).symm
   exact castCount.trans (Cancellation.moveToLast (castCount e))
 
-@[simp]
 theorem edgeToLast_selected
     (P : FiniteCyclicPresentation) (e : P.Edge) :
     edgeToLast P e e =
@@ -140,7 +139,6 @@ def faceToEndpoints
     Equiv.swap f ⟨0, Nat.zero_lt_of_lt f.isLt⟩
   moveFirst.trans (Equiv.swap (moveFirst g) (lastFace P f))
 
-@[simp]
 theorem faceToEndpoints_selected
     (P : FiniteCyclicPresentation) (f g : P.Face)
     (hfg : f ≠ g) :
@@ -434,8 +432,10 @@ theorem exists_dart_of_mem_map_edgeOfDart
 /-- A common edge displayed positively at the head of an oriented cyclic face boundary. -/
 structure PositiveOccurrence
     (P : FiniteCyclicPresentation) (f : P.Face) (e : P.Edge) where
+  /-- The `orientedFace` declaration. -/
   orientedFace : P.OrientedFace
   face_eq : orientedFace.face = f
+  /-- The `tail` declaration. -/
   tail : List P.Dart
   boundary_rotated :
     (P.orientedBoundary orientedFace).IsRotated (.pos e :: tail)
@@ -443,8 +443,10 @@ structure PositiveOccurrence
 /-- A common edge displayed negatively at the head of an oriented cyclic face boundary. -/
 structure NegativeOccurrence
     (P : FiniteCyclicPresentation) (f : P.Face) (e : P.Edge) where
+  /-- The `orientedFace` declaration. -/
   orientedFace : P.OrientedFace
   face_eq : orientedFace.face = f
+  /-- The `tail` declaration. -/
   tail : List P.Dart
   boundary_rotated :
     (P.orientedBoundary orientedFace).IsRotated (.neg e :: tail)
@@ -639,7 +641,6 @@ def mergeMiddleWords
   (middleOriginalFaces P f g hfg).map
     (fun q ↦ lowerTail P e (P.boundary q))
 
-@[simp]
 theorem mergeMiddleWords_length
     (P : FiniteCyclicPresentation) (e : P.Edge)
     (f g : P.Face) (hfg : f ≠ g) :
@@ -647,7 +648,6 @@ theorem mergeMiddleWords_length
       faceCountBetween P := by
   simp [mergeMiddleWords]
 
-@[simp]
 theorem mergeMiddleWords_get
     (P : FiniteCyclicPresentation) (e : P.Edge)
     (f g : P.Face) (hfg : f ≠ g)
@@ -711,7 +711,6 @@ theorem mergeSource_faces_length
     simp [FaceMerge.ContextMerge.target]]
   rw [mergeMiddleWords_length, faceCountBetween_add_two P f g hfg]
 
-@[simp]
 theorem mergeTarget_faces_length
     {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
     (left : PositiveOccurrence P f e)
@@ -1237,7 +1236,6 @@ theorem markedMergeNormalizationEquivalent
       (mergeMiddleWords P e f g hfg) validSource)
 
 /-- A marked merge removes exactly one face. -/
-@[simp]
 theorem markedMergeTarget_faces_length
     {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
     (left : PositiveOccurrence P f e)
@@ -1345,6 +1343,7 @@ theorem exists_oppositelyDisplayedAdjacentFaces
 
 /-- The validity-safe output of merging a connected presentation down to one face. -/
 structure OneFaceReduction (P : ValidPresentation) where
+  /-- The `target` declaration. -/
   target : ValidPresentation
   connected : target.presentation.IsConnected
   faces_length : target.presentation.faces.length = 1

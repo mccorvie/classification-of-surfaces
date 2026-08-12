@@ -91,7 +91,7 @@ noncomputable def faceVertexEmbedding (t : K.Face) : Fin 3 ↪ K.Vertex where
 noncomputable def faceStandardEdge (i : ZMod 3) : Finset (Fin 3) :=
   {(ZMod.finEquiv 3).symm i, (ZMod.finEquiv 3).symm (i + 1)}
 
-@[simp] theorem faceVertexEmbedding_cyclic (t : K.Face) (i : ZMod 3) :
+theorem faceVertexEmbedding_cyclic (t : K.Face) (i : ZMod 3) :
     K.faceVertexEmbedding t ((ZMod.finEquiv 3).symm i) = K.faceVertex t i := rfl
 
 theorem faceStandardEdge_map (t : K.Face) (i : ZMod 3) :

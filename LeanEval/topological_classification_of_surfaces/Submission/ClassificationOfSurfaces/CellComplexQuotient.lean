@@ -46,11 +46,14 @@ def occurrenceSide (K : SurfaceCellComplex) (o : K.BoundaryOccurrence) :
 Equal oriented darts use the same interval direction. Inverse darts use the opposite direction.
 Boundary darts are excluded from both ends of a gluing instruction. -/
 structure BoundaryPairing (K : SurfaceCellComplex) where
+  /-- The source boundary occurrence in the pairing. -/
   source : K.BoundaryOccurrence
+  /-- The target boundary occurrence in the pairing. -/
   target : K.BoundaryOccurrence
   source_ne_target : source ≠ target
   source_not_boundary : ¬K.IsBoundaryDart (K.occurrenceDart source)
   target_not_boundary : ¬K.IsBoundaryDart (K.occurrenceDart target)
+  /-- Whether the gluing preserves or reverses the interval parameter. -/
   direction : PolygonGluing.ParameterDirection
   compatible :
     match direction with
@@ -592,7 +595,6 @@ def sphereBoundaryPairing : sphere.BoundaryPairing where
   compatible := by
     simp
 
-@[simp]
 theorem sphereBoundaryPairing_mem :
     sphereBoundaryPairing.identification ∈
       sphere.polygonalIdentifications sphere_occurrencePairingValid :=

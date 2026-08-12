@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.PolygonalPaths
 import Schoenflies.TwoArcJordan
 
@@ -39,8 +44,11 @@ the Chapter 9 separator argument.  The polygonal carrier is stored separately
 from its oriented path so generic-position arguments can use finite vertices
 while the topological argument uses the path parameter. -/
 structure InsideReturnArc (A : J.AccessibleAngularArc) where
+  /-- The `permittedSet` declaration. -/
   permittedSet : Set Plane
+  /-- The `path` declaration. -/
   path : Path (J.curvePoint A.right : Plane) (J.curvePoint A.left : Plane)
+  /-- The `sourceBrokenLine` declaration. -/
   sourceBrokenLine : SimpleBrokenLine permittedSet
     (J.curvePoint A.left : Plane) (J.curvePoint A.right : Plane)
   path_injective : Injective path

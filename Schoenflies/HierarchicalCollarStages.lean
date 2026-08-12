@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.HierarchicalLevelHairs
 import Schoenflies.RecursiveCollarStages
 
@@ -369,6 +374,7 @@ level is strictly later than the parent synchronized level. -/
 structure Later
     {n : ℕ} {epsilon : ℝ}
     (F : I.LevelAvoidingJoinFamily n epsilon) (hn : 1 ≤ n) where
+  /-- The `next` declaration. -/
   next : I.RecursiveInsideCollarStep
     (F.synchronizedPolygonalCircle hn)
   later : n < next.level

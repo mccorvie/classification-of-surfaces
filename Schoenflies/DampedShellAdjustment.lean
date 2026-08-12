@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.ShortCircleIsotopy
 import Schoenflies.AngularDriftBounds
 import Schoenflies.RadialSectorTransport
@@ -171,6 +176,7 @@ namespace DampedAnnulus
 
 /-- Polar coordinates on a closed round shell bounded away from the origin. -/
 def polarHomeomorph (r s : ℝ) (hr : 0 < r) (hrs : r ≤ s) :
+    let _ := hrs
     StandardPolygonalCollars.roundClosedShell r s ≃ₜ
       sphere (0 : Plane) 1 × Icc r s where
   toFun x := by
@@ -271,7 +277,6 @@ def polarMap
   (SphereShortIsotopy.interpolation q hshort (shellTime r s hrs p.2) p.1,
     p.2)
 
-set_option maxHeartbeats 800000 in
 theorem continuous_polarMap
     (q : sphere (0 : Plane) 1 ≃ₜ sphere (0 : Plane) 1)
     (hshort : ∀ u, q u ≠ SphereShortIsotopy.antipode u)

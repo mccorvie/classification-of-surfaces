@@ -28,7 +28,7 @@ theorem classification_of_surfaces (S : Type*) [TopologicalSpace S]
       ∃ p n,
         ((1 ≤ p ∨ 1 ≤ n) ∧ Nonempty (S ≃ₜ Quot (OrientableRel p n))) ∨
           (1 ≤ p ∧ Nonempty (S ≃ₜ Quot (NonOrientableRel p n))) := by
-  let P := compact_eval_surface_finiteCyclicPresentation S
+  let P := compactEvalSurfaceFiniteCyclicPresentation S
   let validP := compact_eval_surface_finiteCyclicPresentation_isSurfaceValid S
   have connectedP : P.IsConnected :=
     compact_eval_surface_finiteCyclicPresentation_isConnected S

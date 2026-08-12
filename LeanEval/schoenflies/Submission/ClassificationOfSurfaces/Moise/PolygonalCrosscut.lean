@@ -733,7 +733,7 @@ def rotate (J : PolygonalCircle) (a : ZMod J.n) : PolygonalCircle where
   three_le := J.three_le
   vertex i := J.vertex (i + a)
   adjacent_ne i := by
-    convert J.adjacent_ne (i + a) using 1 ; ring
+    convert J.adjacent_ne (i + a) using 1; ring
   consecutive_inter i := by
     convert J.consecutive_inter (i + a) using 1 <;> ring
   nonadjacent_disjoint i j hij hprev hnext := by
@@ -745,7 +745,7 @@ def rotate (J : PolygonalCircle) (a : ZMod J.n) : PolygonalCircle where
       (fun h => hnext (add_right_cancel (by calc
         j + a = i + a + 1 := h
         _ = (i + 1) + a := by ring)))
-    convert h using 1 ; ring
+    convert h using 1; ring
 
 @[simp] theorem rotate_n (J : PolygonalCircle) (a : ZMod J.n) :
     (J.rotate a).n = J.n := rfl
@@ -969,7 +969,9 @@ theorem exists_refinement_vertices (J : PolygonalCircle) (F : Finset Plane)
 /-- A straight crosscut of a polygonal disk: its endpoints lie on the polygon, while every
 other point of the segment lies in the polygon interior. -/
 structure ProperChord (J : PolygonalCircle) where
+  /-- The `P` declaration. -/
   P : Plane
+  /-- The `Q` declaration. -/
   Q : Plane
   ne : P ≠ Q
   P_mem : P ∈ J.carrier
@@ -1301,6 +1303,7 @@ theorem chord_disjoint_middleEdge {k m : ℕ} (hm0 : 0 < m) (hmk : m + 1 < k)
   rw [C.segment_inter_carrier] at hx
   exact hx.elim (fun h => hPnot (h ▸ hxEdge)) (fun h => hQnot (h ▸ hxEdge))
 
+/-- The `forwardCutEdgeSegment` declaration. -/
 def forwardCutEdgeSegment (k : ℕ) (i : ZMod (k + 1)) : Set Plane :=
   segment ℝ (forwardCutVertex (J := J) k i)
     (forwardCutVertex (J := J) k (i + 1))
@@ -2084,13 +2087,21 @@ end PolygonalCircle
 /-- The carrier data of a polygonal theta graph.  `J12`, `J13`, and `J23` are the polygons
 formed by the indicated pairs of arcs. -/
 structure PolygonalTheta where
+  /-- The `P` declaration. -/
   P : Plane
+  /-- The `Q` declaration. -/
   Q : Plane
+  /-- The `B1` declaration. -/
   B1 : Set Plane
+  /-- The `B2` declaration. -/
   B2 : Set Plane
+  /-- The `B3` declaration. -/
   B3 : Set Plane
+  /-- The `J12` declaration. -/
   J12 : PolygonalCircle
+  /-- The `J13` declaration. -/
   J13 : PolygonalCircle
+  /-- The `J23` declaration. -/
   J23 : PolygonalCircle
   P_mem_B1 : P ∈ B1
   Q_mem_B1 : Q ∈ B1
@@ -2181,6 +2192,7 @@ This is the exact interface between the separation theorem of Chapter 2 and the 
 induction of Chapter 3. -/
 structure PolygonalTheta.MeshCrosscut (G : PolygonalTheta) (M : TriangleMesh) where
   support_eq : M.toPlaneComplex.support = G.J12.closedRegion
+  /-- The `chordEdge` declaration. -/
   chordEdge : Finset M.Vertex
   chordEdge_mem : chordEdge ∈ M.edges
   chordVertices : M.position '' (chordEdge : Set M.Vertex) = {G.P, G.Q}

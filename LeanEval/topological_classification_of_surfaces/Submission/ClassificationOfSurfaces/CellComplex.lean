@@ -29,15 +29,22 @@ Validity and connectedness are derived from this data by `IsSurfaceValid` and `I
 than stored as unconstrained propositions. Its faithful polygonal realization is constructed
 separately from the boundary occurrences. -/
 structure SurfaceCellComplex where
+  /-- The type of faces in the cell complex. -/
   Face : Type
+  /-- The type of oriented darts in the cell complex. -/
   Dart : Type
+  /-- The type of vertices in the cell complex. -/
   Vertex : Type
   faceFintype : Fintype Face
   dartFintype : Fintype Dart
   vertexFintype : Fintype Vertex
+  /-- Reversal of an oriented dart. -/
   inv : Dart ≃ Dart
+  /-- The source vertex of an oriented dart. -/
   source : Dart → Vertex
+  /-- The target vertex of an oriented dart. -/
   target : Dart → Vertex
+  /-- The cyclic boundary word of each face. -/
   boundary : Face → List Dart
   inv_involutive : ∀ d, inv (inv d) = d
   inv_source : ∀ d, source (inv d) = target d

@@ -107,7 +107,7 @@ theorem coe_repositionHomeomorph_apply (position' : M.Vertex → Plane)
   rw [hz, repositionHomeomorph_apply_realization]
   rfl
 
-@[simp] theorem coe_repositionHomeomorph_trans_setCongr_apply
+theorem coe_repositionHomeomorph_trans_setCongr_apply
     (position' : M.Vertex → Plane)
     (hposition_injective : Function.Injective position')
     (haffineIndependent : ∀ t ∈ M.triangles,

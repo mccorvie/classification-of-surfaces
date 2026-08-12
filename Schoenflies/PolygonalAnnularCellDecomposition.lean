@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.PolygonalAnnularCells
 import Schoenflies.PolygonalAnnularTheta
 
@@ -22,8 +27,11 @@ namespace PolygonalCircle
 /-- Two straight disjoint crosscuts and compatible boundary splits, packaged
 as an exact two-cell decomposition of the outer polygonal disk. -/
 structure AnnularCellDecomposition (P Q : PolygonalCircle) where
+  /-- The `first` declaration. -/
   first : AnnularCrosscut P Q
+  /-- The `second` declaration. -/
   second : AnnularCrosscut P Q
+  /-- The `separator` declaration. -/
   separator : AnnularCrosscut.SeparatorPair first second
   nested : P.closedRegion ⊆ Q.interiorRegion
   disjoint : Disjoint (range first.path) (range second.path)

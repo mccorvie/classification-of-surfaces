@@ -110,7 +110,6 @@ theorem stretch_length (weights : List ℕ) :
               push_cast
               simp
 
-@[simp]
 theorem unstretch_sum (weights : List ℕ) (h : Positive weights) :
     unstretch weights weights.sum = weights.length := by
   induction weights with
@@ -405,7 +404,6 @@ theorem intervalHomeomorph_zero (weights : List ℕ) (h : Positive weights) :
   apply Subtype.ext
   exact stretch_zero weights
 
-@[simp]
 theorem intervalHomeomorph_length (weights : List ℕ) (h : Positive weights) :
     intervalHomeomorph weights h
         ⟨0 + weights.length, by simp⟩ =

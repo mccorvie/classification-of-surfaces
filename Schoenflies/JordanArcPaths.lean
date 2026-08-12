@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.TwoArcJordan
 
 /-!
@@ -130,7 +135,9 @@ variable (J : JordanCircle)
 /-- Two oppositely oriented injective paths which are precisely the two
 closed boundary arcs between `x` and `y`. -/
 structure TwoBoundaryArcPaths (x y : Plane) where
+  /-- The `first` declaration. -/
   first : Path x y
+  /-- The `second` declaration. -/
   second : Path y x
   first_injective : Injective first
   second_injective : Injective second

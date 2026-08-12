@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.MarkedMoiseCellHomeomorphisms
 import Schoenflies.MoiseBandFilledDisk
 import Schoenflies.CyclicTargetCellGeometry
@@ -185,7 +190,9 @@ theorem range_moiseCellBoundarySplit_second_subset_childCarrier
           (L.moiseBandPolygonalCircle c).closedRegion =
         range (F.synchronizedCrosscutPath c))
     (a : LevelAddress n) :
+    let _ := houtward
     range (L.moiseCellBoundarySplit a).second ⊆ L.childDisk.carrier := by
+  dsimp
   intro x hxSecond
   have hxCell : x ∈ (L.moiseBandPolygonalCircle a).carrier := by
     simpa only [← (L.moiseBandPolygonalCircle a).carrier_toJordanCircle]

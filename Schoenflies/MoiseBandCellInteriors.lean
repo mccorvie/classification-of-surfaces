@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.MoiseBandCellSeams
 import Schoenflies.SharedArcDiskSeparation
 
@@ -26,6 +31,7 @@ variable {J : JordanCircle} {I : J.InitialAngularArcs}
   {F : I.LevelAvoidingJoinFamily n epsilon} {hn : 1 ≤ n}
   (L : RecursiveInsideCollarStep.Later F hn)
 
+/-- The `crosscutMidpoint` declaration. -/
 noncomputable def crosscutMidpoint
     (_L : RecursiveInsideCollarStep.Later F hn)
     (a : LevelAddress n) : Plane :=

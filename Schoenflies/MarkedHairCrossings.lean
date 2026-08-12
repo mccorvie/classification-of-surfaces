@@ -1,5 +1,11 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.MarkedPolygonalDiskExhaustion
 import Schoenflies.LevelEndpointIncidence
+import Mathlib.Topology.Subpath
 
 /-!
 # First retained-hair crossings of marked polygonal disks
@@ -53,6 +59,7 @@ theorem polygonalCrossingParameters_nonempty
 /-- The least crossing parameter of an access hair and a polygonal carrier. -/
 structure FirstPolygonalCrossing (H : J.InsideAccessHair q)
     (P : PolygonalCircle) where
+  /-- The `parameter` declaration. -/
   parameter : unitInterval
   isLeast : IsLeast (H.polygonalCrossingParameters P) parameter
 

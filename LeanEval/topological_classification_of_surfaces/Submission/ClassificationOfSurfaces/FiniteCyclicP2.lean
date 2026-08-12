@@ -43,8 +43,11 @@ open SurfaceCellComplex
 The decomposition is cyclic rather than tied to the stored head of the list. Empty `left` or
 `right` pieces are allowed. -/
 structure P2Cut (P : FiniteCyclicPresentation) where
+  /-- The `face` declaration. -/
   face : P.OrientedFace
+  /-- The `left` declaration. -/
   left : List P.Dart
+  /-- The `right` declaration. -/
   right : List P.Dart
   boundary_rotated : (P.orientedBoundary face).IsRotated (left ++ right)
 
@@ -338,7 +341,6 @@ theorem split_boundary_old (P : FiniteCyclicPresentation) (cut : P2Cut P)
         retainWord (P.boundary f) := by
   simp [oldFace, faceWord]
 
-@[simp]
 theorem split_boundary_selected (P : FiniteCyclicPresentation) (cut : P2Cut P) :
     (split P cut).boundary (oldFace P cut cut.face.face) =
       selectedBoundary P cut := by

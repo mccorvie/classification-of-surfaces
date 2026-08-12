@@ -511,6 +511,7 @@ noncomputable def polygonalReplacementMap (H : K.CellwiseCompatibility G) :
     Set.mem_iUnion.mpr ⟨K.supportFace p,
       Set.mem_range_self (K.supportFacePoint p)⟩⟩
 
+omit [T2Space S] in
 /-- On every named source face, the global replacement map is the chosen face filling. -/
 theorem polygonalReplacementMap_faceToSupport
     (H : K.CellwiseCompatibility G) (f : K.Face) (x : K.ClosedFace f) :
@@ -569,6 +570,7 @@ noncomputable def polygonalReplacementInverse (H : K.CellwiseCompatibility G) :
     ((K.polygonalReplacementComplex H).supportFace p)
     ((K.polygonalReplacementComplex H).supportFacePoint p)
 
+omit [T2Space S] in
 /-- On every replacement face, the inverse is the original face parametrization. -/
 theorem polygonalReplacementInverse_faceToSupport
     (H : K.CellwiseCompatibility G) (f : K.Face) (x : K.ClosedFace f) :
@@ -594,12 +596,14 @@ noncomputable def polygonalReplacementInverseOnFace
   fun p ↦ faceToSupport (K := K) f
     (((K.polygonalReplacementComplex H).faceToSupportHomeomorph f).symm p)
 
+omit [T2Space S] in
 theorem continuous_polygonalReplacementInverseOnFace
     (H : K.CellwiseCompatibility G) (f : K.Face) :
     Continuous (K.polygonalReplacementInverseOnFace H f) := by
   exact (continuous_faceToSupport (K := K) f).comp
     ((K.polygonalReplacementComplex H).faceToSupportHomeomorph f).symm.continuous
 
+omit [T2Space S] in
 theorem polygonalReplacementInverse_eqOn_faceInSupport
     (H : K.CellwiseCompatibility G) (f : K.Face) :
     ∀ p : faceInSupport (K := K.polygonalReplacementComplex H) f,
@@ -610,6 +614,7 @@ theorem polygonalReplacementInverse_eqOn_faceInSupport
   congr 1
   exact ((K.polygonalReplacementComplex H).faceToSupportHomeomorph f).symm_apply_apply x |>.symm
 
+omit [T2Space S] in
 theorem continuous_polygonalReplacementInverse (H : K.CellwiseCompatibility G) :
     Continuous (K.polygonalReplacementInverse H) := by
   let L := K.polygonalReplacementComplex H
@@ -622,6 +627,7 @@ theorem continuous_polygonalReplacementInverse (H : K.CellwiseCompatibility G) :
     funext p
     exact K.polygonalReplacementInverse_eqOn_faceInSupport H f p
 
+omit [T2Space S] in
 theorem polygonalReplacementInverse_apply_map
     (H : K.CellwiseCompatibility G) (p : K.support) :
     K.polygonalReplacementInverse H (K.polygonalReplacementMap H p) = p := by
@@ -633,6 +639,7 @@ theorem polygonalReplacementInverse_apply_map
   rw [← hpresentation, K.polygonalReplacementMap_faceToSupport H f x,
     K.polygonalReplacementInverse_faceToSupport H f x]
 
+omit [T2Space S] in
 theorem polygonalReplacementMap_apply_inverse
     (H : K.CellwiseCompatibility G)
     (p : (K.polygonalReplacementComplex H).support) :

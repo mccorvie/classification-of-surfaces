@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.AvoidingControlledCrosscuts
 
 /-!
@@ -26,7 +31,9 @@ structure FiniteAvoidingJoinFamily (N : ℕ)
     (HR : ∀ i, J.InsideAccessHair (J.curvePoint (A i).right))
     (V : Fin N → Set Plane)
     (K : Set Plane) where
+  /-- The `rightPoint` declaration. -/
   rightPoint : Fin N → Plane
+  /-- The `leftPoint` declaration. -/
   leftPoint : Fin N → Plane
   rightPoint_mem : ∀ i, rightPoint i ∈ (HR i).carrier
   leftPoint_mem : ∀ i, leftPoint i ∈ (HL i).carrier
@@ -37,12 +44,15 @@ structure FiniteAvoidingJoinFamily (N : ℕ)
   Retaining this set lets later trimming reuse that very line rather than
   recomputing a canonical path in a larger ambient set. -/
   sourceAmbient : Fin N → Set Plane
+  /-- The `sourceLine` declaration. -/
   sourceLine : ∀ i,
     SimpleBrokenLine (sourceAmbient i) (rightPoint i) (leftPoint i)
+  /-- The `path` declaration. -/
   path : ∀ i, Path (rightPoint i) (leftPoint i)
   path_eq_sourceLine : ∀ i, path i = (sourceLine i).toPath (endpoint_ne i)
   path_injective : ∀ i, Injective (path i)
   sourceAmbient_subset : ∀ i, sourceAmbient i ⊆ J.inside ∩ V i
+  /-- The `carrierLine` declaration. -/
   carrierLine : ∀ i,
     SimpleBrokenLine J.inside (rightPoint i) (leftPoint i)
   segmentCarrier_carrierLine_eq_range : ∀ i,

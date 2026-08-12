@@ -22,6 +22,7 @@ namespace PlaneComplex
 
 variable (K : PlaneComplex) {P : Type*} [Fintype P]
 
+/-- The `markEquiv` declaration. -/
 noncomputable def markEquiv : P ≃ Fin (Fintype.card P) :=
   Fintype.equivFin P
 
@@ -108,6 +109,7 @@ theorem markedEdgeChain_vertex_original (point : P → Plane)
   congr 2
   exact Fin.ext hsub
 
+/-- The `markedEdgeChainIndex` declaration. -/
 noncomputable def markedEdgeChainIndex (point : P → Plane)
     (i : Fin (Fintype.card K.EdgeFace)) : Fin (K.markedEdgeChain point).n :=
   ⟨2 * i.val, by
@@ -141,9 +143,11 @@ theorem markedEdgeChain_segment (point : P → Plane)
     simp [eq_comm]
   rw [himage, convexHull_pair]
 
+/-- The `markedEdgeArrangement` declaration. -/
 noncomputable def markedEdgeArrangement (point : P → Plane) : PlaneComplex :=
   (K.markedEdgeChain point).arrangementMesh.toPlaneComplex
 
+/-- The `markedEdgeSubdivision` declaration. -/
 noncomputable def markedEdgeSubdivision (point : P → Plane) : PlaneComplex :=
   (K.markedEdgeArrangement point).subordinateTo K
 
@@ -359,6 +363,7 @@ theorem markedEdgeSubdivision_subdivides (point : P → Plane)
   (K.markedEdgeArrangement point).subordinateTo_subdivides K
     (K.markedEdgeSubdivision_support_eq point hgraph)
 
+/-- The `markedEdgeChainMarkIndex` declaration. -/
 noncomputable def markedEdgeChainMarkIndex (point : P → Plane) (p : P) :
     Fin ((K.markedEdgeChain point).n + 1) :=
   ⟨2 * Fintype.card K.EdgeFace + (markEquiv p).val, by

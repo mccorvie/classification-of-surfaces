@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.AmbientGluing
 import Schoenflies.Accessibility
 import Schoenflies.BoundaryPartitions
@@ -199,9 +204,11 @@ theorem outside_joinedByBrokenLine (J : JordanCircle) {a b : Plane}
 curve.  This is the output shape of Moise 9.2 used at each finite stage of the
 nested construction. -/
 structure AccessFamily (J : JordanCircle) (ι : Type*) [Fintype ι] where
+  /-- The `anchor` declaration. -/
   anchor : ι → Plane
   anchor_mem : ∀ i, anchor i ∈ J.carrier
   anchor_injective : Function.Injective anchor
+  /-- The `start` declaration. -/
   start : ι → Plane
   start_mem_inside : ∀ i, start i ∈ J.inside
   accessible : ∀ i,

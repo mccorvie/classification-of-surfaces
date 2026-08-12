@@ -88,7 +88,7 @@ theorem diamondFan_affineIndependent {a : ℝ} (ha0 : -2 < a) (ha2 : a < 2)
           diamondFanPosition_apply_two, planePoint_apply_zero, planePoint_apply_one,
           PiLp.sub_apply]
         linarith
-      convert h using 1 ; funext i ; fin_cases i <;> rfl
+      convert h using 1; funext i; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
   · apply affineIndependent_finset_of_range (diamondFanPosition a) ![1, 2, 4]
@@ -99,7 +99,7 @@ theorem diamondFan_affineIndependent {a : ℝ} (ha0 : -2 < a) (ha2 : a < 2)
           diamondFanPosition_apply_four, planePoint_apply_zero, planePoint_apply_one,
           PiLp.sub_apply]
         linarith
-      convert h using 1 ; funext i ; fin_cases i <;> rfl
+      convert h using 1; funext i; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
   · apply affineIndependent_finset_of_range (diamondFanPosition a) ![0, 3, 4]
@@ -110,7 +110,7 @@ theorem diamondFan_affineIndependent {a : ℝ} (ha0 : -2 < a) (ha2 : a < 2)
           diamondFanPosition_apply_four, planePoint_apply_zero, planePoint_apply_one,
           PiLp.sub_apply]
         linarith
-      convert h using 1 ; funext i ; fin_cases i <;> rfl
+      convert h using 1; funext i; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
   · apply affineIndependent_finset_of_range (diamondFanPosition a) ![1, 4, 3]
@@ -121,7 +121,7 @@ theorem diamondFan_affineIndependent {a : ℝ} (ha0 : -2 < a) (ha2 : a < 2)
           diamondFanPosition_apply_three, planePoint_apply_zero, planePoint_apply_one,
           PiLp.sub_apply]
         linarith
-      convert h using 1 ; funext i ; fin_cases i <;> rfl
+      convert h using 1; funext i; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
 
@@ -711,19 +711,19 @@ noncomputable def diamondSlackLR : Plane →ᵃ[ℝ] ℝ :=
 noncomputable def diamondSlackLL : Plane →ᵃ[ℝ] ℝ :=
   AffineMap.const ℝ Plane 2 + 2 • cartesianX + cartesianY
 
-@[simp] theorem diamondSlackUR_apply (x y : ℝ) :
+theorem diamondSlackUR_apply (x y : ℝ) :
     diamondSlackUR (planePoint x y) = 2 - 2 * x - y := by
   simp [diamondSlackUR]
 
-@[simp] theorem diamondSlackUL_apply (x y : ℝ) :
+theorem diamondSlackUL_apply (x y : ℝ) :
     diamondSlackUL (planePoint x y) = 2 + 2 * x - y := by
   simp [diamondSlackUL]
 
-@[simp] theorem diamondSlackLR_apply (x y : ℝ) :
+theorem diamondSlackLR_apply (x y : ℝ) :
     diamondSlackLR (planePoint x y) = 2 - 2 * x + y := by
   simp [diamondSlackLR]
 
-@[simp] theorem diamondSlackLL_apply (x y : ℝ) :
+theorem diamondSlackLL_apply (x y : ℝ) :
     diamondSlackLL (planePoint x y) = 2 + 2 * x + y := by
   simp [diamondSlackLL]
 
@@ -906,6 +906,7 @@ noncomputable def diamondFanSupportHomeomorph (a b : ℝ)
     (diamondFanMesh b hb0 hb1).affineIndependent_triangle
     (diamondFanMesh b hb0 hb1).triangle_inter
 
+/-- The `diamondFanCenterRealization` declaration. -/
 noncomputable def diamondFanCenterRealization (a : ℝ) (ha0 : -2 < a) (ha1 : a < 2) :
     GeometricRealization (Fin 5) (diamondFanMesh a ha0 ha1).toPlaneComplex.cells := by
   let x : Fin 5 → ℝ := Pi.single 4 1

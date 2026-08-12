@@ -169,11 +169,14 @@ private theorem dart_eq_or_eq_flip_iff_edge_eq
 
 /-- A compatible gluing instruction between two distinct internal boundary occurrences. -/
 structure BoundaryPairing (P : FiniteCyclicPresentation) where
+  /-- The `source` declaration. -/
   source : P.BoundaryOccurrence
+  /-- The `target` declaration. -/
   target : P.BoundaryOccurrence
   source_ne_target : source ≠ target
   source_not_boundary : ¬P.IsBoundaryEdge source.edge
   target_not_boundary : ¬P.IsBoundaryEdge target.edge
+  /-- The `direction` declaration. -/
   direction : PolygonGluing.ParameterDirection
   compatible :
     match direction with
@@ -343,7 +346,9 @@ as a map to their glued quotient. -/
 structure RealizationEquivData
     (P Q : FiniteCyclicPresentation) (validP : P.IsSurfaceValid)
     (validQ : Q.IsSurfaceValid) where
+  /-- The `toPre` declaration. -/
   toPre : P.PolygonalPreRealization → Q.PolygonalRealization validQ
+  /-- The `invPre` declaration. -/
   invPre : Q.PolygonalPreRealization → P.PolygonalRealization validP
   continuous_toPre : Continuous toPre
   continuous_invPre : Continuous invPre

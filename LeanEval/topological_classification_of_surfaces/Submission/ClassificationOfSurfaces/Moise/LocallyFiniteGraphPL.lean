@@ -114,12 +114,14 @@ theorem replacementEdgeMap_edgePath (G : K.PlaneGraphRealization) (e : K.Edge)
 
 /-! ## The finite source breakpoint family -/
 
+/-- The `rawEdgeMiddleBreakpoint` declaration. -/
 noncomputable def rawEdgeMiddleBreakpoint
     (A : G.CentralPolygonalArc e) (v : A.parameterization.source.Vertex) : ℝ :=
   (((A.parameterization.source.position v) 0 /
       A.parameterization.length - A.exitData.left) /
       (A.exitData.right - A.exitData.left) + 2) / 4
 
+/-- The `edgeMiddleBreakpoint` declaration. -/
 noncomputable def edgeMiddleBreakpoint
     (A : G.CentralPolygonalArc e) (v : A.parameterization.source.Vertex) : ℝ :=
   max (1 / 2 : ℝ) (min (3 / 4 : ℝ) (rawEdgeMiddleBreakpoint A v))
@@ -178,6 +180,7 @@ theorem edgeMiddleSourceScalar_breakpoint
 abbrev EdgeBreakpoint (A : G.CentralPolygonalArc e) :=
   Option (Option A.parameterization.source.Vertex)
 
+/-- The `edgeBreakpointParameter` declaration. -/
 noncomputable def edgeBreakpointParameter
     (A : G.CentralPolygonalArc e) (b : EdgeBreakpoint A) : ℝ :=
   match b with
@@ -200,9 +203,11 @@ namespace CentralPolygonalArc
 
 variable (A : G.CentralPolygonalArc e)
 
+/-- The `leftSourcePoint` declaration. -/
 noncomputable def leftSourcePoint : Plane :=
   planePoint (A.parameterization.length * A.exitData.left) 0
 
+/-- The `rightSourcePoint` declaration. -/
 noncomputable def rightSourcePoint : Plane :=
   planePoint (A.parameterization.length * A.exitData.right) 0
 
@@ -212,7 +217,7 @@ theorem leftSourcePoint_mem_source : A.leftSourcePoint ∈ A.parameterization.so
     A.exitData.left_lt_right.le.trans A.exitData.right_le_one⟩, ?_⟩
   ext i
   fin_cases i <;>
-    simp [leftSourcePoint, planePoint, AffineMap.lineMap_apply_module] ; ring
+    simp [leftSourcePoint, planePoint, AffineMap.lineMap_apply_module]; ring
 
 theorem rightSourcePoint_mem_source : A.rightSourcePoint ∈ A.parameterization.source.support := by
   rw [A.parameterization.source_support, segment_eq_image_lineMap]
@@ -220,7 +225,7 @@ theorem rightSourcePoint_mem_source : A.rightSourcePoint ∈ A.parameterization.
     A.exitData.left_lt_right.le, A.exitData.right_le_one⟩, ?_⟩
   ext i
   fin_cases i <;>
-    simp [rightSourcePoint, planePoint, AffineMap.lineMap_apply_module] ; ring
+    simp [rightSourcePoint, planePoint, AffineMap.lineMap_apply_module]; ring
 
 theorem leftSourcePoint_ne_rightSourcePoint : A.leftSourcePoint ≠ A.rightSourcePoint := by
   intro hp
@@ -500,7 +505,7 @@ theorem map_image_sourceSegment :
     ext i
     fin_cases i <;>
       simp [t, leftSourcePoint, rightSourcePoint, planePoint,
-        AffineMap.lineMap_apply_module] ; ring
+        AffineMap.lineMap_apply_module]; ring
   · rintro ⟨t, ht, rfl⟩
     have htSeg : t ∈ segment ℝ A.exitData.left A.exitData.right := by
       rwa [segment_eq_Icc A.exitData.left_lt_right.le]
@@ -515,7 +520,7 @@ theorem map_image_sourceSegment :
     ext i
     fin_cases i <;>
       simp [leftSourcePoint, rightSourcePoint, planePoint,
-        AffineMap.lineMap_apply_module] ; ring
+        AffineMap.lineMap_apply_module]; ring
 
 theorem trimTarget_support : A.trimTarget.support = A.trimmedCarrier := by
   rw [trimTarget, A.trimActive.mapGraph_support A.parameterization.map
@@ -560,9 +565,11 @@ private theorem exists_trimActive_vertex (i : Fin 2) :
     exact hwTrim
   · exact hpos
 
+/-- The `leftTrimVertex` declaration. -/
 noncomputable def leftTrimVertex : A.trimTarget.Vertex :=
   Classical.choose (A.exists_trimActive_vertex 0)
 
+/-- The `rightTrimVertex` declaration. -/
 noncomputable def rightTrimVertex : A.trimTarget.Vertex :=
   Classical.choose (A.exists_trimActive_vertex 1)
 

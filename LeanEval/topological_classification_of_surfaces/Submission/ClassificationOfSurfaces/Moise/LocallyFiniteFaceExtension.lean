@@ -631,7 +631,7 @@ noncomputable def faceMiddleSourceAffine (f : K.Face) (i : ZMod 3) :
         (K.faceEdgeParameterAffine f i p) = _
   ext j
   fin_cases j <;>
-    simp [AffineMap.lineMap_apply_module, planePoint] ; ring
+    simp [AffineMap.lineMap_apply_module, planePoint]; ring
 
 /-- The boundary map is affine on every subset of a standard side contained in the first
 spoke range. -/

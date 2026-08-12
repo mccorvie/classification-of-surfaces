@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.AvoidingLevelCollars
 import Schoenflies.ExactSynchronizedCollarCells
 import Schoenflies.SideConstancy
@@ -25,12 +30,15 @@ variable {J : JordanCircle}
 disk. -/
 structure RecursiveInsideCollarStep (I : J.InitialAngularArcs)
     (P : PolygonalCircle) where
+  /-- The `buffer` declaration. -/
   buffer : ℝ
   buffer_pos : 0 < buffer
   buffer_separation : Disjoint P.closedRegion
     (thickening buffer J.carrier)
+  /-- The `level` declaration. -/
   level : ℕ
   one_le_level : 1 ≤ level
+  /-- The `family` declaration. -/
   family : I.LevelAvoidingJoinFamilyOver level
     ((buffer / 4) / 4) P.closedRegion
   carrier_disjoint : Disjoint P.closedRegion

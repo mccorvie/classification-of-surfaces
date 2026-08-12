@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.LocalizedJordanAnnularOrder
 import Schoenflies.StandardPolygonalCollars
 
@@ -109,6 +114,7 @@ noncomputable def targetDecomposition :
       (I.levelTargetInnerMark k C.next)) = _
     exact Path.range_segment _ _
 
+/-- The `targetFirstAlternative` declaration. -/
 def targetFirstAlternative : Prop :=
   (targetDisk (k + 1)).interiorRegion ⊆
     (C.targetSeparator.circle₀
@@ -415,6 +421,7 @@ theorem targetDisk_closedRegion_subset_outerDisk (hk : 1 ≤ k) :
   · exact False.elim (h (C.targetFirstAlternative_of_one_le hk))
 
 theorem targetInnerDisk_disjoint_targetDiskInterior (hk : 1 ≤ k) :
+    let _ := hk
     Disjoint (targetDisk (k + 1)).closedRegion
       C.targetAttachmentPresentation.disk.interiorRegion := by
   rw [Set.disjoint_left]

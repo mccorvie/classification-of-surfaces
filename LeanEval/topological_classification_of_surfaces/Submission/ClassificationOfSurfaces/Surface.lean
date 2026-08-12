@@ -57,6 +57,7 @@ structure EvalSurface (S : Type*) [TopologicalSpace S] where
   t2 : T2Space S
   connected : ConnectedSpace S
   compact : CompactSpace S
+  /-- The `charted` declaration. -/
   charted : ChartedSpace (EuclideanHalfSpace 2) S
   manifold : IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S
 

@@ -116,7 +116,7 @@ implementations.
 * `FiniteSurfaceTriangulation.toFiniteCyclicPresentation`
 * `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isSurfaceValid`
 * `FiniteSurfaceTriangulation.toFiniteCyclicPresentation_isConnected`
-* `compact_eval_surface_finiteCyclicPresentation`
+* `compactEvalSurfaceFiniteCyclicPresentation`
 * `compact_eval_surface_has_valid_connected_finiteCyclicPresentation`
 * `GeometricTriangulation.polygonalRealizationHomeomorph`
 * `GeometricTriangulation.polygonalRealization_homeomorphic_of_surface`

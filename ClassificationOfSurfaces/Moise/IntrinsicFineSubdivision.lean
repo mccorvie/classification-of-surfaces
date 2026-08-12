@@ -303,7 +303,7 @@ theorem dist_midpointPosition_central_le
         dist_midpoint_midpoint_le _ _ _ _
       _ ≤ d / 2 := by simp only [dist_self, zero_add]; gcongr; exact hvertex _ _
 
-  
+
 
 /-- One midpoint subdivision halves every existing mesh bound. -/
 theorem Subdivision.meshLE_trans_midpoint
@@ -585,6 +585,7 @@ Each stage contains a canonical compact distance core and lies in the interior o
 distance core.  The stages are not yet a single conforming locally finite complex: reconciling
 their boundary subdivisions is the remaining combinatorial part of Moise Ch. 8, Thm. 2. -/
 structure OpenExhaustion (K : IntrinsicTwoComplex) (U : Set K.realization) where
+  /-- The `stage` declaration. -/
   stage : ∀ n : ℕ,
     K.OpenSubcomplex (frontierCore U n) (interior (frontierCore U (n + 1)))
 

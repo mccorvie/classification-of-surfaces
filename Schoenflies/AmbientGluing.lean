@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.JordanRegions
 import Mathlib.Topology.Piecewise
 
@@ -66,9 +71,13 @@ The maps are represented on the whole plane because this makes the pasting
 lemma independent of subtype coercion.  All meaningful hypotheses are
 restricted to the indicated closed regions. -/
 structure DiskExtensionData (J : JordanCircle) where
+  /-- The `insideMap` declaration. -/
   insideMap : Plane → Plane
+  /-- The `outsideMap` declaration. -/
   outsideMap : Plane → Plane
+  /-- The `insideInv` declaration. -/
   insideInv : Plane → Plane
+  /-- The `outsideInv` declaration. -/
   outsideInv : Plane → Plane
   continuousOn_insideMap : ContinuousOn insideMap (closure J.inside)
   continuousOn_outsideMap : ContinuousOn outsideMap (closure J.outside)

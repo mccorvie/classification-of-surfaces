@@ -254,6 +254,7 @@ full subdivision, its support is only the retained compact polyhedron; every ret
 is nevertheless subordinate to the original plane complex. -/
 structure PlaneComplex.OpenSubmesh
     (K : PlaneComplex) (C U : Set Plane) where
+  /-- The `mesh` declaration. -/
   mesh : TriangleMesh
   face_subordinate : ∀ t ∈ mesh.triangles,
     ∃ s ∈ K.simplexes, mesh.toPlaneComplex.cellCarrier t ⊆ K.cellCarrier s

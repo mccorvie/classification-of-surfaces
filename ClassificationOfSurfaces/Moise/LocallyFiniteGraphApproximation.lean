@@ -295,7 +295,7 @@ theorem chartEdgePath_mem_edgeImage (e : K.Edge) (t : Set.Icc (0 : ℝ) 1) :
   rw [← G.range_chartEdgePath e]
   exact Set.mem_range_self t
 
-@[simp] theorem chartEdgePath_zero (e : K.Edge) :
+theorem chartEdgePath_zero (e : K.Edge) :
     G.chartEdgePath e ⟨0, by simp⟩ = G.vertexImage (K.edgeFirst e) := by
   change G.map (edgePathInSupport (K := K) e ⟨0, by simp⟩) =
     G.map ⟨K.vertexPoint (K.edgeFirst e), K.vertexPoint_mem_support _⟩
@@ -303,7 +303,7 @@ theorem chartEdgePath_mem_edgeImage (e : K.Edge) (t : Set.Icc (0 : ℝ) 1) :
   apply Subtype.ext
   exact K.edgePath_zero e
 
-@[simp] theorem chartEdgePath_one (e : K.Edge) :
+theorem chartEdgePath_one (e : K.Edge) :
     G.chartEdgePath e ⟨1, by simp⟩ = G.vertexImage (K.edgeSecond e) := by
   change G.map (edgePathInSupport (K := K) e ⟨1, by simp⟩) =
     G.map ⟨K.vertexPoint (K.edgeSecond e), K.vertexPoint_mem_support _⟩
@@ -352,6 +352,7 @@ theorem endpointDist_le_edgeImage_diam (e : K.Edge) :
 /-- A polygonal replacement of one charted edge inside a prescribed metric neighborhood. -/
 structure EdgeBrokenLineApproximation (e : K.Edge) (eps : ℝ) where
   eps_pos : 0 < eps
+  /-- The `data` declaration. -/
   data : BrokenLineData (Metric.thickening eps (G.edgeImage e))
   start_eq : data.start = G.vertexImage (K.edgeFirst e)
   finish_eq : data.finish = G.vertexImage (K.edgeSecond e)
@@ -367,6 +368,7 @@ theorem exists_edgeBrokenLineApproximation (e : K.Edge) {eps : ℝ} (heps : 0 < 
   obtain ⟨B, hBstart, hBfinish⟩ := BrokenLineData.exists_data_of_joined hjoined
   exact ⟨⟨heps, B, hBstart, hBfinish⟩⟩
 
+/-- The `edgeBrokenLineApproximation` declaration. -/
 noncomputable def edgeBrokenLineApproximation (e : K.Edge) {eps : ℝ} (heps : 0 < eps) :
     G.EdgeBrokenLineApproximation e eps :=
   Classical.choice (G.exists_edgeBrokenLineApproximation e heps)
@@ -1199,7 +1201,9 @@ theorem chartEdgeCurve_eq_of_mem (e : K.Edge) {t : ℝ}
 
 /-- Ordered exits from the two (possibly differently sized) endpoint disks. -/
 structure EdgeTrimData (e : K.Edge) where
+  /-- The `left` declaration. -/
   left : ℝ
+  /-- The `right` declaration. -/
   right : ℝ
   left_pos : 0 < left
   left_lt_right : left < right
@@ -1365,7 +1369,9 @@ radii.  The finite graph layer uses one common radius; local finiteness naturall
 radius depending on the vertex. -/
 structure TwoRadiusBoundaryExitData (gamma : ℝ → Plane)
     (first second : Plane) (firstRadius secondRadius : ℝ) where
+  /-- The `left` declaration. -/
   left : ℝ
+  /-- The `right` declaration. -/
   right : ℝ
   left_nonneg : 0 ≤ left
   left_lt_right : left < right
@@ -1456,10 +1462,14 @@ theorem exists_twoRadiusBoundaryExitData {gamma : ℝ → Plane} {first second :
 abstract: Chapter 6 can produce it either from a broken line or directly as the PL image of a
 finely subdivided source interval. -/
 structure PLArcParameterization (carrier : Set Plane) (start finish : Plane) where
+  /-- The `length` declaration. -/
   length : ℕ
   length_pos : 0 < length
+  /-- The `source` declaration. -/
   source : PlaneComplex
+  /-- The `map` declaration. -/
   map : Plane → Plane
+  /-- The `curve` declaration. -/
   curve : ℝ → Plane
   source_support : source.support =
     segment ℝ (planePoint 0 0) (planePoint length 0)
@@ -1728,9 +1738,13 @@ end BrokenLineData
 tube.  The abstract carrier interface also admits the controlled finite approximation used
 later in Chapter 6. -/
 structure CentralPolygonalArc (e : K.Edge) where
+  /-- The `carrier` declaration. -/
   carrier : Set Plane
+  /-- The `start` declaration. -/
   start : Plane
+  /-- The `finish` declaration. -/
   finish : Plane
+  /-- The `parameterizationData` declaration. -/
   parameterizationData : PLArcParameterization carrier start finish
   carrier_subset_tube : carrier ⊆ G.edgeCentralTube e
   carrier_subset_edgeConvexHull : carrier ⊆ convexHull ℝ (G.edgeImage e)
@@ -1828,6 +1842,7 @@ theorem exists_centralPolygonalArc (e : K.Edge) : Nonempty (G.CentralPolygonalAr
         planePoint_mem_unitSegment ht
       simpa [h, q, planePoint] using hclose (planePoint t 0) htSupport }⟩
 
+/-- The `centralPolygonalArc` declaration. -/
 noncomputable def centralPolygonalArc (e : K.Edge) : G.CentralPolygonalArc e :=
   Classical.choice (G.exists_centralPolygonalArc e)
 
@@ -1876,6 +1891,7 @@ theorem exists_parameterization (A : G.CentralPolygonalArc e) :
     Nonempty A.Parameterization :=
   ⟨A.parameterizationData⟩
 
+/-- The `parameterization` declaration. -/
 noncomputable def parameterization (A : G.CentralPolygonalArc e) : A.Parameterization :=
   A.parameterizationData
 
@@ -1896,6 +1912,7 @@ noncomputable def exitData (A : G.CentralPolygonalArc e) :
     exact (G.edgeTrim e).right_on_sphere
   · exact G.disjoint_vertexDisks (K.edgeFirst_ne_edgeSecond e)
 
+/-- The `trimmedCarrier` declaration. -/
 def trimmedCarrier (A : G.CentralPolygonalArc e) : Set Plane :=
   A.parameterization.curve '' Set.Icc A.exitData.left A.exitData.right
 
@@ -1931,18 +1948,23 @@ theorem trimmedCarrier_avoids_second (A : G.CentralPolygonalArc e) {x : Plane}
     · exact lt_of_le_of_ne ht.1 (Ne.symm hleft)
     · exact lt_of_le_of_ne ht.2 fun heq => hxright (by rw [heq])
 
+/-- The `leftEndpoint` declaration. -/
 noncomputable def leftEndpoint (A : G.CentralPolygonalArc e) : Plane :=
   A.parameterization.curve A.exitData.left
 
+/-- The `rightEndpoint` declaration. -/
 noncomputable def rightEndpoint (A : G.CentralPolygonalArc e) : Plane :=
   A.parameterization.curve A.exitData.right
 
+/-- The `leftSpoke` declaration. -/
 noncomputable def leftSpoke (A : G.CentralPolygonalArc e) : Set Plane :=
   segment ℝ (G.vertexImage (K.edgeFirst e)) A.leftEndpoint
 
+/-- The `rightSpoke` declaration. -/
 noncomputable def rightSpoke (A : G.CentralPolygonalArc e) : Set Plane :=
   segment ℝ A.rightEndpoint (G.vertexImage (K.edgeSecond e))
 
+/-- The `completeCarrier` declaration. -/
 noncomputable def completeCarrier (A : G.CentralPolygonalArc e) : Set Plane :=
   A.leftSpoke ∪ A.trimmedCarrier ∪ A.rightSpoke
 
@@ -2228,12 +2250,15 @@ theorem rightEndpoint_ne_rightEndpoint {d : K.Edge}
   exact Set.disjoint_left.mp (A.disjoint_trimmedCarrier (B := B) hed)
     A.rightEndpoint_mem_trimmedCarrier (heq ▸ B.rightEndpoint_mem_trimmedCarrier)
 
+/-- The `leftOpenSpoke` declaration. -/
 noncomputable def leftOpenSpoke (A : G.CentralPolygonalArc e) : Set Plane :=
   A.leftSpoke \ {G.vertexImage (K.edgeFirst e)}
 
+/-- The `rightOpenSpoke` declaration. -/
 noncomputable def rightOpenSpoke (A : G.CentralPolygonalArc e) : Set Plane :=
   A.rightSpoke \ {G.vertexImage (K.edgeSecond e)}
 
+/-- The `interiorCarrier` declaration. -/
 noncomputable def interiorCarrier (A : G.CentralPolygonalArc e) : Set Plane :=
   A.leftOpenSpoke ∪ A.trimmedCarrier ∪ A.rightOpenSpoke
 
@@ -3067,6 +3092,7 @@ private theorem locallyFinite_union_family {I X : Type*} [TopologicalSpace X]
   · exact Or.inl ⟨p, hpf, hpUV.1⟩
   · exact Or.inr ⟨p, hpg, hpUV.2⟩
 
+/-- The `completeCarrierInRange` declaration. -/
 noncomputable def completeCarrierInRange (e : K.Edge) : Set G.region :=
   {p | p.1 ∈ (G.replacementArc e).completeCarrier}
 

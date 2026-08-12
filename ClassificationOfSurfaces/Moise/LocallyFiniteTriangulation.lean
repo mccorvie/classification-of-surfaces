@@ -124,9 +124,10 @@ theorem extendFaceCoordinates_map_subset
 /-- The vertices of a finite face are equivalent to the vertices of its image under an
 embedding. -/
 noncomputable def finsetMapSubtypeEquiv
-    {A B : Type*} [DecidableEq A] [DecidableEq B]
+    {A B : Type*}
     (e : A ↪ B) (t : Finset A) :
     {a // a ∈ t} ≃ {b // b ∈ t.map e} := by
+  classical
   let f : {a // a ∈ t} → {b // b ∈ t.map e} :=
     fun a ↦ ⟨e a.1, Finset.mem_map.mpr
       ⟨a.1, a.2, rfl⟩⟩
@@ -141,14 +142,13 @@ noncomputable def finsetMapSubtypeEquiv
     exact hab
 
 @[simp] theorem finsetMapSubtypeEquiv_apply_val
-    {A B : Type*} [DecidableEq A] [DecidableEq B]
+    {A B : Type*}
     (e : A ↪ B) (t : Finset A) (a : {a // a ∈ t}) :
     (finsetMapSubtypeEquiv e t a).1 = e a.1 := rfl
 
 /-- Pull simplex coordinates on a relabeled face back to the original face. -/
 noncomputable def relabelFaceSimplex
-    {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    {A B : Type*}
     (e : A ↪ B) (t : Finset A)
     (x : stdSimplex ℝ {b // b ∈ t.map e}) :
     stdSimplex ℝ {a // a ∈ t} :=
@@ -156,10 +156,10 @@ noncomputable def relabelFaceSimplex
 
 /-- Face relabeling along an embedding is onto. -/
 theorem relabelFaceSimplex_surjective
-    {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    {A B : Type*}
     (e : A ↪ B) (t : Finset A) :
     Function.Surjective (relabelFaceSimplex e t) := by
+  classical
   intro x
   refine ⟨stdSimplex.map (finsetMapSubtypeEquiv e t) x, ?_⟩
   unfold relabelFaceSimplex
@@ -174,7 +174,7 @@ theorem relabelFaceSimplex_surjective
 /-- Pulling coordinates back along a face relabeling preserves the coordinate at every
 original vertex. -/
 theorem relabelFaceSimplex_extended_apply
-    {A B : Type*} [Fintype A] [Fintype B]
+    {A B : Type*}
     [DecidableEq A] [DecidableEq B]
     (e : A ↪ B) (t : Finset A)
     (x : stdSimplex ℝ {b // b ∈ t.map e}) (a : A) :
@@ -225,7 +225,7 @@ theorem relabelFaceSimplex_extended_apply
 /-- Relabeling two faces by the same embedding preserves equality of their global
 zero-extended coordinate functions. -/
 theorem relabelFaceSimplex_extended_eq_iff
-    {A B : Type*} [Fintype A] [Fintype B]
+    {A B : Type*} [Fintype A]
     [DecidableEq A] [DecidableEq B]
     (e : A ↪ B) {s t : Finset A}
     {x : stdSimplex ℝ {b // b ∈ s.map e}}
@@ -296,7 +296,7 @@ theorem sum_extendFaceCoordinates_relabelFaceSimplex
 /-- When the source face is the whole finite type, remove the vacuous membership subtype after
 pulling coordinates back along an embedding. -/
 noncomputable def univMapSubtypeEquiv
-    {A B : Type*} [Fintype A] [DecidableEq A] [DecidableEq B]
+    {A B : Type*} [Fintype A]
     (e : A ↪ B) :
     {b // b ∈ (Finset.univ : Finset A).map e} ≃ A :=
   (finsetMapSubtypeEquiv e Finset.univ).symm.trans
@@ -307,8 +307,7 @@ noncomputable def univMapSubtypeEquiv
 
 /-- Pull simplex coordinates on the image of a finite type back to that finite type. -/
 noncomputable def relabelUnivSimplex
-    {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    {A B : Type*} [Fintype A]
     (e : A ↪ B)
     (x : stdSimplex ℝ {b // b ∈ (Finset.univ : Finset A).map e}) :
     stdSimplex ℝ A :=
@@ -317,10 +316,10 @@ noncomputable def relabelUnivSimplex
 /-- Pullback along an embedded whole finite vertex type is onto: its inverse simply pushes
 coordinates forward along the inverse equivalence onto the image. -/
 theorem relabelUnivSimplex_surjective
-    {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    {A B : Type*} [Fintype A]
     (e : A ↪ B) :
     Function.Surjective (relabelUnivSimplex e) := by
+  classical
   intro x
   refine ⟨stdSimplex.map (univMapSubtypeEquiv e).symm x, ?_⟩
   unfold relabelUnivSimplex
@@ -334,8 +333,8 @@ theorem relabelUnivSimplex_surjective
 
 /-- The whole-type relabeling preserves the coordinate of every embedded source vertex. -/
 theorem relabelUnivSimplex_apply
-    {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    {A B : Type*} [Fintype A]
+    [DecidableEq B]
     (e : A ↪ B)
     (x : stdSimplex ℝ {b // b ∈ (Finset.univ : Finset A).map e})
     (a : A) :
@@ -377,9 +376,9 @@ theorem relabelUnivSimplex_apply
 /-- An injective vertex map preserves the coordinate at each source vertex. -/
 theorem stdSimplex_map_embedding_apply
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
     (e : A ↪ B) (x : stdSimplex ℝ A) (a : A) :
     stdSimplex.map e x (e a) = x a := by
+  classical
   simp only [stdSimplex.map_coe, FunOnFinite.linearMap_apply_apply]
   have hfilter :
       Finset.univ.filter (fun q : A ↦ e q = e a) = {a} := by
@@ -393,10 +392,10 @@ theorem stdSimplex_map_embedding_apply
 /-- An injective vertex map has zero coordinate away from its image. -/
 theorem stdSimplex_map_embedding_apply_of_notMem_range
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
     (e : A ↪ B) (x : stdSimplex ℝ A) {b : B}
     (hb : b ∉ Set.range e) :
     stdSimplex.map e x b = 0 := by
+  classical
   simp only [stdSimplex.map_coe, FunOnFinite.linearMap_apply_apply]
   have hfilter :
       Finset.univ.filter (fun q : A ↦ e q = b) = ∅ := by
@@ -409,9 +408,9 @@ theorem stdSimplex_map_embedding_apply_of_notMem_range
 
 /-- Relabel a finite face family along an embedding of its vertex type. -/
 def relabelFaceFamily
-    {A B : Type*} [DecidableEq A] [DecidableEq B]
-    (e : A ↪ B) (F : Finset (Finset A)) : Finset (Finset B) :=
-  F.image fun t ↦ t.map e
+    {A B : Type*} [DecidableEq B]
+    (e : A ↪ B) (F : Finset (Finset A)) : Finset (Finset B) := by
+  exact F.image fun t ↦ t.map e
 
 end Moise
 
@@ -425,11 +424,12 @@ def faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)} :
     Face faces → Face (Moise.relabelFaceFamily e faces) :=
   fun f => ⟨f.1.map e, Finset.mem_image.mpr ⟨f.1, f.2, rfl⟩⟩
 
-@[simp]
+omit [DecidableEq A] in
 theorem faceOfRelabel_val (e : A ↪ B) {faces : Finset (Finset A)}
     (f : Face faces) : (faceOfRelabel e f).1 = f.1.map e :=
   rfl
 
+omit [DecidableEq A] in
 /-- Injective vertex relabeling preserves dual adjacency of listed faces. -/
 theorem faceAdjacent_faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)}
     {f g : Face faces} (hfg : FaceAdjacent faces f g) :
@@ -441,6 +441,7 @@ theorem faceAdjacent_faceOfRelabel (e : A ↪ B) {faces : Finset (Finset A)}
   · exact Finset.map_subset_map.mpr hedgeLeft
   · exact Finset.map_subset_map.mpr hedgeRight
 
+omit [DecidableEq A] in
 /-- Injective vertex relabeling carries a finite dual path to the relabeled family. -/
 theorem reflTransGen_faceAdjacent_faceOfRelabel (e : A ↪ B)
     {faces : Finset (Finset A)} {f g : Face faces}
@@ -452,6 +453,7 @@ theorem reflTransGen_faceAdjacent_faceOfRelabel (e : A ↪ B)
   | tail _hab hbc ih =>
       exact ih.tail (faceAdjacent_faceOfRelabel e hbc)
 
+omit [DecidableEq A] in
 /-- Dual connectivity is preserved by an injective relabeling of the vertex type. -/
 theorem isDualConnected_relabel (e : A ↪ B) {faces : Finset (Finset A)}
     (hfaces : IsDualConnected faces) :
@@ -474,6 +476,7 @@ theorem isDualConnected_relabel (e : A ↪ B) {faces : Finset (Finset A)}
   rw [hfs, hgs] at hpath
   exact hpath
 
+omit [DecidableEq A] [DecidableEq B] in
 /-- Faces relabeled from different vertex types share an edge when the two source edges have the
 same relabeled image. -/
 theorem hasCrossEdge_relabel_of_mapped_edge_eq
@@ -513,7 +516,7 @@ namespace Moise
 /-- Push a geometric realization forward along an injective relabeling of all vertices. -/
 noncomputable def pushGeometricRealization
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A)) :
     GeometricRealization A F →
       GeometricRealization B (relabelFaceFamily e F) := by
@@ -534,7 +537,7 @@ noncomputable def pushGeometricRealization
 /-- Pull a point of a relabeled realization back to its original vertex type. -/
 noncomputable def pullGeometricRealization
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A)) :
     GeometricRealization B (relabelFaceFamily e F) →
       GeometricRealization A F := by
@@ -579,7 +582,7 @@ noncomputable def pullGeometricRealization
 
 @[simp] theorem pushGeometricRealization_val
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A))
     (x : GeometricRealization A F) :
     (pushGeometricRealization e F x).1 =
@@ -587,7 +590,7 @@ noncomputable def pullGeometricRealization
 
 @[simp] theorem pushGeometricRealization_apply_embedding
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A))
     (x : GeometricRealization A F) (a : A) :
     (pushGeometricRealization e F x).1 (e a) = x.1 a := by
@@ -597,7 +600,7 @@ noncomputable def pullGeometricRealization
 
 theorem pushGeometricRealization_apply_of_notMem_range
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A))
     (x : GeometricRealization A F) {b : B}
     (hb : b ∉ Set.range e) :
@@ -607,7 +610,7 @@ theorem pushGeometricRealization_apply_of_notMem_range
 
 theorem pushGeometricRealization_val_eq_of_val_eq
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F G : Finset (Finset A))
     (x : GeometricRealization A F)
     (y : GeometricRealization A G) (hxy : x.1 = y.1) :
@@ -624,7 +627,7 @@ theorem pushGeometricRealization_val_eq_of_val_eq
 
 @[simp] theorem pullGeometricRealization_apply
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A))
     (y : GeometricRealization B (relabelFaceFamily e F)) (a : A) :
     (pullGeometricRealization e F y).1 a = y.1 (e a) := by
@@ -632,7 +635,7 @@ theorem pushGeometricRealization_val_eq_of_val_eq
 
 @[simp] theorem pull_pushGeometricRealization
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A))
     (x : GeometricRealization A F) :
     pullGeometricRealization e F (pushGeometricRealization e F x) = x := by
@@ -643,7 +646,7 @@ theorem pushGeometricRealization_val_eq_of_val_eq
 
 @[simp] theorem push_pullGeometricRealization
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A))
     (y : GeometricRealization B (relabelFaceFamily e F)) :
     pushGeometricRealization e F (pullGeometricRealization e F y) = y := by
@@ -667,7 +670,7 @@ theorem pushGeometricRealization_val_eq_of_val_eq
 
 theorem continuous_pushGeometricRealization
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A)) :
     Continuous (pushGeometricRealization e F) := by
   apply Continuous.subtype_mk
@@ -681,7 +684,7 @@ theorem continuous_pushGeometricRealization
 
 theorem continuous_pullGeometricRealization
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A)) :
     Continuous (pullGeometricRealization e F) := by
   apply Continuous.subtype_mk
@@ -694,7 +697,7 @@ theorem continuous_pullGeometricRealization
 /-- Relabeling a finite face family along a vertex embedding does not change its realization. -/
 noncomputable def relabelGeometricRealizationHomeomorph
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B) (F : Finset (Finset A)) :
     GeometricRealization A F ≃ₜ
       GeometricRealization B (relabelFaceFamily e F) where
@@ -708,7 +711,7 @@ noncomputable def relabelGeometricRealizationHomeomorph
 /-- Weighted evaluation is unchanged by whole-type relabeling. -/
 theorem sum_extendFaceCoordinates_relabelUnivSimplex
     {A B : Type*} [Fintype A] [Fintype B]
-    [DecidableEq A] [DecidableEq B]
+    [DecidableEq B]
     (e : A ↪ B)
     (x : stdSimplex ℝ
       {b // b ∈ (Finset.univ : Finset A).map e})
@@ -1410,7 +1413,7 @@ theorem locallyFinite_edgeCarriers : LocallyFinite K.edgeCarrier := by
   · exact Finset.mem_powersetCard.mpr
       ⟨K.edge_subset_faceVertices e, e.2.1⟩
 
-@[simp] theorem edgeSimplexPath_zero (e : K.Edge) :
+theorem edgeSimplexPath_zero (e : K.Edge) :
     K.edgeSimplexPath e ⟨0, by simp⟩ =
       stdSimplex.vertex ⟨K.edgeFirst e, K.edgeFirst_mem e⟩ := by
   apply stdSimplex.ext
@@ -1420,7 +1423,7 @@ theorem locallyFinite_edgeCarriers : LocallyFinite K.edgeCarrier := by
     (stdSimplex.vertex b : {v // v ∈ e.1} → ℝ) 0 = stdSimplex.vertex a
   simp [AffineMap.lineMap_apply_module]
 
-@[simp] theorem edgeSimplexPath_one (e : K.Edge) :
+theorem edgeSimplexPath_one (e : K.Edge) :
     K.edgeSimplexPath e ⟨1, by simp⟩ =
       stdSimplex.vertex ⟨K.edgeSecond e, K.edgeSecond_mem e⟩ := by
   apply stdSimplex.ext
@@ -1430,12 +1433,12 @@ theorem locallyFinite_edgeCarriers : LocallyFinite K.edgeCarrier := by
     (stdSimplex.vertex b : {v // v ∈ e.1} → ℝ) 1 = stdSimplex.vertex b
   simp [AffineMap.lineMap_apply_module]
 
-@[simp] theorem edgePath_zero (e : K.Edge) :
+theorem edgePath_zero (e : K.Edge) :
     K.edgePath e ⟨0, by simp⟩ = K.vertexPoint (K.edgeFirst e) := by
   rw [edgePath, K.edgeSimplexPath_zero e,
     K.edgeMap_vertex_eq_vertexPoint e]
 
-@[simp] theorem edgePath_one (e : K.Edge) :
+theorem edgePath_one (e : K.Edge) :
     K.edgePath e ⟨1, by simp⟩ = K.vertexPoint (K.edgeSecond e) := by
   rw [edgePath, K.edgeSimplexPath_one e,
     K.edgeMap_vertex_eq_vertexPoint e]
@@ -1575,9 +1578,11 @@ theorem finite_vertex [Finite K.Face] : Finite K.Vertex := by
   letI : Finite K.Vertex := K.finite_vertex
   exact Fintype.ofFinite K.Vertex
 
+/-- The `compactFaceFintype` declaration. -/
 noncomputable local instance compactFaceFintype [CompactSpace S] : Fintype K.Face :=
   K.faceFintype
 
+/-- The `compactVertexFintype` declaration. -/
 noncomputable local instance compactVertexFintype [CompactSpace S] : Fintype K.Vertex :=
   K.vertexFintype
 

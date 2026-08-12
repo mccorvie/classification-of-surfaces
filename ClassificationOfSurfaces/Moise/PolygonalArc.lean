@@ -26,7 +26,9 @@ namespace Moise
 
 /-- Concrete data carried by a broken-line witness. -/
 structure BrokenLineData (U : Set Plane) where
+  /-- The `n` declaration. -/
   n : ℕ
+  /-- The `vertex` declaration. -/
   vertex : Fin (n + 1) → Plane
   segment_subset : ∀ i : Fin n,
     segment ℝ (vertex i.castSucc) (vertex i.succ) ⊆ U
@@ -35,8 +37,10 @@ namespace BrokenLineData
 
 variable {U : Set Plane} (B : BrokenLineData U)
 
+/-- The `start` declaration. -/
 def start : Plane := B.vertex 0
 
+/-- The `finish` declaration. -/
 def finish : Plane := B.vertex (Fin.last B.n)
 
 /-- An auxiliary broken line listing an arbitrary finite family of segments.  The prescribed
@@ -218,9 +222,11 @@ theorem mem_segment_of_segmentLine_eq_zero {a b x : Plane} (hab : a ≠ b)
       field_simp [sub_ne_zero.mpr h1.symm]
       ring
 
+/-- The `verticalLine` declaration. -/
 noncomputable def verticalLine (p : Plane) : Plane →ᵃ[ℝ] ℝ :=
   cartesianX - AffineMap.const ℝ Plane (p 0)
 
+/-- The `horizontalLine` declaration. -/
 noncomputable def horizontalLine (p : Plane) : Plane →ᵃ[ℝ] ℝ :=
   cartesianY - AffineMap.const ℝ Plane (p 1)
 
@@ -241,6 +247,7 @@ noncomputable def vertexLines : List (Plane →ᵃ[ℝ] ℝ) :=
   (Finset.univ : Finset (Fin (B.n + 1))).toList.flatMap fun i =>
     [verticalLine (B.vertex i), horizontalLine (B.vertex i)]
 
+/-- The `arrangementLines` declaration. -/
 noncomputable def arrangementLines : List (Plane →ᵃ[ℝ] ℝ) :=
   B.segmentLines ++ B.vertexLines
 
@@ -267,6 +274,7 @@ theorem segment_subset_enclosingBall (i : Fin B.n) :
   (convex_closedBall (0 : Plane) B.enclosingRadius).segment_subset
     (B.vertex_mem_enclosingBall i.castSucc) (B.vertex_mem_enclosingBall i.succ)
 
+/-- The `enclosingMesh` declaration. -/
 noncomputable def enclosingMesh : TriangleMesh :=
   TriangleMesh.single (PolygonalCircle.enclosingTriangleVertices B.enclosingRadius)
     (PolygonalCircle.enclosingTriangleVertices_affineIndependent B.enclosingRadius_pos)
@@ -1223,6 +1231,7 @@ noncomputable def resolvedPath : B.inSetGraph.Path
     (B.arrangementVertex 0) (B.arrangementVertex (Fin.last B.n)) :=
   Classical.choice B.exists_arrangement_path
 
+/-- The `resolvedWalk` declaration. -/
 noncomputable def resolvedWalk : B.inSetGraph.Walk
     (B.arrangementVertex 0) (B.arrangementVertex (Fin.last B.n)) :=
   B.resolvedPath
@@ -1913,6 +1922,7 @@ def realAxisLinear : ℝ →ₗ[ℝ] Plane where
   map_add' := by intro x y; ext i ; fin_cases i <;> simp [planePoint]
   map_smul' := by intro c x; ext i ; fin_cases i <;> simp [planePoint]
 
+/-- The `realAxisAffine` declaration. -/
 def realAxisAffine : ℝ →ᵃ[ℝ] Plane := realAxisLinear.toAffineMap
 
 @[simp] theorem realAxisAffine_apply (t : ℝ) : realAxisAffine t = planePoint t 0 := rfl

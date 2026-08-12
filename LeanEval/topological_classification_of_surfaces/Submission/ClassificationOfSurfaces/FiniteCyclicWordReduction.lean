@@ -198,8 +198,11 @@ def inversePair {Edge : Type} (a : Edge) : Bool → List (SignedDart Edge)
 /-- Data exposing a cyclically adjacent inverse pair in a one-face word. -/
 structure CancellablePair {n : ℕ}
     (word : List (SignedDart (Fin n))) where
+  /-- The `edge` declaration. -/
   edge : Fin n
+  /-- The `tail` declaration. -/
   tail : List (SignedDart (Fin n))
+  /-- The `negativeFirst` declaration. -/
   negativeFirst : Bool
   rotated : word.IsRotated (inversePair edge negativeFirst ++ tail)
 
@@ -281,7 +284,9 @@ theorem predecessor_eq_zero_of_lowerTail_eq_nil {n : ℕ}
 
 /-- A reduced non-spherical endpoint reached after inverse-pair cancellation. -/
 structure ReducedWordResult (P : ValidPresentation) where
+  /-- The `edgeCount` declaration. -/
   edgeCount : ℕ
+  /-- The `word` declaration. -/
   word : List (SignedDart (Fin edgeCount))
   valid : (Dyck.oneFace word).IsSurfaceValid
   reduced : IsPairReduced word
@@ -640,6 +645,7 @@ noncomputable def reduceAndCancel
 /-- The remaining proof obligation after face merging and inverse-pair cancellation: normalize
 an arbitrary pair-reduced valid one-face word. -/
 structure PairReducedNormalizer where
+  /-- The `normalize` declaration. -/
   normalize :
     {n : ℕ} →
       (word : List (SignedDart (Fin n))) →
@@ -931,7 +937,9 @@ absent from both the input and output residual words.  Its trace records the exa
 choices for subsequent marked execution. -/
 structure ResidualPairReduction {n : ℕ}
     (sourceWord : List (SignedDart (Fin n))) where
+  /-- The `reducedWord` declaration. -/
   reducedWord : List (SignedDart (Fin n))
+  /-- The `trace` declaration. -/
   trace :
     ResidualPairReductionTrace sourceWord reducedWord
   multiplicities : HasValidUsedMultiplicities reducedWord
@@ -1142,9 +1150,13 @@ theorem exists_decomposition_of_count_eq_one {n : ℕ}
 /-- Cyclic data exposing the two occurrences of a twice-used edge. -/
 structure DoubleOccurrenceForm {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n) where
+  /-- The `firstNegative` declaration. -/
   firstNegative : Bool
+  /-- The `secondNegative` declaration. -/
   secondNegative : Bool
+  /-- The `between` declaration. -/
   between : List (SignedDart (Fin n))
+  /-- The `remainder` declaration. -/
   remainder : List (SignedDart (Fin n))
   rotated :
     word.IsRotated
@@ -1258,8 +1270,11 @@ theorem DoubleOccurrenceForm.between_ne_nil_of_opposite {n : ℕ}
 /-- A twice-used edge displayed with equal orientations. -/
 structure CrosscapOccurrenceForm {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n) where
+  /-- The `negative` declaration. -/
   negative : Bool
+  /-- The `between` declaration. -/
   between : List (SignedDart (Fin n))
+  /-- The `remainder` declaration. -/
   remainder : List (SignedDart (Fin n))
   rotated :
     word.IsRotated
@@ -1271,7 +1286,9 @@ structure CrosscapOccurrenceForm {n : ℕ}
 /-- An oppositely used edge displayed positive first and negative second. -/
 structure OppositeOccurrenceForm {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n) where
+  /-- The `between` declaration. -/
   between : List (SignedDart (Fin n))
+  /-- The `remainder` declaration. -/
   remainder : List (SignedDart (Fin n))
   rotated :
     word.IsRotated
@@ -1284,8 +1301,11 @@ Unlike `OppositeOccurrenceForm`, this form permits either sign at the beginning,
 right induction invariant when descending to a shorter nested pair. -/
 structure OppositeArcForm {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n) where
+  /-- The `firstNegative` declaration. -/
   firstNegative : Bool
+  /-- The `between` declaration. -/
   between : List (SignedDart (Fin n))
+  /-- The `remainder` declaration. -/
   remainder : List (SignedDart (Fin n))
   rotated :
     word.IsRotated
@@ -1338,10 +1358,15 @@ occurrence of `b` inside that pair is negative; a signed relabeling will reverse
 necessary before applying handle extraction. -/
 structure InterleavedOccurrenceForm {n : ℕ}
     (word : List (SignedDart (Fin n))) (a b : Fin n) where
+  /-- The `bNegativeInside` declaration. -/
   bNegativeInside : Bool
+  /-- The `beforeB` declaration. -/
   beforeB : List (SignedDart (Fin n))
+  /-- The `beforeNegA` declaration. -/
   beforeNegA : List (SignedDart (Fin n))
+  /-- The `beforeOutsideB` declaration. -/
   beforeOutsideB : List (SignedDart (Fin n))
+  /-- The `remainder` declaration. -/
   remainder : List (SignedDart (Fin n))
   rotated :
     word.IsRotated
@@ -1460,7 +1485,9 @@ theorem exists_oppositeOccurrenceForm {n : ℕ}
 /-- A once-used boundary edge displayed at the cyclic head. -/
 structure BoundaryOccurrenceForm {n : ℕ}
     (word : List (SignedDart (Fin n))) (a : Fin n) where
+  /-- The `negative` declaration. -/
   negative : Bool
+  /-- The `remainder` declaration. -/
   remainder : List (SignedDart (Fin n))
   rotated : word.IsRotated (dart a negative :: remainder)
   edge_not_mem_remainder : a ∉ remainder.map edgeOfDart
@@ -1638,6 +1665,7 @@ theorem Cancellation.restoreEdge_lowerEdge {n : ℕ}
   apply (Cancellation.moveToLast a).injective
   simp [Cancellation.restoreEdge]
 
+/-- The `lowerDart` declaration. -/
 @[simp]
 def Cancellation.lowerDart {n : ℕ}
     (a : Fin (n + 1)) (d : SignedDart (Fin (n + 1)))
@@ -1653,7 +1681,6 @@ def Cancellation.restoreDart {n : ℕ}
   | .pos e => .pos (Cancellation.restoreEdge a e)
   | .neg e => .neg (Cancellation.restoreEdge a e)
 
-@[simp]
 theorem Cancellation.restoreDart_lowerDart {n : ℕ}
     (a : Fin (n + 1)) (d : SignedDart (Fin (n + 1)))
     (hne : edgeOfDart d ≠ a) :
@@ -1664,7 +1691,6 @@ theorem Cancellation.restoreDart_lowerDart {n : ℕ}
     simp [Cancellation.lowerDart,
       Cancellation.restoreDart]
 
-@[simp]
 theorem Cancellation.restoreEdge_edgeOfDart_lowerDart {n : ℕ}
     (a : Fin (n + 1)) (d : SignedDart (Fin (n + 1)))
     (hne : edgeOfDart d ≠ a) :
@@ -4551,6 +4577,7 @@ def targetWord {n : ℕ} (word : List (SignedDart (Fin n))) :
   [.pos (carrier n)] ++ P2.retainWord word ++
     [.neg (carrier n)]
 
+/-- The `target` declaration. -/
 @[reducible]
 def target {n : ℕ} (word : List (SignedDart (Fin n))) :
     FiniteCyclicPresentation :=
@@ -4605,6 +4632,7 @@ def subdivisionRelabeling {n : ℕ}
       (P2.split (target word) (targetCut word)).Edge :=
   Dyck.reverseEdgeRelabeling (subdivisionCarrier word)
 
+/-- The `subdivisionFaceEquiv` declaration. -/
 def subdivisionFaceEquiv {n : ℕ}
     (word : List (SignedDart (Fin n))) :
     (P1.expand
@@ -6851,7 +6879,9 @@ theorem exists_isRotated_residual_cons {n : ℕ}
 structure ResidualSplit {n : ℕ}
     (tokens : List (ReductionToken n))
     (left right : List (SignedDart (Fin n))) where
+  /-- The `tokenLeft` declaration. -/
   tokenLeft : List (ReductionToken n)
+  /-- The `tokenRight` declaration. -/
   tokenRight : List (ReductionToken n)
   tokens_eq : tokens = tokenLeft ++ tokenRight
   residual_left : residualDarts tokenLeft = left
@@ -6862,7 +6892,9 @@ structure ResidualDartSplit {n : ℕ}
     (tokens : List (ReductionToken n))
     (left right : List (SignedDart (Fin n)))
     (dart : SignedDart (Fin n)) where
+  /-- The `tokenLeft` declaration. -/
   tokenLeft : List (ReductionToken n)
+  /-- The `tokenRight` declaration. -/
   tokenRight : List (ReductionToken n)
   tokens_eq :
     tokens = tokenLeft ++ .residual dart :: tokenRight
@@ -6916,6 +6948,7 @@ structure ResidualConsRotation {n : ℕ}
     (tokens : List (ReductionToken n))
     (dart : SignedDart (Fin n))
     (remainder : List (SignedDart (Fin n))) where
+  /-- The `tokenRemainder` declaration. -/
   tokenRemainder : List (ReductionToken n)
   rotated :
     tokens.IsRotated (.residual dart :: tokenRemainder)
@@ -7957,8 +7990,11 @@ end MarkedActionablePairReductionFeature
 erasing protected blocks, this is immediately executable by the ordinary cancellation chain. -/
 structure MarkedCancellablePair {n : ℕ}
     (tokens : List (ReductionToken (n + 1))) where
+  /-- The `edge` declaration. -/
   edge : Fin (n + 1)
+  /-- The `negativeFirst` declaration. -/
   negativeFirst : Bool
+  /-- The `tailTokens` declaration. -/
   tailTokens : List (ReductionToken (n + 1))
   rotated :
     tokens.IsRotated
@@ -8034,9 +8070,13 @@ end MarkedCancellablePair
 The intervening tokens have empty residual contribution but may contain protected blocks. -/
 structure MarkedResidualCancellablePair {n : ℕ}
     (tokens : List (ReductionToken n)) where
+  /-- The `edge` declaration. -/
   edge : Fin n
+  /-- The `negativeFirst` declaration. -/
   negativeFirst : Bool
+  /-- The `betweenTokens` declaration. -/
   betweenTokens : List (ReductionToken n)
+  /-- The `tailTokens` declaration. -/
   tailTokens : List (ReductionToken n)
   rotated :
     tokens.IsRotated
@@ -8196,10 +8236,15 @@ three-token succession as one completed boundary block closes the singleton into
 loop shape without changing the expanded cyclic presentation. -/
 structure MarkedBoundaryClosure {n : ℕ}
     (tokens : List (ReductionToken n)) where
+  /-- The `carrier` declaration. -/
   carrier : Fin n
+  /-- The `hole` declaration. -/
   hole : Fin n
+  /-- The `carrierNegative` declaration. -/
   carrierNegative : Bool
+  /-- The `holeNegative` declaration. -/
   holeNegative : Bool
+  /-- The `tailTokens` declaration. -/
   tailTokens : List (ReductionToken n)
   rotated :
     tokens.IsRotated
@@ -8437,11 +8482,17 @@ end MarkedBoundaryClosure
 Dyck move rotates the raw atom behind that interval, exposing the next protected atom. -/
 structure MarkedBoundaryAtomRotate {n : ℕ}
     (tokens : List (ReductionToken n)) where
+  /-- The `carrier` declaration. -/
   carrier : Fin n
+  /-- The `hole` declaration. -/
   hole : Fin n
+  /-- The `carrierNegative` declaration. -/
   carrierNegative : Bool
+  /-- The `holeNegative` declaration. -/
   holeNegative : Bool
+  /-- The `insideTokens` declaration. -/
   insideTokens : List (ReductionToken n)
+  /-- The `outsideTokens` declaration. -/
   outsideTokens : List (ReductionToken n)
   rotated :
     tokens.IsRotated
@@ -8585,13 +8636,21 @@ end MarkedBoundaryAtomRotate
 `LoopGrouping` move commutes this atom out of that interval. -/
 structure MarkedBoundaryBlockCommute {n : ℕ}
     (tokens : List (ReductionToken n)) where
+  /-- The `outer` declaration. -/
   outer : Fin n
+  /-- The `carrier` declaration. -/
   carrier : Fin n
+  /-- The `hole` declaration. -/
   hole : Fin n
+  /-- The `outerNegative` declaration. -/
   outerNegative : Bool
+  /-- The `carrierNegative` declaration. -/
   carrierNegative : Bool
+  /-- The `holeNegative` declaration. -/
   holeNegative : Bool
+  /-- The `insideTokens` declaration. -/
   insideTokens : List (ReductionToken n)
+  /-- The `outsideTokens` declaration. -/
   outsideTokens : List (ReductionToken n)
   rotated :
     tokens.IsRotated
@@ -8733,11 +8792,17 @@ end MarkedBoundaryBlockCommute
 the pair exchanges the residual and completed carriers and shortens that protected interval. -/
 structure MarkedCrosscapBlockCommute {n : ℕ}
     (tokens : List (ReductionToken n)) where
+  /-- The `outer` declaration. -/
   outer : Fin n
+  /-- The `carrier` declaration. -/
   carrier : Fin n
+  /-- The `outerNegative` declaration. -/
   outerNegative : Bool
+  /-- The `carrierNegative` declaration. -/
   carrierNegative : Bool
+  /-- The `insideTokens` declaration. -/
   insideTokens : List (ReductionToken n)
+  /-- The `outsideTokens` declaration. -/
   outsideTokens : List (ReductionToken n)
   rotated :
     tokens.IsRotated
@@ -9087,11 +9152,17 @@ end MarkedCrosscapBlockCommute
 /-- A completed handle at the head of a protected residual-pair interval. -/
 structure MarkedHandleBlockCommute {n : ℕ}
     (tokens : List (ReductionToken n)) where
+  /-- The `outer` declaration. -/
   outer : Fin n
+  /-- The `first` declaration. -/
   first : Fin n
+  /-- The `second` declaration. -/
   second : Fin n
+  /-- The `outerNegative` declaration. -/
   outerNegative : Bool
+  /-- The `insideTokens` declaration. -/
   insideTokens : List (ReductionToken n)
+  /-- The `outsideTokens` declaration. -/
   outsideTokens : List (ReductionToken n)
   rotated :
     tokens.IsRotated
@@ -9233,10 +9304,15 @@ end MarkedHandleBlockCommute
 /-- Two adjacent extracted boundary singletons which form a P1-subdivided boundary segment. -/
 structure MarkedBoundaryPairContraction {n : ℕ}
     (tokens : List (ReductionToken (n + 1))) where
+  /-- The `first` declaration. -/
   first : Fin (n + 1)
+  /-- The `second` declaration. -/
   second : Fin (n + 1)
+  /-- The `firstNegative` declaration. -/
   firstNegative : Bool
+  /-- The `secondNegative` declaration. -/
   secondNegative : Bool
+  /-- The `tailTokens` declaration. -/
   tailTokens : List (ReductionToken (n + 1))
   rotated :
     tokens.IsRotated
@@ -11734,7 +11810,7 @@ structure MarkedActionablePairReductionResult {n : ℕ}
     (marked : MarkedActionablePairReductionFeature tokens)
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
-    Type where
+    Prop where
   targetValid :
     (Dyck.oneFace
       (ReductionToken.expand marked.targetTokens)).IsSurfaceValid
@@ -11817,7 +11893,7 @@ structure MarkedCancellationResult {n : ℕ}
     (pair : MarkedCancellablePair tokens)
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
-    Type where
+    Prop where
   targetValid :
     (Dyck.oneFace
       (ReductionToken.expand
@@ -11997,7 +12073,7 @@ structure MarkedBoundaryClosureResult {n : ℕ}
     (closure : MarkedBoundaryClosure tokens)
     (valid :
       (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
-    Type where
+    Prop where
   targetValid :
     (Dyck.oneFace
       (ReductionToken.expand closure.targetTokens)).IsSurfaceValid
@@ -12058,7 +12134,7 @@ structure MarkedBoundaryAtomRotateResult {n : ℕ}
     (valid :
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
-    Type where
+    Prop where
   targetValid :
     (Dyck.oneFace
       (ReductionToken.expand step.targetTokens)).IsSurfaceValid
@@ -12162,7 +12238,7 @@ structure MarkedBoundaryBlockCommuteResult {n : ℕ}
     (valid :
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
-    Type where
+    Prop where
   targetValid :
     (Dyck.oneFace
       (ReductionToken.expand commute.targetTokens)).IsSurfaceValid
@@ -12342,7 +12418,7 @@ structure MarkedCrosscapBlockCommuteResult {n : ℕ}
     (valid :
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
-    Type where
+    Prop where
   targetValid :
     (Dyck.oneFace
       (ReductionToken.expand commute.targetTokens)).IsSurfaceValid
@@ -12451,7 +12527,7 @@ structure MarkedHandleBlockCommuteResult {n : ℕ}
     (valid :
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
-    Type where
+    Prop where
   targetValid :
     (Dyck.oneFace
       (ReductionToken.expand commute.targetTokens)).IsSurfaceValid
@@ -12563,7 +12639,7 @@ structure MarkedBoundaryPairContractionResult {n : ℕ}
     (valid :
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
-    Type where
+    Prop where
   targetValid :
     (Dyck.oneFace
       (ReductionToken.expand
@@ -12664,8 +12740,11 @@ structure MarkedResidualPairShortening {n : ℕ}
     {tokens : List (ReductionToken n)}
     (pair : MarkedResidualCancellablePair tokens)
     (state : MarkedExecutionState tokens) where
+  /-- The `targetEdgeCount` declaration. -/
   targetEdgeCount : ℕ
+  /-- The `targetTokens` declaration. -/
   targetTokens : List (ReductionToken targetEdgeCount)
+  /-- The `targetPair` declaration. -/
   targetPair :
     MarkedResidualCancellablePair targetTokens
   targetState : MarkedExecutionState targetTokens
@@ -12742,7 +12821,9 @@ structure MarkedResidualPairRotation {n : ℕ}
     {tokens : List (ReductionToken n)}
     (pair : MarkedResidualCancellablePair tokens)
     (state : MarkedExecutionState tokens) where
+  /-- The `targetTokens` declaration. -/
   targetTokens : List (ReductionToken n)
+  /-- The `targetPair` declaration. -/
   targetPair :
     MarkedResidualCancellablePair targetTokens
   targetState : MarkedExecutionState targetTokens
@@ -13092,7 +13173,9 @@ structure MarkedResidualPairResolution {n : ℕ}
     {tokens : List (ReductionToken n)}
     (pair : MarkedResidualCancellablePair tokens)
     (state : MarkedExecutionState tokens) where
+  /-- The `targetEdgeCount` declaration. -/
   targetEdgeCount : ℕ
+  /-- The `targetTokens` declaration. -/
   targetTokens : List (ReductionToken targetEdgeCount)
   targetState : MarkedExecutionState targetTokens
   targetProtectedNonempty :
@@ -13648,7 +13731,9 @@ edge type. -/
 structure MarkedPairReductionResult {n : ℕ}
     {tokens : List (ReductionToken n)}
     (state : MarkedExecutionState tokens) where
+  /-- The `targetEdgeCount` declaration. -/
   targetEdgeCount : ℕ
+  /-- The `targetTokens` declaration. -/
   targetTokens : List (ReductionToken targetEdgeCount)
   targetState : MarkedExecutionState targetTokens
   targetProtectedNonempty :
@@ -13951,7 +14036,9 @@ is classified, and at least one protected name survives. -/
 structure MarkedExtractionResult {n : ℕ}
     {tokens : List (ReductionToken n)}
     (state : MarkedExecutionState tokens) where
+  /-- The `targetEdgeCount` declaration. -/
   targetEdgeCount : ℕ
+  /-- The `targetTokens` declaration. -/
   targetTokens : List (ReductionToken targetEdgeCount)
   targetState : MarkedExecutionState targetTokens
   targetProtectedNonempty :
@@ -14137,7 +14224,9 @@ end MarkedExecutionState
 /-- Exact atom-level endpoint of the marked recursion.  Its name spine is duplicate-free, its
 word is surface-valid, and at least one protected atom remains. -/
 structure TerminalProtectedWord where
+  /-- The `edgeCount` declaration. -/
   edgeCount : ℕ
+  /-- The `atoms` declaration. -/
   atoms : List (ProtectedAtom edgeCount)
   atomsNonempty : atoms ≠ []
   namesNodup : (ProtectedAtom.sequenceNames atoms).Nodup
@@ -14490,7 +14579,9 @@ end MarkedExecutionState
 
 /-- Exact block-level endpoint after every raw boundary singleton has been completed. -/
 structure TerminalCompletedWord where
+  /-- The `edgeCount` declaration. -/
   edgeCount : ℕ
+  /-- The `blocks` declaration. -/
   blocks : List (CompletedBlock edgeCount)
   blocksNonempty : blocks ≠ []
   namesNodup : (CompletedBlock.sequenceNames blocks).Nodup
@@ -14672,6 +14763,7 @@ end TerminalProtectedWord
 /-- The isolated terminal obligation after the terminating marked recursion: normalize a valid,
 classified marked word whose residual contribution is empty. -/
 structure TerminalMarkedNormalizer where
+  /-- The `normalize` declaration. -/
   normalize :
     {n : ℕ} →
       {tokens : List (ReductionToken n)} →

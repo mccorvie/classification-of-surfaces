@@ -1383,7 +1383,7 @@ noncomputable def midpointSubdivision : K.Subdivision where
 @[simp] theorem midpointSubdivision_refined :
     K.midpointSubdivision.refined = K.midpointComplex := rfl
 
-@[simp] theorem midpointSubdivision_homeo_apply (x : K.midpointComplex.realization) :
+theorem midpointSubdivision_homeo_apply (x : K.midpointComplex.realization) :
     K.midpointSubdivision.homeo x = K.midpointEval x := rfl
 
 end IntrinsicTwoComplex

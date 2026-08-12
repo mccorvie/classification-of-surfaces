@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.JordanAnnularCrosscutSeparators
 
 /-!
@@ -20,18 +25,23 @@ variable {P : PolygonalCircle} {J : JordanCircle}
 
 /-- Compatible complementary boundary arcs for two mixed annular cuts. -/
 structure SeparatorPair (A B : JordanAnnularCrosscut P J) where
+  /-- The `innerSplit` declaration. -/
   innerSplit : P.toJordanCircle.TwoBoundaryArcPaths A.innerPoint B.innerPoint
+  /-- The `outerSplit` declaration. -/
   outerSplit : J.TwoBoundaryArcPaths A.outerPoint B.outerPoint
 
 namespace SeparatorPair
 
 variable {A B : JordanAnnularCrosscut P J} (S : SeparatorPair A B)
 
+/-- The `commonBridge` declaration. -/
 def commonBridge : Path A.outerPoint B.outerPoint :=
   bridgePath A B S.innerSplit.first
 
+/-- The `outerArc₀` declaration. -/
 def outerArc₀ : Path B.outerPoint A.outerPoint := S.outerSplit.second
 
+/-- The `outerArc₁` declaration. -/
 def outerArc₁ : Path B.outerPoint A.outerPoint := S.outerSplit.first.symm
 
 theorem innerFirst_range_subset :
@@ -58,10 +68,9 @@ theorem outerArc₁_range_subset : range S.outerArc₁ ⊆ J.carrier := by
   simpa only [outerArc₁, Path.symm_range] using hx
 
 theorem commonBridge_injective
-    (hPJ : P.closedRegion ⊆ J.inside)
     (hAB : Disjoint (range A.path) (range B.path)) :
     Injective S.commonBridge :=
-  bridgePath_injective hPJ A B hAB S.innerSplit.first
+  bridgePath_injective A B hAB S.innerSplit.first
     S.innerSplit.first_injective S.innerFirst_range_subset
 
 theorem commonBridge_inter_outerArc₀
@@ -78,18 +87,20 @@ theorem commonBridge_inter_outerArc₁
   range_bridgePath_inter_outerArc hPJ A B S.innerSplit.first
     S.innerFirst_range_subset S.outerArc₁ S.outerArc₁_range_subset
 
+/-- The `circle₀` declaration. -/
 def circle₀
     (hPJ : P.closedRegion ⊆ J.inside)
     (hAB : Disjoint (range A.path) (range B.path)) : JordanCircle :=
   TwoArcJordan.toJordanCircle S.commonBridge S.outerArc₀
-    (S.commonBridge_injective hPJ hAB) S.outerSplit.second_injective
+    (S.commonBridge_injective hAB) S.outerSplit.second_injective
     (S.commonBridge_inter_outerArc₀ hPJ)
 
+/-- The `circle₁` declaration. -/
 def circle₁
     (hPJ : P.closedRegion ⊆ J.inside)
     (hAB : Disjoint (range A.path) (range B.path)) : JordanCircle :=
   TwoArcJordan.toJordanCircle S.commonBridge S.outerArc₁
-    (S.commonBridge_injective hPJ hAB)
+    (S.commonBridge_injective hAB)
     (S.outerSplit.first_injective.comp unitInterval.symm_bijective.injective)
     (S.commonBridge_inter_outerArc₁ hPJ)
 

@@ -34,9 +34,11 @@ open Filter
 diameter at most one quarter of that bound. -/
 structure ControlledNeighborhood {X : Type*} [TopologicalSpace X]
     (f : X → Plane) (phi : X → ℝ) (x : X) where
+  /-- The `set` declaration. -/
   set : Set X
   isOpen : IsOpen set
   mem_set : x ∈ set
+  /-- The `scale` declaration. -/
   scale : ℝ
   scale_pos : 0 < scale
   scale_le_one : scale ≤ 1
@@ -46,7 +48,7 @@ structure ControlledNeighborhood {X : Type*} [TopologicalSpace X]
 
 /-- Strong positivity and local compactness produce controlled neighborhoods for every point. -/
 theorem exists_controlledNeighborhood {X : Type*} [TopologicalSpace X]
-    [T2Space X] [LocallyCompactSpace X] {f : X → Plane} (hf : Continuous f)
+    [LocallyCompactSpace X] {f : X → Plane} (hf : Continuous f)
     {phi : X → ℝ} (hphi : StronglyPositiveOn Set.univ phi) (x : X) :
     Nonempty (ControlledNeighborhood f phi x) := by
   obtain ⟨C, hCcompact, hCnhds⟩ := exists_compact_mem_nhds x
@@ -81,7 +83,7 @@ theorem exists_controlledNeighborhood {X : Type*} [TopologicalSpace X]
 
 /-- A chosen controlled neighborhood at every point. -/
 noncomputable def controlledNeighborhood {X : Type*} [TopologicalSpace X]
-    [T2Space X] [LocallyCompactSpace X] {f : X → Plane} (hf : Continuous f)
+    [LocallyCompactSpace X] {f : X → Plane} (hf : Continuous f)
     {phi : X → ℝ} (hphi : StronglyPositiveOn Set.univ phi) (x : X) :
     ControlledNeighborhood f phi x :=
   Classical.choice (exists_controlledNeighborhood hf hphi x)

@@ -47,7 +47,9 @@ open scoped BigOperators
 
 /-- A finite list of cyclic signed boundary words with edge names in `Fin edgeCount`. -/
 structure FiniteCyclicPresentation where
+  /-- The `edgeCount` declaration. -/
   edgeCount : ℕ
+  /-- The `faces` declaration. -/
   faces : List (List (SurfaceCellComplex.SignedDart (Fin edgeCount)))
 
 namespace FiniteCyclicPresentation
@@ -85,7 +87,6 @@ def inverseWord {α : Type*} (word : List (SignedDart α)) :
     List (SignedDart α) :=
   word.reverse.map SignedDart.flip
 
-@[simp]
 theorem inverseWord_nil {α : Type*} :
     inverseWord ([] : List (SignedDart α)) = [] :=
   rfl
@@ -136,7 +137,9 @@ theorem map_edgeOfDart_inverseWord {α : Type*}
 /-- A relabeling of unoriented edges with an independent orientation reversal for each source
 edge. -/
 structure EdgeRelabeling (α β : Type*) where
+  /-- The `edgeEquiv` declaration. -/
   edgeEquiv : α ≃ β
+  /-- The `reverse` declaration. -/
   reverse : α → Bool
 
 namespace EdgeRelabeling
@@ -231,7 +234,6 @@ theorem edgeOfDart_mapDart {α β : Type*} (e : EdgeRelabeling α β)
       cases h : e.reverse a <;>
         simp [mapDart, h, edgeOfDart]
 
-@[simp]
 theorem edgeOfDart_dartEquiv {α β : Type*} (e : EdgeRelabeling α β)
     (d : SignedDart α) :
     edgeOfDart (e.dartEquiv d) = e.edgeEquiv (edgeOfDart d) :=
@@ -249,7 +251,6 @@ theorem mapDart_flip {α β : Type*} (e : EdgeRelabeling α β)
       cases h : e.reverse a <;>
         simp [mapDart, SignedDart.flip, h]
 
-@[simp]
 theorem dartEquiv_flip {α β : Type*} (e : EdgeRelabeling α β)
     (d : SignedDart α) :
     e.dartEquiv d.flip = (e.dartEquiv d).flip :=
@@ -282,7 +283,6 @@ theorem map_mapDart_ofEquiv {α β : Type*} (e : α ≃ β) (l : List (SignedDar
   | cons d l ih =>
       simp only [List.map_cons, mapDart_ofEquiv, ih]
 
-@[simp]
 theorem map_mapDart_refl {α : Type*} (l : List (SignedDart α)) :
     l.map (refl α).mapDart = l := by
   induction l with
@@ -290,7 +290,6 @@ theorem map_mapDart_refl {α : Type*} (l : List (SignedDart α)) :
   | cons d l ih =>
       simp only [List.map_cons, mapDart_refl, ih]
 
-@[simp]
 theorem map_mapDart_symm {α β : Type*}
     (e : EdgeRelabeling α β) (l : List (SignedDart α)) :
     (l.map e.mapDart).map e.symm.mapDart = l := by
@@ -338,7 +337,6 @@ theorem mapEquiv_symm_apply {α β : Type*} (e : α ≃ β) (d : SignedDart α) 
     SignedDart.mapEquiv e.symm (SignedDart.mapEquiv e d) = d := by
   cases d <;> simp [SignedDart.mapEquiv]
 
-@[simp]
 theorem map_mapEquiv_refl {α : Type*} (l : List (SignedDart α)) :
     l.map (SignedDart.mapEquiv (Equiv.refl α)) = l := by
   induction l with
@@ -346,7 +344,6 @@ theorem map_mapEquiv_refl {α : Type*} (l : List (SignedDart α)) :
   | cons d l ih =>
       simp only [List.map_cons, mapEquiv_refl, ih]
 
-@[simp]
 theorem map_mapEquiv_symm {α β : Type*} (e : α ≃ β) (l : List (SignedDart α)) :
     (l.map (SignedDart.mapEquiv e)).map (SignedDart.mapEquiv e.symm) = l := by
   induction l with
@@ -373,7 +370,9 @@ theorem inverseWord_map_mapEquiv {α β : Type*}
 /-- A face together with one of its two traversal orientations. `false` selects the stored
 orientation and `true` selects its reverse. -/
 structure OrientedFace (P : FiniteCyclicPresentation) where
+  /-- The `face` declaration. -/
   face : P.Face
+  /-- The `orientation` declaration. -/
   orientation : Bool
 deriving DecidableEq, Fintype
 
@@ -519,7 +518,6 @@ def twoMonogonSphere : FiniteCyclicPresentation where
   edgeCount := 1
   faces := [[.pos 0], [.neg 0]]
 
-@[simp]
 theorem emptyWordSphere_boundary (f : emptyWordSphere.Face) :
     emptyWordSphere.boundary f = [] := by
   simp [boundary, emptyWordSphere]
@@ -597,7 +595,9 @@ theorem twoMonogonSphere_isConnected :
 /-- An orientation-preserving isomorphism of finite cyclic presentations, allowing a cyclic
 rotation of each face. The sign of every dart is retained under `edgeEquiv`. -/
 structure PresentationIso (P Q : FiniteCyclicPresentation) where
+  /-- The `edgeEquiv` declaration. -/
   edgeEquiv : P.Edge ≃ Q.Edge
+  /-- The `faceEquiv` declaration. -/
   faceEquiv : P.Face ≃ Q.Face
   boundary_rotated :
     ∀ f, ((P.boundary f).map (SignedDart.mapEquiv edgeEquiv)).IsRotated
@@ -774,7 +774,9 @@ end PresentationIso
 /-- A signed isomorphism of finite cyclic presentations. Each edge may be independently
 reoriented while it is renamed; face boundary order is preserved up to cyclic rotation. -/
 structure SignedPresentationIso (P Q : FiniteCyclicPresentation) where
+  /-- The `edgeRelabeling` declaration. -/
   edgeRelabeling : EdgeRelabeling P.Edge Q.Edge
+  /-- The `faceEquiv` declaration. -/
   faceEquiv : P.Face ≃ Q.Face
   boundary_rotated :
     ∀ f, ((P.boundary f).map edgeRelabeling.mapDart).IsRotated

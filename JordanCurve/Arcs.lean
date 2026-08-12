@@ -1,4 +1,13 @@
-import Mathlib
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
+import Mathlib.Analysis.SpecialFunctions.Complex.Circle
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Geometry.Euclidean.Sphere.Basic
+import Mathlib.Topology.Connected.Clopen
+import Mathlib.Topology.UnitInterval
 
 /-!
 # Arc scaffolding for the (continuous) Jordan curve theorem

@@ -83,8 +83,11 @@ open SurfaceCellComplex
 /-- Presentation isomorphism up to independent choices of traversal orientation on target
 faces. -/
 structure UnorientedPresentationIso (P Q : FiniteCyclicPresentation) where
+  /-- The `edgeRelabeling` declaration. -/
   edgeRelabeling : EdgeRelabeling P.Edge Q.Edge
+  /-- The `faceEquiv` declaration. -/
   faceEquiv : P.Face ≃ Q.Face
+  /-- The `reverseFace` declaration. -/
   reverseFace : P.Face → Bool
   boundary_rotated :
     ∀ f, ((P.boundary f).map edgeRelabeling.mapDart).IsRotated
@@ -94,6 +97,7 @@ namespace UnorientedPresentationIso
 
 variable {P Q : FiniteCyclicPresentation}
 
+/-- The `edgeEquiv` declaration. -/
 abbrev edgeEquiv (e : UnorientedPresentationIso P Q) : P.Edge ≃ Q.Edge :=
   e.edgeRelabeling.edgeEquiv
 
@@ -584,7 +588,8 @@ theorem transportDirection_parameter
       else
         direction.homeomorph t := by
   cases sourceReverse <;> cases targetReverse <;> cases direction <;>
-    simp [transportDirection, unitInterval.symm_symm]
+    simp [transportDirection, PolygonGluing.ParameterDirection.homeomorph_opposite_apply,
+      unitInterval.symm_symm]
 
 /-- Transport a compatible source pairing, toggling its parameter direction precisely when one
 of the two incident faces is reflected. -/

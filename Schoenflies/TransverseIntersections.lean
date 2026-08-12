@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.LocalStraightCrossing
 import Schoenflies.PolygonalJordanCircle
 
@@ -33,7 +38,9 @@ variable {U : Set Plane} {a b p : Plane}
 /-- Edge-level data at one transverse intersection. -/
 structure TransverseIntersection (B : SimpleBrokenLine U a b)
     (P : PolygonalCircle) (p : Plane) where
+  /-- The `polygonEdge` declaration. -/
   polygonEdge : ZMod P.n
+  /-- The `brokenEdge` declaration. -/
   brokenEdge : Fin B.data.n
   mem_polygonEdge : p ∈ P.edgeSegment polygonEdge
   mem_brokenEdge : p ∈ segment ℝ

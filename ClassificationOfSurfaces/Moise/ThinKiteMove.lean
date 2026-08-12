@@ -35,9 +35,11 @@ def axisKitePosition (lo hi : ℝ) : Fin 4 → Plane :=
 @[simp] theorem axisKitePosition_three (lo hi : ℝ) :
     axisKitePosition lo hi 3 = planePoint 0 lo := rfl
 
+/-- The `axisKiteTriangles` declaration. -/
 def axisKiteTriangles : Finset (Finset (Fin 4)) :=
   {{0, 2, 3}, {1, 2, 3}}
 
+/-- The `axisKitePatch` declaration. -/
 def axisKitePatch (lo hi : ℝ) : Set Plane :=
   convexHull ℝ (axisKitePosition lo hi '' (({0, 2, 3} : Finset (Fin 4)) : Set _)) ∪
     convexHull ℝ (axisKitePosition lo hi '' (({1, 2, 3} : Finset (Fin 4)) : Set _))
@@ -83,7 +85,7 @@ theorem axisKite_affineIndependent {lo hi : ℝ} (hlo : lo < 0) (hhi : 0 < hi)
         simp only [axisKitePosition_zero, axisKitePosition_two, axisKitePosition_three,
           planePoint_apply_zero, planePoint_apply_one, PiLp.sub_apply]
         linarith
-      convert h using 1 ; funext i ; fin_cases i <;> rfl
+      convert h using 1; funext i; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
   · apply affineIndependent_finset_of_range_kite (axisKitePosition lo hi) ![1, 2, 3]
@@ -93,7 +95,7 @@ theorem axisKite_affineIndependent {lo hi : ℝ} (hlo : lo < 0) (hhi : 0 < hi)
         simp only [axisKitePosition_one, axisKitePosition_two, axisKitePosition_three,
           planePoint_apply_zero, planePoint_apply_one, PiLp.sub_apply]
         linarith
-      convert h using 1 ; funext i ; fin_cases i <;> rfl
+      convert h using 1; funext i; fin_cases i <;> rfl
     · ext v
       fin_cases v <;> simp
 
@@ -108,6 +110,7 @@ theorem axisKite_inter {lo hi : ℝ} (hlo : lo < 0) (hhi : 0 < hi) :
     intro v hv
     fin_cases v <;> simp [axisKitePosition] at hv ⊢
 
+/-- The `axisKiteMesh` declaration. -/
 noncomputable def axisKiteMesh (lo hi : ℝ) (hlo : lo < 0) (hhi : 0 < hi) : TriangleMesh where
   Vertex := Fin 4
   position := axisKitePosition lo hi
@@ -149,6 +152,7 @@ continuity across the vertical diagonal immediate. -/
 noncomputable def thinKiteMap (δ : ℝ) (p : Plane) : Plane :=
   planePoint (p 0) (thinKiteScale δ * p 1 + (1 - |p 0|) / 2)
 
+/-- The `thinKiteInv` declaration. -/
 noncomputable def thinKiteInv (δ : ℝ) (p : Plane) : Plane :=
   planePoint (p 0) ((p 1 - (1 - |p 0|) / 2) / thinKiteScale δ)
 
@@ -156,6 +160,7 @@ theorem thinKiteScale_pos {δ : ℝ} (hδ : 0 < δ) : 0 < thinKiteScale δ := by
   unfold thinKiteScale
   positivity
 
+/-- The `thinKiteGlobalHomeomorph` declaration. -/
 noncomputable def thinKiteGlobalHomeomorph (δ : ℝ) (hδ : 0 < δ) : Plane ≃ₜ Plane := by
   have hs : thinKiteScale δ ≠ 0 := (thinKiteScale_pos hδ).ne'
   have hleft : Function.LeftInverse (thinKiteInv δ) (thinKiteMap δ) := by
@@ -794,12 +799,15 @@ theorem exists_thinKitePatch_inter_segment_subset_baseEndpoints {a b : Plane}
         exact hpatch δ hδ hδε hp.1
       exact False.elim (hpCompl hp.2)
 
+/-- The `diamondOuterToThinKite` declaration. -/
 noncomputable def diamondOuterToThinKite (δ : ℝ) (hδ : 0 < δ) :
     diamondPatch ≃ₜ thinKitePatch δ := by
   exact (thinKiteGlobalHomeomorph δ hδ).image diamondPatch
 
+/-- The `thinKiteSource` declaration. -/
 noncomputable def thinKiteSource (δ : ℝ) : ℝ := -2 / (1 + 2 * δ)
 
+/-- The `thinKiteTarget` declaration. -/
 noncomputable def thinKiteTarget (δ : ℝ) : ℝ := 2 / (1 + 2 * δ)
 
 theorem thinKiteSource_lower {δ : ℝ} (hδ : 0 < δ) : -2 < thinKiteSource δ := by
@@ -990,6 +998,7 @@ theorem isClosed_thinKitePatch (δ : ℝ) : IsClosed (thinKitePatch δ) := by
     unfold thinKiteMap thinKiteScale planePoint
     fun_prop)).isClosed
 
+/-- The `thinKiteAmbientHomeomorph` declaration. -/
 noncomputable def thinKiteAmbientHomeomorph (δ : ℝ) (hδ : 0 < δ) : Plane ≃ₜ Plane :=
   (thinKiteGlobalHomeomorph δ hδ).symm.trans
     ((diamondFanAmbientHomeomorph (thinKiteSource δ) (thinKiteTarget δ)
@@ -1224,20 +1233,20 @@ theorem baseSegment_eq_spokes :
       refine ⟨2 * c, ⟨by linarith [hc.1], by linarith⟩, ?_⟩
       ext i
       fin_cases i <;>
-        simp [AffineMap.lineMap_apply_module, planePoint] ; ring
+        simp [AffineMap.lineMap_apply_module, planePoint]; ring
     · right
       rw [segment_eq_image_lineMap]
       refine ⟨2 - 2 * c, ⟨by linarith [hc.2], by linarith⟩, ?_⟩
       ext i
       fin_cases i <;>
-        simp [AffineMap.lineMap_apply_module, planePoint] ; ring
+        simp [AffineMap.lineMap_apply_module, planePoint]; ring
   · have hcenter : planePoint 0 0 ∈
         segment ℝ (planePoint (-1) 0) (planePoint 1 0) := by
       rw [show planePoint 0 0 = AffineMap.lineMap
           (planePoint (-1) 0) (planePoint 1 0) ((1 : ℝ) / 2) by
         ext i
         fin_cases i <;>
-          simp [AffineMap.lineMap_apply_module, planePoint] ; ring]
+          simp [AffineMap.lineMap_apply_module, planePoint]; ring]
       exact lineMap_mem_segment ℝ _ _ (by constructor <;> norm_num)
     apply Set.union_subset
     · exact (convex_segment (𝕜 := ℝ) (planePoint (-1) 0) (planePoint 1 0)).segment_subset

@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.FiniteAvoidingCrosscuts
 import Schoenflies.LevelGenerationMarks
 import Schoenflies.PolygonalSubpathExtraction
@@ -124,12 +129,15 @@ noncomputable def hairTrimData (i : Fin (levelAddressCount n)) :
     (I.disjoint_levelEndpointHairs (levelAddressAt n i)).symm
     (F.rightPoint_mem i) (F.leftPoint_mem i)
 
+/-- The `trimmedRightPoint` declaration. -/
 noncomputable def trimmedRightPoint (i : Fin (levelAddressCount n)) : Plane :=
   F.sourcePath i (F.hairTrimData i).rightTime
 
+/-- The `trimmedLeftPoint` declaration. -/
 noncomputable def trimmedLeftPoint (i : Fin (levelAddressCount n)) : Plane :=
   F.sourcePath i (F.hairTrimData i).leftTime
 
+/-- The `trimmedPath` declaration. -/
 noncomputable def trimmedPath (i : Fin (levelAddressCount n)) :
     Path (F.trimmedRightPoint i) (F.trimmedLeftPoint i) :=
   (F.hairTrimData i).trimmedPath

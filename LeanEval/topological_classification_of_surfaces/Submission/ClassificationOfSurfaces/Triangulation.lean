@@ -82,20 +82,30 @@ simplicial/CW complex realization.  For now it records the public API needed by 
 triangulation-to-cell-complex bridge: finite incidence data, a topological realization, and a
 homeomorphism from that realization to the target surface. -/
 structure FiniteSurfaceTriangulation (S : Type*) [TopologicalSpace S] where
+  /-- The `Vertex` declaration. -/
   Vertex : Type
+  /-- The `Edge` declaration. -/
   Edge : Type
+  /-- The `Triangle` declaration. -/
   Triangle : Type
   vertexFintype : Fintype Vertex
   vertexDecidableEq : DecidableEq Vertex
   edgeFintype : Fintype Edge
   triangleFintype : Fintype Triangle
+  /-- The `realization` declaration. -/
   realization : Type
   realizationTop : TopologicalSpace realization
+  /-- The `edgeVertices` declaration. -/
   edgeVertices : Edge → Finset Vertex
+  /-- The `triangleVertices` declaration. -/
   triangleVertices : Triangle → Finset Vertex
+  /-- The `edgeSource` declaration. -/
   edgeSource : Edge → Vertex
+  /-- The `edgeTarget` declaration. -/
   edgeTarget : Edge → Vertex
+  /-- The `triangleBoundary` declaration. -/
   triangleBoundary : Triangle → List (OrientedEdge Edge)
+  /-- The `edgeIsBoundary` declaration. -/
   edgeIsBoundary : Edge → Prop
   isSurfaceTriangulation :
     FiniteSurfaceTriangulation.Valid Vertex Edge Triangle edgeVertices triangleVertices
@@ -253,7 +263,7 @@ noncomputable def triangleBoundary (t : T.Triangle) : List (OrientedEdge T.Edge)
 
 /-- Reading a cyclic triangle boundary recovers the correspondingly indexed oriented face
 edge. -/
-@[simp] theorem triangleBoundary_get (t : T.Triangle)
+theorem triangleBoundary_get (t : T.Triangle)
     (i : Fin (T.triangleBoundary t).length) :
     (T.triangleBoundary t).get i =
       T.orientedFaceEdge t
@@ -263,7 +273,7 @@ edge. -/
 
 /-- The underlying edge at a cyclic boundary position is the intrinsic edge with the same
 index. -/
-@[simp] theorem triangleBoundary_get_edge (t : T.Triangle)
+theorem triangleBoundary_get_edge (t : T.Triangle)
     (i : Fin (T.triangleBoundary t).length) :
     ((T.triangleBoundary t).get i).edge =
       T.toIntrinsic.faceEdge t
@@ -272,7 +282,7 @@ index. -/
   exact T.orientedFaceEdge_edge _ _
 
 /-- The source of a boundary occurrence is its cyclic face vertex. -/
-@[simp] theorem triangleBoundary_get_source (t : T.Triangle)
+theorem triangleBoundary_get_source (t : T.Triangle)
     (i : Fin (T.triangleBoundary t).length) :
     T.orientedEdgeSource ((T.triangleBoundary t).get i) =
       T.toIntrinsic.faceVertex t
@@ -281,7 +291,7 @@ index. -/
   exact T.orientedFaceEdge_source _ _
 
 /-- The target of a boundary occurrence is the next cyclic face vertex. -/
-@[simp] theorem triangleBoundary_get_target (t : T.Triangle)
+theorem triangleBoundary_get_target (t : T.Triangle)
     (i : Fin (T.triangleBoundary t).length) :
     T.orientedEdgeTarget ((T.triangleBoundary t).get i) =
       T.toIntrinsic.faceVertex t
@@ -555,37 +565,37 @@ theorem moise_triangulation_explicit :
   nonempty_geometricTriangulation_iff_explicit.mp (moise_triangulation S)
 
 /-- The named geometric triangulation produced for a compact connected Eval surface. -/
-noncomputable def compact_eval_surface_geometricTriangulation :
+noncomputable def compactEvalSurfaceGeometricTriangulation :
     GeometricTriangulation S :=
   Classical.choice (moise_triangulation S)
 
 /-- The Radó triangulation carries nonempty-face, edge-valence, and dual-connectivity data. -/
 theorem compact_eval_surface_geometricTriangulation_surfaceIncidence :
-    (compact_eval_surface_geometricTriangulation S).SurfaceIncidence :=
-  (compact_eval_surface_geometricTriangulation S).surfaceIncidence
+    (compactEvalSurfaceGeometricTriangulation S).SurfaceIncidence :=
+  (compactEvalSurfaceGeometricTriangulation S).surfaceIncidence
 
 /-- The named finite surface triangulation produced for a compact connected Eval surface, obtained
 from the geometric triangulation boundary `moise_triangulation` through the compatibility
 bridge. -/
-noncomputable def compact_eval_surface_finiteSurfaceTriangulation :
+noncomputable def compactEvalSurfaceFiniteSurfaceTriangulation :
     FiniteSurfaceTriangulation S :=
-  (compact_eval_surface_geometricTriangulation S).toFiniteSurfaceTriangulation
+  (compactEvalSurfaceGeometricTriangulation S).toFiniteSurfaceTriangulation
 
 /-- The compatibility triangulation inherits the complete incidence certificate. -/
 theorem compact_eval_surface_finiteSurfaceTriangulation_incidenceCertificate :
-    (compact_eval_surface_finiteSurfaceTriangulation S).IncidenceCertificate :=
-  (compact_eval_surface_geometricTriangulation S).incidenceCertificate_of_surfaceIncidence
+    (compactEvalSurfaceFiniteSurfaceTriangulation S).IncidenceCertificate :=
+    (compactEvalSurfaceGeometricTriangulation S).incidenceCertificate_of_surfaceIncidence
     (compact_eval_surface_geometricTriangulation_surfaceIncidence S)
 
 /-- The named compact connected Eval surface triangulation realizes the ambient surface. -/
 theorem compact_eval_surface_finiteSurfaceTriangulation_homeomorphSurface :
-    Nonempty ((compact_eval_surface_finiteSurfaceTriangulation S).realization ≃ₜ S) :=
-  (compact_eval_surface_finiteSurfaceTriangulation S).homeomorphSurface
+    Nonempty ((compactEvalSurfaceFiniteSurfaceTriangulation S).realization ≃ₜ S) :=
+  (compactEvalSurfaceFiniteSurfaceTriangulation S).homeomorphSurface
 
 /-- Moise/PL theorem boundary: compact connected Eval surfaces admit finite triangulations. -/
 theorem compact_eval_surface_finitely_triangulable :
     ∃ T : FiniteSurfaceTriangulation S, Nonempty (T.realization ≃ₜ S) := by
-  exact ⟨compact_eval_surface_finiteSurfaceTriangulation S,
+  exact ⟨compactEvalSurfaceFiniteSurfaceTriangulation S,
     compact_eval_surface_finiteSurfaceTriangulation_homeomorphSurface S⟩
 
 end EvalHypotheses

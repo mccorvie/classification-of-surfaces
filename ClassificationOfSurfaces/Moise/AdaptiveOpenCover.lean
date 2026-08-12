@@ -26,7 +26,9 @@ variable (K : IntrinsicTwoComplex) (U : Set K.realization)
 
 /-- An open cover of `U` by subsets which remain inside `U`. -/
 structure AdaptiveOpenCover where
+  /-- The `Index` declaration. -/
   Index : Type
+  /-- The `set` declaration. -/
   set : Index → Set K.realization
   isOpen : ∀ i, IsOpen (set i)
   subset : ∀ i, set i ⊆ U

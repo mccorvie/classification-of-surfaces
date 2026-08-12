@@ -370,6 +370,7 @@ theorem adaptiveGlobalFanFaceVertices_injective (hU : IsOpen U) :
 
 /- The conforming adaptive fan family as a locally finite triangle complex in the open
 subspace. -/
+/-- The `adaptiveLocallyFiniteTriangleComplex` declaration. -/
 noncomputable def adaptiveLocallyFiniteTriangleComplex (hU : IsOpen U) :
     LocallyFiniteTriangleComplex U where
   Vertex := K.AdaptiveFanVertex U hU

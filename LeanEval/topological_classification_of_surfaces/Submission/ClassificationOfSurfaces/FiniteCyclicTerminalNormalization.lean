@@ -1846,6 +1846,7 @@ theorem exists_normalizeCrosscapHeadOrientation {n : ℕ}
 /-- Result of converting every handle after choosing an existing crosscap anchor. -/
 structure CrosscapConversionResult
     (terminal : TerminalCompletedWord) where
+  /-- The `target` declaration. -/
   target : TerminalCompletedWord
   equivalent :
     NormalizationEquivalent terminal.validPresentation
@@ -1863,9 +1864,13 @@ structure CrosscapConversionResult
 /-- Type-valued crosscap decomposition used by the constructive conversion result. -/
 structure CrosscapDecomposition {n : ℕ}
     (blocks : List (CompletedBlock n)) where
+  /-- The `before` declaration. -/
   before : List (CompletedBlock n)
+  /-- The `anchor` declaration. -/
   anchor : Fin n
+  /-- The `negative` declaration. -/
   negative : Bool
+  /-- The `after` declaration. -/
   after : List (CompletedBlock n)
   blocks_eq :
     blocks =

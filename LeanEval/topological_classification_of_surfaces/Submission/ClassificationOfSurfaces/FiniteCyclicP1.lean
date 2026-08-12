@@ -183,7 +183,6 @@ theorem expandWord_cons {n : ℕ} (a : Fin n) (d : SignedDart (Fin n))
     expandWord a (d :: word) = expandDart a d ++ expandWord a word :=
   rfl
 
-@[simp]
 theorem expandWord_singleton {n : ℕ} (a : Fin n) (d : SignedDart (Fin n)) :
     expandWord a [d] = expandDart a d := by
   simp [expandWord]

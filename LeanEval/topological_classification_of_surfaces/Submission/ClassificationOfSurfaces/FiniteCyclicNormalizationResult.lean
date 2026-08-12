@@ -42,6 +42,7 @@ theorem canonicalValidPresentation_presentation
 The dependent admissibility field supplies ordinary validity for the canonical endpoint, and the
 equivalence field records the entire validity-safe move chain. -/
 structure NormalizationResult (P : ValidPresentation) where
+  /-- The `normalForm` declaration. -/
   normalForm : NormalForm
   admissible : normalForm.IsEvalAdmissible
   equivalent :

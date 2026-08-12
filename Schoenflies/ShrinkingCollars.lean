@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.PrescribedHairCrosscuts
 
 /-!
@@ -53,8 +58,11 @@ theorem eventually_levelArc_curvePoint_dist_lt
 the recursively retained and locally shortened hairs. -/
 structure LevelInsideJoinData (I : J.InitialAngularArcs) {n : ℕ}
     (a : LevelAddress n) (epsilon : ℝ) (hepsilon : 0 < epsilon) where
+  /-- The `rightPoint` declaration. -/
   rightPoint : Plane
+  /-- The `leftPoint` declaration. -/
   leftPoint : Plane
+  /-- The `line` declaration. -/
   line : SimpleBrokenLine
     (J.inside ∩ thickening epsilon (I.levelArc a).curveArcPlane)
     rightPoint leftPoint

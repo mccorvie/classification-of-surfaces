@@ -106,7 +106,7 @@ noncomputable def mapEmbedding (f : Plane → Plane)
   consecutive_inter i := by
     have hedgeNext : f '' J.edgeSegment (i + 1) =
         segment ℝ (f (J.vertex (i + 1))) (f (J.vertex (i + 2))) := by
-      convert hedge (i + 1) using 1 ; ring
+      convert hedge (i + 1) using 1; ring
     have hsub (k : ZMod J.n) : J.edgeSegment k ⊆ J.carrier := fun x hx =>
       Set.mem_iUnion.mpr ⟨k, hx⟩
     rw [← hedge i, ← hedgeNext, ← hinj.image_inter (hsub i) (hsub (i + 1))]
@@ -170,7 +170,7 @@ noncomputable def mapHomeomorph (h : Plane ≃ₜ Plane)
   consecutive_inter i := by
     have hedgeNext : h '' J.edgeSegment (i + 1) =
         segment ℝ (h (J.vertex (i + 1))) (h (J.vertex (i + 2))) := by
-      convert hedge (i + 1) using 1 ; ring
+      convert hedge (i + 1) using 1; ring
     rw [← hedge i, ← hedgeNext, ← Set.image_inter h.injective]
     have hJ : J.edgeSegment i ∩ J.edgeSegment (i + 1) = {J.vertex (i + 1)} := by
       simpa only [edgeSegment, add_assoc, one_add_one_eq_two] using J.consecutive_inter i
@@ -633,7 +633,7 @@ theorem puncturedBall_subset_twoSectors_union_rays {a b : Circle} (hab : a ≠ b
 noncomputable def planeComplexEquiv : Plane ≃ₗᵢ[ℝ] ℂ :=
   Complex.orthonormalBasisOneI.repr.symm
 
-@[simp] theorem norm_planeComplexEquiv (x : Plane) : ‖planeComplexEquiv x‖ = ‖x‖ :=
+theorem norm_planeComplexEquiv (x : Plane) : ‖planeComplexEquiv x‖ = ‖x‖ :=
   planeComplexEquiv.norm_map x
 
 /-- Equality of complex unit directions reflects equality of normalized plane vectors. -/
@@ -722,15 +722,15 @@ theorem incident_complexDirections_ne (i : ZMod J.n) :
   have hxout : x ∈ J.edgeSegment i := by
     have := add_mem_segment_of_mem_segment_zero (p := J.vertex i) hqout
     rw [hx, edgeSegment]
-    convert this using 1 ; simp only [outgoingVector] ; abel
+    convert this using 1; simp only [outgoingVector]; abel
   have hxin : x ∈ J.edgeSegment (i - 1) := by
     have := add_mem_segment_of_mem_segment_zero (p := J.vertex i) hqin
     rw [edgeSegment, segment_symm]
     rw [hx]
-    convert this using 1 ; simp only [incomingRayVector, sub_add_cancel] ; abel
+    convert this using 1; simp only [incomingRayVector, sub_add_cancel]; abel
   have hinter : J.edgeSegment (i - 1) ∩ J.edgeSegment i = {J.vertex i} := by
     convert J.consecutive_inter (i - 1) using 1 <;>
-      simp only [edgeSegment, sub_add_cancel] ; ring
+      simp only [edgeSegment, sub_add_cancel]; ring
   have hxvertex : x = J.vertex i := by
     have hxinter : x ∈ J.edgeSegment (i - 1) ∩ J.edgeSegment i := ⟨hxin, hxout⟩
     rw [hinter] at hxinter
@@ -838,12 +838,12 @@ theorem neg_rotation_mem_openAngularSector {a b : Circle} {radius bound θ : ℝ
   rw [congrArg (fun q : Circle => (q : ℂ)) hcircle, Circle.coe_mul]
   ring
 
-@[simp] theorem ofReal_mul_circle_exp_re (radius θ : ℝ) :
+theorem ofReal_mul_circle_exp_re (radius θ : ℝ) :
     ((radius : ℂ) * (Circle.exp θ : ℂ)).re = radius * Real.cos θ := by
   simp only [Circle.coe_exp, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im,
     zero_mul, sub_zero, Complex.exp_ofReal_mul_I_re]
 
-@[simp] theorem ofReal_mul_circle_exp_im (radius θ : ℝ) :
+theorem ofReal_mul_circle_exp_im (radius θ : ℝ) :
     ((radius : ℂ) * (Circle.exp θ : ℂ)).im = radius * Real.sin θ := by
   simp only [Circle.coe_exp, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
     zero_mul, add_zero, Complex.exp_ofReal_mul_I_im]
@@ -1134,7 +1134,7 @@ theorem ball_diff_carrier_eq_vertexSectors {r : ℝ}
       apply Set.mem_iUnion.mpr
       refine ⟨i, ?_⟩
       rw [edgeSegment]
-      convert hseg using 1 ; simp only [outgoingVector] ; abel
+      convert hseg using 1; simp only [outgoingVector]; abel
     · exfalso
       apply hxcarrier
       have hlenPrev := hlen (i - 1)
@@ -1150,7 +1150,7 @@ theorem ball_diff_carrier_eq_vertexSectors {r : ℝ}
       apply Set.mem_iUnion.mpr
       refine ⟨i - 1, ?_⟩
       rw [edgeSegment, segment_symm]
-      convert hseg using 1 ; simp only [incomingRayVector, sub_add_cancel] ; abel
+      convert hseg using 1; simp only [incomingRayVector, sub_add_cancel]; abel
   · intro x hx
     rcases hx with hx | hx
     · exact J.vertexForwardSector_subset_ball_diff_carrier hsep i hx
@@ -1394,7 +1394,7 @@ theorem edgeTube_diff_carrier_eq_sides (i : ZMod J.n) {trim width : ℝ}
       rw [← edgeCoordinateInv, J.edgeCoordinateInv_edgeCoordinate] at hseg
       exact Set.mem_iUnion.mpr ⟨i, by
         rw [edgeSegment]
-        convert hseg using 1 ; simp only [outgoingVector] ; abel⟩
+        convert hseg using 1; simp only [outgoingVector]; abel⟩
     · exact Or.inr ⟨htube.1, htube.2.1, htube.2.2.1, him⟩
   · rintro x (hx | hx)
     · refine ⟨J.edgePositiveSide_subset_edgeTube i hwidth hx, ?_⟩
@@ -1836,7 +1836,9 @@ theorem carrier_subset_polygonStrip {trim width : ℝ} (htrim : 0 < trim)
 
 /-- Quantitative scales for the explicit polygon strip. -/
 structure StripScales where
+  /-- The `trim` declaration. -/
   trim : ℝ
+  /-- The `width` declaration. -/
   width : ℝ
   trim_pos : 0 < trim
   width_pos : 0 < width
@@ -2236,7 +2238,7 @@ theorem StripScales.isPathConnected_stripForwardPieces (S : J.StripScales) :
       | succ m ih =>
           apply Relation.ReflTransGen.tail ih
           rw [Nat.cast_succ]
-          convert hstep (i + (m : ZMod J.n)) using 1 ; ring_nf
+          convert hstep (i + (m : ZMod J.n)) using 1; ring_nf
     convert hwalk (j - i).val using 1
     rw [ZMod.natCast_zmod_val]
     ring
@@ -2272,7 +2274,7 @@ theorem StripScales.isPathConnected_stripBackwardPieces (S : J.StripScales) :
       | succ m ih =>
           apply Relation.ReflTransGen.tail ih
           rw [Nat.cast_succ]
-          convert hstep (i + (m : ZMod J.n)) using 1 ; ring_nf
+          convert hstep (i + (m : ZMod J.n)) using 1; ring_nf
     convert hwalk (j - i).val using 1
     rw [ZMod.natCast_zmod_val]
     ring
@@ -3021,7 +3023,7 @@ theorem eventually_edgeCrossed_iff {P : Plane} (hP : P ∉ J.carrier) (i : ZMod 
       ∀ᶠ Q : Plane in nhds P, Q 0 < crossingX (J.vertex i) (J.vertex (i + 1)) (Q 1) :=
     fun hc => (isOpen_lt (continuous_coord 0) (continuous_crossingX _ _)).eventually_mem hc
   by_cases hU : i ∈ J.upLeftEdges P
-  · -- rising flipping edge: status ⟺ (P 1 ≤ Q 1) eventually
+  · -- rising flipping edge: status iff (P 1 ≤ Q 1) eventually
     simp only [hU, if_pos]
     have hU' := hU
     simp only [upLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and] at hU'
@@ -3049,7 +3051,7 @@ theorem eventually_edgeCrossed_iff {P : Plane} (hP : P ∉ J.carrier) (i : ZMod 
       · intro hQ1
         exact ⟨Or.inr ⟨by rw [hbase1]; exact hQ1, hQtop⟩, hQx⟩
   by_cases hD : i ∈ J.downLeftEdges P
-  · -- falling flipping edge: status ⟺ (Q 1 < P 1) eventually
+  · -- falling flipping edge: status iff (Q 1 < P 1) eventually
     simp only [hU, hD, if_neg, if_pos, not_false_iff]
     have hD' := hD
     simp only [downLeftEdges, Finset.mem_filter, Finset.mem_univ, true_and] at hD'
@@ -3659,6 +3661,7 @@ structure TwoGateStrip where
   carrier_subset : J.carrier ⊆ strip
   /-- Two candidate path-component representatives. -/
   gateA : Plane
+  /-- The `gateB` declaration. -/
   gateB : Plane
   gateA_mem : gateA ∈ (strip \ J.carrier)
   gateB_mem : gateB ∈ (strip \ J.carrier)

@@ -148,7 +148,6 @@ theorem range_walkGeometricPath_copy {u v u' v' : K.Vertex}
   subst v'
   rfl
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Mapping a walk from a carrier restriction back to the ambient plane complex preserves its
 geometric range. -/
 theorem range_walkGeometricPath_mapLe_restrictedTo (C : Set Plane)
@@ -157,26 +156,34 @@ theorem range_walkGeometricPath_mapLe_restrictedTo (C : Set Plane)
     (hle : (K.restrictedTo C).vertexGraph ≤ K.vertexGraph) :
     Set.range (K.walkGeometricPath (p.mapLe hle)) =
       Set.range ((K.restrictedTo C).walkGeometricPath p) := by
+  let p' : K.vertexGraph.Walk u v :=
+    @SimpleGraph.Walk.mapLe K.Vertex (K.restrictedTo C).vertexGraph K.vertexGraph hle u v p
+  change Set.range (K.walkGeometricPath p') =
+    Set.range ((K.restrictedTo C).walkGeometricPath p)
   by_cases hzero : p.length = 0
   · cases p with
     | nil => rfl
     | cons h q => simp at hzero
   · have hpos : 0 < p.length := Nat.pos_of_ne_zero hzero
-    have hmap (n : ℕ) : (p.mapLe hle).getVert n = p.getVert n := by
+    have hlength : p'.length = p.length := by
+      change (SimpleGraph.Walk.map (.ofLE hle) p).length = p.length
+      exact SimpleGraph.Walk.length_map (.ofLE hle) p
+    have hmap (n : ℕ) : p'.getVert n = p.getVert n := by
+      change (SimpleGraph.Walk.map (.ofLE hle) p).getVert n = p.getVert n
       rw [SimpleGraph.Walk.getVert_map]
       exact SimpleGraph.Hom.ofLE_apply hle (p.getVert n)
     apply Set.Subset.antisymm
     · intro x hx
-      obtain ⟨i, hi⟩ := K.exists_walkSegment_of_mem_range (p.mapLe hle)
-        (by simpa using hpos) hx
-      let j : Fin p.length := ⟨i.val, by simpa using i.isLt⟩
+      obtain ⟨i, hi⟩ := K.exists_walkSegment_of_mem_range p'
+        (by simpa [hlength] using hpos) hx
+      let j : Fin p.length := ⟨i.val, by simpa [hlength] using i.isLt⟩
       apply (K.restrictedTo C).walkSegment_subset_range p j
       rw [hmap i.val, hmap (i.val + 1)] at hi
       simpa [j] using hi
     · intro x hx
       obtain ⟨i, hi⟩ := (K.restrictedTo C).exists_walkSegment_of_mem_range p hpos hx
-      let j : Fin (p.mapLe hle).length := ⟨i.val, by simpa using i.isLt⟩
-      apply K.walkSegment_subset_range (p.mapLe hle) j
+      let j : Fin p'.length := ⟨i.val, by simpa [hlength] using i.isLt⟩
+      apply K.walkSegment_subset_range p' j
       rw [hmap i.val, hmap (i.val + 1)]
       simpa [j] using hi
 

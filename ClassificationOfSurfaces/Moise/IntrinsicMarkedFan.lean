@@ -29,6 +29,7 @@ variable (K : IntrinsicTwoComplex)
 
 /-- A finite set of intrinsic points containing both endpoints of every abstract edge. -/
 structure EdgeMarking where
+  /-- The `points` declaration. -/
   points : Finset K.realization
   first_mem : ∀ e : K.Edge, K.edgeFirstPoint e ∈ points
   second_mem : ∀ e : K.Edge, K.edgeSecondPoint e ∈ points
@@ -116,6 +117,7 @@ theorem edgeParameterValue_injOn (e : K.Edge) :
 /-- A marked point on one edge. -/
 abbrev EdgeMark (e : K.Edge) := {p // p ∈ M.edgeMarks e}
 
+/-- The `edgeMarkParameter` declaration. -/
 noncomputable def edgeMarkParameter (e : K.Edge) (p : M.EdgeMark e) : ℝ :=
   M.edgeParameterValue e p.1
 
@@ -138,10 +140,11 @@ theorem edgeMarkParameter_injective (e : K.Edge) :
     _ = K.edgePath e (K.edgeParameter e q.1 hq) := congrArg _ hparam
     _ = q.1 := K.edgePath_edgeParameter e q.1 hq
 
+/-- The `edgeMarkLE` declaration. -/
 def edgeMarkLE (e : K.Edge) (p q : M.EdgeMark e) : Prop :=
   M.edgeMarkParameter e p ≤ M.edgeMarkParameter e q
 
-noncomputable instance edgeMarkLE_decidable (e : K.Edge) :
+noncomputable instance edgeMarkLEDecidable (e : K.Edge) :
     DecidableRel (M.edgeMarkLE e) :=
   fun p q ↦ inferInstanceAs
     (Decidable (M.edgeMarkParameter e p ≤ M.edgeMarkParameter e q))
@@ -308,12 +311,14 @@ theorem edgeMarkList_last_parameter (e : K.Edge) :
 /-- Consecutive intervals in the globally ordered mark list. -/
 abbrev EdgeInterval (e : K.Edge) := Fin ((M.edgeMarkList e).length - 1)
 
+/-- The `edgeIntervalFirst` declaration. -/
 noncomputable def edgeIntervalFirst (e : K.Edge) (j : M.EdgeInterval e) :
     K.realization :=
   (M.edgeMarkList e).get ⟨j.1, by
     have := j.2
     omega⟩
 
+/-- The `edgeIntervalSecond` declaration. -/
 noncomputable def edgeIntervalSecond (e : K.Edge) (j : M.EdgeInterval e) :
     K.realization :=
   (M.edgeMarkList e).get ⟨j.1 + 1, by
@@ -751,6 +756,7 @@ interval in the global mark order on that edge. -/
 abbrev FanFace :=
   Σ t : K.Face, Σ i : ZMod 3, M.EdgeInterval (K.faceEdge t i)
 
+/-- The `fanFaceVertices` declaration. -/
 noncomputable def fanFaceVertices (f : M.FanFace) : Finset K.realization :=
   {K.faceCenter f.1,
     M.edgeIntervalFirst (K.faceEdge f.1 f.2.1) f.2.2,

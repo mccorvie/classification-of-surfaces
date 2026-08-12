@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.JordanAnnularSeparatorPairs
 import Schoenflies.JordanThetaRegions
 import Schoenflies.LocallyStraightSets
@@ -23,9 +28,11 @@ namespace PolygonalCircle.JordanAnnularCrosscut.SeparatorPair
 variable {P : PolygonalCircle} {J : JordanCircle}
   {A B : JordanAnnularCrosscut P J} (S : SeparatorPair A B)
 
+/-- The `bridgeSupport` declaration. -/
 def bridgeSupport (_S : SeparatorPair A B) : Set Plane :=
   range A.path ∪ (P.carrier ∪ range B.path)
 
+/-- The `exceptionalSet` declaration. -/
 def exceptionalSet (_S : SeparatorPair A B) : Set Plane :=
   range P.vertex ∪
     {A.innerPoint, B.innerPoint, A.outerPoint, B.outerPoint}
@@ -161,6 +168,7 @@ theorem bridgeSupport_exists_local_determinantLine
     simpa only [bridgeSupport, union_assoc, union_left_comm, union_comm]
       using hlocal'
 
+/-- The `omittedPieces` declaration. -/
 def omittedPieces : Set Plane :=
   range S.innerSplit.second ∪
     (range S.outerArc₀ ∪ range S.outerArc₁)

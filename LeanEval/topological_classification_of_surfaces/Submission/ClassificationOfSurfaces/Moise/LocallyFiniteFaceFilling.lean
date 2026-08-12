@@ -30,6 +30,7 @@ variable {S : Type*} [TopologicalSpace S] {K : LocallyFiniteTriangleComplex S}
 /-- A certified finite PL filling of the canonical polygonal boundary of one locally finite
 face. -/
 structure FacePLFilling (f : K.Face) where
+  /-- The `map` declaration. -/
   map : Plane → Plane
   eqOn_boundary : Set.EqOn map (K.faceBoundaryMap (G := G) f)
     (frontier standardFaceRegion)

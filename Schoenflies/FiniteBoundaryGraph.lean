@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Mathlib.Combinatorics.SimpleGraph.Acyclic
 import Mathlib.Combinatorics.SimpleGraph.Finite
 import Mathlib.Combinatorics.SimpleGraph.DegreeSum
@@ -22,7 +27,7 @@ open SimpleGraph
 simple cycle.  The proof uses the leaf theorem for finite trees on the
 connected component containing the given edge. -/
 theorem SimpleGraph.exists_isCycle_of_even_degree_of_adj
-    {V : Type*} [Fintype V] [DecidableEq V]
+    {V : Type*} [Fintype V]
     (G : SimpleGraph V) [DecidableRel G.Adj]
     (heven : ∀ v, Even (G.degree v))
     {v w : V} (hvw : G.Adj v w) :

@@ -45,13 +45,11 @@ noncomputable def ofOneFaceWord {Edge : Type} [Fintype Edge]
   edgeCount := Fintype.card Edge
   faces := [word.map (SignedDart.mapEquiv (Fintype.equivFin Edge))]
 
-@[simp]
 theorem ofOneFaceWord_faces_length {Edge : Type} [Fintype Edge]
     (word : List (SignedDart Edge)) :
     (ofOneFaceWord word).faces.length = 1 := by
   simp [ofOneFaceWord]
 
-@[simp]
 theorem ofOneFaceWord_boundary_zero {Edge : Type} [Fintype Edge]
     (word : List (SignedDart Edge)) :
     (ofOneFaceWord word).boundary 0 =
@@ -69,7 +67,6 @@ theorem ofOneFaceWord_face_eq_zero {Edge : Type} [Fintype Edge]
   change f.val = 0
   omega
 
-@[simp]
 theorem ofOneFaceWord_boundary {Edge : Type} [Fintype Edge]
     (word : List (SignedDart Edge)) (f : (ofOneFaceWord word).Face) :
     (ofOneFaceWord word).boundary f =
@@ -84,7 +81,6 @@ noncomputable def ofOneFaceWordEdgeEquiv {Edge : Type} [Fintype Edge]
   change Edge ≃ Fin (Fintype.card Edge)
   exact Fintype.equivFin Edge
 
-@[simp]
 theorem ofOneFaceWord_edgeMultiplicity {Edge : Type} [Fintype Edge]
     [DecidableEq Edge] (word : List (SignedDart Edge)) (e : Edge) :
     (ofOneFaceWord word).edgeMultiplicity

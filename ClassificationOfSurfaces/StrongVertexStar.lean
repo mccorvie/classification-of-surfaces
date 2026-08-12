@@ -205,7 +205,9 @@ connected through edges containing that vertex. -/
 theorem faces_isStrongVertexStarConnected
     [ChartedSpace (EuclideanHalfSpace 2) S]
     [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S] :
+    let _ := (inferInstance : IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S)
     TriangleFamily.IsStrongVertexStarConnected T.faces := by
+  dsimp
   classical
   intro v f g hvf hvg
   let Adj :=

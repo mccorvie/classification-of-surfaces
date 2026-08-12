@@ -30,6 +30,7 @@ namespace FiniteCyclicPresentation
 
 /-- An ordinary-valid finite cyclic presentation, used as a node in a normalization chain. -/
 structure ValidPresentation where
+  /-- The `presentation` declaration. -/
   presentation : FiniteCyclicPresentation
   valid : presentation.IsSurfaceValid
 
@@ -37,11 +38,6 @@ namespace ValidPresentation
 
 instance : Coe ValidPresentation FiniteCyclicPresentation :=
   ⟨ValidPresentation.presentation⟩
-
-@[simp]
-theorem coe_presentation (P : ValidPresentation) :
-    (P : FiniteCyclicPresentation) = P.presentation :=
-  rfl
 
 @[ext]
 theorem ext {P Q : ValidPresentation}

@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.BoundaryPartitions
 
 /-!
@@ -20,6 +25,7 @@ variable (J : JordanCircle)
 /-- A nondegenerate straight access hair based at `q`, contained in the
 inside except at its base point. -/
 structure InsideAccessHair (q : Plane) where
+  /-- The `tip` declaration. -/
   tip : Plane
   tip_ne_base : tip ≠ q
   carrier_subset : segment ℝ q tip ⊆ J.inside ∪ {q}
@@ -29,6 +35,7 @@ namespace InsideAccessHair
 
 variable {J : JordanCircle} {q : Plane}
 
+/-- The `carrier` declaration. -/
 def carrier (H : J.InsideAccessHair q) : Set Plane := segment ℝ q H.tip
 
 theorem base_mem (H : J.InsideAccessHair q) : q ∈ H.carrier :=
@@ -238,6 +245,7 @@ theorem exists_insideAccessHair_subset_open {q : Plane}
 /-- Pairwise-disjoint straight hairs based at a finite family of distinct
 linearly accessible points. -/
 structure InsideHairFamily (ι : Type*) [Fintype ι] (anchor : ι → Plane) where
+  /-- The `hair` declaration. -/
   hair : ∀ i, J.InsideAccessHair (anchor i)
   pairwise_disjoint : Pairwise fun i j => Disjoint (hair i).carrier (hair j).carrier
 
@@ -267,6 +275,7 @@ structure InsideHairExtension
     (ι κ : Type*) [Fintype ι] [Fintype κ]
     (oldAnchor : ι → Plane) (newAnchor : κ → Plane)
     (old : J.InsideHairFamily ι oldAnchor) where
+  /-- The `newHair` declaration. -/
   newHair : ∀ j, J.InsideAccessHair (newAnchor j)
   new_pairwise_disjoint :
     Pairwise fun i j => Disjoint (newHair i).carrier (newHair j).carrier

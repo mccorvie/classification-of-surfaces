@@ -25,6 +25,7 @@ variable (K : IntrinsicTwoComplex)
 
 /-- Uniform target disks around the images of the used intrinsic vertices. -/
 structure VertexDiskControl (h : K.realization → Plane) where
+  /-- The `radius` declaration. -/
   radius : ℝ
   radius_pos : 0 < radius
   vertices_disjoint : ∀ v w : K.UsedVertex, v ≠ w →
@@ -172,7 +173,9 @@ theorem edgeCurve_eq_of_mem {h : K.realization → Plane} (e : K.Edge) {t : ℝ}
 
 /-- The two ordered circle crossings delimiting the central part of an intrinsic mapped edge. -/
 structure EdgeTrimData (h : K.realization → Plane) (D : K.VertexDiskControl h) (e : K.Edge) where
+  /-- The `left` declaration. -/
   left : ℝ
+  /-- The `right` declaration. -/
   right : ℝ
   left_pos : 0 < left
   left_lt_right : left < right
@@ -322,6 +325,7 @@ noncomputable def edgeTrim {h : K.realization → Plane} (hcont : Continuous h)
 /-- Pairwise-disjoint closed tubes around all trimmed central intrinsic arcs. -/
 structure CentralTubeControl {h : K.realization → Plane} (hcont : Continuous h)
     (hinj : Function.Injective h) (D : K.VertexDiskControl h) where
+  /-- The `radius` declaration. -/
   radius : ℝ
   radius_pos : 0 < radius
   radius_lt_vertex : radius < D.radius
@@ -399,6 +403,7 @@ end EdgeTrimData
 structure CentralPolygonalArc {h : K.realization → Plane} (hcont : Continuous h)
     (hinj : Function.Injective h) (D : K.VertexDiskControl h)
     (C : K.CentralTubeControl hcont hinj D) (e : K.Edge) where
+  /-- The `data` declaration. -/
   data : BrokenLineData
     (Metric.thickening C.radius (K.edgeTrim hcont D e).centralCarrier)
   start_eq : data.start = K.edgeCurve h e (K.edgeTrim hcont D e).left
@@ -419,6 +424,7 @@ theorem exists_centralPolygonalArc {h : K.realization → Plane}
   obtain ⟨B, hstart, hfinish⟩ := BrokenLineData.exists_data_of_joined hjoined
   exact ⟨⟨B, hstart, hfinish⟩⟩
 
+/-- The `centralPolygonalArc` declaration. -/
 noncomputable def centralPolygonalArc {h : K.realization → Plane}
     (hcont : Continuous h) (hinj : Function.Injective h)
     (D : K.VertexDiskControl h) (C : K.CentralTubeControl hcont hinj D)
@@ -451,8 +457,11 @@ theorem disjoint_resolvedCarrier {d : K.Edge}
 
 /-- A simple parameterization of the polygonal replacement, normalized to the unit interval. -/
 structure Parameterization (A : K.CentralPolygonalArc hcont hinj D C e) where
+  /-- The `source` declaration. -/
   source : PlaneComplex
+  /-- The `map` declaration. -/
   map : Plane → Plane
+  /-- The `curve` declaration. -/
   curve : ℝ → Plane
   source_support : source.support =
     segment ℝ (planePoint 0 0) (planePoint A.data.resolvedWalk.length 0)
@@ -575,6 +584,7 @@ theorem exists_parameterization (A : K.CentralPolygonalArc hcont hinj D C e) :
   · simpa [curve, axis, n] using hstart
   · simpa [curve, axis, n] using hfinish
 
+/-- The `parameterization` declaration. -/
 noncomputable def parameterization (A : K.CentralPolygonalArc hcont hinj D C e) :
     A.Parameterization :=
   Classical.choice A.exists_parameterization
@@ -593,6 +603,7 @@ noncomputable def exitData (A : K.CentralPolygonalArc hcont hinj D C e) :
       D.vertices_disjoint (K.edgeFirstUsed e) (K.edgeSecondUsed e)
         (K.edgeFirstUsed_ne_edgeSecondUsed e)
 
+/-- The `trimmedCarrier` declaration. -/
 def trimmedCarrier (A : K.CentralPolygonalArc hcont hinj D C e) : Set Plane :=
   A.parameterization.curve '' Set.Icc A.exitData.left A.exitData.right
 
@@ -647,18 +658,22 @@ theorem trimmedCarrier_avoids_nonincident
   exact (K.edgeTrim hcont D e).centralCarrier_subset_mapped_openEdge.trans
     (Set.image_subset_range _ _)
 
+/-- The `leftEndpoint` declaration. -/
 noncomputable def leftEndpoint
     (A : K.CentralPolygonalArc hcont hinj D C e) : Plane :=
   A.parameterization.curve A.exitData.left
 
+/-- The `rightEndpoint` declaration. -/
 noncomputable def rightEndpoint
     (A : K.CentralPolygonalArc hcont hinj D C e) : Plane :=
   A.parameterization.curve A.exitData.right
 
+/-- The `leftSpoke` declaration. -/
 noncomputable def leftSpoke
     (A : K.CentralPolygonalArc hcont hinj D C e) : Set Plane :=
   segment ℝ (h (K.edgeFirstPoint e)) A.leftEndpoint
 
+/-- The `rightSpoke` declaration. -/
 noncomputable def rightSpoke
     (A : K.CentralPolygonalArc hcont hinj D C e) : Set Plane :=
   segment ℝ A.rightEndpoint (h (K.edgeSecondPoint e))
@@ -668,14 +683,17 @@ noncomputable def completeCarrier
     (A : K.CentralPolygonalArc hcont hinj D C e) : Set Plane :=
   A.leftSpoke ∪ A.trimmedCarrier ∪ A.rightSpoke
 
+/-- The `leftOpenSpoke` declaration. -/
 noncomputable def leftOpenSpoke
     (A : K.CentralPolygonalArc hcont hinj D C e) : Set Plane :=
   A.leftSpoke \ {h (K.edgeFirstPoint e)}
 
+/-- The `rightOpenSpoke` declaration. -/
 noncomputable def rightOpenSpoke
     (A : K.CentralPolygonalArc hcont hinj D C e) : Set Plane :=
   A.rightSpoke \ {h (K.edgeSecondPoint e)}
 
+/-- The `interiorCarrier` declaration. -/
 noncomputable def interiorCarrier
     (A : K.CentralPolygonalArc hcont hinj D C e) : Set Plane :=
   A.leftOpenSpoke ∪ A.trimmedCarrier ∪ A.rightOpenSpoke

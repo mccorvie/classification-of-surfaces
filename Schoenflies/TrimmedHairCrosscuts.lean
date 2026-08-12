@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.ShrinkingCollars
 
 /-!
@@ -24,7 +29,9 @@ last visit to the right hair and its first subsequent visit to the left
 hair. -/
 structure HairTrimData (P : Path p q)
     (HR : J.InsideAccessHair rbase) (HL : J.InsideAccessHair lbase) where
+  /-- The `rightTime` declaration. -/
   rightTime : unitInterval
+  /-- The `leftTime` declaration. -/
   leftTime : unitInterval
   right_lt_left : rightTime < leftTime
   right_mem : P rightTime ∈ HR.carrier

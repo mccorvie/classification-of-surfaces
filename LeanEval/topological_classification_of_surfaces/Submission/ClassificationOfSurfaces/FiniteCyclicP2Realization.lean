@@ -338,7 +338,6 @@ theorem positiveSelectedCellHomeomorph_side_of_not_lt
 
 /-! ### The fresh seam inside the actual split presentation -/
 
-@[simp]
 theorem positive_split_boundary_selected_length
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false) :
@@ -353,7 +352,6 @@ theorem positive_split_boundary_selected_length
       rw [selectedBoundary_of_orientation_false P cut horientation]
       simp [retainWord]
 
-@[simp]
 theorem positive_split_boundary_right_length
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false) :
@@ -774,7 +772,8 @@ theorem positiveChildPairMap_fresh_seam
   rw [positiveChildPairPreMap_fresh_inl,
     positiveChildPairPreMap_fresh_inr]
   simpa [positiveFreshPairing,
-      PolygonGluing.Identification.parameter] using
+      PolygonGluing.Identification.parameter,
+      PolygonGluing.ParameterDirection.homeomorph_opposite_apply] using
     (split P cut).polygonalMk_pairing_eq
       (split_isSurfaceValid P cut validP)
       (positiveFreshPairing P cut horientation) t
@@ -1188,7 +1187,6 @@ noncomputable def positiveMapOccurrence
   · exact
       ⟨oldFace P cut f, retainedSideIndex P cut hface i⟩
 
-@[simp]
 theorem positiveMapOccurrence_selected_of_lt
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -1210,7 +1208,6 @@ theorem positiveMapOccurrence_selected_of_lt
       cut.left.length at hleft
   simp [positiveMapOccurrence, hleft]
 
-@[simp]
 theorem positiveMapOccurrence_selected_of_not_lt
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -1232,7 +1229,6 @@ theorem positiveMapOccurrence_selected_of_not_lt
       cut.left.length at hleft
   simp [positiveMapOccurrence, hleft]
 
-@[simp]
 theorem positiveMapOccurrence_retained
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -1417,7 +1413,6 @@ theorem positiveMapOccurrence_dart
         P1.castSuccDart ((P.boundary f)[i.val])
     rw [List.getElem_map]
 
-@[simp]
 theorem positiveMapOccurrence_edge
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -2179,8 +2174,7 @@ theorem positiveSelectedChildInvFaceMap_apply
           (.inl z)) := by
   simp [positiveSelectedChildInvFaceMap, Function.comp_apply]
 
-@[simp]
-theorem positiveRightChildInvFaceMap_apply
+@[simp] theorem positiveRightChildInvFaceMap_apply
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
     (hl : 0 < cut.left.length) (hr : 0 < cut.right.length)
@@ -2199,7 +2193,6 @@ theorem positiveRightChildInvFaceMap_apply
           (.inr z)) := by
   simp [positiveRightChildInvFaceMap, Function.comp_apply]
 
-@[simp]
 theorem positiveInvPreMap_retained_apply
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -2216,7 +2209,6 @@ theorem positiveInvPreMap_retained_apply
       P cut horientation hl hr validP hface,
     retainedInvFaceMap_apply]
 
-@[simp]
 theorem positiveInvPreMap_selectedChild_apply
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -2238,7 +2230,6 @@ theorem positiveInvPreMap_selectedChild_apply
     positiveOldInvFaceMap_selected,
     positiveSelectedChildInvFaceMap_apply]
 
-@[simp]
 theorem positiveInvPreMap_rightChild_apply
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -2767,7 +2758,8 @@ theorem positiveInvPreMap_pairing_eq
         rw [BoundaryPairing.identification_source,
           BoundaryPairing.identification_target]
         simpa [hsourceSelected, htargetRight, hdirection,
-            PolygonGluing.Identification.parameter] using
+            PolygonGluing.Identification.parameter,
+            PolygonGluing.ParameterDirection.homeomorph_opposite_apply] using
           positiveInvPreMap_fresh_occurrence_seam
             P cut horientation hl hr validP t
     · rcases positiveFreshOccurrence_cases
@@ -2785,7 +2777,8 @@ theorem positiveInvPreMap_pairing_eq
         rw [BoundaryPairing.identification_source,
           BoundaryPairing.identification_target]
         simpa [hsourceRight, htargetSelected, hdirection,
-            PolygonGluing.Identification.parameter] using
+            PolygonGluing.Identification.parameter,
+            PolygonGluing.ParameterDirection.homeomorph_opposite_apply] using
           (positiveInvPreMap_fresh_occurrence_seam
             P cut horientation hl hr validP
             (unitInterval.symm t)).symm

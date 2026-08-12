@@ -517,6 +517,7 @@ theorem exists_triangleAmbientHomeomorph :
       rfl]
     rw [hfrontier, hsphere]
 
+/-- The `triangleAmbientHomeomorph` declaration. -/
 noncomputable def triangleAmbientHomeomorph : Moise.Plane ≃ₜ ℂ :=
   Classical.choose exists_triangleAmbientHomeomorph
 

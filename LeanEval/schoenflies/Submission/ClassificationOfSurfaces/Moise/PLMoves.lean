@@ -40,7 +40,7 @@ theorem extendHomeomorphByIdentity_image {P : Set Plane} (hP : IsClosed P)
     exact congrArg Subtype.val (e.apply_symm_apply ⟨y, hy⟩)
 
 /-- An affine equivalence is finite PL on the support of any explicit pure complex. -/
-def affineEquivHomeomorph_finitePL (e : Plane ≃ᵃ[ℝ] Plane)
+def affineEquivHomeomorphFinitePL (e : Plane ≃ᵃ[ℝ] Plane)
     (K : PlaneComplex) (hpure : K.IsPure2) :
     FinitePLHomeomorphOn (affineEquivHomeomorph e) K.support where
   complex := K
@@ -255,7 +255,7 @@ theorem ambientRepositionHomeomorph_affineOn
 
 /-- An ambient barycentric repositioning, together with its original mesh, is a finite PL
 homeomorphism on the closed patch. -/
-noncomputable def ambientRepositionHomeomorph_finitePL
+noncomputable def ambientRepositionHomeomorphFinitePL
     (position' : M.Vertex → Plane)
     (hinj : Function.Injective position')
     (haffTriangle : ∀ t ∈ M.triangles,
@@ -286,7 +286,7 @@ noncomputable def ambientRepositionHomeomorph_finitePL
 end TriangleMesh
 
 /-- The elementary diamond fan move is a finite PL homeomorphism on the diamond. -/
-noncomputable def diamondFanAmbientHomeomorph_finitePL (a b : ℝ)
+noncomputable def diamondFanAmbientHomeomorphFinitePL (a b : ℝ)
     (ha0 : -2 < a) (ha1 : a < 2) (hb0 : -2 < b) (hb1 : b < 2) :
     FinitePLHomeomorphOn (diamondFanAmbientHomeomorph a b ha0 ha1 hb0 hb1)
       diamondPatch := by
@@ -368,7 +368,7 @@ theorem nonneg_zero_of_mem_axisKite_right {lo hi : ℝ} {p : Plane}
 
 /-- The explicit global change from the fixed diamond to a thin kite is finite PL on the
 diamond's two-triangle mesh. -/
-noncomputable def thinKiteGlobalHomeomorph_finitePL (δ : ℝ) (hδ : 0 < δ) :
+noncomputable def thinKiteGlobalHomeomorphFinitePL (δ : ℝ) (hδ : 0 < δ) :
     FinitePLHomeomorphOn (thinKiteGlobalHomeomorph δ hδ) diamondPatch := by
   refine {
     complex := (axisKiteMesh (-2) 2 (by norm_num) (by norm_num)).toPlaneComplex
@@ -402,14 +402,14 @@ theorem thinKiteGlobalHomeomorph_image (δ : ℝ) (hδ : 0 < δ) :
   rfl
 
 /-- The normalized thin-kite shelling move is finite PL on its kite patch. -/
-noncomputable def thinKiteAmbientHomeomorph_finitePL (δ : ℝ) (hδ : 0 < δ) :
+noncomputable def thinKiteAmbientHomeomorphFinitePL (δ : ℝ) (hδ : 0 < δ) :
     FinitePLHomeomorphOn (thinKiteAmbientHomeomorph δ hδ) (thinKitePatch δ) := by
   let outer := thinKiteGlobalHomeomorph δ hδ
   let move := diamondFanAmbientHomeomorph (thinKiteSource δ) (thinKiteTarget δ)
     (thinKiteSource_lower hδ) (thinKiteSource_upper hδ)
     (thinKiteTarget_lower hδ) (thinKiteTarget_upper hδ)
-  let Fouter := thinKiteGlobalHomeomorph_finitePL δ hδ
-  let Fmove := diamondFanAmbientHomeomorph_finitePL
+  let Fouter := thinKiteGlobalHomeomorphFinitePL δ hδ
+  let Fmove := diamondFanAmbientHomeomorphFinitePL
     (thinKiteSource δ) (thinKiteTarget δ)
     (thinKiteSource_lower hδ) (thinKiteSource_upper hδ)
     (thinKiteTarget_lower hδ) (thinKiteTarget_upper hδ)
@@ -460,14 +460,14 @@ theorem thinKiteAmbientHomeomorph_image (δ : ℝ) (hδ : 0 < δ) :
     ← Set.image_image move outer.symm, hpull, hmove, houter]
 
 /-- Affine transport preserves the finite-PL certificate for the local thin-kite move. -/
-noncomputable def transportedThinKiteHomeomorph_finitePL
+noncomputable def transportedThinKiteHomeomorphFinitePL
     (e : Plane ≃ᵃ[ℝ] Plane) (δ : ℝ) (hδ : 0 < δ) :
     FinitePLHomeomorphOn (transportedThinKiteHomeomorph e δ hδ)
       (transportedThinKitePatch e δ) := by
   let affine := affineEquivHomeomorph e
   let thin := thinKiteAmbientHomeomorph δ hδ
-  let Fthin := thinKiteAmbientHomeomorph_finitePL δ hδ
-  let Faff := (affineEquivHomeomorph_finitePL e Fthin.complex Fthin.pure).congrSet
+  let Fthin := thinKiteAmbientHomeomorphFinitePL δ hδ
+  let Faff := (affineEquivHomeomorphFinitePL e Fthin.complex Fthin.pure).congrSet
     Fthin.support_eq
   have hpull : affine.symm '' (affine '' thinKitePatch δ) = thinKitePatch δ := by
     ext p
@@ -507,21 +507,21 @@ theorem transportedThinKiteHomeomorph_image
     thinKiteAmbientHomeomorph_image δ hδ]
 
 /-- A transported local move is finite PL on any finite pure source polyhedron. -/
-noncomputable def transportedThinKiteHomeomorph_finitePLOn
+noncomputable def transportedThinKiteHomeomorphFinitePLOn
     (e : Plane ≃ᵃ[ℝ] Plane) (δ : ℝ) (hδ : 0 < δ)
     (K : PlaneComplex) (hKpure : K.IsPure2) :
     FinitePLHomeomorphOn (transportedThinKiteHomeomorph e δ hδ) K.support :=
-  (transportedThinKiteHomeomorph_finitePL e δ hδ).extendByIdentity
+  (transportedThinKiteHomeomorphFinitePL e δ hδ).extendByIdentity
     (transportedThinKiteHomeomorph_eqOn_compl e δ hδ) K hKpure
 
 /-- The inverse transported local move is likewise finite PL on any finite pure polyhedron. -/
-noncomputable def transportedThinKiteHomeomorph_symm_finitePLOn
+noncomputable def transportedThinKiteHomeomorphSymmFinitePLOn
     (e : Plane ≃ᵃ[ℝ] Plane) (δ : ℝ) (hδ : 0 < δ)
     (K : PlaneComplex) (hKpure : K.IsPure2) :
     FinitePLHomeomorphOn (transportedThinKiteHomeomorph e δ hδ).symm K.support := by
   let g := transportedThinKiteHomeomorph e δ hδ
   let P := transportedThinKitePatch e δ
-  let F := transportedThinKiteHomeomorph_finitePL e δ hδ
+  let F := transportedThinKiteHomeomorphFinitePL e δ hδ
   have himage : g '' P = P := transportedThinKiteHomeomorph_image e δ hδ
   let Finv := F.symm |>.congrSet himage
   have hfixInv : Set.EqOn g.symm id Pᶜ := by
