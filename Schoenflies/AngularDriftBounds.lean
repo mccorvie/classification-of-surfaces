@@ -1,4 +1,10 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.MasterParameters
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 
 /-!
 # Metric bounds for the angular subdivision
@@ -56,7 +62,7 @@ def sphereToMasterHomeomorph :
       standardTriangleCircle.sphereStraightening.symm u := by
   rfl
 
-@[simp] theorem sphereToMasterHomeomorph_apply_param (t : ℝ) :
+theorem sphereToMasterHomeomorph_apply_param (t : ℝ) :
     (sphereToMasterHomeomorph (JordanCurve.Arcs.param t) : Plane) =
       masterPoint t := by
   rfl
@@ -184,3 +190,8 @@ end JordanCircle.InitialAngularArcs
 end
 
 end Schoenflies
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/

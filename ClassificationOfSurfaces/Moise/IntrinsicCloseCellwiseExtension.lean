@@ -113,6 +113,7 @@ theorem imagePolygon_carrier (t : K.Face) :
 
 /-- A certified PL filling of one close face boundary. -/
 structure FaceFilling (t : K.Face) where
+  /-- The `map` declaration. -/
   map : Plane → Plane
   eqOn_boundary : Set.EqOn map (A.faceBoundaryMap t) (frontier standardFaceRegion)
   continuousOn : ContinuousOn map standardFaceRegion
@@ -137,11 +138,13 @@ theorem exists_faceFilling (t : K.Face) : Nonempty (A.FaceFilling t) := by
     isPLOnSet := hpl
     certificate := hcert }⟩
 
+/-- The `faceFilling` declaration. -/
 noncomputable def faceFilling (t : K.Face) : A.FaceFilling t :=
   Classical.choice (A.exists_faceFilling t)
 
 namespace FaceFilling
 
+/-- The `faceInteriorMap` declaration. -/
 noncomputable def faceInteriorMap {t : K.Face} (F : A.FaceFilling t) :
     K.ClosedFace t → Plane :=
   fun x ↦ F.map (K.facePlaneHomeomorph t x).1

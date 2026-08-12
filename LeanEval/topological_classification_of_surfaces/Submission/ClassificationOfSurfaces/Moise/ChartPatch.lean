@@ -321,11 +321,13 @@ theorem chartHalfDiamond_baryEval_coordZero_eq_zero_iff
   · intro h
     rw [h, mul_zero]
 
+/-- The `chartHalfDiamondUpperBoundaryEdge` declaration. -/
 def chartHalfDiamondUpperBoundaryEdge :
     Finset chartHalfDiamondComplex.Vertex := by
   change Finset (Fin 5)
   exact {2, 4}
 
+/-- The `chartHalfDiamondLowerBoundaryEdge` declaration. -/
 def chartHalfDiamondLowerBoundaryEdge :
     Finset chartHalfDiamondComplex.Vertex := by
   change Finset (Fin 5)

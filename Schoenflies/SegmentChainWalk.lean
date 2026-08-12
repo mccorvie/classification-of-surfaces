@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.CommonSegmentArrangement
 
 /-!
@@ -28,6 +33,7 @@ segment paths supply its edges. -/
 structure SegmentFamilyChainWalkData
     {I : Type*} [Fintype I] (left right : I → Plane)
     (a : I) (tail : List I) where
+  /-- The `walk` declaration. -/
   walk : (segmentFamilyComplex left right).vertexGraph.Walk
     (segmentFamilyLeftVertex left right a)
     (segmentFamilyRightVertex left right
@@ -323,6 +329,7 @@ geometric range and a lower bound on its number of arrangement edges. -/
 structure SimpleSegmentFamilyChainWalkData
     {I : Type*} [Fintype I] (left right : I → Plane)
     (a : I) (tail : List I) where
+  /-- The `path` declaration. -/
   path : (segmentFamilyComplex left right).vertexGraph.Path
     (segmentFamilyLeftVertex left right a)
     (segmentFamilyRightVertex left right
@@ -502,6 +509,7 @@ closing segment. -/
 structure SimpleSegmentFamilyCycleData
     {I : Type*} [Fintype I] (left right : I → Plane)
     (a : I) (tail : List I) (last : I) where
+  /-- The `cycle` declaration. -/
   cycle : (segmentFamilyComplex left right).vertexGraph.Walk
     (segmentFamilyLeftVertex left right a)
     (segmentFamilyLeftVertex left right a)

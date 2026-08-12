@@ -40,6 +40,7 @@ noncomputable def transportedThinKiteHomeomorph (e : Plane ≃ᵃ[ℝ] Plane)
   (affineEquivHomeomorph e).symm.trans
     ((thinKiteAmbientHomeomorph δ hδ).trans (affineEquivHomeomorph e))
 
+/-- The `transportedThinKitePatch` declaration. -/
 def transportedThinKitePatch (e : Plane ≃ᵃ[ℝ] Plane) (δ : ℝ) : Set Plane :=
   e '' thinKitePatch δ
 
@@ -199,6 +200,7 @@ def IsTwoEdgeFreeTriangle (T : M.Triangle) (k : Fin 3) : Prop :=
     segment ℝ (M.freeTriangleOrder T k 0) (M.freeTriangleOrder T k 2) ∪
       segment ℝ (M.freeTriangleOrder T k 1) (M.freeTriangleOrder T k 2)
 
+/-- The `IsGeometricallyFreeTriangle` declaration. -/
 def IsGeometricallyFreeTriangle (T : M.Triangle) : Prop :=
   ∃ k : Fin 3, M.IsOneEdgeFreeTriangle T k ∨ M.IsTwoEdgeFreeTriangle T k
 
@@ -382,7 +384,6 @@ theorem triangleVertex_mem_freeTriangleApexEdges (T : M.Triangle) (k : Fin 3)
     simp [freeTriangleOrder, Equiv.swap_apply_def, left_mem_segment,
       right_mem_segment]
 
-set_option maxHeartbeats 800000 in
 -- Normalizing all six finite-order cases for the three geometric edges exceeds the default.
 /-- The frontier of a maximal triangle is covered by the base and the two apex edges in every
 Figure 3.3 ordering. -/
@@ -433,8 +434,28 @@ theorem frontier_triangleCarrier_subset_freeTriangleEdges (T : M.Triangle) (k : 
       (M.position (M.orderedVertex T 2))
     have h12 := hsymm (M.position (M.orderedVertex T 1))
       (M.position (M.orderedVertex T 2))
-    fin_cases k <;> simp only [freeTriangleOrder, Equiv.swap_apply_def]
-    all_goals tauto
+    fin_cases k
+    · simp [freeTriangleOrder, Equiv.swap_apply_def]
+      constructor
+      · rintro (h | h | h)
+        · exact Or.inr (Or.inr (h12.mpr h))
+        · exact Or.inr (Or.inl (h02.mpr h))
+        · exact Or.inl (h01.mpr h)
+      · rintro (h | h | h)
+        · exact Or.inr (Or.inr (h01.mp h))
+        · exact Or.inr (Or.inl (h02.mp h))
+        · exact Or.inl (h12.mp h)
+    · simp [freeTriangleOrder, Equiv.swap_apply_def]
+      constructor
+      · rintro (h | h | h)
+        · exact Or.inr (Or.inl h)
+        · exact Or.inl h
+        · exact Or.inr (Or.inr (h12.mpr h))
+      · rintro (h | h | h)
+        · exact Or.inr (Or.inl h)
+        · exact Or.inl h
+        · exact Or.inr (Or.inr (h12.mp h))
+    · simp [freeTriangleOrder, Equiv.swap_apply_def]
   rwa [horder]
 
 theorem freeTriangleBaseSegment_eq_oppositeEdgeCarrier (T : M.Triangle) (k : Fin 3) :

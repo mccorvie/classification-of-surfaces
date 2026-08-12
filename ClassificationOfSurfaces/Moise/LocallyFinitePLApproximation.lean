@@ -351,7 +351,7 @@ theorem facePolygonalCircle_closedRegion_subset_closedBall
     (hcontrol f p hp q')
 
 /-- Pointwise control of the global cellwise replacement. -/
-theorem polygonalReplacementMap_dist_le [T2Space S]
+theorem polygonalReplacementMap_dist_le
     (H : K.CellwiseCompatibility G) {phi : K.support → ℝ}
     (hcontrol : FaceBoundariesControlled G phi) (p : K.support) :
     dist (K.polygonalReplacementMap H p).1.1 (G.map p) ≤ phi p := by

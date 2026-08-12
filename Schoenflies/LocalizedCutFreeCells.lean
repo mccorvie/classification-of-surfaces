@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.LocalizedAnnularOrder
 import Schoenflies.AnnularCellAttachments
 
@@ -29,9 +34,11 @@ private abbrev outerDisk (k : ℕ) : PolygonalCircle :=
 
 /-- The cut-free neighbor and separator selected from one prescribed cut. -/
 structure LocalizedCutFreeCellData (k : ℕ) (a : LevelAddress k) where
+  /-- The `next` declaration. -/
   next : LevelAddress k
   next_ne : a ≠ next
   next_eq : next = I.levelLocalizedSuccessor k a
+  /-- The `separator` declaration. -/
   separator : PolygonalCircle.AnnularCrosscut.SeparatorPair
     (I.levelLocalizedAnnularCrosscut k a)
     (I.levelLocalizedAnnularCrosscut k next)

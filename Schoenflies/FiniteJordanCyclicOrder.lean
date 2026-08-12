@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.FiniteJordanArcOrder
 import Schoenflies.TwoBoundaryArcRigidity
 import Mathlib.Data.Finset.Sort
@@ -25,6 +30,7 @@ namespace JordanCircle
 /-- A finite injective family of at least two marked points on a Jordan
 circle. -/
 structure FiniteMarking (J : JordanCircle) (ι : Type*) [Fintype ι] where
+  /-- The `point` declaration. -/
   point : ι → Plane
   point_mem : ∀ i, point i ∈ J.carrier
   point_injective : Injective point

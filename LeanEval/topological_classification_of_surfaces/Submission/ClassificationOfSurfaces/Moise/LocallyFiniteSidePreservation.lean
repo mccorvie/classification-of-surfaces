@@ -201,7 +201,7 @@ theorem graphReplacement_vertex_mem_facePolygonalCircle
   exact graphReplacement_mem_facePolygonalCircle_of_edge_subset (G := G) f e p hpe
     (K.faceEdge_subset_faceVertices f i)
 
-@[simp] theorem graphReplacementMap_edgePathInOneSkeleton_zero (e : K.Edge) :
+theorem graphReplacementMap_edgePathInOneSkeleton_zero (e : K.Edge) :
     G.graphReplacementMap
         (edgePathInOneSkeleton (K := K) e ⟨0, by simp⟩) =
       G.vertexImage (K.edgeFirst e) := by
@@ -212,7 +212,7 @@ theorem graphReplacement_vertex_mem_facePolygonalCircle
   apply Subtype.ext
   exact (K.edgePath_zero e).trans hp.symm
 
-@[simp] theorem graphReplacementMap_edgePathInOneSkeleton_one (e : K.Edge) :
+theorem graphReplacementMap_edgePathInOneSkeleton_one (e : K.Edge) :
     G.graphReplacementMap
         (edgePathInOneSkeleton (K := K) e ⟨1, by simp⟩) =
       G.vertexImage (K.edgeSecond e) := by

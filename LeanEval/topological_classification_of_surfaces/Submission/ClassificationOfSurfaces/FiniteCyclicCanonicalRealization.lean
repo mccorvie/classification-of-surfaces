@@ -30,7 +30,6 @@ namespace FiniteCyclicPresentation
 
 variable {Edge : Type} [Fintype Edge]
 
-@[simp]
 theorem ofOneFaceWord_boundary_length
     (word : List (SignedDart Edge)) (f : (ofOneFaceWord word).Face) :
     ((ofOneFaceWord word).boundary f).length = word.length := by

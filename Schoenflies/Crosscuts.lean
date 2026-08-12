@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.AngularSubdivisions
 import ClassificationOfSurfaces.Moise.PolygonalArc
 
@@ -30,6 +35,7 @@ edge contained in `U`.  This is the stable interface consumed by the nested
 cell construction; it hides the line-arrangement graph used by Chapter 6 to
 erase loops. -/
 structure SimpleBrokenLine (U : Set Plane) (a b : Plane) where
+  /-- The `data` declaration. -/
   data : MoiseBrokenLineData U
   start_eq : data.start = a
   finish_eq : data.finish = b
@@ -156,7 +162,7 @@ theorem AccessibleAngularArc.exists_polygonalArc_in_thickening
 This is deliberately separate from `simpleInsideCrosscut`: the outstanding
 Moise 9.5 frame argument is exactly what makes one simple line satisfy both
 the metric and the inside-side constraints simultaneously. -/
-noncomputable def AccessibleAngularArc.simpleBrokenLine_in_thickening
+noncomputable def AccessibleAngularArc.simpleBrokenLineInThickening
     (A : J.AccessibleAngularArc) {epsilon : ℝ} (hepsilon : 0 < epsilon) :
     SimpleBrokenLine (Metric.thickening epsilon A.curveArcPlane)
       (J.curvePoint A.left) (J.curvePoint A.right) :=

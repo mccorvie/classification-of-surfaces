@@ -1,7 +1,13 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.CompatibleDiskStages
 import Schoenflies.MarkedMoiseBandBoundaries
 import Schoenflies.ShrinkingMoiseBandHomeomorphisms
 import Schoenflies.MoiseBoundaryDrift
+import Mathlib.Analysis.Real.Pi.Bounds
 
 /-!
 # Compatible disk stages from the shrinking Moise bands
@@ -52,7 +58,8 @@ noncomputable abbrev shrinkingCompatibleBandParentStage (n : ℕ) :=
   let L₀ := I.nextInsideCollarLater k S₀
   InsideCollarStage.ofLater I S₀ L₀
 
-noncomputable abbrev shrinkingCompatibleBand (n : ℕ) :=
+/-- The `shrinkingCompatibleBand` declaration. -/
+noncomputable def shrinkingCompatibleBand (n : ℕ) :=
   let k := I.shrinkingCompatibleBandIndex n
   I.nextInsideCollarLater (k + 1)
     (I.shrinkingCompatibleBandParentStage n)
@@ -227,9 +234,8 @@ theorem shrinkingCompatibleExpectedBoundaryCorrection_short (n : ℕ) :
           angularBoundaryCorrection 0
               ((I.shrinkingCompatibleRawInnerBoundaryHomeomorph 0).symm.trans
                 (I.shrinkingCompatibleExpectedBoundaryHomeomorph 0)) u = u := by
-        simp only [shrinkingCompatibleExpectedBoundaryHomeomorph,
-          angularBoundaryCorrection, Homeomorph.trans_apply,
-          Homeomorph.symm_apply_apply, Homeomorph.apply_symm_apply]
+        simp [shrinkingCompatibleExpectedBoundaryHomeomorph,
+          angularBoundaryCorrection]
       rw [hid] at hu
       have hdist := SphereShortIsotopy.dist_antipode_self u
       rw [← hu, dist_self] at hdist
@@ -260,6 +266,36 @@ theorem shrinkingCompatibleStageSourceDisk_strictlyNested (n : ℕ) :
     InsideCollarStage.circle_ofLater, Nat.succ_eq_add_one,
     Nat.add_assoc] using h
 
+private def extendShrinkingDiskAcrossShell
+    {P Q R S : PolygonalCircle}
+    (D : PolygonalCircle.CompatibleClosedDiskHomeomorph P R)
+    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
+    (hRS : R.closedRegion ⊆ S.interiorRegion)
+    (E : PolygonalCircle.closedShell P Q ≃ₜ PolygonalCircle.closedShell R S)
+    (c : Q.carrier ≃ₜ S.carrier)
+    (hinner : ∀ x : P.carrier,
+      (E ⟨x, PolygonalCircle.innerCarrier_subset_closedShell P Q hPQ x.2⟩ : Plane) =
+        D.boundaryHomeomorph x)
+    (houter : ∀ x : Q.carrier,
+      (E ⟨x, PolygonalCircle.outerCarrier_subset_closedShell P Q hPQ x.2⟩ : Plane) =
+        c x) :
+    PolygonalCircle.CompatibleClosedDiskHomeomorph Q S :=
+  D.extendAcrossShell hPQ hRS E c hinner houter
+
+/-- The compatible closed-disk homeomorphism type at one shrinking stage. -/
+def shrinkingCompatibleClosedDiskHomeomorphType (n : ℕ) :=
+  PolygonalCircle.CompatibleClosedDiskHomeomorph
+    (I.shrinkingCompatibleStageSourceDisk n)
+    (I.shrinkingCompatibleStageTargetDisk n)
+
+/-- A recursive disk stage together with the nonaccumulating boundary
+invariant forced by the damped correction. -/
+structure ShrinkingCompatibleClosedDiskStage (n : ℕ) where
+  /-- The `diskHomeomorph` declaration. -/
+  diskHomeomorph : I.shrinkingCompatibleClosedDiskHomeomorphType n
+  boundary_eq : diskHomeomorph.boundaryHomeomorph =
+    I.shrinkingCompatibleExpectedBoundaryHomeomorph n
+
 /-- The first compatible disk map is the Alexander extension of the exact
 inner-boundary restriction of the first retained shrinking Moise band. -/
 def initialShrinkingCompatibleClosedDiskHomeomorph :
@@ -278,83 +314,99 @@ def initialShrinkingCompatibleClosedDiskHomeomorph :
   change PolygonalCircle.CompatibleClosedDiskHomeomorph L₀.next.circle (disk 0)
   exact PolygonalCircle.CompatibleClosedDiskHomeomorph.ofBoundary _ _ b
 
+private theorem shrinkingCompatibleStageShort (n : ℕ)
+    (D : I.ShrinkingCompatibleClosedDiskStage n) :
+    ∀ u,
+      angularBoundaryCorrection n
+          ((I.shrinkingCompatibleRawInnerBoundaryHomeomorph n).symm.trans
+            D.diskHomeomorph.boundaryHomeomorph) u ≠ SphereShortIsotopy.antipode u := by
+  rw [D.boundary_eq]
+  exact I.shrinkingCompatibleExpectedBoundaryCorrection_short n
+
+private noncomputable def shrinkingCompatibleDampedBandHomeomorph (n : ℕ)
+    (D : I.ShrinkingCompatibleClosedDiskStage n) :
+    PolygonalCircle.closedShell
+        (I.shrinkingCompatibleStageSourceDisk n)
+        (I.shrinkingCompatibleStageSourceDisk (n + 1)) ≃ₜ
+      PolygonalCircle.closedShell
+        (I.shrinkingCompatibleStageTargetDisk n)
+        (I.shrinkingCompatibleStageTargetDisk (n + 1)) :=
+  (I.shrinkingCompatibleBand n).dampedCompatibleMarkedMoiseBandHomeomorph
+    n (I.shrinkingCompatibleBand_outward n) D.diskHomeomorph.boundaryHomeomorph
+      (I.shrinkingCompatibleStageShort n D)
+
+set_option maxRecDepth 2000 in
+private theorem shrinkingCompatibleDampedBandHomeomorph_apply_innerCarrier
+    (n : ℕ) (D : I.ShrinkingCompatibleClosedDiskStage n)
+    (x : (I.shrinkingCompatibleStageSourceDisk n).carrier) :
+    (I.shrinkingCompatibleDampedBandHomeomorph n D)
+        ⟨x, PolygonalCircle.innerCarrier_subset_closedShell _ _
+          (I.shrinkingCompatibleStageSourceDisk_strictlyNested n) x.2⟩ =
+      (D.diskHomeomorph.boundaryHomeomorph x : Plane) := by
+  unfold shrinkingCompatibleDampedBandHomeomorph
+  exact (I.shrinkingCompatibleBand n).dampedCompatibleMarkedMoiseBandHomeomorph_apply_innerCarrier
+    n (I.shrinkingCompatibleBand_outward n) D.diskHomeomorph.boundaryHomeomorph
+      (I.shrinkingCompatibleStageShort n D) x
+
+set_option maxRecDepth 2000 in
+private theorem shrinkingCompatibleDampedBandHomeomorph_apply_outerCarrier
+    (n : ℕ) (D : I.ShrinkingCompatibleClosedDiskStage n)
+    (x : (I.shrinkingCompatibleStageSourceDisk (n + 1)).carrier) :
+    (I.shrinkingCompatibleDampedBandHomeomorph n D)
+        ⟨x, PolygonalCircle.outerCarrier_subset_closedShell _ _
+          (I.shrinkingCompatibleStageSourceDisk_strictlyNested n) x.2⟩ =
+      (I.shrinkingCompatibleRawOuterBoundaryHomeomorph n x : Plane) := by
+  unfold shrinkingCompatibleDampedBandHomeomorph
+  exact (I.shrinkingCompatibleBand n).dampedCompatibleMarkedMoiseBandHomeomorph_apply_outerCarrier
+    n (I.shrinkingCompatibleBand_outward n) D.diskHomeomorph.boundaryHomeomorph
+      (I.shrinkingCompatibleStageShort n D) x
+
 set_option maxRecDepth 2000 in
 /-- Add the next shrinking Moise band while preserving the preceding disk
 map exactly. -/
 def nextShrinkingCompatibleClosedDiskHomeomorph (n : ℕ)
-    (D : PolygonalCircle.CompatibleClosedDiskHomeomorph
-      (I.shrinkingCompatibleStageSourceDisk n)
-      (I.shrinkingCompatibleStageTargetDisk n))
-    (hshort : ∀ u,
-      angularBoundaryCorrection n
-          ((I.shrinkingCompatibleRawInnerBoundaryHomeomorph n).symm.trans
-            D.boundaryHomeomorph) u ≠
-        SphereShortIsotopy.antipode u) :
-    PolygonalCircle.CompatibleClosedDiskHomeomorph
-      (I.shrinkingCompatibleStageSourceDisk (n + 1))
-      (I.shrinkingCompatibleStageTargetDisk (n + 1)) := by
-  exact D.extendAcrossShell
+    (D : I.ShrinkingCompatibleClosedDiskStage n) :
+    I.ShrinkingCompatibleClosedDiskStage (n + 1) := by
+  refine ⟨D.diskHomeomorph.extendAcrossShell
     (I.shrinkingCompatibleStageSourceDisk_strictlyNested n)
     (disk_strictlyNested n)
-    ((I.shrinkingCompatibleBand n).dampedCompatibleMarkedMoiseBandHomeomorph
-      n (I.shrinkingCompatibleBand_outward n) D.boundaryHomeomorph hshort)
+    (I.shrinkingCompatibleDampedBandHomeomorph n D)
     (I.shrinkingCompatibleRawOuterBoundaryHomeomorph n)
-    ((I.shrinkingCompatibleBand n)
-      |>.dampedCompatibleMarkedMoiseBandHomeomorph_apply_innerCarrier
-        n (I.shrinkingCompatibleBand_outward n) D.boundaryHomeomorph hshort)
-    ((I.shrinkingCompatibleBand n)
-      |>.dampedCompatibleMarkedMoiseBandHomeomorph_apply_outerCarrier
-        n (I.shrinkingCompatibleBand_outward n) D.boundaryHomeomorph hshort)
+    (I.shrinkingCompatibleDampedBandHomeomorph_apply_innerCarrier n D)
+    (I.shrinkingCompatibleDampedBandHomeomorph_apply_outerCarrier n D), ?_⟩
+  unfold shrinkingCompatibleExpectedBoundaryHomeomorph
+  rfl
 
-set_option maxRecDepth 2000 in
 /-- Adding one shrinking band leaves the old closed-disk map unchanged. -/
 theorem nextShrinkingCompatibleClosedDiskHomeomorph_apply_old (n : ℕ)
-    (D : PolygonalCircle.CompatibleClosedDiskHomeomorph
-      (I.shrinkingCompatibleStageSourceDisk n)
-      (I.shrinkingCompatibleStageTargetDisk n))
-    (hshort : ∀ u,
-      angularBoundaryCorrection n
-          ((I.shrinkingCompatibleRawInnerBoundaryHomeomorph n).symm.trans
-            D.boundaryHomeomorph) u ≠
-        SphereShortIsotopy.antipode u)
+    (D : I.ShrinkingCompatibleClosedDiskStage n)
     (x : (I.shrinkingCompatibleStageSourceDisk n).closedRegion) :
-    ((I.nextShrinkingCompatibleClosedDiskHomeomorph n D hshort).homeomorph
+    ((I.nextShrinkingCompatibleClosedDiskHomeomorph n D).diskHomeomorph.homeomorph
         ⟨x, PolygonalCircle.closedRegion_subset_closedRegion_of_strictlyNested
           _ _ (I.shrinkingCompatibleStageSourceDisk_strictlyNested n) x.2⟩ :
-      Plane) = D.homeomorph x := by
+      Plane) = D.diskHomeomorph.homeomorph x := by
   unfold nextShrinkingCompatibleClosedDiskHomeomorph
-  apply
-    PolygonalCircle.CompatibleClosedDiskHomeomorph.extendAcrossShell_apply_old
+  exact PolygonalCircle.CompatibleClosedDiskHomeomorph.extendAcrossShell_apply_old
+    D.diskHomeomorph
+    (I.shrinkingCompatibleStageSourceDisk_strictlyNested n)
+    (disk_strictlyNested n)
+    (I.shrinkingCompatibleDampedBandHomeomorph n D)
+    (I.shrinkingCompatibleRawOuterBoundaryHomeomorph n)
+    (I.shrinkingCompatibleDampedBandHomeomorph_apply_innerCarrier n D)
+    (I.shrinkingCompatibleDampedBandHomeomorph_apply_outerCarrier n D)
+    x
 
-/-- A recursive disk stage together with the nonaccumulating boundary
-invariant forced by the damped correction. -/
-structure ShrinkingCompatibleClosedDiskStage (n : ℕ) where
-  diskHomeomorph : PolygonalCircle.CompatibleClosedDiskHomeomorph
-    (I.shrinkingCompatibleStageSourceDisk n)
-    (I.shrinkingCompatibleStageTargetDisk n)
-  boundary_eq : diskHomeomorph.boundaryHomeomorph =
-    I.shrinkingCompatibleExpectedBoundaryHomeomorph n
-
-set_option maxRecDepth 2000 in
+/-- The `initialShrinkingCompatibleClosedDiskStage` declaration. -/
 noncomputable def initialShrinkingCompatibleClosedDiskStage :
     I.ShrinkingCompatibleClosedDiskStage 0 where
   diskHomeomorph := I.initialShrinkingCompatibleClosedDiskHomeomorph
   boundary_eq := by rfl
 
-set_option maxRecDepth 2000 in
+/-- The `nextShrinkingCompatibleClosedDiskStage` declaration. -/
 noncomputable def nextShrinkingCompatibleClosedDiskStage (n : ℕ)
     (D : I.ShrinkingCompatibleClosedDiskStage n) :
     I.ShrinkingCompatibleClosedDiskStage (n + 1) := by
-  have hshort : ∀ u,
-      angularBoundaryCorrection n
-          ((I.shrinkingCompatibleRawInnerBoundaryHomeomorph n).symm.trans
-            D.diskHomeomorph.boundaryHomeomorph) u ≠
-        SphereShortIsotopy.antipode u := by
-    rw [D.boundary_eq]
-    exact I.shrinkingCompatibleExpectedBoundaryCorrection_short n
-  refine ⟨I.nextShrinkingCompatibleClosedDiskHomeomorph n
-    D.diskHomeomorph hshort, ?_⟩
-  rfl
+  exact I.nextShrinkingCompatibleClosedDiskHomeomorph n D
 
 /-- Recursive compatible maps with their damped-boundary invariant. -/
 noncomputable def shrinkingCompatibleClosedDiskStage :
@@ -401,7 +453,6 @@ noncomputable def shrinkingCompatibleActualBandHomeomorph (n : ℕ) :
     |>.dampedCompatibleMarkedMoiseBandHomeomorph n
       (I.shrinkingCompatibleBand_outward n) D.boundaryHomeomorph hshort
 
-set_option maxRecDepth 2000 in
 /-- On the newly attached source shell, recursive stage `n + 1` is exactly
 the actual damped Moise-band map. -/
 theorem shrinkingCompatibleClosedDiskHomeomorphStage_succ_apply_shell
@@ -412,10 +463,8 @@ theorem shrinkingCompatibleClosedDiskHomeomorphStage_succ_apply_shell
     ((I.shrinkingCompatibleClosedDiskHomeomorphStage (n + 1)).homeomorph
         ⟨x, x.2.1⟩ : Plane) =
       I.shrinkingCompatibleActualBandHomeomorph n x := by
-  change
-    ((I.nextShrinkingCompatibleClosedDiskHomeomorph n
-        (I.shrinkingCompatibleClosedDiskStage n).diskHomeomorph _).homeomorph
-        ⟨x, x.2.1⟩ : Plane) = _
+  unfold shrinkingCompatibleClosedDiskHomeomorphStage
+  unfold shrinkingCompatibleClosedDiskStage nextShrinkingCompatibleClosedDiskStage
   unfold nextShrinkingCompatibleClosedDiskHomeomorph
   rw [PolygonalCircle.CompatibleClosedDiskHomeomorph.extendAcrossShell_apply_shell]
   rfl
@@ -467,14 +516,13 @@ theorem shrinkingCompatibleClosedDiskHomeomorphStage_succ_apply_old
           _ _ (I.shrinkingCompatibleStageSourceDisk_strictlyNested n) x.2⟩ :
       Plane) =
       (I.shrinkingCompatibleClosedDiskHomeomorphStage n).homeomorph x := by
-  change
-    ((I.nextShrinkingCompatibleClosedDiskHomeomorph n
-        (I.shrinkingCompatibleClosedDiskStage n).diskHomeomorph _).homeomorph
+  let D := I.shrinkingCompatibleClosedDiskStage n
+  change ((I.nextShrinkingCompatibleClosedDiskHomeomorph n D).diskHomeomorph.homeomorph
       ⟨x, PolygonalCircle.closedRegion_subset_closedRegion_of_strictlyNested
         _ _ (I.shrinkingCompatibleStageSourceDisk_strictlyNested n) x.2⟩ :
-      Plane) =
-        (I.shrinkingCompatibleClosedDiskStage n).diskHomeomorph.homeomorph x
-  apply I.nextShrinkingCompatibleClosedDiskHomeomorph_apply_old
+      Plane) = D.diskHomeomorph.homeomorph x
+  exact I.nextShrinkingCompatibleClosedDiskHomeomorph_apply_old n
+    D x
 
 /-- The source disks form an increasing sequence. -/
 theorem shrinkingCompatibleStageSourceDisk_closedRegion_mono

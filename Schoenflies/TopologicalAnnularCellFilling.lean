@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.ClosedCoverHomeomorph
 import Schoenflies.PolygonalAnnularCellDecomposition
 import Schoenflies.TwoArcCarrierHomeomorph
@@ -31,11 +36,11 @@ private def rawBoundary₀
         Set Plane) :=
   TwoArcJordan.carrierCorrespondence
     D.separator.commonBridge D.separator.outerArc₀
-    (D.separator.commonBridge_injective D.nested D.disjoint)
+    (D.separator.commonBridge_injective D.disjoint)
     D.separator.outerSplit.second_injective
     (D.separator.commonBridge_inter_outerArc₀ D.nested)
     E.separator.commonBridge E.separator.outerArc₀
-    (E.separator.commonBridge_injective E.nested E.disjoint)
+    (E.separator.commonBridge_injective E.disjoint)
     E.separator.outerSplit.second_injective
     (E.separator.commonBridge_inter_outerArc₀ E.nested)
 
@@ -48,12 +53,12 @@ private def rawBoundary₁
         Set Plane) :=
   TwoArcJordan.carrierCorrespondence
     D.separator.commonBridge D.separator.outerArc₁
-    (D.separator.commonBridge_injective D.nested D.disjoint)
+    (D.separator.commonBridge_injective D.disjoint)
     (D.separator.outerSplit.first_injective.comp
       unitInterval.symm_bijective.injective)
     (D.separator.commonBridge_inter_outerArc₁ D.nested)
     E.separator.commonBridge E.separator.outerArc₁
-    (E.separator.commonBridge_injective E.nested E.disjoint)
+    (E.separator.commonBridge_injective E.disjoint)
     (E.separator.outerSplit.first_injective.comp
       unitInterval.symm_bijective.injective)
     (E.separator.commonBridge_inter_outerArc₁ E.nested)
@@ -106,11 +111,11 @@ theorem boundaryHomeomorph₀_apply_commonBridge
   exact congrArg Subtype.val <|
     TwoArcJordan.carrierCorrespondence_apply_first
       D.separator.commonBridge D.separator.outerArc₀
-      (D.separator.commonBridge_injective D.nested D.disjoint)
+      (D.separator.commonBridge_injective D.disjoint)
       D.separator.outerSplit.second_injective
       (D.separator.commonBridge_inter_outerArc₀ D.nested)
       E.separator.commonBridge E.separator.outerArc₀
-      (E.separator.commonBridge_injective E.nested E.disjoint)
+      (E.separator.commonBridge_injective E.disjoint)
       E.separator.outerSplit.second_injective
       (E.separator.commonBridge_inter_outerArc₀ E.nested) t
 
@@ -130,12 +135,12 @@ theorem boundaryHomeomorph₁_apply_commonBridge
   exact congrArg Subtype.val <|
     TwoArcJordan.carrierCorrespondence_apply_first
       D.separator.commonBridge D.separator.outerArc₁
-      (D.separator.commonBridge_injective D.nested D.disjoint)
+      (D.separator.commonBridge_injective D.disjoint)
       (D.separator.outerSplit.first_injective.comp
         unitInterval.symm_bijective.injective)
       (D.separator.commonBridge_inter_outerArc₁ D.nested)
       E.separator.commonBridge E.separator.outerArc₁
-      (E.separator.commonBridge_injective E.nested E.disjoint)
+      (E.separator.commonBridge_injective E.disjoint)
       (E.separator.outerSplit.first_injective.comp
         unitInterval.symm_bijective.injective)
       (E.separator.commonBridge_inter_outerArc₁ E.nested) t

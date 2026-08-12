@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.LocalizedTargetCellCover
 import Schoenflies.StandardRadialCollars
 
@@ -111,7 +116,7 @@ def localizedRawInnerBoundaryHomeomorph
   exact Continuous.homeoOfEquivCompactToT2
     (f := e) (I.continuous_localizedRawInnerBoundaryMap k hk)
 
-@[simp] theorem localizedRawInnerBoundaryHomeomorph_apply
+theorem localizedRawInnerBoundaryHomeomorph_apply
     (k : ℕ) (hk : 1 ≤ k) (x : (I.sourceInnerDisk k).carrier) :
     (I.localizedRawInnerBoundaryHomeomorph k hk x : Plane) =
       I.localizedInnerBoundaryEmbedding k hk
@@ -238,7 +243,7 @@ def localizedRawOuterBoundaryHomeomorph
   exact Continuous.homeoOfEquivCompactToT2
     (f := e) (I.continuous_localizedRawOuterBoundaryMap k hk)
 
-@[simp] theorem localizedRawOuterBoundaryHomeomorph_apply
+theorem localizedRawOuterBoundaryHomeomorph_apply
     (k : ℕ) (hk : 1 ≤ k) (x : (I.sourceOuterDisk k).carrier) :
     (I.localizedRawOuterBoundaryHomeomorph k hk x : Plane) =
       I.localizedOuterBoundaryEmbedding k hk

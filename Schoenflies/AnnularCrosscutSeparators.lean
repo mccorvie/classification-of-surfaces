@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.JordanArcPaths
 import Schoenflies.PolygonalShells
 
@@ -22,8 +27,11 @@ namespace PolygonalCircle
 /-- An embedded path from the outer boundary of `Q` to the inner boundary
 of `P`, meeting each boundary component only at the named endpoint. -/
 structure AnnularCrosscut (P Q : PolygonalCircle) where
+  /-- The `outerPoint` declaration. -/
   outerPoint : Plane
+  /-- The `innerPoint` declaration. -/
   innerPoint : Plane
+  /-- The `path` declaration. -/
   path : Path outerPoint innerPoint
   path_injective : Injective path
   outerPoint_mem : outerPoint ∈ Q.carrier
@@ -97,7 +105,6 @@ theorem range_bridgePath (A B : AnnularCrosscut P Q)
   simp only [bridgePath, Path.trans_range, Path.symm_range, union_assoc]
 
 theorem bridgePath_injective
-    (hPQ : P.closedRegion ⊆ Q.interiorRegion)
     (A B : AnnularCrosscut P Q)
     (hAB : Disjoint (range A.path) (range B.path))
     (innerArc : Path A.innerPoint B.innerPoint)
@@ -192,7 +199,7 @@ theorem exists_jordanSeparator
     rw [← Q.carrier_toJordanCircle, ← outerSplit.cover]
     exact Or.inr hx
   have hBridgeInj : Injective (bridgePath A B innerArc) :=
-    bridgePath_injective hPQ A B hAB innerArc
+    bridgePath_injective A B hAB innerArc
       innerSplit.first_injective hInnerRange
   have hBridgeOuter := range_bridgePath_inter_outerArc
     hPQ A B innerArc hInnerRange outerArc hOuterRange

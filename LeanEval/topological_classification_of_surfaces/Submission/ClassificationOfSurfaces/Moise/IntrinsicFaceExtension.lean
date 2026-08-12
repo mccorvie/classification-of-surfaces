@@ -429,7 +429,7 @@ noncomputable def faceEdgeParameterAffine (t : K.Face) (i : ZMod 3) :
     K.faceEdgeParameterAffine t i p =
       K.facePlaneInverseAffine t p (K.edgeSecond (K.faceEdge t i)) := rfl
 
-@[simp] theorem faceEdgeParameterAffine_sourcePoint
+theorem faceEdgeParameterAffine_sourcePoint
     (t : K.Face) (i : ZMod 3) (r : ℝ) :
     K.faceEdgeParameterAffine t i (K.faceEdgeSourcePoint t i r) = r := by
   exact K.facePlaneInverseAffine_faceEdgeSourcePoint_apply_second t i r

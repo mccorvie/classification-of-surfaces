@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.LocalizedPolygonalDiskExhaustion
 import Schoenflies.MarkedHairCrossings
 
@@ -124,6 +129,7 @@ noncomputable def levelLocalizedExteriorHairPrefix (k : ℕ)
     (a : LevelAddress k) : Set Plane :=
   (I.levelLocalizedFirstPolygonalCrossing k a).prefixCarrier
 
+/-- The `levelLocalizedExteriorHairPrefixPath` declaration. -/
 noncomputable def levelLocalizedExteriorHairPrefixPath (k : ℕ)
     (a : LevelAddress k) :
     Path (J.curvePoint (I.levelArc a).left : Plane)

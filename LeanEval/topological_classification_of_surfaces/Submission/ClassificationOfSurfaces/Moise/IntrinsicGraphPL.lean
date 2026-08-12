@@ -240,6 +240,7 @@ vertex of the finite middle PL model. -/
 abbrev EdgeBreakpoint (A : K.CentralPolygonalArc hcont hinj D C e) :=
   Option (Option A.parameterization.source.Vertex)
 
+/-- The `edgeBreakpointParameter` declaration. -/
 noncomputable def edgeBreakpointParameter
     (A : K.CentralPolygonalArc hcont hinj D C e) (b : EdgeBreakpoint A) : ℝ :=
   match b with
@@ -364,9 +365,11 @@ theorem graphReplacementMap_image_faceCarrier :
 
 namespace CentralPolygonalArc
 
+/-- The `leftSourcePoint` declaration. -/
 noncomputable def leftSourcePoint : Plane :=
   planePoint (A.data.resolvedWalk.length * A.exitData.left) 0
 
+/-- The `rightSourcePoint` declaration. -/
 noncomputable def rightSourcePoint : Plane :=
   planePoint (A.data.resolvedWalk.length * A.exitData.right) 0
 
@@ -376,7 +379,7 @@ theorem leftSourcePoint_mem_source : A.leftSourcePoint ∈ A.parameterization.so
     A.exitData.left_lt_right.le.trans A.exitData.right_le_one⟩, ?_⟩
   ext i
   fin_cases i <;>
-    simp [leftSourcePoint, planePoint, AffineMap.lineMap_apply_module] ; ring
+    simp [leftSourcePoint, planePoint, AffineMap.lineMap_apply_module]; ring
 
 theorem rightSourcePoint_mem_source : A.rightSourcePoint ∈ A.parameterization.source.support := by
   rw [A.parameterization.source_support, segment_eq_image_lineMap]
@@ -384,7 +387,7 @@ theorem rightSourcePoint_mem_source : A.rightSourcePoint ∈ A.parameterization.
     A.exitData.left_lt_right.le, A.exitData.right_le_one⟩, ?_⟩
   ext i
   fin_cases i <;>
-    simp [rightSourcePoint, planePoint, AffineMap.lineMap_apply_module] ; ring
+    simp [rightSourcePoint, planePoint, AffineMap.lineMap_apply_module]; ring
 
 theorem leftSourcePoint_ne_rightSourcePoint : A.leftSourcePoint ≠ A.rightSourcePoint := by
   intro hp
@@ -664,7 +667,7 @@ theorem map_image_sourceSegment :
     ext i
     fin_cases i <;>
       simp [t, leftSourcePoint, rightSourcePoint, planePoint,
-        AffineMap.lineMap_apply_module] ; ring
+        AffineMap.lineMap_apply_module]; ring
   · rintro ⟨t, ht, rfl⟩
     have htSeg : t ∈ segment ℝ A.exitData.left A.exitData.right := by
       rwa [segment_eq_Icc A.exitData.left_lt_right.le]
@@ -679,7 +682,7 @@ theorem map_image_sourceSegment :
     ext i
     fin_cases i <;>
       simp [leftSourcePoint, rightSourcePoint, planePoint,
-        AffineMap.lineMap_apply_module] ; ring
+        AffineMap.lineMap_apply_module]; ring
 
 theorem trimTarget_support : A.trimTarget.support = A.trimmedCarrier := by
   rw [trimTarget, A.trimActive.mapGraph_support A.parameterization.map
@@ -724,9 +727,11 @@ private theorem exists_trimActive_vertex (i : Fin 2) :
     exact hwTrim
   · exact hpos
 
+/-- The `leftTrimVertex` declaration. -/
 noncomputable def leftTrimVertex : A.trimTarget.Vertex :=
   Classical.choose (A.exists_trimActive_vertex 0)
 
+/-- The `rightTrimVertex` declaration. -/
 noncomputable def rightTrimVertex : A.trimTarget.Vertex :=
   Classical.choose (A.exists_trimActive_vertex 1)
 

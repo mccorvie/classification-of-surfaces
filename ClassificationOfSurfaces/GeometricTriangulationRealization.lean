@@ -977,17 +977,17 @@ variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 /-- The Radó triangulation of a compact Eval surface has connected fixed-vertex stars. -/
 theorem compact_eval_surface_geometricTriangulation_isStrongVertexStarConnected :
     TriangleFamily.IsStrongVertexStarConnected
-      (compact_eval_surface_geometricTriangulation S).faces :=
-  (compact_eval_surface_geometricTriangulation S).faces_isStrongVertexStarConnected
+      (compactEvalSurfaceGeometricTriangulation S).faces :=
+  (compactEvalSurfaceGeometricTriangulation S).faces_isStrongVertexStarConnected
 
 /-- The Eval-surface triangulation simultaneously carries cyclic validity, dual connectivity,
 and the fixed-star connectivity used by the faithful geometric quotient. -/
 theorem compact_eval_surface_polygonalRealization_certificates :
-    (compact_eval_surface_finiteCyclicPresentation S).IsSurfaceValid ∧
+    (compactEvalSurfaceFiniteCyclicPresentation S).IsSurfaceValid ∧
       TriangleFamily.IsDualConnected
-        (compact_eval_surface_geometricTriangulation S).faces ∧
+        (compactEvalSurfaceGeometricTriangulation S).faces ∧
       TriangleFamily.IsStrongVertexStarConnected
-        (compact_eval_surface_geometricTriangulation S).faces :=
+        (compactEvalSurfaceGeometricTriangulation S).faces :=
   ⟨compact_eval_surface_finiteCyclicPresentation_isSurfaceValid S,
     (compact_eval_surface_geometricTriangulation_surfaceIncidence S).dual_connected,
     compact_eval_surface_geometricTriangulation_isStrongVertexStarConnected S⟩
@@ -996,21 +996,21 @@ theorem compact_eval_surface_polygonalRealization_certificates :
 barycentric geometric realization. -/
 theorem compact_eval_surface_polygonalRealization_homeomorphic :
     Nonempty
-      ((compact_eval_surface_finiteCyclicPresentation S).PolygonalRealization
+      ((compactEvalSurfaceFiniteCyclicPresentation S).PolygonalRealization
           (compact_eval_surface_finiteCyclicPresentation_isSurfaceValid S) ≃ₜ
-        (compact_eval_surface_geometricTriangulation S).realization) :=
+        (compactEvalSurfaceGeometricTriangulation S).realization) :=
   GeometricTriangulation.polygonalRealization_homeomorphic_of_surface
-      (compact_eval_surface_geometricTriangulation S)
+      (compactEvalSurfaceGeometricTriangulation S)
       (compact_eval_surface_finiteCyclicPresentation_isSurfaceValid S)
 
 /-- Surface-level form of the geometric bridge: the valid polygonal quotient obtained from the
 named Radó triangulation is homeomorphic to the original compact Eval surface. -/
 theorem compact_eval_surface_polygonalRealization_homeomorphic_surface :
     Nonempty
-      ((compact_eval_surface_finiteCyclicPresentation S).PolygonalRealization
+      ((compactEvalSurfaceFiniteCyclicPresentation S).PolygonalRealization
           (compact_eval_surface_finiteCyclicPresentation_isSurfaceValid S) ≃ₜ S) := by
   exact Nonempty.map
-    (fun h ↦ h.trans (compact_eval_surface_geometricTriangulation S).homeo)
+    (fun h ↦ h.trans (compactEvalSurfaceGeometricTriangulation S).homeo)
     (compact_eval_surface_polygonalRealization_homeomorphic S)
 
 end EvalHypotheses

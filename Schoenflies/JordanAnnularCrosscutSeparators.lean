@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.JordanArcPaths
 import Schoenflies.PolygonalShells
 
@@ -31,8 +36,11 @@ def jordanClosedShell (P : PolygonalCircle) (J : JordanCircle) : Set Plane :=
 /-- An embedded path from an arbitrary outer Jordan boundary to a polygonal
 inner boundary, meeting both boundary components only at its endpoints. -/
 structure JordanAnnularCrosscut (P : PolygonalCircle) (J : JordanCircle) where
+  /-- The `outerPoint` declaration. -/
   outerPoint : Plane
+  /-- The `innerPoint` declaration. -/
   innerPoint : Plane
+  /-- The `path` declaration. -/
   path : Path outerPoint innerPoint
   path_injective : Injective path
   outerPoint_mem : outerPoint ∈ J.carrier
@@ -126,7 +134,6 @@ theorem range_bridgePath (A B : JordanAnnularCrosscut P J)
   simp only [bridgePath, Path.trans_range, Path.symm_range, union_assoc]
 
 theorem bridgePath_injective
-    (hPJ : P.closedRegion ⊆ J.inside)
     (A B : JordanAnnularCrosscut P J)
     (hAB : Disjoint (range A.path) (range B.path))
     (innerArc : Path A.innerPoint B.innerPoint)

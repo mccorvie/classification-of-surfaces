@@ -1,4 +1,15 @@
-import Mathlib
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
+import Mathlib.Analysis.SpecialFunctions.Complex.Circle
+import Mathlib.Geometry.Euclidean.Sphere.Basic
+import Mathlib.Geometry.Manifold.Instances.Real
+import Mathlib.Topology.Covering.AddCircle
+import Mathlib.Topology.Homotopy.Lifting
+import Mathlib.Topology.Instances.AddCircle.Real
+import Mathlib.Topology.UnitInterval
 import JordanCurve.Arcs
 
 /-!

@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.CompatibleLocalizedCollars
 import Schoenflies.ClosedCoverHomeomorph
 
@@ -27,7 +32,9 @@ private theorem coe_homeomorph_setCongr
 /-- A closed-disk homeomorphism with its boundary restriction retained as
 data and certified pointwise. -/
 structure CompatibleClosedDiskHomeomorph (P Q : PolygonalCircle) where
+  /-- The `homeomorph` declaration. -/
   homeomorph : P.closedRegion ≃ₜ Q.closedRegion
+  /-- The `boundaryHomeomorph` declaration. -/
   boundaryHomeomorph : P.carrier ≃ₜ Q.carrier
   apply_boundary : ∀ x : P.carrier,
     (homeomorph ⟨x, by

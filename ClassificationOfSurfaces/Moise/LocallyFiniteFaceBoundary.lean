@@ -79,24 +79,28 @@ noncomputable instance faceBoundaryPieceFintype (t : K.Face) :
     unfold FaceBoundaryPiece
     infer_instance
 
+/-- The `faceGraphSegmentLeft` declaration. -/
 noncomputable def faceGraphSegmentLeft (t : K.Face)
     (p : FaceGraphSegment (G := G) t) :
     Plane :=
   (faceReplacementArc (G := G) t p.1
     |>.completeChain.arrangementMesh.toPlaneComplex.position p.2.2.1.1)
 
+/-- The `faceGraphSegmentRight` declaration. -/
 noncomputable def faceGraphSegmentRight (t : K.Face)
     (p : FaceGraphSegment (G := G) t) :
     Plane :=
   (faceReplacementArc (G := G) t p.1
     |>.completeChain.arrangementMesh.toPlaneComplex.position p.2.2.2.1)
 
+/-- The `faceBoundaryLeft` declaration. -/
 noncomputable def faceBoundaryLeft (t : K.Face)
     (p : FaceBoundaryPiece (G := G) t) :
     Plane :=
   Sum.elim (faceGraphSegmentLeft (G := G) t)
     (fun i => G.vertexImage (K.faceVertex t i)) p
 
+/-- The `faceBoundaryRight` declaration. -/
 noncomputable def faceBoundaryRight (t : K.Face)
     (p : FaceBoundaryPiece (G := G) t) :
     Plane :=

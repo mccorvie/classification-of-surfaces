@@ -92,7 +92,6 @@ def commonEdgeRelabeling {n : ℕ} (a : Fin n) :
   edgeEquiv := Equiv.swap a.castSucc (Fin.last n)
   reverse := fun _ ↦ false
 
-@[simp]
 theorem commonEdgeRelabeling_pos_old {n : ℕ} (a : Fin n) :
     (commonEdgeRelabeling a).mapDart (.pos a.castSucc) =
       .pos (Fin.last n) := by
@@ -188,14 +187,12 @@ theorem reverseCommonFace_selected {n : ℕ} (a : Fin n)
   simp [reverseCommonFace, P2.oldFace, P2.rightFace, P2.faceEquiv,
     target, Dyck.oneFace]
 
-@[simp]
 theorem reverseCommonFace_right {n : ℕ} (a : Fin n)
     (X Y : List (SignedDart (Fin n))) :
     reverseCommonFace a X Y
         (P2.rightFace (target a X Y) (targetCut a X Y)) = true := by
   simp [reverseCommonFace]
 
-@[simp]
 theorem split_target_boundary_selected {n : ℕ} (a : Fin n)
     (X Y : List (SignedDart (Fin n))) :
     (P2.split (target a X Y) (targetCut a X Y)).boundary
@@ -208,7 +205,6 @@ theorem split_target_boundary_selected {n : ℕ} (a : Fin n)
       P2.selectedBoundary (target a X Y) (targetCut a X Y)
   exact P2.split_boundary_selected (target a X Y) (targetCut a X Y)
 
-@[simp]
 theorem split_source_boundary_selected {n : ℕ} (a : Fin n)
     (X Y : List (SignedDart (Fin n))) :
     (P2.split (source a X Y) (sourceCut a X Y)).boundary
@@ -221,7 +217,6 @@ theorem split_source_boundary_selected {n : ℕ} (a : Fin n)
       P2.selectedBoundary (source a X Y) (sourceCut a X Y)
   exact P2.split_boundary_selected (source a X Y) (sourceCut a X Y)
 
-@[simp]
 theorem split_target_boundary_right {n : ℕ} (a : Fin n)
     (X Y : List (SignedDart (Fin n))) :
     (P2.split (target a X Y) (targetCut a X Y)).boundary
@@ -229,7 +224,6 @@ theorem split_target_boundary_right {n : ℕ} (a : Fin n)
       P2.rightBoundary (target a X Y) (targetCut a X Y) :=
   P2.split_boundary_right (target a X Y) (targetCut a X Y)
 
-@[simp]
 theorem split_source_boundary_right {n : ℕ} (a : Fin n)
     (X Y : List (SignedDart (Fin n))) :
     (P2.split (source a X Y) (sourceCut a X Y)).boundary

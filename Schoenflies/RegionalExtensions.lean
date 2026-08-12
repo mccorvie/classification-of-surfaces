@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.AmbientGluing
 import Mathlib.Topology.TietzeExtension
 
@@ -29,6 +34,7 @@ private theorem extendFromClosed_apply (s : Set Plane) (hs : IsClosed s)
 output of Moise's nested-cell construction before the unbounded side is
 recovered by inversion. -/
 structure InsideRegionalExtensionData (J : JordanCircle) where
+  /-- The `homeomorph` declaration. -/
   homeomorph : Homeomorph (closure J.inside) (closedBall (0 : Plane) 1)
   boundary : ∀ x : J.carrier,
     (homeomorph ⟨x, by rw [J.closure_inside]; exact Or.inr x.2⟩ : Plane) =
@@ -38,7 +44,9 @@ structure InsideRegionalExtensionData (J : JordanCircle) where
 boundary and open-stratum behavior made explicit.  This is the economical
 output type for the completed regional construction. -/
 structure RegionalExtensionData (J : JordanCircle) where
+  /-- The `insideHomeomorph` declaration. -/
   insideHomeomorph : closure J.inside ≃ₜ closedBall (0 : Plane) 1
+  /-- The `outsideHomeomorph` declaration. -/
   outsideHomeomorph : closure J.outside ≃ₜ ((ball (0 : Plane) 1)ᶜ : Set Plane)
   inside_boundary : ∀ x : J.carrier,
     (insideHomeomorph ⟨x, by rw [J.closure_inside]; exact Or.inr x.2⟩ : Plane) =
@@ -207,15 +215,19 @@ private def outsideBackward : C(((ball (0 : Plane) 1)ᶜ : Set Plane), Plane) :=
   ⟨fun x => E.outsideHomeomorph.symm x,
     continuous_subtype_val.comp E.outsideHomeomorph.symm.continuous⟩
 
+/-- The `insideMap` declaration. -/
 noncomputable def insideMap : Plane → Plane :=
   extendFromClosed (closure J.inside) isClosed_closure E.insideForward
 
+/-- The `outsideMap` declaration. -/
 noncomputable def outsideMap : Plane → Plane :=
   extendFromClosed (closure J.outside) isClosed_closure E.outsideForward
 
+/-- The `insideInv` declaration. -/
 noncomputable def insideInv : Plane → Plane :=
   extendFromClosed (closedBall (0 : Plane) 1) isClosed_closedBall E.insideBackward
 
+/-- The `outsideInv` declaration. -/
 noncomputable def outsideInv : Plane → Plane :=
   extendFromClosed ((ball (0 : Plane) 1)ᶜ) isOpen_ball.isClosed_compl E.outsideBackward
 

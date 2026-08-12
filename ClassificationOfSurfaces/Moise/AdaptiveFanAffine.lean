@@ -108,61 +108,128 @@ theorem adaptiveFanRelabel_source_sum_apply
     extendFaceCoordinates_of_mem _ _ q.2] at hweight
   exact hweight
 
-/- One adaptive global fan face is affine, in original intrinsic barycentric coordinates, as a
-function of its standard planar face coordinates.  Elaborating the dependent fan relabeling and
-the original affine realization together needs a larger local heartbeat budget. -/
-set_option maxHeartbeats 300000 in
--- The relabeling sum is factored out above; the remaining dependent affine assembly needs
--- between 250k and 300k heartbeats.
-theorem adaptiveGlobalFanFaceMap_standardAffine
-    (hU : IsOpen U) (f : K.AdaptiveFanFace U hU) :
-    ∃ a : Plane →ᵃ[ℝ] (K.Vertex → ℝ),
-      ∀ x : stdSimplex ℝ
-          {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f},
-        (K.adaptiveGlobalFanFaceMap U hU f x).1.1 =
-          a ((K.adaptiveLocallyFiniteTriangleComplex U hU).facePlaneHomeomorph f x).1 := by
+theorem adaptiveGlobalFanFaceMap_standardAffine_point
+    (hU : IsOpen U) (f : K.AdaptiveFanFace U hU)
+    (aQ : ((K.safeSubdivision f.1.1).refined.Vertex → ℝ) →ᵃ[ℝ] (K.Vertex → ℝ))
+    (haQ : ∀ z : (K.safeSubdivision f.1.1).refined.realization,
+      z ∈ (K.safeSubdivision f.1.1).refined.faceCarrier f.1.2.1.1 →
+        ((K.safeSubdivision f.1.1).homeo z).1 = aQ z.1)
+    (b : ({v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f} → ℝ) →ₗ[ℝ]
+      (K.safeSubdivision f.1.1).refined.Vertex → ℝ)
+    (hb : ∀ (z : {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f} → ℝ)
+      (v : (K.safeSubdivision f.1.1).refined.Vertex),
+      b z v = ∑ p : {p // p ∈ K.adaptiveFanFaceVertices U hU f},
+        z ((K.adaptiveFanFaceVertexEquiv U hU f).symm p) *
+          (K.adaptiveFanVertexSource U hU f p).1 v) :
+    ∀ x : stdSimplex ℝ
+      {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f},
+      ((K.safeSubdivision f.1.1).homeo
+          (K.adaptiveFanSourcePoint U hU f
+            (K.adaptiveFanRelabelSimplex U hU f x))).1 =
+        aQ (b ((K.adaptiveLocallyFiniteTriangleComplex U hU).facePlaneInverseAffineLF f
+          ((K.adaptiveLocallyFiniteTriangleComplex U hU).facePlaneHomeomorph f x).1)) := by
   classical
   let R := K.adaptiveLocallyFiniteTriangleComplex U hU
   let Q := K.safeSubdivision f.1.1
-  obtain ⟨aQ, haQ⟩ := Q.affineOnFace f.1.2.1.1 f.1.2.1.2
-  let b :
-      ({v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f} → ℝ) →ₗ[ℝ]
-        (Q.refined.Vertex → ℝ) :=
-    ∑ p : {p // p ∈ K.adaptiveFanFaceVertices U hU f},
-      (LinearMap.proj
-        ((K.adaptiveFanFaceVertexEquiv U hU f).symm p)).smulRight
-          (K.adaptiveFanVertexSource U hU f p).1
-  let a : Plane →ᵃ[ℝ] (K.Vertex → ℝ) :=
-    (aQ.comp b.toAffineMap).comp (R.facePlaneInverseAffineLF f)
-  refine ⟨a, ?_⟩
   intro x
   let y := K.adaptiveFanRelabelSimplex U hU f x
-  have hyCarrier :
-      K.adaptiveFanSourcePoint U hU f y ∈
-        Q.refined.faceCarrier f.1.2.1.1 :=
+  have hyCarrier : K.adaptiveFanSourcePoint U hU f y ∈
+      Q.refined.faceCarrier f.1.2.1.1 :=
     K.adaptiveFanSourcePoint_mem_carrier U hU f y
-  have hxPlane :
-      x.1 =
-        R.facePlaneInverseAffineLF f (R.facePlaneHomeomorph f x).1 := by
-    have h :=
-      R.facePlaneHomeomorph_symm_val_LF f (R.facePlaneHomeomorph f x)
+  have hxPlane : x.1 = R.facePlaneInverseAffineLF f
+      (R.facePlaneHomeomorph f x).1 := by
+    have h := R.facePlaneHomeomorph_symm_val_LF f (R.facePlaneHomeomorph f x)
     rw [(R.facePlaneHomeomorph f).symm_apply_apply] at h
     exact h
-  change
-    (Q.homeo (K.adaptiveFanSourcePoint U hU f y)).1 =
-      a (R.facePlaneHomeomorph f x).1
-  rw [haQ _ hyCarrier]
-  change aQ (K.adaptiveFanSourcePoint U hU f y).1 =
+  change (Q.homeo (K.adaptiveFanSourcePoint U hU f y)).1 =
     aQ (b (R.facePlaneInverseAffineLF f (R.facePlaneHomeomorph f x).1))
+  rw [haQ _ hyCarrier]
   apply congrArg aQ
   rw [← hxPlane]
   funext v
-  change
-    (∑ p, y p * (K.adaptiveFanVertexSource U hU f p).1 v) =
-      b x.1 v
-  simp only [b, LinearMap.sum_apply, LinearMap.smulRight_apply,
-    LinearMap.proj_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+  change (∑ p, y p * (K.adaptiveFanVertexSource U hU f p).1 v) = b x.1 v
+  rw [hb]
   exact K.adaptiveFanRelabel_source_sum_apply hU f x v
+
+/-- The affine subdivision map on the refined face supporting a global fan. -/
+noncomputable def adaptiveGlobalFanAffinePiece
+    (hU : IsOpen U) (f : K.AdaptiveFanFace U hU) :
+    ((K.safeSubdivision f.1.1).refined.Vertex → ℝ) →ᵃ[ℝ] (K.Vertex → ℝ) :=
+  Classical.choose ((K.safeSubdivision f.1.1).affineOnFace
+    f.1.2.1.1 f.1.2.1.2)
+
+/-- The linear map that relabels global fan coordinates into refined coordinates. -/
+noncomputable def adaptiveGlobalFanLinearPiece
+    (hU : IsOpen U) (f : K.AdaptiveFanFace U hU) :
+    ({v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f} → ℝ) →ₗ[ℝ]
+      ((K.safeSubdivision f.1.1).refined.Vertex → ℝ) :=
+  ∑ p : {p // p ∈ K.adaptiveFanFaceVertices U hU f},
+    (LinearMap.proj
+      ((K.adaptiveFanFaceVertexEquiv U hU f).symm p)).smulRight
+        (K.adaptiveFanVertexSource U hU f p).1
+
+/-- The affine map describing one global adaptive fan face in standard coordinates. -/
+noncomputable def adaptiveGlobalFanMapStandardAffine
+    (hU : IsOpen U) (f : K.AdaptiveFanFace U hU) :
+    Plane →ᵃ[ℝ] (K.Vertex → ℝ) :=
+  ((K.adaptiveGlobalFanAffinePiece hU f).comp
+      (K.adaptiveGlobalFanLinearPiece hU f).toAffineMap).comp
+    ((K.adaptiveLocallyFiniteTriangleComplex U hU).facePlaneInverseAffineLF f)
+
+/-- The standard simplex indexing a global adaptive fan face. -/
+abbrev adaptiveGlobalFanSimplex (hU : IsOpen U) (f : K.AdaptiveFanFace U hU) :=
+  stdSimplex ℝ {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f}
+
+/-- The intrinsic-coordinate value of a global adaptive fan face map. -/
+noncomputable def adaptiveGlobalFanFaceMapValue
+    (hU : IsOpen U) (f : K.AdaptiveFanFace U hU) :
+    K.adaptiveGlobalFanSimplex hU f → (K.Vertex → ℝ) :=
+  fun x ↦ (K.adaptiveGlobalFanFaceMap U hU f x).1.1
+
+theorem adaptiveGlobalFanMapStandardAffine_apply
+    (hU : IsOpen U) (f : K.AdaptiveFanFace U hU)
+    (x : stdSimplex ℝ
+      {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f}) :
+    K.adaptiveGlobalFanFaceMapValue hU f x =
+      K.adaptiveGlobalFanMapStandardAffine hU f
+        ((K.adaptiveLocallyFiniteTriangleComplex U hU).facePlaneHomeomorph f x).1 := by
+  classical
+  have haQ := Classical.choose_spec ((K.safeSubdivision f.1.1).affineOnFace
+    f.1.2.1.1 f.1.2.1.2)
+  have hb : ∀ (z : {v // v ∈ K.adaptiveGlobalFanFaceVertices U hU f} → ℝ)
+      (v : (K.safeSubdivision f.1.1).refined.Vertex),
+      K.adaptiveGlobalFanLinearPiece hU f z v =
+        ∑ p : {p // p ∈ K.adaptiveFanFaceVertices U hU f},
+          z ((K.adaptiveFanFaceVertexEquiv U hU f).symm p) *
+            (K.adaptiveFanVertexSource U hU f p).1 v := by
+    intro z v
+    simp only [adaptiveGlobalFanLinearPiece, LinearMap.sum_apply,
+      LinearMap.smulRight_apply, LinearMap.proj_apply, Finset.sum_apply,
+      Pi.smul_apply, smul_eq_mul]
+  have hpoint := K.adaptiveGlobalFanFaceMap_standardAffine_point hU f
+    (K.adaptiveGlobalFanAffinePiece hU f) haQ
+      (K.adaptiveGlobalFanLinearPiece hU f) hb x
+  change ((K.safeSubdivision f.1.1).homeo
+      (K.adaptiveFanSourcePoint U hU f
+        (K.adaptiveFanRelabelSimplex U hU f x))).1 = _
+  change _ =
+    (((K.adaptiveGlobalFanAffinePiece hU f).comp
+      (K.adaptiveGlobalFanLinearPiece hU f).toAffineMap).comp
+        ((K.adaptiveLocallyFiniteTriangleComplex U hU).facePlaneInverseAffineLF f))
+      ((K.adaptiveLocallyFiniteTriangleComplex U hU).facePlaneHomeomorph f x).1
+  exact hpoint
+
+/- One adaptive global fan face is affine, in original intrinsic barycentric coordinates, as a
+function of its standard planar face coordinates. -/
+theorem adaptiveGlobalFanFaceMap_standardAffine
+    (hU : IsOpen U) (f : K.AdaptiveFanFace U hU) :
+    ∃ a : Plane →ᵃ[ℝ] (K.Vertex → ℝ),
+      ∀ x : K.adaptiveGlobalFanSimplex hU f,
+        K.adaptiveGlobalFanFaceMapValue hU f x =
+          a ((K.adaptiveLocallyFiniteTriangleComplex U hU).facePlaneHomeomorph f x).1 := by
+  refine ⟨K.adaptiveGlobalFanMapStandardAffine hU f, ?_⟩
+  intro x
+  exact K.adaptiveGlobalFanMapStandardAffine_apply hU f x
 
 /-- On one local fan triangle, the transported old barycentric coordinates are the
 barycentric weighted sum of the coordinates of its three geometric vertices.  This is the

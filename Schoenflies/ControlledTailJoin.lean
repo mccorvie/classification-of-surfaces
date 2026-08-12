@@ -1,6 +1,12 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.FiniteSeparatorSetup
 import Schoenflies.RefinedCyclicCuts
 import Schoenflies.ReturnPathParity
+import Mathlib.Topology.Subpath
 
 /-!
 # A controlled inside join between the two return-path tails

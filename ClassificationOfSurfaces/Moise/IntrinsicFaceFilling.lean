@@ -28,6 +28,7 @@ variable {K : IntrinsicTwoComplex} {h : K.realization → Plane}
 
 /-- A certified finite PL filling of the canonical polygonal boundary of one intrinsic face. -/
 structure FacePLFilling (t : K.Face) where
+  /-- The `map` declaration. -/
   map : Plane → Plane
   eqOn_boundary : Set.EqOn map
     (K.faceBoundaryMap (hcont := hcont) (hinj := hinj) (D := D) (C := C) t)

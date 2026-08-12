@@ -1540,7 +1540,6 @@ theorem rightDegenerateWeights_ne_nil (r : ℕ) :
     rightDegenerateWeights r ≠ [] := by
   simp [rightDegenerateWeights]
 
-@[simp]
 theorem rightDegenerateWeights_get_zero (r : ℕ) :
     (rightDegenerateWeights r).get
         ⟨0, by simp⟩ = r := by
@@ -1552,7 +1551,6 @@ theorem rightDegenerateWeights_take_succ
       r :: List.replicate i.val 1 := by
   simp [rightDegenerateWeights, List.take_succ_cons]
 
-@[simp]
 theorem rightDegenerateWeights_get_succ
     (r : ℕ) (i : Fin r) :
     (rightDegenerateWeights r).get

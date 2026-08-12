@@ -502,6 +502,7 @@ theorem adaptiveEdgeIntervalSecond_source_opposite (hU : IsOpen U)
       (K.adaptiveEdgeIntervalSecond_mem_boundaryEdgeVertices U hU t i j)).2
   · exact K.faceVertex_add_two_not_mem_faceEdge t.2.1 i
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 theorem adaptiveFaceCenter_source_apply (t : K.AdaptiveFace U)
     (i : ZMod 3) :
     ((K.safeSubdivision t.1).homeo.symm (K.adaptiveFaceCenter U t)).1
@@ -829,37 +830,67 @@ theorem affineIndependent_adaptiveFanVertexSource_val (hU : IsOpen U)
     exact hthree.range
   · exact K.adaptiveFanVertexSource_val_injective U hU f
 
--- Barycentric coordinates are unique on each fan face.
-set_option maxHeartbeats 800000 in
--- Affine-combination uniqueness unfolds the dependent three-vertex source family.
-theorem adaptiveFanSourcePoint_injective (hU : IsOpen U)
-    (f : K.AdaptiveFanFace U hU) :
-    Function.Injective (K.adaptiveFanSourcePoint U hU f) := by
-  classical
+/-- The affine combination map is injective when its source points are affinely independent. -/
+theorem affineCombination_injective_of_affineIndependent
+    {ι E : Type*} [Fintype ι] [AddCommGroup E] [Module ℝ E]
+    (source : ι → E) (hsource : AffineIndependent ℝ source) :
+    Function.Injective (fun x : stdSimplex ℝ ι ↦
+      Finset.univ.affineCombination ℝ source x) := by
   intro x y hxy
-  have hval : (K.adaptiveFanSourcePoint U hU f x).1 =
-      (K.adaptiveFanSourcePoint U hU f y).1 := congrArg Subtype.val hxy
+  have hweights := (hsource.affineCombination_eq_iff_eq x.2.2 y.2.2).mp hxy
+  exact Subtype.ext (funext fun i ↦ hweights i (Finset.mem_univ i))
+
+theorem simplex_eq_of_weighted_sum_eq_of_affineIndependent
+    {ι α : Type*} [Fintype ι]
+    (source : ι → α → ℝ) (hsource : AffineIndependent ℝ source)
+    {x y : stdSimplex ℝ ι}
+    (hxy : (fun v ↦ ∑ p, x p * source p v) =
+      (fun v ↦ ∑ p, y p * source p v)) :
+    x = y := by
+  apply affineCombination_injective_of_affineIndependent source hsource
+  change Finset.univ.affineCombination ℝ source x =
+    Finset.univ.affineCombination ℝ source y
+  rw [Finset.univ.affineCombination_eq_linear_combination source x x.2.2,
+    Finset.univ.affineCombination_eq_linear_combination source y y.2.2]
+  funext v
+  simpa only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul] using congrFun hxy v
+
+/-- The coordinate function underlying an adaptive fan source point. -/
+theorem adaptiveFanSourcePoint_val (hU : IsOpen U)
+    (f : K.AdaptiveFanFace U hU)
+    (x : stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU f}) :
+    (K.adaptiveFanSourcePoint U hU f x).1 =
+      (fun v ↦ ∑ p, x p * (K.adaptiveFanVertexSource U hU f p).1 v) := by
+  rfl
+
+/-- The standard simplex parametrizing one adaptive fan face. -/
+abbrev adaptiveFanSimplex (hU : IsOpen U) (f : K.AdaptiveFanFace U hU) :=
+  stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU f}
+
+/-- The coordinate-valued source-point map used for injectivity. -/
+noncomputable def adaptiveFanSourcePointVal (hU : IsOpen U)
+    (f : K.AdaptiveFanFace U hU) :
+    K.adaptiveFanSimplex U hU f →
+      (K.safeSubdivision f.1.1).refined.Vertex → ℝ :=
+  fun x ↦ (K.adaptiveFanSourcePoint U hU f x).1
+
+theorem adaptiveFanSourcePoint_val_injective (hU : IsOpen U)
+    (f : K.AdaptiveFanFace U hU) :
+    Function.Injective (K.adaptiveFanSourcePointVal U hU f) := by
+  intro x y hxy
+  let source : {p // p ∈ K.adaptiveFanFaceVertices U hU f} →
+      (K.safeSubdivision f.1.1).refined.Vertex → ℝ :=
+    fun p ↦ (K.adaptiveFanVertexSource U hU f p).1
+  apply simplex_eq_of_weighted_sum_eq_of_affineIndependent source
+    (K.affineIndependent_adaptiveFanVertexSource_val U hU f)
   change (fun v ↦ ∑ p, x p * (K.adaptiveFanVertexSource U hU f p).1 v) =
-    (fun v ↦ ∑ p, y p * (K.adaptiveFanVertexSource U hU f p).1 v) at hval
-  let source := fun p : {p // p ∈ K.adaptiveFanFaceVertices U hU f} ↦
-    (K.adaptiveFanVertexSource U hU f p).1
-  have hcomb : Finset.univ.affineCombination ℝ source x =
-      Finset.univ.affineCombination ℝ source y := by
-    rw [Finset.univ.affineCombination_eq_linear_combination source x x.2.2,
-      Finset.univ.affineCombination_eq_linear_combination source y y.2.2]
-    funext v
-    simpa only [source, Finset.sum_apply, Pi.smul_apply, smul_eq_mul] using congrFun hval v
-  have hweights :=
-    ((K.affineIndependent_adaptiveFanVertexSource_val U hU f).affineCombination_eq_iff_eq
-      x.2.2 y.2.2).mp hcomb
-  apply Subtype.ext
-  funext p
-  exact hweights p (Finset.mem_univ p)
+    (fun v ↦ ∑ p, y p * (K.adaptiveFanVertexSource U hU f p).1 v) at hxy
+  simpa only [source, Finset.sum_apply, Pi.smul_apply, smul_eq_mul] using hxy
 
 /-- One parametrized fan triangle in the open subspace. -/
 noncomputable def adaptiveFanFaceMap (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU) :
-    stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU f} → U :=
+    K.adaptiveFanSimplex U hU f → U :=
   fun x ↦ ⟨(K.safeSubdivision f.1.1).homeo
       (K.adaptiveFanSourcePoint U hU f x),
     K.adaptiveFaceCarrier_subset U f.1
@@ -883,9 +914,9 @@ theorem adaptiveFanFaceMap_injective (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU) :
     Function.Injective (K.adaptiveFanFaceMap U hU f) := by
   intro x y hxy
-  apply K.adaptiveFanSourcePoint_injective U hU f
-  apply (K.safeSubdivision f.1.1).homeo.injective
-  exact congrArg Subtype.val hxy
+  apply K.adaptiveFanSourcePoint_val_injective U hU f
+  exact congrArg Subtype.val ((K.safeSubdivision f.1.1).homeo.injective
+    (congrArg Subtype.val hxy))
 
 /-- Within one adaptive tile, a geometric point determines its cone-center weight.  This is the
 minimum-coordinate characterization of radial coordinates in a triangle. -/
@@ -1117,21 +1148,21 @@ theorem adaptiveFanBasePath_val_eq_lineMap (hU : IsOpen U)
   change (R.homeo z).1 = _
   rw [ha z hzCarrier, hz, AffineMap.apply_lineMap, hpImage, hqImage]
 
-@[simp] theorem adaptiveFanBaseSimplexPath_zero (hU : IsOpen U)
+theorem adaptiveFanBaseSimplexPath_zero (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU) :
     K.adaptiveFanBaseSimplexPath U hU f ⟨0, by simp⟩ =
       stdSimplex.vertex (K.adaptiveFanFirstVertex U hU f) := by
   apply Subtype.ext
   simp [adaptiveFanBaseSimplexPath, AffineMap.lineMap_apply_module]
 
-@[simp] theorem adaptiveFanBaseSimplexPath_one (hU : IsOpen U)
+theorem adaptiveFanBaseSimplexPath_one (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU) :
     K.adaptiveFanBaseSimplexPath U hU f ⟨1, by simp⟩ =
       stdSimplex.vertex (K.adaptiveFanSecondVertex U hU f) := by
   apply Subtype.ext
   simp [adaptiveFanBaseSimplexPath, AffineMap.lineMap_apply_module]
 
-@[simp] theorem adaptiveFanBasePath_zero (hU : IsOpen U)
+theorem adaptiveFanBasePath_zero (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU) :
     K.adaptiveFanBasePath U hU f ⟨0, by simp⟩ =
       ⟨(K.adaptiveFanFirstVertex U hU f).1,
@@ -1142,7 +1173,7 @@ theorem adaptiveFanBasePath_val_eq_lineMap (hU : IsOpen U)
     K.adaptiveFanBaseSimplexPath_zero U hU f,
     K.adaptiveFanFaceMap_vertex U hU f]
 
-@[simp] theorem adaptiveFanBasePath_one (hU : IsOpen U)
+theorem adaptiveFanBasePath_one (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU) :
     K.adaptiveFanBasePath U hU f ⟨1, by simp⟩ =
       ⟨(K.adaptiveFanSecondVertex U hU f).1,
@@ -1215,6 +1246,7 @@ theorem range_adaptiveFanFaceMap_subset_tile (hU : IsOpen U)
   exact ⟨K.adaptiveFanSourcePoint U hU f x,
     K.adaptiveFanSourcePoint_mem_carrier U hU f x, rfl⟩
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 /-- The adaptive face chart takes a transported cyclic edge to the matching standard edge. -/
 theorem adaptiveFacePlaneHomeomorph_mem_edge
     (t : K.AdaptiveFace U) (i : ZMod 3) {p : K.realization}
@@ -1230,6 +1262,7 @@ theorem adaptiveFacePlaneHomeomorph_mem_edge
   refine ⟨x, K.homeo_symm_mem_levelFaceEdgeCarrier t.2.1 i hpEdge, ?_⟩
   rfl
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 theorem adaptiveFacePlaneHomeomorph_mem_edge_iff
     (t : K.AdaptiveFace U) (i : ZMod 3) {p : K.realization}
     (hp : p ∈ K.adaptiveFaceCarrier U t) :
@@ -1253,6 +1286,7 @@ theorem adaptiveFacePlaneHomeomorph_mem_edge_iff
   · intro hpEdge
     simpa only using K.adaptiveFacePlaneHomeomorph_mem_edge U t i hpEdge
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 /-- The adaptive tile barycenter is an interior point in the standard plane chart. -/
 theorem adaptiveFacePlaneCenter_mem_interior (t : K.AdaptiveFace U) :
     (K.adaptiveFacePlaneHomeomorph U t
@@ -1281,6 +1315,7 @@ theorem adaptiveFacePlaneCenter_mem_interior (t : K.AdaptiveFace U) :
   rw [honeThird] at hzero
   norm_num at hzero
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 /-- The inverse adaptive face chart is given by the explicit affine inverse in refined
 barycentric coordinates. -/
 theorem adaptiveFaceSourceHomeomorph_val_eq_planeInverseAffine
@@ -1293,6 +1328,7 @@ theorem adaptiveFaceSourceHomeomorph_val_eq_planeInverseAffine
   simpa only [adaptiveFacePlaneHomeomorph, Homeomorph.trans_apply,
     Homeomorph.symm_apply_apply] using h
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 /-- A radial segment in the plane tile chart pulls back to the corresponding affine segment in
 the refined barycentric face. -/
 theorem adaptiveFaceSource_val_eq_lineMap_of_plane_eq
@@ -1330,6 +1366,7 @@ theorem adaptiveFaceSource_val_eq_lineMap_of_plane_eq
         ← K.adaptiveFaceSourceHomeomorph_val_eq_planeInverseAffine U t q]
       rfl
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 /-- The adaptive face chart carries the relative boundary of a tile into the standard
 polygonal triangle boundary. -/
 theorem adaptiveFacePlaneHomeomorph_mem_standardCircle_of_not_relInterior
@@ -2631,31 +2668,43 @@ theorem adaptiveFanFaceMap_mem_boundaryVertices_of_center_zero_of_not_base_weigh
       (K.adaptiveEdgeIntervalSecond_mem_boundaryEdgeVertices U hU
         f.1 f.2.1 f.2.2)).1
 
-set_option maxHeartbeats 800000 in
--- Comparing boundary membership reduces both dependent fan-face endpoint presentations.
+-- A shorthand for the simplex of a resolved fan face.
+/-- The resolved fan face assembled from a tile, edge, and interval. -/
+def adaptiveFanFace (hU : IsOpen U) (t : K.AdaptiveFace U)
+    (i : ZMod 3) (a : K.AdaptiveEdgeInterval U hU t i) : K.AdaptiveFanFace U hU :=
+  ⟨t, i, a⟩
+
+/-- The simplex parametrizing a resolved fan face. -/
+abbrev adaptiveFanFaceSimplex (hU : IsOpen U) (t : K.AdaptiveFace U)
+    (i : ZMod 3) (a : K.AdaptiveEdgeInterval U hU t i) :=
+  stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU
+    (K.adaptiveFanFace U hU t i a)}
+
+-- Comparing boundary membership reduces to two fan faces with the same underlying tile.
 theorem adaptiveFanBaseWeights_pos_of_faceMap_eq_of_same_tile
-    (hU : IsOpen U) (t : K.AdaptiveFace U)
-    (i j : ZMod 3) (a : K.AdaptiveEdgeInterval U hU t i)
-    (b : K.AdaptiveEdgeInterval U hU t j)
-    {x : stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU ⟨t, i, a⟩}}
-    {y : stdSimplex ℝ {p // p ∈ K.adaptiveFanFaceVertices U hU ⟨t, j, b⟩}}
-    (hxy : K.adaptiveFanFaceMap U hU ⟨t, i, a⟩ x =
-      K.adaptiveFanFaceMap U hU ⟨t, j, b⟩ y)
-    (hxCenter : x (K.adaptiveFanCenterVertex U hU ⟨t, i, a⟩) = 0)
-    (hyCenter : y (K.adaptiveFanCenterVertex U hU ⟨t, j, b⟩) = 0)
-    (hxPos : 0 < x (K.adaptiveFanFirstVertex U hU ⟨t, i, a⟩) ∧
-      0 < x (K.adaptiveFanSecondVertex U hU ⟨t, i, a⟩)) :
-    0 < y (K.adaptiveFanFirstVertex U hU ⟨t, j, b⟩) ∧
-      0 < y (K.adaptiveFanSecondVertex U hU ⟨t, j, b⟩) := by
-  have hactual : (K.adaptiveFanFaceMap U hU ⟨t, i, a⟩ x).1 =
-      (K.adaptiveFanFaceMap U hU ⟨t, j, b⟩ y).1 :=
+    (hU : IsOpen U) (f g : K.AdaptiveFanFace U hU) (hfg : f.1 = g.1)
+    {x : K.adaptiveFanSimplex U hU f}
+    {y : K.adaptiveFanSimplex U hU g}
+    (hxy : K.adaptiveFanFaceMap U hU f x = K.adaptiveFanFaceMap U hU g y)
+    (hxCenter : x (K.adaptiveFanCenterVertex U hU f) = 0)
+    (hyCenter : y (K.adaptiveFanCenterVertex U hU g) = 0)
+    (hxPos : 0 < x (K.adaptiveFanFirstVertex U hU f) ∧
+      0 < x (K.adaptiveFanSecondVertex U hU f)) :
+    0 < y (K.adaptiveFanFirstVertex U hU g) ∧
+      0 < y (K.adaptiveFanSecondVertex U hU g) := by
+  have hactual : (K.adaptiveFanFaceMap U hU f x).1 =
+      (K.adaptiveFanFaceMap U hU g y).1 :=
     congrArg Subtype.val hxy
   by_contra hyPos
   have hyMark :=
     K.adaptiveFanFaceMap_mem_boundaryVertices_of_center_zero_of_not_base_weights_pos
-      U hU ⟨t, j, b⟩ y hyCenter hyPos
+      U hU g y hyCenter hyPos
+  have hyMark' : (K.adaptiveFanFaceMap U hU g y).1 ∈
+      K.boundaryVertices U hU f.1 := by
+    rw [hfg]
+    exact hyMark
   exact K.adaptiveFanFaceMap_not_mem_boundaryVertices_of_base_weights_pos
-    U hU ⟨t, i, a⟩ x hxCenter hxPos.1 hxPos.2 (hactual ▸ hyMark)
+    U hU f x hxCenter hxPos.1 hxPos.2 (hactual ▸ hyMark')
 
 /- Resolved fan bases in one adaptive tile use compatible global barycentric coordinates at
 every common point. -/
@@ -2678,7 +2727,7 @@ theorem adaptiveFanExtendedCoordinates_eq_of_faceMap_eq_of_same_tile_of_center_e
       0 < x (K.adaptiveFanFirstVertex U hU ⟨t, i, a⟩) ∧
         0 < x (K.adaptiveFanSecondVertex U hU ⟨t, i, a⟩)
   · have hyPos := K.adaptiveFanBaseWeights_pos_of_faceMap_eq_of_same_tile
-        U hU t i j a b hxy hxCenter hyCenter hxPos
+        U hU ⟨t, i, a⟩ ⟨t, j, b⟩ rfl hxy hxCenter hyCenter hxPos
     have hij :=
       K.adaptiveFanSide_eq_of_faceMap_eq_of_same_tile_of_base_weights_pos
         U hU t i j a b hxy hxCenter hyCenter
@@ -2703,7 +2752,7 @@ theorem adaptiveFanExtendedCoordinates_eq_of_faceMap_eq_of_same_tile_of_center_e
           0 < y (K.adaptiveFanSecondVertex U hU ⟨t, j, b⟩)) := by
         intro hyPos
         exact hxPos (K.adaptiveFanBaseWeights_pos_of_faceMap_eq_of_same_tile
-          U hU t j i b a hxy.symm hyCenter hxCenter hyPos)
+          U hU ⟨t, j, b⟩ ⟨t, i, a⟩ rfl hxy.symm hyCenter hxCenter hyPos)
       rcases K.adaptiveFanEndpointData_of_center_eq_zero_of_not_base_weights_pos
           U hU ⟨t, j, b⟩ y hyCenter hyNot with hyEnd | hyEnd
       · have hv : (K.adaptiveFanFirstVertex U hU ⟨t, i, a⟩).1 =
@@ -2723,7 +2772,7 @@ theorem adaptiveFanExtendedCoordinates_eq_of_faceMap_eq_of_same_tile_of_center_e
           0 < y (K.adaptiveFanSecondVertex U hU ⟨t, j, b⟩)) := by
         intro hyPos
         exact hxPos (K.adaptiveFanBaseWeights_pos_of_faceMap_eq_of_same_tile
-          U hU t j i b a hxy.symm hyCenter hxCenter hyPos)
+          U hU ⟨t, j, b⟩ ⟨t, i, a⟩ rfl hxy.symm hyCenter hxCenter hyPos)
       rcases K.adaptiveFanEndpointData_of_center_eq_zero_of_not_base_weights_pos
           U hU ⟨t, j, b⟩ y hyCenter hyNot with hyEnd | hyEnd
       · have hv : (K.adaptiveFanSecondVertex U hU ⟨t, i, a⟩).1 =

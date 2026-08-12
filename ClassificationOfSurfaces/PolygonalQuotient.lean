@@ -35,6 +35,7 @@ namespace ClassificationOfSurfaces
 
 /-- A closed disk whose boundary is divided into `n` labelled sides. -/
 structure PolygonCell (_n : ℕ) where
+  /-- The `val` declaration. -/
   val : ℂ
   property : val ∈ Metric.closedBall (0 : ℂ) 1
 
@@ -62,7 +63,6 @@ noncomputable def castHomeomorph {m n : ℕ} (h : m = n) :
   subst n
   exact Homeomorph.refl _
 
-@[simp]
 theorem castHomeomorph_val {m n : ℕ} (h : m = n) (x : PolygonCell m) :
     (castHomeomorph h x).val = x.val := by
   subst n
@@ -94,25 +94,24 @@ noncomputable def reversedSide {n : ℕ} (i : Fin n) : C(unitInterval, PolygonCe
   toFun t := side i (unitInterval.symm t)
   continuous_toFun := (side i).continuous.comp unitInterval.continuous_symm
 
-@[simp]
 theorem reversedSide_apply {n : ℕ} (i : Fin n) (t : unitInterval) :
     reversedSide i t = side i (unitInterval.symm t) :=
   rfl
 
-@[simp]
 theorem castHomeomorph_side {m n : ℕ} (h : m = n) (i : Fin m)
     (t : unitInterval) :
     castHomeomorph h (side i t) = side (Fin.cast h i) t := by
   subst n
   rfl
 
-@[simp]
 theorem reversedSide_zero {n : ℕ} (i : Fin n) : reversedSide i 0 = side i 1 := by
-  simp
+  rw [reversedSide_apply]
+  simp only [unitInterval.symm_zero]
 
 @[simp]
 theorem reversedSide_one {n : ℕ} (i : Fin n) : reversedSide i 1 = side i 0 := by
-  simp
+  rw [reversedSide_apply]
+  simp only [unitInterval.symm_one]
 
 /-- Consecutive sides meet at their common cyclic endpoint. -/
 theorem side_one_eq_rotate_zero {n : ℕ} (i : Fin n) :
@@ -210,7 +209,9 @@ abbrev PreRealization (Face : Type u) (sideCount : Face → ℕ) : Type u :=
 
 /-- A labelled side in a family of polygonal cells. -/
 structure Side (Face : Type u) (sideCount : Face → ℕ) where
+  /-- The `face` declaration. -/
   face : Face
+  /-- The `index` declaration. -/
   index : Fin (sideCount face)
 
 namespace Side
@@ -235,11 +236,9 @@ def homeomorph : ParameterDirection → (unitInterval ≃ₜ unitInterval)
   | same => Homeomorph.refl unitInterval
   | opposite => unitInterval.symmHomeomorph
 
-@[simp]
 theorem homeomorph_same : homeomorph same = Homeomorph.refl unitInterval :=
   rfl
 
-@[simp]
 theorem homeomorph_opposite : homeomorph opposite = unitInterval.symmHomeomorph :=
   rfl
 
@@ -247,7 +246,6 @@ theorem homeomorph_opposite : homeomorph opposite = unitInterval.symmHomeomorph 
 theorem homeomorph_same_apply (t : unitInterval) : homeomorph same t = t :=
   rfl
 
-@[simp]
 theorem homeomorph_opposite_apply (t : unitInterval) :
     homeomorph opposite t = unitInterval.symm t :=
   rfl
@@ -256,8 +254,11 @@ end ParameterDirection
 
 /-- Instructions for identifying two polygon sides with an affine parameter map. -/
 structure Identification (Face : Type u) (sideCount : Face → ℕ) where
+  /-- The `source` declaration. -/
   source : Side Face sideCount
+  /-- The `target` declaration. -/
   target : Side Face sideCount
+  /-- The `direction` declaration. -/
   direction : ParameterDirection
 
 namespace Identification

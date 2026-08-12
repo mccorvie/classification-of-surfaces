@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.IndexedStandardCrosscuts
 import Schoenflies.AnnularCellAttachments
 import Schoenflies.FiniteAnnularCrosscutOrder
@@ -99,6 +104,7 @@ noncomputable def cyclicTargetDecomposition (m : ℕ) {n : ℕ}
       (I.indexedTargetMark m (nextLevelAddress n a))) = _
     exact Path.range_segment _ _
 
+/-- The `CyclicTargetFirstAlternative` declaration. -/
 def CyclicTargetFirstAlternative (m : ℕ) {n : ℕ}
     (a : LevelAddress n) : Prop :=
   (disk m).interiorRegion ⊆

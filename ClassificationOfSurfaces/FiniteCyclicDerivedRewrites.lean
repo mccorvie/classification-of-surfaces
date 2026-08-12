@@ -297,6 +297,7 @@ theorem negativeTarget_isSurfaceValid {n : ℕ} (a : Fin n)
     List.count_nil, List.count_reverse]
   omega
 
+/-- The `negativeSourceSignedIso` declaration. -/
 def negativeSourceSignedIso {n : ℕ} (a : Fin n)
     (X Y : List (SignedDart (Fin n)))
     (haX : a ∉ X.map edgeOfDart)
@@ -313,6 +314,7 @@ def negativeSourceSignedIso {n : ℕ} (a : Fin n)
     rw [Dyck.reverseEdgeRelabeling_word a X haX,
       Dyck.reverseEdgeRelabeling_word a Y haY]
 
+/-- The `negativeTargetSignedIso` declaration. -/
 def negativeTargetSignedIso {n : ℕ} (a : Fin n)
     (X Y : List (SignedDart (Fin n)))
     (haX : a ∉ X.map edgeOfDart)

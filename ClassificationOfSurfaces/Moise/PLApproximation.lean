@@ -1634,7 +1634,9 @@ theorem PlaneComplex.exists_graphReplacement_cell_extension (K : PlaneComplex)
 /-- A certified PL filling of the polygonalized boundary of one maximal face. -/
 structure PlaneComplex.CellExtensionData (K : PlaneComplex) (g : Plane → Plane)
     (t : {t : Finset K.Vertex // t ∈ K.cells}) where
+  /-- The `polygon` declaration. -/
   polygon : PolygonalCircle
+  /-- The `map` declaration. -/
   map : Plane → Plane
   polygon_carrier : polygon.carrier = g '' frontier (K.cellCarrier t.1)
   eqOn_frontier : Set.EqOn map g (frontier (K.cellCarrier t.1))

@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.StandardRadialCollars
 import Mathlib.Analysis.Normed.Module.Ball.RadialEquiv
 import Mathlib.Analysis.SpecialFunctions.Complex.Circle
@@ -373,7 +378,7 @@ def shortInterpolation (t : unitInterval) : Circle ≃ₜ Circle := by
 @[simp] theorem shortInterpolation_apply (t : unitInterval) (z : Circle) :
     shortInterpolation q hshort t z = shortInterpolationMap q t z := rfl
 
-@[simp] theorem shortInterpolation_zero (z : Circle) :
+theorem shortInterpolation_zero (z : Circle) :
     shortInterpolation q hshort 0 z = q z := by
   rw [shortInterpolation_apply]
   unfold shortInterpolationMap
@@ -383,7 +388,7 @@ def shortInterpolation (t : unitInterval) : Circle ≃ₜ Circle := by
     exact Circle.exp_arg _]
   simp [angularDifference]
 
-@[simp] theorem shortInterpolation_one (z : Circle) :
+theorem shortInterpolation_one (z : Circle) :
     shortInterpolation q hshort 1 z = z := by
   rw [shortInterpolation_apply]
   unfold shortInterpolationMap

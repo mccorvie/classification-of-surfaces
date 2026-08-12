@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.HierarchicalCollarStages
 import Schoenflies.SegmentChainWalk
 
@@ -132,16 +137,20 @@ namespace BandSegmentAddress
 
 variable (a : LevelAddress n)
 
+/-- The `parent` declaration. -/
 def parent (e : F.LevelEdgeAddress) : L.BandSegmentAddress :=
   Sum.inl e
 
+/-- The `leftSide` declaration. -/
 def leftSide : L.BandSegmentAddress :=
   Sum.inr (Sum.inl ())
 
+/-- The `child` declaration. -/
 def child (e : L.next.family.forgetObstacle.LevelEdgeAddress) :
     L.BandSegmentAddress :=
   Sum.inr (Sum.inr (Sum.inl e))
 
+/-- The `rightSide` declaration. -/
 def rightSide : L.BandSegmentAddress :=
   Sum.inr (Sum.inr (Sum.inr ()))
 
@@ -163,6 +172,7 @@ noncomputable def right : L.BandSegmentAddress → Plane
   | .inr (.inr (.inl e)) => L.next.family.forgetObstacle.edgeFinish e
   | .inr (.inr (.inr ())) => F.rightSynchronizedPoint a
 
+/-- The `Adjacent` declaration. -/
 def Adjacent (x y : L.BandSegmentAddress) : Prop :=
   right L a x = left L a y
 
@@ -775,6 +785,7 @@ noncomputable def selectedParentEdge (a : LevelAddress n) :
     F.LevelEdgeAddress :=
   ⟨a, F.firstEdgeIndex a⟩
 
+/-- The `selectedParentSegment` declaration. -/
 noncomputable def selectedParentSegment (a : LevelAddress n) :
     L.BandSegmentAddress :=
   BandSegmentAddress.parent L (selectedParentEdge (F := F) a)

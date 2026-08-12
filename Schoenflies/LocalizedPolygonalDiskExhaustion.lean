@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.MarkedPolygonalDiskExhaustion
 import Schoenflies.LevelArcCover
 
@@ -258,6 +263,7 @@ noncomputable def localizedMarkedPolygonalDiskStage
       ⟨I.nextLocalizedMarkedPolygonalDisk k P.1 P.2,
         I.nextLocalizedMarkedPolygonalDisk_closedRegion_subset_inside k P.1 P.2⟩
 
+/-- The `localizedMarkedPolygonalDisk` declaration. -/
 noncomputable def localizedMarkedPolygonalDisk (k : ℕ) : PolygonalCircle :=
   (I.localizedMarkedPolygonalDiskStage k).1
 

@@ -25,9 +25,11 @@ open Complex
 
 namespace PolygonCell
 
+/-- The `rotationUnit` declaration. -/
 noncomputable def rotationUnit (n k : ℕ) : Circle :=
   Circle.exp (2 * Real.pi * k / n)
 
+/-- The `rotateHomeomorph` declaration. -/
 noncomputable def rotateHomeomorph {n m : ℕ} (h : n = m) (k : ℕ) :
     PolygonCell n ≃ₜ PolygonCell m := by
   subst m
@@ -65,6 +67,7 @@ theorem rotateHomeomorph_apply_val {n m : ℕ} (h : n = m) (k : ℕ)
     subst m
     rfl
 
+/-- The `rotateIndex` declaration. -/
 def rotateIndex {n : ℕ} (hn : 0 < n) (k : ℕ) (i : Fin n) : Fin n :=
   ⟨(i.val + k) % n, Nat.mod_lt _ hn⟩
 

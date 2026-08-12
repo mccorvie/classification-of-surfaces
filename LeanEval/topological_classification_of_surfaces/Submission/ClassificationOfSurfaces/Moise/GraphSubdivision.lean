@@ -116,26 +116,33 @@ namespace PlaneComplex
 
 variable (K : PlaneComplex)
 
+/-- The `EdgeFace` declaration. -/
 abbrev EdgeFace := {e : Finset K.Vertex // e ∈ K.edges}
 
+/-- The `edgeEquiv` declaration. -/
 noncomputable def edgeEquiv : K.EdgeFace ≃ Fin (Fintype.card K.EdgeFace) :=
   Fintype.equivFin K.EdgeFace
 
+/-- The `edgeAt` declaration. -/
 noncomputable def edgeAt (i : Fin (Fintype.card K.EdgeFace)) : K.EdgeFace :=
   K.edgeEquiv.symm i
 
+/-- The `vertexEquiv` declaration. -/
 noncomputable def vertexEquiv : K.Vertex ≃ Fin (Fintype.card K.Vertex) :=
   Fintype.equivFin K.Vertex
 
+/-- The `vertexAt` declaration. -/
 noncomputable def vertexAt (i : Fin (Fintype.card K.Vertex)) : K.Vertex :=
   K.vertexEquiv.symm i
 
 theorem edgeAt_card (i : Fin (Fintype.card K.EdgeFace)) : (K.edgeAt i).1.card = 2 := by
   exact (Finset.mem_filter.mp (K.edgeAt i).2).2
 
+/-- The `edgeFirst` declaration. -/
 noncomputable def edgeFirst (i : Fin (Fintype.card K.EdgeFace)) : K.Vertex :=
   (Finset.card_eq_two.mp (K.edgeAt_card i)).choose
 
+/-- The `edgeSecond` declaration. -/
 noncomputable def edgeSecond (i : Fin (Fintype.card K.EdgeFace)) : K.Vertex :=
   (Finset.card_eq_two.mp (K.edgeAt_card i)).choose_spec.choose
 
@@ -282,6 +289,7 @@ theorem edgeChain_vertex_original (i : Fin (Fintype.card K.Vertex)) :
   congr 2
   exact Fin.ext hsub
 
+/-- The `edgeChainIndex` declaration. -/
 noncomputable def edgeChainIndex (i : Fin (Fintype.card K.EdgeFace)) :
     Fin K.edgeChain.n :=
   ⟨2 * i.val, by
@@ -412,13 +420,16 @@ theorem edgeSubdivision_subdivides (hgraph : ∀ s ∈ K.simplexes, s.card ≤ 2
 
 /-! ## Arbitrarily fine marked arrangements -/
 
+/-- The `EdgeSample` declaration. -/
 abbrev EdgeSample (cuts : ℕ) :=
   Fin (Fintype.card K.EdgeFace) × Fin (cuts + 2)
 
+/-- The `edgeSampleEquiv` declaration. -/
 noncomputable def edgeSampleEquiv (cuts : ℕ) :
     K.EdgeSample cuts ≃ Fin (Fintype.card (K.EdgeSample cuts)) :=
   Fintype.equivFin (K.EdgeSample cuts)
 
+/-- The `edgeSamplePoint` declaration. -/
 noncomputable def edgeSamplePoint (cuts : ℕ) (s : K.EdgeSample cuts) : Plane :=
   AffineMap.lineMap (K.position (K.edgeFirst s.1))
     (K.position (K.edgeSecond s.1)) (s.2.val / (cuts + 1 : ℝ))
@@ -498,6 +509,7 @@ theorem sampledEdgeChain_vertex_sample (cuts : ℕ) (s : K.EdgeSample cuts) :
     Fin.ext hsub
   rw [hfin, Equiv.symm_apply_apply]
 
+/-- The `sampledEdgeChainSampleIndex` declaration. -/
 noncomputable def sampledEdgeChainSampleIndex (cuts : ℕ) (s : K.EdgeSample cuts) :
     Fin ((K.sampledEdgeChain cuts).n + 1) :=
   ⟨2 * Fintype.card K.EdgeFace + (K.edgeSampleEquiv cuts s).val, by
@@ -687,6 +699,7 @@ theorem sampledEdgeChain_vertex_original (cuts : ℕ)
   congr 2
   exact Fin.ext hsub
 
+/-- The `sampledEdgeChainIndex` declaration. -/
 noncomputable def sampledEdgeChainIndex (cuts : ℕ)
     (i : Fin (Fintype.card K.EdgeFace)) : Fin (K.sampledEdgeChain cuts).n :=
   ⟨2 * i.val, by
@@ -730,9 +743,11 @@ theorem sampledEdgeChain_segment (cuts : ℕ)
     simp [eq_comm]
   rw [himage, convexHull_pair]
 
+/-- The `sampledEdgeArrangement` declaration. -/
 noncomputable def sampledEdgeArrangement (cuts : ℕ) : PlaneComplex :=
   (K.sampledEdgeChain cuts).arrangementMesh.toPlaneComplex
 
+/-- The `sampledEdgeSubdivision` declaration. -/
 noncomputable def sampledEdgeSubdivision (cuts : ℕ) : PlaneComplex :=
   (K.sampledEdgeArrangement cuts).subordinateTo K
 

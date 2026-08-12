@@ -105,7 +105,6 @@ theorem nonOrientableBoundaryWord_length (p n : ℕ) :
 
 /-! ## Certified positions in the canonical words -/
 
-@[simp]
 private theorem finProdFinEquiv_symm_linear {m n : ℕ} (i : Fin m) (j : Fin n)
     (h : i.val * n + j.val < m * n) :
     finProdFinEquiv.symm (⟨i.val * n + j.val, h⟩ : Fin (m * n)) = (i, j) := by
@@ -114,8 +113,7 @@ private theorem finProdFinEquiv_symm_linear {m n : ℕ} (i : Fin m) (j : Fin n)
   apply Fin.ext
   simp [finProdFinEquiv, Nat.mul_comm, Nat.add_comm]
 
-@[simp]
-private theorem Fin.divNat_linear {m n : ℕ} (i : Fin m) (j : Fin n)
+@[simp] private theorem Fin.divNat_linear {m n : ℕ} (i : Fin m) (j : Fin n)
     (h : i.val * n + j.val < m * n) :
     (⟨i.val * n + j.val, h⟩ : Fin (m * n)).divNat = i := by
   have hpair := congrArg Prod.fst (finProdFinEquiv_symm_linear i j h)
@@ -159,7 +157,6 @@ def orientableBoundaryPosition (p n : ℕ) (j : Fin n) (k : Fin 3) :
     rw [orientableBoundaryWord_length]
     omega⟩
 
-@[simp]
 theorem orientableHandlePosition_val (p n : ℕ) (i : Fin p) (k : Fin 4) :
     (orientableHandlePosition p n i k).val = i.val * 4 + k.val :=
   rfl
@@ -205,49 +202,42 @@ theorem orientableBoundaryWord_get_boundary_block (p n : ℕ) (j : Fin n) (k : F
   simp only [hopt]
   exact Option.get_some _ _
 
-@[simp]
 theorem orientableBoundaryWord_get_handle_a_pos (p n : ℕ) (i : Fin p) :
     (orientableBoundaryWord p n).get (orientableHandlePosition p n i 0) =
       .pos (.a i) := by
   simpa [orientableHandleBlock] using
     orientableBoundaryWord_get_handle_block p n i (0 : Fin 4)
 
-@[simp]
 theorem orientableBoundaryWord_get_handle_b_pos (p n : ℕ) (i : Fin p) :
     (orientableBoundaryWord p n).get (orientableHandlePosition p n i 1) =
       .pos (.b i) := by
   simpa [orientableHandleBlock] using
     orientableBoundaryWord_get_handle_block p n i (1 : Fin 4)
 
-@[simp]
 theorem orientableBoundaryWord_get_handle_a_neg (p n : ℕ) (i : Fin p) :
     (orientableBoundaryWord p n).get (orientableHandlePosition p n i 2) =
       .neg (.a i) := by
   simpa [orientableHandleBlock] using
     orientableBoundaryWord_get_handle_block p n i (2 : Fin 4)
 
-@[simp]
 theorem orientableBoundaryWord_get_handle_b_neg (p n : ℕ) (i : Fin p) :
     (orientableBoundaryWord p n).get (orientableHandlePosition p n i 3) =
       .neg (.b i) := by
   simpa [orientableHandleBlock] using
     orientableBoundaryWord_get_handle_block p n i (3 : Fin 4)
 
-@[simp]
 theorem orientableBoundaryWord_get_boundary_c_pos (p n : ℕ) (j : Fin n) :
     (orientableBoundaryWord p n).get (orientableBoundaryPosition p n j 0) =
       .pos (.c j) := by
   simpa [orientableBoundaryBlock] using
     orientableBoundaryWord_get_boundary_block p n j (0 : Fin 3)
 
-@[simp]
 theorem orientableBoundaryWord_get_boundary_h_pos (p n : ℕ) (j : Fin n) :
     (orientableBoundaryWord p n).get (orientableBoundaryPosition p n j 1) =
       .pos (.h j) := by
   simpa [orientableBoundaryBlock] using
     orientableBoundaryWord_get_boundary_block p n j (1 : Fin 3)
 
-@[simp]
 theorem orientableBoundaryWord_get_boundary_c_neg (p n : ℕ) (j : Fin n) :
     (orientableBoundaryWord p n).get (orientableBoundaryPosition p n j 2) =
       .neg (.c j) := by
@@ -342,35 +332,30 @@ theorem nonOrientableBoundaryWord_get_boundary_block
   simp only [hopt]
   exact Option.get_some _ _
 
-@[simp]
 theorem nonOrientableBoundaryWord_get_crosscap_a_first (p n : ℕ) (i : Fin p) :
     (nonOrientableBoundaryWord p n).get (nonOrientableCrosscapPosition p n i 0) =
       .pos (.a i) := by
   simpa [nonOrientableCrosscapBlock] using
     nonOrientableBoundaryWord_get_crosscap_block p n i (0 : Fin 2)
 
-@[simp]
 theorem nonOrientableBoundaryWord_get_crosscap_a_second (p n : ℕ) (i : Fin p) :
     (nonOrientableBoundaryWord p n).get (nonOrientableCrosscapPosition p n i 1) =
       .pos (.a i) := by
   simpa [nonOrientableCrosscapBlock] using
     nonOrientableBoundaryWord_get_crosscap_block p n i (1 : Fin 2)
 
-@[simp]
 theorem nonOrientableBoundaryWord_get_boundary_c_pos (p n : ℕ) (j : Fin n) :
     (nonOrientableBoundaryWord p n).get (nonOrientableBoundaryPosition p n j 0) =
       .pos (.c j) := by
   simpa [nonOrientableBoundaryBlock] using
     nonOrientableBoundaryWord_get_boundary_block p n j (0 : Fin 3)
 
-@[simp]
 theorem nonOrientableBoundaryWord_get_boundary_h_pos (p n : ℕ) (j : Fin n) :
     (nonOrientableBoundaryWord p n).get (nonOrientableBoundaryPosition p n j 1) =
       .pos (.h j) := by
   simpa [nonOrientableBoundaryBlock] using
     nonOrientableBoundaryWord_get_boundary_block p n j (1 : Fin 3)
 
-@[simp]
 theorem nonOrientableBoundaryWord_get_boundary_c_neg (p n : ℕ) (j : Fin n) :
     (nonOrientableBoundaryWord p n).get (nonOrientableBoundaryPosition p n j 2) =
       .neg (.c j) := by

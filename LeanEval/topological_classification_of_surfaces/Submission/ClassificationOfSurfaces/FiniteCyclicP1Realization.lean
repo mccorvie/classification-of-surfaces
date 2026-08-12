@@ -247,7 +247,7 @@ def blockPosition {weights : List ℕ} (p : BlockPosition weights) : ℕ :=
   (weights.take p.1).sum + p.2
 
 /-- Distinct block-local positions have distinct linear positions. -/
-theorem blockPosition_injective (weights : List ℕ) :
+@[simp] theorem blockPosition_injective (weights : List ℕ) :
     Function.Injective (@blockPosition weights) := by
   induction weights with
   | nil =>
@@ -291,7 +291,6 @@ theorem blockPosition_injective (weights : List ℕ) :
               cases hp
               rfl
 
-@[simp]
 theorem faceWeights_get
     (P : FiniteCyclicPresentation) (a : P.Edge) (f : P.Face)
     (i : Fin (P.boundary f).length) :
@@ -1141,7 +1140,7 @@ theorem preHomeomorph_generator_related
       have hparameter :
           pairing.identification.parameter t = t := by
         simp [BoundaryPairing.identification, PolygonGluing.Identification.parameter,
-          hdirection]
+          hdirection, PolygonGluing.ParameterDirection.homeomorph_opposite_apply]
       rw [hparameter]
       by_cases hselected : pairing.source.edge = a
       · have htargetSelected : pairing.target.edge = a :=
@@ -1198,7 +1197,7 @@ theorem preHomeomorph_generator_related
       have hparameter :
           pairing.identification.parameter t = unitInterval.symm t := by
         simp [BoundaryPairing.identification, PolygonGluing.Identification.parameter,
-          hdirection]
+          hdirection, PolygonGluing.ParameterDirection.homeomorph_opposite_apply]
       rw [hparameter]
       by_cases hselected : pairing.source.edge = a
       · have htargetSelected : pairing.target.edge = a :=
@@ -1818,7 +1817,8 @@ theorem preHomeomorph_symm_expandedPairingSame_generator_related
       ((P.occurrenceSide pairing.target).point
         (unexpandParameter a pairing.source.dart k u))
   simpa [BoundaryPairing.identification,
-      PolygonGluing.Identification.parameter, hdirection] using
+      PolygonGluing.Identification.parameter, hdirection,
+      PolygonGluing.ParameterDirection.homeomorph_opposite_apply] using
     PolygonGluing.related_of_mem pairing.identification
       (pairing_identification_mem validP pairing)
       (unexpandParameter a pairing.source.dart k u)
@@ -1858,7 +1858,8 @@ theorem preHomeomorph_symm_expandedPairingOpposite_generator_related
         (unitInterval.symm
           (unexpandParameter a pairing.source.dart k u)))
   simpa [BoundaryPairing.identification,
-      PolygonGluing.Identification.parameter, hdirection] using
+      PolygonGluing.Identification.parameter, hdirection,
+      PolygonGluing.ParameterDirection.homeomorph_opposite_apply] using
     PolygonGluing.related_of_mem pairing.identification
       (pairing_identification_mem validP pairing)
       (unexpandParameter a pairing.source.dart k u)

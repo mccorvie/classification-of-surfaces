@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.ClosedCoverHomeomorph
 import Schoenflies.TwoArcCarrierHomeomorph
 import Schoenflies.TwoBoundaryArcRigidity
@@ -25,10 +30,15 @@ namespace PolygonalDiskAttachment
 /-- A polygonal disk attached to a closed base exactly along the first arc
 of a two-arc presentation of its boundary. -/
 structure Presentation (A : Set Plane) where
+  /-- The `disk` declaration. -/
   disk : PolygonalCircle
+  /-- The `startPoint` declaration. -/
   startPoint : Plane
+  /-- The `endPoint` declaration. -/
   endPoint : Plane
+  /-- The `shared` declaration. -/
   shared : Path startPoint endPoint
+  /-- The `exposed` declaration. -/
   exposed : Path endPoint startPoint
   shared_injective : Injective shared
   exposed_injective : Injective exposed

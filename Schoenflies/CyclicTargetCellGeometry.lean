@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.CyclicTargetCells
 import Schoenflies.JordanRegionRecognition
 
@@ -115,6 +120,7 @@ theorem cyclicTargetCell_closedRegion_subset_outerDisk
 
 theorem targetInnerDisk_disjoint_cyclicTargetCellInterior
     (m : ℕ) {n : ℕ} (hn : 1 ≤ n) (a : LevelAddress n) :
+    let _ := hn
     Disjoint (disk m).closedRegion
       (I.cyclicTargetAttachmentPresentation m a).disk.interiorRegion := by
   rw [Set.disjoint_left]
@@ -274,7 +280,6 @@ theorem exists_cyclicTargetCellCarrier_not_mem_otherCarrier
         m hn a b hab.symm hbnext)
       (Path.target_mem_range _)
 
-set_option maxHeartbeats 500000 in
 -- The generic Jordan-region separation theorem unfolds both polygonal cells.
 theorem disjoint_cyclicTargetCellInterior
     (m : ℕ) {n : ℕ} (hn : 1 ≤ n)

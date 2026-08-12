@@ -40,6 +40,7 @@ def PlaneGraphRealization.UniformFrontierControl (G : K.PlaneGraphRealization)
     ∀ (_ : G.regionᶜ.Nonempty) (p : K.support),
       phi p ≤ Metric.infDist (G.map p) G.regionᶜ / 4
 
+omit [T2Space S] in
 /-- Frontier control keeps each selected polygonal disk inside the permitted open region. -/
 theorem closedRegions_mem_region_of_uniformFrontierControl
     (G : K.PlaneGraphRealization) {phi : K.support → ℝ}
@@ -74,6 +75,7 @@ theorem closedRegions_mem_region_of_uniformFrontierControl
     rw [hregion]
     exact Set.subset_univ _
 
+omit [T2Space S] in
 /-- The filled polygonal disks of a uniformly frontier-controlled replacement are locally
 finite in the open perturbation region.  The proof confines any disk meeting a small ball to
 an original face meeting a fixed compact ball, then uses relative closed-embedding transport. -/
@@ -177,6 +179,7 @@ theorem locallyFinite_closedRegions_of_uniformFrontierControl
     · exact ⟨p, hp, rfl⟩
     · exact hpCenter
 
+omit [T2Space S] in
 /-- Convex target regions are preserved by the simultaneous polygonal replacement of the
 one-skeleton.  The construction chooses each central broken line in the convex hull of its
 original embedded edge. -/
@@ -192,12 +195,14 @@ theorem range_graphReplacementMap_subset_of_convex
   rintro z ⟨p, -, rfl⟩
   exact hmap (Set.mem_range_self p)
 
+omit [T2Space S] in
 /-- A source realization in the model half-plane has a replacement graph in that half-plane. -/
 theorem range_graphReplacementMap_subset_halfPlane
     (G : K.PlaneGraphRealization) (hmap : Set.range G.map ⊆ HalfPlaneSet) :
     Set.range G.graphReplacementMap ⊆ HalfPlaneSet :=
   range_graphReplacementMap_subset_of_convex G convex_halfPlaneSet hmap
 
+omit [T2Space S] in
 /-- A zero-normal point of a complete replacement arc is supported by zero-normal points of the
 old embedded edge.  This is the exact supporting-face statement behind boundary preservation;
 mere half-plane containment would only give one implication. -/
@@ -215,6 +220,7 @@ theorem PlaneGraphRealization.CentralPolygonalArc.mem_convexHull_edgeImage_coord
     (G.edgeImage e) cartesianX hnonneg]
   exact ⟨A.completeCarrier_subset_edgeConvexHull hx, hxZero⟩
 
+omit [T2Space S] in
 /-- On the source one-skeleton, the assembled cellwise replacement is exactly the previously
 constructed global graph replacement. -/
 theorem polygonalReplacementMap_eq_graphReplacementMap
@@ -294,6 +300,7 @@ def PlaneGraphRealization.FacewiseCoordZeroExposed
         G.map (faceToSupport (K := K) f x) 0 = 0 ↔
           ∀ v : {v // v ∈ K.faceVertices f}, v.1 ∉ b → x v = 0
 
+omit [T2Space S] in
 /-- A facewise exposed zero locus is necessarily carried by the source one-skeleton. -/
 theorem sourceCoordZeroCarriedByOneSkeleton_of_facewiseCoordZeroExposed
     (G : K.PlaneGraphRealization) (hface : G.FacewiseCoordZeroExposed) :
@@ -580,6 +587,7 @@ theorem edgeCoordZeroTrichotomy_of_facewiseCoordZeroExposed
       have hone : (∑ w, z w) = 1 := z.2.2
       exact one_ne_zero (hone.symm.trans this)
 
+omit [T2Space S] in
 /-- The edgewise zero-locus trichotomy makes the simultaneous graph replacement preserve the
 supporting boundary line exactly.  The forward direction uses the supporting-face theorem for
 the replacement convex hull; the reverse direction uses vertex fixing in the singleton case. -/
@@ -783,6 +791,7 @@ theorem polygonalReplacementHomeomorph_coordZero_iff_of_facewiseCoordZeroExposed
     (sourceCoordZeroCarriedByOneSkeleton_of_facewiseCoordZeroExposed G hface)
     (graphReplacementPreservesCoordZero_of_facewiseCoordZeroExposed G hhalf hface) p
 
+omit [T2Space S] in
 /-- A controlled compatible cellwise replacement lands in the permitted perturbation region. -/
 theorem polygonalReplacementMap_mem_region (G : K.PlaneGraphRealization)
     (H : K.CellwiseCompatibility G) {phi : K.support → ℝ}
@@ -839,6 +848,7 @@ theorem exists_controlled_polygonalReplacement_of_edgeMesh
   exact exists_controlled_polygonalReplacement_of_facewise_close G hfaces hcontrol hfrontier
     (faceBoundariesClose_of_edgeFaceSeparation_control (G := G) hmesh)
 
+omit [T2Space S] in
 /-- If the replacement graph lies in the closed right half-plane, every selected polygonal face
 disk lies there too. -/
 theorem facePolygonalCircle_closedRegion_subset_halfPlane
@@ -849,6 +859,7 @@ theorem facePolygonalCircle_closedRegion_subset_halfPlane
   apply (K.facePolygonalCircle (G := G) f).closedRegion_subset_halfPlane
   exact (K.facePolygonalCircle_carrier_subset_graphReplacement (G := G) f).trans hgraph
 
+omit [T2Space S] in
 /-- Consequently the entire assembled locally finite replacement complex stays in the closed
 right half-plane. -/
 theorem polygonalReplacementComplex_support_subset_halfPlane

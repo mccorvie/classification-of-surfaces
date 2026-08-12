@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.ClosedCoverHomeomorph
 
 /-!
@@ -23,10 +28,14 @@ variable {X Y ι : Type*} [TopologicalSpace X] [TopologicalSpace Y]
 def cover (u : Finset ι) (s : ι → Set X) : Set X :=
   ⋃ i ∈ u, s i
 
+omit [TopologicalSpace X] in
+/-- Membership in a finite cover is witnessed by one indexed set. -/
 theorem mem_cover_iff {u : Finset ι} {s : ι → Set X} {x : X} :
     x ∈ cover u s ↔ ∃ i ∈ u, x ∈ s i := by
   simp [cover]
 
+omit [TopologicalSpace X] in
+/-- Each member of a finite cover is contained in the union of the cover. -/
 theorem subset_cover {u : Finset ι} {s : ι → Set X} {i : ι}
     (hi : i ∈ u) : s i ⊆ cover u s := by
   intro x hx
@@ -36,6 +45,8 @@ theorem isClosed_cover {u : Finset ι} {s : ι → Set X}
     (hs : ∀ i ∈ u, IsClosed (s i)) : IsClosed (cover u s) := by
   exact isClosed_biUnion_finset hs
 
+omit [TopologicalSpace X] in
+/-- Inserting one index adds its set to the existing finite cover. -/
 theorem cover_insert [DecidableEq ι] (a : ι) (u : Finset ι)
     (s : ι → Set X) :
     cover (insert a u) s = cover u s ∪ s a := by

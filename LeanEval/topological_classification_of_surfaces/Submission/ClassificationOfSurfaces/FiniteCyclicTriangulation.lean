@@ -41,12 +41,10 @@ private def orientedEdgeSignedDartEquiv {Edge : Type*} :
     intro d
     cases d <;> rfl
 
-@[simp]
 private theorem orientedEdgeSignedDartEquiv_apply {Edge : Type*} (d : OrientedEdge Edge) :
     orientedEdgeSignedDartEquiv d = signedDartOfOrientedEdge d :=
   rfl
 
-@[simp]
 private theorem orientedEdgeSignedDartEquiv_edge {Edge : Type*} (d : OrientedEdge Edge) :
     (orientedEdgeSignedDartEquiv d).edge = d.edge :=
   signedDartOfOrientedEdge_edge d
@@ -83,7 +81,6 @@ noncomputable def toFiniteCyclicPresentation (T : FiniteSurfaceTriangulation S) 
       (T.triangleBoundary ((Fintype.equivFin T.Triangle).symm f)).map
         T.finiteCyclicDartEquiv
 
-@[simp]
 theorem toFiniteCyclicPresentation_faces_length (T : FiniteSurfaceTriangulation S) :
     T.toFiniteCyclicPresentation.faces.length = Fintype.card T.Triangle := by
   simp [toFiniteCyclicPresentation]
@@ -94,7 +91,6 @@ noncomputable def finiteCyclicEdgeEquiv (T : FiniteSurfaceTriangulation S) :
   change T.Edge ≃ Fin (Fintype.card T.Edge)
   exact Fintype.equivFin T.Edge
 
-@[simp]
 theorem edgeOfDart_finiteCyclicDartEquiv_eq_edgeEquiv
     (T : FiniteSurfaceTriangulation S) (d : OrientedEdge T.Edge) :
     FiniteCyclicPresentation.edgeOfDart (T.finiteCyclicDartEquiv d) =
@@ -122,7 +118,6 @@ theorem finiteCyclicFaceEquiv_symm_apply_val (T : FiniteSurfaceTriangulation S)
   simp [finiteCyclicFaceEquiv]
 
 /-- Reading an enumerated face gives exactly the relabeled original triangle boundary. -/
-@[simp]
 theorem toFiniteCyclicPresentation_boundary_faceEquiv
     (T : FiniteSurfaceTriangulation S) (f : T.Triangle) :
     T.toFiniteCyclicPresentation.boundary (T.finiteCyclicFaceEquiv f) =
@@ -130,7 +125,6 @@ theorem toFiniteCyclicPresentation_boundary_faceEquiv
   simp [FiniteCyclicPresentation.boundary, toFiniteCyclicPresentation,
     finiteCyclicFaceEquiv]
 
-@[simp]
 theorem toFiniteCyclicPresentation_boundary_faceEquiv_length
     (T : FiniteSurfaceTriangulation S) (f : T.Triangle) :
     (T.toFiniteCyclicPresentation.boundary (T.finiteCyclicFaceEquiv f)).length =
@@ -140,7 +134,6 @@ theorem toFiniteCyclicPresentation_boundary_faceEquiv_length
 
 /-- Reading a position in an enumerated boundary is the same as reading the corresponding
 position before relabeling and then relabeling its dart. -/
-@[simp]
 theorem toFiniteCyclicPresentation_boundary_faceEquiv_get
     (T : FiniteSurfaceTriangulation S) (f : T.Triangle)
     (i : Fin
@@ -168,13 +161,11 @@ theorem finiteCyclicOccurrenceEquiv_apply_fst
     (T.finiteCyclicOccurrenceEquiv o).1 = T.finiteCyclicFaceEquiv o.1 :=
   rfl
 
-@[simp]
 theorem finiteCyclicOccurrenceEquiv_apply_val
     (T : FiniteSurfaceTriangulation S) (o : T.BoundaryPosition) :
     (T.finiteCyclicOccurrenceEquiv o).2.val = o.2.val :=
   rfl
 
-@[simp]
 theorem finiteCyclicOccurrenceEquiv_dart
     (T : FiniteSurfaceTriangulation S) (o : T.BoundaryPosition) :
     (T.toFiniteCyclicPresentation.boundary
@@ -458,20 +449,20 @@ variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 
 /-- The named finite cyclic presentation obtained by enumerating the Radó triangulation of a
 compact connected Eval surface. -/
-noncomputable def compact_eval_surface_finiteCyclicPresentation :
+noncomputable def compactEvalSurfaceFiniteCyclicPresentation :
     FiniteCyclicPresentation :=
-  (compact_eval_surface_geometricTriangulation S).toFiniteCyclicPresentation
+  (compactEvalSurfaceGeometricTriangulation S).toFiniteCyclicPresentation
 
 /-- The finite cyclic presentation attached to a compact connected Eval surface is valid. -/
 theorem compact_eval_surface_finiteCyclicPresentation_isSurfaceValid :
-    (compact_eval_surface_finiteCyclicPresentation S).IsSurfaceValid :=
-  (compact_eval_surface_geometricTriangulation S).toFiniteCyclicPresentation_isSurfaceValid
+    (compactEvalSurfaceFiniteCyclicPresentation S).IsSurfaceValid :=
+  (compactEvalSurfaceGeometricTriangulation S).toFiniteCyclicPresentation_isSurfaceValid
     (compact_eval_surface_geometricTriangulation_surfaceIncidence S)
 
 /-- The finite cyclic presentation attached to a compact connected Eval surface is connected. -/
 theorem compact_eval_surface_finiteCyclicPresentation_isConnected :
-    (compact_eval_surface_finiteCyclicPresentation S).IsConnected :=
-  (compact_eval_surface_geometricTriangulation S).toFiniteCyclicPresentation_isConnected
+    (compactEvalSurfaceFiniteCyclicPresentation S).IsConnected :=
+  (compactEvalSurfaceGeometricTriangulation S).toFiniteCyclicPresentation_isConnected
     (compact_eval_surface_geometricTriangulation_surfaceIncidence S)
 
 include S
@@ -480,7 +471,7 @@ include S
 the input expected by the Gallier--Xu normal-form lane. -/
 theorem compact_eval_surface_has_valid_connected_finiteCyclicPresentation :
     ∃ P : FiniteCyclicPresentation, P.IsSurfaceValid ∧ P.IsConnected :=
-  ⟨compact_eval_surface_finiteCyclicPresentation S,
+  ⟨compactEvalSurfaceFiniteCyclicPresentation S,
     compact_eval_surface_finiteCyclicPresentation_isSurfaceValid S,
     compact_eval_surface_finiteCyclicPresentation_isConnected S⟩
 

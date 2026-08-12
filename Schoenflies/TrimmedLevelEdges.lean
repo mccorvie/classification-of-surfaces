@@ -1,5 +1,11 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.FiniteLevelCrosscuts
 import Schoenflies.ResolvedPolygonalArcs
+import Mathlib.Data.List.ChainOfFn
 
 /-!
 # Resolved edges of the raw trimmed level crosscuts
@@ -60,16 +66,20 @@ from the right retained hair to the left retained hair. -/
 abbrev TrimmedEdgeAddress :=
   Σ a : LevelAddress n, Fin (F.trimmedCrosscutCarrierLine a).data.n
 
+/-- The `trimmedEdgeStart` declaration. -/
 noncomputable def trimmedEdgeStart (e : F.TrimmedEdgeAddress) : Plane :=
   (F.trimmedCrosscutCarrierLine e.1).data.vertex e.2.castSucc
 
+/-- The `trimmedEdgeFinish` declaration. -/
 noncomputable def trimmedEdgeFinish (e : F.TrimmedEdgeAddress) : Plane :=
   (F.trimmedCrosscutCarrierLine e.1).data.vertex e.2.succ
 
+/-- The `trimmedEdgeSegment` declaration. -/
 noncomputable def trimmedEdgeSegment
     (e : F.TrimmedEdgeAddress) : Set Plane :=
   segment ℝ (F.trimmedEdgeStart e) (F.trimmedEdgeFinish e)
 
+/-- The `TrimmedEdgeAdjacent` declaration. -/
 def TrimmedEdgeAdjacent
     (e f : F.TrimmedEdgeAddress) : Prop :=
   F.trimmedEdgeFinish e = F.trimmedEdgeStart f
@@ -106,10 +116,12 @@ theorem trimmedEdgeBlock_isChain (a : LevelAddress n) :
   apply Fin.ext
   rfl
 
+/-- The `firstTrimmedEdgeIndex` declaration. -/
 noncomputable def firstTrimmedEdgeIndex (a : LevelAddress n) :
     Fin (F.trimmedCrosscutCarrierLine a).data.n :=
   ⟨0, F.trimmedCrosscutCarrierLine_edgeCount_pos a⟩
 
+/-- The `lastTrimmedEdgeIndex` declaration. -/
 noncomputable def lastTrimmedEdgeIndex (a : LevelAddress n) :
     Fin (F.trimmedCrosscutCarrierLine a).data.n :=
   ⟨(F.trimmedCrosscutCarrierLine a).data.n - 1,

@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.HierarchicalCollarStages
 
 /-!
@@ -29,9 +34,12 @@ variable {J : JordanCircle} (I : J.InitialAngularArcs)
 /-- One synchronized polygonal collar, hiding the dependent subdivision
 level and control scale behind a stable sequence-friendly interface. -/
 structure InsideCollarStage where
+  /-- The `level` declaration. -/
   level : ℕ
   one_le_level : 1 ≤ level
+  /-- The `epsilon` declaration. -/
   epsilon : ℝ
+  /-- The `family` declaration. -/
   family : I.LevelAvoidingJoinFamily level epsilon
 
 namespace InsideCollarStage

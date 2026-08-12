@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.AngularSubdivisions
 import Schoenflies.PlaneTopology
 import ClassificationOfSurfaces.Moise.FineSubdivision
@@ -37,6 +42,7 @@ private abbrev MoiseTriangleMesh :=
 `C` to lie in the interior (rather than merely in the support) is the buffer
 needed before bounded complementary components are filled. -/
 structure FinitePolyhedralNeighborhood (C U : Set Plane) where
+  /-- The `mesh` declaration. -/
   mesh : MoiseTriangleMesh
   coversInterior : C ⊆ interior mesh.toPlaneComplex.support
   contained : mesh.toPlaneComplex.support ⊆ U

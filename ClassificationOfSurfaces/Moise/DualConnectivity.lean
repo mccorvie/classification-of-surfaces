@@ -31,6 +31,7 @@ def FaceReachable (faces : Finset (Finset Vertex)) (root : Face faces)
   ∃ ht : t ∈ faces,
     Relation.ReflTransGen (FaceAdjacent faces) root ⟨t, ht⟩
 
+omit [DecidableEq Vertex] in
 theorem faceReachable_iff
     {faces : Finset (Finset Vertex)} (root f : Face faces) :
     FaceReachable faces root f.1 ↔
@@ -41,11 +42,13 @@ theorem faceReachable_iff
   · intro hpath
     exact ⟨f.2, hpath⟩
 
+omit [DecidableEq Vertex] in
 theorem faceReachable_root
     {faces : Finset (Finset Vertex)} (root : Face faces) :
     FaceReachable faces root root.1 :=
   (faceReachable_iff root root).2 Relation.ReflTransGen.refl
 
+omit [DecidableEq Vertex] in
 /-- A face outside the component of `root` cannot share an edge with a face inside it. -/
 theorem not_faceAdjacent_of_faceReachable_of_not
     {faces : Finset (Finset Vertex)} (root f g : Face faces)

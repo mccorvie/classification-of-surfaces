@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.AccessHairs
 
 /-!
@@ -20,7 +25,9 @@ variable (J : JordanCircle)
 /-- A short angular lift of an arc of the Jordan circle whose endpoints are
 linearly accessible from the inside. -/
 structure AccessibleAngularArc where
+  /-- The `left` declaration. -/
   left : ℝ
+  /-- The `right` declaration. -/
   right : ℝ
   left_lt_right : left < right
   width_lt_turn : right - left < 2 * π
@@ -33,6 +40,7 @@ namespace AccessibleAngularArc
 
 variable {J : JordanCircle}
 
+/-- The `width` declaration. -/
 def width (A : J.AccessibleAngularArc) : ℝ := A.right - A.left
 
 theorem width_pos (A : J.AccessibleAngularArc) : 0 < A.width := by
@@ -68,6 +76,7 @@ theorem splitAngle_accessible (A : J.AccessibleAngularArc) :
   (Classical.choose_spec (J.exists_insideAccessibleAngle
     A.middleThird_bounds)).2
 
+/-- The `leftChild` declaration. -/
 noncomputable def leftChild (A : J.AccessibleAngularArc) :
     J.AccessibleAngularArc where
   left := A.left
@@ -81,6 +90,7 @@ noncomputable def leftChild (A : J.AccessibleAngularArc) :
   left_accessible := A.left_accessible
   right_accessible := A.splitAngle_accessible
 
+/-- The `rightChild` declaration. -/
 noncomputable def rightChild (A : J.AccessibleAngularArc) :
     J.AccessibleAngularArc where
   left := A.splitAngle
@@ -500,6 +510,7 @@ noncomputable def AccessibleAngularArc.curveArcHomeomorph
     ((J.carrierHomeomorph.image S).symm.trans
       (JordanCurve.Arcs.arcHomeoUnitInterval A.left_lt_right A.width_lt_turn))
 
+/-- The `curveArcPlaneHomeomorph` declaration. -/
 noncomputable def AccessibleAngularArc.curveArcPlaneHomeomorph
     (A : J.AccessibleAngularArc) : A.curveArcPlane ≃ₜ unitInterval := by
   letI : CompactSpace A.curveArc :=
@@ -598,7 +609,9 @@ theorem AccessibleAngularArc.eventually_curvePoint_dist_lt
 
 /-- Two initial accessible arcs whose angular lifts make one full turn. -/
 structure InitialAngularArcs where
+  /-- The `first` declaration. -/
   first : J.AccessibleAngularArc
+  /-- The `second` declaration. -/
   second : J.AccessibleAngularArc
   adjacent : first.right = second.left
   closes : second.right = first.left + 2 * π
@@ -656,6 +669,7 @@ def rootArc (I : J.InitialAngularArcs) : Bool → J.AccessibleAngularArc
 two initial arcs, then follow `n` left/right choices. -/
 abbrev LevelAddress (n : ℕ) := Bool × (Fin n → Bool)
 
+/-- The `levelArc` declaration. -/
 noncomputable def levelArc (I : J.InitialAngularArcs) {n : ℕ}
     (a : LevelAddress n) : J.AccessibleAngularArc :=
   (I.rootArc a.1).descendant (List.ofFn a.2)

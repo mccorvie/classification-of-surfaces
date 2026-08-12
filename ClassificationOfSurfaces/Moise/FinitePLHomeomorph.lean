@@ -21,6 +21,7 @@ namespace Moise
 
 /-- An ambient homeomorphism is finitely PL on `A`, with an explicit pure source complex. -/
 structure FinitePLHomeomorphOn (h : Plane ≃ₜ Plane) (A : Set Plane) where
+  /-- The `complex` declaration. -/
   complex : PlaneComplex
   support_eq : complex.support = A
   pure : complex.IsPure2
@@ -31,6 +32,7 @@ structure FinitePLHomeomorphOn (h : Plane ≃ₜ Plane) (A : Set Plane) where
 The underlying function need not be meaningful, continuous, or injective away from `A`; all
 geometric data is deliberately relative to the source support. -/
 structure FinitePLHomeomorphBetween (f : Plane → Plane) (A B : Set Plane) where
+  /-- The `complex` declaration. -/
   complex : PlaneComplex
   support_eq : complex.support = A
   pure : complex.IsPure2
@@ -187,6 +189,7 @@ PL homeomorphism.  This is the relative-subdivision package used when a prescrib
 introduces new vertices on the boundary of a polygonal face. -/
 structure PullbackSubdivision (F : FinitePLHomeomorphBetween f A B)
     (R : PlaneComplex) where
+  /-- The `target` declaration. -/
   target : PlaneComplex
   target_support : target.support = B
   target_pure : target.IsPure2

@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import Schoenflies.CollarBandSegments
 import Schoenflies.TrimmedLevelEdges
 
@@ -44,21 +49,26 @@ abbrev MoiseBandSegmentAddress :=
 
 namespace MoiseBandSegmentAddress
 
+/-- The `parent` declaration. -/
 def parent (e : F.LevelEdgeAddress) : L.MoiseBandSegmentAddress :=
   Sum.inl e
 
+/-- The `leftSide` declaration. -/
 def leftSide : L.MoiseBandSegmentAddress :=
   Sum.inr (Sum.inl ())
 
+/-- The `child` declaration. -/
 def child
     (e : L.next.family.forgetObstacle.TrimmedEdgeAddress) :
     L.MoiseBandSegmentAddress :=
   Sum.inr (Sum.inr (Sum.inl e))
 
+/-- The `junction` declaration. -/
 def junction (b c : LevelAddress L.next.level) :
     L.MoiseBandSegmentAddress :=
   Sum.inr (Sum.inr (Sum.inr (Sum.inl (b, c))))
 
+/-- The `rightSide` declaration. -/
 def rightSide : L.MoiseBandSegmentAddress :=
   Sum.inr (Sum.inr (Sum.inr (Sum.inr ())))
 
@@ -88,6 +98,7 @@ noncomputable def right : L.MoiseBandSegmentAddress → Plane
       L.next.family.forgetObstacle.trimmedLeftPoint (L.childIndex c)
   | .inr (.inr (.inr (.inr ()))) => F.rightSynchronizedPoint a
 
+/-- The `Adjacent` declaration. -/
 def Adjacent (x y : L.MoiseBandSegmentAddress) : Prop :=
   right L a x = left L a y
 
@@ -1911,10 +1922,12 @@ theorem moiseBandOpenSegments_nonempty (a : LevelAddress n) :
   have h₂ := (List.append_eq_nil_iff.mp h₁).1
   exact L.parentMoiseSegments_nonempty a h₂
 
+/-- The `moiseBandOpenFirst` declaration. -/
 noncomputable def moiseBandOpenFirst (a : LevelAddress n) :
     L.MoiseBandSegmentAddress :=
   (L.moiseBandOpenSegments a).head (L.moiseBandOpenSegments_nonempty a)
 
+/-- The `moiseBandOpenTail` declaration. -/
 noncomputable def moiseBandOpenTail (a : LevelAddress n) :
     List L.MoiseBandSegmentAddress :=
   (L.moiseBandOpenSegments a).tail
@@ -2538,6 +2551,7 @@ noncomputable def moiseBandFirst (a : LevelAddress n) :
     L.MoiseBandSegmentAddress :=
   (L.moiseBandSegments a).head (L.moiseBandSegments_nonempty a)
 
+/-- The `moiseBandTail` declaration. -/
 noncomputable def moiseBandTail (a : LevelAddress n) :
     List L.MoiseBandSegmentAddress :=
   (L.moiseBandSegments a).tail

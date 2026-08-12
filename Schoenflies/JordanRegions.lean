@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 ClassificationOfSurfaces contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ClassificationOfSurfaces contributors
+-/
 import JordanCurve
 
 /-!
@@ -18,6 +23,7 @@ abbrev Plane := EuclideanSpace ℝ (Fin 2)
 
 /-- A Jordan circle together with its chosen parametrization. -/
 structure JordanCircle where
+  /-- The `parametrization` declaration. -/
   parametrization : sphere (0 : Plane) 1 → Plane
   continuous : Continuous parametrization
   injective : Injective parametrization

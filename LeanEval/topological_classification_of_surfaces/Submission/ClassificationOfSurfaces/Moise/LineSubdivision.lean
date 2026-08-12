@@ -324,6 +324,7 @@ on each edge issuing from the origin. -/
 def referenceSplitPosition (a b : ℝ) : Fin 5 → Plane :=
   ![planePoint 0 0, planePoint 1 0, planePoint 0 1, planePoint a 0, planePoint 0 b]
 
+/-- The `referenceSplitTriangles` declaration. -/
 def referenceSplitTriangles : Finset (Finset (Fin 5)) :=
   {{0, 3, 4}, {1, 2, 3}, {2, 3, 4}}
 
@@ -499,14 +500,14 @@ noncomputable def referenceSplitMesh (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'] ;
-          (try field_simp) ; nlinarith
+          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'];
+          (try field_simp); nlinarith
       · intro x hx
         fin_cases x <;> simp [referenceSplitPosition, referenceOuterAffine_planePoint,
           ha0.ne', hb0.ne'] at hx ⊢
       · intro x hx
         fin_cases x <;> simp [referenceSplitPosition, referenceOuterAffine_planePoint,
-          ha0.ne', hb0.ne'] at hx ⊢ ; field_simp ; nlinarith
+          ha0.ne', hb0.ne'] at hx ⊢; field_simp; nlinarith
     · rw [Set.inter_comm]
       apply convexHull_image_inter_of_affine_separation _
         (referenceSplitPosition_injective ha0 ha1 hb0 hb1) _ _ (-referenceVertexAffine a b)
@@ -534,18 +535,18 @@ noncomputable def referenceSplitMesh (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint]; nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint]; nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢;
           nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢;
           nlinarith
     · rw [Set.inter_comm]
       apply convexHull_image_inter_of_affine_separation _
@@ -557,32 +558,32 @@ noncomputable def referenceSplitMesh (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'] ;
-          field_simp ; nlinarith
+          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'];
+          field_simp; nlinarith
       · intro x hx
         fin_cases x <;> simp [referenceSplitPosition, referenceOuterAffine_planePoint,
           ha0.ne', hb0.ne'] at hx ⊢
       · intro x hx
         fin_cases x <;> simp [referenceSplitPosition, referenceOuterAffine_planePoint,
-          ha0.ne', hb0.ne'] at hx ⊢ ; field_simp ; nlinarith
+          ha0.ne', hb0.ne'] at hx ⊢; field_simp; nlinarith
     · rw [Set.inter_comm]
       apply convexHull_image_inter_of_affine_separation _
         (referenceSplitPosition_injective ha0 ha1 hb0 hb1) _ _ (referenceDiagonalAffine a)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint]; nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint]; nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢;
           nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
+          simp [referenceSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢;
           nlinarith
     · simp
 
@@ -742,7 +743,7 @@ theorem referenceSplit_union (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
           ring
         · ext i
           fin_cases i <;> simp [planePoint] <;>
-            field_simp [h1b, ha0.ne'] ; ring
+            field_simp [h1b, ha0.ne']; ring
 
 /-- The reference line split preserves the support of the standard triangle. -/
 theorem referenceSplitMesh_support (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
@@ -756,9 +757,11 @@ theorem referenceSplitMesh_support (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
 
 /-! ## The reference split through one vertex -/
 
+/-- The `referenceEdgeSplitPosition` declaration. -/
 def referenceEdgeSplitPosition (c : ℝ) : Fin 4 → Plane :=
   ![planePoint 0 0, planePoint 1 0, planePoint 0 1, planePoint c 0]
 
+/-- The `referenceEdgeSplitTriangles` declaration. -/
 def referenceEdgeSplitTriangles : Finset (Finset (Fin 4)) :=
   {{0, 2, 3}, {1, 2, 3}}
 
@@ -837,18 +840,18 @@ noncomputable def referenceEdgeSplitMesh (c : ℝ) (hc0 : 0 < c) (hc1 : c < 1) :
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint]; nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint]; nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢;
           nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢;
           nlinarith
     · rw [Set.inter_comm]
       apply convexHull_image_inter_of_affine_separation _
@@ -856,18 +859,18 @@ noncomputable def referenceEdgeSplitMesh (c : ℝ) (hc0 : 0 < c) (hc1 : c < 1) :
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint]; nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] ; nlinarith
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint]; nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢;
           nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢ ;
+          simp [referenceEdgeSplitPosition, referenceDiagonalAffine_planePoint] at hx ⊢;
           nlinarith
     · simp
 
@@ -1415,6 +1418,7 @@ theorem strictNegativeLocalMesh_support (t : M.Triangle)
 
 /-! The same strict model for an arbitrary ordering of three vertices. -/
 
+/-- The `strictVertices` declaration. -/
 noncomputable def strictVertices (v : Fin 3 → M.Vertex)
     (h0 : 0 < f (M.position (v 0))) (h1 : f (M.position (v 1)) < 0)
     (h2 : f (M.position (v 2)) < 0) : Fin 5 → M.RefinedVertex f :=
@@ -1428,6 +1432,7 @@ theorem strictVertices_val (v : Fin 3 → M.Vertex)
     (M.strictVertices f v h0 h1 h2 i : Plane) = strictModelPosition (M.position ∘ v) f i := by
   fin_cases i <;> rfl
 
+/-- The `strictVerticesEmbedding` declaration. -/
 noncomputable def strictVerticesEmbedding (v : Fin 3 → M.Vertex)
     (hv : AffineIndependent ℝ (M.position ∘ v))
     (h0 : 0 < f (M.position (v 0))) (h1 : f (M.position (v 1)) < 0)
@@ -1447,6 +1452,7 @@ noncomputable def strictVerticesEmbedding (v : Fin 3 → M.Vertex)
     exact (triangleAffineEquiv standardTrianglePosition (M.position ∘ v)
       standardTrianglePosition_affineIndependent hv).injective hpos
 
+/-- The `strictMeshFor` declaration. -/
 noncomputable def strictMeshFor (v : Fin 3 → M.Vertex)
     (hv : AffineIndependent ℝ (M.position ∘ v))
     (h0 : 0 < f (M.position (v 0))) (h1 : f (M.position (v 1)) < 0)
@@ -1503,6 +1509,7 @@ theorem strictMeshFor_support (v : Fin 3 → M.Vertex)
   exact triangleAffineEquiv_image_convexHull standardTrianglePosition (M.position ∘ v)
     standardTrianglePosition_affineIndependent hv
 
+/-- The `strictNegativeMeshFor` declaration. -/
 noncomputable def strictNegativeMeshFor (v : Fin 3 → M.Vertex)
     (hv : AffineIndependent ℝ (M.position ∘ v))
     (h0 : f (M.position (v 0)) < 0) (h1 : 0 < f (M.position (v 1)))
@@ -1526,6 +1533,7 @@ theorem strictNegativeMeshFor_support (v : Fin 3 → M.Vertex)
 
 /-! The two-triangle model when vertex `2` lies on the cutting line. -/
 
+/-- The `edgeModelPosition` declaration. -/
 noncomputable def edgeModelPosition (p : Fin 3 → Plane) (f : Plane →ᵃ[ℝ] ℝ) : Fin 4 → Plane :=
   ![p 0, p 1, p 2, affineCutPoint f (p 0) (p 1)]
 
@@ -1559,6 +1567,7 @@ theorem edgeModelPosition_eq_affineReference (p : Fin 3 → Plane)
       standardTrianglePosition_affineIndependent hp 0 1
         (triangleCutParameter f (p 0) (p 1))).symm
 
+/-- The `edgeVertices` declaration. -/
 noncomputable def edgeVertices (v : Fin 3 → M.Vertex)
     (h0 : 0 < f (M.position (v 0))) (h1 : f (M.position (v 1)) < 0) :
     Fin 4 → M.RefinedVertex f :=
@@ -1570,6 +1579,7 @@ theorem edgeVertices_val (v : Fin 3 → M.Vertex)
     (M.edgeVertices f v h0 h1 i : Plane) = edgeModelPosition (M.position ∘ v) f i := by
   fin_cases i <;> rfl
 
+/-- The `edgeVerticesEmbedding` declaration. -/
 noncomputable def edgeVerticesEmbedding (v : Fin 3 → M.Vertex)
     (hv : AffineIndependent ℝ (M.position ∘ v))
     (h0 : 0 < f (M.position (v 0))) (h1 : f (M.position (v 1)) < 0) :
@@ -1587,6 +1597,7 @@ noncomputable def edgeVerticesEmbedding (v : Fin 3 → M.Vertex)
     exact (triangleAffineEquiv standardTrianglePosition (M.position ∘ v)
       standardTrianglePosition_affineIndependent hv).injective hpos
 
+/-- The `edgeMeshFor` declaration. -/
 noncomputable def edgeMeshFor (v : Fin 3 → M.Vertex)
     (hv : AffineIndependent ℝ (M.position ∘ v))
     (h0 : 0 < f (M.position (v 0))) (h1 : f (M.position (v 1)) < 0) : TriangleMesh :=
@@ -1634,6 +1645,7 @@ theorem edgeMeshFor_support (v : Fin 3 → M.Vertex)
   exact triangleAffineEquiv_image_convexHull standardTrianglePosition (M.position ∘ v)
     standardTrianglePosition_affineIndependent hv
 
+/-- The `edgeNegativeMeshFor` declaration. -/
 noncomputable def edgeNegativeMeshFor (v : Fin 3 → M.Vertex)
     (hv : AffineIndependent ℝ (M.position ∘ v))
     (h0 : f (M.position (v 0)) < 0) (h1 : 0 < f (M.position (v 1))) : TriangleMesh :=
@@ -1677,30 +1689,39 @@ theorem range_orderedVertex_perm (t : M.Triangle) (σ : Equiv.Perm (Fin 3)) :
     obtain ⟨j, rfl⟩ := hv'
     exact ⟨σ.symm j, by simp⟩
 
+/-- A vertex ordering with one positive value followed by two negative values. -/
 structure PositiveStrictOrdering (t : M.Triangle) where
+  /-- The `perm` declaration. -/
   perm : Equiv.Perm (Fin 3)
   positive : 0 < f (M.position (M.orderedVertex t (perm 0)))
   negative_one : f (M.position (M.orderedVertex t (perm 1))) < 0
   negative_two : f (M.position (M.orderedVertex t (perm 2))) < 0
 
+/-- A vertex ordering with one negative value followed by two positive values. -/
 structure NegativeStrictOrdering (t : M.Triangle) where
+  /-- The `perm` declaration. -/
   perm : Equiv.Perm (Fin 3)
   negative : f (M.position (M.orderedVertex t (perm 0))) < 0
   positive_one : 0 < f (M.position (M.orderedVertex t (perm 1)))
   positive_two : 0 < f (M.position (M.orderedVertex t (perm 2)))
 
+/-- A vertex ordering with one positive, one negative, and one zero value. -/
 structure PositiveEdgeOrdering (t : M.Triangle) where
+  /-- The `perm` declaration. -/
   perm : Equiv.Perm (Fin 3)
   positive : 0 < f (M.position (M.orderedVertex t (perm 0)))
   negative : f (M.position (M.orderedVertex t (perm 1))) < 0
   zero : f (M.position (M.orderedVertex t (perm 2))) = 0
 
+/-- A vertex ordering with one negative, one positive, and one zero value. -/
 structure NegativeEdgeOrdering (t : M.Triangle) where
+  /-- The `perm` declaration. -/
   perm : Equiv.Perm (Fin 3)
   negative : f (M.position (M.orderedVertex t (perm 0))) < 0
   positive : 0 < f (M.position (M.orderedVertex t (perm 1)))
   zero : f (M.position (M.orderedVertex t (perm 2))) = 0
 
+/-- The `oldVerticesEmbedding` declaration. -/
 noncomputable def oldVerticesEmbedding (v : Fin 3 → M.Vertex)
     (hv : AffineIndependent ℝ (M.position ∘ v)) : Fin 3 ↪ M.RefinedVertex f where
   toFun i := M.oldRefinedVertex f (v i)
@@ -1709,6 +1730,7 @@ noncomputable def oldVerticesEmbedding (v : Fin 3 → M.Vertex)
     apply hv.injective
     exact congrArg Subtype.val hij
 
+/-- The `unchangedMeshFor` declaration. -/
 noncomputable def unchangedMeshFor (v : Fin 3 → M.Vertex)
     (hv : AffineIndependent ℝ (M.position ∘ v)) : TriangleMesh :=
   (TriangleMesh.single (M.position ∘ v) hv).reindex

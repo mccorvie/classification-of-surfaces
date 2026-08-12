@@ -148,6 +148,7 @@ theorem zeroLeftCellHomeomorph_side
   apply Fin.ext
   simp [hl]
 
+/-- The `zeroLeftChildPairHomeomorph` declaration. -/
 noncomputable def zeroLeftChildPairHomeomorph
     {l r : ℕ} (hl : l = 0) :
     DiskSquare.ChildPair 0 r ≃ₜ
@@ -248,6 +249,7 @@ theorem zeroLeftChildPair_eqvGen_iff
     simpa only [e, Homeomorph.symm_apply_apply] using
       hcomap hxy
 
+/-- The `zeroLeftChildGluingHomeomorph` declaration. -/
 noncomputable def zeroLeftChildGluingHomeomorph
     {l r : ℕ} (hl : l = 0) :
     DiskSquare.ParamChildGluing 0 r ≃ₜ
@@ -401,6 +403,7 @@ theorem continuous_rightDegenerateFaceMap
   · simpa [rightDegenerateFaceMap, hface] using
       continuous_retainedFaceMap P cut hface validP
 
+/-- The `rightDegeneratePreMap` declaration. -/
 noncomputable def rightDegeneratePreMap
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -704,6 +707,7 @@ theorem rightDegenerateMapOccurrence_injective
       subst j
       rfl
 
+/-- The `rightDegenerateMapPairing` declaration. -/
 noncomputable def rightDegenerateMapPairing
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -1185,7 +1189,6 @@ theorem rightDegenerateRightChildInvFaceMap_apply
           (.inr z)) := by
   simp [rightDegenerateRightChildInvFaceMap, Function.comp_apply]
 
-@[simp]
 theorem rightDegenerateInvPreMap_retained_apply
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -1202,7 +1205,6 @@ theorem rightDegenerateInvPreMap_retained_apply
       P cut horientation hleft hr validP hface,
     retainedInvFaceMap_apply]
 
-@[simp]
 theorem rightDegenerateInvPreMap_selectedChild_apply
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -1224,7 +1226,6 @@ theorem rightDegenerateInvPreMap_selectedChild_apply
     rightDegenerateOldInvFaceMap_selected,
     rightDegenerateSelectedChildInvFaceMap_apply]
 
-@[simp]
 theorem rightDegenerateInvPreMap_rightChild_apply
     (P : FiniteCyclicPresentation) (cut : P2Cut P)
     (horientation : cut.face.orientation = false)
@@ -1575,7 +1576,8 @@ theorem rightDegenerateInvPreMap_pairing_eq
         rw [BoundaryPairing.identification_source,
           BoundaryPairing.identification_target]
         simpa [hsourceSelected, htargetRight, hdirection,
-            PolygonGluing.Identification.parameter] using
+            PolygonGluing.Identification.parameter,
+            PolygonGluing.ParameterDirection.homeomorph_opposite_apply] using
           rightDegenerateInvPreMap_fresh_occurrence_seam
             P cut horientation hleft hr validP t
     · rcases positiveFreshOccurrence_cases
@@ -1593,7 +1595,8 @@ theorem rightDegenerateInvPreMap_pairing_eq
         rw [BoundaryPairing.identification_source,
           BoundaryPairing.identification_target]
         simpa [hsourceRight, htargetSelected, hdirection,
-            PolygonGluing.Identification.parameter] using
+            PolygonGluing.Identification.parameter,
+            PolygonGluing.ParameterDirection.homeomorph_opposite_apply] using
           (rightDegenerateInvPreMap_fresh_occurrence_seam
             P cut horientation hleft hr validP
             (unitInterval.symm t)).symm

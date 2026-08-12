@@ -30,9 +30,11 @@ namespace Moise
 /-- A finite pure two-dimensional abstract simplicial complex.  Lower-dimensional faces are
 implicit in the supports of the listed triangles, exactly as in `GeometricRealization`. -/
 structure IntrinsicTwoComplex where
+  /-- The `Vertex` declaration. -/
   Vertex : Type
   [vertexFintype : Fintype Vertex]
   [vertexDecidableEq : DecidableEq Vertex]
+  /-- The `faces` declaration. -/
   faces : Finset (Finset Vertex)
   faces_card : ∀ t ∈ faces, t.card = 3
 
@@ -477,12 +479,12 @@ theorem continuous_edgePath (e : K.Edge) : Continuous (K.edgePath e) := by
   exact (AffineMap.lineMap (k := ℝ) (K.edgeFirstPoint e).1
     (K.edgeSecondPoint e).1).continuous_of_finiteDimensional.comp continuous_subtype_val
 
-@[simp] theorem edgePath_zero (e : K.Edge) :
+theorem edgePath_zero (e : K.Edge) :
     K.edgePath e ⟨0, by simp⟩ = K.edgeFirstPoint e := by
   apply Subtype.ext
   simp [edgePath, AffineMap.lineMap_apply_module]
 
-@[simp] theorem edgePath_one (e : K.Edge) :
+theorem edgePath_one (e : K.Edge) :
     K.edgePath e ⟨1, by simp⟩ = K.edgeSecondPoint e := by
   apply Subtype.ext
   simp [edgePath, AffineMap.lineMap_apply_module]
@@ -516,12 +518,12 @@ theorem injective_mappedEdgePath {h : K.realization → Plane} (hh : Function.In
     (e : K.Edge) : Function.Injective (K.mappedEdgePath h e) :=
   hh.comp (K.injective_edgePath e)
 
-@[simp] theorem mappedEdgePath_zero (h : K.realization → Plane) (e : K.Edge) :
+theorem mappedEdgePath_zero (h : K.realization → Plane) (e : K.Edge) :
     K.mappedEdgePath h e ⟨0, by simp⟩ = h (K.edgeFirstPoint e) := by
   change h (K.edgePath e ⟨0, by simp⟩) = _
   rw [K.edgePath_zero e]
 
-@[simp] theorem mappedEdgePath_one (h : K.realization → Plane) (e : K.Edge) :
+theorem mappedEdgePath_one (h : K.realization → Plane) (e : K.Edge) :
     K.mappedEdgePath h e ⟨1, by simp⟩ = h (K.edgeSecondPoint e) := by
   change h (K.edgePath e ⟨1, by simp⟩) = _
   rw [K.edgePath_one e]
@@ -745,7 +747,9 @@ theorem IsAffineOnFace.continuousOn {f : K.realization → Plane}
 /-- A faithful intrinsic subdivision.  The refined realization is homeomorphic to the original;
 the homeomorphism is affine on each refined face and carries that face into an old face. -/
 structure Subdivision where
+  /-- The `refined` declaration. -/
   refined : IntrinsicTwoComplex
+  /-- The `homeo` declaration. -/
   homeo : refined.realization ≃ₜ K.realization
   affineOnFace : ∀ t ∈ refined.faces,
     ∃ a : (refined.Vertex → ℝ) →ᵃ[ℝ] (K.Vertex → ℝ),
@@ -771,7 +775,6 @@ noncomputable def refl : K.Subdivision where
 
 @[simp] theorem refl_refined : (refl K).refined = K := rfl
 
-@[simp] theorem refl_homeo_apply (x : K.realization) : (refl K).homeo x = x := rfl
 
 /-- Faithful intrinsic subdivisions compose. -/
 noncomputable def trans {K : IntrinsicTwoComplex}
@@ -797,7 +800,7 @@ noncomputable def trans {K : IntrinsicTwoComplex}
 @[simp] theorem trans_refined (R : K.Subdivision) (Q : R.refined.Subdivision) :
     (R.trans Q).refined = Q.refined := rfl
 
-@[simp] theorem trans_homeo_apply (R : K.Subdivision) (Q : R.refined.Subdivision)
+theorem trans_homeo_apply (R : K.Subdivision) (Q : R.refined.Subdivision)
     (x : Q.refined.realization) :
     (R.trans Q).homeo x = R.homeo (Q.homeo x) := rfl
 
@@ -863,6 +866,7 @@ theorem barycentricMap_isPL (p : K.Vertex → Plane) :
 
 /-- A homeomorphism of canonical realizations that is intrinsically PL in both directions. -/
 structure PLHomeomorph (L : IntrinsicTwoComplex) where
+  /-- The `toHomeomorph` declaration. -/
   toHomeomorph : K.realization ≃ₜ L.realization
   isPL_to : K.IsPLMapTo (fun x => (toHomeomorph x).1)
   isPL_inv : L.IsPLMapTo (fun x => (toHomeomorph.symm x).1)

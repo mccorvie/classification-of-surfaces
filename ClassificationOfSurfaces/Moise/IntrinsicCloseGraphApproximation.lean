@@ -83,6 +83,7 @@ theorem replacementGraphOriginalMap_injOn :
 polygonal graph model; composing it with `graphReplacementMap` is the final intrinsic graph
 embedding. -/
 structure CloseGraphApproximation (ε : ℝ) where
+  /-- The `planeMap` declaration. -/
   planeMap : Plane → Plane
   isPLOnModel : IsPLOn
     (K.replacementGraphComplex

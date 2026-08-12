@@ -49,6 +49,7 @@ The default rule is simple containment in `U`.  A stricter local rule can be ins
 local instance, allowing the conforming adaptive fan construction to be reused for open-cover,
 oscillation, separation, and boundary-control requirements. -/
 class AdaptiveSafety (K : IntrinsicTwoComplex) (U : Set K.realization) where
+  /-- The `safe` declaration. -/
   safe : {n : ℕ} → K.LevelFace n → Prop
   carrier_subset : ∀ {n : ℕ} {t : K.LevelFace n}, safe t →
     K.levelFaceCarrier t ⊆ U
@@ -601,6 +602,7 @@ theorem dist_le_pow_of_mem_levelFaceCarrier {n : ℕ} (t : K.LevelFace n)
   obtain ⟨y', hy', rfl⟩ := hy
   exact K.iteratedMidpointSubdivision_meshLE n t.1 t.2 x' hx' y' hy'
 
+omit [AdaptiveSafety K U] in
 /-- If a child face meets a half-radius ball and its parent mesh is below that half-radius,
 then the parent is already safe. -/
 theorem parent_isSafe_of_inter_ball {n : ℕ} (t : K.LevelFace (n + 1))
@@ -624,6 +626,7 @@ theorem parent_isSafe_of_inter_ball {n : ℕ} (t : K.LevelFace (n + 1))
     _ < ε / 2 + ε / 2 := add_lt_add hmesh hzBall
     _ = ε := by ring
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 /-- Only finitely many adaptive faces occur below a fixed midpoint level. -/
 theorem finite_adaptiveFace_level_lt (N : ℕ) :
     {t : K.AdaptiveFace U | t.1 < N}.Finite := by
@@ -698,15 +701,18 @@ actual points. -/
 abbrev AdaptiveVertexOccurrence (t : K.AdaptiveFace U) :=
   {v // v ∈ t.2.1.1}
 
+/-- The `adaptiveVertexPoint` declaration. -/
 noncomputable def adaptiveVertexPoint (t : K.AdaptiveFace U)
     (v : K.AdaptiveVertexOccurrence U t) : K.realization :=
   K.levelFaceVertexPoint t.2.1 v
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 theorem adaptiveVertexPoint_mem_carrier (t : K.AdaptiveFace U)
     (v : K.AdaptiveVertexOccurrence U t) :
     K.adaptiveVertexPoint U t v ∈ K.adaptiveFaceCarrier U t :=
   K.levelFaceVertexPoint_mem_carrier t.2.1 v
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 theorem isCompact_adaptiveFaceCarrierInOpen (t : K.AdaptiveFace U) :
     IsCompact (K.adaptiveFaceCarrierInOpen U t) := by
   let e : {x // x ∈ K.adaptiveFaceCarrier U t} → U :=
@@ -812,6 +818,7 @@ theorem mem_boundaryVertices_iff_of_mem_adaptiveFaceCarrier_inter
     rw [← huv]
     exact K.adaptiveVertexPoint_mem_carrier U u.1 v
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 /-- Distinct first-safe tiles meet only in the relative boundary of each tile. -/
 theorem adaptiveFaceCarrier_inter_subset_relativeBoundaries
     {s t : K.AdaptiveFace U} (hst : s ≠ t) :
@@ -842,6 +849,7 @@ theorem levelFaceVertexPoint_not_mem_relInterior {n : ℕ} (t : K.LevelFace n)
   have hcoord := congrFun (congrArg Subtype.val hsource) w
   linarith [hx.2 w hwt]
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 theorem adaptiveVertexPoint_not_mem_relInterior (t : K.AdaptiveFace U)
     (v : K.AdaptiveVertexOccurrence U t) :
     K.adaptiveVertexPoint U t v ∉ K.adaptiveFaceRelInterior U t :=
@@ -1028,7 +1036,7 @@ def boundaryEdgeVertexLE (hU : IsOpen U) (t : K.AdaptiveFace U) (i : ZMod 3)
   K.levelFaceEdgeParameter t.2.1 i p.1 ≤
     K.levelFaceEdgeParameter t.2.1 i q.1
 
-noncomputable instance boundaryEdgeVertexLE_decidable (hU : IsOpen U)
+noncomputable instance boundaryEdgeVertexLEDecidable (hU : IsOpen U)
     (t : K.AdaptiveFace U) (i : ZMod 3) :
     DecidableRel (K.boundaryEdgeVertexLE U hU t i) :=
   fun p q ↦ inferInstanceAs (Decidable
@@ -1201,6 +1209,7 @@ theorem adaptiveEdgeSecondCorner_mem_boundaryEdgeVertices (hU : IsOpen U)
       rw [(K.safeSubdivision t.1).refined.faceEdge_val]
       simp)
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 theorem adaptiveEdgeFirstCorner_ne_second (t : K.AdaptiveFace U) (i : ZMod 3) :
     K.adaptiveEdgeFirstCorner U t i ≠ K.adaptiveEdgeSecondCorner U t i := by
   intro h
@@ -1234,6 +1243,7 @@ theorem two_le_boundaryEdgeVertexList_length (hU : IsOpen U)
     simp only [List.mem_toFinset, K.mem_boundaryEdgeVertexList_iff U hU t i]]
   exact K.two_le_boundaryEdgeVertices_card U hU t i
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 @[simp] theorem levelFaceEdgeParameter_adaptiveEdgeFirstCorner
     (t : K.AdaptiveFace U) (i : ZMod 3) :
     K.levelFaceEdgeParameter t.2.1 i
@@ -1241,6 +1251,7 @@ theorem two_le_boundaryEdgeVertexList_length (hU : IsOpen U)
   simp [levelFaceEdgeParameter, adaptiveEdgeFirstCorner, levelFaceVertexPoint,
     (K.safeSubdivision t.1).refined.faceVertex_ne_next t.2.1 i]
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 @[simp] theorem levelFaceEdgeParameter_adaptiveEdgeSecondCorner
     (t : K.AdaptiveFace U) (i : ZMod 3) :
     K.levelFaceEdgeParameter t.2.1 i
@@ -1481,6 +1492,7 @@ noncomputable def adaptiveFaceCenter (t : K.AdaptiveFace U) : K.realization :=
     ((K.safeSubdivision t.1).refined.faceStandardMap t.2.1
       ((K.safeSubdivision t.1).refined.faceCenterSimplex t.2.1))
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 theorem adaptiveFaceCenter_mem_relInterior (t : K.AdaptiveFace U) :
     K.adaptiveFaceCenter U t ∈ K.adaptiveFaceRelInterior U t := by
   refine ⟨(K.safeSubdivision t.1).refined.faceStandardMap t.2.1
@@ -1494,6 +1506,7 @@ theorem adaptiveFaceCenter_mem_relInterior (t : K.AdaptiveFace U) :
       extendFaceCoordinates_of_mem t.2.1.1 _ hv]
     norm_num
 
+omit [AdaptiveSafety.IsAdmissible K U] in
 theorem adaptiveFaceCenter_mem_carrier (t : K.AdaptiveFace U) :
     K.adaptiveFaceCenter U t ∈ K.adaptiveFaceCarrier U t :=
   K.levelFaceRelInterior_subset_carrier t.2.1
@@ -1717,6 +1730,7 @@ theorem mem_adaptiveFanFacesOver_iff (hU : IsOpen U)
     apply Finset.mem_map.mpr
     exact ⟨f.2, by simp, rfl⟩
 
+/-- The `adaptiveFanFaceVertices` declaration. -/
 noncomputable def adaptiveFanFaceVertices (hU : IsOpen U)
     (f : K.AdaptiveFanFace U hU) : Finset K.realization :=
   {K.adaptiveFaceCenter U f.1,

@@ -197,7 +197,7 @@ theorem PolygonalCircle.edgeSegment_inter_eq_shared_vertices
   · subst j
     have hfin :
         ({i, i + 1} : Finset (ZMod J.n)) ∩ {i + 1, i + 1 + 1} = {i + 1} := by
-      convert hadjacent i using 1 ; ring
+      convert hadjacent i using 1; ring
     change J.edgeSegment i ∩ J.edgeSegment (i + 1) = _
     rw [hfin, show convexHull ℝ (J.vertex '' (({i + 1} :
       Finset (ZMod J.n)) : Set (ZMod J.n))) = {J.vertex (i + 1)} by simp]
@@ -209,7 +209,7 @@ theorem PolygonalCircle.edgeSegment_inter_eq_shared_vertices
     have hfin :
         ({j + 1, j + 1 + 1} : Finset (ZMod J.n)) ∩ {j, j + 1} = {j + 1} := by
       rw [Finset.inter_comm]
-      convert hadjacent j using 1 ; ring
+      convert hadjacent j using 1; ring
     rw [hprev]
     change J.edgeSegment (j + 1) ∩ J.edgeSegment j = _
     rw [hfin, show convexHull ℝ (J.vertex '' (({j + 1} :
@@ -2714,7 +2714,7 @@ theorem TriangleMesh.exists_supported_polygonalDisk_move_of_oneEdgeFree
     J'.eq_closedRegion_of_isCompact_frontier_eq
       (M.eraseTriangle T.1).toPlaneComplex.isCompact_support hnewFrontier hinterior
   exact ⟨g, J',
-    transportedThinKiteHomeomorph_finitePLOn E δ hδ M.toPlaneComplex
+    transportedThinKiteHomeomorphFinitePLOn E δ hδ M.toPlaneComplex
       M.toPlaneComplex_isPure2,
     hfixU, hfrontier, hremaining⟩
 
@@ -2902,7 +2902,7 @@ theorem TriangleMesh.exists_supported_polygonalDisk_move_of_twoEdgeFree
     rw [← hpush, Set.image_image]
     simp [pull]
   exact ⟨pull, J',
-    transportedThinKiteHomeomorph_symm_finitePLOn E δ hδ M.toPlaneComplex
+    transportedThinKiteHomeomorphSymmFinitePLOn E δ hδ M.toPlaneComplex
       M.toPlaneComplex_isPure2,
     hpullFix, hpull, hremaining⟩
 

@@ -170,14 +170,12 @@ def twoMonogonReverseBoundaryPairing : twoMonogonSphere.BoundaryPairing where
   direction := .opposite
   compatible := by simp [SurfaceCellComplex.SignedDart.flip]
 
-@[simp]
 theorem twoMonogonBoundaryPairing_mem :
     twoMonogonBoundaryPairing.identification ∈
       twoMonogonSphere.polygonalIdentifications
         twoMonogonSphere_isSurfaceValid :=
   pairing_identification_mem _ _
 
-@[simp]
 theorem twoMonogonReverseBoundaryPairing_mem :
     twoMonogonReverseBoundaryPairing.identification ∈
       twoMonogonSphere.polygonalIdentifications
