@@ -29,12 +29,19 @@ The generated Lean Eval payloads include those new modules. After any source edi
 Lean Pool forbids `set_option`, and also forbids moving heartbeat overrides into the Lake
 configuration. One source override remains:
 
-1. `ClassificationOfSurfaces/Moise/ChartInduction.lean`, around line 34:
+1. `ClassificationOfSurfaces/Moise/ChartInduction.lean`, around line 255:
    `MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening` needs
-   `maxHeartbeats 2500000`.
+   `maxHeartbeats 900000`.
 
 Treat this as a proof-design task, not a formatting task. The proof deterministically times out at
 Lean's default 200,000-heartbeat budget when the override is simply removed.
+
+The first chart-weld refactor reduced the verified ceiling from 2,500,000 to 900,000 heartbeats.
+Reusable declarations now handle simplex-vertex evaluation, repeated mapped-finset membership,
+the fan coordinate relabeling chain, and the injective amalgamation of old and local target
+vertices. The full file passes with `-DmaxHeartbeats=900000` and fails with
+`-DmaxHeartbeats=800000`. With the source override removed, the first default-budget failure is in
+`localFanMixedFaceMap_eq_iff`, while constructing the positive-base-weight case.
 
 ### Resolved: `FiniteCyclicDerivedRewrites`
 
@@ -52,6 +59,11 @@ into named theorem/lemma declarations with compact interfaces: chart replacement
 subdivision, old/new embedding construction, boundary regularity, and final coverage. Avoid merely
 moving tactic blocks into definitions: Lean Pool's proof-size checker ends a proof block only at the
 next `theorem` or `lemma`, and the heartbeat problem requires reducing elaboration work as well.
+
+The next useful boundary is `localFanMixedFaceMap_eq_iff`: package the local face, marked fan face,
+and their shared edge data into a compact compatibility certificate, then prove its positive-weight
+and endpoint cases as separate top-level lemmas. After that, split the final common-coordinate
+agreement phase beginning with `fanFace_oldPoint_mem_selected_of_common`.
 
 ## Outstanding blocker 2: proofs over 200 code lines
 
@@ -77,7 +89,7 @@ count too. At this checkpoint it reports 28 oversized blocks:
 | `FiniteCyclicWordReductionCore.lean` | 3902 | 250 |
 | `FiniteCyclicWordReductionCore.lean` | 4459 | 254 |
 | `Moise/AdaptiveFanComplex.lean` | 2071 | 274 |
-| `Moise/ChartInduction.lean` | 52 | 4709 |
+| `Moise/ChartInduction.lean` | 257 | about 4500 |
 | `Moise/ChartInductionCore.lean` | 1685 | 219 |
 | `Moise/ChartInductionCore.lean` | 5306 | 387 |
 | `Moise/ChartInductionCore.lean` | 6391 | 287 |

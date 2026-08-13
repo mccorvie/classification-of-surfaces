@@ -29,10 +29,231 @@ variable [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
 open PartialTriangulation.PolygonalReplacementSourceAtlas
 open PartialTriangulation.RelativeSynchronizedTarget
 
--- This large assembly includes the boundary-regular subdivision certificate as well as the
--- crossing weld; keep one explicit cumulative budget for the whole construction.
-set_option maxHeartbeats 2500000 in
--- The proof assembles the certified straightening, subdivision, and weld in one dependent term.
+private theorem extendFaceCoordinates_vertex {V : Type*} [DecidableEq V]
+    (F : Finset V) (v : {v // v ∈ F}) :
+    extendFaceCoordinates F (stdSimplex.vertex v) = Pi.single v.1 1 := by
+  funext w
+  by_cases hwv : w = v.1
+  · subst w
+    simp [extendFaceCoordinates, v.2]
+  · by_cases hw : w ∈ F
+    · have hsub : (⟨w, hw⟩ : {w // w ∈ F}) ≠ v :=
+        fun h ↦ hwv (congrArg Subtype.val h)
+      simp [extendFaceCoordinates, hw, hwv, hsub]
+    · simp [extendFaceCoordinates, hw, hwv]
+
+private theorem barycentricVertex_sum {V K : Type*} [Fintype V] [DecidableEq V]
+    (F : Finset V) (v : {v // v ∈ F}) (point : V → K → ℝ) :
+    (fun k ↦ ∑ w : V, extendFaceCoordinates F (stdSimplex.vertex v) w * point w k) =
+      point v.1 := by
+  rw [extendFaceCoordinates_vertex]
+  funext k
+  rw [Finset.sum_eq_single v.1]
+  · simp
+  · intro w _ hw
+    simp [hw]
+  · simp
+
+private theorem mem_map_univ {V W : Type*} [Fintype V]
+    (e : V ↪ W) (v : V) : e v ∈ (Finset.univ : Finset V).map e :=
+  Finset.mem_map.mpr ⟨v, Finset.mem_univ v, rfl⟩
+
+private theorem mem_finset_map {V W : Type*}
+    (e : V ↪ W) (F : Finset V) {v : V} (hv : v ∈ F) : e v ∈ F.map e :=
+  Finset.mem_map.mpr ⟨v, hv, rfl⟩
+
+private theorem fanVertexEmbedding_mem_globalFanFaceVertices
+    {K : IntrinsicTwoComplex} (M : K.EdgeMarking) (f : M.FanFace)
+    (v : {p // p ∈ M.fanFaceVertices f}) :
+    M.fanVertexEmbedding f v ∈ M.globalFanFaceVertices f :=
+  (M.mem_globalFanFaceVertices_iff f _).mpr v.2
+
+private theorem fanFirstVertexEmbedding_mem_globalFanFaceVertices
+    {K : IntrinsicTwoComplex} (M : K.EdgeMarking) (f : M.FanFace) :
+    M.fanVertexEmbedding f (M.fanFirstVertex f) ∈ M.globalFanFaceVertices f :=
+  fanVertexEmbedding_mem_globalFanFaceVertices M f (M.fanFirstVertex f)
+
+private theorem fanSecondVertexEmbedding_mem_globalFanFaceVertices
+    {K : IntrinsicTwoComplex} (M : K.EdgeMarking) (f : M.FanFace) :
+    M.fanVertexEmbedding f (M.fanSecondVertex f) ∈ M.globalFanFaceVertices f :=
+  fanVertexEmbedding_mem_globalFanFaceVertices M f (M.fanSecondVertex f)
+
+private theorem fanRelabel_relabelFace_relabelUniv_apply
+    {K : IntrinsicTwoComplex} (M : K.EdgeMarking) (f : M.FanFace)
+    {Old Used : Type*}
+    (fanToOld : M.FanVertex ↪ Old)
+    (oldToUsed :
+      {v // v ∈ (M.globalFanFaceVertices f).map fanToOld} ↪ Used)
+    (x : stdSimplex ℝ
+      {v // v ∈ (Finset.univ : Finset
+        {v // v ∈ (M.globalFanFaceVertices f).map fanToOld}).map oldToUsed})
+    (p : {p // p ∈ M.fanFaceVertices f}) :
+    (M.fanRelabelSimplex f
+      (relabelFaceSimplex fanToOld (M.globalFanFaceVertices f)
+        (relabelUnivSimplex oldToUsed x))) p =
+      x ⟨oldToUsed
+          ⟨fanToOld (M.fanVertexEmbedding f p),
+            mem_finset_map fanToOld _
+              (fanVertexEmbedding_mem_globalFanFaceVertices M f p)⟩,
+        mem_map_univ oldToUsed _⟩ := by
+  classical
+  let gp := M.fanVertexEmbedding f p
+  have hgp : gp ∈ M.globalFanFaceVertices f :=
+    fanVertexEmbedding_mem_globalFanFaceVertices M f p
+  let op : {v // v ∈ (M.globalFanFaceVertices f).map fanToOld} :=
+    ⟨fanToOld gp, mem_finset_map fanToOld _ hgp⟩
+  let uv := oldToUsed op
+  have huv : uv ∈ (Finset.univ : Finset
+      {v // v ∈ (M.globalFanFaceVertices f).map fanToOld}).map oldToUsed :=
+    mem_map_univ oldToUsed op
+  let wv : {v // v ∈ (Finset.univ : Finset
+      {v // v ∈ (M.globalFanFaceVertices f).map fanToOld}).map oldToUsed} :=
+    ⟨uv, huv⟩
+  calc
+    (M.fanRelabelSimplex f
+        (relabelFaceSimplex fanToOld (M.globalFanFaceVertices f)
+          (relabelUnivSimplex oldToUsed x))) p =
+        extendFaceCoordinates (M.fanFaceVertices f)
+          (M.fanRelabelSimplex f
+            (relabelFaceSimplex fanToOld (M.globalFanFaceVertices f)
+              (relabelUnivSimplex oldToUsed x))) gp.1 := by
+      change _ = extendFaceCoordinates (M.fanFaceVertices f) _ p.1
+      rw [extendFaceCoordinates_of_mem _ _ p.2]
+    _ = extendFaceCoordinates (M.globalFanFaceVertices f)
+          (relabelFaceSimplex fanToOld (M.globalFanFaceVertices f)
+            (relabelUnivSimplex oldToUsed x)) gp :=
+      M.fanRelabel_extended_apply f _ gp
+    _ = extendFaceCoordinates
+          ((M.globalFanFaceVertices f).map fanToOld)
+          (relabelUnivSimplex oldToUsed x) (fanToOld gp) :=
+      relabelFaceSimplex_extended_apply fanToOld
+        (M.globalFanFaceVertices f) _ gp
+    _ = (relabelUnivSimplex oldToUsed x) op := by
+      rw [extendFaceCoordinates_of_mem _ _ op.2]
+    _ = extendFaceCoordinates
+          ((Finset.univ : Finset
+            {v // v ∈ (M.globalFanFaceVertices f).map fanToOld}).map oldToUsed)
+          x uv :=
+      relabelUnivSimplex_apply oldToUsed x op
+    _ = x wv := by
+      rw [extendFaceCoordinates_of_mem _ _ huv]
+    _ = _ := rfl
+
+/-- The vertices of an old complex which are not identified with a local target vertex. -/
+private abbrev OldVertexComplement {Local Old : Type*} (localToOld : Local ↪ Old) :=
+  {v : Old // ¬ ∃ u : Local, localToOld u = v}
+
+/-- A common vertex type obtained by replacing the local part of `Old` by `Target`. -/
+private abbrev AmalgamatedVertex {Local Old : Type*} (localToOld : Local ↪ Old)
+    (Target : Type*) :=
+  Sum (OldVertexComplement localToOld) Target
+
+private noncomputable def oldToAmalgamatedFun {Local Old Target : Type*}
+    (localToOld : Local ↪ Old) (localToTarget : Local ↪ Target) :
+    Old → AmalgamatedVertex localToOld Target := by
+  classical
+  exact fun v ↦ if hv : ∃ u : Local, localToOld u = v then
+      Sum.inr (localToTarget (Classical.choose hv))
+    else
+      Sum.inl ⟨v, hv⟩
+
+private theorem oldToAmalgamatedFun_injective {Local Old Target : Type*}
+    (localToOld : Local ↪ Old) (localToTarget : Local ↪ Target) :
+    Function.Injective (oldToAmalgamatedFun localToOld localToTarget) := by
+  intro v w hvw
+  by_cases hv : ∃ u : Local, localToOld u = v
+  · by_cases hw : ∃ u : Local, localToOld u = w
+    · have htarget :
+          localToTarget (Classical.choose hv) =
+            localToTarget (Classical.choose hw) := by
+        have hs :
+            (Sum.inr (localToTarget (Classical.choose hv)) :
+                AmalgamatedVertex localToOld Target) =
+              Sum.inr (localToTarget (Classical.choose hw)) := by
+          simpa only [oldToAmalgamatedFun, dif_pos hv, dif_pos hw] using hvw
+        exact Sum.inr_injective (show
+          (Sum.inr (localToTarget (Classical.choose hv)) :
+              OldVertexComplement localToOld ⊕ Target) =
+            Sum.inr (localToTarget (Classical.choose hw)) from
+          hs)
+      have hlocal : Classical.choose hv = Classical.choose hw :=
+        localToTarget.injective htarget
+      calc
+        v = localToOld (Classical.choose hv) := (Classical.choose_spec hv).symm
+        _ = localToOld (Classical.choose hw) := congrArg localToOld hlocal
+        _ = w := Classical.choose_spec hw
+    · exfalso
+      simp only [oldToAmalgamatedFun, dif_pos hv, dif_neg hw, reduceCtorEq] at hvw
+  · by_cases hw : ∃ u : Local, localToOld u = w
+    · exfalso
+      simp only [oldToAmalgamatedFun, dif_neg hv, dif_pos hw, reduceCtorEq] at hvw
+    · have hextra :
+          (⟨v, hv⟩ : OldVertexComplement localToOld) = ⟨w, hw⟩ := by
+        have hs :
+            (Sum.inl (⟨v, hv⟩ : OldVertexComplement localToOld) :
+                AmalgamatedVertex localToOld Target) =
+              Sum.inl ⟨w, hw⟩ := by
+          simpa only [oldToAmalgamatedFun, dif_neg hv, dif_neg hw] using hvw
+        exact Sum.inl_injective (show
+          (Sum.inl (⟨v, hv⟩ : OldVertexComplement localToOld) :
+              OldVertexComplement localToOld ⊕ Target) =
+            Sum.inl ⟨w, hw⟩ from hs)
+      exact congrArg Subtype.val hextra
+
+private noncomputable def oldToAmalgamated {Local Old Target : Type*}
+    (localToOld : Local ↪ Old) (localToTarget : Local ↪ Target) :
+    Old ↪ AmalgamatedVertex localToOld Target :=
+  ⟨oldToAmalgamatedFun localToOld localToTarget,
+    oldToAmalgamatedFun_injective localToOld localToTarget⟩
+
+private def targetToAmalgamated {Local Old Target : Type*}
+    (localToOld : Local ↪ Old) : Target ↪ AmalgamatedVertex localToOld Target :=
+  ⟨Sum.inr, Sum.inr_injective⟩
+
+private theorem oldToAmalgamated_local {Local Old Target : Type*}
+    (localToOld : Local ↪ Old) (localToTarget : Local ↪ Target) (u : Local) :
+    oldToAmalgamated localToOld localToTarget (localToOld u) =
+      targetToAmalgamated localToOld (localToTarget u) := by
+  have hlocal : ∃ q, localToOld q = localToOld u := ⟨u, rfl⟩
+  change oldToAmalgamatedFun localToOld localToTarget (localToOld u) =
+    Sum.inr (localToTarget u)
+  rw [show oldToAmalgamatedFun localToOld localToTarget (localToOld u) =
+      Sum.inr (localToTarget (Classical.choose hlocal)) by
+    simp only [oldToAmalgamatedFun, dif_pos hlocal]]
+  congr 1
+  exact congrArg localToTarget
+    (localToOld.injective (Classical.choose_spec hlocal))
+
+/-- Equality of coordinates on an amalgamated vertex type forces every positively weighted old
+vertex to come from the local part. -/
+private theorem exists_local_of_positive_of_amalgamated_coordinates
+    {Local Old Target : Type*}
+    (localToOld : Local ↪ Old) (localToTarget : Local ↪ Target)
+    (oldWeight : Old → ℝ)
+    (oldCoordinates targetCoordinates :
+      AmalgamatedVertex localToOld Target → ℝ)
+    (hOld : ∀ v, oldCoordinates
+      (oldToAmalgamated localToOld localToTarget v) = oldWeight v)
+    (hTarget : ∀ v : OldVertexComplement localToOld,
+      targetCoordinates (Sum.inl v) = 0)
+    (hcoords : oldCoordinates = targetCoordinates)
+    (v : Old) (hv : 0 < oldWeight v) :
+    ∃ u : Local, localToOld u = v := by
+  by_contra hlocal
+  have hvCommon :
+      oldToAmalgamated localToOld localToTarget v =
+        Sum.inl ⟨v, hlocal⟩ := by
+    change oldToAmalgamatedFun localToOld localToTarget v =
+      Sum.inl ⟨v, hlocal⟩
+    simp only [oldToAmalgamatedFun, dif_neg hlocal]
+  have hzero : oldWeight v = 0 := by
+    rw [← hOld v, hvCommon, hcoords]
+    exact hTarget ⟨v, hlocal⟩
+  linarith
+
+set_option maxHeartbeats 900000 in
+-- Generic coordinate and vertex-amalgamation certificates reduce this from the former
+-- 2,500,000-heartbeat budget; the remaining local/fan compatibility phase is still monolithic.
 /-- Shared implementation of the Moise crossing weld once the chart straightening is certified
 to preserve the ambient manifold-boundary stratum.
 
@@ -1392,8 +1613,7 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
         change localFaceOldVertexEmbedding t v ∈
           (Finset.univ : Finset {v // v ∈ t.1}).map
             (localFaceOldVertexEmbedding t)
-        exact Finset.mem_map.mpr
-          ⟨v, Finset.mem_univ v, rfl⟩
+        exact mem_map_univ (localFaceOldVertexEmbedding t) v
       rw [hemb,
         extendFaceCoordinates_of_mem _ _ hmem,
         extendFaceCoordinates_of_mem _ _ hut]
@@ -1633,30 +1853,16 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       (v : {v // v ∈ mixedOldFaceVertices f}) :
       extendFaceCoordinates (mixedOldFaceVertices f)
           (stdSimplex.vertex v) =
-        Pi.single v.1 1 := by
-    funext w
-    by_cases hwv : w = v.1
-    · subst w
-      simp [extendFaceCoordinates, v.2]
-    · by_cases hw : w ∈ mixedOldFaceVertices f
-      · have hsub :
-            (⟨w, hw⟩ : {w // w ∈ mixedOldFaceVertices f}) ≠ v := by
-          exact fun h ↦ hwv (congrArg Subtype.val h)
-        simp [extendFaceCoordinates, hw, hwv, hsub]
-      · simp [extendFaceCoordinates, hw, hwv]
+        Pi.single v.1 1 :=
+    extendFaceCoordinates_vertex (mixedOldFaceVertices f) v
   have mixedOldFaceMap_vertex
       (f : MixedOldFace)
       (v : {v // v ∈ mixedOldFaceVertices f}) :
       mixedOldFaceMap f (stdSimplex.vertex v) = v.1.1 := by
     apply Subtype.ext
-    rw [mixedOldFaceMap_val,
-      extend_mixedOldFace_vertex]
-    funext k
-    rw [Finset.sum_eq_single v.1]
-    · simp
-    · intro w _ hw
-      simp [hw]
-    · simp
+    rw [mixedOldFaceMap_val]
+    exact barycentricVertex_sum
+      (mixedOldFaceVertices f) v (fun w k ↦ w.1.1 k)
   have mixedLocalExtended_eq_single_of_map_eq_localVertex
       (t : localSourceComplex.Face)
       (x : stdSimplex ℝ
@@ -1683,8 +1889,8 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       change localOldVertexEmbedding u ∈
         (Finset.univ : Finset {v // v ∈ tu.1}).map
           (localFaceOldVertexEmbedding tu)
-      exact Finset.mem_map.mpr
-        ⟨uv, Finset.mem_univ uv, huv⟩
+      rw [← huv]
+      exact mem_map_univ (localFaceOldVertexEmbedding tu) uv
     let w :
         {v // v ∈ mixedOldFaceVertices (Sum.inl tu)} :=
       ⟨localOldVertexEmbedding u, huMem⟩
@@ -1721,14 +1927,14 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       boundaryMarking.fanVertexEmbedding f.1 v
     have hgvMem :
         gv ∈ boundaryMarking.globalFanFaceVertices f.1 :=
-      (boundaryMarking.mem_globalFanFaceVertices_iff f.1 gv).mpr v.2
+      fanVertexEmbedding_mem_globalFanFaceVertices boundaryMarking f.1 v
     have hOldMem :
         fanOldVertexEmbedding gv ∈
           mixedOldFaceVertices (Sum.inr f) := by
       change fanOldVertexEmbedding gv ∈
         (boundaryMarking.globalFanFaceVertices f.1).map
           fanOldVertexEmbedding
-      exact Finset.mem_map.mpr ⟨gv, hgvMem, rfl⟩
+      exact mem_finset_map fanOldVertexEmbedding _ hgvMem
     let w :
         {v // v ∈ mixedOldFaceVertices (Sum.inr f)} :=
       ⟨fanOldVertexEmbedding gv, hOldMem⟩
@@ -2591,16 +2797,16 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
           change localOldVertexEmbedding u₀ ∈
             (Finset.univ : Finset {v // v ∈ t.1}).map
               (localFaceOldVertexEmbedding t)
-          exact Finset.mem_map.mpr
-            ⟨v₀t, Finset.mem_univ v₀t, hv₀Local⟩
+          rw [← hv₀Local]
+          exact mem_map_univ (localFaceOldVertexEmbedding t) v₀t
         have hw₁LocalMem :
             localOldVertexEmbedding u₁ ∈
               mixedOldFaceVertices (Sum.inl t) := by
           change localOldVertexEmbedding u₁ ∈
             (Finset.univ : Finset {v // v ∈ t.1}).map
               (localFaceOldVertexEmbedding t)
-          exact Finset.mem_map.mpr
-            ⟨v₁t, Finset.mem_univ v₁t, hv₁Local⟩
+          rw [← hv₁Local]
+          exact mem_map_univ (localFaceOldVertexEmbedding t) v₁t
         let w₀Local :
             {v // v ∈ mixedOldFaceVertices (Sum.inl t)} :=
           ⟨localOldVertexEmbedding u₀, hw₀LocalMem⟩
@@ -2613,40 +2819,40 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
         let gv₁ : boundaryMarking.FanVertex :=
           boundaryMarking.fanVertexEmbedding f.1
             (boundaryMarking.fanSecondVertex f.1)
+        have hw₀Raw : localOldVertexEmbedding u₀ = fanOldVertexEmbedding gv₀ :=
+          Subtype.ext hu₀
+        have hw₁Raw : localOldVertexEmbedding u₁ = fanOldVertexEmbedding gv₁ :=
+          Subtype.ext hu₁
         have hgv₀Mem :
             gv₀ ∈ boundaryMarking.globalFanFaceVertices f.1 :=
-          (boundaryMarking.mem_globalFanFaceVertices_iff f.1 gv₀).mpr
-            (boundaryMarking.fanFirstVertex f.1).2
+          fanFirstVertexEmbedding_mem_globalFanFaceVertices boundaryMarking f.1
         have hgv₁Mem :
             gv₁ ∈ boundaryMarking.globalFanFaceVertices f.1 :=
-          (boundaryMarking.mem_globalFanFaceVertices_iff f.1 gv₁).mpr
-            (boundaryMarking.fanSecondVertex f.1).2
+          fanSecondVertexEmbedding_mem_globalFanFaceVertices boundaryMarking f.1
         have hw₀FanMem :
             fanOldVertexEmbedding gv₀ ∈
               mixedOldFaceVertices (Sum.inr f) := by
           change fanOldVertexEmbedding gv₀ ∈
             (boundaryMarking.globalFanFaceVertices f.1).map
               fanOldVertexEmbedding
-          exact Finset.mem_map.mpr ⟨gv₀, hgv₀Mem, rfl⟩
+          exact mem_finset_map fanOldVertexEmbedding _ hgv₀Mem
         have hw₁FanMem :
             fanOldVertexEmbedding gv₁ ∈
               mixedOldFaceVertices (Sum.inr f) := by
           change fanOldVertexEmbedding gv₁ ∈
             (boundaryMarking.globalFanFaceVertices f.1).map
               fanOldVertexEmbedding
-          exact Finset.mem_map.mpr ⟨gv₁, hgv₁Mem, rfl⟩
+          exact mem_finset_map fanOldVertexEmbedding _ hgv₁Mem
         let w₀Fan :
             {v // v ∈ mixedOldFaceVertices (Sum.inr f)} :=
           ⟨fanOldVertexEmbedding gv₀, hw₀FanMem⟩
         let w₁Fan :
             {v // v ∈ mixedOldFaceVertices (Sum.inr f)} :=
           ⟨fanOldVertexEmbedding gv₁, hw₁FanMem⟩
-        have hw₀Eq : w₀Local.1 = w₀Fan.1 := by
-          apply Subtype.ext
-          exact hu₀
-        have hw₁Eq : w₁Local.1 = w₁Fan.1 := by
-          apply Subtype.ext
-          exact hu₁
+        have hw₀Eq : w₀Local.1 = w₀Fan.1 :=
+          hw₀Raw
+        have hw₁Eq : w₁Local.1 = w₁Fan.1 :=
+          hw₁Raw
         let β := y₀ (boundaryMarking.fanSecondVertex f.1)
         have hβIcc : β ∈ Set.Icc (0 : ℝ) 1 :=
           ⟨y₀.2.1 _, stdSimplex.le_one y₀ _⟩
@@ -2962,8 +3168,7 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
           (Finset.univ :
             Finset {v // v ∈ mixedOldFaceVertices f}).map
               (mixedFaceUsedEmbedding f)
-        exact Finset.mem_map.mpr
-          ⟨v, Finset.mem_univ v, rfl⟩
+        exact mem_map_univ (mixedFaceUsedEmbedding f) v
       have hpMem : p ∈ mixedUsedFaceVertices f := by
         rw [← hemb]
         exact hmem
@@ -2986,7 +3191,7 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
             (Finset.univ :
               Finset {q // q ∈ mixedOldFaceVertices f}).map
                 (mixedFaceUsedEmbedding f) :=
-        Finset.mem_map.mpr ⟨v, Finset.mem_univ v, rfl⟩
+        mem_map_univ (mixedFaceUsedEmbedding f) v
       have hrel :=
         (relabelUnivSimplex_apply
           (mixedFaceUsedEmbedding f) x v).symm
@@ -3093,8 +3298,7 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
             (Finset.univ :
               Finset {v // v ∈ mixedOldFaceVertices f}).map
                 (mixedFaceUsedEmbedding f)
-          exact Finset.mem_map.mpr
-            ⟨⟨v.1, hvf⟩, Finset.mem_univ _, rfl⟩
+          exact mem_map_univ (mixedFaceUsedEmbedding f) ⟨v.1, hvf⟩
         refine ⟨f, ?_⟩
         convert hvMem using 1
         apply Subtype.ext
@@ -3388,80 +3592,24 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
         intro u v huv
         apply localOldVertexEmbedding.injective
         exact congrArg Subtype.val huv }
-  let OldExtra :=
-    {v : UsedOldVertex //
-      ¬ ∃ u : localSourceComplex.UsedVertex,
-        localUsedOldEmbedding u = v}
-  let CommonVertex := Sum OldExtra localSourceComplex.Vertex
+  let localUsedVertexEmbedding :
+      localSourceComplex.UsedVertex ↪ localSourceComplex.Vertex :=
+    ⟨Subtype.val, Subtype.val_injective⟩
+  let OldExtra := OldVertexComplement localUsedOldEmbedding
+  let CommonVertex :=
+    AmalgamatedVertex localUsedOldEmbedding localSourceComplex.Vertex
   let oldToCommonFun : UsedOldVertex → CommonVertex :=
-    fun v ↦ if hv : ∃ u : localSourceComplex.UsedVertex,
-        localUsedOldEmbedding u = v then
-      Sum.inr (Classical.choose hv).1
-    else
-      Sum.inl ⟨v, hv⟩
-  have oldToCommonFun_injective :
-      Function.Injective oldToCommonFun := by
-    intro v w hvw
-    by_cases hv : ∃ u : localSourceComplex.UsedVertex,
-        localUsedOldEmbedding u = v
-    · by_cases hw : ∃ u : localSourceComplex.UsedVertex,
-          localUsedOldEmbedding u = w
-      · have hraw :
-            (Classical.choose hv).1 =
-              (Classical.choose hw).1 := by
-          have hs :
-              (Sum.inr (Classical.choose hv).1 :
-                  CommonVertex) =
-                Sum.inr (Classical.choose hw).1 := by
-            simpa only [oldToCommonFun, dif_pos hv,
-              dif_pos hw] using hvw
-          exact Sum.inr_injective hs
-        have hused :
-            Classical.choose hv = Classical.choose hw :=
-          Subtype.ext hraw
-        calc
-          v = localUsedOldEmbedding (Classical.choose hv) :=
-            (Classical.choose_spec hv).symm
-          _ = localUsedOldEmbedding (Classical.choose hw) :=
-            congrArg localUsedOldEmbedding hused
-          _ = w := Classical.choose_spec hw
-      · exfalso
-        simp only [oldToCommonFun, dif_pos hv,
-          dif_neg hw, reduceCtorEq] at hvw
-    · by_cases hw : ∃ u : localSourceComplex.UsedVertex,
-          localUsedOldEmbedding u = w
-      · exfalso
-        simp only [oldToCommonFun, dif_neg hv,
-          dif_pos hw, reduceCtorEq] at hvw
-      · have hextra :
-            (⟨v, hv⟩ : OldExtra) = ⟨w, hw⟩ := by
-          have hs :
-              (Sum.inl (⟨v, hv⟩ : OldExtra) :
-                  CommonVertex) =
-                Sum.inl ⟨w, hw⟩ := by
-            simpa only [oldToCommonFun, dif_neg hv,
-              dif_neg hw] using hvw
-          exact Sum.inl_injective hs
-        exact congrArg Subtype.val hextra
+    oldToAmalgamatedFun localUsedOldEmbedding localUsedVertexEmbedding
   let oldToCommon : UsedOldVertex ↪ CommonVertex :=
-    ⟨oldToCommonFun, oldToCommonFun_injective⟩
+    oldToAmalgamated localUsedOldEmbedding localUsedVertexEmbedding
   let targetToCommon : localSourceComplex.Vertex ↪ CommonVertex :=
-    ⟨Sum.inr, Sum.inr_injective⟩
+    targetToAmalgamated localUsedOldEmbedding
   have oldToCommon_local
       (u : localSourceComplex.UsedVertex) :
       oldToCommon (localUsedOldEmbedding u) =
-        targetToCommon u.1 := by
-    have hlocal :
-        ∃ q, localUsedOldEmbedding q =
-          localUsedOldEmbedding u := ⟨u, rfl⟩
-    change oldToCommonFun (localUsedOldEmbedding u) = Sum.inr u.1
-    rw [show oldToCommonFun (localUsedOldEmbedding u) =
-        Sum.inr (Classical.choose hlocal).1 by
-      simp only [oldToCommonFun, dif_pos hlocal]]
-    congr 1
-    exact congrArg Subtype.val
-      (localUsedOldEmbedding.injective
-        (Classical.choose_spec hlocal))
+        targetToCommon u.1 :=
+    oldToAmalgamated_local
+      localUsedOldEmbedding localUsedVertexEmbedding u
   letI : Fintype UsedOldVertex :=
     mixedOldComplex.compactIntrinsic.vertexFintype
   let compactVertexEquiv :
@@ -3886,7 +4034,8 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
             change oldToCommonFun v.1 = Sum.inl v
             rw [show oldToCommonFun v.1 =
                 Sum.inl ⟨v.1, v.2⟩ by
-              simp only [oldToCommonFun, dif_neg v.2]]
+              simp only [oldToCommonFun, oldToAmalgamatedFun,
+                dif_neg v.2]]
           rw [← hcompact,
             pushGeometricRealization_apply_embedding]
           change x.1 v.1 = _
@@ -3976,7 +4125,8 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
                     localUsedOldEmbedding u = vOld
               · exact hlocal
               · change oldToCommonFun vOld = Sum.inr a at hvOld
-                simp only [oldToCommonFun, dif_neg hlocal,
+                simp only [oldToCommonFun, oldToAmalgamatedFun,
+                  dif_neg hlocal,
                   reduceCtorEq] at hvOld
             obtain ⟨u, huv⟩ := hvLocal
             have hraw :
@@ -4149,14 +4299,14 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       boundaryMarking.fanVertexEmbedding f.1 fc
     have hgc :
         gc ∈ boundaryMarking.globalFanFaceVertices f.1 :=
-      (boundaryMarking.mem_globalFanFaceVertices_iff f.1 gc).mpr fc.2
+      fanVertexEmbedding_mem_globalFanFaceVertices boundaryMarking f.1 fc
     have hoc :
         fanOldVertexEmbedding gc ∈
           mixedOldFaceVertices (Sum.inr f) := by
       change fanOldVertexEmbedding gc ∈
         (boundaryMarking.globalFanFaceVertices f.1).map
           fanOldVertexEmbedding
-      exact Finset.mem_map.mpr ⟨gc, hgc, rfl⟩
+      exact mem_finset_map fanOldVertexEmbedding _ hgc
     let oc :
         {v // v ∈ mixedOldFaceVertices (Sum.inr f)} :=
       ⟨fanOldVertexEmbedding gc, hoc⟩
@@ -4168,7 +4318,7 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
         (Finset.univ :
           Finset {v // v ∈ mixedOldFaceVertices (Sum.inr f)}).map
             (mixedFaceUsedEmbedding (Sum.inr f))
-      exact Finset.mem_map.mpr ⟨oc, Finset.mem_univ oc, rfl⟩
+      exact mem_map_univ (mixedFaceUsedEmbedding (Sum.inr f)) oc
     let wc :
         {v // v ∈ mixedUsedFaceVertices (Sum.inr f)} :=
       ⟨uc, huc⟩
@@ -4182,7 +4332,8 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     have hucCommon :
         oldToCommon uc = Sum.inl ⟨uc, hnotLocal⟩ := by
       change oldToCommonFun uc = Sum.inl ⟨uc, hnotLocal⟩
-      simp only [oldToCommonFun, dif_neg hnotLocal]
+      simp only [oldToCommonFun, oldToAmalgamatedFun,
+        dif_neg hnotLocal]
     let vc :
         mixedOldComplex.compactIntrinsic.Vertex :=
       compactVertexEquiv.symm uc
@@ -4245,36 +4396,13 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
           {p // p ∈ boundaryMarking.fanFaceVertices f.1} :=
       boundaryMarking.fanRelabelSimplex f.1 xG
     have hcenter : x₀ fc = 0 := by
-      calc
-        x₀ fc =
-            extendFaceCoordinates
-              (boundaryMarking.fanFaceVertices f.1) x₀ gc.1 := by
-          change x₀ fc =
-            extendFaceCoordinates
-              (boundaryMarking.fanFaceVertices f.1) x₀ fc.1
-          rw [extendFaceCoordinates_of_mem _ _ fc.2]
-        _ =
-            extendFaceCoordinates
-              (boundaryMarking.globalFanFaceVertices f.1) xG gc :=
-          boundaryMarking.fanRelabel_extended_apply f.1 xG gc
-        _ =
-            extendFaceCoordinates
-              (mixedOldFaceVertices (Sum.inr f)) x₁
-                (fanOldVertexEmbedding gc) := by
-          exact
-            relabelFaceSimplex_extended_apply fanOldVertexEmbedding
-              (boundaryMarking.globalFanFaceVertices f.1) x₁ gc
-        _ = x₁ oc := by
-          rw [extendFaceCoordinates_of_mem _ _ hoc]
-        _ =
-            extendFaceCoordinates
-              (mixedUsedFaceVertices (Sum.inr f)) x₂ uc :=
-          relabelUnivSimplex_apply
-            (mixedFaceUsedEmbedding (Sum.inr f)) x₂ oc
-        _ = x₂ wc := by
-          rw [extendFaceCoordinates_of_mem _ _ huc]
-        _ = xb.1 vc := by rfl
-        _ = 0 := hxbCenter
+      have hweight : x₀ fc = x₂ wc := by
+        simpa only [x₀, xG, x₁, wc, uc, oc, gc,
+          mixedOldFaceVertices, mixedUsedFaceVertices] using
+          fanRelabel_relabelFace_relabelUniv_apply
+            boundaryMarking f.1 fanOldVertexEmbedding
+            (mixedFaceUsedEmbedding (Sum.inr f)) x₂ fc
+      exact hweight.trans hxbCenter
     rw [mixedOldComplex.compactEval_eq_faceMap
       (Sum.inr f) xb hxb]
     change boundaryMarking.fanFaceMap f.1 x₀ ∈
@@ -4301,48 +4429,27 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
       (hv : 0 < xb.1 (compactVertexEquiv.symm v)) :
       ∃ u : localSourceComplex.UsedVertex,
         localUsedOldEmbedding u = v := by
-    by_contra hlocal
-    have hvCommon :
-        oldCompactToCommon (compactVertexEquiv.symm v) =
-          Sum.inl ⟨v, hlocal⟩ := by
-      change
-        oldToCommon
-            (compactVertexEquiv (compactVertexEquiv.symm v)) =
-          Sum.inl ⟨v, hlocal⟩
-      rw [compactVertexEquiv.apply_symm_apply]
-      change oldToCommonFun v = Sum.inl ⟨v, hlocal⟩
-      simp only [oldToCommonFun, dif_neg hlocal]
-    have htargetZero :
-        (pushGeometricRealization targetToCommon
-          (PartialTriangulation.RelativeSynchronizedTarget.newMesh
-            J N lines).triangles yb).1 (Sum.inl ⟨v, hlocal⟩) = 0 := by
+    apply exists_local_of_positive_of_amalgamated_coordinates
+      localUsedOldEmbedding localUsedVertexEmbedding
+      (fun w ↦ xb.1 (compactVertexEquiv.symm w))
+      (pushGeometricRealization oldCompactToCommon
+        mixedOldComplex.compactIntrinsic.faces xb).1
+      (pushGeometricRealization targetToCommon
+        (PartialTriangulation.RelativeSynchronizedTarget.newMesh
+          J N lines).triangles yb).1
+    · intro w
+      rw [← pushGeometricRealization_apply_embedding
+        oldCompactToCommon mixedOldComplex.compactIntrinsic.faces
+        xb (compactVertexEquiv.symm w)]
+      congr 1
+    · intro w
       apply pushGeometricRealization_apply_of_notMem_range
       rintro ⟨a, ha⟩
       have hcontra :
-          (Sum.inr a : CommonVertex) = Sum.inl ⟨v, hlocal⟩ := ha
+          (Sum.inr a : CommonVertex) = Sum.inl w := ha
       simp at hcontra
-    have hzero :
-        xb.1 (compactVertexEquiv.symm v) = 0 := by
-      calc
-        xb.1 (compactVertexEquiv.symm v) =
-            (pushGeometricRealization oldCompactToCommon
-              mixedOldComplex.compactIntrinsic.faces xb).1
-                (oldCompactToCommon (compactVertexEquiv.symm v)) :=
-          (pushGeometricRealization_apply_embedding
-            oldCompactToCommon mixedOldComplex.compactIntrinsic.faces
-            xb (compactVertexEquiv.symm v)).symm
-        _ =
-            (pushGeometricRealization oldCompactToCommon
-              mixedOldComplex.compactIntrinsic.faces xb).1
-                (Sum.inl ⟨v, hlocal⟩) := by rw [hvCommon]
-        _ =
-            (pushGeometricRealization targetToCommon
-              (PartialTriangulation.RelativeSynchronizedTarget.newMesh
-                J N lines).triangles yb).1
-                (Sum.inl ⟨v, hlocal⟩) :=
-          congrFun hcoords (Sum.inl ⟨v, hlocal⟩)
-        _ = 0 := htargetZero
-    linarith
+    · exact hcoords
+    · exact hv
   have fanFace_oldPoint_mem_selected_of_common
       (f : OutsideFanFace)
       (xb : mixedOldComplex.compactIntrinsic.realization)
@@ -4404,14 +4511,14 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
         boundaryMarking.fanVertexEmbedding f.1 p
       have hgp :
           gp ∈ boundaryMarking.globalFanFaceVertices f.1 :=
-        (boundaryMarking.mem_globalFanFaceVertices_iff f.1 gp).mpr p.2
+        fanVertexEmbedding_mem_globalFanFaceVertices boundaryMarking f.1 p
       have hop :
           fanOldVertexEmbedding gp ∈
             mixedOldFaceVertices (Sum.inr f) := by
         change fanOldVertexEmbedding gp ∈
           (boundaryMarking.globalFanFaceVertices f.1).map
             fanOldVertexEmbedding
-        exact Finset.mem_map.mpr ⟨gp, hgp, rfl⟩
+        exact mem_finset_map fanOldVertexEmbedding _ hgp
       let op :
           {v // v ∈ mixedOldFaceVertices (Sum.inr f)} :=
         ⟨fanOldVertexEmbedding gp, hop⟩
@@ -4423,41 +4530,19 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
           (Finset.univ :
             Finset {v // v ∈ mixedOldFaceVertices (Sum.inr f)}).map
               (mixedFaceUsedEmbedding (Sum.inr f))
-        exact Finset.mem_map.mpr ⟨op, Finset.mem_univ op, rfl⟩
+        exact mem_map_univ (mixedFaceUsedEmbedding (Sum.inr f)) op
       let wv :
           {v // v ∈ mixedUsedFaceVertices (Sum.inr f)} :=
         ⟨uv, huv⟩
       let cv : mixedOldComplex.compactIntrinsic.Vertex :=
         compactVertexEquiv.symm uv
       have hweight : x₀ p = xb.1 cv := by
-        calc
-          x₀ p =
-              extendFaceCoordinates
-                (boundaryMarking.fanFaceVertices f.1) x₀ gp.1 := by
-            change x₀ p =
-              extendFaceCoordinates
-                (boundaryMarking.fanFaceVertices f.1) x₀ p.1
-            rw [extendFaceCoordinates_of_mem _ _ p.2]
-          _ =
-              extendFaceCoordinates
-                (boundaryMarking.globalFanFaceVertices f.1) xG gp :=
-            boundaryMarking.fanRelabel_extended_apply f.1 xG gp
-          _ =
-              extendFaceCoordinates
-                (mixedOldFaceVertices (Sum.inr f)) x₁
-                  (fanOldVertexEmbedding gp) :=
-            relabelFaceSimplex_extended_apply fanOldVertexEmbedding
-              (boundaryMarking.globalFanFaceVertices f.1) x₁ gp
-          _ = x₁ op := by
-            rw [extendFaceCoordinates_of_mem _ _ hop]
-          _ =
-              extendFaceCoordinates
-                (mixedUsedFaceVertices (Sum.inr f)) x₂ uv :=
-            relabelUnivSimplex_apply
-              (mixedFaceUsedEmbedding (Sum.inr f)) x₂ op
-          _ = x₂ wv := by
-            rw [extendFaceCoordinates_of_mem _ _ huv]
-          _ = xb.1 cv := by rfl
+        change x₀ p = x₂ wv
+        simpa only [x₀, xG, x₁, wv, uv, op, gp,
+          mixedOldFaceVertices, mixedUsedFaceVertices] using
+          fanRelabel_relabelFace_relabelUniv_apply
+            boundaryMarking f.1 fanOldVertexEmbedding
+            (mixedFaceUsedEmbedding (Sum.inr f)) x₂ p
       have hcv : 0 < xb.1 cv := by
         rw [← hweight]
         exact hp
