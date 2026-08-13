@@ -623,6 +623,42 @@ end Handle
 
 namespace HandleToCrosscaps
 
+-- A compact interface for one validity-preserving normalization rewrite.  Keeping validity
+-- transport inside the certificate prevents long chains from exposing every dependent witness.
+private structure RewriteCertificate (P Q : FiniteCyclicPresentation) : Prop where
+  target_isSurfaceValid : P.IsSurfaceValid → Q.IsSurfaceValid
+  normalizationEquivalent :
+    ∀ (validP : P.IsSurfaceValid) (validQ : Q.IsSurfaceValid),
+      NormalizationEquivalent ⟨P, validP⟩ ⟨Q, validQ⟩
+
+-- Composition chooses the intermediate validity witness once, behind the compact interface.
+private theorem RewriteCertificate.trans {P Q R : FiniteCyclicPresentation}
+    (hPQ : RewriteCertificate P Q) (hQR : RewriteCertificate Q R) :
+    RewriteCertificate P R where
+  target_isSurfaceValid validP := hQR.target_isSurfaceValid (hPQ.target_isSurfaceValid validP)
+  normalizationEquivalent validP validR := by
+    let validQ := hPQ.target_isSurfaceValid validP
+    exact (hPQ.normalizationEquivalent validP validQ).trans
+      (hQR.normalizationEquivalent validQ validR)
+
+-- Package the generic negative cross-cap rule without specializing its presentation expressions.
+private theorem negativeCrosscap_rewriteCertificate {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (haX : a ∉ X.map edgeOfDart) (haY : a ∉ Y.map edgeOfDart) :
+    RewriteCertificate (Crosscap.negativeSource a X Y) (Crosscap.negativeTarget a X Y) := by
+  constructor
+  · exact Crosscap.negativeTarget_isSurfaceValid a X Y
+  · exact Crosscap.negativeNormalizationEquivalent a X Y haX haY
+
+-- Package the generic positive cross-cap rule at the same compact interface.
+private theorem crosscap_rewriteCertificate {n : ℕ} (a : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (haX : a ∉ X.map edgeOfDart) (haY : a ∉ Y.map edgeOfDart) :
+    RewriteCertificate (Crosscap.source a X Y) (Crosscap.target a X Y) := by
+  constructor
+  · exact Crosscap.target_isSurfaceValid a X Y
+  · exact Crosscap.normalizationEquivalent a X Y haX haY
+
 /-- A crosscap followed by a handle, with arbitrary intervening words `X` and `Y`. -/
 @[reducible]
 def source {n : ℕ} (a b c : Fin n)
@@ -754,8 +790,62 @@ theorem target_boundary_isRotated_crosscaps {n : ℕ} (a b c : Fin n)
     List.reverse_nil, List.map_cons, List.map_nil, List.nil_append,
     List.cons_append, List.append_assoc]
 
-set_option maxHeartbeats 1600000 in
--- The four dependent closure steps elaborate to a substantially larger term than one rewrite.
+-- The first alternate cross-cap rewrite, with its validity transport hidden in a certificate.
+private theorem first_rewriteCertificate {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n)))
+    (hab : a ≠ b) (hac : a ≠ c)
+    (haX : a ∉ X.map edgeOfDart) (haY : a ∉ Y.map edgeOfDart) :
+    RewriteCertificate (source a b c X Y) (afterFirst a b c X Y) := by
+  have haFirstX :
+      a ∉ (X ++ [SignedDart.pos b, SignedDart.pos c]).map edgeOfDart := by
+    simp [edgeOfDart, haX, hab, hac]
+  have haFirstY :
+      a ∉ ([SignedDart.neg b, SignedDart.neg c] ++ Y).map edgeOfDart := by
+    simp [edgeOfDart, hab, hac, haY]
+  constructor
+  · exact Crosscap.adjacentTarget_isSurfaceValid a
+      (X ++ [.pos b, .pos c]) ([.neg b, .neg c] ++ Y)
+  · intro validP validQ
+    exact Crosscap.adjacentNormalizationEquivalent a
+      (X ++ [.pos b, .pos c]) ([.neg b, .neg c] ++ Y)
+      haFirstX haFirstY validP validQ
+
+-- Rotation after the first rewrite is independent of the chosen validity witnesses.
+private theorem first_rotationCertificate {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    RewriteCertificate (afterFirst a b c X Y) (secondSource a b c X Y) := by
+  let rotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      (afterFirst_isRotated_secondSource a b c X Y)
+  constructor
+  · exact rotation.isSurfaceValid
+  · intro _ _
+    exact NormalizationEquivalent.ofSignedIso rotation
+
+-- Rotation after rewriting `b` exposes the two negative occurrences of `c`.
+private theorem second_rotationCertificate {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    RewriteCertificate (afterSecond a b c X Y) (thirdSource a b c X Y) := by
+  let rotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      (afterSecond_isRotated_thirdSource a b c X Y)
+  constructor
+  · exact rotation.isSurfaceValid
+  · intro _ _
+    exact NormalizationEquivalent.ofSignedIso rotation
+
+-- The final rotation exposes the two remaining occurrences of `a`.
+private theorem third_rotationCertificate {n : ℕ} (a b c : Fin n)
+    (X Y : List (SignedDart (Fin n))) :
+    RewriteCertificate (afterThird a b c X Y) (fourthSource a b c X Y) := by
+  let rotation :=
+    Dyck.oneFaceSignedIsoOfIsRotated
+      (afterThird_isRotated_fourthSource a b c X Y)
+  constructor
+  · exact rotation.isSurfaceValid
+  · intro _ _
+    exact NormalizationEquivalent.ofSignedIso rotation
+
 /-- Gallier--Xu Step 5: a crosscap and a handle are equivalent to three crosscaps. -/
 theorem normalizationEquivalent {n : ℕ} (a b c : Fin n)
     (X Y : List (SignedDart (Fin n)))
@@ -768,32 +858,6 @@ theorem normalizationEquivalent {n : ℕ} (a b c : Fin n)
     NormalizationEquivalent
       ⟨source a b c X Y, validSource⟩
       ⟨target a b c X Y, validTarget⟩ := by
-  have haFirstX :
-      a ∉ (X ++ [SignedDart.pos b, SignedDart.pos c]).map edgeOfDart := by
-    simp [edgeOfDart, haX, hab, hac]
-  have haFirstY :
-      a ∉ ([SignedDart.neg b, SignedDart.neg c] ++ Y).map edgeOfDart := by
-    simp [edgeOfDart, hab, hac, haY]
-  let validAfterFirst : (afterFirst a b c X Y).IsSurfaceValid :=
-    Crosscap.adjacentTarget_isSurfaceValid a
-      (X ++ [.pos b, .pos c]) ([.neg b, .neg c] ++ Y) validSource
-  have hFirst :
-      NormalizationEquivalent
-        ⟨source a b c X Y, validSource⟩
-        ⟨afterFirst a b c X Y, validAfterFirst⟩ :=
-    Crosscap.adjacentNormalizationEquivalent a
-      (X ++ [.pos b, .pos c]) ([.neg b, .neg c] ++ Y)
-      haFirstX haFirstY validSource validAfterFirst
-  let firstRotation :=
-    Dyck.oneFaceSignedIsoOfIsRotated
-      (afterFirst_isRotated_secondSource a b c X Y)
-  let validSecondSource : (secondSource a b c X Y).IsSurfaceValid :=
-    firstRotation.isSurfaceValid validAfterFirst
-  have hRotateFirst :
-      NormalizationEquivalent
-        ⟨afterFirst a b c X Y, validAfterFirst⟩
-        ⟨secondSource a b c X Y, validSecondSource⟩ :=
-    NormalizationEquivalent.ofSignedIso firstRotation
   have hbSecondX :
       b ∉ ([SignedDart.neg c] ++ Y ++
         [SignedDart.pos a] ++ [SignedDart.neg c]).map edgeOfDart := by
@@ -801,28 +865,6 @@ theorem normalizationEquivalent {n : ℕ} (a b c : Fin n)
   have hbSecondY :
       b ∉ (inverseWord X ++ [SignedDart.pos a]).map edgeOfDart := by
     simp [map_edgeOfDart_inverseWord, hbX, edgeOfDart, hab.symm]
-  let validAfterSecond : (afterSecond a b c X Y).IsSurfaceValid :=
-    Crosscap.negativeTarget_isSurfaceValid b
-      ([.neg c] ++ Y ++ [.pos a] ++ [.neg c])
-      (inverseWord X ++ [.pos a]) validSecondSource
-  have hSecond :
-      NormalizationEquivalent
-        ⟨secondSource a b c X Y, validSecondSource⟩
-        ⟨afterSecond a b c X Y, validAfterSecond⟩ :=
-    Crosscap.negativeNormalizationEquivalent b
-      ([.neg c] ++ Y ++ [.pos a] ++ [.neg c])
-      (inverseWord X ++ [.pos a])
-      hbSecondX hbSecondY validSecondSource validAfterSecond
-  let secondRotation :=
-    Dyck.oneFaceSignedIsoOfIsRotated
-      (afterSecond_isRotated_thirdSource a b c X Y)
-  let validThirdSource : (thirdSource a b c X Y).IsSurfaceValid :=
-    secondRotation.isSurfaceValid validAfterSecond
-  have hRotateSecond :
-      NormalizationEquivalent
-        ⟨afterSecond a b c X Y, validAfterSecond⟩
-        ⟨thirdSource a b c X Y, validThirdSource⟩ :=
-    NormalizationEquivalent.ofSignedIso secondRotation
   have hcThirdX :
       c ∉ (Y ++ [SignedDart.pos a]).map edgeOfDart := by
     simp [hcY, edgeOfDart, hac.symm]
@@ -830,27 +872,6 @@ theorem normalizationEquivalent {n : ℕ} (a b c : Fin n)
       c ∉ ([SignedDart.neg b, SignedDart.neg b,
         SignedDart.neg a] ++ X).map edgeOfDart := by
     simp [edgeOfDart, hbc.symm, hac.symm, hcX]
-  let validAfterThird : (afterThird a b c X Y).IsSurfaceValid :=
-    Crosscap.negativeTarget_isSurfaceValid c
-      (Y ++ [.pos a]) ([.neg b, .neg b, .neg a] ++ X)
-      validThirdSource
-  have hThird :
-      NormalizationEquivalent
-        ⟨thirdSource a b c X Y, validThirdSource⟩
-        ⟨afterThird a b c X Y, validAfterThird⟩ :=
-    Crosscap.negativeNormalizationEquivalent c
-      (Y ++ [.pos a]) ([.neg b, .neg b, .neg a] ++ X)
-      hcThirdX hcThirdY validThirdSource validAfterThird
-  let thirdRotation :=
-    Dyck.oneFaceSignedIsoOfIsRotated
-      (afterThird_isRotated_fourthSource a b c X Y)
-  let validFourthSource : (fourthSource a b c X Y).IsSurfaceValid :=
-    thirdRotation.isSurfaceValid validAfterThird
-  have hRotateThird :
-      NormalizationEquivalent
-        ⟨afterThird a b c X Y, validAfterThird⟩
-        ⟨fourthSource a b c X Y, validFourthSource⟩ :=
-    NormalizationEquivalent.ofSignedIso thirdRotation
   have haFourthX :
       a ∉ ([SignedDart.pos b, SignedDart.pos b] ++ Y).map edgeOfDart := by
     simp [edgeOfDart, hab, haY]
@@ -858,19 +879,24 @@ theorem normalizationEquivalent {n : ℕ} (a b c : Fin n)
       a ∉ ([SignedDart.neg c, SignedDart.neg c] ++
         inverseWord X).map edgeOfDart := by
     simp [edgeOfDart, hac, map_edgeOfDart_inverseWord, haX]
-  have hFourth :
-      NormalizationEquivalent
-        ⟨fourthSource a b c X Y, validFourthSource⟩
-        ⟨target a b c X Y, validTarget⟩ :=
-    Crosscap.normalizationEquivalent a
-      ([.pos b, .pos b] ++ Y)
-      ([.neg c, .neg c] ++ inverseWord X)
-      haFourthX haFourthY validFourthSource validTarget
-  exact hFirst.trans
-    (hRotateFirst.trans
-      (hSecond.trans
-        (hRotateSecond.trans
-          (hThird.trans (hRotateThird.trans hFourth)))))
+  let chain₁ :=
+    (first_rewriteCertificate a b c X Y hab hac haX haY).trans
+      (first_rotationCertificate a b c X Y)
+  let chain₂ := chain₁.trans
+    (negativeCrosscap_rewriteCertificate b
+      ([.neg c] ++ Y ++ [.pos a] ++ [.neg c])
+      (inverseWord X ++ [.pos a]) hbSecondX hbSecondY)
+  let chain₃ := chain₂.trans (second_rotationCertificate a b c X Y)
+  let chain₄ := chain₃.trans
+    (negativeCrosscap_rewriteCertificate c
+      (Y ++ [.pos a]) ([.neg b, .neg b, .neg a] ++ X)
+      hcThirdX hcThirdY)
+  let chain₅ := chain₄.trans (third_rotationCertificate a b c X Y)
+  let chain := chain₅.trans
+    (crosscap_rewriteCertificate a
+      ([.pos b, .pos b] ++ Y) ([.neg c, .neg c] ++ inverseWord X)
+      haFourthX haFourthY)
+  exact chain.normalizationEquivalent validSource validTarget
 
 end HandleToCrosscaps
 

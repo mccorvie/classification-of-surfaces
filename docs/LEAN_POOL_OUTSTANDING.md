@@ -27,27 +27,23 @@ The generated Lean Eval payloads include those new modules. After any source edi
 ## Outstanding blocker 1: forbidden heartbeat overrides
 
 Lean Pool forbids `set_option`, and also forbids moving heartbeat overrides into the Lake
-configuration. Two source overrides remain:
+configuration. One source override remains:
 
-1. `ClassificationOfSurfaces/FiniteCyclicDerivedRewrites.lean`, around line 757:
-   `HandleToCrosscaps.normalizationEquivalent` needs `maxHeartbeats 1600000`.
-2. `ClassificationOfSurfaces/Moise/ChartInduction.lean`, around line 34:
+1. `ClassificationOfSurfaces/Moise/ChartInduction.lean`, around line 34:
    `MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening` needs
    `maxHeartbeats 2500000`.
 
-Treat these as proof-design tasks, not formatting tasks. Both proofs deterministically time out at
-Lean's default 200,000-heartbeat budget when the overrides are simply removed.
+Treat this as a proof-design task, not a formatting task. The proof deterministically times out at
+Lean's default 200,000-heartbeat budget when the override is simply removed.
 
-### Attempt already made on `FiniteCyclicDerivedRewrites`
+### Resolved: `FiniteCyclicDerivedRewrites`
 
-The four normalization stages were extracted into separate dependent helper theorems. This did not
-work: elaborating several helper *types* timed out at `whnf` under the default budget. Removing
-`@[reducible]` from the eight presentation abbreviations was also unsuccessful because their
-one-face structure is needed for face-index inference and definitional matching.
-
-A better approach will probably need smaller named data/certificates whose types do not repeatedly
-normalize all eight presentation expressions, or a reformulation that composes less dependent
-proof terms. Preserve the public theorem statement.
+`HandleToCrosscaps.normalizationEquivalent` now composes a private `RewriteCertificate` interface
+whose validity transport is hidden from the final dependent chain. Generic positive and negative
+cross-cap certificates avoid specializing the largest presentation expressions in theorem
+headers; the three rotations have separate compact certificates. The public theorem statement is
+unchanged, the `maxHeartbeats 1600000` override is gone, and the complete file compiles with a
+40,000-heartbeat command-line cap.
 
 ### Suggested approach for the chart weld
 
@@ -102,7 +98,7 @@ Recommended sequencing:
 
 1. Handle one file or one proof family per session.
 2. Start with the near-limit proofs (202--250 lines) to establish good extraction patterns.
-3. Address the two heartbeat proofs as dedicated sessions.
+3. Address the remaining chart-weld heartbeat proof as a dedicated session.
 4. Leave the 708-, 874-, and 4709-line proofs until their surrounding APIs suggest natural helper
    certificates.
 5. After every edit, compile the affected module first; run the full build only at a checkpoint.
