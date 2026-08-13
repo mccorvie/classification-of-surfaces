@@ -11,8 +11,6 @@ import Submission.ClassificationOfSurfaces.Moise.AdaptiveOpenComplex
 import Submission.ClassificationOfSurfaces.Moise.IntrinsicFaceModel
 import Submission.ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
 
-open scoped BigOperators
-
 /-!
 # Finite marked-edge fans on intrinsic two-complexes
 
@@ -21,6 +19,8 @@ subcomplex.  They must be ordered once on each global abstract edge: ordering in
 the two incident face charts can introduce incompatible auxiliary points.  This file supplies
 that global finite edge order and its consecutive intervals.
 -/
+
+open scoped BigOperators
 
 namespace LeanEval
 namespace Topology
@@ -2155,11 +2155,11 @@ theorem fanEndpointData_of_center_eq_zero_of_not_base_weights_pos
         rw [M.fanVertex_univ f] at this
         simpa only [Finset.mem_insert, Finset.mem_singleton] using this
       rcases hv with rfl | rfl | rfl
-      · simp [M.fanCenterVertex_ne_second f]
+      · simp only [ne_eq, M.fanCenterVertex_ne_second f, not_false_eq_true, Pi.single_eq_of_ne]
         exact hxCenter'
-      · simp [M.fanFirstVertex_ne_second f]
+      · simp only [ne_eq, M.fanFirstVertex_ne_second f, not_false_eq_true, Pi.single_eq_of_ne]
         exact hxFirst'
-      · simp
+      · simp only [Pi.single_eq_same]
         exact hxSecond'
     constructor
     · rw [hxVertex, M.fanFaceMap_vertex f]
@@ -2190,11 +2190,11 @@ theorem fanEndpointData_of_center_eq_zero_of_not_base_weights_pos
         rw [M.fanVertex_univ f] at this
         simpa only [Finset.mem_insert, Finset.mem_singleton] using this
       rcases hv with rfl | rfl | rfl
-      · simp [M.fanCenterVertex_ne_first f]
+      · simp only [ne_eq, M.fanCenterVertex_ne_first f, not_false_eq_true, Pi.single_eq_of_ne]
         exact hxCenter'
-      · simp
+      · simp only [Pi.single_eq_same]
         exact hxFirstOne'
-      · simp [M.fanFirstVertex_ne_second f]
+      · simp only [ne_eq, M.fanFirstVertex_ne_second f, not_false_eq_true, Pi.single_eq_of_ne']
         exact hxSecond'
     constructor
     · rw [hxVertex, M.fanFaceMap_vertex f]
@@ -2513,16 +2513,17 @@ theorem extendFaceCoordinates_eq_center_add_smul_normalizedBase
         (x (M.fanFirstVertex f)) := by
     funext v
     by_cases hv : (M.fanFirstVertex f).1 = v
-    · simp [hv]
+    · simp only [hv, Pi.smul_apply, Pi.single_eq_same, smul_eq_mul]
       exact mul_div_cancel₀ _ hd
-    · simp [hv]
+    · simp only [Pi.smul_apply, ne_eq, hv, not_false_eq_true, Pi.single_eq_of_ne', smul_eq_mul,
+        mul_zero]
   have hsecond : d • Pi.single (M.fanSecondVertex f).1
         (x (M.fanSecondVertex f) / d) =
       Pi.single (M.fanSecondVertex f).1
         (x (M.fanSecondVertex f)) := by
     funext v
     by_cases hv : (M.fanSecondVertex f).1 = v
-    · simp [hv]
+    · simp only [hv, Pi.smul_apply, Pi.single_eq_same, smul_eq_mul]
       exact mul_div_cancel₀ _ hd
     · simp [hv]
   rw [M.extendFaceCoordinates_fanFace f x,
@@ -2698,7 +2699,8 @@ theorem mem_globalFanFaceVertices_iff (f : M.FanFace) (v : M.FanVertex) :
   · intro hv
     obtain ⟨p, -, hp⟩ := Finset.mem_map.mp hv
     have hval : p.1 = v.1 := congrArg Subtype.val hp
-    simpa [← hval] using p.2
+    rw [← hval]
+    exact p.2
   · intro hv
     let p : {p // p ∈ M.fanFaceVertices f} := ⟨v.1, hv⟩
     apply Finset.mem_map.mpr

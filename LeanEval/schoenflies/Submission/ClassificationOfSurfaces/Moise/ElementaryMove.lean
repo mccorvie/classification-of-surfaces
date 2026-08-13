@@ -52,10 +52,11 @@ theorem diamondFanPosition_injective {a : ℝ} (ha0 : -2 < a) (ha1 : a < 2) :
   fin_cases i <;> fin_cases j <;> simp [diamondFanPosition, planePoint] at hij ⊢
   all_goals linarith
 
-private theorem affineIndependent_finset_of_range {V : Type} [DecidableEq V]
+private theorem affineIndependent_finset_of_range {V : Type}
     (position : V → Plane) {t : Finset V} (p : Fin 3 → V)
     (hp : AffineIndependent ℝ (position ∘ p)) (hrange : Set.range p = (t : Set V)) :
     AffineIndependent ℝ fun v : t => position v := by
+  classical
   let eFun : Fin 3 → t := fun i => ⟨p i, by
     change p i ∈ (t : Set V)
     rw [← hrange]

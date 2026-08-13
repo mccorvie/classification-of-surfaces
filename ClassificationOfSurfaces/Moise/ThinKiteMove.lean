@@ -44,10 +44,11 @@ def axisKitePatch (lo hi : ℝ) : Set Plane :=
   convexHull ℝ (axisKitePosition lo hi '' (({0, 2, 3} : Finset (Fin 4)) : Set _)) ∪
     convexHull ℝ (axisKitePosition lo hi '' (({1, 2, 3} : Finset (Fin 4)) : Set _))
 
-private theorem affineIndependent_finset_of_range_kite {V : Type} [DecidableEq V]
+private theorem affineIndependent_finset_of_range_kite {V : Type}
     (position : V → Plane) {t : Finset V} (p : Fin 3 → V)
     (hp : AffineIndependent ℝ (position ∘ p)) (hrange : Set.range p = (t : Set V)) :
     AffineIndependent ℝ fun v : t => position v := by
+  classical
   let eFun : Fin 3 → t := fun i => ⟨p i, by
     change p i ∈ (t : Set V)
     rw [← hrange]
@@ -298,7 +299,8 @@ theorem exists_leftBase_openSegment_mem_kiteTriangle {q : Plane}
   have hpTriangle : p ∈ convexHull ℝ (Set.range kiteTrianglePosition) := by
     apply mem_convexHull_range_fin3_of_weights kiteTrianglePosition p w
     · intro i
-      fin_cases i <;> simp [w]
+      fin_cases i <;> simp only [Fin.zero_eta, Fin.isValue, Matrix.cons_val_zero, sub_nonneg, w,
+                        Fin.mk_one, Matrix.cons_val_one, Fin.reduceFinMk, Matrix.cons_val]
       · have htd : t * (dx + dy) < 1 := by
           dsimp [t]
           field_simp
@@ -348,7 +350,8 @@ theorem exists_rightBase_openSegment_mem_kiteTriangle {q : Plane}
   have hpTriangle : p ∈ convexHull ℝ (Set.range kiteTrianglePosition) := by
     apply mem_convexHull_range_fin3_of_weights kiteTrianglePosition p w
     · intro i
-      fin_cases i <;> simp [w]
+      fin_cases i <;> simp only [Fin.zero_eta, Fin.isValue, Matrix.cons_val_zero, w, Fin.mk_one,
+                        Matrix.cons_val_one, sub_nonneg, Fin.reduceFinMk, Matrix.cons_val]
       · nlinarith [mul_nonneg ht.le (sub_nonneg.mpr hyx)]
       · have htd : t * (dx + dy) < 1 := by
           dsimp [t]
@@ -974,7 +977,8 @@ private theorem diamondFanAmbientHomeomorph_rightSpoke (a b : ℝ)
   ext i
   fin_cases i
   · simp [thinKiteMap]
-  · simp [thinKiteMap, thinKiteScale, thinKiteSource]
+  · simp only [thinKiteMap, thinKiteSource, Fin.isValue, planePoint_apply_zero, thinKiteScale,
+      planePoint_apply_one, abs_zero, sub_zero, one_div, Fin.mk_one]
     have hd : 1 + 2 * δ ≠ 0 := (by positivity : 0 < 1 + 2 * δ).ne'
     field_simp [hd]
     ring
@@ -984,7 +988,8 @@ private theorem diamondFanAmbientHomeomorph_rightSpoke (a b : ℝ)
   ext i
   fin_cases i
   · simp [thinKiteMap]
-  · simp [thinKiteMap, thinKiteScale, thinKiteTarget]
+  · simp only [thinKiteMap, thinKiteTarget, Fin.isValue, planePoint_apply_zero, thinKiteScale,
+      planePoint_apply_one, abs_zero, sub_zero, one_div, Fin.mk_one]
     have hd : 1 + 2 * δ ≠ 0 := (by positivity : 0 < 1 + 2 * δ).ne'
     field_simp [hd]
     ring
@@ -1017,8 +1022,11 @@ private theorem thinKiteInv_leftSpoke (δ : ℝ) (hδ : 0 < δ)
   ext i
   fin_cases i
   · simp [thinKiteInv, AffineMap.lineMap_apply_module, planePoint]
-  · simp [thinKiteInv, thinKiteScale, thinKiteSource,
-      AffineMap.lineMap_apply_module, planePoint, habs]
+  · simp only [thinKiteInv, planePoint, AffineMap.lineMap_apply_module, Fin.isValue,
+      PiLp.add_apply, PiLp.smul_apply, Matrix.cons_val_zero, smul_eq_mul, mul_neg,
+      mul_one, neg_sub, mul_zero, add_zero, Matrix.cons_val_one,
+      Matrix.cons_val_fin_one, habs, sub_sub_cancel, zero_sub, thinKiteScale,
+      Fin.mk_one, thinKiteSource, zero_add]
     have hd : 1 + 2 * δ ≠ 0 := (by positivity : 0 < 1 + 2 * δ).ne'
     field_simp [hd]
     ring
@@ -1031,8 +1039,10 @@ private theorem thinKiteInv_rightSpoke (δ : ℝ) (hδ : 0 < δ)
   ext i
   fin_cases i
   · simp [thinKiteInv, AffineMap.lineMap_apply_module, planePoint]
-  · simp [thinKiteInv, thinKiteScale, thinKiteSource,
-      AffineMap.lineMap_apply_module, planePoint, habs]
+  · simp only [thinKiteInv, planePoint, AffineMap.lineMap_apply_module, Fin.isValue,
+      PiLp.add_apply, PiLp.smul_apply, Matrix.cons_val_zero, smul_eq_mul, mul_one,
+      mul_zero, add_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one, habs,
+      sub_sub_cancel, zero_sub, thinKiteScale, Fin.mk_one, thinKiteSource, zero_add]
     have hd : 1 + 2 * δ ≠ 0 := (by positivity : 0 < 1 + 2 * δ).ne'
     field_simp [hd]
     ring
@@ -1049,8 +1059,11 @@ private theorem thinKiteMap_leftTargetSpoke (δ : ℝ) (hδ : 0 < δ)
   ext i
   fin_cases i
   · simp [thinKiteMap, AffineMap.lineMap_apply_module, planePoint]
-  · simp [thinKiteMap, thinKiteScale, thinKiteTarget,
-      AffineMap.lineMap_apply_module, planePoint, habs]
+  · simp only [thinKiteMap, planePoint, thinKiteTarget,
+      AffineMap.lineMap_apply_module, Fin.isValue, PiLp.add_apply, PiLp.smul_apply,
+      Matrix.cons_val_zero, smul_eq_mul, mul_neg, mul_one, neg_sub, mul_zero,
+      add_zero, thinKiteScale, Matrix.cons_val_one, Matrix.cons_val_fin_one,
+      zero_add, habs, sub_sub_cancel, Fin.mk_one]
     have hd : 1 + 2 * δ ≠ 0 := (by positivity : 0 < 1 + 2 * δ).ne'
     field_simp [hd]
     ring
@@ -1064,8 +1077,11 @@ private theorem thinKiteMap_rightTargetSpoke (δ : ℝ) (hδ : 0 < δ)
   ext i
   fin_cases i
   · simp [thinKiteMap, AffineMap.lineMap_apply_module, planePoint]
-  · simp [thinKiteMap, thinKiteScale, thinKiteTarget,
-      AffineMap.lineMap_apply_module, planePoint, habs]
+  · simp only [thinKiteMap, planePoint, thinKiteTarget,
+      AffineMap.lineMap_apply_module, Fin.isValue, PiLp.add_apply, PiLp.smul_apply,
+      Matrix.cons_val_zero, smul_eq_mul, mul_one, mul_zero, add_zero, thinKiteScale,
+      Matrix.cons_val_one, Matrix.cons_val_fin_one, zero_add, habs, sub_sub_cancel,
+      Fin.mk_one]
     have hd : 1 + 2 * δ ≠ 0 := (by positivity : 0 < 1 + 2 * δ).ne'
     field_simp [hd]
     ring
@@ -1272,7 +1288,8 @@ theorem thinKiteAmbientHomeomorph_center (δ : ℝ) (hδ : 0 < δ) :
     ext i
     fin_cases i
     · simp [thinKiteInv]
-    · simp [thinKiteInv, thinKiteScale, thinKiteSource]
+    · simp only [thinKiteInv, Fin.isValue, planePoint_apply_zero, planePoint_apply_one, abs_zero,
+        sub_zero, one_div, zero_sub, thinKiteScale, Fin.mk_one, thinKiteSource]
       have hd : 1 + 2 * δ ≠ 0 := (by positivity : 0 < 1 + 2 * δ).ne'
       field_simp [hd]
       ring]

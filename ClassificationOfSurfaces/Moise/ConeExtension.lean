@@ -343,7 +343,8 @@ theorem affineIndependent_insert_interior_of_card_le_two {S : Set Plane} (hS : C
   · obtain ⟨a, rfl⟩ := Finset.card_eq_one.mp hcard
     have haFrontier : a ∈ frontier S := by
       apply hAS
-      simpa using subset_convexHull ℝ ({a} : Set Plane) (by simp)
+      simpa only [Finset.coe_singleton] using
+        subset_convexHull ℝ ({a} : Set Plane) (Set.mem_singleton a)
     have hca : c ≠ a := by
       intro h
       subst a
@@ -723,7 +724,7 @@ theorem exists_affineMap_eqOn_affineIndependent {ι : Type*} [Nonempty ι]
       change l (b i - b i0) + Q i0 = Q i
       have hl : l (b i - b i0) = Q i - Q i0 := by
         have hbasis : (b.basisOf i0) j = b i - b i0 := by
-          simpa [j] using b.basisOf_apply i0 j
+          exact b.basisOf_apply i0 j
         rw [← hbasis]
         rw [Module.Basis.constr_basis]
       rw [hl]
@@ -978,7 +979,7 @@ theorem repositionMap_position (position' : K.Vertex → Plane)
     K.repositionMap position' hinj haff hface (K.position v) = position' v := by
   classical
   let w : K.Vertex → ℝ := fun u => if u = v then 1 else 0
-  have hw0 : ∀ u, 0 ≤ w u := by intro u; simp [w]; split <;> positivity
+  have hw0 : ∀ u, 0 ≤ w u := by intro u; simp only [w]; split <;> positivity
   have hw1 : ∑ u, w u = 1 := by simp [w]
   have hwsupp : ∀ u ∉ ({v} : Finset K.Vertex), w u = 0 := by
     intro u hu

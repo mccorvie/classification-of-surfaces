@@ -158,8 +158,10 @@ private theorem boundaryParam_eq_iff
   · by_cases hy1 : (y : ℝ) ≤ 1
     · left
       apply Subtype.ext
-      simp [boundaryParam, hx1, hy1, Moise.standardTriangleVertex,
-        AffineMap.lineMap_apply_module] at h0
+      simp only [Fin.isValue, boundaryParam, hx1, ↓reduceIte, Moise.standardTriangleVertex,
+        Matrix.cons_val_zero, Matrix.cons_val_one, AffineMap.lineMap_apply_module,
+        PiLp.add_apply, PiLp.smul_apply, smul_eq_mul, mul_zero, mul_one, zero_add,
+        hy1] at h0
       exact h0
     · have hy1' : 1 < (y : ℝ) := lt_of_not_ge hy1
       by_cases hy2 : (y : ℝ) ≤ 2
@@ -172,7 +174,7 @@ private theorem boundaryParam_eq_iff
         have hy2' : 2 < (y : ℝ) := lt_of_not_ge hy2
         simp [boundaryParam, hx1, hy1, hy2, Moise.standardTriangleVertex,
           AffineMap.lineMap_apply_module] at h0 h1
-        constructor <;> apply Subtype.ext <;> simp_all <;> linarith
+        constructor <;> apply Subtype.ext <;> simp_all ; linarith
   · have hx1' : 1 < (x : ℝ) := lt_of_not_ge hx1
     by_cases hx2 : (x : ℝ) ≤ 2
     · by_cases hy1 : (y : ℝ) ≤ 1
@@ -200,7 +202,7 @@ private theorem boundaryParam_eq_iff
         right
         simp [boundaryParam, hx1, hx2, hy1, Moise.standardTriangleVertex,
           AffineMap.lineMap_apply_module] at h0 h1
-        constructor <;> apply Subtype.ext <;> simp_all <;> linarith
+        constructor <;> apply Subtype.ext <;> simp_all ; linarith
       · have hy1' : 1 < (y : ℝ) := lt_of_not_ge hy1
         by_cases hy2 : (y : ℝ) ≤ 2
         · simp [boundaryParam, hx1, hx2, hy1, hy2,
@@ -288,7 +290,7 @@ theorem surjective_boundaryQuotMap : Function.Surjective boundaryQuotMap := by
       simpa [Moise.standardTriangleVertex] using htp
     · have htpos : 0 < t := lt_of_le_of_ne ht.1 (Ne.symm ht0)
       rw [boundaryParam, if_neg (by linarith), if_pos (by linarith [ht.2])]
-      convert htp using 1 <;> ring
+      convert htp using 1; ring
   · change p.1 ∈ segment ℝ
       (Moise.standardTriangleVertex 2) (Moise.standardTriangleVertex 0) at hi
     rw [segment_eq_image_lineMap] at hi
@@ -304,7 +306,7 @@ theorem surjective_boundaryQuotMap : Function.Surjective boundaryQuotMap := by
       simpa [Moise.standardTriangleVertex] using htp
     · have htpos : 0 < t := lt_of_le_of_ne ht.1 (Ne.symm ht0)
       rw [boundaryParam, if_neg (by linarith), if_neg (by linarith)]
-      convert htp using 1 <;> ring
+      convert htp using 1; ring
 
 /-- The additive circle of circumference three is the standard triangular frontier. -/
 noncomputable def addCircleBoundaryHomeomorph :
@@ -387,7 +389,7 @@ theorem circleBoundaryHomeomorph_side
           refine ⟨(i : ZMod 3), ?_⟩
           rw [Moise.PolygonalCircle.edgeSegment, segment_eq_image_lineMap]
           refine ⟨t, t.2, ?_⟩
-          congr 2 <;> fin_cases i <;> rfl⟩ := by
+          congr 2; fin_cases i <;> rfl⟩ := by
   let x : ℝ := i + t
   have hx : x ∈ Set.Icc (0 : ℝ) 3 := by
     have hi0 : (0 : ℝ) ≤ (i : ℕ) := by positivity
@@ -577,7 +579,9 @@ noncomputable def boundaryCircleHomeomorph :
             triangleAmbientHomeomorph ''
               frontier Moise.standardTrianglePlaneComplex.support := by
         rw [triangleAmbientHomeomorph_image_boundary]
-        simpa [Submonoid.unitSphere] using z.property
+        rw [triangleAmbientHomeomorph.apply_symm_apply]
+        rw [Metric.mem_sphere, dist_zero_right]
+        exact Circle.norm_coe z
       rcases hz with ⟨w, hw, heq⟩
       exact triangleAmbientHomeomorph.injective heq.symm ▸ hw⟩
   left_inv := by

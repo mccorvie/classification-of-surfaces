@@ -597,7 +597,8 @@ theorem rightDegenerateMapOccurrence_dart
             by
               rw [rightBoundary_of_orientation_false
                 P cut horientation]
-              simp [retainWord]
+              simp only [rightDegenerateCutSideIndex_val, retainWord, List.length_cons,
+                List.length_map, Order.lt_add_one_iff, Order.add_one_le_iff]
               exact
                 (rightDegenerateCutSideIndex
                   P cut horientation hleft hr i).isLt⟩ =
@@ -610,7 +611,8 @@ theorem rightDegenerateMapOccurrence_dart
       (.neg (freshEdge P) :: retainWord cut.right)[
           (rightDegenerateCutSideIndex
             P cut horientation hleft hr i).val + 1]'(by
-              simp [retainWord]
+              simp only [rightDegenerateCutSideIndex_val, retainWord, List.length_cons,
+                List.length_map, Order.lt_add_one_iff, Order.add_one_le_iff]
               exact
                 (rightDegenerateCutSideIndex
                   P cut horientation hleft hr i).isLt) =

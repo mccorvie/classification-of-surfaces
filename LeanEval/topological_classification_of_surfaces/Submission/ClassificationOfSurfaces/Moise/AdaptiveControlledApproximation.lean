@@ -438,10 +438,10 @@ theorem range_graphReplacementMap_subset_halfPlane
   intro y hy
   obtain ⟨e, hye⟩ := Set.mem_iUnion.mp hy
   apply convexHull_min _ convex_halfPlaneSet
-  exact (G.replacementArc e).completeCarrier_subset_edgeConvexHull hye
-  rintro z ⟨p, -, rfl⟩
-  rw [hmap p]
-  exact hfHalf (Set.mem_range_self p.1)
+  · exact (G.replacementArc e).completeCarrier_subset_edgeConvexHull hye
+  · rintro z ⟨p, -, rfl⟩
+    rw [hmap p]
+    exact hfHalf (Set.mem_range_self p.1)
 
 end ControlledAdaptiveComplex
 

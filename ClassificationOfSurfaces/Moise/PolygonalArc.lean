@@ -909,7 +909,9 @@ theorem exists_face_on_segment (i : Fin B.n) {x : Plane}
               · exact h0
               · exact h1
             have hprod : (b 1 - a 1) * (M.toPlaneComplex.position v 0 - a 0) = 0 := by
-              simp [segmentLine] at hvline
+              simp only [segmentLine, Fin.isValue, AffineMap.coe_sub, AffineMap.coe_smul,
+                AffineMap.coe_const, Pi.sub_apply, Pi.smul_apply, cartesianX_apply, smul_eq_mul,
+                cartesianY_apply, Function.const_apply] at hvline
               rw [h0] at hvline
               ring_nf at hvline ⊢
               rw [h0]
@@ -961,7 +963,9 @@ theorem exists_face_on_segment (i : Fin B.n) {x : Plane}
               · exact h0
               · exact h1
             have hprod : (b 0 - a 0) * (M.toPlaneComplex.position v 1 - a 1) = 0 := by
-              simp [segmentLine] at hvline
+              simp only [segmentLine, Fin.isValue, AffineMap.coe_sub, AffineMap.coe_smul,
+                AffineMap.coe_const, Pi.sub_apply, Pi.smul_apply, cartesianX_apply, smul_eq_mul,
+                cartesianY_apply, Function.const_apply] at hvline
               rw [h1] at hvline
               ring_nf at hvline ⊢
               rw [h1]
@@ -1482,8 +1486,8 @@ theorem resolvedComplex_support : B.resolvedComplex.support = B.resolvedCarrier 
       refine Set.mem_iUnion₂.mpr ⟨{B.resolvedWalk.getVert 0}, ?_, ?_⟩
       · apply B.mem_resolvedComplex_simplexes_iff.mpr
         refine ⟨?_, ?_⟩
-        have hstart : B.resolvedWalk.getVert 0 = B.arrangementVertex 0 := by simp
-        · change ({B.resolvedWalk.getVert 0} :
+        · have hstart : B.resolvedWalk.getVert 0 = B.arrangementVertex 0 := by simp
+          change ({B.resolvedWalk.getVert 0} :
             Finset B.arrangementMesh.toPlaneComplex.Vertex) ∈
               B.arrangementMesh.toPlaneComplex.simplexes
           rw [hstart]

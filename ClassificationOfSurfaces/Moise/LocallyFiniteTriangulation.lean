@@ -225,8 +225,7 @@ theorem relabelFaceSimplex_extended_apply
 /-- Relabeling two faces by the same embedding preserves equality of their global
 zero-extended coordinate functions. -/
 theorem relabelFaceSimplex_extended_eq_iff
-    {A B : Type*} [Fintype A]
-    [DecidableEq A] [DecidableEq B]
+    {A B : Type*} [DecidableEq A] [DecidableEq B]
     (e : A ↪ B) {s t : Finset A}
     {x : stdSimplex ℝ {b // b ∈ s.map e}}
     {y : stdSimplex ℝ {b // b ∈ t.map e}} :

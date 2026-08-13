@@ -33,7 +33,7 @@ theorem ofOneFaceWord_boundary_length
   simp
 
 /-- The unique enumerated face is equivalent to the unique typed one-face face. -/
-def ofOneFaceWordFaceEquiv (word : List (SignedDart Edge)) :
+noncomputable def ofOneFaceWordFaceEquiv (word : List (SignedDart Edge)) :
     (ofOneFaceWord word).Face ≃ PUnit where
   toFun := fun _ ↦ PUnit.unit
   invFun := fun _ ↦ 0

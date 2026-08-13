@@ -688,7 +688,7 @@ theorem locallyFinite_vertexDisks : LocallyFinite G.vertexDiskInRange := by
   · let d := Metric.infDist x.1 G.regionᶜ
     have hd : 0 < d := by
       apply (G.regionOpen.isClosed_compl.notMem_iff_infDist_pos hcomp).mp
-      simpa using x.2
+      simpa only [Set.mem_compl_iff, not_not] using x.2
     let U : Set G.region :=
       {p | p.1 ∈ Metric.ball x.1 (d / 8)}
     refine ⟨U, continuous_subtype_val.continuousAt
@@ -1104,7 +1104,7 @@ theorem locallyFinite_edgeCentralTubes : LocallyFinite G.edgeCentralTubeInRange 
   · let d := Metric.infDist x.1 G.regionᶜ
     have hd : 0 < d := by
       apply (G.regionOpen.isClosed_compl.notMem_iff_infDist_pos hcomp).mp
-      simpa using x.2
+      simpa only [Set.mem_compl_iff, not_not] using x.2
     let U : Set G.region :=
       {p | p.1 ∈ Metric.ball x.1 (d / 8)}
     refine ⟨U, continuous_subtype_val.continuousAt
@@ -1594,10 +1594,10 @@ theorem unitSegmentComplex_support :
 theorem unitSegmentComplex_graph (s : Finset unitSegmentComplex.Vertex)
     (hs : s ∈ unitSegmentComplex.simplexes) : s.card ≤ 2 := by
   apply unitSegmentComplex.card_le_two_of_vertices_mem_segment hs
-  intro v hv
-  rw [← unitSegmentComplex_support]
-  exact unitSegmentComplex.cellCarrier_subset_support hs
-    (subset_convexHull ℝ _ ⟨v, hv, rfl⟩)
+  · intro v hv
+    rw [← unitSegmentComplex_support]
+    exact unitSegmentComplex.cellCarrier_subset_support hs
+      (subset_convexHull ℝ _ ⟨v, hv, rfl⟩)
 
 theorem unitSegment_mem_bounds {p : Plane}
     (hp : p ∈ unitSegmentComplex.support) :

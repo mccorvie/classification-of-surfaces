@@ -747,8 +747,8 @@ theorem mergeFaceEquiv_selected
         (mergeLeftWord left) (mergeRightWord right)
         (mergeMiddleWords P e f g hfg) := by
   apply Fin.ext
-  simp [mergeFaceEquiv, FaceMerge.ContextMerge.selectedFace,
-    faceToEndpoints_selected P f g hfg]
+  simp only [P2.split_edgeCount, mergeFaceEquiv, Equiv.trans_apply,
+    faceToEndpoints_selected P f g hfg, FaceMerge.ContextMerge.selectedFace]
   change 0 = 0
   rfl
 
@@ -790,10 +790,10 @@ theorem mergeFaceEquiv_middle
           rw [mergeMiddleWords_length]
           exact i.isLt⟩ := by
   apply Fin.ext
-  simp [mergeFaceEquiv, middleOriginalFace,
-    middleFacePosition,
+  simp only [P2.split_edgeCount, mergeFaceEquiv, middleOriginalFace,
+    middleFacePosition, Equiv.trans_apply, Equiv.apply_symm_apply,
     FaceMerge.ContextMerge.untouchedSourceFace,
-    FaceMerge.ContextMerge.untouchedTargetFace]
+    FaceMerge.ContextMerge.untouchedTargetFace, List.length_cons]
   change i.val + 1 = i.val + 1
   rfl
 

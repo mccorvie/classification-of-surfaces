@@ -66,7 +66,9 @@ theorem continuous_reflectAcrossHalfPlaneBoundary :
   apply (PiLp.continuous_toLp 2 _).comp
   apply continuous_pi
   intro i
-  fin_cases i <;> simp <;> fun_prop
+  fin_cases i <;>
+    simp only [Fin.zero_eta, Fin.isValue, ↓reduceIte, Fin.mk_one, one_ne_zero] <;>
+    fun_prop
 
 /-- Folding the plane onto the Euclidean half-plane is continuous. -/
 theorem continuous_foldPlaneToHalfSpace :
@@ -76,7 +78,9 @@ theorem continuous_foldPlaneToHalfSpace :
   apply (PiLp.continuous_toLp 2 _).comp
   apply continuous_pi
   intro i
-  fin_cases i <;> simp <;> fun_prop
+  fin_cases i <;>
+    simp only [Fin.zero_eta, Fin.isValue, ↓reduceIte, Fin.mk_one, one_ne_zero] <;>
+    fun_prop
 
 /-- Reflection across the boundary line is injective. -/
 theorem injective_reflectAcrossHalfPlaneBoundary :

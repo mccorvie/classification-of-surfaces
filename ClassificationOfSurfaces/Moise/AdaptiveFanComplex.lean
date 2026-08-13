@@ -2293,14 +2293,10 @@ theorem adaptiveFanBaseEndpoints_eq_or_swap_of_faceMap_eq
     constructor
     · apply K.levelFaceEdgeParameter_injOn f.1.2.1 f.2.1
         hgFirstEdgeF hfFirstBoundary.2
-      change K.levelFaceEdgeParameter f.1.2.1 f.2.1
-        (K.adaptiveFanFirstVertex U hU g).1 = _
       rw [← hpathZeroVal]
       exact hzeroEqA
     · apply K.levelFaceEdgeParameter_injOn f.1.2.1 f.2.1
         hgSecondEdgeF hfSecondBoundary.2
-      change K.levelFaceEdgeParameter f.1.2.1 f.2.1
-        (K.adaptiveFanSecondVertex U hU g).1 = _
       rw [← hpathOneVal]
       exact hOneEqB
   · have hzeroRy : rzero < ry := by
@@ -2358,14 +2354,10 @@ theorem adaptiveFanBaseEndpoints_eq_or_swap_of_faceMap_eq
     constructor
     · apply K.levelFaceEdgeParameter_injOn f.1.2.1 f.2.1
         hgFirstEdgeF hfSecondBoundary.2
-      change K.levelFaceEdgeParameter f.1.2.1 f.2.1
-        (K.adaptiveFanFirstVertex U hU g).1 = _
       rw [← hpathZeroVal]
       exact hzeroEqB
     · apply K.levelFaceEdgeParameter_injOn f.1.2.1 f.2.1
         hgSecondEdgeF hfFirstBoundary.2
-      change K.levelFaceEdgeParameter f.1.2.1 f.2.1
-        (K.adaptiveFanSecondVertex U hU g).1 = _
       rw [← hpathOneVal]
       exact hOneEqA
 
@@ -2444,16 +2436,17 @@ theorem extendFaceCoordinates_eq_center_add_smul_normalizedBase (hU : IsOpen U)
         (x (K.adaptiveFanFirstVertex U hU f)) := by
     funext v
     by_cases hv : (K.adaptiveFanFirstVertex U hU f).1 = v
-    · simp [hv]
+    · simp only [hv, Pi.smul_apply, Pi.single_eq_same, smul_eq_mul]
       exact mul_div_cancel₀ _ hd
-    · simp [hv]
+    · simp only [Pi.smul_apply, ne_eq, hv, not_false_eq_true, Pi.single_eq_of_ne', smul_eq_mul,
+        mul_zero]
   have hsecond : d • Pi.single (K.adaptiveFanSecondVertex U hU f).1
         (x (K.adaptiveFanSecondVertex U hU f) / d) =
       Pi.single (K.adaptiveFanSecondVertex U hU f).1
         (x (K.adaptiveFanSecondVertex U hU f)) := by
     funext v
     by_cases hv : (K.adaptiveFanSecondVertex U hU f).1 = v
-    · simp [hv]
+    · simp only [hv, Pi.smul_apply, Pi.single_eq_same, smul_eq_mul]
       exact mul_div_cancel₀ _ hd
     · simp [hv]
   rw [K.extendFaceCoordinates_adaptiveFanFace U hU f x,

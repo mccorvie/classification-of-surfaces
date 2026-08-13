@@ -87,9 +87,7 @@ theorem walkSegment_subset_range {u w : K.Vertex} (p : K.vertexGraph.Walk u w)
           rw [K.walkGeometricPath_cons, Path.trans_range]
           apply Set.subset_union_of_subset_left
           rw [Path.range_segment]
-          simpa using
-            (Set.Subset.rfl : segment ℝ (K.position u) (K.position z) ⊆
-              segment ℝ (K.position u) (K.position z))
+          simp
       | succ i =>
           rw [K.walkGeometricPath_cons, Path.trans_range]
           apply Set.subset_union_of_subset_right
@@ -186,10 +184,10 @@ theorem range_walkGeometricPath_mapLe_restrictedTo (C : Set Plane)
       simpa [j] using hi
     · intro x hx
       obtain ⟨i, hi⟩ := (K.restrictedTo C).exists_walkSegment_of_mem_range p hpos hx
-      let j : Fin p'.length := ⟨i.val, by simpa [hlength] using i.isLt⟩
+      let j : Fin p'.length := ⟨i.val, by simpa only [hlength] using i.isLt⟩
       apply K.walkSegment_subset_range p' j
       rw [hmap i.val, hmap (i.val + 1)]
-      simpa [j] using hi
+      exact hi
 
 end PlaneComplex
 

@@ -584,7 +584,8 @@ theorem exists_face_containing_axis_segment_of_no_vertex
   rw [segment_eq_image_lineMap] at hqSeg
   obtain ⟨t, ht, hqt⟩ := hqSeg
   have hqcoord := congrArg (fun z : Plane => z 0) hqt
-  simp [planePoint, AffineMap.lineMap_apply_module] at hqcoord
+  simp only [Fin.isValue, planePoint, AffineMap.lineMap_apply_module, PiLp.add_apply,
+    PiLp.smul_apply, Matrix.cons_val_zero, smul_eq_mul] at hqcoord
   rcases havoid v with hvLow | hvHigh <;> rcases havoid w with hwLow | hwHigh
   · have hqle : q ≤ a := by
       rw [← hqcoord]

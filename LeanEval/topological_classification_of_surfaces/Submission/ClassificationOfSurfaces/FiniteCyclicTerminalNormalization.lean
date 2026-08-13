@@ -169,7 +169,9 @@ theorem orientableTargetNames_nodup (p n : ℕ) :
       simp
     · rw [List.pairwise_ofFn]
       intro i j hij
-      simp [List.Disjoint]
+      simp only [List.Disjoint, List.mem_cons, List.not_mem_nil, or_false, imp_false, not_or,
+        forall_eq_or_imp, NormalForm.OrientableEdge.a.injEq, reduceCtorEq, not_false_eq_true,
+        and_true, forall_eq, NormalForm.OrientableEdge.b.injEq, true_and, and_self]
       exact Fin.ne_of_lt hij
   · rw [List.nodup_flatten]
     constructor
@@ -179,16 +181,18 @@ theorem orientableTargetNames_nodup (p n : ℕ) :
       simp
     · rw [List.pairwise_ofFn]
       intro i j hij
-      simp [List.Disjoint]
+      simp only [List.Disjoint, List.mem_cons, List.not_mem_nil, or_false, imp_false, not_or,
+        forall_eq_or_imp, NormalForm.OrientableEdge.c.injEq, reduceCtorEq, not_false_eq_true,
+        and_true, forall_eq, NormalForm.OrientableEdge.h.injEq, true_and, and_self]
       exact Fin.ne_of_lt hij
   · intro x hx y hy
     simp only [List.mem_flatten, List.mem_ofFn] at hx hy
     rcases hx with ⟨names, ⟨i, hi⟩, hx⟩
     subst names
-    simp at hx
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
     rcases hy with ⟨names, ⟨j, hj⟩, hy⟩
     subst names
-    simp at hy
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
     rcases hx with rfl | rfl <;>
       rcases hy with rfl | rfl <;>
       simp
@@ -215,7 +219,8 @@ theorem nonOrientableTargetNames_nodup (p n : ℕ) :
       simp
     · rw [List.pairwise_ofFn]
       intro i j hij
-      simp [List.Disjoint]
+      simp only [List.Disjoint, List.mem_cons, List.not_mem_nil, or_false, imp_false, forall_eq,
+        NormalForm.NonOrientableEdge.a.injEq]
       exact Fin.ne_of_lt hij
   · rw [List.nodup_flatten]
     constructor
@@ -225,16 +230,18 @@ theorem nonOrientableTargetNames_nodup (p n : ℕ) :
       simp
     · rw [List.pairwise_ofFn]
       intro i j hij
-      simp [List.Disjoint]
+      simp only [List.Disjoint, List.mem_cons, List.not_mem_nil, or_false, imp_false, not_or,
+        forall_eq_or_imp, NormalForm.NonOrientableEdge.c.injEq, reduceCtorEq, not_false_eq_true,
+        and_true, forall_eq, NormalForm.NonOrientableEdge.h.injEq, true_and, and_self]
       exact Fin.ne_of_lt hij
   · intro x hx y hy
     simp only [List.mem_flatten, List.mem_ofFn] at hx hy
     rcases hx with ⟨names, ⟨i, hi⟩, hx⟩
     subst names
-    simp at hx
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
     rcases hy with ⟨names, ⟨j, hj⟩, hy⟩
     subst names
-    simp at hy
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
     subst x
     rcases hy with rfl | rfl <;>
       simp
@@ -291,7 +298,7 @@ theorem crosscapCount_eq_countP {n : ℕ}
   | cons block blocks ih =>
       cases block <;>
         simp [CompletedBlock.crosscapCount,
-          isCrosscap, ih] <;> omega
+          isCrosscap, ih]; omega
 
 /-- The recursive handle count is the corresponding Boolean list count. -/
 theorem handleCount_eq_countP {n : ℕ}
@@ -304,7 +311,7 @@ theorem handleCount_eq_countP {n : ℕ}
   | cons block blocks ih =>
       cases block <;>
         simp [CompletedBlock.handleCount,
-          isHandle, ih] <;> omega
+          isHandle, ih]; omega
 
 /-- The recursive boundary count is the corresponding Boolean list count. -/
 theorem boundaryCount_eq_countP {n : ℕ}
@@ -317,7 +324,7 @@ theorem boundaryCount_eq_countP {n : ℕ}
   | cons block blocks ih =>
       cases block <;>
         simp [CompletedBlock.boundaryCount,
-          isBoundary, ih] <;> omega
+          isBoundary, ih]; omega
 
 /-- The distinct-name spine has one name per crosscap, two per handle, and two per boundary
 loop. -/
@@ -2900,7 +2907,7 @@ theorem crosscapConversionResult_normalForm_eq
 /-- The completed-block terminal seam: stable-sort boundary blocks, convert all handles when a
 crosscap is present, normalize every edge orientation, and relabel positionally to the single
 canonical finite-cyclic presentation selected by `TerminalCompletedWord.normalForm`. -/
-noncomputable def terminalCompletedNormalizer :
+theorem terminalCompletedNormalizer :
     TerminalCompletedNormalizer where
   equivalent terminal := by
     by_cases hcrosscap :

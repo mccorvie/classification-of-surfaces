@@ -56,16 +56,18 @@ theorem injOn_faceBoundaryMap (t : K.Face) :
     Set.InjOn (A.faceBoundaryMap t) (frontier standardFaceRegion) := by
   intro p hp q hq hpq
   apply K.faceBoundaryMap_injectiveOn t hp hq
-  apply A.injOnModel
-  · rw [K.replacementGraphComplex_support_eq_image]
-    let p' : StandardFaceBoundary := ⟨p, hp⟩
-    exact ⟨(K.faceBoundaryLift t p').1, (K.faceBoundaryLift t p').2,
-      (K.faceBoundaryMap_apply t p').symm⟩
-  · rw [K.replacementGraphComplex_support_eq_image]
-    let q' : StandardFaceBoundary := ⟨q, hq⟩
-    exact ⟨(K.faceBoundaryLift t q').1, (K.faceBoundaryLift t q').2,
-      (K.faceBoundaryMap_apply t q').symm⟩
-  · exact hpq
+  exact A.injOnModel
+    (by
+      rw [K.replacementGraphComplex_support_eq_image]
+      let p' : StandardFaceBoundary := ⟨p, hp⟩
+      exact ⟨(K.faceBoundaryLift t p').1, (K.faceBoundaryLift t p').2,
+        (K.faceBoundaryMap_apply t p').symm⟩)
+    (by
+      rw [K.replacementGraphComplex_support_eq_image]
+      let q' : StandardFaceBoundary := ⟨q, hq⟩
+      exact ⟨(K.faceBoundaryLift t q').1, (K.faceBoundaryLift t q').2,
+        (K.faceBoundaryMap_apply t q').symm⟩)
+    hpq
 
 theorem faceBoundaryMap_isPLOnSet (t : K.Face) :
     IsPLOnSet (frontier standardFaceRegion) (A.faceBoundaryMap t) := by

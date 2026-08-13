@@ -1727,8 +1727,6 @@ theorem forwardArc_inter_backwardArc {k : ℕ} (hk2 : 2 ≤ k) (hk : k + 1 < J.n
       (by omega) (by omega)
     have hlOld : x ∈ J.edgeSegment (b : ZMod J.n) := by
       have hl' : x ∈ (J.rotate (k : ZMod J.n)).edgeSegment (l.val : ZMod J.n) := by
-        change x ∈ (J.rotate (k : ZMod J.n)).edgeSegment
-          ((l.val : ℕ) : ZMod J.n)
         exact hl
       rw [hrot] at hl'
       have hidx : (l.val : ZMod J.n) + (k : ZMod J.n) = (b : ZMod J.n) := by

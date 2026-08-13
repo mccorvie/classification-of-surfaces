@@ -62,8 +62,6 @@ theorem IsTriangle.exists_polygonalCircle {C : Set Plane} (hC : IsTriangle C) :
   rw [show J.carrier = E '' standardTriangleCircle.carrier by
     exact standardTriangleCircle.mapEmbedding_carrier E E.injective.injOn hedge,
     standardTriangleCircle_carrier]
-  change E '' frontier (convexHull ℝ (Set.range standardTriangleVertex)) =
-    frontier (convexHull ℝ (Set.range p))
   change affineEquivHomeomorph E '' frontier
       (convexHull ℝ (Set.range standardTriangleVertex)) = _
   rw [(affineEquivHomeomorph E).image_frontier,
