@@ -24,24 +24,22 @@ The former oversized modules were split without changing their public import pat
 The generated Lean Eval payloads include those new modules. After any source edit, run
 `python3 port_submission.py` and then `python3 port_submission.py --check`.
 
-## Outstanding blocker 1: forbidden heartbeat overrides
+## Resolved: forbidden heartbeat override in `ChartInduction`
 
 Lean Pool forbids `set_option`, and also forbids moving heartbeat overrides into the Lake
-configuration. One source override remains:
+configuration. The override on
+`MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening` has now been removed.
 
-1. `ClassificationOfSurfaces/Moise/ChartInduction.lean`, around line 255:
-   `MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening` needs
-   `maxHeartbeats 900000`.
+The chart-weld proof now uses opaque `ChartInductionGeometry` components and small phase
+certificates for the old and target embeddings, boundary regularity, selected-fan lifting,
+old/target agreement, relabeled agreement and separation, and final coverage. In particular,
+`finish_crossing_weld` is a short certificate assembly instead of a second elaboration of the
+synchronized mesh construction.
 
-Treat this as a proof-design task, not a formatting task. The proof deterministically times out at
-Lean's default 200,000-heartbeat budget when the override is simply removed.
-
-The first chart-weld refactor reduced the verified ceiling from 2,500,000 to 900,000 heartbeats.
-Reusable declarations now handle simplex-vertex evaluation, repeated mapped-finset membership,
-the fan coordinate relabeling chain, and the injective amalgamation of old and local target
-vertices. The full file passes with `-DmaxHeartbeats=900000` and fails with
-`-DmaxHeartbeats=800000`. With the source override removed, the first default-budget failure is in
-`localFanMixedFaceMap_eq_iff`, while constructing the positive-base-weight case.
+The full file passes with `-DmaxHeartbeats=101500` and fails with
+`-DmaxHeartbeats=101400`. This reduces the verified ceiling from 790,000 by about 87%, and leaves
+substantial headroom below Lean's default 200,000-heartbeat budget. The hottest remaining
+declaration is the public construction theorem, not the final weld assembly.
 
 ### Resolved: `FiniteCyclicDerivedRewrites`
 
@@ -52,18 +50,9 @@ headers; the three rotations have separate compact certificates. The public theo
 unchanged, the `maxHeartbeats 1600000` override is gone, and the complete file compiles with a
 40,000-heartbeat command-line cap.
 
-### Suggested approach for the chart weld
-
-The crossing-weld proof is also the largest proof-size violation below. Extract mathematical phases
-into named theorem/lemma declarations with compact interfaces: chart replacement, common
-subdivision, old/new embedding construction, boundary regularity, and final coverage. Avoid merely
-moving tactic blocks into definitions: Lean Pool's proof-size checker ends a proof block only at the
-next `theorem` or `lemma`, and the heartbeat problem requires reducing elaboration work as well.
-
-The next useful boundary is `localFanMixedFaceMap_eq_iff`: package the local face, marked fan face,
-and their shared edge data into a compact compatibility certificate, then prove its positive-weight
-and endpoint cases as separate top-level lemmas. After that, split the final common-coordinate
-agreement phase beginning with `fanFace_oldPoint_mem_selected_of_common`.
+The crossing-weld public construction remains a proof-size cleanup target, but it is no longer a
+heartbeat blocker. Continue extracting its construction phases only where the resulting interfaces
+also improve readability and satisfy Lean Pool's textual proof-size check.
 
 ## Outstanding blocker 2: proofs over 200 code lines
 
@@ -89,7 +78,7 @@ count too. At this checkpoint it reports 28 oversized blocks:
 | `FiniteCyclicWordReductionCore.lean` | 3902 | 250 |
 | `FiniteCyclicWordReductionCore.lean` | 4459 | 254 |
 | `Moise/AdaptiveFanComplex.lean` | 2071 | 274 |
-| `Moise/ChartInduction.lean` | 257 | about 4500 |
+| `Moise/ChartInduction.lean` | 4295 | about 1390 |
 | `Moise/ChartInductionCore.lean` | 1685 | 219 |
 | `Moise/ChartInductionCore.lean` | 5306 | 387 |
 | `Moise/ChartInductionCore.lean` | 6391 | 287 |
@@ -110,7 +99,7 @@ Recommended sequencing:
 
 1. Handle one file or one proof family per session.
 2. Start with the near-limit proofs (202--250 lines) to establish good extraction patterns.
-3. Address the remaining chart-weld heartbeat proof as a dedicated session.
+3. Split the remaining chart-weld public construction for the proof-size check.
 4. Leave the 708-, 874-, and 4709-line proofs until their surrounding APIs suggest natural helper
    certificates.
 5. After every edit, compile the affected module first; run the full build only at a checkpoint.
