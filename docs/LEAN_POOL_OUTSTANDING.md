@@ -73,8 +73,14 @@ The follow-up finite-cyclic pass removed six more blocks:
 `MarkedActionablePairReductionFeature.targetTokens_isSeparated`,
 `MarkedResidualCancellablePair.exists_betweenAtoms`,
 `OppositeArcForm.exists_step_of_usedMultiplicities`, `mergeSource_isSurfaceValid`, and
-`dist_completePath_comparison_lt`. The remaining two word-reduction proofs are the deliberately
-deferred 708- and 874-line blocks.
+`dist_completePath_comparison_lt`.
+
+The final word-reduction pass removed the deliberately deferred 708- and 874-line blocks. The
+boundary-commute span now factors surface multiplicity through private boundary, crosscap, and
+handle freshness certificates plus a shared count-exhaustion lemma. The resolver span now uses
+exact primitive target-interval lemmas, a uniform completed-block shortening, a certified
+one-step disposition, and a single recursive shortening branch. The two public theorems that
+headed the charged spans retain their original statements and proofs.
 
 The subsequent extraction pass removed thirteen further blocks. Reusable helpers now isolate the
 radial-projection separator argument, chart-frontier matching, marked-fan edge uniqueness,
@@ -86,8 +92,6 @@ statements are unchanged.
 
 | File | Approximate line | Code lines |
 | --- | ---: | ---: |
-| `FiniteCyclicWordReduction.lean` | 3047 | 708 |
-| `FiniteCyclicWordReduction.lean` | 5860 | 874 |
 | `Moise/ChartInduction.lean` | 1034 | 409 |
 | `Moise/ChartInduction.lean` | 2570 | 523 |
 | `Moise/ChartInduction.lean` | 4323 | 1388 |
@@ -102,8 +106,8 @@ Recommended sequencing:
 1. Handle one file or one proof family per session.
 2. Start with the near-limit proofs (202--250 lines) to establish good extraction patterns.
 3. Split the remaining chart-weld public construction for the proof-size check.
-4. Leave the 708-, 874-, and 4709-line proofs until their surrounding APIs suggest natural helper
-   certificates.
+4. Use certificate and step abstractions for the remaining large construction proofs when their
+   surrounding APIs expose natural phase boundaries.
 5. After every edit, compile the affected module first; run the full build only at a checkpoint.
 
 Do not change theorem statements or add waivers merely to satisfy the textual check.

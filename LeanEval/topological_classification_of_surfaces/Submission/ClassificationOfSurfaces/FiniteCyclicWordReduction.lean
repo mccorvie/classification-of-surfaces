@@ -3125,6 +3125,81 @@ def toBoundaryBlockCommute {n : ℕ}
   carrier_not_mem_inside := hcarrierInside
   carrier_not_mem_outside := hcarrierOutside
 
+private theorem not_mem_inside_and_outside_of_count_eq_two {n : ℕ}
+    (edge : Fin n) (displayed inside outside : List (Fin n))
+    (hcount : displayed.count edge = 2)
+    (hsum : displayed.count edge = 2 + inside.count edge + outside.count edge) :
+    edge ∉ inside ∧ edge ∉ outside := by
+  constructor
+  · intro hmem
+    have hpositive : 0 < inside.count edge := List.count_pos_iff.mpr hmem
+    omega
+  · intro hmem
+    have hpositive : 0 < outside.count edge := List.count_pos_iff.mpr hmem
+    omega
+
+private structure BoundaryBlockCommuteConditions {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier hole : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1))) : Prop where
+  carrier_ne_hole : carrier ≠ hole
+  carrier_ne_outer : carrier ≠ pair.edge
+  carrier_not_mem_inside :
+    carrier ∉ (ReductionToken.expand insideTokens).map edgeOfDart
+  carrier_not_mem_outside :
+    carrier ∉ (ReductionToken.expand pair.tailTokens).map edgeOfDart
+
+private theorem boundaryBlockCommuteConditions_of_valid {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier hole : Fin (n + 1))
+    (carrierNegative holeNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.boundary carrier hole carrierNegative holeNegative) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    BoundaryBlockCommuteConditions pair carrier hole insideTokens := by
+  let displayed :=
+    dart pair.edge pair.negativeFirst ::
+      (CompletedBlock.boundary carrier hole carrierNegative holeNegative).word ++
+      ReductionToken.expand insideTokens ++
+      dart pair.edge (!pair.negativeFirst) :: ReductionToken.expand pair.tailTokens
+  have hexpanded : (ReductionToken.expand tokens).IsRotated displayed := by
+    have h := ReductionToken.expand_isRotated pair.rotated
+    rw [hbetween] at h
+    simpa [displayed, ReductionToken.expand_cons, ReductionToken.expand_append,
+      ReductionToken.word_residual, ReductionToken.word_completed, List.append_assoc] using h
+  have hmultiplicity := valid.2.2.2 carrier
+  rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
+  have hpermuted := (hexpanded.map edgeOfDart).perm.count_eq carrier
+  have hcount : (displayed.map edgeOfDart).count carrier = 2 := by
+    have hlower : 2 ≤ (displayed.map edgeOfDart).count carrier := by
+      simp [displayed, CompletedBlock.word, boundaryLoopWord, List.count_cons]
+      omega
+    omega
+  have hcarrierHole : carrier ≠ hole := by
+    intro heq
+    subst hole
+    simp [displayed, CompletedBlock.word, boundaryLoopWord, List.count_cons] at hcount
+    omega
+  have hcarrierOuter : carrier ≠ pair.edge := by
+    intro heq
+    subst carrier
+    simp [displayed, CompletedBlock.word, boundaryLoopWord, List.count_cons] at hcount
+  have hsum :
+      (displayed.map edgeOfDart).count carrier =
+        2 + ((ReductionToken.expand insideTokens).map edgeOfDart).count carrier +
+          ((ReductionToken.expand pair.tailTokens).map edgeOfDart).count carrier := by
+    simp [displayed, CompletedBlock.word, boundaryLoopWord, hcarrierHole.symm,
+      hcarrierOuter.symm]
+    omega
+  have hfresh := not_mem_inside_and_outside_of_count_eq_two carrier
+    (displayed.map edgeOfDart) ((ReductionToken.expand insideTokens).map edgeOfDart)
+    ((ReductionToken.expand pair.tailTokens).map edgeOfDart) hcount hsum
+  exact ⟨hcarrierHole, hcarrierOuter, hfresh.1, hfresh.2⟩
+
 /-- Surface multiplicity supplies all freshness conditions needed to commute a completed
 boundary-loop atom at the head of a lifted residual-pair interval. -/
 noncomputable def toBoundaryBlockCommuteOfValid {n : ℕ}
@@ -3142,88 +3217,37 @@ noncomputable def toBoundaryBlockCommuteOfValid {n : ℕ}
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
     MarkedBoundaryBlockCommute tokens := by
-  let displayed :=
-    dart pair.edge pair.negativeFirst ::
-      (CompletedBlock.boundary carrier hole
-        carrierNegative holeNegative).word ++
-      ReductionToken.expand insideTokens ++
-      dart pair.edge (!pair.negativeFirst) ::
-      ReductionToken.expand pair.tailTokens
-  have hexpanded :
-      (ReductionToken.expand tokens).IsRotated displayed := by
-    have h :=
-      ReductionToken.expand_isRotated pair.rotated
-    rw [hbetween] at h
-    simpa [displayed, ReductionToken.expand_cons,
-      ReductionToken.expand_append,
-      ReductionToken.word_residual,
-      ReductionToken.word_completed,
-      List.append_assoc] using h
-  have hmultiplicity := valid.2.2.2 carrier
-  rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
-  have hcount :=
-    (hexpanded.map edgeOfDart).perm.count_eq carrier
-  have hdisplayedMultiplicity :
-      (displayed.map edgeOfDart).count carrier = 1 ∨
-        (displayed.map edgeOfDart).count carrier = 2 := by
-    omega
-  have hdisplayedLower :
-      2 ≤ (displayed.map edgeOfDart).count carrier := by
-    simp [displayed, CompletedBlock.word,
-      boundaryLoopWord, List.count_cons]
-    omega
-  have hdisplayed :
-      (displayed.map edgeOfDart).count carrier = 2 := by
-    omega
-  have hcarrierHole : carrier ≠ hole := by
-    intro heq
-    subst hole
-    simp [displayed, CompletedBlock.word,
-      boundaryLoopWord, List.count_cons] at hdisplayed
-    omega
-  have hcarrierOuter : carrier ≠ pair.edge := by
-    intro heq
-    subst carrier
-    simp [displayed, CompletedBlock.word,
-      boundaryLoopWord, List.count_cons] at hdisplayed
-  have hsum :
-      (displayed.map edgeOfDart).count carrier =
-        2 +
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count carrier +
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count carrier := by
-    simp [displayed, CompletedBlock.word,
-      boundaryLoopWord,
-      hcarrierHole.symm, hcarrierOuter.symm]
-    omega
-  have hcarrierInside :
-      carrier ∉
-        (ReductionToken.expand insideTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count carrier :=
-      List.count_pos_iff.mpr hmem
-    omega
-  have hcarrierOutside :
-      carrier ∉
-        (ReductionToken.expand pair.tailTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count carrier :=
-      List.count_pos_iff.mpr hmem
-    omega
-  exact
-    pair.toBoundaryBlockCommute carrier hole
-      carrierNegative holeNegative insideTokens
-      hbetween hcarrierHole hcarrierOuter
-      hcarrierInside hcarrierOutside
+  let conditions := boundaryBlockCommuteConditions_of_valid pair carrier hole carrierNegative
+    holeNegative insideTokens hbetween valid
+  exact pair.toBoundaryBlockCommute carrier hole carrierNegative holeNegative insideTokens hbetween
+    conditions.carrier_ne_hole conditions.carrier_ne_outer conditions.carrier_not_mem_inside
+    conditions.carrier_not_mem_outside
+
+@[simp]
+private theorem toBoundaryBlockCommuteOfValid_insideTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier hole : Fin (n + 1)) (carrierNegative holeNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.boundary carrier hole carrierNegative holeNegative) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    (pair.toBoundaryBlockCommuteOfValid carrier hole carrierNegative holeNegative insideTokens
+      hbetween valid).insideTokens = insideTokens := rfl
+
+@[simp]
+private theorem toBoundaryBlockCommuteOfValid_outsideTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier hole : Fin (n + 1)) (carrierNegative holeNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.boundary carrier hole carrierNegative holeNegative) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    (pair.toBoundaryBlockCommuteOfValid carrier hole carrierNegative holeNegative insideTokens
+      hbetween valid).outsideTokens = pair.tailTokens := rfl
 
 /-- A lifted residual pair whose protected interval begins with a completed crosscap exposes the
 exact contextual crosscap transition. -/
@@ -3270,6 +3294,83 @@ def toCrosscapBlockCommute {n : ℕ}
   outer_not_mem_inside := houterInside
   outer_not_mem_outside := houterOutside
 
+private structure CrosscapBlockCommuteConditions {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1))) : Prop where
+  carrier_ne_outer : carrier ≠ pair.edge
+  carrier_not_mem_inside :
+    carrier ∉ (ReductionToken.expand insideTokens).map edgeOfDart
+  carrier_not_mem_outside :
+    carrier ∉ (ReductionToken.expand pair.tailTokens).map edgeOfDart
+  outer_not_mem_inside :
+    pair.edge ∉ (ReductionToken.expand insideTokens).map edgeOfDart
+  outer_not_mem_outside :
+    pair.edge ∉ (ReductionToken.expand pair.tailTokens).map edgeOfDart
+
+private theorem crosscapBlockCommuteConditions_of_valid {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier : Fin (n + 1)) (carrierNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens = .completed (.crosscap carrier carrierNegative) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    CrosscapBlockCommuteConditions pair carrier insideTokens := by
+  let displayed :=
+    dart pair.edge pair.negativeFirst ::
+      (CompletedBlock.crosscap carrier carrierNegative).word ++
+      ReductionToken.expand insideTokens ++
+      dart pair.edge (!pair.negativeFirst) :: ReductionToken.expand pair.tailTokens
+  have hexpanded : (ReductionToken.expand tokens).IsRotated displayed := by
+    have h := ReductionToken.expand_isRotated pair.rotated
+    rw [hbetween] at h
+    simpa [displayed, ReductionToken.expand_cons, ReductionToken.expand_append,
+      ReductionToken.word_residual, ReductionToken.word_completed, List.append_assoc] using h
+  have hvalidCount (edge : Fin (n + 1)) :
+      (displayed.map edgeOfDart).count edge = 1 ∨
+        (displayed.map edgeOfDart).count edge = 2 := by
+    have hmultiplicity := valid.2.2.2 edge
+    rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
+    have hpermuted := (hexpanded.map edgeOfDart).perm.count_eq edge
+    omega
+  have hcarrierCount : (displayed.map edgeOfDart).count carrier = 2 := by
+    have h := hvalidCount carrier
+    have hlower : 2 ≤ (displayed.map edgeOfDart).count carrier := by
+      simp [displayed, CompletedBlock.word, List.count_cons]
+      omega
+    omega
+  have houterCount : (displayed.map edgeOfDart).count pair.edge = 2 := by
+    have h := hvalidCount pair.edge
+    have hlower : 2 ≤ (displayed.map edgeOfDart).count pair.edge := by
+      simp [displayed, CompletedBlock.word, List.count_cons]
+      omega
+    omega
+  have hcarrierOuter : carrier ≠ pair.edge := by
+    intro heq
+    subst carrier
+    simp [displayed, CompletedBlock.word] at houterCount
+  have hcarrierSum :
+      (displayed.map edgeOfDart).count carrier =
+        2 + ((ReductionToken.expand insideTokens).map edgeOfDart).count carrier +
+          ((ReductionToken.expand pair.tailTokens).map edgeOfDart).count carrier := by
+    simp [displayed, CompletedBlock.word, hcarrierOuter.symm]
+    omega
+  have houterSum :
+      (displayed.map edgeOfDart).count pair.edge =
+        2 + ((ReductionToken.expand insideTokens).map edgeOfDart).count pair.edge +
+          ((ReductionToken.expand pair.tailTokens).map edgeOfDart).count pair.edge := by
+    simp [displayed, CompletedBlock.word, hcarrierOuter]
+    omega
+  have hcarrierFresh := not_mem_inside_and_outside_of_count_eq_two carrier
+    (displayed.map edgeOfDart) ((ReductionToken.expand insideTokens).map edgeOfDart)
+    ((ReductionToken.expand pair.tailTokens).map edgeOfDart) hcarrierCount hcarrierSum
+  have houterFresh := not_mem_inside_and_outside_of_count_eq_two pair.edge
+    (displayed.map edgeOfDart) ((ReductionToken.expand insideTokens).map edgeOfDart)
+    ((ReductionToken.expand pair.tailTokens).map edgeOfDart) houterCount houterSum
+  exact ⟨hcarrierOuter, hcarrierFresh.1, hcarrierFresh.2, houterFresh.1, houterFresh.2⟩
+
 /-- Surface multiplicity supplies every freshness condition needed for a contextual crosscap
 transition at the head of a lifted residual-pair interval. -/
 noncomputable def toCrosscapBlockCommuteOfValid {n : ℕ}
@@ -3287,130 +3388,36 @@ noncomputable def toCrosscapBlockCommuteOfValid {n : ℕ}
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
     MarkedCrosscapBlockCommute tokens := by
-  let displayed :=
-    dart pair.edge pair.negativeFirst ::
-      (CompletedBlock.crosscap carrier
-        carrierNegative).word ++
-      ReductionToken.expand insideTokens ++
-      dart pair.edge (!pair.negativeFirst) ::
-      ReductionToken.expand pair.tailTokens
-  have hexpanded :
-      (ReductionToken.expand tokens).IsRotated
-        displayed := by
-    have h :=
-      ReductionToken.expand_isRotated pair.rotated
-    rw [hbetween] at h
-    simpa [displayed, ReductionToken.expand_cons,
-      ReductionToken.expand_append,
-      ReductionToken.word_residual,
-      ReductionToken.word_completed,
-      List.append_assoc] using h
-  have hvalidCount (edge : Fin (n + 1)) :
-      (displayed.map edgeOfDart).count edge = 1 ∨
-        (displayed.map edgeOfDart).count edge = 2 := by
-    have hmultiplicity := valid.2.2.2 edge
-    rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
-    have hcount :=
-      (hexpanded.map edgeOfDart).perm.count_eq
-        edge
-    omega
-  have hcarrierLower :
-      2 ≤
-        (displayed.map edgeOfDart).count
-          carrier := by
-    simp [displayed, CompletedBlock.word,
-      List.count_cons]
-    omega
-  have hcarrierCount :
-      (displayed.map edgeOfDart).count
-          carrier = 2 := by
-    have h := hvalidCount carrier
-    omega
-  have houterLower :
-      2 ≤
-        (displayed.map edgeOfDart).count
-          pair.edge := by
-    simp [displayed, CompletedBlock.word,
-      List.count_cons]
-    omega
-  have houterCount :
-      (displayed.map edgeOfDart).count
-          pair.edge = 2 := by
-    have h := hvalidCount pair.edge
-    omega
-  have hcarrierOuter : carrier ≠ pair.edge := by
-    intro heq
-    subst carrier
-    simp [displayed, CompletedBlock.word] at houterCount
-  have hcarrierSum :
-      (displayed.map edgeOfDart).count carrier =
-        2 +
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count carrier +
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count carrier := by
-    simp [displayed, CompletedBlock.word,
-      hcarrierOuter.symm]
-    omega
-  have houterSum :
-      (displayed.map edgeOfDart).count pair.edge =
-        2 +
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count pair.edge +
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count pair.edge := by
-    simp [displayed, CompletedBlock.word,
-      hcarrierOuter]
-    omega
-  have hcarrierInside :
-      carrier ∉
-        (ReductionToken.expand insideTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count carrier :=
-      List.count_pos_iff.mpr hmem
-    omega
-  have hcarrierOutside :
-      carrier ∉
-        (ReductionToken.expand pair.tailTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count carrier :=
-      List.count_pos_iff.mpr hmem
-    omega
-  have houterInside :
-      pair.edge ∉
-        (ReductionToken.expand insideTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count pair.edge :=
-      List.count_pos_iff.mpr hmem
-    omega
-  have houterOutside :
-      pair.edge ∉
-        (ReductionToken.expand pair.tailTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count pair.edge :=
-      List.count_pos_iff.mpr hmem
-    omega
-  exact
-    pair.toCrosscapBlockCommute carrier
-      carrierNegative insideTokens hbetween
-      hcarrierOuter hcarrierInside hcarrierOutside
-      houterInside houterOutside
+  let conditions := crosscapBlockCommuteConditions_of_valid pair carrier carrierNegative
+    insideTokens hbetween valid
+  exact pair.toCrosscapBlockCommute carrier carrierNegative insideTokens hbetween
+    conditions.carrier_ne_outer conditions.carrier_not_mem_inside
+    conditions.carrier_not_mem_outside conditions.outer_not_mem_inside
+    conditions.outer_not_mem_outside
+
+@[simp]
+private theorem toCrosscapBlockCommuteOfValid_insideTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier : Fin (n + 1)) (carrierNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens = .completed (.crosscap carrier carrierNegative) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    (pair.toCrosscapBlockCommuteOfValid carrier carrierNegative insideTokens hbetween valid
+      ).insideTokens = insideTokens := rfl
+
+@[simp]
+private theorem toCrosscapBlockCommuteOfValid_outsideTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (carrier : Fin (n + 1)) (carrierNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens = .completed (.crosscap carrier carrierNegative) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    (pair.toCrosscapBlockCommuteOfValid carrier carrierNegative insideTokens hbetween valid
+      ).outsideTokens = pair.tailTokens := rfl
 
 /-- A lifted residual pair whose protected interval begins with a completed handle exposes the
 exact contextual handle transition. -/
@@ -3469,6 +3476,106 @@ def toHandleBlockCommute {n : ℕ}
   outer_not_mem_inside := houterInside
   outer_not_mem_outside := houterOutside
 
+private structure HandleBlockCommuteConditions {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (first second : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1))) : Prop where
+  first_ne_second : first ≠ second
+  first_ne_outer : first ≠ pair.edge
+  second_ne_outer : second ≠ pair.edge
+  first_not_mem_inside : first ∉ (ReductionToken.expand insideTokens).map edgeOfDart
+  first_not_mem_outside : first ∉ (ReductionToken.expand pair.tailTokens).map edgeOfDart
+  second_not_mem_inside : second ∉ (ReductionToken.expand insideTokens).map edgeOfDart
+  second_not_mem_outside : second ∉ (ReductionToken.expand pair.tailTokens).map edgeOfDart
+  outer_not_mem_inside : pair.edge ∉ (ReductionToken.expand insideTokens).map edgeOfDart
+  outer_not_mem_outside : pair.edge ∉ (ReductionToken.expand pair.tailTokens).map edgeOfDart
+
+private theorem handleBlockCommuteConditions_of_valid {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (first second : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween : pair.betweenTokens = .completed (.handle first second) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    HandleBlockCommuteConditions pair first second insideTokens := by
+  let displayed :=
+    dart pair.edge pair.negativeFirst ::
+      (CompletedBlock.handle first second).word ++ ReductionToken.expand insideTokens ++
+      dart pair.edge (!pair.negativeFirst) :: ReductionToken.expand pair.tailTokens
+  have hexpanded : (ReductionToken.expand tokens).IsRotated displayed := by
+    have h := ReductionToken.expand_isRotated pair.rotated
+    rw [hbetween] at h
+    simpa [displayed, ReductionToken.expand_cons, ReductionToken.expand_append,
+      ReductionToken.word_residual, ReductionToken.word_completed, List.append_assoc] using h
+  have hvalidCount (edge : Fin (n + 1)) :
+      (displayed.map edgeOfDart).count edge = 1 ∨
+        (displayed.map edgeOfDart).count edge = 2 := by
+    have hmultiplicity := valid.2.2.2 edge
+    rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
+    have hpermuted := (hexpanded.map edgeOfDart).perm.count_eq edge
+    omega
+  have hfirstCount : (displayed.map edgeOfDart).count first = 2 := by
+    have h := hvalidCount first
+    have hlower : 2 ≤ (displayed.map edgeOfDart).count first := by
+      simp [displayed, CompletedBlock.word, List.count_cons]
+      omega
+    omega
+  have hsecondCount : (displayed.map edgeOfDart).count second = 2 := by
+    have h := hvalidCount second
+    have hlower : 2 ≤ (displayed.map edgeOfDart).count second := by
+      simp [displayed, CompletedBlock.word, List.count_cons]
+      omega
+    omega
+  have houterCount : (displayed.map edgeOfDart).count pair.edge = 2 := by
+    have h := hvalidCount pair.edge
+    have hlower : 2 ≤ (displayed.map edgeOfDart).count pair.edge := by
+      simp [displayed, CompletedBlock.word, List.count_cons]
+      omega
+    omega
+  have hfirstSecond : first ≠ second := by
+    intro heq
+    subst second
+    simp [displayed, CompletedBlock.word, List.count_cons] at hfirstCount
+    omega
+  have hfirstOuter : first ≠ pair.edge := by
+    intro heq
+    subst first
+    simp [displayed, CompletedBlock.word, hfirstSecond.symm] at houterCount
+  have hsecondOuter : second ≠ pair.edge := by
+    intro heq
+    subst second
+    simp [displayed, CompletedBlock.word, hfirstSecond] at houterCount
+  have hfirstSum :
+      (displayed.map edgeOfDart).count first =
+        2 + ((ReductionToken.expand insideTokens).map edgeOfDart).count first +
+          ((ReductionToken.expand pair.tailTokens).map edgeOfDart).count first := by
+    simp [displayed, CompletedBlock.word, hfirstSecond.symm, hfirstOuter.symm]
+    omega
+  have hsecondSum :
+      (displayed.map edgeOfDart).count second =
+        2 + ((ReductionToken.expand insideTokens).map edgeOfDart).count second +
+          ((ReductionToken.expand pair.tailTokens).map edgeOfDart).count second := by
+    simp [displayed, CompletedBlock.word, hfirstSecond, hsecondOuter.symm]
+    omega
+  have houterSum :
+      (displayed.map edgeOfDart).count pair.edge =
+        2 + ((ReductionToken.expand insideTokens).map edgeOfDart).count pair.edge +
+          ((ReductionToken.expand pair.tailTokens).map edgeOfDart).count pair.edge := by
+    simp [displayed, CompletedBlock.word, hfirstOuter, hsecondOuter]
+    omega
+  have hfirstFresh := not_mem_inside_and_outside_of_count_eq_two first
+    (displayed.map edgeOfDart) ((ReductionToken.expand insideTokens).map edgeOfDart)
+    ((ReductionToken.expand pair.tailTokens).map edgeOfDart) hfirstCount hfirstSum
+  have hsecondFresh := not_mem_inside_and_outside_of_count_eq_two second
+    (displayed.map edgeOfDart) ((ReductionToken.expand insideTokens).map edgeOfDart)
+    ((ReductionToken.expand pair.tailTokens).map edgeOfDart) hsecondCount hsecondSum
+  have houterFresh := not_mem_inside_and_outside_of_count_eq_two pair.edge
+    (displayed.map edgeOfDart) ((ReductionToken.expand insideTokens).map edgeOfDart)
+    ((ReductionToken.expand pair.tailTokens).map edgeOfDart) houterCount houterSum
+  exact ⟨hfirstSecond, hfirstOuter, hsecondOuter, hfirstFresh.1, hfirstFresh.2,
+    hsecondFresh.1, hsecondFresh.2, houterFresh.1, houterFresh.2⟩
+
 /-- Surface multiplicity supplies every distinction and freshness condition needed for a
 contextual handle transition. -/
 noncomputable def toHandleBlockCommuteOfValid {n : ℕ}
@@ -3484,183 +3591,35 @@ noncomputable def toHandleBlockCommuteOfValid {n : ℕ}
       (Dyck.oneFace
         (ReductionToken.expand tokens)).IsSurfaceValid) :
     MarkedHandleBlockCommute tokens := by
-  let displayed :=
-    dart pair.edge pair.negativeFirst ::
-      (CompletedBlock.handle first second).word ++
-      ReductionToken.expand insideTokens ++
-      dart pair.edge (!pair.negativeFirst) ::
-      ReductionToken.expand pair.tailTokens
-  have hexpanded :
-      (ReductionToken.expand tokens).IsRotated
-        displayed := by
-    have h :=
-      ReductionToken.expand_isRotated pair.rotated
-    rw [hbetween] at h
-    simpa [displayed, ReductionToken.expand_cons,
-      ReductionToken.expand_append,
-      ReductionToken.word_residual,
-      ReductionToken.word_completed,
-      List.append_assoc] using h
-  have hvalidCount (edge : Fin (n + 1)) :
-      (displayed.map edgeOfDart).count edge = 1 ∨
-        (displayed.map edgeOfDart).count edge = 2 := by
-    have hmultiplicity := valid.2.2.2 edge
-    rw [Dyck.oneFace_edgeMultiplicity] at hmultiplicity
-    have hcount :=
-      (hexpanded.map edgeOfDart).perm.count_eq
-        edge
-    omega
-  have hfirstLower :
-      2 ≤
-        (displayed.map edgeOfDart).count first := by
-    simp [displayed, CompletedBlock.word,
-      List.count_cons]
-    omega
-  have hfirstCount :
-      (displayed.map edgeOfDart).count first = 2 := by
-    have h := hvalidCount first
-    omega
-  have hsecondLower :
-      2 ≤
-        (displayed.map edgeOfDart).count second := by
-    simp [displayed, CompletedBlock.word,
-      List.count_cons]
-    omega
-  have hsecondCount :
-      (displayed.map edgeOfDart).count second = 2 := by
-    have h := hvalidCount second
-    omega
-  have houterLower :
-      2 ≤
-        (displayed.map edgeOfDart).count
-          pair.edge := by
-    simp [displayed, CompletedBlock.word,
-      List.count_cons]
-    omega
-  have houterCount :
-      (displayed.map edgeOfDart).count
-          pair.edge = 2 := by
-    have h := hvalidCount pair.edge
-    omega
-  have hfirstSecond : first ≠ second := by
-    intro heq
-    subst second
-    simp [displayed, CompletedBlock.word,
-      List.count_cons] at hfirstCount
-    omega
-  have hfirstOuter : first ≠ pair.edge := by
-    intro heq
-    subst first
-    simp [displayed, CompletedBlock.word,
-      hfirstSecond.symm] at houterCount
-  have hsecondOuter : second ≠ pair.edge := by
-    intro heq
-    subst second
-    simp [displayed, CompletedBlock.word,
-      hfirstSecond] at houterCount
-  have hfirstSum :
-      (displayed.map edgeOfDart).count first =
-        2 +
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count first +
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count first := by
-    simp [displayed, CompletedBlock.word,
-      hfirstSecond.symm, hfirstOuter.symm]
-    omega
-  have hsecondSum :
-      (displayed.map edgeOfDart).count second =
-        2 +
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count second +
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count second := by
-    simp [displayed, CompletedBlock.word,
-      hfirstSecond, hsecondOuter.symm]
-    omega
-  have houterSum :
-      (displayed.map edgeOfDart).count pair.edge =
-        2 +
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count pair.edge +
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count pair.edge := by
-    simp [displayed, CompletedBlock.word,
-      hfirstOuter, hsecondOuter]
-    omega
-  have hfirstInside :
-      first ∉
-        (ReductionToken.expand insideTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count first :=
-      List.count_pos_iff.mpr hmem
-    omega
-  have hfirstOutside :
-      first ∉
-        (ReductionToken.expand pair.tailTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count first :=
-      List.count_pos_iff.mpr hmem
-    omega
-  have hsecondInside :
-      second ∉
-        (ReductionToken.expand insideTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count second :=
-      List.count_pos_iff.mpr hmem
-    omega
-  have hsecondOutside :
-      second ∉
-        (ReductionToken.expand pair.tailTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count second :=
-      List.count_pos_iff.mpr hmem
-    omega
-  have houterInside :
-      pair.edge ∉
-        (ReductionToken.expand insideTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand insideTokens).map
-            edgeOfDart).count pair.edge :=
-      List.count_pos_iff.mpr hmem
-    omega
-  have houterOutside :
-      pair.edge ∉
-        (ReductionToken.expand pair.tailTokens).map
-          edgeOfDart := by
-    intro hmem
-    have hpositive :
-        0 <
-          ((ReductionToken.expand pair.tailTokens).map
-            edgeOfDart).count pair.edge :=
-      List.count_pos_iff.mpr hmem
-    omega
-  exact
-    pair.toHandleBlockCommute first second
-      insideTokens hbetween
-      hfirstSecond hfirstOuter hsecondOuter
-      hfirstInside hfirstOutside
-      hsecondInside hsecondOutside
-      houterInside houterOutside
+  let conditions :=
+    handleBlockCommuteConditions_of_valid pair first second insideTokens hbetween valid
+  exact pair.toHandleBlockCommute first second insideTokens hbetween conditions.first_ne_second
+    conditions.first_ne_outer conditions.second_ne_outer conditions.first_not_mem_inside
+    conditions.first_not_mem_outside conditions.second_not_mem_inside
+    conditions.second_not_mem_outside conditions.outer_not_mem_inside
+    conditions.outer_not_mem_outside
+
+@[simp]
+private theorem toHandleBlockCommuteOfValid_insideTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (first second : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween : pair.betweenTokens = .completed (.handle first second) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    (pair.toHandleBlockCommuteOfValid first second insideTokens hbetween valid).insideTokens =
+      insideTokens := rfl
+
+@[simp]
+private theorem toHandleBlockCommuteOfValid_outsideTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (first second : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween : pair.betweenTokens = .completed (.handle first second) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    (pair.toHandleBlockCommuteOfValid first second insideTokens hbetween valid).outsideTokens =
+      pair.tailTokens := rfl
 
 /-- Exhaustive local disposition of a lifted residual inverse pair.  The first two constructors
 are already executable.  The final constructor isolates the remaining contextual move: commuting
@@ -5909,9 +5868,13 @@ noncomputable def shortenBoundaryBlock {n : ℕ}
     pair.toBoundaryBlockCommuteOfValid carrier hole
       carrierNegative holeNegative insideTokens
       hbetween state.valid
-  have stepInside : step.insideTokens = insideTokens := rfl
+  have stepInside : step.insideTokens = insideTokens := by
+    exact pair.toBoundaryBlockCommuteOfValid_insideTokens carrier hole
+      carrierNegative holeNegative insideTokens hbetween state.valid
   have stepOutside :
-      step.outsideTokens = pair.tailTokens := rfl
+      step.outsideTokens = pair.tailTokens := by
+    exact pair.toBoundaryBlockCommuteOfValid_outsideTokens carrier hole
+      carrierNegative holeNegative insideTokens hbetween state.valid
   let execution :=
     step.commute state.separated state.classified
       state.protectedNodup state.valid
@@ -5947,6 +5910,21 @@ noncomputable def shortenBoundaryBlock {n : ℕ}
       MarkedBoundaryBlockCommute.targetPair]
     simp [stepInside]
 
+@[simp]
+private theorem shortenBoundaryBlock_targetPair_betweenTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty : ReductionToken.protectedNames tokens ≠ [])
+    (carrier hole : Fin (n + 1)) (carrierNegative holeNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .completed (.boundary carrier hole carrierNegative holeNegative) :: insideTokens) :
+    (pair.shortenBoundaryBlock state protectedNonempty carrier hole carrierNegative holeNegative
+      insideTokens hbetween).targetPair.betweenTokens = insideTokens := by
+  rfl
+
 /-- Commute a completed crosscap out of a lifted pair, producing a strict interval shortening. -/
 noncomputable def shortenCrosscapBlock {n : ℕ}
     {tokens : List (ReductionToken (n + 1))}
@@ -5969,9 +5947,13 @@ noncomputable def shortenCrosscapBlock {n : ℕ}
   let step :=
     pair.toCrosscapBlockCommuteOfValid carrier
       carrierNegative insideTokens hbetween state.valid
-  have stepInside : step.insideTokens = insideTokens := rfl
+  have stepInside : step.insideTokens = insideTokens := by
+    exact pair.toCrosscapBlockCommuteOfValid_insideTokens carrier carrierNegative
+      insideTokens hbetween state.valid
   have stepOutside :
-      step.outsideTokens = pair.tailTokens := rfl
+      step.outsideTokens = pair.tailTokens := by
+    exact pair.toCrosscapBlockCommuteOfValid_outsideTokens carrier carrierNegative
+      insideTokens hbetween state.valid
   let execution :=
     step.commute state.separated state.classified
       state.protectedNodup state.valid
@@ -6007,6 +5989,19 @@ noncomputable def shortenCrosscapBlock {n : ℕ}
       MarkedCrosscapBlockCommute.targetPair]
     simp [stepInside]
 
+@[simp]
+private theorem shortenCrosscapBlock_targetPair_betweenTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (carrier : Fin (n + 1)) (carrierNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens = .completed (.crosscap carrier carrierNegative) :: insideTokens) :
+    (pair.shortenCrosscapBlock state carrier carrierNegative insideTokens hbetween
+      ).targetPair.betweenTokens = insideTokens := by
+  rfl
+
 /-- Commute a completed handle out of a lifted pair, producing a strict interval shortening. -/
 noncomputable def shortenHandleBlock {n : ℕ}
     {tokens : List (ReductionToken (n + 1))}
@@ -6029,9 +6024,13 @@ noncomputable def shortenHandleBlock {n : ℕ}
   let step :=
     pair.toHandleBlockCommuteOfValid first second
       insideTokens hbetween state.valid
-  have stepInside : step.insideTokens = insideTokens := rfl
+  have stepInside : step.insideTokens = insideTokens := by
+    exact pair.toHandleBlockCommuteOfValid_insideTokens first second insideTokens
+      hbetween state.valid
   have stepOutside :
-      step.outsideTokens = pair.tailTokens := rfl
+      step.outsideTokens = pair.tailTokens := by
+    exact pair.toHandleBlockCommuteOfValid_outsideTokens first second insideTokens
+      hbetween state.valid
   let execution :=
     step.commute state.separated state.classified
       state.protectedNodup state.valid
@@ -6066,6 +6065,19 @@ noncomputable def shortenHandleBlock {n : ℕ}
     dsimp [targetPair,
       MarkedHandleBlockCommute.targetPair]
     simp [stepInside]
+
+@[simp]
+private theorem shortenHandleBlock_targetPair_betweenTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty : ReductionToken.protectedNames tokens ≠ [])
+    (first second : Fin (n + 1))
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween : pair.betweenTokens = .completed (.handle first second) :: insideTokens) :
+    (pair.shortenHandleBlock state protectedNonempty first second insideTokens hbetween
+      ).targetPair.betweenTokens = insideTokens := by
+  rfl
 
 /-- Contract two adjacent raw boundary atoms, producing a strict interval shortening in the
 lowered ambient edge type. -/
@@ -6124,6 +6136,121 @@ noncomputable def shortenBoundaryPair {n : ℕ}
           first second firstNegative secondNegative
           insideTokens hbetween state.separated
           state.protectedNodup }
+
+private theorem shortenBoundaryPair_targetPair_betweenTokens_length {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (first second : Fin (n + 1)) (firstNegative secondNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        [.extracted (.boundary first firstNegative),
+          .extracted (.boundary second secondNegative)] ++ insideTokens) :
+    (pair.shortenBoundaryPair state first second firstNegative secondNegative insideTokens
+      hbetween).targetPair.betweenTokens.length = insideTokens.length + 1 := by
+  simp [shortenBoundaryPair, boundaryContractionTargetPair]
+
+@[simp]
+private theorem shortenBoundaryPair_targetPair_betweenTokens {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (first second : Fin (n + 1)) (firstNegative secondNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        [.extracted (.boundary first firstNegative),
+          .extracted (.boundary second secondNegative)] ++ insideTokens) :
+    let step := pair.toBoundaryPairContraction first second firstNegative secondNegative
+      insideTokens hbetween state.separated state.protectedNodup
+    let loweredInside := ReductionToken.lowerTokensAvoiding second insideTokens (by
+      intro hmem
+      apply step.second_not_mem_tail
+      change second ∈
+        (ReductionToken.expand
+          (insideTokens ++
+            .residual (dart pair.edge (!pair.negativeFirst)) ::
+              pair.tailTokens ++ [.residual (dart pair.edge pair.negativeFirst)])).map edgeOfDart
+      simp [hmem])
+    (pair.shortenBoundaryPair state first second firstNegative secondNegative insideTokens
+      hbetween).targetPair.betweenTokens =
+        .extracted
+            (.boundary
+              (Cancellation.lowerEdge second first step.first_ne_second) false) ::
+          loweredInside := by
+  rfl
+
+private noncomputable def shortenCompletedBlock {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty : ReductionToken.protectedNames tokens ≠ [])
+    (block : CompletedBlock (n + 1))
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween : pair.betweenTokens = .completed block :: insideTokens) :
+    MarkedResidualPairShortening pair state := by
+  cases block with
+  | boundary carrier hole carrierNegative holeNegative =>
+      exact pair.shortenBoundaryBlock state protectedNonempty carrier hole carrierNegative
+        holeNegative insideTokens hbetween
+  | crosscap carrier carrierNegative =>
+      exact pair.shortenCrosscapBlock state carrier carrierNegative insideTokens hbetween
+  | handle first second =>
+      exact pair.shortenHandleBlock state protectedNonempty first second insideTokens hbetween
+
+private noncomputable def shortenBoundaryThenCompletedBlock {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty : ReductionToken.protectedNames tokens ≠ [])
+    (hole : Fin (n + 1)) (holeNegative : Bool)
+    (block : CompletedBlock (n + 1))
+    (remainingTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .extracted (.boundary hole holeNegative) :: .completed block :: remainingTokens) :
+    MarkedResidualPairShortening pair state := by
+  let insideTokens := .completed block :: remainingTokens
+  have hrotate :
+      pair.betweenTokens = .extracted (.boundary hole holeNegative) :: insideTokens := by
+    exact hbetween
+  let rotation :=
+    pair.rotateBoundaryAtom state protectedNonempty hole holeNegative insideTokens hrotate
+  let rotatedInsideTokens :=
+    remainingTokens ++
+      [(.extracted (.boundary hole holeNegative) : ReductionToken (n + 1))]
+  have hrotationBetween :
+      rotation.targetPair.betweenTokens = .completed block :: rotatedInsideTokens := by
+    calc
+      rotation.targetPair.betweenTokens =
+          insideTokens ++ [.extracted (.boundary hole holeNegative)] :=
+        pair.rotateBoundaryAtom_targetPair_betweenTokens state protectedNonempty hole
+          holeNegative insideTokens hrotate
+      _ = .completed block :: rotatedInsideTokens := by
+        simp [insideTokens, rotatedInsideTokens]
+  let shorteningAfter :=
+    shortenCompletedBlock rotation.targetPair rotation.targetState
+      rotation.targetProtectedNonempty block rotatedInsideTokens hrotationBetween
+  exact MarkedResidualPairShortening.prepend pair state rotation.targetPair rotation.targetState
+    rotation.equivalent rotation.residualLengthEq rotation.betweenLengthEq
+    rotation.rawBoundaryCountTailEq shorteningAfter
+
+private theorem shortenBoundaryThenCompletedBlock_betweenLengthLt {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty : ReductionToken.protectedNames tokens ≠ [])
+    (hole : Fin (n + 1)) (holeNegative : Bool)
+    (block : CompletedBlock (n + 1))
+    (remainingTokens : List (ReductionToken (n + 1)))
+    (hbetween :
+      pair.betweenTokens =
+        .extracted (.boundary hole holeNegative) :: .completed block :: remainingTokens) :
+    (shortenBoundaryThenCompletedBlock pair state protectedNonempty hole holeNegative block
+      remainingTokens hbetween).targetPair.betweenTokens.length < pair.betweenTokens.length :=
+  (shortenBoundaryThenCompletedBlock pair state protectedNonempty hole holeNegative block
+    remainingTokens hbetween).betweenLengthLt
 
 end MarkedResidualCancellablePair
 
@@ -6204,6 +6331,15 @@ def prepend {n m : ℕ}
     exact tail.residualLengthLt
 
 end MarkedResidualPairResolution
+
+private theorem resolution_rawBoundaryCount_eq_tail {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    {pair : MarkedResidualCancellablePair tokens}
+    {state : MarkedExecutionState tokens}
+    (resolution : MarkedResidualPairResolution pair state) :
+    ReductionToken.rawBoundaryCount resolution.targetTokens =
+      ReductionToken.rawBoundaryCount pair.tailTokens :=
+  resolution.rawBoundaryCountEqTail
 
 namespace MarkedResidualCancellablePair
 
@@ -6327,6 +6463,17 @@ noncomputable def resolveAdjacent {n : ℕ}
       rw [htargetLength, pair.residualDarts_length_eq]
       omega
 
+private theorem resolveAdjacent_rawBoundaryCount_eq_tail {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty : ReductionToken.protectedNames tokens ≠ [])
+    (hempty : pair.betweenTokens = []) :
+    ReductionToken.rawBoundaryCount
+        (pair.resolveAdjacent state protectedNonempty hempty).targetTokens =
+      ReductionToken.rawBoundaryCount pair.tailTokens :=
+  resolution_rawBoundaryCount_eq_tail (pair.resolveAdjacent state protectedNonempty hempty)
+
 /-- Eliminate a lifted pair surrounding one raw boundary atom by reclassifying the three displayed
 tokens as one completed boundary loop. -/
 noncomputable def resolveBoundary {n : ℕ}
@@ -6368,6 +6515,97 @@ noncomputable def resolveBoundary {n : ℕ}
   simp [closure, MarkedBoundaryClosure.targetTokens,
     MarkedResidualCancellablePair.toBoundaryClosure]
 
+private theorem resolveBoundary_rawBoundaryCount_eq_tail {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (hole : Fin (n + 1)) (holeNegative : Bool)
+    (hbetween : pair.betweenTokens = [.extracted (.boundary hole holeNegative)]) :
+    ReductionToken.rawBoundaryCount
+        (pair.resolveBoundary state hole holeNegative hbetween).targetTokens =
+      ReductionToken.rawBoundaryCount pair.tailTokens :=
+  resolution_rawBoundaryCount_eq_tail (pair.resolveBoundary state hole holeNegative hbetween)
+
+private inductive CertifiedResolutionStep {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens) : Type
+  | resolved (resolution : MarkedResidualPairResolution pair state)
+  | shortened (shortening : MarkedResidualPairShortening pair state)
+
+private noncomputable def nextResolutionStep {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty : ReductionToken.protectedNames tokens ≠ []) :
+    CertifiedResolutionStep pair state := by
+  cases n with
+  | zero => exact Fin.elim0 pair.edge
+  | succ k =>
+      cases pair.classifiedDisposition state.classified with
+      | adjacent hempty =>
+          exact .resolved (pair.resolveAdjacent state protectedNonempty hempty)
+      | boundary hole holeNegative hbetween =>
+          exact .resolved (pair.resolveBoundary state hole holeNegative hbetween)
+      | structured first rest hbetween =>
+          cases first with
+          | completed block =>
+              let insideTokens := rest.map ReductionToken.ofProtectedAtom
+              have hbetween' : pair.betweenTokens = .completed block :: insideTokens := by
+                simpa [insideTokens, ReductionToken.ofProtectedAtom] using hbetween
+              exact .shortened
+                (shortenCompletedBlock pair state protectedNonempty block insideTokens hbetween')
+          | boundary hole holeNegative =>
+              cases rest with
+              | nil =>
+                  exact .resolved (pair.resolveBoundary state hole holeNegative (by
+                    simpa [ReductionToken.ofProtectedAtom] using hbetween))
+              | cons second restTail =>
+                  let remainingTokens := restTail.map ReductionToken.ofProtectedAtom
+                  cases second with
+                  | boundary secondHole secondNegative =>
+                      have hbetween' :
+                          pair.betweenTokens =
+                            [.extracted (.boundary hole holeNegative),
+                              .extracted (.boundary secondHole secondNegative)] ++
+                              remainingTokens := by
+                        simpa [remainingTokens, ReductionToken.ofProtectedAtom] using hbetween
+                      exact .shortened
+                        (pair.shortenBoundaryPair state hole secondHole holeNegative secondNegative
+                          remainingTokens hbetween')
+                  | completed block =>
+                      have hbetween' :
+                          pair.betweenTokens =
+                            .extracted (.boundary hole holeNegative) ::
+                              .completed block :: remainingTokens := by
+                        simpa [remainingTokens, ReductionToken.ofProtectedAtom] using hbetween
+                      exact .shortened
+                        (shortenBoundaryThenCompletedBlock pair state protectedNonempty hole
+                          holeNegative block remainingTokens hbetween')
+
+private theorem nextResolutionStep_shortening_decreases {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (pair : MarkedResidualCancellablePair tokens)
+    (state : MarkedExecutionState tokens)
+    (protectedNonempty : ReductionToken.protectedNames tokens ≠ []) :
+    match nextResolutionStep pair state protectedNonempty with
+    | .resolved _ => True
+    | .shortened shortening =>
+        shortening.targetPair.betweenTokens.length < pair.betweenTokens.length := by
+  cases nextResolutionStep pair state protectedNonempty with
+  | resolved => trivial
+  | shortened shortening => exact shortening.betweenLengthLt
+
+private def finishShorteningResolution {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    {pair : MarkedResidualCancellablePair tokens}
+    {state : MarkedExecutionState tokens}
+    (shortening : MarkedResidualPairShortening pair state)
+    (tail : MarkedResidualPairResolution shortening.targetPair shortening.targetState) :
+    MarkedResidualPairResolution pair state :=
+  MarkedResidualPairResolution.prepend pair state shortening.targetPair shortening.targetState
+    shortening.equivalent shortening.residualLengthEq shortening.rawBoundaryCountTailEq tail
+
 /-- Resolve one lifted residual inverse pair.  The fuel measures the protected interval: every
 contextual step strictly shortens it, while the terminal cases eliminate the residual pair. -/
 noncomputable def resolveFuel {n : ℕ}
@@ -6379,299 +6617,24 @@ noncomputable def resolveFuel {n : ℕ}
       ReductionToken.protectedNames tokens ≠ [])
     (hbound : pair.betweenTokens.length ≤ fuel) :
     MarkedResidualPairResolution pair state := by
-  cases n with
-  | zero =>
-      exact Fin.elim0 pair.edge
-  | succ k =>
-      cases pair.classifiedDisposition state.classified with
-      | adjacent hempty =>
-          exact pair.resolveAdjacent state protectedNonempty hempty
-      | boundary hole holeNegative hbetween =>
-          exact pair.resolveBoundary state hole holeNegative hbetween
-      | structured first rest hbetween =>
-          cases first with
-          | completed block =>
-              let insideTokens :=
-                rest.map ReductionToken.ofProtectedAtom
-              cases block with
-              | boundary carrier hole carrierNegative holeNegative =>
-                  have hbetween' :
-                      pair.betweenTokens =
-                        .completed (.boundary carrier hole
-                          carrierNegative holeNegative) ::
-                          insideTokens := by
-                    simpa [insideTokens,
-                      ReductionToken.ofProtectedAtom] using hbetween
-                  let shortening :=
-                    pair.shortenBoundaryBlock state protectedNonempty
-                      carrier hole carrierNegative holeNegative
-                      insideTokens hbetween'
-                  have hfuelPositive : 0 < fuel := by
-                    have := shortening.betweenLengthLt
-                    omega
-                  have htargetBound :
-                      shortening.targetPair.betweenTokens.length ≤
-                        fuel - 1 := by
-                    have := shortening.betweenLengthLt
-                    omega
-                  let tail :=
-                    resolveFuel (fuel - 1) shortening.targetPair
-                      shortening.targetState
-                      shortening.targetProtectedNonempty htargetBound
-                  exact
-                    MarkedResidualPairResolution.prepend pair state
-                      shortening.targetPair shortening.targetState
-                      shortening.equivalent
-                      shortening.residualLengthEq
-                      shortening.rawBoundaryCountTailEq tail
-              | crosscap carrier carrierNegative =>
-                  have hbetween' :
-                      pair.betweenTokens =
-                        .completed (.crosscap carrier
-                          carrierNegative) :: insideTokens := by
-                    simpa [insideTokens,
-                      ReductionToken.ofProtectedAtom] using hbetween
-                  let shortening :=
-                    pair.shortenCrosscapBlock state carrier
-                      carrierNegative insideTokens hbetween'
-                  have hfuelPositive : 0 < fuel := by
-                    have := shortening.betweenLengthLt
-                    omega
-                  have htargetBound :
-                      shortening.targetPair.betweenTokens.length ≤
-                        fuel - 1 := by
-                    have := shortening.betweenLengthLt
-                    omega
-                  let tail :=
-                    resolveFuel (fuel - 1) shortening.targetPair
-                      shortening.targetState
-                      shortening.targetProtectedNonempty htargetBound
-                  exact
-                    MarkedResidualPairResolution.prepend pair state
-                      shortening.targetPair shortening.targetState
-                      shortening.equivalent
-                      shortening.residualLengthEq
-                      shortening.rawBoundaryCountTailEq tail
-              | handle first second =>
-                  have hbetween' :
-                      pair.betweenTokens =
-                        .completed (.handle first second) ::
-                          insideTokens := by
-                    simpa [insideTokens,
-                      ReductionToken.ofProtectedAtom] using hbetween
-                  let shortening :=
-                    pair.shortenHandleBlock state protectedNonempty
-                      first second insideTokens hbetween'
-                  have hfuelPositive : 0 < fuel := by
-                    have := shortening.betweenLengthLt
-                    omega
-                  have htargetBound :
-                      shortening.targetPair.betweenTokens.length ≤
-                        fuel - 1 := by
-                    have := shortening.betweenLengthLt
-                    omega
-                  let tail :=
-                    resolveFuel (fuel - 1) shortening.targetPair
-                      shortening.targetState
-                      shortening.targetProtectedNonempty htargetBound
-                  exact
-                    MarkedResidualPairResolution.prepend pair state
-                      shortening.targetPair shortening.targetState
-                      shortening.equivalent
-                      shortening.residualLengthEq
-                      shortening.rawBoundaryCountTailEq tail
-          | boundary hole holeNegative =>
-              cases rest with
-              | nil =>
-                  exact pair.resolveBoundary state hole holeNegative
-                    (by simpa [ReductionToken.ofProtectedAtom] using
-                      hbetween)
-              | cons second restTail =>
-                  let remainingTokens :=
-                    restTail.map ReductionToken.ofProtectedAtom
-                  cases second with
-                  | boundary secondHole secondNegative =>
-                      have hbetween' :
-                          pair.betweenTokens =
-                            [.extracted
-                                (.boundary hole holeNegative),
-                              .extracted
-                                (.boundary secondHole
-                                  secondNegative)] ++
-                              remainingTokens := by
-                        simpa [remainingTokens,
-                          ReductionToken.ofProtectedAtom] using hbetween
-                      let shortening :=
-                        pair.shortenBoundaryPair state hole secondHole
-                          holeNegative secondNegative remainingTokens
-                          hbetween'
-                      have hfuelPositive : 0 < fuel := by
-                        have := shortening.betweenLengthLt
-                        omega
-                      have htargetBound :
-                          shortening.targetPair.betweenTokens.length ≤
-                            fuel - 1 := by
-                        have := shortening.betweenLengthLt
-                        omega
-                      let tail :=
-                        resolveFuel (fuel - 1) shortening.targetPair
-                          shortening.targetState
-                          shortening.targetProtectedNonempty htargetBound
-                      exact
-                        MarkedResidualPairResolution.prepend pair state
-                          shortening.targetPair shortening.targetState
-                          shortening.equivalent
-                          shortening.residualLengthEq
-                          shortening.rawBoundaryCountTailEq tail
-                  | completed block =>
-                      let insideTokens :=
-                        .completed block :: remainingTokens
-                      have hrotate :
-                          pair.betweenTokens =
-                            .extracted
-                                (.boundary hole holeNegative) ::
-                              insideTokens := by
-                        simpa [insideTokens, remainingTokens,
-                          ReductionToken.ofProtectedAtom] using hbetween
-                      let rotation :=
-                        pair.rotateBoundaryAtom state protectedNonempty
-                          hole holeNegative insideTokens hrotate
-                      have hrotationBetween :
-                          rotation.targetPair.betweenTokens =
-                            .completed block ::
-                              (remainingTokens ++
-                                [.extracted
-                                  (.boundary hole holeNegative)]) := by
-                        have h :=
-                          rotateBoundaryAtom_targetPair_betweenTokens
-                            pair state protectedNonempty hole
-                            holeNegative insideTokens hrotate
-                        simp [rotation, insideTokens] at h ⊢
-                      cases block with
-                      | boundary carrier blockHole
-                          carrierNegative blockHoleNegative =>
-                          let shorteningAfter :=
-                            rotation.targetPair.shortenBoundaryBlock
-                              rotation.targetState
-                              rotation.targetProtectedNonempty
-                              carrier blockHole carrierNegative
-                              blockHoleNegative
-                              (remainingTokens ++
-                                [.extracted
-                                  (.boundary hole holeNegative)])
-                              hrotationBetween
-                          let shortening :=
-                            MarkedResidualPairShortening.prepend pair
-                              state rotation.targetPair
-                              rotation.targetState rotation.equivalent
-                              rotation.residualLengthEq
-                              rotation.betweenLengthEq
-                              rotation.rawBoundaryCountTailEq
-                              shorteningAfter
-                          have hfuelPositive : 0 < fuel := by
-                            have := shortening.betweenLengthLt
-                            omega
-                          have htargetBound :
-                              shortening.targetPair.betweenTokens.length ≤
-                                fuel - 1 := by
-                            have := shortening.betweenLengthLt
-                            omega
-                          let tail :=
-                            resolveFuel (fuel - 1)
-                              shortening.targetPair
-                              shortening.targetState
-                              shortening.targetProtectedNonempty
-                              htargetBound
-                          exact
-                            MarkedResidualPairResolution.prepend pair
-                              state shortening.targetPair
-                              shortening.targetState
-                              shortening.equivalent
-                              shortening.residualLengthEq
-                              shortening.rawBoundaryCountTailEq tail
-                      | crosscap carrier carrierNegative =>
-                          let shorteningAfter :=
-                            rotation.targetPair.shortenCrosscapBlock
-                              rotation.targetState carrier
-                              carrierNegative
-                              (remainingTokens ++
-                                [.extracted
-                                  (.boundary hole holeNegative)])
-                              hrotationBetween
-                          let shortening :=
-                            MarkedResidualPairShortening.prepend pair
-                              state rotation.targetPair
-                              rotation.targetState rotation.equivalent
-                              rotation.residualLengthEq
-                              rotation.betweenLengthEq
-                              rotation.rawBoundaryCountTailEq
-                              shorteningAfter
-                          have hfuelPositive : 0 < fuel := by
-                            have := shortening.betweenLengthLt
-                            omega
-                          have htargetBound :
-                              shortening.targetPair.betweenTokens.length ≤
-                                fuel - 1 := by
-                            have := shortening.betweenLengthLt
-                            omega
-                          let tail :=
-                            resolveFuel (fuel - 1)
-                              shortening.targetPair
-                              shortening.targetState
-                              shortening.targetProtectedNonempty
-                              htargetBound
-                          exact
-                            MarkedResidualPairResolution.prepend pair
-                              state shortening.targetPair
-                              shortening.targetState
-                              shortening.equivalent
-                              shortening.residualLengthEq
-                              shortening.rawBoundaryCountTailEq tail
-                      | handle first second =>
-                          let shorteningAfter :=
-                            rotation.targetPair.shortenHandleBlock
-                              rotation.targetState
-                              rotation.targetProtectedNonempty first
-                              second
-                              (remainingTokens ++
-                                [.extracted
-                                  (.boundary hole holeNegative)])
-                              hrotationBetween
-                          let shortening :=
-                            MarkedResidualPairShortening.prepend pair
-                              state rotation.targetPair
-                              rotation.targetState rotation.equivalent
-                              rotation.residualLengthEq
-                              rotation.betweenLengthEq
-                              rotation.rawBoundaryCountTailEq
-                              shorteningAfter
-                          have hfuelPositive : 0 < fuel := by
-                            have := shortening.betweenLengthLt
-                            omega
-                          have htargetBound :
-                              shortening.targetPair.betweenTokens.length ≤
-                                fuel - 1 := by
-                            have := shortening.betweenLengthLt
-                            omega
-                          let tail :=
-                            resolveFuel (fuel - 1)
-                              shortening.targetPair
-                              shortening.targetState
-                              shortening.targetProtectedNonempty
-                              htargetBound
-                          exact
-                            MarkedResidualPairResolution.prepend pair
-                              state shortening.targetPair
-                              shortening.targetState
-                              shortening.equivalent
-                              shortening.residualLengthEq
-                              shortening.rawBoundaryCountTailEq tail
+  cases nextResolutionStep pair state protectedNonempty with
+  | resolved resolution => exact resolution
+  | shortened shortening =>
+      have hfuelPositive : 0 < fuel := by
+        have hshort := shortening.betweenLengthLt
+        omega
+      have htargetBound :
+          shortening.targetPair.betweenTokens.length ≤ fuel - 1 := by
+        have hshort := shortening.betweenLengthLt
+        omega
+      exact finishShorteningResolution shortening
+        (resolveFuel (fuel - 1) shortening.targetPair shortening.targetState
+          shortening.targetProtectedNonempty htargetBound)
 termination_by fuel
 decreasing_by
-  all_goals
-    apply Nat.sub_lt
-    · assumption
-    · omega
+  apply Nat.sub_lt
+  · exact hfuelPositive
+  · omega
 
 /-- Eliminate one lifted residual inverse pair by the terminating protected-interval resolver. -/
 noncomputable def resolve {n : ℕ}
