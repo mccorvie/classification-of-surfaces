@@ -942,6 +942,65 @@ theorem facewiseComparison_eq_sidePiece (G : K.PlaneGraphRealization)
 
 /-! ## The boundary estimate -/
 
+private theorem dist_completePath_comparison_lt_of_middle (G : K.PlaneGraphRealization)
+    (f : K.Face) (i : ZMod 3)
+    (htube : G.centralTubeRadius (K.faceEdge f i) ≤ comparisonScale G f)
+    {r : ℝ} (hr : r ∈ Set.Icc (0 : ℝ) 1) (hr2 : ¬r ≤ 1 / 2) (hr34 : r ≤ 3 / 4) :
+    dist ((G.replacementArc (K.faceEdge f i)).completePath ⟨r, hr⟩)
+        (faceOriginalMap G f
+          (K.faceEdgeSourcePoint f i (sideParamProfile G f i r))) <
+      faceVertexSeparationRadius G f / 2 := by
+  set e := K.faceEdge f i with he
+  set A := G.replacementArc e with hA
+  have hXl : A.exitData.left ∈ Set.Icc (0 : ℝ) 1 :=
+    ⟨A.exitData.left_nonneg,
+      A.exitData.left_lt_right.le.trans A.exitData.right_le_one⟩
+  have hXr : A.exitData.right ∈ Set.Icc (0 : ℝ) 1 :=
+    ⟨A.exitData.left_nonneg.trans A.exitData.left_lt_right.le,
+      A.exitData.right_le_one⟩
+  have hw : (0 : ℝ) ≤ 2 * (2 * r - 1) ∧ 2 * (2 * r - 1) ≤ 1 := by
+    constructor <;> nlinarith [not_le.mp hr2]
+  have hcp : A.completePath ⟨r, hr⟩ =
+      A.parameterizationData.curve
+        (AffineMap.lineMap A.exitData.left A.exitData.right (2 * (2 * r - 1))) := by
+    rw [CentralPolygonalArc.completePath, Path.trans_apply]
+    rw [dif_neg (show ¬ ((⟨r, hr⟩ : unitInterval) : ℝ) ≤ 1 / 2 from hr2)]
+    rw [Path.trans_apply]
+    rw [dif_pos (by
+      change (2 * ((⟨r, hr⟩ : unitInterval) : ℝ) - 1) ≤ 1 / 2
+      linarith)]
+    change A.parameterizationData.curve
+        (Path.segment A.exitData.left A.exitData.right _) = _
+    rw [Path.segment_apply]
+  have hprofile : sideParamProfile G f i r =
+      AffineMap.lineMap (sideTrimLeft G f i) (sideTrimRight G f i) (4 * r - 2) := by
+    rw [sideParamProfile, if_neg hr2, if_pos hr34]
+  have hT : AffineMap.lineMap (sideTrimLeft G f i) (sideTrimRight G f i) (4 * r - 2) =
+      (G.edgeTrim e).left + ((G.edgeTrim e).right - (G.edgeTrim e).left) *
+        (AffineMap.lineMap A.exitData.left A.exitData.right (2 * (2 * r - 1))) := by
+    simp only [sideTrimLeft, sideTrimRight, AffineMap.lineMap_apply_ring]
+    rw [← he]
+    ring
+  have htmem : AffineMap.lineMap A.exitData.left A.exitData.right
+      (2 * (2 * r - 1)) ∈ Set.Icc (0 : ℝ) 1 := by
+    rw [AffineMap.lineMap_apply_ring]
+    have hlr := A.exitData.left_lt_right
+    constructor <;> nlinarith [hXl.1, hXl.2, hXr.1, hXr.2, hw.1, hw.2]
+  have hpmem : sideParamProfile G f i r ∈ Set.Icc (0 : ℝ) 1 :=
+    sideParamProfile_mem G f i hr
+  rw [hcp, K.faceOriginalMap_sourcePoint f i hpmem, hprofile, hT]
+  have hclose := A.curve_close _ htmem
+  calc
+    dist (A.parameterizationData.curve
+        (AffineMap.lineMap A.exitData.left A.exitData.right (2 * (2 * r - 1))))
+        (G.chartEdgeCurve e ((G.edgeTrim e).left +
+          ((G.edgeTrim e).right - (G.edgeTrim e).left) *
+            AffineMap.lineMap A.exitData.left A.exitData.right (2 * (2 * r - 1)))) <
+      G.centralTubeRadius e := hclose
+    _ ≤ faceVertexSeparationRadius G f / 2 := by
+      have := htube.trans (comparisonScale_le G f)
+      linarith [faceVertexSeparationRadius_pos (G := G) f]
+
 /-- The complete replacement path of one side stays within half the face separation radius of
 the reparametrized original boundary chart, once the vertex isolation disks and the central
 tube are below the comparison scale. -/
@@ -1087,52 +1146,7 @@ theorem dist_completePath_comparison_lt (G : K.PlaneGraphRealization)
           linarith
   · by_cases hr34 : r ≤ 3 / 4
     · -- middle range
-      have hw : (0 : ℝ) ≤ 2 * (2 * r - 1) ∧ 2 * (2 * r - 1) ≤ 1 := by
-        constructor <;> nlinarith [not_le.mp hr2]
-      have hcp : A.completePath ⟨r, hr⟩ =
-          A.parameterizationData.curve
-            (AffineMap.lineMap A.exitData.left A.exitData.right
-              (2 * (2 * r - 1))) := by
-        rw [CentralPolygonalArc.completePath, Path.trans_apply]
-        rw [dif_neg (show ¬ ((⟨r, hr⟩ : unitInterval) : ℝ) ≤ 1 / 2 from hr2)]
-        rw [Path.trans_apply]
-        rw [dif_pos (by
-          change (2 * ((⟨r, hr⟩ : unitInterval) : ℝ) - 1) ≤ 1 / 2
-          linarith)]
-        change A.parameterizationData.curve
-            (Path.segment A.exitData.left A.exitData.right _) = _
-        rw [Path.segment_apply]
-      have hprofile : sideParamProfile G f i r =
-          AffineMap.lineMap (sideTrimLeft G f i) (sideTrimRight G f i)
-            (4 * r - 2) := by
-        rw [sideParamProfile, if_neg hr2, if_pos hr34]
-      have hT : AffineMap.lineMap (sideTrimLeft G f i) (sideTrimRight G f i)
-          (4 * r - 2) =
-          (G.edgeTrim e).left + ((G.edgeTrim e).right - (G.edgeTrim e).left) *
-            (AffineMap.lineMap A.exitData.left A.exitData.right
-              (2 * (2 * r - 1))) := by
-        simp only [sideTrimLeft, sideTrimRight, AffineMap.lineMap_apply_ring]
-        rw [← he]
-        ring
-      have htmem : AffineMap.lineMap A.exitData.left A.exitData.right
-          (2 * (2 * r - 1)) ∈ Set.Icc (0 : ℝ) 1 := by
-        rw [AffineMap.lineMap_apply_ring]
-        have hlr := A.exitData.left_lt_right
-        constructor <;> nlinarith [hXl.1, hXl.2, hXr.1, hXr.2, hw.1, hw.2]
-      have hpmem : sideParamProfile G f i r ∈ Set.Icc (0 : ℝ) 1 :=
-        sideParamProfile_mem G f i hr
-      rw [hcp, K.faceOriginalMap_sourcePoint f i hpmem, hprofile, hT]
-      have hclose := A.curve_close _ htmem
-      calc dist (A.parameterizationData.curve
-            (AffineMap.lineMap A.exitData.left A.exitData.right
-              (2 * (2 * r - 1))))
-            (G.chartEdgeCurve e ((G.edgeTrim e).left +
-              ((G.edgeTrim e).right - (G.edgeTrim e).left) *
-                AffineMap.lineMap A.exitData.left A.exitData.right
-                  (2 * (2 * r - 1)))) < G.centralTubeRadius e := hclose
-        _ ≤ rsep / 2 := by
-            have := htube.trans heta8
-            linarith
+      exact dist_completePath_comparison_lt_of_middle G f i htube hr hr2 hr34
     · -- right spoke
       push Not at hr2 hr34
       have hw : (0 : ℝ) ≤ 2 * (2 * r - 1) - 1 ∧ 2 * (2 * r - 1) - 1 ≤ 1 := by

@@ -58,39 +58,41 @@ also improve readability and satisfy Lean Pool's textual proof-size check.
 
 Lean Pool's current quality checker uses a textual heuristic: for each `theorem` or `lemma`, it
 counts non-comment code from the declaration's `:=` through the next theorem/lemma. Private helpers
-count too. At this checkpoint it reports 28 oversized blocks:
+count too. At this checkpoint it reports 7 oversized blocks:
+
+The latest near-limit pass removed five blocks from the exact checker output:
+`MarkedBoundaryPairContraction.contract`, `pairReducedNormalForm_isEvalAdmissible`,
+`CrosscapBlockCommute.exists_normalizationEquivalent`,
+`faceBoundarySubdivision_middleSource`, `insertZero_nonadjacent_disjoint`, and
+`PolygonalCircle.edgeSegment_subset_normalized_baseHalf_or_disjoint`. The first two shared one
+counted span in `FiniteCyclicWordReduction.lean`, so six named declarations account for five
+reported blocks.
+
+The follow-up finite-cyclic pass removed six more blocks:
+`ActionablePairReductionFeature.extractedEdges_subset_source`,
+`MarkedActionablePairReductionFeature.targetTokens_isSeparated`,
+`MarkedResidualCancellablePair.exists_betweenAtoms`,
+`OppositeArcForm.exists_step_of_usedMultiplicities`, `mergeSource_isSurfaceValid`, and
+`dist_completePath_comparison_lt`. The remaining two word-reduction proofs are the deliberately
+deferred 708- and 874-line blocks.
+
+The subsequent extraction pass removed thirteen further blocks. Reusable helpers now isolate the
+radial-projection separator argument, chart-frontier matching, marked-fan edge uniqueness,
+three-point convex-hull separation, positive normalization, interval endpoint order, repositioning
+support behavior, triangular graph purity, two-page edge neighborhoods, and the two outcomes of
+inverse-pair cancellation. Natural accessor lemmas also split checker-charged runs of definitions
+in the boundary-envelope, terminal-normalization, and chart-geometry APIs. The public theorem
+statements are unchanged.
 
 | File | Approximate line | Code lines |
 | --- | ---: | ---: |
-| `FiniteCyclicReduction.lean` | 938 | 237 |
-| `FiniteCyclicTerminalNormalization.lean` | 928 | 288 |
-| `FiniteCyclicTerminalNormalization.lean` | 1796 | 277 |
-| `FiniteCyclicWordReduction.lean` | 139 | 234 |
-| `FiniteCyclicWordReduction.lean` | 674 | 234 |
-| `FiniteCyclicWordReduction.lean` | 2801 | 228 |
-| `FiniteCyclicWordReduction.lean` | 3046 | 708 |
-| `FiniteCyclicWordReduction.lean` | 3959 | 240 |
-| `FiniteCyclicWordReduction.lean` | 5628 | 209 |
-| `FiniteCyclicWordReduction.lean` | 5867 | 874 |
-| `FiniteCyclicWordReduction.lean` | 6978 | 202 |
-| `FiniteCyclicWordReductionCore.lean` | 248 | 394 |
-| `FiniteCyclicWordReductionCore.lean` | 3636 | 213 |
-| `FiniteCyclicWordReductionCore.lean` | 3902 | 250 |
-| `FiniteCyclicWordReductionCore.lean` | 4459 | 254 |
-| `Moise/AdaptiveFanComplex.lean` | 2071 | 274 |
-| `Moise/ChartInduction.lean` | 4295 | about 1390 |
-| `Moise/ChartInductionCore.lean` | 1685 | 219 |
-| `Moise/ChartInductionCore.lean` | 5306 | 387 |
-| `Moise/ChartInductionCore.lean` | 6391 | 287 |
-| `Moise/EmbeddedComplexValence.lean` | 53 | 315 |
-| `Moise/FacewiseComparison.lean` | 948 | 239 |
-| `Moise/IntrinsicFaceExtension.lean` | 780 | 212 |
-| `Moise/IntrinsicMarkedFan.lean` | 3059 | 223 |
-| `Moise/LineSubdivision.lean` | 3164 | 243 |
-| `Moise/PLApproximation.lean` | 1235 | 275 |
-| `Moise/PolygonalCrosscut.lean` | 413 | 211 |
-| `Moise/PolygonalSchoenflies.lean` | 503 | 207 |
-| `Topology/InvarianceOfDomain.lean` | 193 | 218 |
+| `FiniteCyclicWordReduction.lean` | 3047 | 708 |
+| `FiniteCyclicWordReduction.lean` | 5860 | 874 |
+| `Moise/ChartInduction.lean` | 1034 | 409 |
+| `Moise/ChartInduction.lean` | 2570 | 523 |
+| `Moise/ChartInduction.lean` | 4323 | 1388 |
+| `Moise/ChartInductionCore.lean` | 5303 | 387 |
+| `Moise/ChartInductionCore.lean` | 6388 | 287 |
 
 Line numbers will drift as helpers are extracted. Re-run Lean Pool's actual quality checker after
 each batch instead of treating this table as permanent.

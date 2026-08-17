@@ -337,6 +337,162 @@ noncomputable def finish {P : ValidPresentation}
 
 end CancellationResult
 
+/-- If cancelling a displayed inverse pair leaves no tail, the source normalizes to the sphere. -/
+private noncomputable def cancellationResult_sphere_of_lowerTail_eq_nil {n : ℕ}
+    {word : List (SignedDart (Fin (n + 1)))} (pair : CancellablePair word)
+    (ha : pair.edge ∉ pair.tail.map edgeOfDart)
+    (hlower : Cancellation.lowerTail pair.edge pair.tail = [])
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    CancellationResult ⟨Dyck.oneFace word, valid⟩ := by
+  let a := pair.edge
+  let X := pair.tail
+  cases horientation : pair.negativeFirst
+  · have hrotated : word.IsRotated ([.pos a, .neg a] ++ X) := by
+      simpa [a, X, inversePair, horientation] using pair.rotated
+    let rotation := Dyck.oneFaceSignedIsoOfIsRotated hrotated
+    let validNamed : (Cancellation.namedSource a X).IsSurfaceValid :=
+      rotation.isSurfaceValid valid
+    have hnzero := predecessor_eq_zero_of_lowerTail_eq_nil a X ha hlower validNamed
+    subst n
+    let renameIso := Cancellation.namedSourceSignedIso a X ha
+    let validBase : (Cancellation.source (Cancellation.lowerTail a X)).IsSurfaceValid :=
+      renameIso.isSurfaceValid validNamed
+    have hRotate : NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩ ⟨Cancellation.namedSource a X, validNamed⟩ :=
+      NormalizationEquivalent.ofSignedIso rotation
+    have hRename : NormalizationEquivalent
+        ⟨Cancellation.namedSource a X, validNamed⟩
+        ⟨Cancellation.source (Cancellation.lowerTail a X), validBase⟩ :=
+      NormalizationEquivalent.ofSignedIso renameIso
+    have hToBase : NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩
+        ⟨Cancellation.source (Cancellation.lowerTail a X), validBase⟩ :=
+      hRotate.trans hRename
+    have hbase : Cancellation.source (Cancellation.lowerTail a X) =
+        Cancellation.source ([] : List (SignedDart (Fin 0))) :=
+      congrArg Cancellation.source hlower
+    let validEmpty :
+        (Cancellation.source ([] : List (SignedDart (Fin 0)))).IsSurfaceValid :=
+      hbase ▸ validBase
+    have hnode :
+        (⟨Cancellation.source (Cancellation.lowerTail a X), validBase⟩ :
+            ValidPresentation) =
+          ⟨Cancellation.source ([] : List (SignedDart (Fin 0))), validEmpty⟩ :=
+      ValidPresentation.ext hbase
+    rw [hnode] at hToBase
+    exact .sphere
+      (hToBase.trans (Cancellation.sphereNormalizationEquivalent validEmpty))
+  · have hrotated : word.IsRotated ([.neg a, .pos a] ++ X) := by
+      simpa [a, X, inversePair, horientation] using pair.rotated
+    let rotation := Dyck.oneFaceSignedIsoOfIsRotated hrotated
+    let validNegative : (Cancellation.negativeNamedSource a X).IsSurfaceValid :=
+      rotation.isSurfaceValid valid
+    let signIso := Cancellation.negativeNamedSourceSignedIso a X ha
+    let validNamed : (Cancellation.namedSource a X).IsSurfaceValid :=
+      signIso.isSurfaceValid validNegative
+    have hnzero := predecessor_eq_zero_of_lowerTail_eq_nil a X ha hlower validNamed
+    subst n
+    let renameIso := Cancellation.namedSourceSignedIso a X ha
+    let validBase : (Cancellation.source (Cancellation.lowerTail a X)).IsSurfaceValid :=
+      renameIso.isSurfaceValid validNamed
+    have hRotate : NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩
+        ⟨Cancellation.negativeNamedSource a X, validNegative⟩ :=
+      NormalizationEquivalent.ofSignedIso rotation
+    have hSign : NormalizationEquivalent
+        ⟨Cancellation.negativeNamedSource a X, validNegative⟩
+        ⟨Cancellation.namedSource a X, validNamed⟩ :=
+      NormalizationEquivalent.ofSignedIso signIso
+    have hRename : NormalizationEquivalent
+        ⟨Cancellation.namedSource a X, validNamed⟩
+        ⟨Cancellation.source (Cancellation.lowerTail a X), validBase⟩ :=
+      NormalizationEquivalent.ofSignedIso renameIso
+    have hToBase : NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩
+        ⟨Cancellation.source (Cancellation.lowerTail a X), validBase⟩ :=
+      hRotate.trans (hSign.trans hRename)
+    have hbase : Cancellation.source (Cancellation.lowerTail a X) =
+        Cancellation.source ([] : List (SignedDart (Fin 0))) :=
+      congrArg Cancellation.source hlower
+    let validEmpty :
+        (Cancellation.source ([] : List (SignedDart (Fin 0)))).IsSurfaceValid :=
+      hbase ▸ validBase
+    have hnode :
+        (⟨Cancellation.source (Cancellation.lowerTail a X), validBase⟩ :
+            ValidPresentation) =
+          ⟨Cancellation.source ([] : List (SignedDart (Fin 0))), validEmpty⟩ :=
+      ValidPresentation.ext hbase
+    rw [hnode] at hToBase
+    exact .sphere
+      (hToBase.trans (Cancellation.sphereNormalizationEquivalent validEmpty))
+
+/-- A displayed inverse pair with nonempty lower tail gives one certified cancellation step. -/
+private theorem exists_cancellationStep_of_lowerTail_ne_nil {n : ℕ}
+    {word : List (SignedDart (Fin (n + 1)))} (pair : CancellablePair word)
+    (ha : pair.edge ∉ pair.tail.map edgeOfDart)
+    (hlower : Cancellation.lowerTail pair.edge pair.tail ≠ [])
+    (valid : (Dyck.oneFace word).IsSurfaceValid) :
+    ∃ validLower :
+        (Cancellation.target
+          (Cancellation.lowerTail pair.edge pair.tail)).IsSurfaceValid,
+      NormalizationEquivalent ⟨Dyck.oneFace word, valid⟩
+        ⟨Cancellation.target (Cancellation.lowerTail pair.edge pair.tail), validLower⟩ := by
+  let a := pair.edge
+  let X := pair.tail
+  let lower := Cancellation.lowerTail a X
+  cases horientation : pair.negativeFirst
+  · have hrotated : word.IsRotated ([.pos a, .neg a] ++ X) := by
+      simpa [a, X, inversePair, horientation] using pair.rotated
+    let rotation := Dyck.oneFaceSignedIsoOfIsRotated hrotated
+    let validNamed : (Cancellation.namedSource a X).IsSurfaceValid :=
+      rotation.isSurfaceValid valid
+    let renameIso := Cancellation.namedSourceSignedIso a X ha
+    let validBase : (Cancellation.source lower).IsSurfaceValid :=
+      renameIso.isSurfaceValid validNamed
+    let validLower : (Cancellation.target lower).IsSurfaceValid :=
+      Cancellation.target_isSurfaceValid lower hlower validBase
+    have hRotate : NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩ ⟨Cancellation.namedSource a X, validNamed⟩ :=
+      NormalizationEquivalent.ofSignedIso rotation
+    have hRename : NormalizationEquivalent
+        ⟨Cancellation.namedSource a X, validNamed⟩
+        ⟨Cancellation.source lower, validBase⟩ :=
+      NormalizationEquivalent.ofSignedIso renameIso
+    refine ⟨validLower, ?_⟩
+    exact hRotate.trans
+      (hRename.trans
+        (Cancellation.normalizationEquivalent lower hlower validBase))
+  · have hrotated : word.IsRotated ([.neg a, .pos a] ++ X) := by
+      simpa [a, X, inversePair, horientation] using pair.rotated
+    let rotation := Dyck.oneFaceSignedIsoOfIsRotated hrotated
+    let validNegative : (Cancellation.negativeNamedSource a X).IsSurfaceValid :=
+      rotation.isSurfaceValid valid
+    let signIso := Cancellation.negativeNamedSourceSignedIso a X ha
+    let validNamed : (Cancellation.namedSource a X).IsSurfaceValid :=
+      signIso.isSurfaceValid validNegative
+    let renameIso := Cancellation.namedSourceSignedIso a X ha
+    let validBase : (Cancellation.source lower).IsSurfaceValid :=
+      renameIso.isSurfaceValid validNamed
+    let validLower : (Cancellation.target lower).IsSurfaceValid :=
+      Cancellation.target_isSurfaceValid lower hlower validBase
+    have hRotate : NormalizationEquivalent
+        ⟨Dyck.oneFace word, valid⟩
+        ⟨Cancellation.negativeNamedSource a X, validNegative⟩ :=
+      NormalizationEquivalent.ofSignedIso rotation
+    have hSign : NormalizationEquivalent
+        ⟨Cancellation.negativeNamedSource a X, validNegative⟩
+        ⟨Cancellation.namedSource a X, validNamed⟩ :=
+      NormalizationEquivalent.ofSignedIso signIso
+    have hRename : NormalizationEquivalent
+        ⟨Cancellation.namedSource a X, validNamed⟩
+        ⟨Cancellation.source lower, validBase⟩ :=
+      NormalizationEquivalent.ofSignedIso renameIso
+    refine ⟨validLower, ?_⟩
+    exact hRotate.trans
+      (hSign.trans
+        (hRename.trans
+          (Cancellation.normalizationEquivalent lower hlower validBase)))
+
 /-- Fuel-bounded implementation of repeated inverse-pair cancellation. -/
 noncomputable def cancelInversePairsFuel (fuel : ℕ) {n : ℕ}
     (word : List (SignedDart (Fin n)))
@@ -381,221 +537,12 @@ noncomputable def cancelInversePairsFuel (fuel : ℕ) {n : ℕ}
         have hlowerBound : lower.length ≤ fuel - 1 := by
           omega
         by_cases hlower : lower = []
-        · cases horientation : pair.negativeFirst
-          · have hrotated :
-                word.IsRotated
-                  ([.pos a, .neg a] ++ X) := by
-              simpa [a, X, inversePair, horientation] using pair.rotated
-            let rotation :=
-              Dyck.oneFaceSignedIsoOfIsRotated hrotated
-            let validNamed :
-                (Cancellation.namedSource a X).IsSurfaceValid :=
-              rotation.isSurfaceValid valid
-            have hnzero :=
-              predecessor_eq_zero_of_lowerTail_eq_nil
-                a X ha hlower validNamed
-            subst n
-            let renameIso :=
-              Cancellation.namedSourceSignedIso a X ha
-            let validBase :
-                (Cancellation.source
-                  (Cancellation.lowerTail a X)).IsSurfaceValid :=
-              renameIso.isSurfaceValid validNamed
-            have hRotate :
-                NormalizationEquivalent
-                  ⟨Dyck.oneFace word, valid⟩
-                  ⟨Cancellation.namedSource a X, validNamed⟩ :=
-              NormalizationEquivalent.ofSignedIso rotation
-            have hRename :
-                NormalizationEquivalent
-                  ⟨Cancellation.namedSource a X, validNamed⟩
-                  ⟨Cancellation.source
-                    (Cancellation.lowerTail a X), validBase⟩ :=
-              NormalizationEquivalent.ofSignedIso renameIso
-            have hToBase :
-                NormalizationEquivalent
-                  ⟨Dyck.oneFace word, valid⟩
-                  ⟨Cancellation.source
-                    (Cancellation.lowerTail a X), validBase⟩ :=
-              hRotate.trans hRename
-            have hbase :
-                Cancellation.source (Cancellation.lowerTail a X) =
-                  Cancellation.source
-                    ([] : List (SignedDart (Fin 0))) :=
-              congrArg Cancellation.source hlower
-            let validEmpty :
-                (Cancellation.source
-                  ([] : List (SignedDart (Fin 0)))).IsSurfaceValid :=
-              hbase ▸ validBase
-            have hnode :
-                (⟨Cancellation.source
-                    (Cancellation.lowerTail a X), validBase⟩ :
-                    ValidPresentation) =
-                  ⟨Cancellation.source
-                    ([] : List (SignedDart (Fin 0))), validEmpty⟩ :=
-              ValidPresentation.ext hbase
-            rw [hnode] at hToBase
-            exact .sphere
-              (hToBase.trans
-                (Cancellation.sphereNormalizationEquivalent validEmpty))
-          · have hrotated :
-                word.IsRotated
-                  ([.neg a, .pos a] ++ X) := by
-              simpa [a, X, inversePair, horientation] using pair.rotated
-            let rotation :=
-              Dyck.oneFaceSignedIsoOfIsRotated hrotated
-            let validNegative :
-                (Cancellation.negativeNamedSource a X).IsSurfaceValid :=
-              rotation.isSurfaceValid valid
-            let signIso :=
-              Cancellation.negativeNamedSourceSignedIso a X ha
-            let validNamed :
-                (Cancellation.namedSource a X).IsSurfaceValid :=
-              signIso.isSurfaceValid validNegative
-            have hnzero :=
-              predecessor_eq_zero_of_lowerTail_eq_nil
-                a X ha hlower validNamed
-            subst n
-            let renameIso :=
-              Cancellation.namedSourceSignedIso a X ha
-            let validBase :
-                (Cancellation.source
-                  (Cancellation.lowerTail a X)).IsSurfaceValid :=
-              renameIso.isSurfaceValid validNamed
-            have hRotate :
-                NormalizationEquivalent
-                  ⟨Dyck.oneFace word, valid⟩
-                  ⟨Cancellation.negativeNamedSource a X,
-                    validNegative⟩ :=
-              NormalizationEquivalent.ofSignedIso rotation
-            have hSign :
-                NormalizationEquivalent
-                  ⟨Cancellation.negativeNamedSource a X,
-                    validNegative⟩
-                  ⟨Cancellation.namedSource a X, validNamed⟩ :=
-              NormalizationEquivalent.ofSignedIso signIso
-            have hRename :
-                NormalizationEquivalent
-                  ⟨Cancellation.namedSource a X, validNamed⟩
-                  ⟨Cancellation.source
-                    (Cancellation.lowerTail a X), validBase⟩ :=
-              NormalizationEquivalent.ofSignedIso renameIso
-            have hToBase :
-                NormalizationEquivalent
-                  ⟨Dyck.oneFace word, valid⟩
-                  ⟨Cancellation.source
-                    (Cancellation.lowerTail a X), validBase⟩ :=
-              hRotate.trans (hSign.trans hRename)
-            have hbase :
-                Cancellation.source (Cancellation.lowerTail a X) =
-                  Cancellation.source
-                    ([] : List (SignedDart (Fin 0))) :=
-              congrArg Cancellation.source hlower
-            let validEmpty :
-                (Cancellation.source
-                  ([] : List (SignedDart (Fin 0)))).IsSurfaceValid :=
-              hbase ▸ validBase
-            have hnode :
-                (⟨Cancellation.source
-                    (Cancellation.lowerTail a X), validBase⟩ :
-                    ValidPresentation) =
-                  ⟨Cancellation.source
-                    ([] : List (SignedDart (Fin 0))), validEmpty⟩ :=
-              ValidPresentation.ext hbase
-            rw [hnode] at hToBase
-            exact .sphere
-              (hToBase.trans
-                (Cancellation.sphereNormalizationEquivalent validEmpty))
-        · cases horientation : pair.negativeFirst
-          · have hrotated :
-                word.IsRotated
-                  ([.pos a, .neg a] ++ X) := by
-              simpa [a, X, inversePair, horientation] using pair.rotated
-            let rotation :=
-              Dyck.oneFaceSignedIsoOfIsRotated hrotated
-            let validNamed :
-                (Cancellation.namedSource a X).IsSurfaceValid :=
-              rotation.isSurfaceValid valid
-            let renameIso :=
-              Cancellation.namedSourceSignedIso a X ha
-            let validBase :
-                (Cancellation.source lower).IsSurfaceValid :=
-              renameIso.isSurfaceValid validNamed
-            let validLower :
-                (Cancellation.target lower).IsSurfaceValid :=
-              Cancellation.target_isSurfaceValid lower hlower validBase
-            have hRotate :
-                NormalizationEquivalent
-                  ⟨Dyck.oneFace word, valid⟩
-                  ⟨Cancellation.namedSource a X, validNamed⟩ :=
-              NormalizationEquivalent.ofSignedIso rotation
-            have hRename :
-                NormalizationEquivalent
-                  ⟨Cancellation.namedSource a X, validNamed⟩
-                  ⟨Cancellation.source lower, validBase⟩ :=
-              NormalizationEquivalent.ofSignedIso renameIso
-            have hstep :
-                NormalizationEquivalent
-                  ⟨Dyck.oneFace word, valid⟩
-                  ⟨Cancellation.target lower, validLower⟩ :=
-              hRotate.trans
-                (hRename.trans
-                  (Cancellation.normalizationEquivalent
-                    lower hlower validBase))
-            exact
-              (cancelInversePairsFuel (fuel - 1)
-                lower validLower hlowerBound).ofEquivalent hstep
-          · have hrotated :
-                word.IsRotated
-                  ([.neg a, .pos a] ++ X) := by
-              simpa [a, X, inversePair, horientation] using pair.rotated
-            let rotation :=
-              Dyck.oneFaceSignedIsoOfIsRotated hrotated
-            let validNegative :
-                (Cancellation.negativeNamedSource a X).IsSurfaceValid :=
-              rotation.isSurfaceValid valid
-            let signIso :=
-              Cancellation.negativeNamedSourceSignedIso a X ha
-            let validNamed :
-                (Cancellation.namedSource a X).IsSurfaceValid :=
-              signIso.isSurfaceValid validNegative
-            let renameIso :=
-              Cancellation.namedSourceSignedIso a X ha
-            let validBase :
-                (Cancellation.source lower).IsSurfaceValid :=
-              renameIso.isSurfaceValid validNamed
-            let validLower :
-                (Cancellation.target lower).IsSurfaceValid :=
-              Cancellation.target_isSurfaceValid lower hlower validBase
-            have hRotate :
-                NormalizationEquivalent
-                  ⟨Dyck.oneFace word, valid⟩
-                  ⟨Cancellation.negativeNamedSource a X,
-                    validNegative⟩ :=
-              NormalizationEquivalent.ofSignedIso rotation
-            have hSign :
-                NormalizationEquivalent
-                  ⟨Cancellation.negativeNamedSource a X,
-                    validNegative⟩
-                  ⟨Cancellation.namedSource a X, validNamed⟩ :=
-              NormalizationEquivalent.ofSignedIso signIso
-            have hRename :
-                NormalizationEquivalent
-                  ⟨Cancellation.namedSource a X, validNamed⟩
-                  ⟨Cancellation.source lower, validBase⟩ :=
-              NormalizationEquivalent.ofSignedIso renameIso
-            have hstep :
-                NormalizationEquivalent
-                  ⟨Dyck.oneFace word, valid⟩
-                  ⟨Cancellation.target lower, validLower⟩ :=
-              hRotate.trans
-                (hSign.trans
-                  (hRename.trans
-                    (Cancellation.normalizationEquivalent
-                      lower hlower validBase)))
-            exact
-              (cancelInversePairsFuel (fuel - 1)
-                lower validLower hlowerBound).ofEquivalent hstep
+        · exact cancellationResult_sphere_of_lowerTail_eq_nil pair ha hlower valid
+        · let stepWitness :=
+            exists_cancellationStep_of_lowerTail_ne_nil pair ha hlower valid
+          let validLower := Classical.choose stepWitness
+          have hstep := Classical.choose_spec stepWitness
+          exact (cancelInversePairsFuel (fuel - 1) lower validLower hlowerBound).ofEquivalent hstep
   · exact .reduced
       { edgeCount := n
         word := word
@@ -3759,6 +3706,13 @@ def sourceWord {n : ℕ}
     positiveSourceWord outer first second
       insideTail outsideTail
 
+@[simp]
+private theorem sourceWord_false {n : ℕ} (outer first second : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    sourceWord outer first second false insideTail outsideTail =
+      positiveSourceWord outer first second insideTail outsideTail := by
+  simp [sourceWord]
+
 /-- Contextual handle target with arbitrary residual-carrier orientation. -/
 def targetWord {n : ℕ}
     (outer first second : Fin n)
@@ -3771,6 +3725,13 @@ def targetWord {n : ℕ}
   else
     positiveTargetWord outer first second
       insideTail outsideTail
+
+@[simp]
+private theorem targetWord_false {n : ℕ} (outer first second : Fin n)
+    (insideTail outsideTail : List (SignedDart (Fin n))) :
+    targetWord outer first second false insideTail outsideTail =
+      positiveTargetWord outer first second insideTail outsideTail := by
+  simp [targetWord]
 
 /-- Reversing only the residual carrier identifies negative and positive handle sources. -/
 def negativeSourceSignedIso {n : ℕ}
@@ -3897,6 +3858,66 @@ def negativeTargetSignedIso {n : ℕ}
     simp only [Dyck.reverseEdgeRelabeling_neg,
       Dyck.reverseEdgeRelabeling_pos, List.map_nil]
     exact List.IsRotated.refl _
+
+private theorem exists_positiveTarget_of_thirdTarget {n : ℕ}
+    (outer first second : Fin n) (insideTail outsideTail : List (SignedDart (Fin n)))
+    (hfirstSecond : first ≠ second) (hsecondOuter : second ≠ outer)
+    (hsecondInside : second ∉ insideTail.map edgeOfDart)
+    (hsecondOutside : second ∉ outsideTail.map edgeOfDart)
+    (validSource : (Dyck.target first [.pos second] [.pos outer]
+      (SignedDart.neg second :: insideTail ++ SignedDart.neg outer :: outsideTail)).IsSurfaceValid) :
+    ∃ validTarget : (Dyck.oneFace
+        (positiveTargetWord outer first second insideTail outsideTail)).IsSurfaceValid,
+      NormalizationEquivalent
+        ⟨Dyck.target first [.pos second] [.pos outer]
+          (SignedDart.neg second :: insideTail ++ SignedDart.neg outer :: outsideTail),
+          validSource⟩
+        ⟨Dyck.oneFace (positiveTargetWord outer first second insideTail outsideTail),
+          validTarget⟩ := by
+  let fourthU :=
+    insideTail ++ SignedDart.neg outer :: outsideTail ++ [SignedDart.pos first]
+  let fourthV : List (SignedDart (Fin n)) := [.pos outer]
+  let fourthX : List (SignedDart (Fin n)) := [.neg first]
+  have hthirdTargetRotated :
+      (Dyck.target first [.pos second] [.pos outer]
+        (SignedDart.neg second :: insideTail ++ SignedDart.neg outer :: outsideTail)
+        ).boundary 0 |>.IsRotated
+        ((Dyck.negativeSource second fourthU fourthV fourthX).boundary 0) := by
+    simpa [fourthU, fourthV, fourthX, Dyck.target, Dyck.negativeSource,
+      Dyck.oneFace_boundary_zero, List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l := [SignedDart.pos second, SignedDart.neg first])
+        (l' := [SignedDart.neg second] ++ insideTail ++ [SignedDart.neg outer] ++
+          outsideTail ++ [SignedDart.pos first, SignedDart.pos outer]))
+  let thirdTargetRotation := Dyck.oneFaceSignedIsoOfIsRotated hthirdTargetRotated
+  let validFourthSource :
+      (Dyck.negativeSource second fourthU fourthV fourthX).IsSurfaceValid :=
+    thirdTargetRotation.isSurfaceValid validSource
+  have hfourthU : second ∉ fourthU.map edgeOfDart := by
+    simp [fourthU, hsecondInside, hsecondOuter, hsecondOutside, hfirstSecond.symm]
+  have hfourthV : second ∉ fourthV.map edgeOfDart := by
+    simp [fourthV, hsecondOuter]
+  have hfourthX : second ∉ fourthX.map edgeOfDart := by
+    simp [fourthX, hfirstSecond.symm]
+  let validFourthTarget :=
+    Dyck.negativeTarget_isSurfaceValid second fourthU fourthV fourthX validFourthSource
+  have hfourth := Dyck.negativeNormalizationEquivalent second fourthU fourthV fourthX
+    hfourthU hfourthV hfourthX validFourthSource validFourthTarget
+  have htargetRotated :
+      (Dyck.negativeTarget second fourthU fourthV fourthX).boundary 0 |>.IsRotated
+        (positiveTargetWord outer first second insideTail outsideTail) := by
+    simpa [fourthU, fourthV, fourthX, positiveTargetWord, Dyck.negativeTarget,
+      Dyck.oneFace_boundary_zero, List.cons_append, List.append_assoc] using
+      (List.isRotated_append
+        (l := insideTail ++ SignedDart.neg outer :: outsideTail)
+        (l' := [SignedDart.pos first, SignedDart.pos second, SignedDart.neg first,
+          SignedDart.neg second, SignedDart.pos outer]))
+  let targetRotation := Dyck.oneFaceSignedIsoOfIsRotated htargetRotated
+  let validTarget : (Dyck.oneFace
+      (positiveTargetWord outer first second insideTail outsideTail)).IsSurfaceValid :=
+    targetRotation.isSurfaceValid validFourthTarget
+  exact ⟨validTarget, (NormalizationEquivalent.ofSignedIso thirdTargetRotation).trans
+    (hfourth.trans (NormalizationEquivalent.ofSignedIso targetRotation))⟩
 
 /-- Commuting a completed handle through a residual pair is a four-Dyck chain. -/
 theorem exists_positiveNormalizationEquivalent {n : ℕ}
@@ -4083,102 +4104,14 @@ theorem exists_positiveNormalizationEquivalent {n : ℕ}
       thirdU thirdV thirdX
       hthirdU hthirdV hthirdX
       validThirdSource validThirdTarget
-  let fourthU :=
-    insideTail ++
-      SignedDart.neg outer ::
-      outsideTail ++ [SignedDart.pos first]
-  let fourthV : List (SignedDart (Fin n)) :=
-    [.pos outer]
-  let fourthX : List (SignedDart (Fin n)) :=
-    [.neg first]
-  have hthirdTargetRotated :
-      (Dyck.target first
-        thirdU thirdV thirdX).boundary 0 |>.IsRotated
-        ((Dyck.negativeSource second
-          fourthU fourthV fourthX).boundary 0) := by
-    simpa [thirdU, thirdV, thirdX,
-      fourthU, fourthV, fourthX,
-      Dyck.target, Dyck.negativeSource,
-      Dyck.oneFace_boundary_zero,
-      List.cons_append, List.append_assoc] using
-      (List.isRotated_append
-        (l :=
-          [SignedDart.pos second,
-            SignedDart.neg first])
-        (l' :=
-          [SignedDart.neg second] ++
-          insideTail ++
-          [SignedDart.neg outer] ++
-          outsideTail ++
-          [SignedDart.pos first,
-            SignedDart.pos outer]))
-  let thirdTargetRotation :=
-    Dyck.oneFaceSignedIsoOfIsRotated
-      hthirdTargetRotated
-  let validFourthSource :
-      (Dyck.negativeSource second
-        fourthU fourthV fourthX).IsSurfaceValid :=
-    thirdTargetRotation.isSurfaceValid validThirdTarget
-  have hfourthU :
-      second ∉ fourthU.map edgeOfDart := by
-    simp [fourthU, hsecondInside, hsecondOuter,
-      hsecondOutside, hfirstSecond.symm]
-  have hfourthV :
-      second ∉ fourthV.map edgeOfDart := by
-    simp [fourthV, hsecondOuter]
-  have hfourthX :
-      second ∉ fourthX.map edgeOfDart := by
-    simp [fourthX, hfirstSecond.symm]
-  let validFourthTarget :=
-    Dyck.negativeTarget_isSurfaceValid second
-      fourthU fourthV fourthX validFourthSource
-  have hfourth :=
-    Dyck.negativeNormalizationEquivalent second
-      fourthU fourthV fourthX
-      hfourthU hfourthV hfourthX
-      validFourthSource validFourthTarget
-  have htargetRotated :
-      (Dyck.negativeTarget second
-        fourthU fourthV fourthX).boundary 0 |>.IsRotated
-        (positiveTargetWord outer first second
-          insideTail outsideTail) := by
-    simpa [fourthU, fourthV, fourthX,
-      positiveTargetWord,
-      Dyck.negativeTarget,
-      Dyck.oneFace_boundary_zero,
-      List.cons_append, List.append_assoc] using
-      (List.isRotated_append
-        (l :=
-          insideTail ++
-            SignedDart.neg outer :: outsideTail)
-        (l' :=
-          [SignedDart.pos first,
-            SignedDart.pos second,
-            SignedDart.neg first,
-            SignedDart.neg second,
-            SignedDart.pos outer]))
-  let targetRotation :=
-    Dyck.oneFaceSignedIsoOfIsRotated htargetRotated
-  let validTarget :
-      (Dyck.oneFace
-        (positiveTargetWord outer first second
-          insideTail outsideTail)).IsSurfaceValid :=
-    targetRotation.isSurfaceValid validFourthTarget
-  exact
-    ⟨validTarget,
-      (NormalizationEquivalent.ofSignedIso sourceRotation).trans
-        (hfirst.trans
-          ((NormalizationEquivalent.ofSignedIso
-              firstTargetRotation).trans
-            (hsecond.trans
-              ((NormalizationEquivalent.ofSignedIso
-                  secondTargetRotation).trans
-                (hthird.trans
-                  ((NormalizationEquivalent.ofSignedIso
-                      thirdTargetRotation).trans
-                    (hfourth.trans
-                      (NormalizationEquivalent.ofSignedIso
-                        targetRotation))))))))⟩
+  let finalWitness := exists_positiveTarget_of_thirdTarget outer first second
+    insideTail outsideTail hfirstSecond hsecondOuter hsecondInside hsecondOutside validThirdTarget
+  let validTarget := Classical.choose finalWitness
+  have hfinal := Classical.choose_spec finalWitness
+  exact ⟨validTarget, (NormalizationEquivalent.ofSignedIso sourceRotation).trans
+    (hfirst.trans ((NormalizationEquivalent.ofSignedIso firstTargetRotation).trans
+      (hsecond.trans ((NormalizationEquivalent.ofSignedIso secondTargetRotation).trans
+        (hthird.trans hfinal)))))⟩
 
 /-- Contextual handle commuting supports either orientation of the residual carrier. -/
 theorem exists_normalizationEquivalent {n : ℕ}
@@ -4607,6 +4540,15 @@ def targetCut {n : ℕ} (word : List (SignedDart (Fin n))) :
         (l := [.pos (carrier n)] ++ P2.retainWord word)
         (l' := [.neg (carrier n)])) using 1 ;
       simp [targetWord, List.cons_append]
+
+/-- The right side of the enveloped cut contains the positive carrier followed by the retained
+word. -/
+@[simp]
+private theorem targetCut_right {n : ℕ}
+    (word : List (SignedDart (Fin n))) :
+    (targetCut word).right =
+      [.pos (carrier n)] ++ P2.retainWord word :=
+  rfl
 
 /-- The separator edge selected for P1 expansion in the source split. -/
 def expandedCarrier {n : ℕ}

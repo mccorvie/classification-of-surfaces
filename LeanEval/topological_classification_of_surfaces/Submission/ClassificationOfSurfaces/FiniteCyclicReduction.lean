@@ -935,6 +935,79 @@ def mergeUnorientedIso
             left.edge_mem_boundary right.edge_mem_boundary)]
         exact List.IsRotated.refl _
 
+private theorem mergeSource_untouched_eq_of_boundary_rotated
+    {P : FiniteCyclicPresentation} {f g : P.Face} {e : P.Edge}
+    (left : PositiveOccurrence P f e) (right : NegativeOccurrence P g e)
+    (hfg : f ≠ g) (validP : P.IsSurfaceValid)
+    (i j : Fin (mergeMiddleWords P e f g hfg).length)
+    (h : ((mergeSource left right hfg).boundary
+        (FaceMerge.ContextMerge.untouchedSourceFace (mergeLeftWord left)
+          (mergeRightWord right) (mergeMiddleWords P e f g hfg) i)).IsRotated
+      ((mergeSource left right hfg).boundary
+        (FaceMerge.ContextMerge.untouchedSourceFace (mergeLeftWord left)
+          (mergeRightWord right) (mergeMiddleWords P e f g hfg) j))) :
+    FaceMerge.ContextMerge.untouchedSourceFace (mergeLeftWord left)
+        (mergeRightWord right) (mergeMiddleWords P e f g hfg) i =
+      FaceMerge.ContextMerge.untouchedSourceFace (mergeLeftWord left)
+        (mergeRightWord right) (mergeMiddleWords P e f g hfg) j := by
+  let U := mergeLeftWord left
+  let V := mergeRightWord right
+  let W := mergeMiddleWords P e f g hfg
+  let iso := mergeUnorientedIso left right hfg validP
+  let i' : Fin (faceCountBetween P) :=
+    ⟨i.val, by simpa [W, mergeMiddleWords_length] using i.isLt⟩
+  let j' : Fin (faceCountBetween P) :=
+    ⟨j.val, by simpa [W, mergeMiddleWords_length] using j.isLt⟩
+  let fi := middleOriginalFace P f g hfg i'
+  let fj := middleOriginalFace P f g hfg j'
+  have hfi : fi ≠ f := middleOriginalFace_ne_selected P f g hfg i'
+  have hfig : fi ≠ g := middleOriginalFace_ne_right P f g hfg i'
+  have hfj : fj ≠ f := middleOriginalFace_ne_selected P f g hfg j'
+  have hfjg : fj ≠ g := middleOriginalFace_ne_right P f g hfg j'
+  have hiFace : iso.faceEquiv fi =
+      FaceMerge.ContextMerge.untouchedSourceFace U V W i := by
+    apply Fin.ext
+    change (mergeFaceEquiv left right hfg (middleOriginalFace P f g hfg i')).val = i.val + 1
+    rw [mergeFaceEquiv_middle]
+    rfl
+  have hjFace : iso.faceEquiv fj =
+      FaceMerge.ContextMerge.untouchedSourceFace U V W j := by
+    apply Fin.ext
+    change (mergeFaceEquiv left right hfg (middleOriginalFace P f g hfg j')).val = j.val + 1
+    rw [mergeFaceEquiv_middle]
+    rfl
+  have hiReverse : mergeReverseFace left right fi = false := by
+    simp [mergeReverseFace, hfi, hfig]
+  have hjReverse : mergeReverseFace left right fj = false := by
+    simp [mergeReverseFace, hfj, hfjg]
+  have hiFace' : mergeFaceEquiv left right hfg fi =
+      FaceMerge.ContextMerge.untouchedSourceFace U V W i := hiFace
+  have hjFace' : mergeFaceEquiv left right hfg fj =
+      FaceMerge.ContextMerge.untouchedSourceFace U V W j := hjFace
+  have hi := iso.boundary_rotated fi
+  have hj := iso.boundary_rotated fj
+  change ((P.boundary fi).map iso.edgeRelabeling.mapDart).IsRotated
+    ((mergeSource left right hfg).orientedBoundary
+      ⟨mergeFaceEquiv left right hfg fi, mergeReverseFace left right fi⟩) at hi
+  change ((P.boundary fj).map iso.edgeRelabeling.mapDart).IsRotated
+    ((mergeSource left right hfg).orientedBoundary
+      ⟨mergeFaceEquiv left right hfg fj, mergeReverseFace left right fj⟩) at hj
+  have hi' : ((P.boundary fi).map iso.edgeRelabeling.mapDart).IsRotated
+      ((mergeSource left right hfg).boundary
+        (FaceMerge.ContextMerge.untouchedSourceFace U V W i)) := by
+    rw [hiFace', hiReverse] at hi
+    simpa [FiniteCyclicPresentation.orientedBoundary] using hi
+  have hj' : ((P.boundary fj).map iso.edgeRelabeling.mapDart).IsRotated
+      ((mergeSource left right hfg).boundary
+        (FaceMerge.ContextMerge.untouchedSourceFace U V W j)) := by
+    rw [hjFace', hjReverse] at hj
+    simpa [FiniteCyclicPresentation.orientedBoundary] using hj
+  have hmapped := hi'.trans (h.trans hj'.symm)
+  have horiginal := hmapped.map iso.edgeRelabeling.symm.mapDart
+  rw [EdgeRelabeling.map_mapDart_symm, EdgeRelabeling.map_mapDart_symm] at horiginal
+  have hfij := validP.2.2.1 fi fj horiginal
+  exact hiFace.symm.trans ((congrArg iso.faceEquiv hfij).trans hjFace)
+
 /-- The specialized unoriented comparison used by an adjacent-face merge preserves ordinary
 validity.  Reversing either selected face cannot create a duplicate: both selected faces contain
 the fresh separator, untouched faces do not, and the two selected occurrences have opposite
@@ -1049,89 +1122,8 @@ theorem mergeSource_isSurfaceValid
           ((mergeSource left right hfg).boundary
             (FaceMerge.ContextMerge.untouchedSourceFace U V W j))) :
       FaceMerge.ContextMerge.untouchedSourceFace U V W i =
-        FaceMerge.ContextMerge.untouchedSourceFace U V W j := by
-    let i' : Fin (faceCountBetween P) :=
-      ⟨i.val, by simpa [W, mergeMiddleWords_length] using i.isLt⟩
-    let j' : Fin (faceCountBetween P) :=
-      ⟨j.val, by simpa [W, mergeMiddleWords_length] using j.isLt⟩
-    let fi := middleOriginalFace P f g hfg i'
-    let fj := middleOriginalFace P f g hfg j'
-    have hfi : fi ≠ f :=
-      middleOriginalFace_ne_selected P f g hfg i'
-    have hfig : fi ≠ g :=
-      middleOriginalFace_ne_right P f g hfg i'
-    have hfj : fj ≠ f :=
-      middleOriginalFace_ne_selected P f g hfg j'
-    have hfjg : fj ≠ g :=
-      middleOriginalFace_ne_right P f g hfg j'
-    have hiFace :
-        iso.faceEquiv fi =
-          FaceMerge.ContextMerge.untouchedSourceFace U V W i := by
-      apply Fin.ext
-      change
-        (mergeFaceEquiv left right hfg
-          (middleOriginalFace P f g hfg i')).val =
-            i.val + 1
-      rw [mergeFaceEquiv_middle]
-      rfl
-    have hjFace :
-        iso.faceEquiv fj =
-          FaceMerge.ContextMerge.untouchedSourceFace U V W j := by
-      apply Fin.ext
-      change
-        (mergeFaceEquiv left right hfg
-          (middleOriginalFace P f g hfg j')).val =
-            j.val + 1
-      rw [mergeFaceEquiv_middle]
-      rfl
-    have hiReverse :
-        mergeReverseFace left right fi = false := by
-      simp [mergeReverseFace, hfi, hfig]
-    have hjReverse :
-        mergeReverseFace left right fj = false := by
-      simp [mergeReverseFace, hfj, hfjg]
-    have hiFace' :
-        mergeFaceEquiv left right hfg fi =
-          FaceMerge.ContextMerge.untouchedSourceFace U V W i :=
-      hiFace
-    have hjFace' :
-        mergeFaceEquiv left right hfg fj =
-          FaceMerge.ContextMerge.untouchedSourceFace U V W j :=
-      hjFace
-    have hi := iso.boundary_rotated fi
-    have hj := iso.boundary_rotated fj
-    change
-      ((P.boundary fi).map
-          iso.edgeRelabeling.mapDart).IsRotated
-        ((mergeSource left right hfg).orientedBoundary
-          ⟨mergeFaceEquiv left right hfg fi,
-            mergeReverseFace left right fi⟩) at hi
-    change
-      ((P.boundary fj).map
-          iso.edgeRelabeling.mapDart).IsRotated
-        ((mergeSource left right hfg).orientedBoundary
-          ⟨mergeFaceEquiv left right hfg fj,
-            mergeReverseFace left right fj⟩) at hj
-    have hi' :
-        ((P.boundary fi).map iso.edgeRelabeling.mapDart).IsRotated
-          ((mergeSource left right hfg).boundary
-            (FaceMerge.ContextMerge.untouchedSourceFace U V W i)) := by
-      rw [hiFace', hiReverse] at hi
-      simpa [FiniteCyclicPresentation.orientedBoundary] using hi
-    have hj' :
-        ((P.boundary fj).map iso.edgeRelabeling.mapDart).IsRotated
-          ((mergeSource left right hfg).boundary
-            (FaceMerge.ContextMerge.untouchedSourceFace U V W j)) := by
-      rw [hjFace', hjReverse] at hj
-      simpa [FiniteCyclicPresentation.orientedBoundary] using hj
-    have hmapped := hi'.trans (h.trans hj'.symm)
-    have horiginal :=
-      hmapped.map iso.edgeRelabeling.symm.mapDart
-    rw [EdgeRelabeling.map_mapDart_symm,
-      EdgeRelabeling.map_mapDart_symm] at horiginal
-    have hfij := validP.2.2.1 fi fj horiginal
-    exact hiFace.symm.trans
-      ((congrArg iso.faceEquiv hfij).trans hjFace)
+        FaceMerge.ContextMerge.untouchedSourceFace U V W j :=
+    mergeSource_untouched_eq_of_boundary_rotated left right hfg validP i j h
   refine ⟨iso.faceEquiv.nonempty_congr.mp validP.1, ?_, ?_, ?_⟩
   · intro q hq
     let p := iso.faceEquiv.symm q

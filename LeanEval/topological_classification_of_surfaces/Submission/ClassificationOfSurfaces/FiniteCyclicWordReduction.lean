@@ -268,6 +268,10 @@ def targetTokens {n : ℕ}
         remainderTokens ++ beforeOutsideBTokens ++
         beforeNegATokens ++ beforeBTokens
 
+private theorem targetTokens_ne_nil {n : ℕ} {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens) : marked.targetTokens ≠ [] := by
+  cases marked <;> simp [targetTokens]
+
 /-- Lift an actionable feature of the erased residual word to the marked token word. -/
 noncomputable def lift {n : ℕ}
     {tokens : List (ReductionToken n)}
@@ -701,6 +705,13 @@ theorem targetTokens_isSeparated {n : ℕ}
     exact (List.disjoint_left.mp separated)
       heSourceResidual heOld
 
+private theorem residualWord_disjoint_extractedEdges {n : ℕ}
+    {tokens : List (ReductionToken n)}
+    (marked : MarkedActionablePairReductionFeature tokens) :
+    List.Disjoint (marked.residualFeature.residualWord.map edgeOfDart)
+      marked.residualFeature.extractedEdges :=
+  marked.residualFeature.extractedEdges_disjoint_residualWord.symm
+
 /-- Expanding a separated marked feature gives the genuine feature on the full signed word.
 The separation invariant is exactly what rules out a selected residual edge from every protected
 block lying in an intervening token segment. -/
@@ -830,50 +841,28 @@ def expandedFeature {n : ℕ}
       have hbProtected :=
         separatedDisplayed.not_mem_protected_of_mem_residual
           b hbResidual
-      have haBeforeB :
-          a ∉ ReductionToken.protectedEdges beforeBTokens := by
-        intro ha
-        apply haProtected
-        simp [ha]
-      have haBeforeNegA :
-          a ∉ ReductionToken.protectedEdges beforeNegATokens := by
-        intro ha
-        apply haProtected
-        simp [ha]
+      have haBeforeB : a ∉ ReductionToken.protectedEdges beforeBTokens := by
+        intro ha; exact haProtected (by simp [ha])
+      have haBeforeNegA : a ∉ ReductionToken.protectedEdges beforeNegATokens := by
+        intro ha; exact haProtected (by simp [ha])
       have haBeforeOutsideB :
           a ∉
             ReductionToken.protectedEdges
               beforeOutsideBTokens := by
-        intro ha
-        apply haProtected
-        simp [ha]
-      have haRemainder :
-          a ∉ ReductionToken.protectedEdges remainderTokens := by
-        intro ha
-        apply haProtected
-        simp [ha]
-      have hbBeforeB :
-          b ∉ ReductionToken.protectedEdges beforeBTokens := by
-        intro hb
-        apply hbProtected
-        simp [hb]
-      have hbBeforeNegA :
-          b ∉ ReductionToken.protectedEdges beforeNegATokens := by
-        intro hb
-        apply hbProtected
-        simp [hb]
+        intro ha; exact haProtected (by simp [ha])
+      have haRemainder : a ∉ ReductionToken.protectedEdges remainderTokens := by
+        intro ha; exact haProtected (by simp [ha])
+      have hbBeforeB : b ∉ ReductionToken.protectedEdges beforeBTokens := by
+        intro hb; exact hbProtected (by simp [hb])
+      have hbBeforeNegA : b ∉ ReductionToken.protectedEdges beforeNegATokens := by
+        intro hb; exact hbProtected (by simp [hb])
       have hbBeforeOutsideB :
           b ∉
             ReductionToken.protectedEdges
               beforeOutsideBTokens := by
-        intro hb
-        apply hbProtected
-        simp [hb]
-      have hbRemainder :
-          b ∉ ReductionToken.protectedEdges remainderTokens := by
-        intro hb
-        apply hbProtected
-        simp [hb]
+        intro hb; exact hbProtected (by simp [hb])
+      have hbRemainder : b ∉ ReductionToken.protectedEdges remainderTokens := by
+        intro hb; exact hbProtected (by simp [hb])
       refine .handle a b
         { bNegativeInside := form.bNegativeInside
           beforeB := ReductionToken.expand beforeBTokens
@@ -2869,6 +2858,18 @@ noncomputable def toBoundaryAtomRotateOfValid {n : ℕ}
       carrier_not_mem_inside := hcarrierInside
       carrier_not_mem_outside := hfresh.2 }
 
+private theorem toBoundaryAtomRotateOfValid_carrier {n : ℕ}
+    {tokens : List (ReductionToken (n + 1))}
+    (pair : MarkedResidualCancellablePair tokens)
+    (hole : Fin (n + 1)) (holeNegative : Bool)
+    (insideTokens : List (ReductionToken (n + 1)))
+    (hbetween : pair.betweenTokens =
+      .extracted (.boundary hole holeNegative) :: insideTokens)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
+    (pair.toBoundaryAtomRotateOfValid hole holeNegative insideTokens hbetween valid).carrier =
+      pair.edge := by
+  rfl
+
 /-- Two raw boundary atoms at the head of a protected residual-pair interval expose an adjacent
 P1 contraction after one cyclic token rotation. -/
 def toBoundaryPairContraction {n : ℕ}
@@ -3957,6 +3958,88 @@ theorem exists_boundaryOccurrenceForm {n : ℕ}
           List.mem_append, not_or]
         exact ⟨hright, hleft⟩ }⟩
 
+private theorem OppositeArcForm.exists_handleStep_of_second_in_remainder {n : ℕ}
+    {word : List (SignedDart (Fin n))} {a : Fin n}
+    (form : OppositeArcForm word a) {d : SignedDart (Fin n)}
+    {tail : List (SignedDart (Fin n))} (hbetween : form.between = d :: tail)
+    (b : Fin n) (bNegative : Bool) (hd : d = dart b bNegative) (hba : b ≠ a)
+    (hbTail : b ∉ tail.map edgeOfDart) (outsideNegative : Bool)
+    (left right : List (SignedDart (Fin n)))
+    (hremainder : form.remainder = left ++ dart b outsideNegative :: right)
+    (hopposite : outsideNegative = !bNegative)
+    (hbLeft : b ∉ left.map edgeOfDart) (hbRight : b ∉ right.map edgeOfDart) :
+    Nonempty (OppositeArcStep word form) := by
+  cases horientation : form.firstNegative
+  · let handleForm : InterleavedOccurrenceForm word a b :=
+      { bNegativeInside := bNegative
+        beforeB := []
+        beforeNegA := tail
+        beforeOutsideB := left
+        remainder := right
+        rotated := by
+          have hrotated := form.rotated
+          rw [hbetween, hd, hremainder, hopposite, horientation] at hrotated
+          simpa [dart, List.cons_append, List.append_assoc] using hrotated
+        edge_ne := hba.symm
+        a_not_mem_beforeB := by simp
+        a_not_mem_beforeNegA := by
+          intro haTail
+          apply form.edge_not_mem_between
+          rw [hbetween]
+          simp [haTail]
+        a_not_mem_beforeOutsideB := by
+          intro haLeft
+          apply form.edge_not_mem_remainder
+          rw [hremainder]
+          simp [haLeft]
+        a_not_mem_remainder := by
+          intro haRight
+          apply form.edge_not_mem_remainder
+          rw [hremainder]
+          simp [haRight]
+        b_not_mem_beforeB := by simp
+        b_not_mem_beforeNegA := hbTail
+        b_not_mem_beforeOutsideB := hbLeft
+        b_not_mem_remainder := hbRight }
+    exact ⟨.actionable (.handle a b handleForm)⟩
+  · let handleForm : InterleavedOccurrenceForm word a b :=
+      { bNegativeInside := outsideNegative
+        beforeB := left
+        beforeNegA := right
+        beforeOutsideB := []
+        remainder := tail
+        rotated := by
+          have hrotate :=
+            List.isRotated_append
+              (l := dart a form.firstNegative :: dart b bNegative :: tail)
+              (l' := dart a (!form.firstNegative) :: left ++ dart b outsideNegative :: right)
+          have hrotated := form.rotated
+          rw [hbetween, hd, hremainder] at hrotated
+          apply hrotated.trans
+          simpa [dart, horientation, hopposite, List.cons_append, List.append_assoc] using hrotate
+        edge_ne := hba.symm
+        a_not_mem_beforeB := by
+          intro haLeft
+          apply form.edge_not_mem_remainder
+          rw [hremainder]
+          simp [haLeft]
+        a_not_mem_beforeNegA := by
+          intro haRight
+          apply form.edge_not_mem_remainder
+          rw [hremainder]
+          simp [haRight]
+        a_not_mem_beforeOutsideB := by simp
+        a_not_mem_remainder := by
+          intro haTail
+          apply form.edge_not_mem_between
+          rw [hbetween]
+          simp [haTail]
+        b_not_mem_beforeB := hbLeft
+        b_not_mem_beforeNegA := hbRight
+        b_not_mem_beforeOutsideB := by simp
+        b_not_mem_remainder := hbTail }
+    exact ⟨.actionable (.handle a b handleForm)⟩
+
 /-- Inspect the first dart of a nonempty opposite arc.  A boundary or equal-orientation edge is
 immediately actionable.  An opposite edge either crosses the selected pair, yielding a handle,
 or closes inside it, yielding a strictly shorter directed arc. -/
@@ -4129,82 +4212,8 @@ theorem OppositeArcForm.exists_step_of_usedMultiplicities {n : ℕ}
                 cases haorientation : form.firstNegative <;>
                   simp [hbetween, hd, hremainder, dart, hfirst, hsecond,
                     haorientation, hab] at hnegativeCount
-            cases horientation : form.firstNegative
-            · let handleForm : InterleavedOccurrenceForm word a b :=
-                { bNegativeInside := bNegative
-                  beforeB := []
-                  beforeNegA := tail
-                  beforeOutsideB := left
-                  remainder := right
-                  rotated := by
-                    have hrotated := form.rotated
-                    rw [hbetween, hd, hremainder, hopposite,
-                      horientation] at hrotated
-                    simpa [dart, List.cons_append,
-                      List.append_assoc] using hrotated
-                  edge_ne := hba.symm
-                  a_not_mem_beforeB := by simp
-                  a_not_mem_beforeNegA := by
-                    intro haTail
-                    apply form.edge_not_mem_between
-                    rw [hbetween]
-                    simp [haTail]
-                  a_not_mem_beforeOutsideB := by
-                    intro haLeft
-                    apply form.edge_not_mem_remainder
-                    rw [hremainder]
-                    simp [haLeft]
-                  a_not_mem_remainder := by
-                    intro haRight
-                    apply form.edge_not_mem_remainder
-                    rw [hremainder]
-                    simp [haRight]
-                  b_not_mem_beforeB := by simp
-                  b_not_mem_beforeNegA := hbTail
-                  b_not_mem_beforeOutsideB := hbLeft
-                  b_not_mem_remainder := hbRight }
-              exact ⟨.actionable (.handle a b handleForm)⟩
-            · let handleForm : InterleavedOccurrenceForm word a b :=
-                { bNegativeInside := outsideNegative
-                  beforeB := left
-                  beforeNegA := right
-                  beforeOutsideB := []
-                  remainder := tail
-                  rotated := by
-                    have hrotate :=
-                      List.isRotated_append
-                        (l := dart a form.firstNegative ::
-                          dart b bNegative :: tail)
-                        (l' := dart a (!form.firstNegative) ::
-                          left ++ dart b outsideNegative :: right)
-                    have hrotated := form.rotated
-                    rw [hbetween, hd, hremainder] at hrotated
-                    apply hrotated.trans
-                    simpa [
-                      dart, horientation, hopposite,
-                      List.cons_append, List.append_assoc] using hrotate
-                  edge_ne := hba.symm
-                  a_not_mem_beforeB := by
-                    intro haLeft
-                    apply form.edge_not_mem_remainder
-                    rw [hremainder]
-                    simp [haLeft]
-                  a_not_mem_beforeNegA := by
-                    intro haRight
-                    apply form.edge_not_mem_remainder
-                    rw [hremainder]
-                    simp [haRight]
-                  a_not_mem_beforeOutsideB := by simp
-                  a_not_mem_remainder := by
-                    intro haTail
-                    apply form.edge_not_mem_between
-                    rw [hbetween]
-                    simp [haTail]
-                  b_not_mem_beforeB := hbLeft
-                  b_not_mem_beforeNegA := hbRight
-                  b_not_mem_beforeOutsideB := by simp
-                  b_not_mem_remainder := hbTail }
-              exact ⟨.actionable (.handle a b handleForm)⟩
+            exact form.exists_handleStep_of_second_in_remainder hbetween b bNegative hd hba
+              hbTail outsideNegative left right hremainder hopposite hbLeft hbRight
 
 /-- Surface-valid words supply the residual multiplicity hypothesis required by one opposite-arc
 descent step. -/
@@ -5634,57 +5643,42 @@ theorem contract {n : ℕ}
     (step : MarkedBoundaryPairContraction tokens)
     (separated : ReductionToken.IsSeparated tokens)
     (classified : ReductionToken.AllClassified tokens)
-    (protectedNodup :
-      (ReductionToken.protectedNames tokens).Nodup)
-    (valid :
-      (Dyck.oneFace
-        (ReductionToken.expand tokens)).IsSurfaceValid) :
+    (protectedNodup : (ReductionToken.protectedNames tokens).Nodup)
+    (valid : (Dyck.oneFace (ReductionToken.expand tokens)).IsSurfaceValid) :
     MarkedBoundaryPairContractionResult step valid := by
   let sourceRotation :=
-    Dyck.oneFaceSignedIsoOfIsRotated
-      step.expand_isRotated_sourceWord
+    Dyck.oneFaceSignedIsoOfIsRotated step.expand_isRotated_sourceWord
   let validSourceWord :
       (Dyck.oneFace
         (BoundaryPairContraction.sourceWord
           step.first step.second
           step.firstNegative step.secondNegative
-          (ReductionToken.expand
-            step.tailTokens))).IsSurfaceValid :=
+          (ReductionToken.expand step.tailTokens))).IsSurfaceValid :=
     sourceRotation.isSurfaceValid valid
   let witness :=
     BoundaryPairContraction.exists_normalizationEquivalent
-      step.first step.second
-      step.firstNegative step.secondNegative
+      step.first step.second step.firstNegative step.secondNegative
       (ReductionToken.expand step.tailTokens)
-      step.first_ne_second
-      step.first_not_mem_tail
-      step.second_not_mem_tail
-      validSourceWord
+      step.first_ne_second step.first_not_mem_tail step.second_not_mem_tail validSourceWord
   let validTargetWord := Classical.choose witness
   have hequivalentWord :=
     Classical.choose_spec witness
   have htarget :
       ReductionToken.expand step.targetTokens =
         BoundaryPairContraction.targetWord
-          step.first step.second
-          step.first_ne_second
+          step.first step.second step.first_ne_second
           (ReductionToken.expand step.tailTokens) :=
     step.expand_targetTokens
   have targetValid :
-      (Dyck.oneFace
-        (ReductionToken.expand
-          step.targetTokens)).IsSurfaceValid := by
+      (Dyck.oneFace (ReductionToken.expand step.targetTokens)).IsSurfaceValid := by
     rw [htarget]
     exact validTargetWord
   refine
     { targetValid := targetValid
-      targetSeparated :=
-        step.targetTokens_isSeparated separated
-      targetClassified :=
-        step.targetTokens_allClassified classified
+      targetSeparated := step.targetTokens_isSeparated separated
+      targetClassified := step.targetTokens_allClassified classified
       targetProtectedNodup :=
-        step.targetTokens_protectedNames_nodup
-          protectedNodup
+        step.targetTokens_protectedNames_nodup protectedNodup
       equivalent := ?_ }
   have hrotation :
       NormalizationEquivalent
@@ -5694,8 +5688,7 @@ theorem contract {n : ℕ}
           (BoundaryPairContraction.sourceWord
             step.first step.second
             step.firstNegative step.secondNegative
-            (ReductionToken.expand step.tailTokens)),
-          validSourceWord⟩ :=
+            (ReductionToken.expand step.tailTokens)), validSourceWord⟩ :=
     NormalizationEquivalent.ofSignedIso sourceRotation
   have hchain := hrotation.trans hequivalentWord
   simpa only [htarget] using hchain
@@ -6984,8 +6977,7 @@ theorem pairReducedNormalForm_isEvalAdmissible {n : ℕ}
     (valid : (Dyck.oneFace word).IsSurfaceValid)
     (reduced : IsPairReduced word) :
     (pairReducedNormalForm word valid reduced).IsEvalAdmissible := by
-  apply
-    (decomposePairReduced word valid reduced).normalForm_isEvalAdmissible_of_word_ne_nil
+  apply (decomposePairReduced word valid reduced).normalForm_isEvalAdmissible_of_word_ne_nil
   simpa only [Dyck.oneFace_boundary] using
     valid.2.1 (0 : (Dyck.oneFace word).Face)
 
@@ -6996,8 +6988,7 @@ noncomputable def extractPairReductionFeature {n : ℕ}
     (reduced : IsPairReduced word)
     (hn : 0 < n) :
     ActionablePairReductionResult word valid :=
-  (Classical.choice
-    (exists_actionablePairReductionFeature word valid reduced hn)).extract valid
+  (Classical.choice (exists_actionablePairReductionFeature word valid reduced hn)).extract valid
 
 /-- Certified endpoint of the marked extraction recursion: no residual darts remain, every token
 is classified, and at least one protected name survives. -/

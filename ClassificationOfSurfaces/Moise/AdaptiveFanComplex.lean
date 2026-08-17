@@ -2066,6 +2066,100 @@ theorem adaptiveFanLaterBasePath_subset_earlierBaseEdge_of_faceMap_eq
     (hLaterInEarlier (K.adaptiveFanBasePath_mem_baseEdge U hU g r))).mp
       (by simpa [a, q] using harEdge)
 
+/-- A continuous injective path through an open interval matches its two boundary values at the
+domain endpoints, up to reversing their order, provided neither boundary value occurs inside. -/
+private theorem endpoint_values_eq_or_swap_of_injective
+    (psi : Set.Icc (0 : ℝ) 1 → ℝ) (hpsiCont : Continuous psi)
+    (hpsiInj : Function.Injective psi) (r : Set.Icc (0 : ℝ) 1)
+    (hrZero : (⟨0, by simp⟩ : Set.Icc (0 : ℝ) 1) < r)
+    (hrOne : r < (⟨1, by simp⟩ : Set.Icc (0 : ℝ) 1)) {a b : ℝ}
+    (hrange : psi r ∈ Set.Ioo a b)
+    (hzeroNot : psi ⟨0, by simp⟩ ∉ Set.Ioo a b)
+    (honeNot : psi ⟨1, by simp⟩ ∉ Set.Ioo a b)
+    (hnoA : ∀ s : Set.Icc (0 : ℝ) 1, s.1 ∈ Set.Ioo (0 : ℝ) 1 → psi s ≠ a)
+    (hnoB : ∀ s : Set.Icc (0 : ℝ) 1, s.1 ∈ Set.Ioo (0 : ℝ) 1 → psi s ≠ b) :
+    (psi ⟨0, by simp⟩ = a ∧ psi ⟨1, by simp⟩ = b) ∨
+      (psi ⟨0, by simp⟩ = b ∧ psi ⟨1, by simp⟩ = a) := by
+  let rzero : Set.Icc (0 : ℝ) 1 := ⟨0, by simp⟩
+  let rone : Set.Icc (0 : ℝ) 1 := ⟨1, by simp⟩
+  rcases hpsiCont.strictMono_of_inj_boundedOrder' hpsiInj with hmono | hanti
+  · have hzeroZ : psi rzero < psi r := hmono hrZero
+    have hzOne : psi r < psi rone := hmono hrOne
+    have hzeroLeA : psi rzero ≤ a := by
+      by_contra h
+      exact hzeroNot ⟨lt_of_not_ge h, hzeroZ.trans hrange.2⟩
+    have hbLeOne : b ≤ psi rone := by
+      by_contra h
+      exact honeNot ⟨hrange.1.trans hzOne, lt_of_not_ge h⟩
+    have hzeroEqA : psi rzero = a := by
+      apply le_antisymm hzeroLeA
+      by_contra h
+      have hlt : psi rzero < a := lt_of_not_ge h
+      obtain ⟨s, hs, hps⟩ := intermediate_value_Icc
+        (a := rzero) (b := r) (f := psi) hrZero.le hpsiCont.continuousOn
+        (show a ∈ Set.Icc (psi rzero) (psi r) from ⟨hlt.le, hrange.1.le⟩)
+      have hzeroS : rzero < s := lt_of_le_of_ne hs.1 fun heq ↦ by
+        subst s
+        exact hlt.ne hps
+      have hsr : s < r := lt_of_le_of_ne hs.2 fun heq ↦ by
+        subst s
+        exact hrange.1.ne' hps
+      exact hnoA s ⟨by simpa [rzero] using hzeroS, hsr.trans hrOne⟩ hps
+    have hOneEqB : psi rone = b := by
+      apply le_antisymm
+      · by_contra h
+        have hlt : b < psi rone := lt_of_not_ge h
+        obtain ⟨s, hs, hps⟩ := intermediate_value_Icc
+          (a := r) (b := rone) (f := psi) hrOne.le hpsiCont.continuousOn
+          (show b ∈ Set.Icc (psi r) (psi rone) from ⟨hrange.2.le, hlt.le⟩)
+        have hrs : r < s := lt_of_le_of_ne hs.1 fun heq ↦ by
+          subst s
+          exact hrange.2.ne hps
+        have hsone : s < rone := lt_of_le_of_ne hs.2 fun heq ↦ by
+          subst s
+          exact hlt.ne' hps
+        exact hnoB s ⟨hrZero.trans hrs, by simpa [rone] using hsone⟩ hps
+      · exact hbLeOne
+    exact Or.inl ⟨by simpa [rzero] using hzeroEqA, by simpa [rone] using hOneEqB⟩
+  · have hzZero : psi r < psi rzero := hanti hrZero
+    have hOneZ : psi rone < psi r := hanti hrOne
+    have hOneLeA : psi rone ≤ a := by
+      by_contra h
+      exact honeNot ⟨lt_of_not_ge h, hOneZ.trans hrange.2⟩
+    have hbLeZero : b ≤ psi rzero := by
+      by_contra h
+      exact hzeroNot ⟨hrange.1.trans hzZero, lt_of_not_ge h⟩
+    have hOneEqA : psi rone = a := by
+      apply le_antisymm hOneLeA
+      by_contra h
+      have hlt : psi rone < a := lt_of_not_ge h
+      obtain ⟨s, hs, hps⟩ := intermediate_value_Icc'
+        (a := r) (b := rone) (f := psi) hrOne.le hpsiCont.continuousOn
+        (show a ∈ Set.Icc (psi rone) (psi r) from ⟨hlt.le, hrange.1.le⟩)
+      have hrs : r < s := lt_of_le_of_ne hs.1 fun heq ↦ by
+        subst s
+        exact hrange.1.ne' hps
+      have hsone : s < rone := lt_of_le_of_ne hs.2 fun heq ↦ by
+        subst s
+        exact hlt.ne hps
+      exact hnoA s ⟨hrZero.trans hrs, by simpa [rone] using hsone⟩ hps
+    have hzeroEqB : psi rzero = b := by
+      apply le_antisymm
+      · by_contra h
+        have hlt : b < psi rzero := lt_of_not_ge h
+        obtain ⟨s, hs, hps⟩ := intermediate_value_Icc'
+          (a := rzero) (b := r) (f := psi) hrZero.le hpsiCont.continuousOn
+          (show b ∈ Set.Icc (psi r) (psi rzero) from ⟨hrange.2.le, hlt.le⟩)
+        have hzeroS : rzero < s := lt_of_le_of_ne hs.1 fun heq ↦ by
+          subst s
+          exact hlt.ne' hps
+        have hsr : s < r := lt_of_le_of_ne hs.2 fun heq ↦ by
+          subst s
+          exact hrange.2.ne hps
+        exact hnoB s ⟨by simpa [rzero] using hzeroS, hsr.trans hrOne⟩ hps
+      · exact hbLeZero
+    exact Or.inr ⟨by simpa [rzero] using hzeroEqB, by simpa [rone] using hOneEqA⟩
+
 /-- Two resolved fan intervals whose relative interiors meet have the same geometric endpoints,
 possibly with opposite order. -/
 theorem adaptiveFanBaseEndpoints_eq_or_swap_of_faceMap_eq
@@ -2237,129 +2331,45 @@ theorem adaptiveFanBaseEndpoints_eq_or_swap_of_faceMap_eq
   have hfSecondBoundary := (K.mem_boundaryEdgeVertices_iff U hU f.1 f.2.1 _).mp
     (K.adaptiveEdgeIntervalSecond_mem_boundaryEdgeVertices U hU
       f.1 f.2.1 f.2.2)
-  rcases hpsiCont.strictMono_of_inj_boundedOrder' hpsiInj with hmono | hanti
-  · have hzeroRy : rzero < ry := by
-      change (0 : ℝ) < y (K.adaptiveFanSecondVertex U hU g)
-      exact hySecond
-    have hryOne : ry < rone := by
-      change y (K.adaptiveFanSecondVertex U hU g) < (1 : ℝ)
-      exact hySecondLt
-    have hzeroZ : psi rzero < psi ry := hmono hzeroRy
-    have hzOne : psi ry < psi rone := hmono hryOne
-    have hzeroLeA : psi rzero ≤ af := by
-      by_contra h
-      apply hpsiZeroNot
-      exact ⟨lt_of_not_ge h, hzeroZ.trans hzIoo.2⟩
-    have hbLeOne : bf ≤ psi rone := by
-      by_contra h
-      apply hpsiOneNot
-      exact ⟨hzIoo.1.trans hzOne, lt_of_not_ge h⟩
-    have hzeroEqA : psi rzero = af := by
-      apply le_antisymm hzeroLeA
-      by_contra h
-      have hlt : psi rzero < af := lt_of_not_ge h
-      have haRange : af ∈ Set.Icc (psi rzero) (psi ry) := ⟨hlt.le, hzIoo.1.le⟩
-      obtain ⟨r, hr, hpr⟩ :=
-        intermediate_value_Icc hzeroRy.le hpsiCont.continuousOn haRange
-      have hrzero : rzero < r := lt_of_le_of_ne hr.1 fun heq ↦ by
-        subst r
-        exact hlt.ne hpr
-      have hrry : r < ry := lt_of_le_of_ne hr.2 fun heq ↦ by
-        subst r
-        exact hzIoo.1.ne' hpr
-      apply hnoEndpointParameter r ⟨by simpa [rzero] using hrzero,
-        hrry.trans hryOne⟩
-        (K.adaptiveFanFirstVertex U hU f).1 hfFirstBoundary.1 hfFirstBoundary.2
-      simpa [psi, af] using hpr
-    have hOneEqB : psi rone = bf := by
-      apply le_antisymm
-      · by_contra h
-        have hlt : bf < psi rone := lt_of_not_ge h
-        have hbRange : bf ∈ Set.Icc (psi ry) (psi rone) := ⟨hzIoo.2.le, hlt.le⟩
-        obtain ⟨r, hr, hpr⟩ :=
-          intermediate_value_Icc hryOne.le hpsiCont.continuousOn hbRange
-        have hryr : ry < r := lt_of_le_of_ne hr.1 fun heq ↦ by
-          subst r
-          exact hzIoo.2.ne hpr
-        have hrone : r < rone := lt_of_le_of_ne hr.2 fun heq ↦ by
-          subst r
-          exact hlt.ne' hpr
-        apply hnoEndpointParameter r ⟨hzeroRy.trans hryr,
-          by simpa [rone] using hrone⟩
-          (K.adaptiveFanSecondVertex U hU f).1 hfSecondBoundary.1 hfSecondBoundary.2
-        simpa [psi, bf] using hpr
-      · exact hbLeOne
-    left
+  have hzeroRy : rzero < ry := by
+    change (0 : ℝ) < y (K.adaptiveFanSecondVertex U hU g)
+    exact hySecond
+  have hryOne : ry < rone := by
+    change y (K.adaptiveFanSecondVertex U hU g) < (1 : ℝ)
+    exact hySecondLt
+  have hendpointValues := endpoint_values_eq_or_swap_of_injective psi hpsiCont hpsiInj ry
+    hzeroRy hryOne hzIoo hpsiZeroNot hpsiOneNot
+    (fun r hr hpr ↦ hnoEndpointParameter r hr
+      (K.adaptiveFanFirstVertex U hU f).1 hfFirstBoundary.1 hfFirstBoundary.2
+      (by simpa [psi, af] using hpr))
+    (fun r hr hpr ↦ hnoEndpointParameter r hr
+      (K.adaptiveFanSecondVertex U hU f).1 hfSecondBoundary.1 hfSecondBoundary.2
+      (by simpa [psi, bf] using hpr))
+  rcases hendpointValues with ⟨hzero, hone⟩ | ⟨hzero, hone⟩
+  · left
     constructor
     · apply K.levelFaceEdgeParameter_injOn f.1.2.1 f.2.1
         hgFirstEdgeF hfFirstBoundary.2
       rw [← hpathZeroVal]
-      exact hzeroEqA
+      change psi rzero = af
+      simpa [rzero] using hzero
     · apply K.levelFaceEdgeParameter_injOn f.1.2.1 f.2.1
         hgSecondEdgeF hfSecondBoundary.2
       rw [← hpathOneVal]
-      exact hOneEqB
-  · have hzeroRy : rzero < ry := by
-      change (0 : ℝ) < y (K.adaptiveFanSecondVertex U hU g)
-      exact hySecond
-    have hryOne : ry < rone := by
-      change y (K.adaptiveFanSecondVertex U hU g) < (1 : ℝ)
-      exact hySecondLt
-    have hzZero : psi ry < psi rzero := hanti hzeroRy
-    have hOneZ : psi rone < psi ry := hanti hryOne
-    have hOneLeA : psi rone ≤ af := by
-      by_contra h
-      apply hpsiOneNot
-      exact ⟨lt_of_not_ge h, hOneZ.trans hzIoo.2⟩
-    have hbLeZero : bf ≤ psi rzero := by
-      by_contra h
-      apply hpsiZeroNot
-      exact ⟨hzIoo.1.trans hzZero, lt_of_not_ge h⟩
-    have hOneEqA : psi rone = af := by
-      apply le_antisymm hOneLeA
-      by_contra h
-      have hlt : psi rone < af := lt_of_not_ge h
-      have haRange : af ∈ Set.Icc (psi rone) (psi ry) := ⟨hlt.le, hzIoo.1.le⟩
-      obtain ⟨r, hr, hpr⟩ :=
-        intermediate_value_Icc' hryOne.le hpsiCont.continuousOn haRange
-      have hryr : ry < r := lt_of_le_of_ne hr.1 fun heq ↦ by
-        subst r
-        exact hzIoo.1.ne' hpr
-      have hrone : r < rone := lt_of_le_of_ne hr.2 fun heq ↦ by
-        subst r
-        exact hlt.ne hpr
-      apply hnoEndpointParameter r ⟨hzeroRy.trans hryr,
-        by simpa [rone] using hrone⟩
-        (K.adaptiveFanFirstVertex U hU f).1 hfFirstBoundary.1 hfFirstBoundary.2
-      simpa [psi, af] using hpr
-    have hzeroEqB : psi rzero = bf := by
-      apply le_antisymm
-      · by_contra h
-        have hlt : bf < psi rzero := lt_of_not_ge h
-        have hbRange : bf ∈ Set.Icc (psi ry) (psi rzero) := ⟨hzIoo.2.le, hlt.le⟩
-        obtain ⟨r, hr, hpr⟩ :=
-          intermediate_value_Icc' hzeroRy.le hpsiCont.continuousOn hbRange
-        have hrzero : rzero < r := lt_of_le_of_ne hr.1 fun heq ↦ by
-          subst r
-          exact hlt.ne' hpr
-        have hrry : r < ry := lt_of_le_of_ne hr.2 fun heq ↦ by
-          subst r
-          exact hzIoo.2.ne hpr
-        apply hnoEndpointParameter r ⟨by simpa [rzero] using hrzero,
-          hrry.trans hryOne⟩
-          (K.adaptiveFanSecondVertex U hU f).1 hfSecondBoundary.1 hfSecondBoundary.2
-        simpa [psi, bf] using hpr
-      · exact hbLeZero
-    right
+      change psi rone = bf
+      simpa [rone] using hone
+  · right
     constructor
     · apply K.levelFaceEdgeParameter_injOn f.1.2.1 f.2.1
         hgFirstEdgeF hfSecondBoundary.2
       rw [← hpathZeroVal]
-      exact hzeroEqB
+      change psi rzero = bf
+      simpa [rzero] using hzero
     · apply K.levelFaceEdgeParameter_injOn f.1.2.1 f.2.1
         hgSecondEdgeF hfFirstBoundary.2
       rw [← hpathOneVal]
-      exact hOneEqA
+      change psi rone = af
+      simpa [rone] using hone
 
 /-- Extended coordinates of a fan triangle are the sum of its three vertex-weight spikes. -/
 theorem extendFaceCoordinates_adaptiveFanFace (hU : IsOpen U)

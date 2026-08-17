@@ -1679,6 +1679,23 @@ theorem exists_chartMatchingControl_of_metricSpace {S' : Type*} [MetricSpace S']
         add_le_add (hkey.trans hSle) le_rfl
       _ = 2 * dist (T.embed y') (T.embed x) := by ring
 
+private theorem matchesAtFrontier_and_disjoint_of_compl_not_nonempty
+    {S' : Type*} [MetricSpace S'] (T : PartialTriangulation S')
+    (U : Set T.toIntrinsic.realization) (hU : IsOpen U) (hComp : ¬ Uᶜ.Nonempty)
+    (g : T.toIntrinsic.realization → S') :
+    MatchesAtFrontier U g T.embed ∧ Disjoint (g '' U) (T.embed '' Uᶜ) := by
+  constructor
+  · intro x hx
+    exfalso
+    apply hComp
+    have hxcomp : x ∈ Uᶜ := by
+      rw [← frontier_compl U] at hx
+      exact hU.isClosed_compl.frontier_subset hx
+    exact ⟨x, hxcomp⟩
+  · rw [Set.disjoint_left]
+    rintro z ⟨x, hx, rfl⟩ ⟨y, hy, -⟩
+    exact hComp ⟨y, hy⟩
+
 /-- Relative form of the chart matching control.  On an arbitrary open subset of the chart
 overlap, one control simultaneously makes the replacement converge to the old embedding at the
 new frontier and keeps its image disjoint from the unchanged complement. -/
@@ -1712,17 +1729,7 @@ theorem exists_chartMatchingControlOn_of_metricSpace
   swap
   · refine ⟨fun _ ↦ 1, fun C _ _ ↦ ⟨1, one_pos, fun _ _ ↦ le_rfl⟩, ?_⟩
     intro g' g hgval hclose
-    constructor
-    · intro x hx
-      exfalso
-      apply hComp
-      have hxcomp : x ∈ Uᶜ := by
-        rw [← frontier_compl U] at hx
-        exact hU.isClosed_compl.frontier_subset hx
-      exact ⟨x, hxcomp⟩
-    · rw [Set.disjoint_left]
-      rintro z ⟨x, hx, rfl⟩ ⟨y, hy, -⟩
-      exact hComp ⟨y, hy⟩
+    exact matchesAtFrontier_and_disjoint_of_compl_not_nonempty T U hU hComp g
   have hCompCompact : IsCompact (T.embed '' Uᶜ) :=
     hU.isClosed_compl.isCompact.image T.isEmbedding.continuous
   have hCompNe : (T.embed '' Uᶜ).Nonempty := hComp.image _
@@ -1844,6 +1851,14 @@ theorem exists_chartMatchingControlOn_of_metricSpace
     have := le_csSup (hAbdd y) (hmem y hy)
     linarith
   · intro g' g hgval hclose
+    have replacementClose (y : U) : dist (g y.1) (T.embed y.1) ≤ sS y := by
+      obtain ⟨r, hrA, hr⟩ :=
+        exists_lt_of_lt_csSup (hANe y) (half_lt_self (hsSupPos y))
+      have hdist : dist ((g' y : Plane)) (coord y) < r :=
+        lt_of_le_of_lt (hclose y) hr
+      have hval := hrA.2.2 (g' y) hdist
+      rw [show g y.1 = psi (g' y) from hgval y]
+      exact hval
     constructor
     · intro x hx
       rw [tendsto_iff_dist_tendsto_zero]
@@ -1863,16 +1878,7 @@ theorem exists_chartMatchingControlOn_of_metricSpace
       apply squeeze_zero'
         (Filter.Eventually.of_forall fun _ ↦ dist_nonneg) ?_ hbase
       filter_upwards [self_mem_nhdsWithin] with y' hy'
-      have hkey : dist (g y') (T.embed y') ≤ sS ⟨y', hy'⟩ := by
-        obtain ⟨r, hrA, hr⟩ :=
-          exists_lt_of_lt_csSup (hANe ⟨y', hy'⟩)
-            (half_lt_self (hsSupPos ⟨y', hy'⟩))
-        have hdist : dist ((g' ⟨y', hy'⟩ : Plane))
-            (coord ⟨y', hy'⟩) < r :=
-          lt_of_le_of_lt (hclose ⟨y', hy'⟩) hr
-        have hval := hrA.2.2 (g' ⟨y', hy'⟩) hdist
-        rw [show g y' = psi (g' ⟨y', hy'⟩) from hgval ⟨y', hy'⟩]
-        exact hval
+      have hkey := replacementClose ⟨y', hy'⟩
       have hxcomp : x ∈ Uᶜ := by
         rw [← frontier_compl U] at hx
         exact hU.isClosed_compl.frontier_subset hx
@@ -1895,16 +1901,7 @@ theorem exists_chartMatchingControlOn_of_metricSpace
         _ = 2 * dist (T.embed y') (T.embed x) := by ring
     · rw [Set.disjoint_left]
       rintro z ⟨x, hxU, rfl⟩ ⟨y, hyComp, hyEq⟩
-      have hkey : dist (g x) (T.embed x) ≤ sS ⟨x, hxU⟩ := by
-        obtain ⟨r, hrA, hr⟩ :=
-          exists_lt_of_lt_csSup (hANe ⟨x, hxU⟩)
-            (half_lt_self (hsSupPos ⟨x, hxU⟩))
-        have hdist : dist ((g' ⟨x, hxU⟩ : Plane))
-            (coord ⟨x, hxU⟩) < r :=
-          lt_of_le_of_lt (hclose ⟨x, hxU⟩) hr
-        have hval := hrA.2.2 (g' ⟨x, hxU⟩) hdist
-        rw [show g x = psi (g' ⟨x, hxU⟩) from hgval ⟨x, hxU⟩]
-        exact hval
+      have hkey := replacementClose ⟨x, hxU⟩
       have hinf : Metric.infDist (T.embed x) (T.embed '' Uᶜ) ≤
           dist (T.embed x) (T.embed y) :=
         Metric.infDist_le_dist_of_mem ⟨y, hyComp, rfl⟩

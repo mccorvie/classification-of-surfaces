@@ -3463,6 +3463,17 @@ private structure ChartInductionGeometry
   subdivision_surface :
     (ChartInductionGeometry.subdivision P).refined.HasSurfaceEdgeValence
 
+/-- The source realization map stored by a chart-induction geometry certificate is injective. -/
+private theorem ChartInductionGeometry.source_injective_of_geometry
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    {P : CrossingWeldPatchContext S c T A}
+    (G : ChartInductionGeometry S c T A P) :
+    Function.Injective (ChartInductionGeometry.source P G.anchorLines) :=
+  G.source_injective
+
 private noncomputable def ChartInductionGeometry.localVertexPoints
     {S : Type*} [TopologicalSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]

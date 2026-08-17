@@ -1124,6 +1124,18 @@ noncomputable def orientableOrderedResult
         rw [← htarget]
         exact result.equivalent }
 
+/-- The ordered orientable construction retains the terminal word's computed normal form. -/
+@[simp]
+private theorem orientableOrderedResult_normalForm
+    (terminal : TerminalCompletedWord)
+    (hcrosscap : CompletedBlock.crosscapCount terminal.blocks = 0)
+    (hshape :
+      blockKinds terminal.blocks =
+        List.replicate (CompletedBlock.handleCount terminal.blocks) BlockKind.handle ++
+          List.replicate (CompletedBlock.boundaryCount terminal.blocks) BlockKind.boundary) :
+    (orientableOrderedResult terminal hcrosscap hshape).normalForm = terminal.normalForm :=
+  rfl
+
 /-- An already ordered nonorientable completed word relabels exactly to the existing canonical
 nonorientable finite-cyclic presentation. -/
 noncomputable def nonOrientableOrderedResult
@@ -1898,6 +1910,18 @@ noncomputable def chooseCrosscapDecomposition {n : ℕ}
          after := after
          blocks_eq := hdecomp }⟩)
 
+/-- The selected crosscap decomposition reconstructs the original completed-block sequence. -/
+private theorem chooseCrosscapDecomposition_blocks_eq {n : ℕ}
+    (blocks : List (CompletedBlock n))
+    (hcrosscap : CompletedBlock.crosscapCount blocks ≠ 0) :
+    blocks =
+      (chooseCrosscapDecomposition blocks hcrosscap).before ++
+        CompletedBlock.crosscap
+            (chooseCrosscapDecomposition blocks hcrosscap).anchor
+            (chooseCrosscapDecomposition blocks hcrosscap).negative ::
+          (chooseCrosscapDecomposition blocks hcrosscap).after :=
+  (chooseCrosscapDecomposition blocks hcrosscap).blocks_eq
+
 /-- In the presence of a crosscap, rotate one crosscap to the head, normalize its sign, and
 convert every handle into two additional crosscaps. -/
 noncomputable def convertHandlesOfCrosscap
@@ -2055,6 +2079,15 @@ noncomputable def convertHandlesOfCrosscap
     simpa [rotatedBlocks, tail,
       CompletedBlock.boundaryCount] using
       hboundaryCount.symm
+
+/-- The constructive crosscap conversion eliminates every handle block. -/
+@[simp]
+private theorem convertHandlesOfCrosscap_handleCount_eq_zero
+    (terminal : TerminalCompletedWord)
+    (hcrosscap : CompletedBlock.crosscapCount terminal.blocks ≠ 0) :
+    CompletedBlock.handleCount
+        (convertHandlesOfCrosscap terminal hcrosscap).target.blocks = 0 :=
+  (convertHandlesOfCrosscap terminal hcrosscap).handleCount_eq_zero
 
 /-- A raw one-face context containing one completed boundary loop. -/
 def boundaryContextWord {n : ℕ}
