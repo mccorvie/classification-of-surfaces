@@ -54,11 +54,11 @@ The crossing-weld public construction remains a proof-size cleanup target, but i
 heartbeat blocker. Continue extracting its construction phases only where the resulting interfaces
 also improve readability and satisfy Lean Pool's textual proof-size check.
 
-## Outstanding blocker 2: proofs over 200 code lines
+## Resolved blocker 2: proofs over 200 code lines
 
 Lean Pool's current quality checker uses a textual heuristic: for each `theorem` or `lemma`, it
 counts non-comment code from the declaration's `:=` through the next theorem/lemma. Private helpers
-count too. At this checkpoint it reports 7 oversized blocks:
+count too. Before the extraction passes, it reported these final oversized blocks:
 
 The latest near-limit pass removed five blocks from the exact checker output:
 `MarkedBoundaryPairContraction.contract`, `pairReducedNormalForm_isEvalAdmissible`,
@@ -82,6 +82,11 @@ exact primitive target-interval lemmas, a uniform completed-block shortening, a 
 one-step disposition, and a single recursive shortening branch. The two public theorems that
 headed the charged spans retain their original statements and proofs.
 
+The `ChartInductionCore` pass removed its 387- and 287-line blocks by sharing the adaptive
+replacement's source homeomorphism, polygonal presentation, and finite source atlas between the
+open-region and full-overlap constructions. A separate boundary-coordinate certificate isolates
+the bordered-chart argument. Both public theorem statements are unchanged.
+
 The subsequent extraction pass removed thirteen further blocks. Reusable helpers now isolate the
 radial-projection separator argument, chart-frontier matching, marked-fan edge uniqueness,
 three-point convex-hull separation, positive normalization, interval endpoint order, repositioning
@@ -90,13 +95,14 @@ inverse-pair cancellation. Natural accessor lemmas also split checker-charged ru
 in the boundary-envelope, terminal-normalization, and chart-geometry APIs. The public theorem
 statements are unchanged.
 
-| File | Approximate line | Code lines |
-| --- | ---: | ---: |
-| `Moise/ChartInduction.lean` | 1034 | 409 |
-| `Moise/ChartInduction.lean` | 2570 | 523 |
-| `Moise/ChartInduction.lean` | 4323 | 1388 |
-| `Moise/ChartInductionCore.lean` | 5303 | 387 |
-| `Moise/ChartInductionCore.lean` | 6388 | 287 |
+The `ChartInduction` pass removed the final three blocks. Mixed local/fan interpolation now uses an
+explicit interval-vertex certificate; aligned relative faces carry a reusable parent witness and
+plane-transport API; and the crossing-weld proof is assembled from canonical chart geometry,
+marking, mixed-map, barycentric, and interpolation certificates. The public crossing-weld theorem
+is now a short orchestration of those independently checked phases, and all public theorem
+statements remain unchanged.
+
+The exact textual checker now reports no oversized theorem or lemma spans in the main library.
 
 Line numbers will drift as helpers are extracted. Re-run Lean Pool's actual quality checker after
 each batch instead of treating this table as permanent.

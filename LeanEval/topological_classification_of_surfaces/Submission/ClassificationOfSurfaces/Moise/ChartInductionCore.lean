@@ -5302,6 +5302,329 @@ theorem exists_patchTile_local_weld
 
 end PolygonalReplacementSourceAtlas
 
+private noncomputable def straightenedChartOpenSourceHomeomorph
+    {K : IntrinsicTwoComplex} {U : Set K.realization}
+    (R : LocallyFiniteTriangleComplex U)
+    (G : R.PlaneGraphRealization) (H : R.CellwiseCompatibility G)
+    (hRsupport : R.support = Set.univ) :
+    U ≃ₜ (R.polygonalReplacementComplex H).support := by
+  let uToSupport : U → R.support := fun x ↦ ⟨x, by rw [hRsupport]; trivial⟩
+  let eU : U ≃ₜ R.support :=
+    { toFun := uToSupport
+      invFun := Subtype.val
+      left_inv := fun _ ↦ rfl
+      right_inv := fun _ ↦ Subtype.ext rfl
+      continuous_toFun := Continuous.subtype_mk continuous_id _
+      continuous_invFun := continuous_subtype_val }
+  exact eU.trans (R.polygonalReplacementHomeomorph H)
+
+private noncomputable def straightenedChartOpenPresentation
+    {K : IntrinsicTwoComplex} {U : Set K.realization}
+    (R : LocallyFiniteTriangleComplex U)
+    (G : R.PlaneGraphRealization) (H : R.CellwiseCompatibility G)
+    (hRsupport : R.support = Set.univ) :
+    PolygonalReplacementPresentation U G.region :=
+  let q := straightenedChartOpenSourceHomeomorph R G H hRsupport
+  { complex := R.polygonalReplacementComplex H
+    sourceHomeomorph := q
+    facePolygon := fun f ↦ R.facePolygonalCircle (G := G) f
+    faceFillingMap := fun f ↦ (R.facePLFilling (G := G) f).map
+    faceMap_eq := fun _ _ ↦ rfl
+    faceCertificate := fun f ↦ (R.facePLFilling (G := G) f).certificate
+    faceClosedRegion_subset := fun f ↦ H.closedRegions_mem_region f
+    faceCarrier_eq := fun f ↦ R.polygonalReplacementComplex_faceCarrier H f }
+
+@[simp]
+private theorem straightenedChartOpenPresentation_sourceHomeomorph
+    {K : IntrinsicTwoComplex} {U : Set K.realization}
+    (R : LocallyFiniteTriangleComplex U)
+    (G : R.PlaneGraphRealization) (H : R.CellwiseCompatibility G)
+    (hRsupport : R.support = Set.univ) :
+    (straightenedChartOpenPresentation R G H hRsupport).sourceHomeomorph =
+      straightenedChartOpenSourceHomeomorph R G H hRsupport := rfl
+
+private noncomputable def straightenedChartOpenSourceAtlas
+    {S' : Type*} [TopologicalSpace S']
+    (T : PartialTriangulation S')
+    (U : Set T.toIntrinsic.realization) (hU : IsOpen U)
+    (V : Set Plane) (hV : IsOpen V)
+    (f : U → Plane) (hf : Continuous f) (hmem : ∀ x, f x ∈ V)
+    (mu : U → ℝ) (hmu : StronglyPositiveOn Set.univ mu)
+    (G :
+      (T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem
+        mu hmu).PlaneGraphRealization)
+    (H :
+      (T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem
+        mu hmu).CellwiseCompatibility G)
+    (hRsupport :
+      (T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem mu hmu).support =
+        Set.univ) :
+    PolygonalReplacementSourceAtlas T.toIntrinsic U G.region
+      (straightenedChartOpenPresentation
+        (T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem mu hmu)
+        G H hRsupport) := by
+  classical
+  let C₀ := T.toIntrinsic.controlledAdaptiveOpenCover U hU f hf
+    (regionSafeControl V f mu)
+    (stronglyPositiveOn_regionSafeControl hV hf hmem hmu)
+  letI : T.toIntrinsic.AdaptiveSafety U := C₀.safety
+  letI : IntrinsicTwoComplex.AdaptiveSafety.IsAdmissible
+      (K := T.toIntrinsic) (U := U) := C₀.safety_isAdmissible
+  let R := T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem mu hmu
+  let Q := straightenedChartOpenPresentation R G H hRsupport
+  let q := straightenedChartOpenSourceHomeomorph R G H hRsupport
+  let uToSupport : U → R.support := fun x ↦ ⟨x, by
+    rw [hRsupport]
+    trivial⟩
+  let eU : U ≃ₜ R.support :=
+    { toFun := uToSupport
+      invFun := Subtype.val
+      left_inv := fun _ ↦ rfl
+      right_inv := fun _ ↦ Subtype.ext rfl
+      continuous_toFun := Continuous.subtype_mk continuous_id _
+      continuous_invFun := continuous_subtype_val }
+  let sourceParent (a : T.toIntrinsic.AdaptiveFanFace U hU) : T.toIntrinsic.Face := by
+    let Rt := T.toIntrinsic.safeSubdivision a.1.1
+    let h := Rt.subordinate a.1.2.1.1 a.1.2.1.2
+    exact ⟨Classical.choose h, (Classical.choose_spec h).1⟩
+  refine
+    { Tile := T.toIntrinsic.AdaptiveFace U
+      tileDecidableEq := Classical.decEq _
+      tile := fun f ↦ f.1
+      tileFaces := T.toIntrinsic.adaptiveFanFacesOver U hU
+      mem_tileFaces := fun t f ↦ T.toIntrinsic.mem_adaptiveFanFacesOver_iff U hU t f
+      sourceTileCarrier := T.toIntrinsic.adaptiveFaceCarrier U
+      sourceTileCarrier_subset_open := fun t ↦
+        T.toIntrinsic.adaptiveFaceCarrier_subset U t
+      sourceTileCarrier_locallyFinite :=
+        T.toIntrinsic.locallyFinite_adaptiveFaceCarrierInOpen U hU
+      sourceTileCarrier_eq_faces := ?_
+      sourceFaceParent := sourceParent
+      sourceFaceSet_subset_parent := ?_
+      sourceFaceStandardAffine := ?_
+      commonLevel := T.toIntrinsic.adaptiveFaceCommonLevel U
+      levelFaces := fun F ↦
+        (Finset.univ : Finset
+          (T.toIntrinsic.LevelFace (T.toIntrinsic.adaptiveFaceCommonLevel U F))).filter
+          fun u ↦ ∃ t ∈ F,
+            T.toIntrinsic.levelFaceCarrier u ⊆ T.toIntrinsic.adaptiveFaceCarrier U t
+      sourceTiles_eq_levelFaces := ?_ }
+  · intro t
+    apply Set.Subset.antisymm
+    · intro x hx
+      obtain ⟨i, j, z, hz⟩ :=
+        T.toIntrinsic.exists_adaptiveFanFaceMap_eq_of_mem_adaptiveFaceCarrier U hU t hx
+      let a : T.toIntrinsic.AdaptiveFanFace U hU := ⟨t, i, j⟩
+      have ha : a ∈ T.toIntrinsic.adaptiveFanFacesOver U hU t :=
+        (T.toIntrinsic.mem_adaptiveFanFacesOver_iff U hU t a).2 rfl
+      let a' : {f : Q.complex.Face //
+          f ∈ T.toIntrinsic.adaptiveFanFacesOver U hU t} := ⟨a, ha⟩
+      apply Set.mem_iUnion.mpr
+      refine ⟨a', ?_⟩
+      let hxU : x ∈ U := T.toIntrinsic.adaptiveFaceCarrier_subset U t hx
+      refine ⟨hxU, ?_⟩
+      apply (R.polygonalReplacementHomeomorph_mem_faceCarrier_iff H a
+        (eU ⟨x, hxU⟩)).2
+      change ⟨x, hxU⟩ ∈ Set.range (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a)
+      rw [T.toIntrinsic.range_adaptiveGlobalFanFaceMap U hU a]
+      exact ⟨z, hz⟩
+    · intro x hx
+      obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx
+      obtain ⟨hxU, hxaQ⟩ := hxa
+      have hxaR := (R.polygonalReplacementHomeomorph_mem_faceCarrier_iff H a.1
+        (eU ⟨x, hxU⟩)).1 hxaQ
+      change ⟨x, hxU⟩ ∈ Set.range
+        (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a.1) at hxaR
+      rw [T.toIntrinsic.range_adaptiveGlobalFanFaceMap U hU a.1] at hxaR
+      have hxt := T.toIntrinsic.range_adaptiveFanFaceMap_subset_tile U hU a.1 hxaR
+      change x ∈ T.toIntrinsic.adaptiveFaceCarrier U a.1.1 at hxt
+      rw [(T.toIntrinsic.mem_adaptiveFanFacesOver_iff U hU t a.1).1 a.2] at hxt
+      exact hxt
+  · intro a x hx
+    change T.toIntrinsic.AdaptiveFanFace U hU at a
+    obtain ⟨hxU, hxaQ⟩ := hx
+    have hxaR := (R.polygonalReplacementHomeomorph_mem_faceCarrier_iff H a
+      (eU ⟨x, hxU⟩)).1 hxaQ
+    change ⟨x, hxU⟩ ∈ Set.range
+      (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a) at hxaR
+    rw [T.toIntrinsic.range_adaptiveGlobalFanFaceMap U hU a] at hxaR
+    have hxt := T.toIntrinsic.range_adaptiveFanFaceMap_subset_tile U hU a hxaR
+    change x ∈ T.toIntrinsic.adaptiveFaceCarrier U a.1 at hxt
+    obtain ⟨z, hz, hzx⟩ := hxt
+    let Rt := T.toIntrinsic.safeSubdivision a.1.1
+    let h := Rt.subordinate a.1.2.1.1 a.1.2.1.2
+    have hzParent := (Classical.choose_spec h).2 z hz
+    change x ∈ T.toIntrinsic.faceCarrier (Classical.choose h)
+    rw [← hzx]
+    exact hzParent
+  · intro a
+    change T.toIntrinsic.AdaptiveFanFace U hU at a
+    obtain ⟨b, hb⟩ := T.toIntrinsic.adaptiveGlobalFanFaceMap_standardAffine hU a
+    refine ⟨b, ?_⟩
+    intro x
+    have hsource :
+        q.symm (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
+            (K := Q.complex) a x) =
+          eU.symm (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
+            (K := R) a x) := by
+      change eU.symm ((R.polygonalReplacementHomeomorph H).symm
+          (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
+            (K := Q.complex) a x)) = _
+      congr 1
+      exact R.polygonalReplacementInverse_faceToSupport H a x
+    change (q.symm
+        (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
+          (K := Q.complex) a x)).1.1 = b (Q.complex.facePlaneHomeomorph a x).1
+    rw [hsource]
+    exact hb x
+  · intro F
+    apply Set.Subset.antisymm
+    · intro x hx
+      obtain ⟨t, hxt⟩ := Set.mem_iUnion.mp hx
+      rw [T.toIntrinsic.adaptiveFaceCarrier_eq_iUnion_commonLevel_descendants U F t.2] at hxt
+      obtain ⟨u, hxt⟩ := Set.mem_iUnion.mp hxt
+      obtain ⟨hut, hxu⟩ := Set.mem_iUnion.mp hxt
+      let u' : {u : T.toIntrinsic.LevelFace
+          (T.toIntrinsic.adaptiveFaceCommonLevel U F) //
+          u ∈ (Finset.univ : Finset
+            (T.toIntrinsic.LevelFace
+              (T.toIntrinsic.adaptiveFaceCommonLevel U F))).filter
+              (fun u ↦ ∃ t ∈ F,
+                T.toIntrinsic.levelFaceCarrier u ⊆
+                  T.toIntrinsic.adaptiveFaceCarrier U t)} :=
+        ⟨u, Finset.mem_filter.mpr ⟨Finset.mem_univ _, ⟨t.1, t.2, hut⟩⟩⟩
+      exact Set.mem_iUnion.mpr ⟨u', hxu⟩
+    · intro x hx
+      obtain ⟨u, hxu⟩ := Set.mem_iUnion.mp hx
+      obtain ⟨-, t, htF, hut⟩ := Finset.mem_filter.mp u.2
+      let t' : {t : T.toIntrinsic.AdaptiveFace U // t ∈ F} := ⟨t, htF⟩
+      exact Set.mem_iUnion.mpr ⟨t', hut hxu⟩
+
+private theorem straightenedChartOpen_coordZero_iff_boundary
+    {S' : Type*} [TopologicalSpace S'] [ChartedSpace (EuclideanHalfSpace 2) S']
+    (T : PartialTriangulation S') (c : MoiseChart S') (hc : c.BoundaryFaithful)
+    (hboundary : T.BoundaryFacewiseRegular)
+    (U : Set T.toIntrinsic.realization) (hU : IsOpen U)
+    (hsub : U ⊆ T.chartOverlap c)
+    (V : Set Plane) (hV : IsOpen V)
+    (f : U → Plane) (hf : Continuous f) (hmem : ∀ x, f x ∈ V)
+    (hfcoord : ∀ x, f x = T.chartOverlapMap c ⟨x.1, hsub x.2⟩)
+    (mu : U → ℝ) (hmu : StronglyPositiveOn Set.univ mu)
+    (G :
+      (T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem
+        mu hmu).PlaneGraphRealization)
+    (H :
+      (T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem
+        mu hmu).CellwiseCompatibility G)
+    (hRsupport :
+      (T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem mu hmu).support =
+        Set.univ)
+    (hGmap : ∀ p, G.map p = f p.1) :
+    let q := straightenedChartOpenSourceHomeomorph
+      (T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem mu hmu)
+      G H hRsupport
+    ∀ (_hk : c.kind = ChartKind.halfDisk) (y : U),
+      (q y).1.1 0 = 0 ↔
+        T.embed y.1 ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S' := by
+  classical
+  let C₀ := T.toIntrinsic.controlledAdaptiveOpenCover U hU f hf
+    (regionSafeControl V f mu)
+    (stronglyPositiveOn_regionSafeControl hV hf hmem hmu)
+  letI : T.toIntrinsic.AdaptiveSafety U := C₀.safety
+  letI : IntrinsicTwoComplex.AdaptiveSafety.IsAdmissible
+      (K := T.toIntrinsic) (U := U) := C₀.safety_isAdmissible
+  let R := T.toIntrinsic.regionControlledAdaptiveComplex U hU V hV f hf hmem mu hmu
+  let q := straightenedChartOpenSourceHomeomorph R G H hRsupport
+  let uToSupport : U → R.support := fun x ↦ ⟨x, by rw [hRsupport]; trivial⟩
+  let eU : U ≃ₜ R.support :=
+    { toFun := uToSupport
+      invFun := Subtype.val
+      left_inv := fun _ ↦ rfl
+      right_inv := fun _ ↦ Subtype.ext rfl
+      continuous_toFun := Continuous.subtype_mk continuous_id _
+      continuous_invFun := continuous_subtype_val }
+  let toOverlap : U → T.chartOverlap c := fun x ↦ ⟨x.1, hsub x.2⟩
+  dsimp only
+  intro hk y
+  have hfHalf : Set.range G.map ⊆ HalfPlaneSet := by
+    rintro z ⟨p, rfl⟩
+    rw [hGmap]
+    have hpModel : f p.1 ∈ c.kind.modelRegion := by
+      rw [hfcoord p.1]
+      exact (T.chartOverlapModelMap c (toOverlap p.1)).2
+    rw [hk] at hpModel
+    exact hpModel.2
+  have hGface :
+      LocallyFiniteTriangleComplex.PlaneGraphRealization.FacewiseCoordZeroExposed G := by
+    intro a
+    let Rt := T.toIntrinsic.safeSubdivision a.1.1
+    let hs := Rt.subordinate a.1.2.1.1 a.1.2.1.2
+    let t : T.toIntrinsic.Face := ⟨Classical.choose hs, (Classical.choose_spec hs).1⟩
+    obtain ⟨b, hbt, hbcard, hb⟩ := hboundary t.1 t.2
+    let E := T.toIntrinsic.adaptiveFanFaceVertexEquiv U hU a
+    let v₀ : {v // v ∈ T.toIntrinsic.adaptiveGlobalFanFaceVertices U hU a} :=
+      E.symm (T.toIntrinsic.adaptiveFanCenterVertex U hU a)
+    have hv₀ : v₀.1.1 ∉ T.toIntrinsic.faceCarrier b := by
+      change T.toIntrinsic.adaptiveFaceCenter U a.1 ∉ T.toIntrinsic.faceCarrier b
+      apply T.toIntrinsic.adaptiveFaceCenter_not_mem_faceCarrier_of_subordinate hU a t
+      · exact (Classical.choose_spec hs).2
+      · exact hbt
+      · exact hbcard
+    obtain ⟨d, hda, hdcard, hd⟩ :=
+      T.toIntrinsic.adaptiveGlobalFanFaceMap_exists_exposedFace hU a b v₀ hv₀
+    refine ⟨d, hda, hdcard, ?_⟩
+    intro x
+    let z : U := T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a x
+    have hzt : z.1 ∈ T.toIntrinsic.faceCarrier t.1 :=
+      (Classical.choose_spec hs).2
+        (T.toIntrinsic.adaptiveFanSourcePoint U hU a
+          (T.toIntrinsic.adaptiveFanRelabelSimplex U hU a x))
+        (T.toIntrinsic.adaptiveFanSourcePoint_mem_carrier U hU a _)
+    have hsurface :
+        T.embed z.1 ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S' ↔
+          z.1 ∈ T.toIntrinsic.faceCarrier b := hb z.1 hzt
+    have hchart :
+        T.embed z.1 ∈ (modelWithCornersEuclideanHalfSpace 2).boundary S' ↔
+          f z 0 = 0 := by
+      have h := MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary
+        c hc (T.embed z.1) (hsub z.2)
+      have hmodel : c.kind.IsModelBoundary
+          (c.chart ⟨T.embed z.1, hsub z.2⟩ : Plane) ↔ f z 0 = 0 := by
+        change c.kind.IsModelBoundary (T.chartOverlapMap c ⟨z.1, hsub z.2⟩) ↔
+          f z 0 = 0
+        rw [← hfcoord z]
+        rw [hk]
+        rfl
+      exact h.trans hmodel
+    have hsource : G.map
+          (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
+            (K := R) a x) 0 = 0 ↔ z.1 ∈ T.toIntrinsic.faceCarrier b := by
+      rw [hGmap]
+      exact hchart.symm.trans hsurface
+    exact hsource.trans (hd x)
+  have hzero := polygonalReplacementHomeomorph_coordZero_iff_of_facewiseCoordZeroExposed
+    G H hfHalf hGface (eU y)
+  rw [hGmap] at hzero
+  have heUy : (eU y).1 = y := rfl
+  rw [heUy] at hzero
+  have hqy : q y = R.polygonalReplacementHomeomorph H (eU y) := by
+    apply congrArg (R.polygonalReplacementHomeomorph H)
+    apply Subtype.ext
+    rfl
+  have hzero' : (q y).1.1 0 = 0 ↔ f y 0 = 0 := by
+    rw [hqy]
+    exact hzero
+  have hchart := MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary
+    c hc (T.embed y.1) (hsub y.2)
+  have hmodel : c.kind.IsModelBoundary
+      (c.chart ⟨T.embed y.1, hsub y.2⟩ : Plane) ↔ f y 0 = 0 := by
+    change c.kind.IsModelBoundary (T.chartOverlapMap c ⟨y.1, hsub y.2⟩) ↔
+      f y 0 = 0
+    rw [← hfcoord y]
+    rw [hk]
+    rfl
+  exact hzero'.trans (hchart.trans hmodel).symm
+
 /-- Assemble the controlled polygonal replacement over an arbitrary open chart region whose
 coordinate image is closed relative to the chosen plane perturbation region. -/
 theorem exists_straightenedChartOpen
@@ -5387,7 +5710,6 @@ theorem exists_straightenedChartOpen
     IntrinsicTwoComplex.RegionControlledAdaptiveComplex.exists_polygonalReplacement_of_comparison
       T.toIntrinsic U hU V hV f hf hmem mu hmu G hGmap hGregion
   let G' := G.withApproximationControls vc hvc ec hec
-  let P := R.polygonalReplacementComplex H
   let uToSupport : U → R.support := fun x ↦ ⟨x, by rw [hRsupport]; trivial⟩
   let eU : U ≃ₜ R.support :=
     { toFun := uToSupport
@@ -5396,254 +5718,18 @@ theorem exists_straightenedChartOpen
       right_inv := fun x ↦ Subtype.ext rfl
       continuous_toFun := Continuous.subtype_mk continuous_id _
       continuous_invFun := continuous_subtype_val }
-  let q : U ≃ₜ P.support := eU.trans (R.polygonalReplacementHomeomorph H)
-  let Q : PolygonalReplacementPresentation U V :=
-    { complex := P
-      sourceHomeomorph := q
-      facePolygon := fun f ↦ R.facePolygonalCircle (G := G') f
-      faceFillingMap := fun f ↦ (R.facePLFilling (G := G') f).map
-      faceMap_eq := fun _ _ ↦ rfl
-      faceCertificate := fun f ↦ (R.facePLFilling (G := G') f).certificate
-      faceClosedRegion_subset := fun f ↦ H.closedRegions_mem_region f
-      faceCarrier_eq := fun f ↦ R.polygonalReplacementComplex_faceCarrier H f }
+  let q := straightenedChartOpenSourceHomeomorph R G' H hRsupport
+  let Q := straightenedChartOpenPresentation R G' H hRsupport
+  have hfcoord : ∀ x, f x = T.chartOverlapMap c ⟨x.1, hsub x.2⟩ := fun _ ↦ rfl
   have hqzero :
       ∀ (_hk : c.kind = ChartKind.halfDisk) (y : U),
         (q y).1.1 0 = 0 ↔
           T.embed y.1 ∈
             (modelWithCornersEuclideanHalfSpace 2).boundary S' := by
-    intro hk y
-    have hfHalf : Set.range G'.map ⊆ HalfPlaneSet := by
-      rintro z ⟨p, rfl⟩
-      change f p.1 ∈ HalfPlaneSet
-      have hpModel :
-          f p.1 ∈ c.kind.modelRegion :=
-        (T.chartOverlapModelMap c (toOverlap p.1)).2
-      rw [hk] at hpModel
-      change 0 ≤ f p.1 0
-      exact hpModel.2
-    have hGface :
-        LocallyFiniteTriangleComplex.PlaneGraphRealization.FacewiseCoordZeroExposed
-          G' := by
-      intro a
-      let Rt := T.toIntrinsic.safeSubdivision a.1.1
-      let hs := Rt.subordinate a.1.2.1.1 a.1.2.1.2
-      let t : T.toIntrinsic.Face :=
-        ⟨Classical.choose hs, (Classical.choose_spec hs).1⟩
-      obtain ⟨b, hbt, hbcard, hb⟩ :=
-        hboundary t.1 t.2
-      let E :=
-        T.toIntrinsic.adaptiveFanFaceVertexEquiv U hU a
-      let v₀ :
-          {v // v ∈
-            T.toIntrinsic.adaptiveGlobalFanFaceVertices U hU a} :=
-        E.symm
-          (T.toIntrinsic.adaptiveFanCenterVertex U hU a)
-      have hv₀ :
-          v₀.1.1 ∉ T.toIntrinsic.faceCarrier b := by
-        change
-          T.toIntrinsic.adaptiveFaceCenter U a.1 ∉
-            T.toIntrinsic.faceCarrier b
-        apply
-          T.toIntrinsic.adaptiveFaceCenter_not_mem_faceCarrier_of_subordinate
-            hU a t
-        · exact (Classical.choose_spec hs).2
-        · exact hbt
-        · exact hbcard
-      obtain ⟨d, hda, hdcard, hd⟩ :=
-        T.toIntrinsic.adaptiveGlobalFanFaceMap_exists_exposedFace
-          hU a b v₀ hv₀
-      refine ⟨d, hda, hdcard, ?_⟩
-      intro x
-      let z : U :=
-        T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a x
-      have hzt : z.1 ∈ T.toIntrinsic.faceCarrier t.1 := by
-        exact (Classical.choose_spec hs).2
-          (T.toIntrinsic.adaptiveFanSourcePoint U hU a
-            (T.toIntrinsic.adaptiveFanRelabelSimplex U hU a x))
-          (T.toIntrinsic.adaptiveFanSourcePoint_mem_carrier U hU a _)
-      have hsurface :
-          T.embed z.1 ∈
-              (modelWithCornersEuclideanHalfSpace 2).boundary S' ↔
-            z.1 ∈ T.toIntrinsic.faceCarrier b :=
-        hb z.1 hzt
-      have hchart :
-          T.embed z.1 ∈
-              (modelWithCornersEuclideanHalfSpace 2).boundary S' ↔
-            f z 0 = 0 := by
-        have h :=
-          MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary
-            c hc (T.embed z.1) (hsub z.2)
-        have hmodel :
-            c.kind.IsModelBoundary
-                (c.chart ⟨T.embed z.1, hsub z.2⟩ : Plane) ↔
-              f z 0 = 0 := by
-          change c.kind.IsModelBoundary (f z) ↔ f z 0 = 0
-          rw [hk]
-          rfl
-        exact h.trans hmodel
-      have hsource :
-          G'.map
-              (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-                (K := R) a x) 0 = 0 ↔
-            z.1 ∈ T.toIntrinsic.faceCarrier b := by
-        change f z 0 = 0 ↔ _
-        exact hchart.symm.trans hsurface
-      exact hsource.trans (hd x)
-    have hzero :=
-      polygonalReplacementHomeomorph_coordZero_iff_of_facewiseCoordZeroExposed
-        G' H hfHalf hGface (eU y)
-    change (q y).1.1 0 = 0 ↔ f y 0 = 0 at hzero
-    have hchart :=
-      MoiseChart.BoundaryFaithful.mem_boundary_iff_isModelBoundary
-        c hc (T.embed y.1) (hsub y.2)
-    have hmodel :
-        c.kind.IsModelBoundary
-            (c.chart ⟨T.embed y.1, hsub y.2⟩ : Plane) ↔
-          f y 0 = 0 := by
-      change c.kind.IsModelBoundary (f y) ↔ f y 0 = 0
-      rw [hk]
-      rfl
-    exact hzero.trans (hchart.trans hmodel).symm
-  let sourceParent (a : T.toIntrinsic.AdaptiveFanFace U hU) :
-      T.toIntrinsic.Face := by
-    let Rt := T.toIntrinsic.safeSubdivision a.1.1
-    let h := Rt.subordinate a.1.2.1.1 a.1.2.1.2
-    exact ⟨Classical.choose h, (Classical.choose_spec h).1⟩
+    exact straightenedChartOpen_coordZero_iff_boundary T c hc hboundary U hU hsub V hV
+      f hf hmem hfcoord mu hmu G' H hRsupport hGmap
   let A : PolygonalReplacementSourceAtlas T.toIntrinsic U V Q :=
-    { Tile := T.toIntrinsic.AdaptiveFace U
-      tileDecidableEq := Classical.decEq _
-      tile := fun f ↦ f.1
-      tileFaces := T.toIntrinsic.adaptiveFanFacesOver U hU
-      mem_tileFaces := fun t f ↦
-        T.toIntrinsic.mem_adaptiveFanFacesOver_iff U hU t f
-      sourceTileCarrier := T.toIntrinsic.adaptiveFaceCarrier U
-      sourceTileCarrier_subset_open := fun t ↦
-        T.toIntrinsic.adaptiveFaceCarrier_subset U t
-      sourceTileCarrier_locallyFinite :=
-        T.toIntrinsic.locallyFinite_adaptiveFaceCarrierInOpen U hU
-      sourceTileCarrier_eq_faces := by
-        intro t
-        apply Set.Subset.antisymm
-        · intro x hx
-          obtain ⟨i, j, z, hz⟩ :=
-            T.toIntrinsic.exists_adaptiveFanFaceMap_eq_of_mem_adaptiveFaceCarrier
-              U hU t hx
-          let a : T.toIntrinsic.AdaptiveFanFace U hU := ⟨t, i, j⟩
-          have ha : a ∈ T.toIntrinsic.adaptiveFanFacesOver U hU t :=
-            (T.toIntrinsic.mem_adaptiveFanFacesOver_iff U hU t a).2 rfl
-          let a' : {f : Q.complex.Face //
-              f ∈ T.toIntrinsic.adaptiveFanFacesOver U hU t} := ⟨a, ha⟩
-          apply Set.mem_iUnion.mpr
-          refine ⟨a', ?_⟩
-          let hxU : x ∈ U := T.toIntrinsic.adaptiveFaceCarrier_subset U t hx
-          refine ⟨hxU, ?_⟩
-          apply (R.polygonalReplacementHomeomorph_mem_faceCarrier_iff H a
-            (eU ⟨x, hxU⟩)).2
-          change ⟨x, hxU⟩ ∈ R.faceCarrier a
-          change ⟨x, hxU⟩ ∈
-            Set.range (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a)
-          rw [T.toIntrinsic.range_adaptiveGlobalFanFaceMap U hU a]
-          exact ⟨z, hz⟩
-        · intro x hx
-          obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx
-          obtain ⟨hxU, hxaQ⟩ := hxa
-          have hxaR := (R.polygonalReplacementHomeomorph_mem_faceCarrier_iff H a.1
-            (eU ⟨x, hxU⟩)).1 hxaQ
-          change ⟨x, hxU⟩ ∈
-            Set.range (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a.1) at hxaR
-          rw [T.toIntrinsic.range_adaptiveGlobalFanFaceMap U hU a.1] at hxaR
-          have hxt :=
-            T.toIntrinsic.range_adaptiveFanFaceMap_subset_tile U hU a.1 hxaR
-          change x ∈ T.toIntrinsic.adaptiveFaceCarrier U a.1.1 at hxt
-          rw [(T.toIntrinsic.mem_adaptiveFanFacesOver_iff U hU t a.1).1 a.2] at hxt
-          exact hxt
-      sourceFaceParent := sourceParent
-      sourceFaceSet_subset_parent := by
-        intro a x hx
-        change T.toIntrinsic.AdaptiveFanFace U hU at a
-        obtain ⟨hxU, hxaQ⟩ := hx
-        have hxaR :=
-          (R.polygonalReplacementHomeomorph_mem_faceCarrier_iff H a
-            (eU ⟨x, hxU⟩)).1 hxaQ
-        change ⟨x, hxU⟩ ∈
-          Set.range (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a) at hxaR
-        rw [T.toIntrinsic.range_adaptiveGlobalFanFaceMap U hU a] at hxaR
-        have hxt :=
-          T.toIntrinsic.range_adaptiveFanFaceMap_subset_tile U hU a hxaR
-        change x ∈ T.toIntrinsic.adaptiveFaceCarrier U a.1 at hxt
-        obtain ⟨z, hz, hzx⟩ := hxt
-        let Rt := T.toIntrinsic.safeSubdivision a.1.1
-        let h := Rt.subordinate a.1.2.1.1 a.1.2.1.2
-        have hzParent :=
-          (Classical.choose_spec h).2 z hz
-        change x ∈ T.toIntrinsic.faceCarrier (sourceParent a).1
-        change x ∈ T.toIntrinsic.faceCarrier (Classical.choose h)
-        rw [← hzx]
-        exact hzParent
-      sourceFaceStandardAffine := by
-        intro a
-        change T.toIntrinsic.AdaptiveFanFace U hU at a
-        obtain ⟨b, hb⟩ :=
-          T.toIntrinsic.adaptiveGlobalFanFaceMap_standardAffine hU a
-        refine ⟨b, ?_⟩
-        intro x
-        have hsource :
-            q.symm (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-                (K := P) a x) =
-              eU.symm (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-                (K := R) a x) := by
-          change
-            eU.symm
-                ((R.polygonalReplacementHomeomorph H).symm
-                  (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-                    (K := P) a x)) =
-              eU.symm
-                (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-                  (K := R) a x)
-          congr 1
-          exact R.polygonalReplacementInverse_faceToSupport H a x
-        change
-          (q.symm
-            (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-              (K := P) a x)).1.1 =
-            b (P.facePlaneHomeomorph a x).1
-        rw [hsource]
-        change
-          (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a x).1.1 =
-            b ((T.toIntrinsic.adaptiveLocallyFiniteTriangleComplex U hU
-              ).facePlaneHomeomorph a x).1
-        exact hb x
-      commonLevel := T.toIntrinsic.adaptiveFaceCommonLevel U
-      levelFaces := fun F ↦
-        (Finset.univ : Finset
-          (T.toIntrinsic.LevelFace (T.toIntrinsic.adaptiveFaceCommonLevel U F))).filter
-          fun u ↦ ∃ t ∈ F,
-            T.toIntrinsic.levelFaceCarrier u ⊆
-              T.toIntrinsic.adaptiveFaceCarrier U t
-      sourceTiles_eq_levelFaces := by
-        intro F
-        apply Set.Subset.antisymm
-        · intro x hx
-          obtain ⟨t, hxt⟩ := Set.mem_iUnion.mp hx
-          rw [T.toIntrinsic.adaptiveFaceCarrier_eq_iUnion_commonLevel_descendants
-            U F t.2] at hxt
-          obtain ⟨u, hxt⟩ := Set.mem_iUnion.mp hxt
-          obtain ⟨hut, hxu⟩ := Set.mem_iUnion.mp hxt
-          let u' : {u : T.toIntrinsic.LevelFace
-              (T.toIntrinsic.adaptiveFaceCommonLevel U F) //
-              u ∈ (Finset.univ : Finset
-                (T.toIntrinsic.LevelFace
-                  (T.toIntrinsic.adaptiveFaceCommonLevel U F))).filter
-                (fun u ↦ ∃ t ∈ F,
-                  T.toIntrinsic.levelFaceCarrier u ⊆
-                    T.toIntrinsic.adaptiveFaceCarrier U t)} :=
-            ⟨u, Finset.mem_filter.mpr ⟨Finset.mem_univ _, ⟨t.1, t.2, hut⟩⟩⟩
-          exact Set.mem_iUnion.mpr ⟨u', hxu⟩
-        · intro x hx
-          obtain ⟨u, hxu⟩ := Set.mem_iUnion.mp hx
-          obtain ⟨-, t, htF, hut⟩ := Finset.mem_filter.mp u.2
-          let t' : {t : T.toIntrinsic.AdaptiveFace U // t ∈ F} := ⟨t, htF⟩
-          exact Set.mem_iUnion.mpr ⟨t', hut hxu⟩ }
+    straightenedChartOpenSourceAtlas T U hU V hV f hf hmem mu hmu G' H hRsupport
   have hqmodel : ∀ y : U, (q y).1.1 ∈ c.kind.modelRegion := by
     intro y
     cases hk : c.kind with
@@ -6458,165 +6544,19 @@ theorem PartialTriangulation.exists_straightenedChartOverlap
     IntrinsicTwoComplex.RegionControlledAdaptiveComplex.exists_polygonalReplacement_of_comparison
       T.toIntrinsic U hU V hV f hf hmem mu hmu G hGmap hGregion
   let G' := G.withApproximationControls vc hvc ec hec
-  let P := R.polygonalReplacementComplex H
   let uToSupport : U → R.support := fun x ↦ ⟨x, by rw [hRsupport]; trivial⟩
   let eU : U ≃ₜ R.support :=
     { toFun := uToSupport
       invFun := Subtype.val
-      left_inv := fun x ↦ rfl
-      right_inv := fun x ↦ Subtype.ext rfl
+      left_inv := fun _ ↦ rfl
+      right_inv := fun _ ↦ Subtype.ext rfl
       continuous_toFun := Continuous.subtype_mk continuous_id _
       continuous_invFun := continuous_subtype_val }
-  let q : U ≃ₜ P.support := eU.trans (R.polygonalReplacementHomeomorph H)
+  let q := straightenedChartOpenSourceHomeomorph R G' H hRsupport
   let Q : PolygonalReplacementPresentation U V :=
-    { complex := P
-      sourceHomeomorph := q
-      facePolygon := fun f ↦ R.facePolygonalCircle (G := G') f
-      faceFillingMap := fun f ↦ (R.facePLFilling (G := G') f).map
-      faceMap_eq := fun _ _ ↦ rfl
-      faceCertificate := fun f ↦ (R.facePLFilling (G := G') f).certificate
-      faceClosedRegion_subset := fun f ↦ H.closedRegions_mem_region f
-      faceCarrier_eq := fun f ↦ R.polygonalReplacementComplex_faceCarrier H f }
-  let sourceParent (a : T.toIntrinsic.AdaptiveFanFace U hU) :
-      T.toIntrinsic.Face := by
-    let Rt := T.toIntrinsic.safeSubdivision a.1.1
-    let h := Rt.subordinate a.1.2.1.1 a.1.2.1.2
-    exact ⟨Classical.choose h, (Classical.choose_spec h).1⟩
+    straightenedChartOpenPresentation R G' H hRsupport
   let A : PolygonalReplacementSourceAtlas T.toIntrinsic U V Q :=
-    { Tile := T.toIntrinsic.AdaptiveFace U
-      tileDecidableEq := Classical.decEq _
-      tile := fun f ↦ f.1
-      tileFaces := T.toIntrinsic.adaptiveFanFacesOver U hU
-      mem_tileFaces := fun t f ↦
-        T.toIntrinsic.mem_adaptiveFanFacesOver_iff U hU t f
-      sourceTileCarrier := T.toIntrinsic.adaptiveFaceCarrier U
-      sourceTileCarrier_subset_open := fun t ↦
-        T.toIntrinsic.adaptiveFaceCarrier_subset U t
-      sourceTileCarrier_locallyFinite :=
-        T.toIntrinsic.locallyFinite_adaptiveFaceCarrierInOpen U hU
-      sourceTileCarrier_eq_faces := by
-        intro t
-        apply Set.Subset.antisymm
-        · intro x hx
-          obtain ⟨i, j, z, hz⟩ :=
-            T.toIntrinsic.exists_adaptiveFanFaceMap_eq_of_mem_adaptiveFaceCarrier
-              U hU t hx
-          let a : T.toIntrinsic.AdaptiveFanFace U hU := ⟨t, i, j⟩
-          have ha : a ∈ T.toIntrinsic.adaptiveFanFacesOver U hU t :=
-            (T.toIntrinsic.mem_adaptiveFanFacesOver_iff U hU t a).2 rfl
-          let a' : {f : Q.complex.Face //
-              f ∈ T.toIntrinsic.adaptiveFanFacesOver U hU t} := ⟨a, ha⟩
-          apply Set.mem_iUnion.mpr
-          refine ⟨a', ?_⟩
-          let hxU : x ∈ U := T.toIntrinsic.adaptiveFaceCarrier_subset U t hx
-          refine ⟨hxU, ?_⟩
-          apply (R.polygonalReplacementHomeomorph_mem_faceCarrier_iff H a
-            (eU ⟨x, hxU⟩)).2
-          change ⟨x, hxU⟩ ∈ R.faceCarrier a
-          change ⟨x, hxU⟩ ∈
-            Set.range (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a)
-          rw [T.toIntrinsic.range_adaptiveGlobalFanFaceMap U hU a]
-          exact ⟨z, hz⟩
-        · intro x hx
-          obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx
-          obtain ⟨hxU, hxaQ⟩ := hxa
-          have hxaR := (R.polygonalReplacementHomeomorph_mem_faceCarrier_iff H a.1
-            (eU ⟨x, hxU⟩)).1 hxaQ
-          change ⟨x, hxU⟩ ∈
-            Set.range (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a.1) at hxaR
-          rw [T.toIntrinsic.range_adaptiveGlobalFanFaceMap U hU a.1] at hxaR
-          have hxt :=
-            T.toIntrinsic.range_adaptiveFanFaceMap_subset_tile U hU a.1 hxaR
-          change x ∈ T.toIntrinsic.adaptiveFaceCarrier U a.1.1 at hxt
-          rw [(T.toIntrinsic.mem_adaptiveFanFacesOver_iff U hU t a.1).1 a.2] at hxt
-          exact hxt
-      sourceFaceParent := sourceParent
-      sourceFaceSet_subset_parent := by
-        intro a x hx
-        change T.toIntrinsic.AdaptiveFanFace U hU at a
-        obtain ⟨hxU, hxaQ⟩ := hx
-        have hxaR :=
-          (R.polygonalReplacementHomeomorph_mem_faceCarrier_iff H a
-            (eU ⟨x, hxU⟩)).1 hxaQ
-        change ⟨x, hxU⟩ ∈
-          Set.range (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a) at hxaR
-        rw [T.toIntrinsic.range_adaptiveGlobalFanFaceMap U hU a] at hxaR
-        have hxt :=
-          T.toIntrinsic.range_adaptiveFanFaceMap_subset_tile U hU a hxaR
-        change x ∈ T.toIntrinsic.adaptiveFaceCarrier U a.1 at hxt
-        obtain ⟨z, hz, hzx⟩ := hxt
-        let Rt := T.toIntrinsic.safeSubdivision a.1.1
-        let h := Rt.subordinate a.1.2.1.1 a.1.2.1.2
-        have hzParent :=
-          (Classical.choose_spec h).2 z hz
-        change x ∈ T.toIntrinsic.faceCarrier (sourceParent a).1
-        change x ∈ T.toIntrinsic.faceCarrier (Classical.choose h)
-        rw [← hzx]
-        exact hzParent
-      sourceFaceStandardAffine := by
-        intro a
-        change T.toIntrinsic.AdaptiveFanFace U hU at a
-        obtain ⟨b, hb⟩ :=
-          T.toIntrinsic.adaptiveGlobalFanFaceMap_standardAffine hU a
-        refine ⟨b, ?_⟩
-        intro x
-        have hsource :
-            q.symm (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-                (K := P) a x) =
-              eU.symm (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-                (K := R) a x) := by
-          change
-            eU.symm
-                ((R.polygonalReplacementHomeomorph H).symm
-                  (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-                    (K := P) a x)) =
-              eU.symm
-                (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-                  (K := R) a x)
-          congr 1
-          exact R.polygonalReplacementInverse_faceToSupport H a x
-        change
-          (q.symm
-            (LocallyFiniteTriangleComplex.PlaneGraphRealization.faceToSupport
-              (K := P) a x)).1.1 =
-            b (P.facePlaneHomeomorph a x).1
-        rw [hsource]
-        change
-          (T.toIntrinsic.adaptiveGlobalFanFaceMap U hU a x).1.1 =
-            b ((T.toIntrinsic.adaptiveLocallyFiniteTriangleComplex U hU
-              ).facePlaneHomeomorph a x).1
-        exact hb x
-      commonLevel := T.toIntrinsic.adaptiveFaceCommonLevel U
-      levelFaces := fun F ↦
-        (Finset.univ : Finset
-          (T.toIntrinsic.LevelFace (T.toIntrinsic.adaptiveFaceCommonLevel U F))).filter
-          fun u ↦ ∃ t ∈ F,
-            T.toIntrinsic.levelFaceCarrier u ⊆
-              T.toIntrinsic.adaptiveFaceCarrier U t
-      sourceTiles_eq_levelFaces := by
-        intro F
-        apply Set.Subset.antisymm
-        · intro x hx
-          obtain ⟨t, hxt⟩ := Set.mem_iUnion.mp hx
-          rw [T.toIntrinsic.adaptiveFaceCarrier_eq_iUnion_commonLevel_descendants
-            U F t.2] at hxt
-          obtain ⟨u, hxt⟩ := Set.mem_iUnion.mp hxt
-          obtain ⟨hut, hxu⟩ := Set.mem_iUnion.mp hxt
-          let u' : {u : T.toIntrinsic.LevelFace
-              (T.toIntrinsic.adaptiveFaceCommonLevel U F) //
-              u ∈ (Finset.univ : Finset
-                (T.toIntrinsic.LevelFace
-                  (T.toIntrinsic.adaptiveFaceCommonLevel U F))).filter
-                (fun u ↦ ∃ t ∈ F,
-                  T.toIntrinsic.levelFaceCarrier u ⊆
-                    T.toIntrinsic.adaptiveFaceCarrier U t)} :=
-            ⟨u, Finset.mem_filter.mpr ⟨Finset.mem_univ _, ⟨t.1, t.2, hut⟩⟩⟩
-          exact Set.mem_iUnion.mpr ⟨u', hxu⟩
-        · intro x hx
-          obtain ⟨u, hxu⟩ := Set.mem_iUnion.mp hx
-          obtain ⟨-, t, htF, hut⟩ := Finset.mem_filter.mp u.2
-          let t' : {t : T.toIntrinsic.AdaptiveFace U // t ∈ F} := ⟨t, htF⟩
-          exact Set.mem_iUnion.mpr ⟨t', hut hxu⟩ }
+    straightenedChartOpenSourceAtlas T U hU V hV f hf hmem mu hmu G' H hRsupport
   have hqmodel : ∀ y : U, (q y).1.1 ∈ c.kind.modelRegion := by
     intro y
     cases hk : c.kind with
@@ -6641,7 +6581,7 @@ theorem PartialTriangulation.exists_straightenedChartOverlap
           exact LocallyFiniteTriangleComplex.polygonalReplacementHomeomorph_mem_halfPlane
             G' H hgraph (eU y)
         exact ⟨by
-            simp [V, ChartKind.perturbationRegion],
+            exact (q y).1.2,
           by simpa [HalfPlaneSet] using hhalf⟩
   let g' : U → c.kind.modelRegion := fun y ↦ ⟨(q y).1.1, hqmodel y⟩
   let g : T.toIntrinsic.realization → S := fun x ↦

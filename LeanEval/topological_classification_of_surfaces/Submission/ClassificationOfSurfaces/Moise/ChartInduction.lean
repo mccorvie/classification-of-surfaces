@@ -1033,6 +1033,306 @@ private structure MixedLocalFanCertificate (M : MixedLocalFanData) where
         extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)) y =
           Pi.single (M.fanOldVertexEmbedding (M.marking.fanVertexEmbedding f.1 v)) 1
 
+private structure LocalFanIntervalVertices
+    (M : MixedLocalFanData) (t : M.localComplex.Face) (f : M.OutsideFanFace) where
+  first : M.localComplex.UsedVertex
+  second : M.localComplex.UsedVertex
+  first_mem : first.1 ∈ t.1
+  second_mem : second.1 ∈ t.1
+  first_eq : M.localVertexPoint first =
+    M.marking.edgeIntervalFirst (M.ambient.faceEdge f.1.1 f.1.2.1) f.1.2.2
+  second_eq : M.localVertexPoint second =
+    M.marking.edgeIntervalSecond (M.ambient.faceEdge f.1.1 f.1.2.1) f.1.2.2
+
+private theorem MixedLocalFanCertificate.exists_localFanIntervalVertices
+    (M : MixedLocalFanData) (C : MixedLocalFanCertificate M)
+    {t : M.localComplex.Face} {f : M.OutsideFanFace}
+    {x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)}}
+    {y : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)}}
+    (hxy : M.mixedOldFaceMap (Sum.inl t) x = M.mixedOldFaceMap (Sum.inr f) y)
+    (hyCenter :
+      (M.marking.fanRelabelSimplex f.1
+        (relabelFaceSimplex M.fanOldVertexEmbedding
+          (M.marking.globalFanFaceVertices f.1) y))
+          (M.marking.fanCenterVertex f.1) = 0)
+    (hyPos :
+      0 < (M.marking.fanRelabelSimplex f.1
+        (relabelFaceSimplex M.fanOldVertexEmbedding
+          (M.marking.globalFanFaceVertices f.1) y))
+          (M.marking.fanFirstVertex f.1) ∧
+      0 < (M.marking.fanRelabelSimplex f.1
+        (relabelFaceSimplex M.fanOldVertexEmbedding
+          (M.marking.globalFanFaceVertices f.1) y))
+          (M.marking.fanSecondVertex f.1)) :
+    Nonempty (LocalFanIntervalVertices M t f) := by
+  let x₀ := relabelUnivSimplex (M.localFaceOldVertexEmbedding t) x
+  let yG := relabelFaceSimplex M.fanOldVertexEmbedding
+    (M.marking.globalFanFaceVertices f.1) y
+  let y₀ := M.marking.fanRelabelSimplex f.1 yG
+  let e := M.ambient.faceEdge f.1.1 f.1.2.1
+  let q := M.mixedOldFaceMap (Sum.inl t) x
+  let p₀ := M.marking.edgeIntervalFirst e f.1.2.2
+  let p₁ := M.marking.edgeIntervalSecond e f.1.2.2
+  let a₀ := M.marking.edgeParameterValue e p₀
+  let a₁ := M.marking.edgeParameterValue e p₁
+  let z₀ := M.marking.edgeParameterValue e q
+  have hfanEq : M.marking.fanFaceMap f.1 y₀ = q := hxy.symm
+  have hqOpen :
+      q ∈ M.ambient.edgePath e ''
+        {r : Set.Icc (0 : ℝ) 1 | 0 < r.1 ∧ r.1 < 1} := by
+    rw [← hfanEq]
+    exact M.marking.fanFaceMap_mem_edgePath_image_Ioo_of_center_zero_of_base_weights_pos
+      f.1 y₀ hyCenter hyPos.1 hyPos.2
+  have hqEdge : q ∈ M.ambient.faceCarrier e.1 := by
+    rw [← hfanEq]
+    exact M.marking.fanFaceMap_mem_baseEdge_of_center_eq_zero f.1 y₀ hyCenter
+  have heSelected : e.1 ⊆ (C.parentFace t).1 :=
+    C.edge_subset_face_of_openPoint e (C.parentFace t) q hqOpen
+      (C.localMixedFaceMap_mem_parent t x)
+  have hzInterval : z₀ ∈ Set.Ioo a₀ a₁ := by
+    change M.marking.edgeParameterValue e q ∈
+      Set.Ioo
+        (M.marking.edgeParameterValue e (M.marking.fanFirstVertex f.1).1)
+        (M.marking.edgeParameterValue e (M.marking.fanSecondVertex f.1).1)
+    rw [← hfanEq]
+    exact M.marking.edgeParameterValue_fanFaceMap_mem_Ioo_of_center_eq_zero
+      f.1 y₀ hyCenter hyPos.1 hyPos.2
+  have hzAverage :
+      z₀ = ∑ v : {v // v ∈ t.1}, x₀ v * M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) :=
+    C.localFace_edgeParameter_eq_sum t x₀ e hqEdge
+  have hgap (v : {v // v ∈ t.1}) (hvPos : 0 < x₀ v) :
+      ¬M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) ∈ Set.Ioo a₀ a₁ := by
+    have hvEdge := C.positive_localVertex_mem_edge t x₀ e hqEdge v hvPos
+    have hvMark : M.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈
+        M.marking.edgeMarks e :=
+      (M.marking.mem_edgeMarks_iff e _).mpr
+        ⟨C.localVertexPoint_mem_marking ⟨v.1, ⟨t.1, t.2, v.2⟩⟩, hvEdge⟩
+    exact M.marking.not_edgeMark_parameter_mem_Ioo e f.1.2.2 hvMark
+  obtain ⟨⟨lo, hloPos, hlo⟩, ⟨hi, hhiPos, hhi⟩⟩ :=
+    exists_positive_weight_on_both_sides_of_gap
+      (weight := fun v : {v // v ∈ t.1} ↦ x₀ v)
+      (value := fun v ↦ M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩))
+      a₀ a₁ z₀ x₀.2.1 x₀.2.2 hzAverage hgap hzInterval
+  have hloEdge := C.positive_localVertex_mem_edge t x₀ e hqEdge lo hloPos
+  have hhiEdge := C.positive_localVertex_mem_edge t x₀ e hqEdge hi hhiPos
+  have hp₀Mark : p₀ ∈ M.marking.edgeMarks e :=
+    M.marking.edgeIntervalFirst_mem_edgeMarks e f.1.2.2
+  have hp₁Mark : p₁ ∈ M.marking.edgeMarks e :=
+    M.marking.edgeIntervalSecond_mem_edgeMarks e f.1.2.2
+  have hp₀Edge := ((M.marking.mem_edgeMarks_iff e p₀).mp hp₀Mark).2
+  have hp₁Edge := ((M.marking.mem_edgeMarks_iff e p₁).mp hp₁Mark).2
+  obtain ⟨u₀, hu₀⟩ := C.edgeMark_lift t e heSelected p₀ hp₀Mark
+  obtain ⟨u₁, hu₁⟩ := C.edgeMark_lift t e heSelected p₁ hp₁Mark
+  have hlohi : M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨lo.1, ⟨t.1, t.2, lo.2⟩⟩) <
+      M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨hi.1, ⟨t.1, t.2, hi.2⟩⟩) := by
+    calc
+      _ ≤ a₀ := hlo
+      _ < a₁ := hzInterval.1.trans hzInterval.2
+      _ ≤ _ := hhi
+  have hp₀hi : M.marking.edgeParameterValue e p₀ ≤
+      M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨hi.1, ⟨t.1, t.2, hi.2⟩⟩) :=
+    le_trans (hzInterval.1.trans hzInterval.2).le hhi
+  have hloP₁ : M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨lo.1, ⟨t.1, t.2, lo.2⟩⟩) ≤
+      M.marking.edgeParameterValue e p₁ :=
+    le_trans hlo (hzInterval.1.trans hzInterval.2).le
+  obtain ⟨zAt, hzAt⟩ := C.exists_localFacePoint_eq_of_edgeParameter_between
+    t e lo hi p₀ hloEdge hhiEdge hp₀Edge hlo hp₀hi hlohi
+  obtain ⟨zBt, hzBt⟩ := C.exists_localFacePoint_eq_of_edgeParameter_between
+    t e lo hi p₁ hloEdge hhiEdge hp₁Edge hloP₁ hhi hlohi
+  have hu₀Face : u₀.1 ∈ t.1 :=
+    C.localUsedVertex_mem_face_of_map_eq t zAt u₀ (hzAt.trans hu₀.symm)
+  have hu₁Face : u₁.1 ∈ t.1 :=
+    C.localUsedVertex_mem_face_of_map_eq t zBt u₁ (hzBt.trans hu₁.symm)
+  exact ⟨u₀, u₁, hu₀Face, hu₁Face, hu₀, hu₁⟩
+
+private theorem MixedLocalFanCertificate.localFanInterior_extendedCoordinates_eq
+    (M : MixedLocalFanData) (C : MixedLocalFanCertificate M)
+    {t : M.localComplex.Face} {f : M.OutsideFanFace}
+    {x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)}}
+    {y : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)}}
+    (hxy : M.mixedOldFaceMap (Sum.inl t) x = M.mixedOldFaceMap (Sum.inr f) y)
+    (hyCenter :
+      (M.marking.fanRelabelSimplex f.1
+        (relabelFaceSimplex M.fanOldVertexEmbedding
+          (M.marking.globalFanFaceVertices f.1) y))
+          (M.marking.fanCenterVertex f.1) = 0)
+    (hyPos :
+      0 < (M.marking.fanRelabelSimplex f.1
+        (relabelFaceSimplex M.fanOldVertexEmbedding
+          (M.marking.globalFanFaceVertices f.1) y))
+          (M.marking.fanFirstVertex f.1) ∧
+      0 < (M.marking.fanRelabelSimplex f.1
+        (relabelFaceSimplex M.fanOldVertexEmbedding
+          (M.marking.globalFanFaceVertices f.1) y))
+          (M.marking.fanSecondVertex f.1)) :
+    extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl t)) x =
+      extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)) y := by
+  let yG := relabelFaceSimplex M.fanOldVertexEmbedding
+    (M.marking.globalFanFaceVertices f.1) y
+  let y₀ := M.marking.fanRelabelSimplex f.1 yG
+  let e := M.ambient.faceEdge f.1.1 f.1.2.1
+  let q := M.mixedOldFaceMap (Sum.inl t) x
+  let p₀ := M.marking.edgeIntervalFirst e f.1.2.2
+  let p₁ := M.marking.edgeIntervalSecond e f.1.2.2
+  let a₀ := M.marking.edgeParameterValue e p₀
+  let a₁ := M.marking.edgeParameterValue e p₁
+  let z₀ := M.marking.edgeParameterValue e q
+  obtain ⟨D⟩ := C.exists_localFanIntervalVertices M hxy hyCenter hyPos
+  let v₀t : {v // v ∈ t.1} := ⟨D.first.1, D.first_mem⟩
+  let v₁t : {v // v ∈ t.1} := ⟨D.second.1, D.second_mem⟩
+  have hv₀Local : M.localFaceOldVertexEmbedding t v₀t =
+      M.localOldVertexEmbedding D.first := Subtype.ext rfl
+  have hv₁Local : M.localFaceOldVertexEmbedding t v₁t =
+      M.localOldVertexEmbedding D.second := Subtype.ext rfl
+  have hw₀LocalMem : M.localOldVertexEmbedding D.first ∈
+      M.mixedOldFaceVertices (Sum.inl t) := by
+    change M.localOldVertexEmbedding D.first ∈
+      (Finset.univ : Finset {v // v ∈ t.1}).map (M.localFaceOldVertexEmbedding t)
+    rw [← hv₀Local]
+    exact mem_map_univ (M.localFaceOldVertexEmbedding t) v₀t
+  have hw₁LocalMem : M.localOldVertexEmbedding D.second ∈
+      M.mixedOldFaceVertices (Sum.inl t) := by
+    change M.localOldVertexEmbedding D.second ∈
+      (Finset.univ : Finset {v // v ∈ t.1}).map (M.localFaceOldVertexEmbedding t)
+    rw [← hv₁Local]
+    exact mem_map_univ (M.localFaceOldVertexEmbedding t) v₁t
+  let w₀Local : {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)} :=
+    ⟨M.localOldVertexEmbedding D.first, hw₀LocalMem⟩
+  let w₁Local : {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)} :=
+    ⟨M.localOldVertexEmbedding D.second, hw₁LocalMem⟩
+  let gv₀ : M.marking.FanVertex :=
+    M.marking.fanVertexEmbedding f.1 (M.marking.fanFirstVertex f.1)
+  let gv₁ : M.marking.FanVertex :=
+    M.marking.fanVertexEmbedding f.1 (M.marking.fanSecondVertex f.1)
+  have hw₀Raw : M.localOldVertexEmbedding D.first = M.fanOldVertexEmbedding gv₀ :=
+    Subtype.ext D.first_eq
+  have hw₁Raw : M.localOldVertexEmbedding D.second = M.fanOldVertexEmbedding gv₁ :=
+    Subtype.ext D.second_eq
+  have hgv₀Mem : gv₀ ∈ M.marking.globalFanFaceVertices f.1 :=
+    fanFirstVertexEmbedding_mem_globalFanFaceVertices M.marking f.1
+  have hgv₁Mem : gv₁ ∈ M.marking.globalFanFaceVertices f.1 :=
+    fanSecondVertexEmbedding_mem_globalFanFaceVertices M.marking f.1
+  have hw₀FanMem : M.fanOldVertexEmbedding gv₀ ∈
+      M.mixedOldFaceVertices (Sum.inr f) := by
+    change M.fanOldVertexEmbedding gv₀ ∈
+      (M.marking.globalFanFaceVertices f.1).map M.fanOldVertexEmbedding
+    exact mem_finset_map M.fanOldVertexEmbedding _ hgv₀Mem
+  have hw₁FanMem : M.fanOldVertexEmbedding gv₁ ∈
+      M.mixedOldFaceVertices (Sum.inr f) := by
+    change M.fanOldVertexEmbedding gv₁ ∈
+      (M.marking.globalFanFaceVertices f.1).map M.fanOldVertexEmbedding
+    exact mem_finset_map M.fanOldVertexEmbedding _ hgv₁Mem
+  let w₀Fan : {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)} :=
+    ⟨M.fanOldVertexEmbedding gv₀, hw₀FanMem⟩
+  let w₁Fan : {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)} :=
+    ⟨M.fanOldVertexEmbedding gv₁, hw₁FanMem⟩
+  let β := y₀ (M.marking.fanSecondVertex f.1)
+  let r : Set.Icc (0 : ℝ) 1 := ⟨β, y₀.2.1 _, stdSimplex.le_one y₀ _⟩
+  let xLine := simplexLineMap (stdSimplex.vertex w₀Local) (stdSimplex.vertex w₁Local) r
+  let yLine := simplexLineMap (stdSimplex.vertex w₀Fan) (stdSimplex.vertex w₁Fan) r
+  have hlineCoords :
+      extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl t)) xLine =
+        extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)) yLine :=
+    extendFaceCoordinates_simplexLineMap_vertices_eq
+      (M.mixedOldFaceVertices (Sum.inl t)) (M.mixedOldFaceVertices (Sum.inr f))
+      w₀Local w₁Local w₀Fan w₁Fan hw₀Raw hw₁Raw r
+  have hp₀Edge := M.marking.edgeIntervalFirst_mem_faceCarrier e f.1.2.2
+  have hp₁Edge := M.marking.edgeIntervalSecond_mem_faceCarrier e f.1.2.2
+  have hyLineVal : (M.mixedOldFaceMap (Sum.inr f) yLine).1 =
+      AffineMap.lineMap p₀.1 p₁.1 β := by
+    dsimp only [yLine]
+    calc
+      (M.mixedOldFaceMap (Sum.inr f)
+          (simplexLineMap (stdSimplex.vertex w₀Fan) (stdSimplex.vertex w₁Fan) r)).1 =
+          AffineMap.lineMap w₀Fan.1.1.1 w₁Fan.1.1.1 r.1 := by
+        apply map_simplexLineMap_vertices
+          (fun z ↦ (M.mixedOldFaceMap (Sum.inr f) z).1) (fun v ↦ v.1.1)
+        · exact fun z w s ↦ C.mixedOldFaceMap_simplexLineMap (Sum.inr f) z w s
+        · exact fun v ↦ congrArg Subtype.val (C.mixedOldFaceMap_vertex (Sum.inr f) v)
+      _ = AffineMap.lineMap p₀.1 p₁.1 β := by rfl
+  have hyLineEdge : M.mixedOldFaceMap (Sum.inr f) yLine ∈ M.ambient.faceCarrier e.1 :=
+    mem_faceCarrier_of_val_eq_lineMap e.1 p₀ p₁ _ β hp₀Edge hp₁Edge hyLineVal
+  have hfanEq : M.marking.fanFaceMap f.1 y₀ = q := hxy.symm
+  have hqEdge : q ∈ M.ambient.faceCarrier e.1 := by
+    rw [← hfanEq]
+    exact M.marking.fanFaceMap_mem_baseEdge_of_center_eq_zero f.1 y₀ hyCenter
+  have hyLineParameter : M.marking.edgeParameterValue e
+        (M.mixedOldFaceMap (Sum.inr f) yLine) = (1 - β) * a₀ + β * a₁ :=
+    edgeParameterValue_eq_lineMap M.marking e p₀ p₁ _ β hp₀Edge hp₁Edge hyLineVal
+  have hqParameter : z₀ = y₀ (M.marking.fanFirstVertex f.1) * a₀ + β * a₁ := by
+    change M.marking.edgeParameterValue e q =
+      y₀ (M.marking.fanFirstVertex f.1) *
+          M.marking.edgeParameterValue e (M.marking.fanFirstVertex f.1).1 +
+        y₀ (M.marking.fanSecondVertex f.1) *
+          M.marking.edgeParameterValue e (M.marking.fanSecondVertex f.1).1
+    rw [← hfanEq]
+    exact M.marking.edgeParameterValue_fanFaceMap_of_center_eq_zero f.1 y₀ hyCenter
+  have hbaseSum := M.marking.fanBaseWeights_sum_of_center_eq_zero f.1 y₀ hyCenter
+  have hfirstCoeff : 1 - β = y₀ (M.marking.fanFirstVertex f.1) := by
+    dsimp only [β]
+    linarith
+  have hyLineEq : M.mixedOldFaceMap (Sum.inr f) yLine = q := by
+    apply M.marking.edgeParameterValue_injOn e hyLineEdge hqEdge
+    calc
+      _ = (1 - β) * a₀ + β * a₁ := hyLineParameter
+      _ = y₀ (M.marking.fanFirstVertex f.1) * a₀ + β * a₁ := by rw [hfirstCoeff]
+      _ = z₀ := hqParameter.symm
+      _ = M.marking.edgeParameterValue e q := rfl
+  exact coordinates_eq_of_comparison
+    (M.mixedOldFaceMap (Sum.inl t)) (M.mixedOldFaceMap (Sum.inr f))
+    (extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl t)))
+    (extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)))
+    (fun {_ _} h ↦ C.localMixedFaceMap_eq_iff.mp h)
+    (fun {_ _} h ↦ C.fanMixedFaceMap_eq_iff.mp h)
+    (fun {z w} h ↦ C.mixedOldFaceMap_eq_of_extendedCoordinates
+      (f := Sum.inl t) (g := Sum.inr f) (x := z) (y := w) h)
+    hxy hlineCoords (hyLineEq.trans hxy)
+
+private theorem MixedLocalFanCertificate.localFanEndpoint_extendedCoordinates_eq
+    (M : MixedLocalFanData) (C : MixedLocalFanCertificate M)
+    {t : M.localComplex.Face} {f : M.OutsideFanFace}
+    {x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)}}
+    {y : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)}}
+    (hxy : M.mixedOldFaceMap (Sum.inl t) x = M.mixedOldFaceMap (Sum.inr f) y)
+    (v : {p // p ∈ M.marking.fanFaceVertices f.1})
+    (hvMark : v.1 ∈ M.marking.points)
+    (hyv : (M.marking.fanFaceMap f.1
+      (M.marking.fanRelabelSimplex f.1
+        (relabelFaceSimplex M.fanOldVertexEmbedding
+          (M.marking.globalFanFaceVertices f.1) y))).1 = v.1.1) :
+    extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl t)) x =
+      extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)) y := by
+  have hyEndpoint : M.mixedOldFaceMap (Sum.inr f) y = v.1 := by
+    apply Subtype.ext
+    exact hyv
+  have hvSelected : v.1 ∈ M.ambient.faceCarrier (C.parentFace t).1 := by
+    rw [← hyEndpoint, ← hxy]
+    exact C.localMixedFaceMap_mem_parent t x
+  obtain ⟨u, hu⟩ := C.markingPoint_lift t v.1 hvMark hvSelected
+  have hxLocal :
+      extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl t)) x =
+        Pi.single (M.localOldVertexEmbedding u) 1 :=
+    C.mixedLocalExtended_eq_single_of_map_eq_localVertex
+      t x u (hxy.trans (hyEndpoint.trans hu.symm))
+  have hyFan :
+      extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)) y =
+        Pi.single
+          (M.fanOldVertexEmbedding (M.marking.fanVertexEmbedding f.1 v)) 1 :=
+    C.mixedFanExtended_eq_single_of_map_eq_fanVertex f y v hyEndpoint
+  have hvertex :
+      M.localOldVertexEmbedding u =
+        M.fanOldVertexEmbedding (M.marking.fanVertexEmbedding f.1 v) := by
+    apply Subtype.ext
+    exact hu
+  rw [hxLocal, hyFan, hvertex]
+
 -- The raw straightening witness is kept behind one projection boundary so later phases do not
 -- inherit the full dependent telescope produced by the existential straightening statement.
 private theorem MixedLocalFanCertificate.localFanMixedFaceMap_eq_iff
@@ -1074,360 +1374,8 @@ private theorem MixedLocalFanCertificate.localFanMixedFaceMap_eq_iff
     by_cases hyPos :
         0 < y₀ (M.marking.fanFirstVertex f.1) ∧
           0 < y₀ (M.marking.fanSecondVertex f.1)
-    · let e := M.ambient.faceEdge f.1.1 f.1.2.1
-      let q := M.mixedOldFaceMap (Sum.inl t) x
-      let p₀ := M.marking.edgeIntervalFirst e f.1.2.2
-      let p₁ := M.marking.edgeIntervalSecond e f.1.2.2
-      let a₀ := M.marking.edgeParameterValue e p₀
-      let a₁ := M.marking.edgeParameterValue e p₁
-      let z₀ := M.marking.edgeParameterValue e q
-      have hfanEq :
-          M.marking.fanFaceMap f.1 y₀ = q := by
-        exact hxy.symm
-      have hqOpen :
-          q ∈ M.ambient.edgePath e ''
-            {r : Set.Icc (0 : ℝ) 1 | 0 < r.1 ∧ r.1 < 1} := by
-        rw [← hfanEq]
-        exact
-          M.marking.fanFaceMap_mem_edgePath_image_Ioo_of_center_zero_of_base_weights_pos
-            f.1 y₀ hyCenter hyPos.1 hyPos.2
-      have hqEdge : q ∈ M.ambient.faceCarrier e.1 := by
-        rw [← hfanEq]
-        exact
-          M.marking.fanFaceMap_mem_baseEdge_of_center_eq_zero
-            f.1 y₀ hyCenter
-      have heSelected :
-          e.1 ⊆ (C.parentFace t).1 :=
-        C.edge_subset_face_of_openPoint e (C.parentFace t)
-          q hqOpen (C.localMixedFaceMap_mem_parent t x)
-      have hzInterval : z₀ ∈ Set.Ioo a₀ a₁ := by
-        change
-          M.marking.edgeParameterValue e q ∈
-            Set.Ioo
-              (M.marking.edgeParameterValue e
-                (M.marking.fanFirstVertex f.1).1)
-              (M.marking.edgeParameterValue e
-                (M.marking.fanSecondVertex f.1).1)
-        rw [← hfanEq]
-        exact
-          M.marking.edgeParameterValue_fanFaceMap_mem_Ioo_of_center_eq_zero
-            f.1 y₀ hyCenter hyPos.1 hyPos.2
-      have hzAverage :
-          z₀ =
-            ∑ v : {v // v ∈ t.1}, x₀ v *
-              M.marking.edgeParameterValue e
-                (M.localVertexPoint
-                  ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) := by
-        exact C.localFace_edgeParameter_eq_sum t x₀ e hqEdge
-      have hgap (v : {v // v ∈ t.1}) (hvPos : 0 < x₀ v) :
-          ¬M.marking.edgeParameterValue e
-              (M.localVertexPoint
-                ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) ∈ Set.Ioo a₀ a₁ := by
-        have hvEdge :=
-          C.positive_localVertex_mem_edge t x₀ e hqEdge v hvPos
-        have hvMark :
-            M.localVertexPoint
-                ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈
-              M.marking.edgeMarks e :=
-          (M.marking.mem_edgeMarks_iff e _).mpr
-            ⟨C.localVertexPoint_mem_marking
-              ⟨v.1, ⟨t.1, t.2, v.2⟩⟩, hvEdge⟩
-        exact M.marking.not_edgeMark_parameter_mem_Ioo
-          e f.1.2.2 hvMark
-      obtain ⟨existsLow, existsHigh⟩ :=
-        exists_positive_weight_on_both_sides_of_gap
-          (weight := fun v : {v // v ∈ t.1} ↦ x₀ v)
-          (value := fun v ↦
-            M.marking.edgeParameterValue e
-              (M.localVertexPoint
-                ⟨v.1, ⟨t.1, t.2, v.2⟩⟩))
-          a₀ a₁ z₀ x₀.2.1 x₀.2.2 hzAverage hgap hzInterval
-      obtain ⟨lo, hloPos, hlo⟩ := existsLow
-      obtain ⟨hi, hhiPos, hhi⟩ := existsHigh
-      have hloEdge :=
-        C.positive_localVertex_mem_edge t x₀ e hqEdge lo hloPos
-      have hhiEdge :=
-        C.positive_localVertex_mem_edge t x₀ e hqEdge hi hhiPos
-      have hp₀Mark :
-          p₀ ∈ M.marking.edgeMarks e := by
-        exact
-          M.marking.edgeIntervalFirst_mem_edgeMarks
-            e f.1.2.2
-      have hp₁Mark :
-          p₁ ∈ M.marking.edgeMarks e := by
-        exact
-          M.marking.edgeIntervalSecond_mem_edgeMarks
-            e f.1.2.2
-      have hp₀Edge :=
-        ((M.marking.mem_edgeMarks_iff e p₀).mp hp₀Mark).2
-      have hp₁Edge :=
-        ((M.marking.mem_edgeMarks_iff e p₁).mp hp₁Mark).2
-      have hp₀Local := C.edgeMark_lift t e heSelected p₀ hp₀Mark
-      have hp₁Local := C.edgeMark_lift t e heSelected p₁ hp₁Mark
-      obtain ⟨u₀, hu₀⟩ := hp₀Local
-      obtain ⟨u₁, hu₁⟩ := hp₁Local
-      have hlohi :
-          M.marking.edgeParameterValue e
-              (M.localVertexPoint
-                ⟨lo.1, ⟨t.1, t.2, lo.2⟩⟩) <
-            M.marking.edgeParameterValue e
-              (M.localVertexPoint
-                ⟨hi.1, ⟨t.1, t.2, hi.2⟩⟩) := by
-        calc
-          _ ≤ a₀ := hlo
-          _ < a₁ := hzInterval.1.trans hzInterval.2
-          _ ≤ _ := hhi
-      have hp₀hi :
-          M.marking.edgeParameterValue e p₀ ≤
-            M.marking.edgeParameterValue e
-              (M.localVertexPoint
-                ⟨hi.1, ⟨t.1, t.2, hi.2⟩⟩) := by
-        change a₀ ≤ _
-        exact le_trans (hzInterval.1.trans hzInterval.2).le hhi
-      have hloP₁ :
-          M.marking.edgeParameterValue e
-              (M.localVertexPoint
-                ⟨lo.1, ⟨t.1, t.2, lo.2⟩⟩) ≤
-            M.marking.edgeParameterValue e p₁ := by
-        change _ ≤ a₁
-        exact le_trans hlo (hzInterval.1.trans hzInterval.2).le
-      obtain ⟨zAt, hzAt⟩ :=
-        C.exists_localFacePoint_eq_of_edgeParameter_between
-          t e lo hi p₀ hloEdge hhiEdge hp₀Edge hlo
-            hp₀hi hlohi
-      obtain ⟨zBt, hzBt⟩ :=
-        C.exists_localFacePoint_eq_of_edgeParameter_between
-          t e lo hi p₁ hloEdge hhiEdge hp₁Edge
-            hloP₁ hhi hlohi
-      have hu₀Face : u₀.1 ∈ t.1 :=
-        C.localUsedVertex_mem_face_of_map_eq
-          t zAt u₀ (hzAt.trans hu₀.symm)
-      have hu₁Face : u₁.1 ∈ t.1 :=
-        C.localUsedVertex_mem_face_of_map_eq
-          t zBt u₁ (hzBt.trans hu₁.symm)
-      let v₀t : {v // v ∈ t.1} := ⟨u₀.1, hu₀Face⟩
-      let v₁t : {v // v ∈ t.1} := ⟨u₁.1, hu₁Face⟩
-      have hv₀Local :
-          M.localFaceOldVertexEmbedding t v₀t =
-            M.localOldVertexEmbedding u₀ := by
-        apply Subtype.ext
-        rfl
-      have hv₁Local :
-          M.localFaceOldVertexEmbedding t v₁t =
-            M.localOldVertexEmbedding u₁ := by
-        apply Subtype.ext
-        rfl
-      have hw₀LocalMem :
-          M.localOldVertexEmbedding u₀ ∈
-            M.mixedOldFaceVertices (Sum.inl t) := by
-        change M.localOldVertexEmbedding u₀ ∈
-          (Finset.univ : Finset {v // v ∈ t.1}).map
-            (M.localFaceOldVertexEmbedding t)
-        rw [← hv₀Local]
-        exact mem_map_univ (M.localFaceOldVertexEmbedding t) v₀t
-      have hw₁LocalMem :
-          M.localOldVertexEmbedding u₁ ∈
-            M.mixedOldFaceVertices (Sum.inl t) := by
-        change M.localOldVertexEmbedding u₁ ∈
-          (Finset.univ : Finset {v // v ∈ t.1}).map
-            (M.localFaceOldVertexEmbedding t)
-        rw [← hv₁Local]
-        exact mem_map_univ (M.localFaceOldVertexEmbedding t) v₁t
-      let w₀Local :
-          {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)} :=
-        ⟨M.localOldVertexEmbedding u₀, hw₀LocalMem⟩
-      let w₁Local :
-          {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)} :=
-        ⟨M.localOldVertexEmbedding u₁, hw₁LocalMem⟩
-      let gv₀ : M.marking.FanVertex :=
-        M.marking.fanVertexEmbedding f.1
-          (M.marking.fanFirstVertex f.1)
-      let gv₁ : M.marking.FanVertex :=
-        M.marking.fanVertexEmbedding f.1
-          (M.marking.fanSecondVertex f.1)
-      have hw₀Raw : M.localOldVertexEmbedding u₀ = M.fanOldVertexEmbedding gv₀ :=
-        Subtype.ext hu₀
-      have hw₁Raw : M.localOldVertexEmbedding u₁ = M.fanOldVertexEmbedding gv₁ :=
-        Subtype.ext hu₁
-      have hgv₀Mem :
-          gv₀ ∈ M.marking.globalFanFaceVertices f.1 :=
-        fanFirstVertexEmbedding_mem_globalFanFaceVertices M.marking f.1
-      have hgv₁Mem :
-          gv₁ ∈ M.marking.globalFanFaceVertices f.1 :=
-        fanSecondVertexEmbedding_mem_globalFanFaceVertices M.marking f.1
-      have hw₀FanMem :
-          M.fanOldVertexEmbedding gv₀ ∈
-            M.mixedOldFaceVertices (Sum.inr f) := by
-        change M.fanOldVertexEmbedding gv₀ ∈
-          (M.marking.globalFanFaceVertices f.1).map
-            M.fanOldVertexEmbedding
-        exact mem_finset_map M.fanOldVertexEmbedding _ hgv₀Mem
-      have hw₁FanMem :
-          M.fanOldVertexEmbedding gv₁ ∈
-            M.mixedOldFaceVertices (Sum.inr f) := by
-        change M.fanOldVertexEmbedding gv₁ ∈
-          (M.marking.globalFanFaceVertices f.1).map
-            M.fanOldVertexEmbedding
-        exact mem_finset_map M.fanOldVertexEmbedding _ hgv₁Mem
-      let w₀Fan :
-          {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)} :=
-        ⟨M.fanOldVertexEmbedding gv₀, hw₀FanMem⟩
-      let w₁Fan :
-          {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)} :=
-        ⟨M.fanOldVertexEmbedding gv₁, hw₁FanMem⟩
-      have hw₀Eq : w₀Local.1 = w₀Fan.1 :=
-        hw₀Raw
-      have hw₁Eq : w₁Local.1 = w₁Fan.1 :=
-        hw₁Raw
-      let β := y₀ (M.marking.fanSecondVertex f.1)
-      have hβIcc : β ∈ Set.Icc (0 : ℝ) 1 :=
-        ⟨y₀.2.1 _, stdSimplex.le_one y₀ _⟩
-      let r : Set.Icc (0 : ℝ) 1 := ⟨β, hβIcc⟩
-      let xLine :=
-        mixedFaceSimplexLineMap (Sum.inl t)
-          (stdSimplex.vertex w₀Local)
-          (stdSimplex.vertex w₁Local) r
-      let yLine :=
-        mixedFaceSimplexLineMap (Sum.inr f)
-          (stdSimplex.vertex w₀Fan)
-          (stdSimplex.vertex w₁Fan) r
-      have hlineCoords :
-          extendFaceCoordinates
-              (M.mixedOldFaceVertices (Sum.inl t)) xLine =
-            extendFaceCoordinates
-              (M.mixedOldFaceVertices (Sum.inr f)) yLine := by
-        exact extendFaceCoordinates_simplexLineMap_vertices_eq
-          (M.mixedOldFaceVertices (Sum.inl t))
-          (M.mixedOldFaceVertices (Sum.inr f))
-          w₀Local w₁Local w₀Fan w₁Fan hw₀Eq hw₁Eq r
-      have hyLineVal :
-          (M.mixedOldFaceMap (Sum.inr f) yLine).1 =
-            AffineMap.lineMap p₀.1 p₁.1 β := by
-        dsimp only [yLine]
-        calc
-          (M.mixedOldFaceMap (Sum.inr f)
-              (mixedFaceSimplexLineMap (Sum.inr f)
-                (stdSimplex.vertex w₀Fan)
-                (stdSimplex.vertex w₁Fan) r)).1 =
-              AffineMap.lineMap w₀Fan.1.1.1 w₁Fan.1.1.1 r.1 := by
-            apply map_simplexLineMap_vertices
-              (fun z ↦ (M.mixedOldFaceMap (Sum.inr f) z).1)
-              (fun v ↦ v.1.1)
-            · intro z w s
-              exact C.mixedOldFaceMap_simplexLineMap (Sum.inr f) z w s
-            · intro v
-              exact congrArg Subtype.val
-                (C.mixedOldFaceMap_vertex (Sum.inr f) v)
-          _ = AffineMap.lineMap p₀.1 p₁.1 β := by rfl
-      have hyLineEdge :
-          M.mixedOldFaceMap (Sum.inr f) yLine ∈
-            M.ambient.faceCarrier e.1 :=
-        mem_faceCarrier_of_val_eq_lineMap e.1 p₀ p₁ _ β
-          hp₀Edge hp₁Edge hyLineVal
-      have hyLineParameter :
-          M.marking.edgeParameterValue e
-              (M.mixedOldFaceMap (Sum.inr f) yLine) =
-            (1 - β) * a₀ + β * a₁ := by
-        change M.marking.edgeParameterValue e
-            (M.mixedOldFaceMap (Sum.inr f) yLine) =
-          (1 - β) * M.marking.edgeParameterValue e p₀ +
-            β * M.marking.edgeParameterValue e p₁
-        exact edgeParameterValue_eq_lineMap M.marking e p₀ p₁ _ β
-          hp₀Edge hp₁Edge hyLineVal
-      have hqParameter :
-          z₀ =
-            y₀ (M.marking.fanFirstVertex f.1) * a₀ +
-              β * a₁ := by
-        change M.marking.edgeParameterValue e q =
-          y₀ (M.marking.fanFirstVertex f.1) *
-              M.marking.edgeParameterValue e
-                (M.marking.fanFirstVertex f.1).1 +
-            y₀ (M.marking.fanSecondVertex f.1) *
-              M.marking.edgeParameterValue e
-                (M.marking.fanSecondVertex f.1).1
-        rw [← hfanEq]
-        exact
-          M.marking.edgeParameterValue_fanFaceMap_of_center_eq_zero
-            f.1 y₀ hyCenter
-      have hbaseSum :=
-        M.marking.fanBaseWeights_sum_of_center_eq_zero
-          f.1 y₀ hyCenter
-      have hfirstCoeff :
-          1 - β =
-            y₀ (M.marking.fanFirstVertex f.1) := by
-        dsimp only [β]
-        linarith
-      have hyLineEq :
-          M.mixedOldFaceMap (Sum.inr f) yLine = q := by
-        apply
-          M.marking.edgeParameterValue_injOn e
-            hyLineEdge hqEdge
-        calc
-          M.marking.edgeParameterValue e
-              (M.mixedOldFaceMap (Sum.inr f) yLine) =
-              (1 - β) * a₀ + β * a₁ := hyLineParameter
-          _ = y₀ (M.marking.fanFirstVertex f.1) * a₀ +
-                β * a₁ := by rw [hfirstCoeff]
-          _ = z₀ := hqParameter.symm
-          _ = M.marking.edgeParameterValue e q := rfl
-      have hyMap :
-          M.mixedOldFaceMap (Sum.inr f) y = q := hxy.symm
-      have hyLineSame :
-          M.mixedOldFaceMap (Sum.inr f) yLine =
-            M.mixedOldFaceMap (Sum.inr f) y :=
-        hyLineEq.trans hyMap.symm
-      exact coordinates_eq_of_comparison
-        (M.mixedOldFaceMap (Sum.inl t))
-        (M.mixedOldFaceMap (Sum.inr f))
-        (extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl t)))
-        (extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)))
-        (fun {_ _} h ↦ C.localMixedFaceMap_eq_iff.mp h)
-        (fun {_ _} h ↦ C.fanMixedFaceMap_eq_iff.mp h)
-        (fun {z w} h ↦ C.mixedOldFaceMap_eq_of_extendedCoordinates
-          (f := Sum.inl t) (g := Sum.inr f) (x := z) (y := w) h)
-        hxy hlineCoords hyLineSame
-    · have endpointCoordinates
-          (v : {p // p ∈ M.marking.fanFaceVertices f.1})
-          (hvMark : v.1 ∈ M.marking.points)
-          (hyv :
-            (M.marking.fanFaceMap f.1 y₀).1 = v.1.1) :
-          extendFaceCoordinates
-              (M.mixedOldFaceVertices (Sum.inl t)) x =
-            extendFaceCoordinates
-              (M.mixedOldFaceVertices (Sum.inr f)) y := by
-        have hyEndpoint :
-            M.mixedOldFaceMap (Sum.inr f) y = v.1 := by
-          apply Subtype.ext
-          exact hyv
-        have hvSelected :
-            v.1 ∈
-              M.ambient.faceCarrier
-                (C.parentFace t).1 := by
-          rw [← hyEndpoint, ← hxy]
-          exact C.localMixedFaceMap_mem_parent t x
-        have hvLocal := C.markingPoint_lift t v.1 hvMark hvSelected
-        obtain ⟨u, hu⟩ := hvLocal
-        have hxLocal :
-            extendFaceCoordinates
-                (M.mixedOldFaceVertices (Sum.inl t)) x =
-              Pi.single (M.localOldVertexEmbedding u) 1 :=
-          C.mixedLocalExtended_eq_single_of_map_eq_localVertex
-            t x u (hxy.trans (hyEndpoint.trans hu.symm))
-        have hyFan :
-            extendFaceCoordinates
-                (M.mixedOldFaceVertices (Sum.inr f)) y =
-              Pi.single
-                (M.fanOldVertexEmbedding
-                  (M.marking.fanVertexEmbedding f.1 v)) 1 :=
-          C.mixedFanExtended_eq_single_of_map_eq_fanVertex
-            f y v hyEndpoint
-        have hvertex :
-            M.localOldVertexEmbedding u =
-              M.fanOldVertexEmbedding
-                (M.marking.fanVertexEmbedding f.1 v) := by
-          apply Subtype.ext
-          exact hu
-        rw [hxLocal, hyFan, hvertex]
+    · exact C.localFanInterior_extendedCoordinates_eq M hxy hyCenter hyPos
+    · let endpointCoordinates := C.localFanEndpoint_extendedCoordinates_eq M hxy
       rcases
           M.marking.fanEndpointData_of_center_eq_zero_of_not_base_weights_pos
             f.1 y₀ hyCenter hyPos with hyFirst | hySecond
@@ -2571,6 +2519,320 @@ private theorem exists_baseTriangle_of_alignedRelativeOldTriangle
   exact ⟨u, hu⟩
 
 
+private theorem alignedRelativeOldTriangle_source_mem_levelFace
+    {K : IntrinsicTwoComplex} {U : Set K.realization} {V : Set Plane}
+    {Q : PartialTriangulation.PolygonalReplacementPresentation U V}
+    (A : PartialTriangulation.PolygonalReplacementSourceAtlas K U V Q)
+    (C : Set V) (hC : IsCompact C) (N : TriangleMesh)
+    (anchorLines : List (Plane →ᵃ[ℝ] ℝ))
+    (t : (A.tileFacesMeetingRelativeOldMesh C hC N
+      (alignedRelativeExtraLines A C hC N anchorLines)).Triangle)
+    (u : (A.tileFacesMeetingRelativeOldMesh C hC N anchorLines).Triangle)
+    (s : {s : K.LevelFace (A.commonLevel (A.tilesMeeting C hC)) //
+      s ∈ A.levelFaces (A.tilesMeeting C hC)})
+    (p : Plane)
+    (hp : p ∈ interior ((A.tileFacesMeetingRelativeOldMesh C hC N
+      (alignedRelativeExtraLines A C hC N anchorLines)).triangleCarrier t.1))
+    (htu : (A.tileFacesMeetingRelativeOldMesh C hC N
+        (alignedRelativeExtraLines A C hC N anchorLines)).triangleCarrier t.1 ⊆
+      (A.tileFacesMeetingRelativeOldMesh C hC N anchorLines).triangleCarrier u.1)
+    (hparent : levelFaceParent K s.1 =
+      A.relativeOldTriangleParent C hC N anchorLines u)
+    (hmono : ∀ k : Fin 3,
+      (A.tileFacesMeetingRelativeOldMesh C hC N
+        (alignedRelativeExtraLines A C hC N anchorLines)).IsMonochromatic
+        ((levelFaceParentCoord K s.1 k).comp
+          (A.relativeOldTriangleParentPlaneAffine C hC N anchorLines u)))
+    (hcoordAtP : ∀ k : Fin 3, 0 <
+      ((levelFaceParentCoord K s.1 k).comp
+        (A.relativeOldTriangleParentPlaneAffine C hC N anchorLines u)) p) :
+    ∀ (r : Plane)
+      (hr : r ∈ (A.tileFacesMeetingRelativeOldMesh C hC N
+        (alignedRelativeExtraLines A C hC N anchorLines)).triangleCarrier t.1),
+      A.tileFacesMeetingRelativeSourceEmbed C hC N
+          (alignedRelativeExtraLines A C hC N anchorLines)
+          (A.relativeOldTrianglePoint C hC N
+            (alignedRelativeExtraLines A C hC N anchorLines) t ⟨r, hr⟩) ∈
+        K.levelFaceCarrier s.1 := by
+  classical
+  let n := A.commonLevel (A.tilesMeeting C hC)
+  let Rlevel := K.safeSubdivision n
+  let baseOldMesh := A.tileFacesMeetingRelativeOldMesh C hC N anchorLines
+  let extraLines := alignedRelativeExtraLines A C hC N anchorLines
+  let localOldMesh := A.tileFacesMeetingRelativeOldMesh C hC N extraLines
+  let source₁ := A.tileFacesMeetingRelativeSourceEmbed C hC N extraLines
+  let F := A.relativeOldTriangleParentPlaneAffine C hC N anchorLines u
+  intro r hr
+  let a : Fin 3 → (Plane →ᵃ[ℝ] ℝ) := fun k ↦ (levelFaceParentCoord K s.1 k).comp F
+  have hrcoord (k : Fin 3) : 0 ≤ a k r := by
+    rcases hmono k t.1 t.2 with hpos | hneg
+    · apply convexHull_min ?_ ((convex_Ici (0 : ℝ)).affine_preimage (a k)) hr
+      rintro z ⟨v, hv, rfl⟩
+      exact hpos v hv
+    · have hpNonpos : a k p ≤ 0 := by
+        apply convexHull_min ?_ ((convex_Iic (0 : ℝ)).affine_preimage (a k))
+          (interior_subset hp)
+        rintro z ⟨v, hv, rfl⟩
+        exact hneg v hv
+      exact False.elim ((not_lt_of_ge hpNonpos) (hcoordAtP k))
+  let b := affineBasisOfTriangle
+    (levelFaceParentPlaneAffine K s.1 ∘ standardTriangleVertex)
+    (affineIndependent_comp_of_injOn_convexHull
+      standardTriangleVertex standardTriangleVertex_affineIndependent
+      (levelFaceParentPlaneAffine K s.1) (by
+        rw [← standardTrianglePlaneComplex_support]
+        exact levelFaceParentPlaneAffine_injOn K s.1))
+  have hFr : F r ∈ convexHull ℝ (Set.range b) := by
+    rw [b.convexHull_eq_nonneg_coord]
+    exact fun k ↦ hrcoord k
+  have hb : (fun i ↦ b i) =
+      levelFaceParentPlaneAffine K s.1 ∘ standardTriangleVertex := by
+    funext i
+    rfl
+  have hFr' : F r ∈ convexHull ℝ
+      (Set.range (levelFaceParentPlaneAffine K s.1 ∘ standardTriangleVertex)) := by
+    rwa [← congrArg Set.range hb]
+  rw [Set.range_comp, ← (levelFaceParentPlaneAffine K s.1).image_convexHull,
+    ← standardTrianglePlaneComplex_support] at hFr'
+  obtain ⟨z', hz', hz'eq⟩ := hFr'
+  let z'Support : standardTrianglePlaneComplex.support := ⟨z', hz'⟩
+  let rLocal : {q : Plane // q ∈ localOldMesh.triangleCarrier t.1} := ⟨r, hr⟩
+  let rBase : {q : Plane // q ∈ baseOldMesh.triangleCarrier u.1} := ⟨r, htu hr⟩
+  let q' : Rlevel.refined.ClosedFace s.1 :=
+    (Rlevel.refined.facePlaneHomeomorph s.1).symm z'Support
+  refine ⟨q'.1, q'.2, ?_⟩
+  have hsourceR :
+      A.tileFacesMeetingRelativeSourceEmbed C hC N anchorLines
+          (A.relativeOldTrianglePoint C hC N anchorLines u rBase) =
+        source₁ (A.relativeOldTrianglePoint C hC N extraLines t rLocal) := by
+    apply A.tileFacesMeetingRelativeSourceEmbed_eq_of_coordinateEmbed_eq C hC N
+    rw [A.relativeOldTrianglePoint_coordinateEmbed C hC N anchorLines u rBase,
+      A.relativeOldTrianglePoint_coordinateEmbed C hC N extraLines t rLocal]
+  have hsourceRMem : source₁ (A.relativeOldTrianglePoint C hC N extraLines t rLocal) ∈
+      K.faceCarrier (A.relativeOldTriangleParent C hC N anchorLines u).1 := by
+    rw [← hsourceR]
+    exact A.relativeOldTriangleParent_contains C hC N anchorLines u _
+      (A.relativeOldTrianglePoint_supported C hC N anchorLines u rBase)
+  have hq'Parent : Rlevel.homeo q'.1 ∈
+      K.faceCarrier (A.relativeOldTriangleParent C hC N anchorLines u).1 := by
+    rw [← hparent]
+    exact levelFaceParent_contains K s.1 q'.1 q'.2
+  have hclosed :
+      (⟨Rlevel.homeo q'.1, hq'Parent⟩ :
+          K.ClosedFace (A.relativeOldTriangleParent C hC N anchorLines u)) =
+        ⟨source₁ (A.relativeOldTrianglePoint C hC N extraLines t rLocal),
+          hsourceRMem⟩ := by
+    apply (K.facePlaneHomeomorph
+      (A.relativeOldTriangleParent C hC N anchorLines u)).injective
+    apply Subtype.ext
+    have hlevel := levelFaceParentPlaneAffine_eq K s.1 z'Support
+    have hbase := A.relativeOldTriangleParentPlaneAffine_eq
+      C hC N anchorLines u rBase
+    rw [K.facePlaneHomeomorph_val_eq_forwardAffine] at hlevel hbase
+    calc
+      K.facePlaneForwardAffine (A.relativeOldTriangleParent C hC N anchorLines u)
+          (Rlevel.homeo q'.1).1 =
+          K.facePlaneForwardAffine (levelFaceParent K s.1) (Rlevel.homeo q'.1).1 := by
+        rw [hparent]
+      _ = levelFaceParentPlaneAffine K s.1 z' := hlevel.symm
+      _ = F r := hz'eq
+      _ = K.facePlaneForwardAffine (A.relativeOldTriangleParent C hC N anchorLines u)
+          (A.tileFacesMeetingRelativeSourceEmbed C hC N anchorLines
+            (A.relativeOldTrianglePoint C hC N anchorLines u rBase)).1 := hbase
+      _ = K.facePlaneForwardAffine (A.relativeOldTriangleParent C hC N anchorLines u)
+          (source₁ (A.relativeOldTrianglePoint C hC N extraLines t rLocal)).1 :=
+        congrArg (K.facePlaneForwardAffine
+          (A.relativeOldTriangleParent C hC N anchorLines u))
+          (congrArg Subtype.val hsourceR)
+  exact congrArg Subtype.val hclosed
+
+private theorem exists_alignedRelativeOldTriangle_parentWitness
+    {K : IntrinsicTwoComplex} {U : Set K.realization} {V : Set Plane}
+    {Q : PartialTriangulation.PolygonalReplacementPresentation U V}
+    (A : PartialTriangulation.PolygonalReplacementSourceAtlas K U V Q)
+    (C : Set V) (hC : IsCompact C) (N : TriangleMesh)
+    (anchorLines : List (Plane →ᵃ[ℝ] ℝ))
+    (t : (A.tileFacesMeetingRelativeOldMesh C hC N
+      (alignedRelativeExtraLines A C hC N anchorLines)).Triangle) :
+    ∃ (u : (A.tileFacesMeetingRelativeOldMesh C hC N anchorLines).Triangle)
+      (s : {s : K.LevelFace (A.commonLevel (A.tilesMeeting C hC)) //
+        s ∈ A.levelFaces (A.tilesMeeting C hC)})
+      (htu : (A.tileFacesMeetingRelativeOldMesh C hC N
+          (alignedRelativeExtraLines A C hC N anchorLines)).triangleCarrier t.1 ⊆
+        (A.tileFacesMeetingRelativeOldMesh C hC N anchorLines).triangleCarrier u.1)
+      (p : {p : Plane // p ∈ interior
+        ((A.tileFacesMeetingRelativeOldMesh C hC N
+          (alignedRelativeExtraLines A C hC N anchorLines)).triangleCarrier t.1)})
+      (q : (K.safeSubdivision (A.commonLevel (A.tilesMeeting C hC))).refined.ClosedFace s.1),
+      A.tileFacesMeetingRelativeSourceEmbed C hC N anchorLines
+          (A.relativeOldTrianglePoint C hC N anchorLines u
+            ⟨p.1, interior_subset (interior_mono htu p.2)⟩) =
+        A.tileFacesMeetingRelativeSourceEmbed C hC N
+          (alignedRelativeExtraLines A C hC N anchorLines)
+          (A.relativeOldTrianglePoint C hC N
+            (alignedRelativeExtraLines A C hC N anchorLines) t
+            ⟨p.1, interior_subset p.2⟩) ∧
+      A.tileFacesMeetingRelativeSourceEmbed C hC N
+          (alignedRelativeExtraLines A C hC N anchorLines)
+          (A.relativeOldTrianglePoint C hC N
+            (alignedRelativeExtraLines A C hC N anchorLines) t
+            ⟨p.1, interior_subset p.2⟩) =
+        (K.safeSubdivision (A.commonLevel (A.tilesMeeting C hC))).homeo q.1 ∧
+      levelFaceParent K s.1 = A.relativeOldTriangleParent C hC N anchorLines u := by
+  classical
+  let n := A.commonLevel (A.tilesMeeting C hC)
+  let selectedLevelFaces := A.levelFaces (A.tilesMeeting C hC)
+  let Rlevel := K.safeSubdivision n
+  let baseOldMesh := A.tileFacesMeetingRelativeOldMesh C hC N anchorLines
+  let extraLines := alignedRelativeExtraLines A C hC N anchorLines
+  let source₁ := A.tileFacesMeetingRelativeSourceEmbed C hC N extraLines
+  let localOldMesh := A.tileFacesMeetingRelativeOldMesh C hC N extraLines
+  have hsource₁Range : Set.range source₁ =
+      ⋃ u : {u : K.LevelFace n // u ∈ selectedLevelFaces}, K.levelFaceCarrier u.1 :=
+    A.range_tileFacesMeetingRelativeSourceEmbed_eq_levelFaces C hC N extraLines
+  obtain ⟨u, htu⟩ :=
+    exists_baseTriangle_of_alignedRelativeOldTriangle A C hC N anchorLines t
+  obtain ⟨p, hp⟩ := localOldMesh.interior_triangleCarrier_nonempty t
+  have hpBase : p ∈ interior (baseOldMesh.triangleCarrier u.1) := interior_mono htu hp
+  let pLocal : {q : Plane // q ∈ localOldMesh.triangleCarrier t.1} :=
+    ⟨p, interior_subset hp⟩
+  let pBase : {q : Plane // q ∈ baseOldMesh.triangleCarrier u.1} :=
+    ⟨p, interior_subset hpBase⟩
+  let xLocal := A.relativeOldTrianglePoint C hC N extraLines t pLocal
+  let xBase := A.relativeOldTrianglePoint C hC N anchorLines u pBase
+  have hsourceEq :
+      A.tileFacesMeetingRelativeSourceEmbed C hC N anchorLines xBase = source₁ xLocal := by
+    apply A.tileFacesMeetingRelativeSourceEmbed_eq_of_coordinateEmbed_eq C hC N
+    rw [A.relativeOldTrianglePoint_coordinateEmbed C hC N anchorLines u pBase,
+      A.relativeOldTrianglePoint_coordinateEmbed C hC N extraLines t pLocal]
+  have hxUnion : source₁ xLocal ∈
+      ⋃ s : {s : K.LevelFace n // s ∈ selectedLevelFaces}, K.levelFaceCarrier s.1 := by
+    rw [← hsource₁Range]
+    exact Set.mem_range_self xLocal
+  obtain ⟨s, q, hqFace, hqSource⟩ := Set.mem_iUnion.mp hxUnion
+  have hbaseMem : source₁ xLocal ∈
+      K.faceCarrier (A.relativeOldTriangleParent C hC N anchorLines u).1 := by
+    rw [← hsourceEq]
+    exact A.relativeOldTriangleParent_contains C hC N anchorLines u xBase
+      (A.relativeOldTrianglePoint_supported C hC N anchorLines u pBase)
+  have hlevelMem : source₁ xLocal ∈ K.faceCarrier (levelFaceParent K s.1).1 := by
+    have h := levelFaceParent_contains K s.1 q hqFace
+    rw [hqSource] at h
+    exact h
+  let F := A.relativeOldTriangleParentPlaneAffine C hC N anchorLines u
+  have hFimage : F '' interior (baseOldMesh.triangleCarrier u.1) ⊆
+      standardTrianglePlaneComplex.support := by
+    rintro z ⟨r, hr, rfl⟩
+    let rBase : {q : Plane // q ∈ baseOldMesh.triangleCarrier u.1} :=
+      ⟨r, interior_subset hr⟩
+    rw [A.relativeOldTriangleParentPlaneAffine_eq C hC N anchorLines u rBase]
+    exact (K.facePlaneHomeomorph (A.relativeOldTriangleParent C hC N anchorLines u) _).2
+  have hFopen : IsOpen (F '' interior (baseOldMesh.triangleCarrier u.1)) :=
+    (F.isOpenMap F.continuous_of_finiteDimensional
+      (A.relativeOldTriangleParentPlaneAffine_surjective C hC N anchorLines u))
+      (interior (baseOldMesh.triangleCarrier u.1)) isOpen_interior
+  have hpFint : F p ∈ interior standardTrianglePlaneComplex.support := by
+    apply mem_interior_iff_mem_nhds.mpr
+    exact Filter.mem_of_superset (hFopen.mem_nhds ⟨p, hpBase, rfl⟩) hFimage
+  have hpChartInt :
+      (K.facePlaneHomeomorph (A.relativeOldTriangleParent C hC N anchorLines u)
+        ⟨source₁ xLocal, hbaseMem⟩).1 ∈
+        interior standardTrianglePlaneComplex.support := by
+    have hbaseMem' : A.tileFacesMeetingRelativeSourceEmbed C hC N anchorLines xBase ∈
+        K.faceCarrier (A.relativeOldTriangleParent C hC N anchorLines u).1 :=
+      A.relativeOldTriangleParent_contains C hC N anchorLines u xBase
+        (A.relativeOldTrianglePoint_supported C hC N anchorLines u pBase)
+    have hclosed :
+        (⟨A.tileFacesMeetingRelativeSourceEmbed C hC N anchorLines xBase, hbaseMem'⟩ :
+          K.ClosedFace (A.relativeOldTriangleParent C hC N anchorLines u)) =
+          ⟨source₁ xLocal, hbaseMem⟩ := Subtype.ext hsourceEq
+    have heq :
+        (K.facePlaneHomeomorph (A.relativeOldTriangleParent C hC N anchorLines u)
+          ⟨source₁ xLocal, hbaseMem⟩).1 = F p := by
+      calc
+        _ = (K.facePlaneHomeomorph (A.relativeOldTriangleParent C hC N anchorLines u)
+              ⟨A.tileFacesMeetingRelativeSourceEmbed C hC N anchorLines xBase,
+                hbaseMem'⟩).1 :=
+          congrArg (fun w ↦ w.1) (congrArg (K.facePlaneHomeomorph
+            (A.relativeOldTriangleParent C hC N anchorLines u)) hclosed.symm)
+        _ = F p :=
+          (A.relativeOldTriangleParentPlaneAffine_eq C hC N anchorLines u pBase).symm
+    rw [heq]
+    exact hpFint
+  have hparent : levelFaceParent K s.1 =
+      A.relativeOldTriangleParent C hC N anchorLines u := by
+    symm
+    exact face_eq_of_mem_faceCarriers_of_facePlane_mem_interior K
+      (A.relativeOldTriangleParent C hC N anchorLines u) (levelFaceParent K s.1)
+      (source₁ xLocal) hbaseMem hlevelMem hpChartInt
+  exact ⟨u, s, htu, ⟨p, hp⟩, ⟨q, hqFace⟩, hsourceEq, hqSource.symm, hparent⟩
+
+private theorem alignedRelativeOldTriangle_planeAt_parentWitness
+    {K : IntrinsicTwoComplex} {U : Set K.realization} {V : Set Plane}
+    {Q : PartialTriangulation.PolygonalReplacementPresentation U V}
+    (A : PartialTriangulation.PolygonalReplacementSourceAtlas K U V Q)
+    (C : Set V) (hC : IsCompact C) (N : TriangleMesh)
+    (anchorLines : List (Plane →ᵃ[ℝ] ℝ))
+    (t : (A.tileFacesMeetingRelativeOldMesh C hC N
+      (alignedRelativeExtraLines A C hC N anchorLines)).Triangle)
+    (u : (A.tileFacesMeetingRelativeOldMesh C hC N anchorLines).Triangle)
+    (s : {s : K.LevelFace (A.commonLevel (A.tilesMeeting C hC)) //
+      s ∈ A.levelFaces (A.tilesMeeting C hC)})
+    (htu : (A.tileFacesMeetingRelativeOldMesh C hC N
+        (alignedRelativeExtraLines A C hC N anchorLines)).triangleCarrier t.1 ⊆
+      (A.tileFacesMeetingRelativeOldMesh C hC N anchorLines).triangleCarrier u.1)
+    (p : {p : Plane // p ∈ interior
+      ((A.tileFacesMeetingRelativeOldMesh C hC N
+        (alignedRelativeExtraLines A C hC N anchorLines)).triangleCarrier t.1)})
+    (q : (K.safeSubdivision (A.commonLevel (A.tilesMeeting C hC))).refined.ClosedFace s.1)
+    (hsourceEq : A.tileFacesMeetingRelativeSourceEmbed C hC N anchorLines
+        (A.relativeOldTrianglePoint C hC N anchorLines u
+          ⟨p.1, interior_subset (interior_mono htu p.2)⟩) =
+      A.tileFacesMeetingRelativeSourceEmbed C hC N
+        (alignedRelativeExtraLines A C hC N anchorLines)
+        (A.relativeOldTrianglePoint C hC N
+          (alignedRelativeExtraLines A C hC N anchorLines) t
+          ⟨p.1, interior_subset p.2⟩))
+    (hqSource : A.tileFacesMeetingRelativeSourceEmbed C hC N
+        (alignedRelativeExtraLines A C hC N anchorLines)
+        (A.relativeOldTrianglePoint C hC N
+          (alignedRelativeExtraLines A C hC N anchorLines) t
+          ⟨p.1, interior_subset p.2⟩) =
+      (K.safeSubdivision (A.commonLevel (A.tilesMeeting C hC))).homeo q.1)
+    (hparent : levelFaceParent K s.1 =
+      A.relativeOldTriangleParent C hC N anchorLines u) :
+    A.relativeOldTriangleParentPlaneAffine C hC N anchorLines u p.1 =
+      levelFaceParentPlaneAffine K s.1
+        ((K.safeSubdivision (A.commonLevel (A.tilesMeeting C hC))).refined
+          |>.facePlaneHomeomorph s.1 q).1 := by
+  let Rlevel := K.safeSubdivision (A.commonLevel (A.tilesMeeting C hC))
+  let pBase : {r : Plane // r ∈
+      (A.tileFacesMeetingRelativeOldMesh C hC N anchorLines).triangleCarrier u.1} :=
+    ⟨p.1, interior_subset (interior_mono htu p.2)⟩
+  let z : standardTrianglePlaneComplex.support := Rlevel.refined.facePlaneHomeomorph s.1 q
+  have hbase := A.relativeOldTriangleParentPlaneAffine_eq C hC N anchorLines u pBase
+  have hlevel := levelFaceParentPlaneAffine_eq K s.1 z
+  rw [K.facePlaneHomeomorph_val_eq_forwardAffine] at hbase hlevel
+  have hqback : ((Rlevel.refined.facePlaneHomeomorph s.1).symm z).1 = q.1 :=
+    congrArg Subtype.val ((Rlevel.refined.facePlaneHomeomorph s.1).symm_apply_apply q)
+  have hlevel' : levelFaceParentPlaneAffine K s.1 z.1 =
+      K.facePlaneForwardAffine (levelFaceParent K s.1) (Rlevel.homeo q.1).1 := by
+    calc
+      _ = K.facePlaneForwardAffine (levelFaceParent K s.1)
+          (Rlevel.homeo ((Rlevel.refined.facePlaneHomeomorph s.1).symm z).1).1 := hlevel
+      _ = _ := congrArg (K.facePlaneForwardAffine (levelFaceParent K s.1))
+        (congrArg Subtype.val (congrArg Rlevel.homeo hqback))
+  calc
+    _ = K.facePlaneForwardAffine (A.relativeOldTriangleParent C hC N anchorLines u)
+        (A.tileFacesMeetingRelativeSourceEmbed C hC N anchorLines
+          (A.relativeOldTrianglePoint C hC N anchorLines u pBase)).1 := hbase
+    _ = K.facePlaneForwardAffine (levelFaceParent K s.1) (Rlevel.homeo q.1).1 := by
+      rw [hparent]
+      exact congrArg (K.facePlaneForwardAffine
+        (A.relativeOldTriangleParent C hC N anchorLines u))
+        (congrArg Subtype.val (hsourceEq.trans hqSource))
+    _ = _ := hlevel'.symm
+
 private theorem exists_levelFace_of_alignedRelativeOldTriangle
     {K : IntrinsicTwoComplex} {U : Set K.realization} {V : Set Plane}
     {Q : PartialTriangulation.PolygonalReplacementPresentation U V}
@@ -2600,222 +2862,14 @@ private theorem exists_levelFace_of_alignedRelativeOldTriangle
   let J := A.tileFacePolygonMeeting C hC
   let source₁ := A.tileFacesMeetingRelativeSourceEmbed C hC N extraLines
   let localOldMesh := A.tileFacesMeetingRelativeOldMesh C hC N extraLines
-  have hsource₁Range :
-      Set.range source₁ =
-        ⋃ u : {u : K.LevelFace n // u ∈ selectedLevelFaces},
-          K.levelFaceCarrier u.1 :=
-    A.range_tileFacesMeetingRelativeSourceEmbed_eq_levelFaces C hC N extraLines
-  have exists_baseTriangle_of_localOldTriangle
-      (w : localOldMesh.Triangle) :
-      ∃ u : baseOldMesh.Triangle,
-        localOldMesh.triangleCarrier w.1 ⊆
-          baseOldMesh.triangleCarrier u.1 :=
-    exists_baseTriangle_of_alignedRelativeOldTriangle A C hC N anchorLines w
-  obtain ⟨u, htu⟩ := exists_baseTriangle_of_localOldTriangle t
-  obtain ⟨p, hp⟩ := localOldMesh.interior_triangleCarrier_nonempty t
-  have hpBase : p ∈ interior (baseOldMesh.triangleCarrier u.1) :=
-    interior_mono htu hp
-  let pLocal :
-      {q : Plane // q ∈ localOldMesh.triangleCarrier t.1} :=
-    ⟨p, interior_subset hp⟩
-  let pBase :
-      {q : Plane // q ∈ baseOldMesh.triangleCarrier u.1} :=
-    ⟨p, interior_subset hpBase⟩
-  let xLocal :=
-    A.relativeOldTrianglePoint
-      C hC N extraLines t pLocal
-  let xBase :=
-    A.relativeOldTrianglePoint
-      C hC N anchorLines u pBase
-  have hsourceEq :
-      A.tileFacesMeetingRelativeSourceEmbed
-          C hC N anchorLines xBase =
-        source₁ xLocal := by
-    apply
-      A.tileFacesMeetingRelativeSourceEmbed_eq_of_coordinateEmbed_eq
-        C hC N xBase xLocal
-    rw [A.relativeOldTrianglePoint_coordinateEmbed
-        C hC N anchorLines u pBase,
-      A.relativeOldTrianglePoint_coordinateEmbed
-        C hC N extraLines t pLocal]
-  have hxUnion :
-      source₁ xLocal ∈
-        ⋃ s : {s : K.LevelFace n // s ∈ selectedLevelFaces},
-          K.levelFaceCarrier s.1 := by
-    rw [← hsource₁Range]
-    exact Set.mem_range_self xLocal
-  obtain ⟨s, hsSource⟩ := Set.mem_iUnion.mp hxUnion
-  obtain ⟨q, hqFace, hqSource⟩ := hsSource
-  have hbaseMem :
-      source₁ xLocal ∈
-        K.faceCarrier
-          (A.relativeOldTriangleParent
-            C hC N anchorLines u).1 := by
-    rw [← hsourceEq]
-    exact A.relativeOldTriangleParent_contains
-      C hC N anchorLines u xBase
-      (A.relativeOldTrianglePoint_supported
-        C hC N anchorLines u pBase)
-  have hlevelMem :
-      source₁ xLocal ∈
-        K.faceCarrier
-          (levelFaceParent K s.1).1 := by
-    have h :=
-      levelFaceParent_contains K s.1 q hqFace
-    rw [hqSource] at h
-    exact h
-  let F :=
-    A.relativeOldTriangleParentPlaneAffine
-      C hC N anchorLines u
-  have hFimage :
-      F '' interior (baseOldMesh.triangleCarrier u.1) ⊆
-        standardTrianglePlaneComplex.support := by
-    rintro z ⟨r, hr, rfl⟩
-    let rBase :
-        {q : Plane // q ∈ baseOldMesh.triangleCarrier u.1} :=
-      ⟨r, interior_subset hr⟩
-    rw [A.relativeOldTriangleParentPlaneAffine_eq
-      C hC N anchorLines u rBase]
-    exact
-      (K.facePlaneHomeomorph
-        (A.relativeOldTriangleParent
-          C hC N anchorLines u) _).2
-  have hFopen :
-      IsOpen (F '' interior (baseOldMesh.triangleCarrier u.1)) :=
-    (F.isOpenMap F.continuous_of_finiteDimensional
-      (A.relativeOldTriangleParentPlaneAffine_surjective
-        C hC N anchorLines u))
-      (interior (baseOldMesh.triangleCarrier u.1)) isOpen_interior
-  have hpFint :
-      F p ∈ interior standardTrianglePlaneComplex.support := by
-    apply mem_interior_iff_mem_nhds.mpr
-    exact Filter.mem_of_superset
-      (hFopen.mem_nhds ⟨p, hpBase, rfl⟩) hFimage
-  have hpChartInt :
-      (K.facePlaneHomeomorph
-        (A.relativeOldTriangleParent
-          C hC N anchorLines u)
-        ⟨source₁ xLocal, hbaseMem⟩).1 ∈
-          interior standardTrianglePlaneComplex.support := by
-    have heq :
-        (K.facePlaneHomeomorph
-          (A.relativeOldTriangleParent
-            C hC N anchorLines u)
-          ⟨source₁ xLocal, hbaseMem⟩).1 = F p := by
-      have hbaseMem' :
-          A.tileFacesMeetingRelativeSourceEmbed
-              C hC N anchorLines xBase ∈
-            K.faceCarrier
-              (A.relativeOldTriangleParent
-                C hC N anchorLines u).1 :=
-        A.relativeOldTriangleParent_contains
-          C hC N anchorLines u xBase
-          (A.relativeOldTrianglePoint_supported
-            C hC N anchorLines u pBase)
-      have hclosed :
-          (⟨A.tileFacesMeetingRelativeSourceEmbed
-                C hC N anchorLines xBase, hbaseMem'⟩ :
-              K.ClosedFace
-                (A.relativeOldTriangleParent
-                  C hC N anchorLines u)) =
-            ⟨source₁ xLocal, hbaseMem⟩ :=
-        Subtype.ext hsourceEq
-      calc
-        (K.facePlaneHomeomorph
-            (A.relativeOldTriangleParent
-              C hC N anchorLines u)
-            ⟨source₁ xLocal, hbaseMem⟩).1 =
-            (K.facePlaneHomeomorph
-              (A.relativeOldTriangleParent
-                C hC N anchorLines u)
-              ⟨A.tileFacesMeetingRelativeSourceEmbed
-                  C hC N anchorLines xBase, hbaseMem'⟩).1 :=
-          congrArg (fun w => w.1)
-            (congrArg
-              (K.facePlaneHomeomorph
-                (A.relativeOldTriangleParent
-                  C hC N anchorLines u)) hclosed.symm)
-        _ = F p :=
-          (A.relativeOldTriangleParentPlaneAffine_eq
-            C hC N anchorLines u pBase).symm
-    rw [heq]
-    exact hpFint
-  have hparent :
-      levelFaceParent K s.1 =
-        A.relativeOldTriangleParent
-          C hC N anchorLines u := by
-    symm
-    exact face_eq_of_mem_faceCarriers_of_facePlane_mem_interior
-      K
-      (A.relativeOldTriangleParent
-        C hC N anchorLines u)
-      (levelFaceParent K s.1)
-      (source₁ xLocal) hbaseMem hlevelMem hpChartInt
+  obtain ⟨u, s, htu, p, q, hsourceEq, hqSource, hparent⟩ :=
+    exists_alignedRelativeOldTriangle_parentWitness A C hC N anchorLines t
+  let F := A.relativeOldTriangleParentPlaneAffine C hC N anchorLines u
   let z : standardTrianglePlaneComplex.support :=
-    Rlevel.refined.facePlaneHomeomorph s.1 ⟨q, hqFace⟩
-  have hplaneAtP :
-      F p =
-        levelFaceParentPlaneAffine K s.1 z.1 := by
-    have hbase :=
-      A.relativeOldTriangleParentPlaneAffine_eq
-        C hC N anchorLines u pBase
-    have hlevel :=
-      levelFaceParentPlaneAffine_eq K s.1 z
-    rw [K.facePlaneHomeomorph_val_eq_forwardAffine] at hbase hlevel
-    have hqback :
-        ((Rlevel.refined.facePlaneHomeomorph s.1).symm z).1 = q := by
-      change
-        ((Rlevel.refined.facePlaneHomeomorph s.1).symm
-            ((Rlevel.refined.facePlaneHomeomorph s.1) ⟨q, hqFace⟩)).1 =
-          q
-      exact congrArg Subtype.val
-        ((Rlevel.refined.facePlaneHomeomorph s.1
-          ).symm_apply_apply ⟨q, hqFace⟩)
-    have hhomeoBack :
-        (Rlevel.homeo
-            ((Rlevel.refined.facePlaneHomeomorph s.1).symm z).1).1 =
-          (Rlevel.homeo q).1 :=
-      congrArg Subtype.val (congrArg Rlevel.homeo hqback)
-    have hlevel' :
-        levelFaceParentPlaneAffine K s.1 z.1 =
-          K.facePlaneForwardAffine
-            (levelFaceParent K s.1)
-            (Rlevel.homeo q).1 := by
-      calc
-        levelFaceParentPlaneAffine K s.1 z.1 =
-            K.facePlaneForwardAffine
-              (levelFaceParent K s.1)
-              (Rlevel.homeo
-                ((Rlevel.refined.facePlaneHomeomorph s.1).symm z).1).1 :=
-          hlevel
-        _ =
-            K.facePlaneForwardAffine
-              (levelFaceParent K s.1)
-              (Rlevel.homeo q).1 :=
-          congrArg
-            (K.facePlaneForwardAffine
-              (levelFaceParent K s.1)) hhomeoBack
-    calc
-      F p =
-          K.facePlaneForwardAffine
-            (A.relativeOldTriangleParent
-              C hC N anchorLines u)
-            (A.tileFacesMeetingRelativeSourceEmbed
-              C hC N anchorLines xBase).1 :=
-        hbase
-      _ =
-          K.facePlaneForwardAffine
-            (levelFaceParent K s.1)
-            (Rlevel.homeo q).1 := by
-        rw [hparent]
-        apply congrArg
-          (K.facePlaneForwardAffine
-            (A.relativeOldTriangleParent
-              C hC N anchorLines u))
-        exact congrArg Subtype.val
-          (hsourceEq.trans hqSource.symm)
-      _ = levelFaceParentPlaneAffine K s.1 z.1 :=
-        hlevel'.symm
+    Rlevel.refined.facePlaneHomeomorph s.1 q
+  have hplaneAtP : F p.1 = levelFaceParentPlaneAffine K s.1 z.1 :=
+    alignedRelativeOldTriangle_planeAt_parentWitness
+      A C hC N anchorLines t u s htu p q hsourceEq hqSource hparent
   have hmono (k : Fin 3) :
       localOldMesh.IsMonochromatic
         ((levelFaceParentCoord K s.1 k).comp F) := by
@@ -2846,10 +2900,10 @@ private theorem exists_levelFace_of_alignedRelativeOldTriangle
         J N lines (fun _ ↦ True)).mp hw |>.1
   have hcoordAtP (k : Fin 3) :
       0 <
-        ((levelFaceParentCoord K s.1 k).comp F) p := by
+        ((levelFaceParentCoord K s.1 k).comp F) p.1 := by
     let a := (levelFaceParentCoord K s.1 k).comp F
-    have hnonneg : 0 ≤ a p := by
-      change 0 ≤ levelFaceParentCoord K s.1 k (F p)
+    have hnonneg : 0 ≤ a p.1 := by
+      change 0 ≤ levelFaceParentCoord K s.1 k (F p.1)
       rw [hplaneAtP]
       exact levelFaceParentCoord_nonneg K s.1 k z
     rcases hmono k t.1 t.2 with hpos | hneg
@@ -2859,7 +2913,7 @@ private theorem exists_levelFace_of_alignedRelativeOldTriangle
         · rintro r ⟨v, hv, rfl⟩
           exact hpos v hv
         · exact ((convex_Ici (0 : ℝ)).affine_preimage a)
-      have hpHalf := interior_mono hsub hp
+      have hpHalf := interior_mono hsub p.2
       rw [TriangleMesh.interior_affine_nonneg_of_surjective a
         (A.relativeLevelAlignmentLine_surjective
           C hC N anchorLines u s.1 k)] at hpHalf
@@ -2870,159 +2924,13 @@ private theorem exists_levelFace_of_alignedRelativeOldTriangle
         · rintro r ⟨v, hv, rfl⟩
           exact hneg v hv
         · exact ((convex_Iic (0 : ℝ)).affine_preimage a)
-      have hpHalf := interior_mono hsub hp
+      have hpHalf := interior_mono hsub p.2
       rw [TriangleMesh.interior_affine_nonpos_of_surjective a
         (A.relativeLevelAlignmentLine_surjective
           C hC N anchorLines u s.1 k)] at hpHalf
       exact False.elim ((not_lt_of_ge hnonneg) hpHalf)
-  refine ⟨s, ?_⟩
-  intro r hr
-  let a : Fin 3 → (Plane →ᵃ[ℝ] ℝ) :=
-    fun k => (levelFaceParentCoord K s.1 k).comp F
-  have hrcoord (k : Fin 3) : 0 ≤ a k r := by
-    rcases hmono k t.1 t.2 with hpos | hneg
-    · apply convexHull_min ?_
-        ((convex_Ici (0 : ℝ)).affine_preimage (a k)) hr
-      rintro z ⟨v, hv, rfl⟩
-      exact hpos v hv
-    · have hpNonpos : a k p ≤ 0 := by
-        apply convexHull_min ?_
-            ((convex_Iic (0 : ℝ)).affine_preimage (a k))
-          (interior_subset hp)
-        rintro z ⟨v, hv, rfl⟩
-        exact hneg v hv
-      exact False.elim ((not_lt_of_ge hpNonpos) (hcoordAtP k))
-  let b := affineBasisOfTriangle
-    (levelFaceParentPlaneAffine K s.1 ∘
-      standardTriangleVertex)
-    (affineIndependent_comp_of_injOn_convexHull
-      standardTriangleVertex standardTriangleVertex_affineIndependent
-      (levelFaceParentPlaneAffine K s.1) (by
-        rw [← standardTrianglePlaneComplex_support]
-        exact levelFaceParentPlaneAffine_injOn K s.1))
-  have hFr :
-      F r ∈ convexHull ℝ (Set.range b) := by
-    rw [b.convexHull_eq_nonneg_coord]
-    intro k
-    change
-      0 ≤
-        levelFaceParentCoord K s.1 k (F r)
-    exact hrcoord k
-  have hb :
-      (fun i => b i) =
-        levelFaceParentPlaneAffine K s.1 ∘
-          standardTriangleVertex := by
-    funext i
-    rfl
-  have hFr' :
-      F r ∈ convexHull ℝ
-        (Set.range
-          (levelFaceParentPlaneAffine K s.1 ∘
-            standardTriangleVertex)) := by
-    rwa [← congrArg Set.range hb]
-  rw [Set.range_comp,
-    ← (levelFaceParentPlaneAffine K s.1).image_convexHull,
-    ← standardTrianglePlaneComplex_support] at hFr'
-  obtain ⟨z', hz', hz'eq⟩ := hFr'
-  let z'Support : standardTrianglePlaneComplex.support := ⟨z', hz'⟩
-  let rLocal :
-      {q : Plane // q ∈ localOldMesh.triangleCarrier t.1} := ⟨r, hr⟩
-  let rBase :
-      {q : Plane // q ∈ baseOldMesh.triangleCarrier u.1} :=
-    ⟨r, htu hr⟩
-  let q' : Rlevel.refined.ClosedFace s.1 :=
-    (Rlevel.refined.facePlaneHomeomorph s.1).symm z'Support
-  refine ⟨q'.1, q'.2, ?_⟩
-  have hsourceR :
-      A.tileFacesMeetingRelativeSourceEmbed
-          C hC N anchorLines
-          (A.relativeOldTrianglePoint
-            C hC N anchorLines u rBase) =
-        source₁
-          (A.relativeOldTrianglePoint
-            C hC N extraLines t rLocal) := by
-    apply
-      A.tileFacesMeetingRelativeSourceEmbed_eq_of_coordinateEmbed_eq
-        C hC N
-    rw [A.relativeOldTrianglePoint_coordinateEmbed
-        C hC N anchorLines u rBase,
-      A.relativeOldTrianglePoint_coordinateEmbed
-        C hC N extraLines t rLocal]
-  have hsourceRMem :
-      source₁
-          (A.relativeOldTrianglePoint
-            C hC N extraLines t rLocal) ∈
-        K.faceCarrier
-          (A.relativeOldTriangleParent
-            C hC N anchorLines u).1 := by
-    rw [← hsourceR]
-    exact A.relativeOldTriangleParent_contains
-      C hC N anchorLines u _
-      (A.relativeOldTrianglePoint_supported
-        C hC N anchorLines u rBase)
-  have hq'Parent :
-      Rlevel.homeo q'.1 ∈
-        K.faceCarrier
-          (A.relativeOldTriangleParent
-            C hC N anchorLines u).1 := by
-    rw [← hparent]
-    exact levelFaceParent_contains
-      K s.1 q'.1 q'.2
-  have hclosed :
-      (⟨Rlevel.homeo q'.1, hq'Parent⟩ :
-          K.ClosedFace
-            (A.relativeOldTriangleParent
-              C hC N anchorLines u)) =
-        ⟨source₁
-            (A.relativeOldTrianglePoint
-              C hC N extraLines t rLocal),
-          hsourceRMem⟩ := by
-    apply
-      (K.facePlaneHomeomorph
-        (A.relativeOldTriangleParent
-          C hC N anchorLines u)).injective
-    apply Subtype.ext
-    have hlevel :=
-      levelFaceParentPlaneAffine_eq
-        K s.1 z'Support
-    have hbase :=
-      A.relativeOldTriangleParentPlaneAffine_eq
-        C hC N anchorLines u rBase
-    rw [K.facePlaneHomeomorph_val_eq_forwardAffine] at hlevel hbase
-    calc
-      K.facePlaneForwardAffine
-            (A.relativeOldTriangleParent
-              C hC N anchorLines u)
-            (Rlevel.homeo q'.1).1 =
-          K.facePlaneForwardAffine
-            (levelFaceParent K s.1)
-            (Rlevel.homeo q'.1).1 := by
-        rw [hparent]
-      _ = levelFaceParentPlaneAffine K s.1 z' :=
-        hlevel.symm
-      _ = F r := hz'eq
-      _ =
-          K.facePlaneForwardAffine
-            (A.relativeOldTriangleParent
-              C hC N anchorLines u)
-            (A.tileFacesMeetingRelativeSourceEmbed
-              C hC N anchorLines
-              (A.relativeOldTrianglePoint
-                C hC N anchorLines u rBase)).1 :=
-        hbase
-      _ =
-          K.facePlaneForwardAffine
-            (A.relativeOldTriangleParent
-              C hC N anchorLines u)
-            (source₁
-              (A.relativeOldTrianglePoint
-                C hC N extraLines t rLocal)).1 := by
-        exact congrArg
-          (K.facePlaneForwardAffine
-            (A.relativeOldTriangleParent
-              C hC N anchorLines u))
-          (congrArg Subtype.val hsourceR)
-  exact congrArg Subtype.val hclosed
+  exact ⟨s, alignedRelativeOldTriangle_source_mem_levelFace
+    A C hC N anchorLines t u s p.1 p.2 htu hparent hmono hcoordAtP⟩
 
 
 private structure CrossingWeldStraighteningContext
@@ -3432,6 +3340,20 @@ private noncomputable def ChartInductionGeometry.source
   P.straightening.Qatlas.tileFacesMeetingRelativeSourceEmbed
     P.CN P.hCNcompact P.N (ChartInductionGeometry.extraLines P anchorLines)
 
+@[simp]
+private theorem ChartInductionGeometry.source_apply
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A)
+    (anchorLines : List (Plane →ᵃ[ℝ] ℝ))
+    (x : (ChartInductionGeometry.localComplex P anchorLines).realization) :
+    ChartInductionGeometry.source P anchorLines x =
+      P.straightening.Qatlas.tileFacesMeetingRelativeSourceEmbed
+        P.CN P.hCNcompact P.N
+          (ChartInductionGeometry.extraLines P anchorLines) x := rfl
+
 private structure ChartInductionGeometry
     (S : Type*) [TopologicalSpace S]
     [ChartedSpace (EuclideanHalfSpace 2) S]
@@ -3466,6 +3388,507 @@ private structure ChartInductionGeometry
       T.toIntrinsic.levelFaceCarrier s.1
   subdivision_surface :
     (ChartInductionGeometry.subdivision P).refined.HasSurfaceEdgeValence
+
+private abbrev ChartInductionGeometry.LevelAnchor
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) :=
+  Σ u : {u : T.toIntrinsic.LevelFace (ChartInductionGeometry.n P) //
+      u ∈ ChartInductionGeometry.selectedFaces P},
+    Sum {v // v ∈ u.1.1} (ZMod 3)
+
+private noncomputable def ChartInductionGeometry.anchorLevelPoint
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) :
+    ChartInductionGeometry.LevelAnchor P →
+      (ChartInductionGeometry.subdivision P).refined.realization :=
+  fun a ↦ match a.2 with
+    | Sum.inl v => (ChartInductionGeometry.subdivision P).refined.facePoint a.1.1 v
+    | Sum.inr i => (ChartInductionGeometry.subdivision P).refined.edgePath
+        ((ChartInductionGeometry.subdivision P).refined.faceEdge a.1.1 i)
+        ⟨1 / 2, by constructor <;> norm_num⟩
+
+private noncomputable def ChartInductionGeometry.anchorSourcePoint
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) :
+    ChartInductionGeometry.LevelAnchor P → T.toIntrinsic.realization :=
+  fun a ↦ (ChartInductionGeometry.subdivision P).homeo
+    (ChartInductionGeometry.anchorLevelPoint P a)
+
+private theorem ChartInductionGeometry.anchorSourcePoint_mem_selected
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (a : ChartInductionGeometry.LevelAnchor P) :
+    ChartInductionGeometry.anchorSourcePoint P a ∈
+      ⋃ u : {u : T.toIntrinsic.LevelFace (ChartInductionGeometry.n P) //
+          u ∈ ChartInductionGeometry.selectedFaces P},
+        T.toIntrinsic.levelFaceCarrier u.1 := by
+  rcases a with ⟨s, v | i⟩
+  · apply Set.mem_iUnion.mpr
+    refine ⟨s, (ChartInductionGeometry.subdivision P).refined.facePoint s.1 v, ?_, rfl⟩
+    exact (ChartInductionGeometry.subdivision P).refined.facePoint_mem_faceCarrier s.1 v
+  · let edgeHalf : Set.Icc (0 : ℝ) 1 := ⟨1 / 2, by constructor <;> norm_num⟩
+    have hedge : (ChartInductionGeometry.subdivision P).refined.edgePath
+        ((ChartInductionGeometry.subdivision P).refined.faceEdge s.1 i) edgeHalf ∈
+      (ChartInductionGeometry.subdivision P).refined.faceCarrier
+        ((ChartInductionGeometry.subdivision P).refined.faceEdge s.1 i).1 := by
+      rw [← (ChartInductionGeometry.subdivision P).refined.range_edgePath]
+      exact ⟨edgeHalf, rfl⟩
+    apply Set.mem_iUnion.mpr
+    refine ⟨s, (ChartInductionGeometry.subdivision P).refined.edgePath
+      ((ChartInductionGeometry.subdivision P).refined.faceEdge s.1 i) edgeHalf, ?_, rfl⟩
+    intro v hv
+    exact hedge v (fun hve ↦ hv
+      ((ChartInductionGeometry.subdivision P).refined.faceEdge_subset_face s.1 i hve))
+
+private theorem ChartInductionGeometry.anchorSourcePoint_mem_open
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (a : ChartInductionGeometry.LevelAnchor P) :
+    ChartInductionGeometry.anchorSourcePoint P a ∈ P.straightening.U := by
+  apply P.straightening.Qatlas.sourceTileFacesMeeting_subset_open P.CN P.hCNcompact
+  rw [P.straightening.Qatlas.sourceTileFacesMeeting_eq_levelFaces P.CN P.hCNcompact]
+  exact ChartInductionGeometry.anchorSourcePoint_mem_selected P a
+
+private noncomputable def ChartInductionGeometry.anchorCoordinate
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) : ChartInductionGeometry.LevelAnchor P → Plane :=
+  fun a ↦ (P.straightening.Q.sourceHomeomorph
+    ⟨ChartInductionGeometry.anchorSourcePoint P a,
+      ChartInductionGeometry.anchorSourcePoint_mem_open P a⟩).1.1
+
+private noncomputable def ChartInductionGeometry.canonicalAnchorLines
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) : List (Plane →ᵃ[ℝ] ℝ) :=
+  PartialTriangulation.PolygonalReplacementSourceAtlas.coordinateAnchorLines
+    (ChartInductionGeometry.anchorCoordinate P)
+
+private noncomputable def ChartInductionGeometry.canonicalLocalFaceParent
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A)
+    (t : (ChartInductionGeometry.localComplex P
+      (ChartInductionGeometry.canonicalAnchorLines P)).Face) :
+    {s : T.toIntrinsic.LevelFace (ChartInductionGeometry.n P) //
+      s ∈ ChartInductionGeometry.selectedFaces P} :=
+  Classical.choose (exists_levelFace_of_alignedRelativeOldTriangle
+    P.straightening.Qatlas P.CN P.hCNcompact P.N
+      (ChartInductionGeometry.canonicalAnchorLines P)
+    (⟨t.1, t.2⟩ : (P.straightening.Qatlas.tileFacesMeetingRelativeOldMesh
+      P.CN P.hCNcompact P.N (ChartInductionGeometry.extraLines P
+        (ChartInductionGeometry.canonicalAnchorLines P))).Triangle))
+
+private theorem ChartInductionGeometry.canonicalLocalFaceParent_contains
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A)
+    (t : (ChartInductionGeometry.localComplex P
+      (ChartInductionGeometry.canonicalAnchorLines P)).Face)
+    (p : Plane)
+    (hp : p ∈ (P.straightening.Qatlas.tileFacesMeetingRelativeOldMesh
+      P.CN P.hCNcompact P.N (ChartInductionGeometry.extraLines P
+        (ChartInductionGeometry.canonicalAnchorLines P))).triangleCarrier t.1) :
+    ChartInductionGeometry.source P (ChartInductionGeometry.canonicalAnchorLines P)
+        (P.straightening.Qatlas.relativeOldTrianglePoint P.CN P.hCNcompact P.N
+          (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P))
+          (⟨t.1, t.2⟩ : (P.straightening.Qatlas.tileFacesMeetingRelativeOldMesh
+            P.CN P.hCNcompact P.N (ChartInductionGeometry.extraLines P
+              (ChartInductionGeometry.canonicalAnchorLines P))).Triangle) ⟨p, hp⟩) ∈
+      T.toIntrinsic.levelFaceCarrier
+        (ChartInductionGeometry.canonicalLocalFaceParent P t).1 :=
+  Classical.choose_spec (exists_levelFace_of_alignedRelativeOldTriangle
+    P.straightening.Qatlas P.CN P.hCNcompact P.N
+      (ChartInductionGeometry.canonicalAnchorLines P)
+      (⟨t.1, t.2⟩ : (P.straightening.Qatlas.tileFacesMeetingRelativeOldMesh
+        P.CN P.hCNcompact P.N (ChartInductionGeometry.extraLines P
+          (ChartInductionGeometry.canonicalAnchorLines P))).Triangle)) p hp
+
+private theorem ChartInductionGeometry.canonicalLocalFaceParent_contains_realization
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A)
+    (t : (ChartInductionGeometry.localComplex P
+      (ChartInductionGeometry.canonicalAnchorLines P)).Face)
+    (x : (ChartInductionGeometry.localComplex P
+      (ChartInductionGeometry.canonicalAnchorLines P)).realization)
+    (hx : ∀ v ∉ t.1, x.1 v = 0) :
+    ChartInductionGeometry.source P (ChartInductionGeometry.canonicalAnchorLines P) x ∈
+      T.toIntrinsic.levelFaceCarrier
+        (ChartInductionGeometry.canonicalLocalFaceParent P t).1 := by
+  let localOldMesh := P.straightening.Qatlas.tileFacesMeetingRelativeOldMesh
+    P.CN P.hCNcompact P.N
+      (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P))
+  let p : Plane := localOldMesh.coordinateEmbed x
+  have hp : p ∈ localOldMesh.triangleCarrier t.1 := by
+    apply localOldMesh.toPlaneComplex.baryEval_mem_cellCarrier hx x.2.1.1 x.2.1.2
+  let y := P.straightening.Qatlas.relativeOldTrianglePoint P.CN P.hCNcompact P.N
+    (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P))
+    (⟨t.1, t.2⟩ : localOldMesh.Triangle) ⟨p, hp⟩
+  have hyx : y = x := by
+    apply localOldMesh.isEmbedding_coordinateEmbed.injective
+    rw [P.straightening.Qatlas.relativeOldTrianglePoint_coordinateEmbed
+      P.CN P.hCNcompact P.N
+      (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P))
+      (⟨t.1, t.2⟩ : localOldMesh.Triangle) ⟨p, hp⟩]
+  rw [← hyx]
+  exact ChartInductionGeometry.canonicalLocalFaceParent_contains P t p hp
+
+private noncomputable def ChartInductionGeometry.canonicalLocalVertexPoint
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) :
+    (ChartInductionGeometry.localComplex P
+      (ChartInductionGeometry.canonicalAnchorLines P)).UsedVertex →
+      (ChartInductionGeometry.subdivision P).refined.realization :=
+  fun v ↦ (ChartInductionGeometry.subdivision P).homeo.symm
+    (P.straightening.Qatlas.tileFacesMeetingRelativeSourceVertexPoint
+      P.CN P.hCNcompact P.N
+      (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P)) v)
+
+private theorem ChartInductionGeometry.canonicalLocalVertexPoint_mem_face
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A)
+    (t : (ChartInductionGeometry.localComplex P
+      (ChartInductionGeometry.canonicalAnchorLines P)).Face) (v : {v // v ∈ t.1}) :
+    ChartInductionGeometry.canonicalLocalVertexPoint P ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈
+      (ChartInductionGeometry.subdivision P).refined.faceCarrier
+        (ChartInductionGeometry.canonicalLocalFaceParent P t).1.1 := by
+  let localComplex := ChartInductionGeometry.localComplex P
+    (ChartInductionGeometry.canonicalAnchorLines P)
+  let uv : localComplex.UsedVertex := ⟨v.1, ⟨t.1, t.2, v.2⟩⟩
+  let xv : localComplex.realization := localComplex.vertexPoint uv
+  have hxv : ∀ w ∉ t.1, xv.1 w = 0 := by
+    intro w hw
+    change Pi.single v.1 1 w = 0
+    have hwv : w ≠ v.1 := fun h ↦ hw (h ▸ v.2)
+    simp [hwv]
+  obtain ⟨q, hq, hqeq⟩ :=
+    ChartInductionGeometry.canonicalLocalFaceParent_contains_realization P t xv hxv
+  have hlocal : (ChartInductionGeometry.subdivision P).homeo
+      (ChartInductionGeometry.canonicalLocalVertexPoint P uv) =
+        ChartInductionGeometry.source P (ChartInductionGeometry.canonicalAnchorLines P) xv :=
+    (ChartInductionGeometry.subdivision P).homeo.apply_symm_apply _
+  have heq : ChartInductionGeometry.canonicalLocalVertexPoint P uv = q :=
+    (ChartInductionGeometry.subdivision P).homeo.injective (hlocal.trans hqeq.symm)
+  rwa [heq]
+
+private theorem ChartInductionGeometry.canonicalSource_isEmbedding
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) :
+    _root_.Topology.IsEmbedding
+      (ChartInductionGeometry.source P (ChartInductionGeometry.canonicalAnchorLines P)) :=
+  P.straightening.Qatlas.isEmbedding_tileFacesMeetingRelativeSourceEmbed
+    P.CN P.hCNcompact P.N
+      (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P))
+
+private theorem ChartInductionGeometry.canonicalLocalFaceMap_val
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A)
+    (t : (ChartInductionGeometry.localComplex P
+      (ChartInductionGeometry.canonicalAnchorLines P)).Face)
+    (x : stdSimplex ℝ {v // v ∈ t.1}) :
+    ((ChartInductionGeometry.subdivision P).homeo.symm
+      (ChartInductionGeometry.source P (ChartInductionGeometry.canonicalAnchorLines P)
+        ((ChartInductionGeometry.localComplex P
+          (ChartInductionGeometry.canonicalAnchorLines P)).faceStandardMap t x))).1 =
+      ∑ v : {v // v ∈ t.1}, x v •
+        (ChartInductionGeometry.canonicalLocalVertexPoint P
+          ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 := by
+  let Rlevel := ChartInductionGeometry.subdivision P
+  let localComplex := ChartInductionGeometry.localComplex P
+    (ChartInductionGeometry.canonicalAnchorLines P)
+  let source₁ := ChartInductionGeometry.source P
+    (ChartInductionGeometry.canonicalAnchorLines P)
+  let localVertexLevelPoint := ChartInductionGeometry.canonicalLocalVertexPoint P
+  let localFaceLevelFace := ChartInductionGeometry.canonicalLocalFaceParent P
+  apply subdivision_preimage_faceMap_eq_vertex_sum
+    Rlevel source₁ localVertexLevelPoint (fun u ↦ (localFaceLevelFace u).1)
+  · exact fun u ↦ Rlevel.homeo.apply_symm_apply _
+  · exact ChartInductionGeometry.canonicalLocalVertexPoint_mem_face P
+  · intro u y
+    let yg : localComplex.realization := localComplex.faceStandardMap u y
+    have hyg : ∀ v ∉ u.1, yg.1 v = 0 := by
+      intro v hv
+      rw [localComplex.faceStandardMap_val]
+      exact extendFaceCoordinates_of_notMem u.1 y hv
+    obtain ⟨q, hq, hqeq⟩ :=
+      ChartInductionGeometry.canonicalLocalFaceParent_contains_realization P u yg hyg
+    have hyq : Rlevel.homeo.symm (source₁ yg) = q := by
+      change (T.toIntrinsic.safeSubdivision (ChartInductionGeometry.n P)).homeo.symm
+        (ChartInductionGeometry.source P
+          (ChartInductionGeometry.canonicalAnchorLines P) yg) = q
+      calc
+        _ = (T.toIntrinsic.safeSubdivision (ChartInductionGeometry.n P)).homeo.symm
+            ((T.toIntrinsic.safeSubdivision (ChartInductionGeometry.n P)).homeo q) :=
+          congrArg
+            (T.toIntrinsic.safeSubdivision (ChartInductionGeometry.n P)).homeo.symm hqeq.symm
+        _ = q :=
+          (T.toIntrinsic.safeSubdivision
+            (ChartInductionGeometry.n P)).homeo.symm_apply_apply q
+    rwa [hyq]
+  · intro u y
+    let yg : localComplex.realization := localComplex.faceStandardMap u y
+    have hyg : ∀ v ∉ u.1, yg.1 v = 0 := by
+      intro v hv
+      rw [localComplex.faceStandardMap_val]
+      exact extendFaceCoordinates_of_notMem u.1 y hv
+    change (ChartInductionGeometry.source P
+      (ChartInductionGeometry.canonicalAnchorLines P) yg).1 = _
+    dsimp only [ChartInductionGeometry.source, source₁]
+    rw [P.straightening.Qatlas.relativeSourceFaceMap_eq_vertex_sum
+      P.CN P.hCNcompact P.N
+      (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P))
+      (⟨u.1, u.2⟩ : (P.straightening.Qatlas.tileFacesMeetingRelativeOldMesh
+        P.CN P.hCNcompact P.N (ChartInductionGeometry.extraLines P
+          (ChartInductionGeometry.canonicalAnchorLines P))).Triangle) yg hyg]
+    apply Finset.sum_congr rfl
+    intro v _
+    have hcoord : yg.1 v.1 = y v := by
+      rw [show yg.1 = extendFaceCoordinates u.1 y from localComplex.faceStandardMap_val u y,
+        extendFaceCoordinates_of_mem u.1 y v.2]
+      exact congrArg y (Subtype.ext rfl)
+    rw [hcoord]
+    rfl
+
+private theorem ChartInductionGeometry.canonicalLocalVertexPoint_injective
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) :
+    Function.Injective (ChartInductionGeometry.canonicalLocalVertexPoint P) := by
+  intro v w hvw
+  let localComplex := ChartInductionGeometry.localComplex P
+    (ChartInductionGeometry.canonicalAnchorLines P)
+  apply localComplex.injective_vertexPoint
+  apply (ChartInductionGeometry.canonicalSource_isEmbedding P).injective
+  change P.straightening.Qatlas.tileFacesMeetingRelativeSourceVertexPoint
+      P.CN P.hCNcompact P.N
+        (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P)) v =
+    P.straightening.Qatlas.tileFacesMeetingRelativeSourceVertexPoint
+      P.CN P.hCNcompact P.N
+        (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P)) w
+  have h := congrArg (ChartInductionGeometry.subdivision P).homeo hvw
+  simpa only [ChartInductionGeometry.canonicalLocalVertexPoint,
+    (ChartInductionGeometry.subdivision P).homeo.apply_symm_apply] using h
+
+private noncomputable def ChartInductionGeometry.canonical
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (hT : RadoInvariant T A) :
+    ChartInductionGeometry S c T A P where
+  anchorLines := ChartInductionGeometry.canonicalAnchorLines P
+  localFaceParent := ChartInductionGeometry.canonicalLocalFaceParent P
+  localVertexPoint := ChartInductionGeometry.canonicalLocalVertexPoint P
+  localVertexPoint_injective := ChartInductionGeometry.canonicalLocalVertexPoint_injective P
+  localVertex_source := fun _ ↦
+    (ChartInductionGeometry.subdivision P).homeo.apply_symm_apply _ |>.symm
+  source_injective := (ChartInductionGeometry.canonicalSource_isEmbedding P).injective
+  localFaceMap_val := ChartInductionGeometry.canonicalLocalFaceMap_val P
+  source_range := P.straightening.Qatlas.range_tileFacesMeetingRelativeSourceEmbed_eq_levelFaces
+    P.CN P.hCNcompact P.N
+      (ChartInductionGeometry.extraLines P (ChartInductionGeometry.canonicalAnchorLines P))
+  subdivision_surface := by
+    apply T.toIntrinsic.hasSurfaceEdgeValence_iteratedMidpointSubdivision
+    exact fun e he ↦ hT.combSurface e he
+
+private theorem ChartInductionGeometry.canonicalLocalFaceMap_simplexLineMap
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A)
+    (t : (ChartInductionGeometry.localComplex P
+      (ChartInductionGeometry.canonicalAnchorLines P)).Face)
+    (x y : stdSimplex ℝ {v // v ∈ t.1}) (r : Set.Icc (0 : ℝ) 1) :
+    ((ChartInductionGeometry.subdivision P).homeo.symm
+      (ChartInductionGeometry.source P (ChartInductionGeometry.canonicalAnchorLines P)
+        ((ChartInductionGeometry.localComplex P
+          (ChartInductionGeometry.canonicalAnchorLines P)).faceStandardMap t
+          (simplexLineMap x y r)))).1 =
+      AffineMap.lineMap
+        ((ChartInductionGeometry.subdivision P).homeo.symm
+          (ChartInductionGeometry.source P (ChartInductionGeometry.canonicalAnchorLines P)
+            ((ChartInductionGeometry.localComplex P
+              (ChartInductionGeometry.canonicalAnchorLines P)).faceStandardMap t x))).1
+        ((ChartInductionGeometry.subdivision P).homeo.symm
+          (ChartInductionGeometry.source P (ChartInductionGeometry.canonicalAnchorLines P)
+            ((ChartInductionGeometry.localComplex P
+              (ChartInductionGeometry.canonicalAnchorLines P)).faceStandardMap t y))).1 r.1 := by
+  rw [ChartInductionGeometry.canonicalLocalFaceMap_val P t (simplexLineMap x y r),
+    ChartInductionGeometry.canonicalLocalFaceMap_val P t x,
+    ChartInductionGeometry.canonicalLocalFaceMap_val P t y]
+  funext k
+  simp only [simplexLineMap, AffineMap.lineMap_apply_module, Pi.add_apply, Pi.smul_apply,
+    Finset.sum_apply, smul_eq_mul]
+  change (∑ v, ((1 - r.1) * x v + r.1 * y v) *
+      (ChartInductionGeometry.canonicalLocalVertexPoint P
+        ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k) =
+    (1 - r.1) * ∑ v, x v * (ChartInductionGeometry.canonicalLocalVertexPoint P
+      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k +
+    r.1 * ∑ v, y v * (ChartInductionGeometry.canonicalLocalVertexPoint P
+      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k
+  calc
+    _ = ∑ v, ((1 - r.1) * (x v * (ChartInductionGeometry.canonicalLocalVertexPoint P
+          ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k) +
+        r.1 * (y v * (ChartInductionGeometry.canonicalLocalVertexPoint P
+          ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k)) := by
+      apply Finset.sum_congr rfl
+      intro v _
+      ring
+    _ = _ := by rw [Finset.sum_add_distrib, Finset.mul_sum, Finset.mul_sum]
+
+private theorem ChartInductionGeometry.canonicalLocalFaceMap_vertex
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A)
+    (t : (ChartInductionGeometry.localComplex P
+      (ChartInductionGeometry.canonicalAnchorLines P)).Face) (v : {v // v ∈ t.1}) :
+    (ChartInductionGeometry.subdivision P).homeo.symm
+      (ChartInductionGeometry.source P (ChartInductionGeometry.canonicalAnchorLines P)
+        ((ChartInductionGeometry.localComplex P
+          (ChartInductionGeometry.canonicalAnchorLines P)).faceStandardMap t
+            (stdSimplex.vertex v))) =
+      ChartInductionGeometry.canonicalLocalVertexPoint P
+        ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ := by
+  apply Subtype.ext
+  rw [ChartInductionGeometry.canonicalLocalFaceMap_val]
+  funext k
+  rw [Finset.sum_eq_single v]
+  · simp
+  · intro w _ hw
+    simp [stdSimplex.vertex, hw]
+  · simp
+
+private theorem ChartInductionGeometry.exists_canonicalLocalVertex_eq_anchor
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (a : ChartInductionGeometry.LevelAnchor P) :
+    ∃ v : (ChartInductionGeometry.localComplex P
+        (ChartInductionGeometry.canonicalAnchorLines P)).UsedVertex,
+      P.straightening.Qatlas.tileFacesMeetingRelativeSourceVertexPoint
+          P.CN P.hCNcompact P.N
+          (ChartInductionGeometry.extraLines P
+            (ChartInductionGeometry.canonicalAnchorLines P)) v =
+        ChartInductionGeometry.anchorSourcePoint P a := by
+  let Qatlas := P.straightening.Qatlas
+  let Q := P.straightening.Q
+  let anchorCoordinate := ChartInductionGeometry.anchorCoordinate P
+  let anchorLines := ChartInductionGeometry.canonicalAnchorLines P
+  let extraLines := ChartInductionGeometry.extraLines P anchorLines
+  let lines := Qatlas.tileFaceMeetingLines P.CN P.hCNcompact P.N extraLines
+  let J := Qatlas.tileFacePolygonMeeting P.CN P.hCNcompact
+  let localOldMesh := Qatlas.tileFacesMeetingRelativeOldMesh
+    P.CN P.hCNcompact P.N extraLines
+  have hAnchorCoordinateSupport : anchorCoordinate a ∈ localOldMesh.toPlaneComplex.support := by
+    rw [Qatlas.tileFacesMeetingRelativeOldMesh_support P.CN P.hCNcompact P.N extraLines]
+    have haSelected : ChartInductionGeometry.anchorSourcePoint P a ∈
+        ⋃ f : Qatlas.TileFacesMeeting P.CN P.hCNcompact, Q.sourceFaceSet f.1 := by
+      rw [Qatlas.sourceTileFacesMeeting_eq_levelFaces P.CN P.hCNcompact]
+      exact ChartInductionGeometry.anchorSourcePoint_mem_selected P a
+    rw [Qatlas.sourceTileFacesMeeting_eq_coordinatePreimage P.CN P.hCNcompact] at haSelected
+    simpa only [anchorCoordinate, ChartInductionGeometry.anchorCoordinate] using haSelected.2
+  have hmono (line : Plane →ᵃ[ℝ] ℝ) (hline : line ∈ anchorLines) :
+      localOldMesh.IsMonochromatic line := by
+    have hExtra : line ∈ extraLines := by
+      apply List.mem_append_left
+      apply List.mem_append_left
+      exact hline
+    have hAll : line ∈ P.N.coordinateLines ++ lines :=
+      List.mem_append_right _ (List.mem_append_right _ hExtra)
+    have hR := (PolygonalFamily.arrangementMesh J).refineByLines_isMonochromatic_of_mem
+      (P.N.coordinateLines ++ lines) hAll
+    intro t ht
+    exact hR t ((PolygonalFamily.selectedRelativeSynchronizedMesh_triangle_mem
+      J P.N lines (fun _ ↦ True)).mp ht).1
+  have hVertical := hmono (BrokenLineData.verticalLine (anchorCoordinate a))
+    (PartialTriangulation.PolygonalReplacementSourceAtlas.verticalLine_mem_coordinateAnchorLines
+      anchorCoordinate a)
+  have hHorizontal := hmono (BrokenLineData.horizontalLine (anchorCoordinate a))
+    (horizontalLine_mem_coordinateAnchorLines anchorCoordinate a)
+  obtain ⟨v, hvPosition, hvSimplex⟩ :=
+    localOldMesh.exists_vertex_position_eq_of_monochromatic_coordinates
+      (anchorCoordinate a) hAnchorCoordinateSupport hVertical hHorizontal
+  obtain ⟨-, t, ht, hvt⟩ := localOldMesh.mem_faces_iff.mp hvSimplex
+  let localComplex := ChartInductionGeometry.localComplex P anchorLines
+  let v' : localComplex.UsedVertex := ⟨v, ⟨t, ht, hvt (by simp)⟩⟩
+  refine ⟨v', ?_⟩
+  let pLocal : P.straightening.U :=
+    Qatlas.tileFacesMeetingRelativeSourceVertexPointInOpen
+      P.CN P.hCNcompact P.N extraLines v'
+  let pAnchor : P.straightening.U :=
+    ⟨ChartInductionGeometry.anchorSourcePoint P a,
+      ChartInductionGeometry.anchorSourcePoint_mem_open P a⟩
+  have hcoordLocal : (Q.sourceHomeomorph pLocal).1.1 = localOldMesh.position v :=
+    Qatlas.sourceHomeomorph_relativeSourceVertexPointInOpen
+      P.CN P.hCNcompact P.N extraLines v'
+  have hq : Q.sourceHomeomorph pLocal = Q.sourceHomeomorph pAnchor := by
+    apply Subtype.ext
+    apply Subtype.ext
+    exact hcoordLocal.trans hvPosition
+  exact congrArg Subtype.val (Q.sourceHomeomorph.injective hq)
+
+private theorem ChartInductionGeometry.canonicalAnchor_mem_localVertexPoints
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (a : ChartInductionGeometry.LevelAnchor P) :
+    ChartInductionGeometry.anchorLevelPoint P a ∈
+      ((Finset.univ : Finset (ChartInductionGeometry.localComplex P
+          (ChartInductionGeometry.canonicalAnchorLines P)).UsedVertex).image
+        (ChartInductionGeometry.canonicalLocalVertexPoint P)) := by
+  obtain ⟨v, hv⟩ := ChartInductionGeometry.exists_canonicalLocalVertex_eq_anchor P a
+  apply Finset.mem_image.mpr
+  refine ⟨v, Finset.mem_univ v, ?_⟩
+  change (ChartInductionGeometry.subdivision P).homeo.symm
+      (P.straightening.Qatlas.tileFacesMeetingRelativeSourceVertexPoint
+        P.CN P.hCNcompact P.N (ChartInductionGeometry.extraLines P
+          (ChartInductionGeometry.canonicalAnchorLines P)) v) =
+    ChartInductionGeometry.anchorLevelPoint P a
+  rw [hv]
+  exact (ChartInductionGeometry.subdivision P).homeo.symm_apply_apply _
 
 /-- The source realization map stored by a chart-induction geometry certificate is injective. -/
 private theorem ChartInductionGeometry.source_injective_of_geometry
@@ -4307,523 +4730,371 @@ private theorem finish_crossing_weld
 
 -- Opaque geometry and compatibility certificates keep this final assembly below the default
 -- heartbeat budget without exposing the synchronized mesh construction to reduction.
-/-- Shared implementation of the Moise crossing weld once the chart straightening is certified
-to preserve the ambient manifold-boundary stratum.
+private theorem edge_subset_face_of_halfpoint_mem
+    (K : IntrinsicTwoComplex) (d : K.Edge) (s : Finset K.Vertex)
+    (hmid : K.edgePath d ⟨1 / 2, by constructor <;> norm_num⟩ ∈ K.faceCarrier s) :
+    d.1 ⊆ s := by
+  intro v hv
+  by_contra hvs
+  have hzero : (K.edgePath d ⟨1 / 2, by constructor <;> norm_num⟩).1 v = 0 :=
+    hmid v hvs
+  have hpos : 0 < (K.edgePath d ⟨1 / 2, by constructor <;> norm_num⟩).1 v := by
+    rw [K.edge_eq_pair d] at hv
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hv
+    rcases hv with rfl | rfl
+    · rw [K.edgePath_apply_first]
+      norm_num
+    · rw [K.edgePath_apply_second]
+      norm_num
+  linarith
 
-In the genuine crossing case (the chart core is not yet covered, and the absorbed region is not
-inside the chart patch), the adjusted old complex and the chart patch admit a common welded
-presentation: a common vertex type carrying both face families, with embeddings that agree
-exactly on the shared realization, satisfy the combinatorial-surface bound jointly, and whose
-united image contains `A ∪ c.core` in its topological interior.
-
-The proof straightens the old complex over the
-chart overlap by the locally finite controlled polygonal replacement over
-`adaptiveOverlapGraphRealization` with tolerance vanishing at the overlap frontier
-(`replaceOnOpen`/`frontierGlue`), refine the straightened trace and the fixed patch complex to
-a common plane subdivision (`CommonSubdivision`, Moise's conditions (e)-(h)), and read off the
-welded presentation. The finite compact-collar theorem cannot replace this vanishing-tolerance
-construction, because continuity across the overlap frontier depends on the error tending to
-zero there. -/
-theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
-    (c : MoiseChart S) (hc : c.BoundaryFaithful)
-    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
-    (hstraight :
-      PartialTriangulation.BoundaryPreservingStraightening S T c) :
-    let _ := (inferInstance : ConnectedSpace S)
-    let _ := (inferInstance : IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S)
-    ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
-      (F₁ F₂ : Finset (Finset V))
-      (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S),
-      (∀ t ∈ F₁ ∪ F₂, t.card = 3) ∧
-      _root_.Topology.IsEmbedding e₁ ∧ _root_.Topology.IsEmbedding e₂ ∧
-      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
-        (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y) ∧
-      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
-        e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) ∧
-      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₁ e₁ ∧
-      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₂ e₂ ∧
-      A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) := by
-  dsimp
+private theorem ChartInductionGeometry.canonicalInterfaceEdgeMarks_subset_local
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (hT : RadoInvariant T A) :
+    let G := ChartInductionGeometry.canonical P hT
+    ∀ (s : {s : T.toIntrinsic.LevelFace (ChartInductionGeometry.n P) //
+        s ∈ ChartInductionGeometry.selectedFaces P})
+      (e : (ChartInductionGeometry.subdivision P).refined.Edge), e.1 ⊆ s.1.1 →
+      ∀ p ∈ G.marking.edgeMarks e, p ∈ G.localVertexPoints := by
   classical
-  letI : SecondCountableTopology S := moise_secondCountableTopology S
-  obtain ⟨W⟩ := exists_crossingWeldStraighteningContext S c hT hstraight
-  obtain ⟨P⟩ := exists_crossingWeldPatchContext S c hc W
-  let C := P.straightening.C
-  let U := P.straightening.U
-  let V := P.straightening.V
-  let Q := P.straightening.Q
-  let Qatlas := P.straightening.Qatlas
-  let g' := P.straightening.g'
-  let g := P.straightening.g
-  let hVprotected := P.straightening.hVprotected
-  let hUprotected := P.straightening.hUprotected
-  let hgcoord := P.straightening.hgcoord
-  let hgval := P.straightening.hgval
-  let hBoundaryPreservation := P.straightening.hBoundaryPreservation
-  let T₀ := P.straightening.adjusted
-  let hA₀ := P.hA_adjusted
-  let D := P.straightening.remainder
-  let dToDomain := P.straightening.remainderToDomain
-  let dModel := P.straightening.remainderModel
-  let Dmodel : Set c.kind.modelRegion := Set.range dModel
-  let N := P.N
-  let hDmodelInteriorN := P.hRemainderInterior
-  let hN_V := P.hN_V
-  let CN := P.CN
-  let hCN_support := P.hCN_support
-  let hCNcompact := P.hCNcompact
-  let hN_arrangement := P.hN_arrangement
-  let hN_model := P.hN_model
-  let J := Qatlas.tileFacePolygonMeeting CN hCNcompact
-  let n := Qatlas.commonLevel (Qatlas.tilesMeeting CN hCNcompact)
-  let Rlevel := T.toIntrinsic.safeSubdivision n
-  have hRlevelSurface : Rlevel.refined.HasSurfaceEdgeValence := by
-    apply T.toIntrinsic.hasSurfaceEdgeValence_iteratedMidpointSubdivision
-    intro e he
-    exact hT.combSurface e he
-  let selectedLevelFaces :=
-    Qatlas.levelFaces (Qatlas.tilesMeeting CN hCNcompact)
-  let edgeHalf : Set.Icc (0 : ℝ) 1 :=
-    ⟨1 / 2, by constructor <;> norm_num⟩
-  let LevelAnchor :=
-    Σ u : {u : T.toIntrinsic.LevelFace n // u ∈ selectedLevelFaces},
-      Sum {v // v ∈ u.1.1} (ZMod 3)
-  let anchorLevelPoint : LevelAnchor → Rlevel.refined.realization :=
-    fun a ↦
-      match a.2 with
-      | Sum.inl v => Rlevel.refined.facePoint a.1.1 v
-      | Sum.inr i =>
-          Rlevel.refined.edgePath
-            (Rlevel.refined.faceEdge a.1.1 i) edgeHalf
-  let anchorSourcePoint : LevelAnchor → T.toIntrinsic.realization :=
-    fun a ↦ Rlevel.homeo (anchorLevelPoint a)
-  have hAnchorSelected (a : LevelAnchor) :
-      anchorSourcePoint a ∈
-        ⋃ u : {u : T.toIntrinsic.LevelFace n // u ∈ selectedLevelFaces},
-          T.toIntrinsic.levelFaceCarrier u.1 := by
-    rcases a with ⟨s, v | i⟩
-    · apply Set.mem_iUnion.mpr
-      refine ⟨s, Rlevel.refined.facePoint s.1 v, ?_, rfl⟩
-      exact Rlevel.refined.facePoint_mem_faceCarrier s.1 v
-    · have hedge :
-          Rlevel.refined.edgePath
-              (Rlevel.refined.faceEdge s.1 i) edgeHalf ∈
-            Rlevel.refined.faceCarrier
-              (Rlevel.refined.faceEdge s.1 i).1 := by
-        rw [← Rlevel.refined.range_edgePath]
-        exact ⟨edgeHalf, rfl⟩
-      apply Set.mem_iUnion.mpr
-      refine ⟨s,
-        Rlevel.refined.edgePath
-          (Rlevel.refined.faceEdge s.1 i) edgeHalf, ?_, rfl⟩
-      intro v hv
-      exact hedge v (fun hve ↦
-        hv (Rlevel.refined.faceEdge_subset_face s.1 i hve))
-  have hAnchorU (a : LevelAnchor) : anchorSourcePoint a ∈ U := by
-    apply Qatlas.sourceTileFacesMeeting_subset_open CN hCNcompact
-    rw [Qatlas.sourceTileFacesMeeting_eq_levelFaces CN hCNcompact]
-    exact hAnchorSelected a
-  let anchorCoordinate : LevelAnchor → Plane :=
-    fun a ↦
-      (Q.sourceHomeomorph
-        ⟨anchorSourcePoint a, hAnchorU a⟩).1.1
-  let anchorLines : List (Plane →ᵃ[ℝ] ℝ) :=
-    PartialTriangulation.PolygonalReplacementSourceAtlas.coordinateAnchorLines
-      anchorCoordinate
-  let baseOldMesh :=
-    Qatlas.tileFacesMeetingRelativeOldMesh CN hCNcompact N anchorLines
-  let alignmentLines : List (Plane →ᵃ[ℝ] ℝ) :=
-    Qatlas.relativeLevelAlignmentLines
-      CN hCNcompact N anchorLines n
-  let extraLines : List (Plane →ᵃ[ℝ] ℝ) :=
-    alignedRelativeExtraLines Qatlas CN hCNcompact N anchorLines
-  let lines := Qatlas.tileFaceMeetingLines CN hCNcompact N extraLines
-  have hJmodel : PolygonalFamily.closedRegion J ⊆ c.kind.modelRegion :=
-    Qatlas.tileFacePolygonMeeting_closedRegion_subset_modelRegion
-      c CN hCNcompact g' hgcoord
-  let e₁local :=
-    PartialTriangulation.RelativeSynchronizedTarget.oldSurfaceEmbed
-      c J N lines hJmodel
-  have he₁local : _root_.Topology.IsEmbedding e₁local :=
-    PartialTriangulation.RelativeSynchronizedTarget.isEmbedding_oldSurfaceEmbed
-      c J N lines hJmodel
-  let source₁ :=
-    Qatlas.tileFacesMeetingRelativeSourceEmbed CN hCNcompact N extraLines
-  have hsource₁Embedding : _root_.Topology.IsEmbedding source₁ :=
-    Qatlas.isEmbedding_tileFacesMeetingRelativeSourceEmbed
-      CN hCNcompact N extraLines
-  have hsource₁Range :
-      Set.range source₁ =
-        ⋃ u : {u : T.toIntrinsic.LevelFace
-            (Qatlas.commonLevel (Qatlas.tilesMeeting CN hCNcompact)) //
-            u ∈ Qatlas.levelFaces (Qatlas.tilesMeeting CN hCNcompact)},
-          T.toIntrinsic.levelFaceCarrier u.1 :=
-    Qatlas.range_tileFacesMeetingRelativeSourceEmbed_eq_levelFaces
-      CN hCNcompact N extraLines
-  let localSourceComplex :=
-    Qatlas.tileFacesMeetingRelativeSourceComplex CN hCNcompact N extraLines
-  let localOldMesh :=
-    Qatlas.tileFacesMeetingRelativeOldMesh CN hCNcompact N extraLines
-  have exists_baseTriangle_of_localOldTriangle
-      (t : localOldMesh.Triangle) :
-      ∃ u : baseOldMesh.Triangle,
-        localOldMesh.triangleCarrier t.1 ⊆
-          baseOldMesh.triangleCarrier u.1 :=
-    exists_baseTriangle_of_alignedRelativeOldTriangle
-      Qatlas CN hCNcompact N anchorLines t
-  have exists_levelFace_of_localOldTriangle
-      (t : localOldMesh.Triangle) :
-      ∃ s : {s : T.toIntrinsic.LevelFace n // s ∈ selectedLevelFaces},
-        ∀ (p : Plane) (hp : p ∈ localOldMesh.triangleCarrier t.1),
-          source₁
-              (Qatlas.relativeOldTrianglePoint
-                CN hCNcompact N extraLines t ⟨p, hp⟩) ∈
-            T.toIntrinsic.levelFaceCarrier s.1 :=
-    exists_levelFace_of_alignedRelativeOldTriangle
-      Qatlas CN hCNcompact N anchorLines t
-  let localFaceLevelFace
-      (t : localSourceComplex.Face) :
-      {s : T.toIntrinsic.LevelFace n // s ∈ selectedLevelFaces} :=
-    Classical.choose
-      (exists_levelFace_of_localOldTriangle
-        (⟨t.1, t.2⟩ : localOldMesh.Triangle))
-  have localFaceLevelFace_contains
-      (t : localSourceComplex.Face) (p : Plane)
-      (hp : p ∈ localOldMesh.triangleCarrier t.1) :
-      source₁
-          (Qatlas.relativeOldTrianglePoint
-            CN hCNcompact N extraLines
-              (⟨t.1, t.2⟩ : localOldMesh.Triangle) ⟨p, hp⟩) ∈
-        T.toIntrinsic.levelFaceCarrier (localFaceLevelFace t).1 :=
-    Classical.choose_spec
-      (exists_levelFace_of_localOldTriangle
-        (⟨t.1, t.2⟩ : localOldMesh.Triangle)) p hp
-  have localFaceLevelFace_contains_realization
-      (t : localSourceComplex.Face)
-      (x : localSourceComplex.realization)
-      (hx : ∀ v ∉ t.1, x.1 v = 0) :
-      source₁ x ∈
-        T.toIntrinsic.levelFaceCarrier (localFaceLevelFace t).1 := by
-    let p : Plane := localOldMesh.coordinateEmbed x
-    have hp : p ∈ localOldMesh.triangleCarrier t.1 := by
-      apply localOldMesh.toPlaneComplex.baryEval_mem_cellCarrier
-        hx x.2.1.1 x.2.1.2
-    let y :=
-      Qatlas.relativeOldTrianglePoint
-        CN hCNcompact N extraLines
-          (⟨t.1, t.2⟩ : localOldMesh.Triangle) ⟨p, hp⟩
-    have hyx : y = x := by
-      apply localOldMesh.isEmbedding_coordinateEmbed.injective
-      rw [Qatlas.relativeOldTrianglePoint_coordinateEmbed
-        CN hCNcompact N extraLines
-          (⟨t.1, t.2⟩ : localOldMesh.Triangle) ⟨p, hp⟩]
-    rw [← hyx]
-    exact localFaceLevelFace_contains t p hp
-  have hAnchorCoordinateSupport (a : LevelAnchor) :
-      anchorCoordinate a ∈ localOldMesh.toPlaneComplex.support := by
-    rw [Qatlas.tileFacesMeetingRelativeOldMesh_support
-      CN hCNcompact N extraLines]
-    have haSelected :
-        anchorSourcePoint a ∈
-          ⋃ f : Qatlas.TileFacesMeeting CN hCNcompact,
-            Q.sourceFaceSet f.1 := by
-      rw [Qatlas.sourceTileFacesMeeting_eq_levelFaces CN hCNcompact]
-      exact hAnchorSelected a
-    rw [Qatlas.sourceTileFacesMeeting_eq_coordinatePreimage
-      CN hCNcompact] at haSelected
-    simpa only [anchorCoordinate] using haSelected.2
-  have hAnchorVerticalMono (a : LevelAnchor) :
-      localOldMesh.IsMonochromatic
-        (BrokenLineData.verticalLine (anchorCoordinate a)) := by
-    have hExtra :
-        BrokenLineData.verticalLine (anchorCoordinate a) ∈ extraLines := by
-      apply List.mem_append_left
-      apply List.mem_append_left
-      exact
-        PartialTriangulation.PolygonalReplacementSourceAtlas.verticalLine_mem_coordinateAnchorLines
-          anchorCoordinate a
-    have hLines :
-        BrokenLineData.verticalLine (anchorCoordinate a) ∈ lines := by
-      exact List.mem_append_right _ hExtra
-    have hAll :
-        BrokenLineData.verticalLine (anchorCoordinate a) ∈
-          N.coordinateLines ++ lines :=
-      List.mem_append_right _ hLines
-    have hR :=
-      (PolygonalFamily.arrangementMesh J).refineByLines_isMonochromatic_of_mem
-        (N.coordinateLines ++ lines) hAll
-    intro t ht
-    apply hR t
-    exact
-      (PolygonalFamily.selectedRelativeSynchronizedMesh_triangle_mem
-        J N lines (fun _ ↦ True)).mp ht |>.1
-  have hAnchorHorizontalMono (a : LevelAnchor) :
-      localOldMesh.IsMonochromatic
-        (BrokenLineData.horizontalLine (anchorCoordinate a)) := by
-    have hExtra :
-        BrokenLineData.horizontalLine (anchorCoordinate a) ∈ extraLines := by
-      apply List.mem_append_left
-      apply List.mem_append_left
-      exact
-        horizontalLine_mem_coordinateAnchorLines anchorCoordinate a
-    have hLines :
-        BrokenLineData.horizontalLine (anchorCoordinate a) ∈ lines := by
-      exact List.mem_append_right _ hExtra
-    have hAll :
-        BrokenLineData.horizontalLine (anchorCoordinate a) ∈
-          N.coordinateLines ++ lines :=
-      List.mem_append_right _ hLines
-    have hR :=
-      (PolygonalFamily.arrangementMesh J).refineByLines_isMonochromatic_of_mem
-        (N.coordinateLines ++ lines) hAll
-    intro t ht
-    apply hR t
-    exact
-      (PolygonalFamily.selectedRelativeSynchronizedMesh_triangle_mem
-        J N lines (fun _ ↦ True)).mp ht |>.1
-  have exists_localSourceVertex_eq_anchor (a : LevelAnchor) :
-      ∃ v : localSourceComplex.UsedVertex,
-        Qatlas.tileFacesMeetingRelativeSourceVertexPoint
-          CN hCNcompact N extraLines v = anchorSourcePoint a := by
-    obtain ⟨v, hvPosition, hvSimplex⟩ :=
-      localOldMesh.exists_vertex_position_eq_of_monochromatic_coordinates
-        (anchorCoordinate a) (hAnchorCoordinateSupport a)
-        (hAnchorVerticalMono a) (hAnchorHorizontalMono a)
-    obtain ⟨-, t, ht, hvt⟩ :=
-      localOldMesh.mem_faces_iff.mp hvSimplex
-    have hvUsed : ∃ t ∈ localOldMesh.triangles, v ∈ t :=
-      ⟨t, ht, hvt (by simp)⟩
-    let v' : localSourceComplex.UsedVertex := ⟨v, hvUsed⟩
-    refine ⟨v', ?_⟩
-    let pLocal : U :=
-      Qatlas.tileFacesMeetingRelativeSourceVertexPointInOpen
-        CN hCNcompact N extraLines v'
-    let pAnchor : U := ⟨anchorSourcePoint a, hAnchorU a⟩
-    have hcoordLocal :
-        (Q.sourceHomeomorph pLocal).1.1 =
-          localOldMesh.position v := by
-      exact
-        Qatlas.sourceHomeomorph_relativeSourceVertexPointInOpen
-          CN hCNcompact N extraLines v'
-    have hq :
-        Q.sourceHomeomorph pLocal = Q.sourceHomeomorph pAnchor := by
-      apply Subtype.ext
-      apply Subtype.ext
-      exact hcoordLocal.trans hvPosition
-    have hp : pLocal = pAnchor :=
-      Q.sourceHomeomorph.injective hq
-    exact congrArg Subtype.val hp
-  let localVertexLevelPoint :
-      localSourceComplex.UsedVertex → Rlevel.refined.realization :=
-    fun v ↦ Rlevel.homeo.symm
-      (Qatlas.tileFacesMeetingRelativeSourceVertexPoint
-        CN hCNcompact N extraLines v)
-  have localVertexLevelPoint_mem_face
-      (t : localSourceComplex.Face) (v : {v // v ∈ t.1}) :
-      localVertexLevelPoint
-          ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈
-        Rlevel.refined.faceCarrier (localFaceLevelFace t).1.1 := by
-    let uv : localSourceComplex.UsedVertex :=
-      ⟨v.1, ⟨t.1, t.2, v.2⟩⟩
-    let xv : localSourceComplex.realization :=
-      localSourceComplex.vertexPoint uv
-    have hxv : ∀ w ∉ t.1, xv.1 w = 0 := by
-      intro w hw
-      change Pi.single v.1 1 w = 0
-      have hwv : w ≠ v.1 := fun h => hw (h ▸ v.2)
-      simp [hwv]
-    have hsource :
-        source₁ xv ∈
-          T.toIntrinsic.levelFaceCarrier (localFaceLevelFace t).1 :=
-      localFaceLevelFace_contains_realization t xv hxv
-    obtain ⟨q, hq, hqeq⟩ := hsource
-    have hlocal :
-        Rlevel.homeo (localVertexLevelPoint uv) = source₁ xv := by
-      exact Rlevel.homeo.apply_symm_apply _
-    have heq :
-        localVertexLevelPoint uv = q :=
-      Rlevel.homeo.injective (hlocal.trans hqeq.symm)
-    rwa [heq]
-  have localFaceLevelMap_val
-      (t : localSourceComplex.Face)
-      (x : stdSimplex ℝ {v // v ∈ t.1}) :
-      (Rlevel.homeo.symm
-          (source₁ (localSourceComplex.faceStandardMap t x))).1 =
-        ∑ v : {v // v ∈ t.1}, x v •
-          (localVertexLevelPoint
-            ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 := by
-    apply subdivision_preimage_faceMap_eq_vertex_sum
-      Rlevel source₁ localVertexLevelPoint (fun u ↦ (localFaceLevelFace u).1)
-    · intro u
-      exact Rlevel.homeo.apply_symm_apply _
-    · exact localVertexLevelPoint_mem_face
-    · intro u y
-      let yg : localSourceComplex.realization :=
-        localSourceComplex.faceStandardMap u y
-      have hyg : ∀ v ∉ u.1, yg.1 v = 0 := by
-        intro v hv
-        rw [localSourceComplex.faceStandardMap_val]
-        exact extendFaceCoordinates_of_notMem u.1 y hv
-      have hsource := localFaceLevelFace_contains_realization u yg hyg
-      obtain ⟨q, hq, hqeq⟩ := hsource
-      have hyq : Rlevel.homeo.symm (source₁ yg) = q := by
-        apply Rlevel.homeo.injective
-        rw [Rlevel.homeo.apply_symm_apply, hqeq]
-      rwa [hyq]
-    · intro u y
-      let yg : localSourceComplex.realization :=
-        localSourceComplex.faceStandardMap u y
-      have hyg : ∀ v ∉ u.1, yg.1 v = 0 := by
-        intro v hv
-        rw [localSourceComplex.faceStandardMap_val]
-        exact extendFaceCoordinates_of_notMem u.1 y hv
-      rw [Qatlas.relativeSourceFaceMap_eq_vertex_sum
-        CN hCNcompact N extraLines
-        (⟨u.1, u.2⟩ : localOldMesh.Triangle) yg hyg]
-      apply Finset.sum_congr rfl
-      intro v _
-      have hcoord : yg.1 v.1 = y v := by
-        rw [show yg.1 = extendFaceCoordinates u.1 y from
-          localSourceComplex.faceStandardMap_val u y,
-          extendFaceCoordinates_of_mem u.1 y v.2]
-        exact congrArg y (Subtype.ext rfl)
-      rw [hcoord]
-  let localFaceSimplexLineMap
-      (t : localSourceComplex.Face)
-      (x y : stdSimplex ℝ {v // v ∈ t.1})
-      (r : Set.Icc (0 : ℝ) 1) :
-      stdSimplex ℝ {v // v ∈ t.1} :=
-    ⟨AffineMap.lineMap x.1 y.1 r.1,
-      (convex_stdSimplex ℝ _).lineMap_mem x.2 y.2 r.2⟩
-  have localFaceLevelMap_simplexLineMap
-      (t : localSourceComplex.Face)
-      (x y : stdSimplex ℝ {v // v ∈ t.1})
-      (r : Set.Icc (0 : ℝ) 1) :
-      (Rlevel.homeo.symm
-        (source₁
-          (localSourceComplex.faceStandardMap t
-            (localFaceSimplexLineMap t x y r)))).1 =
-        AffineMap.lineMap
-          (Rlevel.homeo.symm
-            (source₁
-              (localSourceComplex.faceStandardMap t x))).1
-          (Rlevel.homeo.symm
-            (source₁
-              (localSourceComplex.faceStandardMap t y))).1 r.1 := by
-    rw [localFaceLevelMap_val t (localFaceSimplexLineMap t x y r),
-      localFaceLevelMap_val t x, localFaceLevelMap_val t y]
-    funext k
-    simp only [localFaceSimplexLineMap,
-      AffineMap.lineMap_apply_module, Pi.add_apply, Pi.smul_apply,
-      Finset.sum_apply, smul_eq_mul]
-    change
-      (∑ v, (((1 - r.1) • x.1 + r.1 • y.1) v) *
-          (localVertexLevelPoint
-            ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k) =
-        (1 - r.1) *
-            ∑ v, x v *
-              (localVertexLevelPoint
-                ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k +
-          r.1 *
-            ∑ v, y v *
-              (localVertexLevelPoint
-                ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k
-    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
-    calc
-      (∑ v, ((1 - r.1) * x v + r.1 * y v) *
-          (localVertexLevelPoint
-            ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k) =
-          ∑ v,
-            ((1 - r.1) *
-                (x v *
-                  (localVertexLevelPoint
-                    ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k) +
-              r.1 *
-                (y v *
-                  (localVertexLevelPoint
-                    ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k)) := by
-        apply Finset.sum_congr rfl
-        intro v _
-        ring
-      _ = _ := by
-        rw [Finset.sum_add_distrib, Finset.mul_sum, Finset.mul_sum]
-  have localFaceLevelMap_vertex
-      (t : localSourceComplex.Face) (v : {v // v ∈ t.1}) :
-      Rlevel.homeo.symm
-          (source₁
-            (localSourceComplex.faceStandardMap t
-              (stdSimplex.vertex v))) =
-        localVertexLevelPoint
-          ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ := by
-    apply Subtype.ext
-    rw [localFaceLevelMap_val]
-    funext k
-    rw [Finset.sum_eq_single v]
-    · simp
-    · intro w _ hw
-      simp [stdSimplex.vertex, hw]
-    · simp
-  let localVertexLevelPoints : Finset Rlevel.refined.realization :=
-    (Finset.univ : Finset localSourceComplex.UsedVertex).image
-      localVertexLevelPoint
-  have hAnchorLevelPoint_mem_localVertexLevelPoints (a : LevelAnchor) :
-      anchorLevelPoint a ∈ localVertexLevelPoints := by
-    obtain ⟨v, hv⟩ := exists_localSourceVertex_eq_anchor a
-    apply Finset.mem_image.mpr
-    refine ⟨v, Finset.mem_univ v, ?_⟩
-    change Rlevel.homeo.symm
-        (Qatlas.tileFacesMeetingRelativeSourceVertexPoint
-          CN hCNcompact N extraLines v) =
-      anchorLevelPoint a
-    rw [hv]
-    change Rlevel.homeo.symm
-        (Rlevel.homeo (anchorLevelPoint a)) =
-      anchorLevelPoint a
-    exact Rlevel.homeo.symm_apply_apply _
-  let edgeMidpointPoints : Finset Rlevel.refined.realization :=
-    (Finset.univ : Finset Rlevel.refined.Edge).image
-      (fun e ↦ Rlevel.refined.edgePath e edgeHalf)
-  let boundaryMarking : Rlevel.refined.EdgeMarking :=
-    IntrinsicTwoComplex.EdgeMarking.ofFinset
-      (K := Rlevel.refined)
-        (localVertexLevelPoints ∪ edgeMidpointPoints)
-  let outsideFan := boundaryMarking.markedFanLocallyFiniteTriangleComplex
-  have hboundaryFanSurface :
-      outsideFan.compactIntrinsic.HasSurfaceEdgeValence :=
-    boundaryMarking.markedFanCompactIntrinsic_hasSurfaceEdgeValence
-      hRlevelSurface
-  let OutsideFanFace :=
-    {f : boundaryMarking.FanFace // f.1 ∉ selectedLevelFaces}
-  let outsideFanFaceMap (f : OutsideFanFace) :
-      stdSimplex ℝ
-          {v // v ∈ boundaryMarking.globalFanFaceVertices f.1} →
-        T.toIntrinsic.realization :=
-    fun x ↦ Rlevel.homeo (boundaryMarking.globalFanFaceMap f.1 x)
-  have localVertexLevelPoint_injective :
-      Function.Injective localVertexLevelPoint := by
-    intro v w hvw
-    apply localSourceComplex.injective_vertexPoint
-    apply hsource₁Embedding.injective
-    change
-      Qatlas.tileFacesMeetingRelativeSourceVertexPoint
-          CN hCNcompact N extraLines v =
-        Qatlas.tileFacesMeetingRelativeSourceVertexPoint
-          CN hCNcompact N extraLines w
-    have h := congrArg Rlevel.homeo hvw
-    simpa only [localVertexLevelPoint,
-      Rlevel.homeo.apply_symm_apply] using h
+  dsimp only
+  let G := ChartInductionGeometry.canonical P hT
+  let R := ChartInductionGeometry.subdivision P
+  intro s e hes p hp
+  have hpData := (G.marking.mem_edgeMarks_iff e p).mp hp
+  have hpPoints := hpData.1
+  have hpEdge := hpData.2
+  change p ∈ (G.localVertexPoints ∪ G.edgeMidpointPoints) ∪
+      (Finset.univ : Finset R.refined.Edge).image R.refined.edgeFirstPoint ∪
+        (Finset.univ : Finset R.refined.Edge).image R.refined.edgeSecondPoint at hpPoints
+  rcases Finset.mem_union.mp hpPoints with hpLeft | hpSecond
+  · rcases Finset.mem_union.mp hpLeft with hpPrimary | hpFirst
+    · rcases Finset.mem_union.mp hpPrimary with hpLocal | hpMid
+      · exact hpLocal
+      · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpMid
+        have hdSubset : d.1 ⊆ e.1 := by
+          apply edge_subset_face_of_halfpoint_mem R.refined d e.1
+          rw [hdp]
+          exact hpEdge
+        have hde : d = e := by
+          apply Subtype.ext
+          exact Finset.eq_of_subset_of_card_le hdSubset (by
+            rw [R.refined.card_of_mem_edges d.2, R.refined.card_of_mem_edges e.2])
+        subst d
+        obtain ⟨i, hi⟩ := R.refined.exists_faceEdge_eq_of_subset s.1 e hes
+        let a : ChartInductionGeometry.LevelAnchor P := ⟨s, Sum.inr i⟩
+        have ha := ChartInductionGeometry.canonicalAnchor_mem_localVertexPoints P a
+        have hpoint : ChartInductionGeometry.anchorLevelPoint P a =
+            R.refined.edgePath e ⟨1 / 2, by constructor <;> norm_num⟩ := by
+          change ChartInductionGeometry.anchorLevelPoint P ⟨s, Sum.inr i⟩ = _
+          simp only [ChartInductionGeometry.anchorLevelPoint]
+          rw [hi]
+        rw [← hdp, ← hpoint]
+        exact ha
+    · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpFirst
+      have hfirstEdge : R.refined.edgeFirst d ∈ e.1 := by
+        let w := R.refined.edgeFirstUsed d
+        exact (R.refined.vertexPoint_mem_faceCarrier_iff w e.1).mp (by
+          rw [R.refined.vertexPoint_edgeFirstUsed d, hdp]
+          exact hpEdge)
+      let v : s.1.1 := ⟨R.refined.edgeFirst d, hes hfirstEdge⟩
+      let a : ChartInductionGeometry.LevelAnchor P := ⟨s, Sum.inl v⟩
+      have ha := ChartInductionGeometry.canonicalAnchor_mem_localVertexPoints P a
+      have heq : R.refined.edgeFirstPoint d = R.refined.facePoint s.1 v := Subtype.ext rfl
+      rw [← hdp, heq]
+      exact ha
+  · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpSecond
+    have hsecondEdge : R.refined.edgeSecond d ∈ e.1 := by
+      let w := R.refined.edgeSecondUsed d
+      exact (R.refined.vertexPoint_mem_faceCarrier_iff w e.1).mp (by
+        rw [R.refined.vertexPoint_edgeSecondUsed d, hdp]
+        exact hpEdge)
+    let v : s.1.1 := ⟨R.refined.edgeSecond d, hes hsecondEdge⟩
+    let a : ChartInductionGeometry.LevelAnchor P := ⟨s, Sum.inl v⟩
+    have ha := ChartInductionGeometry.canonicalAnchor_mem_localVertexPoints P a
+    have heq : R.refined.edgeSecondPoint d = R.refined.facePoint s.1 v := Subtype.ext rfl
+    rw [← hdp, heq]
+    exact ha
+
+private theorem ChartInductionGeometry.canonicalSelectedFace_marking_subset_local
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (hT : RadoInvariant T A) :
+    let G := ChartInductionGeometry.canonical P hT
+    ∀ (s : {s : T.toIntrinsic.LevelFace (ChartInductionGeometry.n P) //
+        s ∈ ChartInductionGeometry.selectedFaces P})
+      (p : (ChartInductionGeometry.subdivision P).refined.realization),
+      p ∈ G.marking.points →
+      p ∈ (ChartInductionGeometry.subdivision P).refined.faceCarrier s.1.1 →
+      p ∈ G.localVertexPoints := by
+  classical
+  dsimp only
+  let G := ChartInductionGeometry.canonical P hT
+  let R := ChartInductionGeometry.subdivision P
+  intro s p hpMark hpFace
+  change p ∈ (G.localVertexPoints ∪ G.edgeMidpointPoints) ∪
+      (Finset.univ : Finset R.refined.Edge).image R.refined.edgeFirstPoint ∪
+        (Finset.univ : Finset R.refined.Edge).image R.refined.edgeSecondPoint at hpMark
+  rcases Finset.mem_union.mp hpMark with hpLeft | hpSecond
+  · rcases Finset.mem_union.mp hpLeft with hpPrimary | hpFirst
+    · rcases Finset.mem_union.mp hpPrimary with hpLocal | hpMid
+      · exact hpLocal
+      · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpMid
+        have hdSubset : d.1 ⊆ s.1.1 := by
+          apply edge_subset_face_of_halfpoint_mem R.refined d s.1.1
+          rw [hdp]
+          exact hpFace
+        obtain ⟨i, hi⟩ := R.refined.exists_faceEdge_eq_of_subset s.1 d hdSubset
+        let a : ChartInductionGeometry.LevelAnchor P := ⟨s, Sum.inr i⟩
+        have ha := ChartInductionGeometry.canonicalAnchor_mem_localVertexPoints P a
+        have hpoint : ChartInductionGeometry.anchorLevelPoint P a =
+            R.refined.edgePath d ⟨1 / 2, by constructor <;> norm_num⟩ := by
+          change ChartInductionGeometry.anchorLevelPoint P ⟨s, Sum.inr i⟩ = _
+          simp only [ChartInductionGeometry.anchorLevelPoint]
+          rw [hi]
+        rw [← hdp, ← hpoint]
+        exact ha
+    · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpFirst
+      have hfirstFace : R.refined.edgeFirst d ∈ s.1.1 := by
+        let w := R.refined.edgeFirstUsed d
+        exact (R.refined.vertexPoint_mem_faceCarrier_iff w s.1.1).mp (by
+          rw [R.refined.vertexPoint_edgeFirstUsed d, hdp]
+          exact hpFace)
+      let v : s.1.1 := ⟨R.refined.edgeFirst d, hfirstFace⟩
+      let a : ChartInductionGeometry.LevelAnchor P := ⟨s, Sum.inl v⟩
+      have ha := ChartInductionGeometry.canonicalAnchor_mem_localVertexPoints P a
+      have heq : R.refined.edgeFirstPoint d = R.refined.facePoint s.1 v := Subtype.ext rfl
+      rw [← hdp, heq]
+      exact ha
+  · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpSecond
+    have hsecondFace : R.refined.edgeSecond d ∈ s.1.1 := by
+      let w := R.refined.edgeSecondUsed d
+      exact (R.refined.vertexPoint_mem_faceCarrier_iff w s.1.1).mp (by
+        rw [R.refined.vertexPoint_edgeSecondUsed d, hdp]
+        exact hpFace)
+    let v : s.1.1 := ⟨R.refined.edgeSecond d, hsecondFace⟩
+    let a : ChartInductionGeometry.LevelAnchor P := ⟨s, Sum.inl v⟩
+    have ha := ChartInductionGeometry.canonicalAnchor_mem_localVertexPoints P a
+    have heq : R.refined.edgeSecondPoint d = R.refined.facePoint s.1 v := Subtype.ext rfl
+    rw [← hdp, heq]
+    exact ha
+
+private theorem edge_subset_face_of_open_edgePoint
+    (K : IntrinsicTwoComplex) (e : K.Edge) (s : K.Face) (q : K.realization)
+    (hqOpen : q ∈ K.edgePath e '' {r : Set.Icc (0 : ℝ) 1 | 0 < r.1 ∧ r.1 < 1})
+    (hqFace : q ∈ K.faceCarrier s.1) : e.1 ⊆ s.1 := by
+  rintro v hv
+  obtain ⟨r, hr, hqr⟩ := hqOpen
+  by_contra hvs
+  have hzero : q.1 v = 0 := hqFace v hvs
+  have hpositive : 0 < (K.edgePath e r).1 v := by
+    rw [K.edge_eq_pair e] at hv
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hv
+    rcases hv with rfl | rfl
+    · rw [K.edgePath_apply_first]
+      exact sub_pos.mpr hr.2
+    · rw [K.edgePath_apply_second]
+      exact hr.1
+  rw [hqr] at hpositive
+  linarith
+
+private theorem ChartInductionGeometry.canonicalLocalMark_endpoint_or_selectedEdge
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (hT : RadoInvariant T A)
+    (e : (ChartInductionGeometry.subdivision P).refined.Edge)
+    (p : (ChartInductionGeometry.subdivision P).refined.realization)
+    (hpEdge : p ∈ (ChartInductionGeometry.subdivision P).refined.faceCarrier e.1)
+    (hpLocal : p ∈ (ChartInductionGeometry.canonical P hT).localVertexPoints) :
+    (∃ s : {s : T.toIntrinsic.LevelFace (ChartInductionGeometry.n P) //
+        s ∈ ChartInductionGeometry.selectedFaces P}, e.1 ⊆ s.1.1) ∨
+      p = (ChartInductionGeometry.subdivision P).refined.edgeFirstPoint e ∨
+      p = (ChartInductionGeometry.subdivision P).refined.edgeSecondPoint e := by
+  classical
+  let G := ChartInductionGeometry.canonical P hT
+  let R := ChartInductionGeometry.subdivision P
+  let localComplex := ChartInductionGeometry.localComplex P G.anchorLines
+  obtain ⟨u, -, hup⟩ := Finset.mem_image.mp hpLocal
+  obtain ⟨t, ht, hut⟩ := u.2
+  let tf : localComplex.Face := ⟨t, ht⟩
+  let uv : {v // v ∈ tf.1} := ⟨u.1, hut⟩
+  have huFace : G.localVertexPoint u ∈ R.refined.faceCarrier (G.localFaceParent tf).1.1 := by
+    have huv : (⟨uv.1, ⟨tf.1, tf.2, uv.2⟩⟩ : localComplex.UsedVertex) = u :=
+      Subtype.ext rfl
+    change ChartInductionGeometry.canonicalLocalVertexPoint P u ∈
+      (ChartInductionGeometry.subdivision P).refined.faceCarrier
+        (ChartInductionGeometry.canonicalLocalFaceParent P tf).1.1
+    rw [← huv]
+    exact ChartInductionGeometry.canonicalLocalVertexPoint_mem_face P tf uv
+  have hpFace : p ∈ R.refined.faceCarrier (G.localFaceParent tf).1.1 := by
+    rw [← hup]
+    exact huFace
+  by_cases hes : e.1 ⊆ (G.localFaceParent tf).1.1
+  · exact Or.inl ⟨G.localFaceParent tf, hes⟩
+  · let r := R.refined.edgeParameter e p hpEdge
+    have hpath : R.refined.edgePath e r = p := R.refined.edgePath_edgeParameter e p hpEdge
+    by_cases hr0 : r.1 = 0
+    · exact Or.inr (Or.inl (calc
+        p = R.refined.edgePath e r := hpath.symm
+        _ = R.refined.edgePath e ⟨0, by simp⟩ := by
+          apply congrArg (R.refined.edgePath e)
+          exact Subtype.ext hr0
+        _ = R.refined.edgeFirstPoint e := R.refined.edgePath_zero e))
+    · by_cases hr1 : r.1 = 1
+      · exact Or.inr (Or.inr (calc
+          p = R.refined.edgePath e r := hpath.symm
+          _ = R.refined.edgePath e ⟨1, by simp⟩ := by
+            apply congrArg (R.refined.edgePath e)
+            exact Subtype.ext hr1
+          _ = R.refined.edgeSecondPoint e := R.refined.edgePath_one e))
+      · have hrOpen : 0 < r.1 ∧ r.1 < 1 :=
+          ⟨lt_of_le_of_ne r.2.1 (Ne.symm hr0), lt_of_le_of_ne r.2.2 hr1⟩
+        exact (hes (edge_subset_face_of_open_edgePoint R.refined e
+          (G.localFaceParent tf).1 p ⟨r, hrOpen, hpath⟩ hpFace)).elim
+
+private theorem ChartInductionGeometry.canonicalSelectedFace_of_fanInterval_endpoints_local
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (hT : RadoInvariant T A) :
+    let G := ChartInductionGeometry.canonical P hT
+    ∀ (f : G.mixedData.OutsideFanFace),
+      G.marking.edgeIntervalFirst
+          ((ChartInductionGeometry.subdivision P).refined.faceEdge f.1.1 f.1.2.1)
+          f.1.2.2 ∈ G.localVertexPoints →
+      G.marking.edgeIntervalSecond
+          ((ChartInductionGeometry.subdivision P).refined.faceEdge f.1.1 f.1.2.1)
+          f.1.2.2 ∈ G.localVertexPoints →
+      ∃ s : {s : T.toIntrinsic.LevelFace (ChartInductionGeometry.n P) //
+          s ∈ ChartInductionGeometry.selectedFaces P},
+        ((ChartInductionGeometry.subdivision P).refined.faceEdge f.1.1 f.1.2.1).1 ⊆
+          s.1.1 := by
+  classical
+  dsimp only
+  let G := ChartInductionGeometry.canonical P hT
+  let R := ChartInductionGeometry.subdivision P
+  intro f hp₀ hp₁
+  let e := R.refined.faceEdge f.1.1 f.1.2.1
+  let p₀ := G.marking.edgeIntervalFirst e f.1.2.2
+  let p₁ := G.marking.edgeIntervalSecond e f.1.2.2
+  have hp₀Edge : p₀ ∈ R.refined.faceCarrier e.1 :=
+    G.marking.edgeIntervalFirst_mem_faceCarrier e f.1.2.2
+  have hp₁Edge : p₁ ∈ R.refined.faceCarrier e.1 :=
+    G.marking.edgeIntervalSecond_mem_faceCarrier e f.1.2.2
+  rcases ChartInductionGeometry.canonicalLocalMark_endpoint_or_selectedEdge
+      P hT e p₀ hp₀Edge hp₀ with hs | hp₀End
+  · exact hs
+  rcases ChartInductionGeometry.canonicalLocalMark_endpoint_or_selectedEdge
+      P hT e p₁ hp₁Edge hp₁ with hs | hp₁End
+  · exact hs
+  have hparamPath (r : Set.Icc (0 : ℝ) 1) :
+      G.marking.edgeParameterValue e (R.refined.edgePath e r) = r.1 := by
+    rw [G.marking.edgeParameterValue_eq e (by
+        rw [← R.refined.range_edgePath e]
+        exact ⟨r, rfl⟩),
+      R.refined.edgeParameter_eq_secondCoordinate, R.refined.edgePath_apply_second]
+  have hfirstParam : G.marking.edgeParameterValue e (R.refined.edgeFirstPoint e) = 0 := by
+    rw [← R.refined.edgePath_zero e, hparamPath]
+  have hsecondParam : G.marking.edgeParameterValue e (R.refined.edgeSecondPoint e) = 1 := by
+    rw [← R.refined.edgePath_one e, hparamPath]
+  let edgeHalf : Set.Icc (0 : ℝ) 1 := ⟨1 / 2, by constructor <;> norm_num⟩
+  have hmidPoint : R.refined.edgePath e edgeHalf ∈ G.marking.points := by
+    apply IntrinsicTwoComplex.EdgeMarking.subset_points_ofFinset
+    apply Finset.mem_union_right
+    exact Finset.mem_image.mpr ⟨e, Finset.mem_univ e, rfl⟩
+  have hmidMark : R.refined.edgePath e edgeHalf ∈ G.marking.edgeMarks e := by
+    rw [G.marking.mem_edgeMarks_iff e]
+    refine ⟨hmidPoint, ?_⟩
+    rw [← R.refined.range_edgePath e]
+    exact ⟨edgeHalf, rfl⟩
+  have hmidParam : G.marking.edgeParameterValue e
+      (R.refined.edgePath e edgeHalf) = 1 / 2 := by rw [hparamPath]
+  rcases hp₀End with hp₀First | hp₀Second <;>
+    rcases hp₁End with hp₁First | hp₁Second
+  · exact False.elim (G.marking.edgeIntervalFirst_ne_second e f.1.2.2
+      (hp₀First.trans hp₁First.symm))
+  · exfalso
+    apply G.marking.not_edgeMark_parameter_mem_Ioo e f.1.2.2 hmidMark
+    change G.marking.edgeParameterValue e (R.refined.edgePath e edgeHalf) ∈
+      Set.Ioo (G.marking.edgeParameterValue e p₀) (G.marking.edgeParameterValue e p₁)
+    rw [hp₀First, hp₁Second, hfirstParam, hsecondParam, hmidParam]
+    norm_num
+  · have hlt := G.marking.edgeInterval_parameter_lt e f.1.2.2
+    change G.marking.edgeParameterValue e p₀ < G.marking.edgeParameterValue e p₁ at hlt
+    rw [hp₀Second, hp₁First, hsecondParam, hfirstParam] at hlt
+    norm_num at hlt
+  · exact False.elim (G.marking.edgeIntervalFirst_ne_second e f.1.2.2
+      (hp₀Second.trans hp₁Second.symm))
+
+private structure MixedMapCertificate (M : MixedLocalFanData) where
+  mixedOldFaceVertices_card : ∀ f : M.MixedOldFace, (M.mixedOldFaceVertices f).card = 3
+  continuous_mixedOldFaceMap : ∀ f : M.MixedOldFace, Continuous (M.mixedOldFaceMap f)
+  mixedOldFaceMap_val : ∀ (f : M.MixedOldFace)
+      (x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices f}),
+    (M.mixedOldFaceMap f x).1 = fun k ↦ ∑ v : M.OldVertex,
+      extendFaceCoordinates (M.mixedOldFaceVertices f) x v * v.1.1 k
+  localMixedFaceMap_eq_iff : ∀ {t u : M.localComplex.Face}
+      {x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)}}
+      {y : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inl u)}},
+    M.mixedOldFaceMap (Sum.inl t) x = M.mixedOldFaceMap (Sum.inl u) y ↔
+      extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl t)) x =
+        extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl u)) y
+  fanMixedFaceMap_eq_iff : ∀ {f g : M.OutsideFanFace}
+      {x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)}}
+      {y : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inr g)}},
+    M.mixedOldFaceMap (Sum.inr f) x = M.mixedOldFaceMap (Sum.inr g) y ↔
+      extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)) x =
+        extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr g)) y
+  mixedOldFaceMap_simplexLineMap : ∀ (f : M.MixedOldFace)
+      (x y : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices f})
+      (r : Set.Icc (0 : ℝ) 1),
+    (M.mixedOldFaceMap f (simplexLineMap x y r)).1 =
+      AffineMap.lineMap (M.mixedOldFaceMap f x).1 (M.mixedOldFaceMap f y).1 r.1
+  mixedOldFaceMap_vertex : ∀ (f : M.MixedOldFace)
+      (v : {v // v ∈ M.mixedOldFaceVertices f}),
+    M.mixedOldFaceMap f (stdSimplex.vertex v) = v.1.1
+
+private theorem exists_canonicalMixedMapCertificate
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (hT : RadoInvariant T A) :
+    Nonempty (MixedMapCertificate (ChartInductionGeometry.canonical P hT).mixedData) := by
+  classical
   let geometry : ChartInductionGeometry S c T A P :=
-    { anchorLines := anchorLines
-      localFaceParent := localFaceLevelFace
-      localVertexPoint := localVertexLevelPoint
-      localVertexPoint_injective := localVertexLevelPoint_injective
-      localVertex_source := by
-        intro u
-        exact (Rlevel.homeo.apply_symm_apply _).symm
-      source_injective := hsource₁Embedding.injective
-      localFaceMap_val := localFaceLevelMap_val
-      source_range := hsource₁Range
-      subdivision_surface := hRlevelSurface }
+    ChartInductionGeometry.canonical P hT
+  let Rlevel := ChartInductionGeometry.subdivision P
+  let selectedLevelFaces := ChartInductionGeometry.selectedFaces P
+  let source₁ := ChartInductionGeometry.source P geometry.anchorLines
+  have hsource₁Embedding : _root_.Topology.IsEmbedding source₁ :=
+    ChartInductionGeometry.canonicalSource_isEmbedding P
+  let localSourceComplex := ChartInductionGeometry.localComplex P geometry.anchorLines
+  let localFaceLevelFace := geometry.localFaceParent
+  have localFaceLevelFace_contains_realization :=
+    ChartInductionGeometry.canonicalLocalFaceParent_contains_realization P
+  let localVertexLevelPoint := geometry.localVertexPoint
+  have localVertexLevelPoint_mem_face :=
+    ChartInductionGeometry.canonicalLocalVertexPoint_mem_face P
+  have localFaceLevelMap_val := geometry.localFaceMap_val
+  have localFaceLevelMap_simplexLineMap :=
+    ChartInductionGeometry.canonicalLocalFaceMap_simplexLineMap P
+  have localFaceLevelMap_vertex := ChartInductionGeometry.canonicalLocalFaceMap_vertex P
+  let localVertexLevelPoints := geometry.localVertexPoints
+  let boundaryMarking := geometry.marking
+  let OutsideFanFace := {f : boundaryMarking.FanFace // f.1 ∉ selectedLevelFaces}
+  have interfaceEdgeMarks_subset_local :=
+    ChartInductionGeometry.canonicalInterfaceEdgeMarks_subset_local P hT
+  have selectedFace_marking_subset_local :=
+    ChartInductionGeometry.canonicalSelectedFace_marking_subset_local P hT
   let mixedData : MixedLocalFanData := geometry.mixedData
   let oldVertexPoints := mixedData.oldVertexPoints
   let OldVertex := mixedData.OldVertex
@@ -4980,689 +5251,316 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
     rw [mixedOldFaceMap_val]
     exact barycentricVertex_sum
       (mixedOldFaceVertices f) v (fun w k ↦ w.1.1 k)
-  have mixedLocalExtended_eq_single_of_map_eq_localVertex
-      (t : localSourceComplex.Face)
-      (x : stdSimplex ℝ
-        {v // v ∈ mixedOldFaceVertices (Sum.inl t)})
-      (u : localSourceComplex.UsedVertex)
-      (hxu :
-        mixedOldFaceMap (Sum.inl t) x =
-          localVertexLevelPoint u) :
-      extendFaceCoordinates
-          (mixedOldFaceVertices (Sum.inl t)) x =
-        Pi.single (localOldVertexEmbedding u) 1 := by
-    let tu : localSourceComplex.Face :=
-      ⟨Classical.choose u.2, (Classical.choose_spec u.2).1⟩
-    let uv : {v // v ∈ tu.1} :=
-      ⟨u.1, (Classical.choose_spec u.2).2⟩
-    have huv :
-        localFaceOldVertexEmbedding tu uv =
-          localOldVertexEmbedding u := by
-      apply Subtype.ext
-      rfl
-    have huMem :
-        localOldVertexEmbedding u ∈
-          mixedOldFaceVertices (Sum.inl tu) := by
-      change localOldVertexEmbedding u ∈
-        (Finset.univ : Finset {v // v ∈ tu.1}).map
-          (localFaceOldVertexEmbedding tu)
-      rw [← huv]
-      exact mem_map_univ (localFaceOldVertexEmbedding tu) uv
-    let w :
-        {v // v ∈ mixedOldFaceVertices (Sum.inl tu)} :=
-      ⟨localOldVertexEmbedding u, huMem⟩
-    have hmapw :
-        mixedOldFaceMap (Sum.inl tu) (stdSimplex.vertex w) =
-          localVertexLevelPoint u := by
-      calc
-        mixedOldFaceMap (Sum.inl tu) (stdSimplex.vertex w) =
-            w.1.1 := mixedOldFaceMap_vertex (Sum.inl tu) w
-        _ = localVertexLevelPoint u := rfl
-    have hcoords :=
-      localMixedFaceMap_eq_iff.mp (hxu.trans hmapw.symm)
-    calc
-      extendFaceCoordinates
-          (mixedOldFaceVertices (Sum.inl t)) x =
-          extendFaceCoordinates
-            (mixedOldFaceVertices (Sum.inl tu))
-            (stdSimplex.vertex w) := hcoords
-      _ = Pi.single w.1 1 :=
-        extend_mixedOldFace_vertex (Sum.inl tu) w
-      _ = Pi.single (localOldVertexEmbedding u) 1 := by rfl
-  have mixedFanExtended_eq_single_of_map_eq_fanVertex
-      (f : OutsideFanFace)
-      (y : stdSimplex ℝ
-        {v // v ∈ mixedOldFaceVertices (Sum.inr f)})
-      (v : {p // p ∈ boundaryMarking.fanFaceVertices f.1})
-      (hyv : mixedOldFaceMap (Sum.inr f) y = v.1) :
-      extendFaceCoordinates
-          (mixedOldFaceVertices (Sum.inr f)) y =
-        Pi.single
-          (fanOldVertexEmbedding
-            (boundaryMarking.fanVertexEmbedding f.1 v)) 1 := by
-    let gv : boundaryMarking.FanVertex :=
-      boundaryMarking.fanVertexEmbedding f.1 v
-    have hgvMem :
-        gv ∈ boundaryMarking.globalFanFaceVertices f.1 :=
-      fanVertexEmbedding_mem_globalFanFaceVertices boundaryMarking f.1 v
-    have hOldMem :
-        fanOldVertexEmbedding gv ∈
-          mixedOldFaceVertices (Sum.inr f) := by
-      change fanOldVertexEmbedding gv ∈
-        (boundaryMarking.globalFanFaceVertices f.1).map
-          fanOldVertexEmbedding
-      exact mem_finset_map fanOldVertexEmbedding _ hgvMem
-    let w :
-        {v // v ∈ mixedOldFaceVertices (Sum.inr f)} :=
-      ⟨fanOldVertexEmbedding gv, hOldMem⟩
-    have hmapw :
-        mixedOldFaceMap (Sum.inr f) (stdSimplex.vertex w) = v.1 := by
-      calc
-        mixedOldFaceMap (Sum.inr f) (stdSimplex.vertex w) =
-            w.1.1 := mixedOldFaceMap_vertex (Sum.inr f) w
-        _ = v.1 := rfl
-    have hcoords :=
-      fanMixedFaceMap_eq_iff.mp (hyv.trans hmapw.symm)
-    calc
-      extendFaceCoordinates
-          (mixedOldFaceVertices (Sum.inr f)) y =
-          extendFaceCoordinates
-            (mixedOldFaceVertices (Sum.inr f))
-            (stdSimplex.vertex w) := hcoords
-      _ = Pi.single w.1 1 :=
-        extend_mixedOldFace_vertex (Sum.inr f) w
-      _ = Pi.single
-          (fanOldVertexEmbedding
-            (boundaryMarking.fanVertexEmbedding f.1 v)) 1 := by rfl
-  have edge_subset_face_of_midpoint_mem
-      (d : Rlevel.refined.Edge) (s : Finset Rlevel.refined.Vertex)
-      (hmid :
-        Rlevel.refined.edgePath d edgeHalf ∈
-          Rlevel.refined.faceCarrier s) :
-      d.1 ⊆ s := by
-    intro v hv
-    by_contra hvs
-    have hzero :
-        (Rlevel.refined.edgePath d edgeHalf).1 v = 0 :=
-      hmid v hvs
-    have hpos :
-        0 < (Rlevel.refined.edgePath d edgeHalf).1 v := by
-      rw [Rlevel.refined.edge_eq_pair d] at hv
-      simp only [Finset.mem_insert, Finset.mem_singleton] at hv
-      rcases hv with rfl | rfl
-      · rw [Rlevel.refined.edgePath_apply_first]
-        change 0 < 1 - (1 / 2 : ℝ)
-        norm_num
-      · rw [Rlevel.refined.edgePath_apply_second]
-        change 0 < (1 / 2 : ℝ)
-        norm_num
-    linarith
-  have interfaceEdgeMarks_subset_local
-      (s : {s : T.toIntrinsic.LevelFace n //
-        s ∈ selectedLevelFaces})
-      (e : Rlevel.refined.Edge) (hes : e.1 ⊆ s.1.1) :
-      ∀ p ∈ boundaryMarking.edgeMarks e,
-        p ∈ localVertexLevelPoints := by
-    intro p hp
-    have hpData := (boundaryMarking.mem_edgeMarks_iff e p).mp hp
-    have hpPoints := hpData.1
-    have hpEdge := hpData.2
-    change p ∈ (localVertexLevelPoints ∪ edgeMidpointPoints) ∪
-        (Finset.univ : Finset Rlevel.refined.Edge).image
-            Rlevel.refined.edgeFirstPoint ∪
-          (Finset.univ : Finset Rlevel.refined.Edge).image
-            Rlevel.refined.edgeSecondPoint at hpPoints
-    rcases Finset.mem_union.mp hpPoints with hpLeft | hpSecond
-    · rcases Finset.mem_union.mp hpLeft with hpPrimary | hpFirst
-      · rcases Finset.mem_union.mp hpPrimary with hpLocal | hpMid
-        · exact hpLocal
-        · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpMid
-          have hdSubset :
-              d.1 ⊆ e.1 := by
-            apply edge_subset_face_of_midpoint_mem d e.1
-            rw [hdp]
-            exact hpEdge
-          have hde : d = e := by
-            apply Subtype.ext
-            exact Finset.eq_of_subset_of_card_le hdSubset (by
-              rw [Rlevel.refined.card_of_mem_edges d.2,
-                Rlevel.refined.card_of_mem_edges e.2])
-          subst d
-          obtain ⟨i, hi⟩ :=
-            Rlevel.refined.exists_faceEdge_eq_of_subset s.1 e hes
-          let a : LevelAnchor := ⟨s, Sum.inr i⟩
-          have ha := hAnchorLevelPoint_mem_localVertexLevelPoints a
-          rw [← hdp]
-          simpa only [a, anchorLevelPoint, hi] using ha
-      · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpFirst
-        have hfirstEdge :
-            Rlevel.refined.edgeFirst d ∈ e.1 := by
-          let w := Rlevel.refined.edgeFirstUsed d
-          have hw :
-              Rlevel.refined.vertexPoint w ∈
-                Rlevel.refined.faceCarrier e.1 := by
-            rw [Rlevel.refined.vertexPoint_edgeFirstUsed d,
-              hdp]
-            exact hpEdge
-          exact
-            (Rlevel.refined.vertexPoint_mem_faceCarrier_iff
-              w e.1).mp hw
-        let v : s.1.1 :=
-          ⟨Rlevel.refined.edgeFirst d, hes hfirstEdge⟩
-        let a : LevelAnchor := ⟨s, Sum.inl v⟩
-        have ha := hAnchorLevelPoint_mem_localVertexLevelPoints a
-        have heq :
-            Rlevel.refined.edgeFirstPoint d =
-              Rlevel.refined.facePoint s.1 v := by
-          apply Subtype.ext
-          rfl
-        rw [← hdp, heq]
-        exact ha
-    · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpSecond
-      have hsecondEdge :
-          Rlevel.refined.edgeSecond d ∈ e.1 := by
-        let w := Rlevel.refined.edgeSecondUsed d
-        have hw :
-            Rlevel.refined.vertexPoint w ∈
-              Rlevel.refined.faceCarrier e.1 := by
-          rw [Rlevel.refined.vertexPoint_edgeSecondUsed d,
-            hdp]
-          exact hpEdge
-        exact
-          (Rlevel.refined.vertexPoint_mem_faceCarrier_iff
-            w e.1).mp hw
-      let v : s.1.1 :=
-        ⟨Rlevel.refined.edgeSecond d, hes hsecondEdge⟩
-      let a : LevelAnchor := ⟨s, Sum.inl v⟩
-      have ha := hAnchorLevelPoint_mem_localVertexLevelPoints a
-      have heq :
-          Rlevel.refined.edgeSecondPoint d =
-            Rlevel.refined.facePoint s.1 v := by
-        apply Subtype.ext
-        rfl
-      rw [← hdp, heq]
-      exact ha
-  have selectedFace_marking_subset_local
-      (s : {s : T.toIntrinsic.LevelFace n //
-        s ∈ selectedLevelFaces})
-      (p : Rlevel.refined.realization)
-      (hpMark : p ∈ boundaryMarking.points)
-      (hpFace : p ∈ Rlevel.refined.faceCarrier s.1.1) :
-      p ∈ localVertexLevelPoints := by
-    change p ∈ (localVertexLevelPoints ∪ edgeMidpointPoints) ∪
-        (Finset.univ : Finset Rlevel.refined.Edge).image
-            Rlevel.refined.edgeFirstPoint ∪
-          (Finset.univ : Finset Rlevel.refined.Edge).image
-            Rlevel.refined.edgeSecondPoint at hpMark
-    rcases Finset.mem_union.mp hpMark with hpLeft | hpSecond
-    · rcases Finset.mem_union.mp hpLeft with hpPrimary | hpFirst
-      · rcases Finset.mem_union.mp hpPrimary with hpLocal | hpMid
-        · exact hpLocal
-        · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpMid
-          have hdSubset :
-              d.1 ⊆ s.1.1 := by
-            apply edge_subset_face_of_midpoint_mem d s.1.1
-            rw [hdp]
-            exact hpFace
-          obtain ⟨i, hi⟩ :=
-            Rlevel.refined.exists_faceEdge_eq_of_subset s.1 d hdSubset
-          let a : LevelAnchor := ⟨s, Sum.inr i⟩
-          have ha := hAnchorLevelPoint_mem_localVertexLevelPoints a
-          rw [← hdp]
-          simpa only [a, anchorLevelPoint, hi] using ha
-      · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpFirst
-        have hfirstFace :
-            Rlevel.refined.edgeFirst d ∈ s.1.1 := by
-          let w := Rlevel.refined.edgeFirstUsed d
-          have hw :
-              Rlevel.refined.vertexPoint w ∈
-                Rlevel.refined.faceCarrier s.1.1 := by
-            rw [Rlevel.refined.vertexPoint_edgeFirstUsed d,
-              hdp]
-            exact hpFace
-          exact
-            (Rlevel.refined.vertexPoint_mem_faceCarrier_iff
-              w s.1.1).mp hw
-        let v : s.1.1 :=
-          ⟨Rlevel.refined.edgeFirst d, hfirstFace⟩
-        let a : LevelAnchor := ⟨s, Sum.inl v⟩
-        have ha := hAnchorLevelPoint_mem_localVertexLevelPoints a
-        have heq :
-            Rlevel.refined.edgeFirstPoint d =
-              Rlevel.refined.facePoint s.1 v := by
-          apply Subtype.ext
-          rfl
-        rw [← hdp, heq]
-        exact ha
-    · obtain ⟨d, -, hdp⟩ := Finset.mem_image.mp hpSecond
-      have hsecondFace :
-          Rlevel.refined.edgeSecond d ∈ s.1.1 := by
-        let w := Rlevel.refined.edgeSecondUsed d
-        have hw :
-            Rlevel.refined.vertexPoint w ∈
-              Rlevel.refined.faceCarrier s.1.1 := by
-          rw [Rlevel.refined.vertexPoint_edgeSecondUsed d,
-            hdp]
-          exact hpFace
-        exact
-          (Rlevel.refined.vertexPoint_mem_faceCarrier_iff
-            w s.1.1).mp hw
-      let v : s.1.1 :=
-        ⟨Rlevel.refined.edgeSecond d, hsecondFace⟩
-      let a : LevelAnchor := ⟨s, Sum.inl v⟩
-      have ha := hAnchorLevelPoint_mem_localVertexLevelPoints a
-      have heq :
-          Rlevel.refined.edgeSecondPoint d =
-            Rlevel.refined.facePoint s.1 v := by
-        apply Subtype.ext
-        rfl
-      rw [← hdp, heq]
-      exact ha
-  have edge_subset_selectedFace_of_openPoint
-      (e : Rlevel.refined.Edge) (s : Rlevel.refined.Face)
-      (q : Rlevel.refined.realization)
-      (hqOpen :
-        q ∈ Rlevel.refined.edgePath e ''
-          {r : Set.Icc (0 : ℝ) 1 | 0 < r.1 ∧ r.1 < 1})
-      (hqFace : q ∈ Rlevel.refined.faceCarrier s.1) :
-      e.1 ⊆ s.1 := by
-    rintro v hv
-    obtain ⟨r, hr, hqr⟩ := hqOpen
-    by_contra hvs
-    have hzero : q.1 v = 0 := hqFace v hvs
-    have hpositive :
-        0 < (Rlevel.refined.edgePath e r).1 v := by
-      rw [Rlevel.refined.edge_eq_pair e] at hv
-      simp only [Finset.mem_insert, Finset.mem_singleton] at hv
-      rcases hv with rfl | rfl
-      · rw [Rlevel.refined.edgePath_apply_first]
-        exact sub_pos.mpr hr.2
-      · rw [Rlevel.refined.edgePath_apply_second]
-        exact hr.1
-    rw [hqr] at hpositive
-    linarith
-  have localMark_endpoint_or_selectedEdge
-      (e : Rlevel.refined.Edge) (p : Rlevel.refined.realization)
-      (hpEdge : p ∈ Rlevel.refined.faceCarrier e.1)
-      (hpLocal : p ∈ localVertexLevelPoints) :
-      (∃ s : {s : T.toIntrinsic.LevelFace n //
-          s ∈ selectedLevelFaces}, e.1 ⊆ s.1.1) ∨
-        p = Rlevel.refined.edgeFirstPoint e ∨
-        p = Rlevel.refined.edgeSecondPoint e := by
-    obtain ⟨u, -, hup⟩ := Finset.mem_image.mp hpLocal
-    obtain ⟨t, ht, hut⟩ := u.2
-    let tf : localSourceComplex.Face := ⟨t, ht⟩
-    let uv : {v // v ∈ tf.1} := ⟨u.1, hut⟩
-    have huFace :
-        localVertexLevelPoint u ∈
-          Rlevel.refined.faceCarrier
-            (localFaceLevelFace tf).1.1 := by
-      have huv :
-          (⟨uv.1, ⟨tf.1, tf.2, uv.2⟩⟩ :
-              localSourceComplex.UsedVertex) = u :=
-        Subtype.ext rfl
-      simpa only [huv] using localVertexLevelPoint_mem_face tf uv
-    have hpFace :
-        p ∈ Rlevel.refined.faceCarrier
-          (localFaceLevelFace tf).1.1 := by
-      rw [← hup]
-      exact huFace
-    by_cases hes : e.1 ⊆ (localFaceLevelFace tf).1.1
-    · exact Or.inl ⟨localFaceLevelFace tf, hes⟩
-    · let r := Rlevel.refined.edgeParameter e p hpEdge
-      have hpath :
-          Rlevel.refined.edgePath e r = p :=
-        Rlevel.refined.edgePath_edgeParameter e p hpEdge
-      by_cases hr0 : r.1 = 0
-      · apply Or.inr
-        apply Or.inl
-        calc
-          p = Rlevel.refined.edgePath e r := hpath.symm
-          _ =
-              Rlevel.refined.edgePath e
-                ⟨0, by simp⟩ := by
-            apply congrArg (Rlevel.refined.edgePath e)
-            exact Subtype.ext hr0
-          _ = Rlevel.refined.edgeFirstPoint e :=
-            Rlevel.refined.edgePath_zero e
-      · by_cases hr1 : r.1 = 1
-        · apply Or.inr
-          apply Or.inr
-          calc
-            p = Rlevel.refined.edgePath e r := hpath.symm
-            _ =
-                Rlevel.refined.edgePath e
-                  ⟨1, by simp⟩ := by
-              apply congrArg (Rlevel.refined.edgePath e)
-              exact Subtype.ext hr1
-            _ = Rlevel.refined.edgeSecondPoint e :=
-              Rlevel.refined.edgePath_one e
-        · have hrOpen : 0 < r.1 ∧ r.1 < 1 := by
-            exact
-              ⟨lt_of_le_of_ne r.2.1 (Ne.symm hr0),
-                lt_of_le_of_ne r.2.2 hr1⟩
-          have hes' :
-              e.1 ⊆ (localFaceLevelFace tf).1.1 :=
-            edge_subset_selectedFace_of_openPoint e
-              (localFaceLevelFace tf).1 p
-              ⟨r, hrOpen, hpath⟩ hpFace
-          exact (hes hes').elim
-  have selectedFace_of_fanInterval_endpoints_local
-      (f : OutsideFanFace)
-      (hp₀ :
-        boundaryMarking.edgeIntervalFirst
-            (Rlevel.refined.faceEdge f.1.1 f.1.2.1) f.1.2.2 ∈
-          localVertexLevelPoints)
-      (hp₁ :
-        boundaryMarking.edgeIntervalSecond
-            (Rlevel.refined.faceEdge f.1.1 f.1.2.1) f.1.2.2 ∈
-          localVertexLevelPoints) :
-      ∃ s : {s : T.toIntrinsic.LevelFace n //
-          s ∈ selectedLevelFaces},
-        (Rlevel.refined.faceEdge f.1.1 f.1.2.1).1 ⊆ s.1.1 := by
-    let e := Rlevel.refined.faceEdge f.1.1 f.1.2.1
-    let p₀ :=
-      boundaryMarking.edgeIntervalFirst e f.1.2.2
-    let p₁ :=
-      boundaryMarking.edgeIntervalSecond e f.1.2.2
-    have hp₀Edge : p₀ ∈ Rlevel.refined.faceCarrier e.1 :=
-      boundaryMarking.edgeIntervalFirst_mem_faceCarrier e f.1.2.2
-    have hp₁Edge : p₁ ∈ Rlevel.refined.faceCarrier e.1 :=
-      boundaryMarking.edgeIntervalSecond_mem_faceCarrier e f.1.2.2
-    rcases localMark_endpoint_or_selectedEdge e p₀ hp₀Edge hp₀ with hs | hp₀End
-    · exact hs
-    rcases localMark_endpoint_or_selectedEdge e p₁ hp₁Edge hp₁ with hs | hp₁End
-    · exact hs
-    have hparamPath (r : Set.Icc (0 : ℝ) 1) :
-        boundaryMarking.edgeParameterValue e
-            (Rlevel.refined.edgePath e r) = r.1 := by
-      rw [boundaryMarking.edgeParameterValue_eq e (by
-          rw [← Rlevel.refined.range_edgePath e]
-          exact ⟨r, rfl⟩),
-        Rlevel.refined.edgeParameter_eq_secondCoordinate,
-        Rlevel.refined.edgePath_apply_second]
-    have hfirstParam :
-        boundaryMarking.edgeParameterValue e
-            (Rlevel.refined.edgeFirstPoint e) = 0 := by
-      rw [← Rlevel.refined.edgePath_zero e, hparamPath]
-    have hsecondParam :
-        boundaryMarking.edgeParameterValue e
-            (Rlevel.refined.edgeSecondPoint e) = 1 := by
-      rw [← Rlevel.refined.edgePath_one e, hparamPath]
-    have hmidPoint :
-        Rlevel.refined.edgePath e edgeHalf ∈
-          boundaryMarking.points := by
-      apply IntrinsicTwoComplex.EdgeMarking.subset_points_ofFinset
-      apply Finset.mem_union_right
-      exact Finset.mem_image.mpr ⟨e, Finset.mem_univ e, rfl⟩
-    have hmidMark :
-        Rlevel.refined.edgePath e edgeHalf ∈
-          boundaryMarking.edgeMarks e := by
-      rw [boundaryMarking.mem_edgeMarks_iff e]
-      refine ⟨hmidPoint, ?_⟩
-      rw [← Rlevel.refined.range_edgePath e]
-      exact ⟨edgeHalf, rfl⟩
-    have hmidParam :
-        boundaryMarking.edgeParameterValue e
-            (Rlevel.refined.edgePath e edgeHalf) = 1 / 2 := by
-      rw [hparamPath]
-    rcases hp₀End with hp₀First | hp₀Second <;>
-      rcases hp₁End with hp₁First | hp₁Second
-    · exact False.elim
-        (boundaryMarking.edgeIntervalFirst_ne_second e f.1.2.2
-          (hp₀First.trans hp₁First.symm))
-    · exfalso
-      apply boundaryMarking.not_edgeMark_parameter_mem_Ioo
-        e f.1.2.2 hmidMark
-      change
-        boundaryMarking.edgeParameterValue e
-              (Rlevel.refined.edgePath e edgeHalf) ∈
-          Set.Ioo
-            (boundaryMarking.edgeParameterValue e p₀)
-            (boundaryMarking.edgeParameterValue e p₁)
-      rw [hp₀First, hp₁Second, hfirstParam, hsecondParam, hmidParam]
-      norm_num
-    · have hlt :=
-        boundaryMarking.edgeInterval_parameter_lt e f.1.2.2
-      change
-        boundaryMarking.edgeParameterValue e p₀ <
-          boundaryMarking.edgeParameterValue e p₁ at hlt
-      rw [hp₀Second, hp₁First, hsecondParam, hfirstParam] at hlt
-      norm_num at hlt
-    · exact False.elim
-        (boundaryMarking.edgeIntervalFirst_ne_second e f.1.2.2
-          (hp₀Second.trans hp₁Second.symm))
-  have mixedOldFaceMap_eq_of_extendedCoordinates
-      {f g : MixedOldFace}
-      {x : stdSimplex ℝ {v // v ∈ mixedOldFaceVertices f}}
-      {y : stdSimplex ℝ {v // v ∈ mixedOldFaceVertices g}}
-      (hxy :
-        extendFaceCoordinates (mixedOldFaceVertices f) x =
-          extendFaceCoordinates (mixedOldFaceVertices g) y) :
-      mixedOldFaceMap f x = mixedOldFaceMap g y := by
+  exact ⟨⟨mixedOldFaceVertices_card, continuous_mixedOldFaceMap, mixedOldFaceMap_val,
+    localMixedFaceMap_eq_iff, fanMixedFaceMap_eq_iff,
+    mixedOldFaceMap_simplexLineMap, mixedOldFaceMap_vertex⟩⟩
+
+private theorem MixedMapCertificate.localExtended_eq_single
+    {M : MixedLocalFanData} (C : MixedMapCertificate M)
+    (t : M.localComplex.Face)
+    (x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)})
+    (u : M.localComplex.UsedVertex)
+    (hxu : M.mixedOldFaceMap (Sum.inl t) x = M.localVertexPoint u) :
+    extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl t)) x =
+      Pi.single (M.localOldVertexEmbedding u) 1 := by
+  let tu : M.localComplex.Face :=
+    ⟨Classical.choose u.2, (Classical.choose_spec u.2).1⟩
+  let uv : {v // v ∈ tu.1} :=
+    ⟨u.1, (Classical.choose_spec u.2).2⟩
+  have huv : M.localFaceOldVertexEmbedding tu uv = M.localOldVertexEmbedding u := by
     apply Subtype.ext
-    rw [mixedOldFaceMap_val f x, mixedOldFaceMap_val g y, hxy]
-  have localMixedFaceMap_mem_parent
-      (t : localSourceComplex.Face)
-      (x : stdSimplex ℝ
-        {v // v ∈ mixedOldFaceVertices (Sum.inl t)}) :
-      mixedOldFaceMap (Sum.inl t) x ∈
-        Rlevel.refined.faceCarrier (localFaceLevelFace t).1.1 := by
-    let x₀ := relabelUnivSimplex
-      (localFaceOldVertexEmbedding t) x
-    let z := localSourceComplex.faceStandardMap t x₀
+    rfl
+  have huMem : M.localOldVertexEmbedding u ∈
+      M.mixedOldFaceVertices (Sum.inl tu) := by
+    change M.localOldVertexEmbedding u ∈
+      (Finset.univ : Finset {v // v ∈ tu.1}).map
+        (M.localFaceOldVertexEmbedding tu)
+    rw [← huv]
+    exact mem_map_univ (M.localFaceOldVertexEmbedding tu) uv
+  let w : {v // v ∈ M.mixedOldFaceVertices (Sum.inl tu)} :=
+    ⟨M.localOldVertexEmbedding u, huMem⟩
+  have hmapw : M.mixedOldFaceMap (Sum.inl tu) (stdSimplex.vertex w) =
+      M.localVertexPoint u := by
+    calc
+      M.mixedOldFaceMap (Sum.inl tu) (stdSimplex.vertex w) =
+          w.1.1 := C.mixedOldFaceMap_vertex (Sum.inl tu) w
+      _ = M.localVertexPoint u := rfl
+  have hcoords := C.localMixedFaceMap_eq_iff.mp (hxu.trans hmapw.symm)
+  calc
+    extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl t)) x =
+        extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inl tu))
+          (stdSimplex.vertex w) := hcoords
+    _ = Pi.single w.1 1 :=
+      extendFaceCoordinates_vertex (M.mixedOldFaceVertices (Sum.inl tu)) w
+    _ = Pi.single (M.localOldVertexEmbedding u) 1 := by rfl
+
+private theorem MixedMapCertificate.fanExtended_eq_single
+    {M : MixedLocalFanData} (C : MixedMapCertificate M)
+    (f : M.OutsideFanFace)
+    (y : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)})
+    (v : {p // p ∈ M.marking.fanFaceVertices f.1})
+    (hyv : M.mixedOldFaceMap (Sum.inr f) y = v.1) :
+    extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)) y =
+      Pi.single
+        (M.fanOldVertexEmbedding (M.marking.fanVertexEmbedding f.1 v)) 1 := by
+  let gv : M.marking.FanVertex := M.marking.fanVertexEmbedding f.1 v
+  have hgvMem : gv ∈ M.marking.globalFanFaceVertices f.1 :=
+    fanVertexEmbedding_mem_globalFanFaceVertices M.marking f.1 v
+  have hOldMem : M.fanOldVertexEmbedding gv ∈
+      M.mixedOldFaceVertices (Sum.inr f) := by
+    change M.fanOldVertexEmbedding gv ∈
+      (M.marking.globalFanFaceVertices f.1).map M.fanOldVertexEmbedding
+    exact mem_finset_map M.fanOldVertexEmbedding _ hgvMem
+  let w : {v // v ∈ M.mixedOldFaceVertices (Sum.inr f)} :=
+    ⟨M.fanOldVertexEmbedding gv, hOldMem⟩
+  have hmapw : M.mixedOldFaceMap (Sum.inr f) (stdSimplex.vertex w) = v.1 := by
+    calc
+      M.mixedOldFaceMap (Sum.inr f) (stdSimplex.vertex w) =
+          w.1.1 := C.mixedOldFaceMap_vertex (Sum.inr f) w
+      _ = v.1 := rfl
+  have hcoords := C.fanMixedFaceMap_eq_iff.mp (hyv.trans hmapw.symm)
+  calc
+    extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f)) y =
+        extendFaceCoordinates (M.mixedOldFaceVertices (Sum.inr f))
+          (stdSimplex.vertex w) := hcoords
+    _ = Pi.single w.1 1 :=
+      extendFaceCoordinates_vertex (M.mixedOldFaceVertices (Sum.inr f)) w
+    _ = Pi.single
+        (M.fanOldVertexEmbedding (M.marking.fanVertexEmbedding f.1 v)) 1 := by rfl
+
+private theorem MixedMapCertificate.map_eq_of_extendedCoordinates
+    {M : MixedLocalFanData} (C : MixedMapCertificate M)
+    {f g : M.MixedOldFace}
+    {x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices f}}
+    {y : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices g}}
+    (hxy : extendFaceCoordinates (M.mixedOldFaceVertices f) x =
+      extendFaceCoordinates (M.mixedOldFaceVertices g) y) :
+    M.mixedOldFaceMap f x = M.mixedOldFaceMap g y := by
+  apply Subtype.ext
+  rw [C.mixedOldFaceMap_val f x, C.mixedOldFaceMap_val g y, hxy]
+
+private structure MixedLocalBarycentricCertificate
+    (M : MixedLocalFanData) (parentFace : M.localComplex.Face → M.ambient.Face) where
+  localMixedFaceMap_mem_parent : ∀ (t : M.localComplex.Face)
+      (x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)}),
+    M.mixedOldFaceMap (Sum.inl t) x ∈ M.ambient.faceCarrier (parentFace t).1
+  localVertexPoint_mem_marking : ∀ v : M.localComplex.UsedVertex,
+    M.localVertexPoint v ∈ M.marking.points
+  positive_localVertex_mem_edge : ∀ (t : M.localComplex.Face)
+      (x : stdSimplex ℝ {v // v ∈ t.1}) (e : M.ambient.Edge),
+    M.localFaceMap t x ∈ M.ambient.faceCarrier e.1 →
+      ∀ (v : {v // v ∈ t.1}), 0 < x v →
+        M.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈ M.ambient.faceCarrier e.1
+  localFace_edgeParameter_eq_sum : ∀ (t : M.localComplex.Face)
+      (x : stdSimplex ℝ {v // v ∈ t.1}) (e : M.ambient.Edge),
+    M.localFaceMap t x ∈ M.ambient.faceCarrier e.1 →
+      M.marking.edgeParameterValue e (M.localFaceMap t x) =
+        ∑ v : {v // v ∈ t.1}, x v * M.marking.edgeParameterValue e
+          (M.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩)
+
+private theorem exists_canonicalMixedLocalBarycentricCertificate
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (hT : RadoInvariant T A) :
+    let G := ChartInductionGeometry.canonical P hT
+    Nonempty (MixedLocalBarycentricCertificate G.mixedData
+      (fun t ↦ (G.localFaceParent t).1)) := by
+  classical
+  dsimp only
+  let G : ChartInductionGeometry S c T A P := ChartInductionGeometry.canonical P hT
+  let R := ChartInductionGeometry.subdivision P
+  let L := ChartInductionGeometry.localComplex P G.anchorLines
+  let source := ChartInductionGeometry.source P G.anchorLines
+  let M := G.mixedData
+  have hcontains := ChartInductionGeometry.canonicalLocalFaceParent_contains_realization P
+  have hlocalFaceMap := G.localFaceMap_val
+  have hmemParent (t : L.Face)
+      (x : stdSimplex ℝ {v // v ∈ M.mixedOldFaceVertices (Sum.inl t)}) :
+      M.mixedOldFaceMap (Sum.inl t) x ∈
+        R.refined.faceCarrier (G.localFaceParent t).1.1 := by
+    let x₀ := relabelUnivSimplex (M.localFaceOldVertexEmbedding t) x
+    let z := L.faceStandardMap t x₀
     have hzSupport : ∀ v ∉ t.1, z.1 v = 0 := by
       intro v hv
-      rw [localSourceComplex.faceStandardMap_val]
+      rw [L.faceStandardMap_val]
       exact extendFaceCoordinates_of_notMem t.1 x₀ hv
-    have hsource :=
-      localFaceLevelFace_contains_realization t z hzSupport
-    obtain ⟨q, hqFace, hq⟩ := hsource
-    change Rlevel.homeo.symm (source₁ z) ∈
-      Rlevel.refined.faceCarrier (localFaceLevelFace t).1.1
-    have heq :
-        Rlevel.homeo.symm (source₁ z) = q := by
-      apply Rlevel.homeo.injective
-      rw [Rlevel.homeo.apply_symm_apply]
+    obtain ⟨q, hqFace, hq⟩ := hcontains t z hzSupport
+    change R.homeo.symm (source z) ∈ R.refined.faceCarrier (G.localFaceParent t).1.1
+    have heq : R.homeo.symm (source z) = q := by
+      apply R.homeo.injective
+      rw [R.homeo.apply_symm_apply]
       exact hq.symm
     rwa [heq]
-  have localVertexLevelPoint_mem_marking
-      (v : localSourceComplex.UsedVertex) :
-      localVertexLevelPoint v ∈ boundaryMarking.points := by
+  have hmemMarking (v : L.UsedVertex) : G.localVertexPoint v ∈ G.marking.points := by
     apply IntrinsicTwoComplex.EdgeMarking.subset_points_ofFinset
     apply Finset.mem_union_left
     exact Finset.mem_image.mpr ⟨v, Finset.mem_univ v, rfl⟩
-  have positive_localVertex_mem_edge
-      (t : localSourceComplex.Face)
-      (x : stdSimplex ℝ {v // v ∈ t.1})
-      (e : Rlevel.refined.Edge)
-      (hqEdge :
-        Rlevel.homeo.symm
-            (source₁ (localSourceComplex.faceStandardMap t x)) ∈
-          Rlevel.refined.faceCarrier e.1)
+  have hpositive (t : L.Face) (x : stdSimplex ℝ {v // v ∈ t.1})
+      (e : R.refined.Edge) (hqEdge : M.localFaceMap t x ∈ R.refined.faceCarrier e.1)
       (v : {v // v ∈ t.1}) (hv : 0 < x v) :
-      localVertexLevelPoint
-          ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈
-        Rlevel.refined.faceCarrier e.1 := by
+      G.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩ ∈ R.refined.faceCarrier e.1 := by
     intro k hk
-    have hmap := congrFun (localFaceLevelMap_val t x) k
+    have hmap := congrFun (hlocalFaceMap t x) k
     simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul] at hmap
-    have hsumZero :
-        (∑ w : {w // w ∈ t.1},
-          x w *
-            (localVertexLevelPoint
-              ⟨w.1, ⟨t.1, t.2, w.2⟩⟩).1 k) = 0 := by
+    have hsumZero : (∑ w : {w // w ∈ t.1}, x w *
+        (G.localVertexPoint ⟨w.1, ⟨t.1, t.2, w.2⟩⟩).1 k) = 0 := by
       rw [← hmap]
       exact hqEdge k hk
-    have htermNonneg :
-        0 ≤ x v *
-          (localVertexLevelPoint
-            ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k :=
+    have htermNonneg : 0 ≤ x v *
+        (G.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k :=
       mul_nonneg (x.2.1 v)
-        ((localVertexLevelPoint
-          ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).2.1.1 k)
-    have htermLe :
-        x v *
-            (localVertexLevelPoint
-              ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k ≤
-          ∑ w : {w // w ∈ t.1},
-            x w *
-              (localVertexLevelPoint
-                ⟨w.1, ⟨t.1, t.2, w.2⟩⟩).1 k := by
+        ((G.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).2.1.1 k)
+    have htermLe : x v *
+          (G.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k ≤
+        ∑ w : {w // w ∈ t.1}, x w *
+          (G.localVertexPoint ⟨w.1, ⟨t.1, t.2, w.2⟩⟩).1 k := by
       simpa only using (Finset.single_le_sum
-        (s := (Finset.univ : Finset {w // w ∈ t.1}))
-        (a := v)
+        (s := (Finset.univ : Finset {w // w ∈ t.1})) (a := v)
         (f := fun w ↦ x w *
-          (localVertexLevelPoint
-            ⟨w.1, ⟨t.1, t.2, w.2⟩⟩).1 k)
+          (G.localVertexPoint ⟨w.1, ⟨t.1, t.2, w.2⟩⟩).1 k)
         (by
           intro w _
           exact mul_nonneg (x.2.1 w)
-            ((localVertexLevelPoint
-              ⟨w.1, ⟨t.1, t.2, w.2⟩⟩).2.1.1 k))
+            ((G.localVertexPoint ⟨w.1, ⟨t.1, t.2, w.2⟩⟩).2.1.1 k))
         (Finset.mem_univ v))
-    have hprod :
-        x v *
-          (localVertexLevelPoint
-            ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k = 0 := by
+    have hprod : x v *
+        (G.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩).1 k = 0 := by
       apply le_antisymm
       · rw [hsumZero] at htermLe
         exact htermLe
       · exact htermNonneg
     exact (mul_eq_zero.mp hprod).resolve_left hv.ne'
-  have localFace_edgeParameter_eq_sum
-      (t : localSourceComplex.Face)
-      (x : stdSimplex ℝ {v // v ∈ t.1})
-      (e : Rlevel.refined.Edge)
-      (hqEdge :
-        Rlevel.homeo.symm
-            (source₁ (localSourceComplex.faceStandardMap t x)) ∈
-          Rlevel.refined.faceCarrier e.1) :
-      boundaryMarking.edgeParameterValue e
-          (Rlevel.homeo.symm
-            (source₁ (localSourceComplex.faceStandardMap t x))) =
-        ∑ v : {v // v ∈ t.1}, x v *
-          boundaryMarking.edgeParameterValue e
-            (localVertexLevelPoint
-              ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) := by
-    let q :=
-      Rlevel.homeo.symm
-        (source₁ (localSourceComplex.faceStandardMap t x))
-    rw [boundaryMarking.edgeParameterValue_eq e hqEdge,
-      Rlevel.refined.edgeParameter_eq_secondCoordinate]
-    have hmap := congrFun (localFaceLevelMap_val t x)
-      (Rlevel.refined.edgeSecond e)
+  have hparameter (t : L.Face) (x : stdSimplex ℝ {v // v ∈ t.1})
+      (e : R.refined.Edge) (hqEdge : M.localFaceMap t x ∈ R.refined.faceCarrier e.1) :
+      G.marking.edgeParameterValue e (M.localFaceMap t x) =
+        ∑ v : {v // v ∈ t.1}, x v * G.marking.edgeParameterValue e
+          (G.localVertexPoint ⟨v.1, ⟨t.1, t.2, v.2⟩⟩) := by
+    rw [G.marking.edgeParameterValue_eq e hqEdge,
+      R.refined.edgeParameter_eq_secondCoordinate]
+    have hmap := congrFun (hlocalFaceMap t x) (R.refined.edgeSecond e)
     simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul] at hmap
     rw [hmap]
     apply Finset.sum_congr rfl
     intro v _
     by_cases hvZero : x v = 0
     · rw [hvZero, zero_mul, zero_mul]
-    · have hvPos : 0 < x v :=
-        lt_of_le_of_ne (x.2.1 v) (Ne.symm hvZero)
-      have hvEdge :=
-        positive_localVertex_mem_edge t x e hqEdge v hvPos
-      rw [boundaryMarking.edgeParameterValue_eq e hvEdge,
-        Rlevel.refined.edgeParameter_eq_secondCoordinate]
-  have edge_subset_face_of_openPoint
-      (e : Rlevel.refined.Edge) (s : Rlevel.refined.Face)
-      (q : Rlevel.refined.realization)
-      (hqOpen :
-        q ∈ Rlevel.refined.edgePath e ''
-          {r : Set.Icc (0 : ℝ) 1 | 0 < r.1 ∧ r.1 < 1})
-      (hqFace : q ∈ Rlevel.refined.faceCarrier s.1) :
-      e.1 ⊆ s.1 := by
-    rintro v hv
-    obtain ⟨r, hr, hqr⟩ := hqOpen
-    by_contra hvs
-    have hzero : q.1 v = 0 := hqFace v hvs
-    have hpositive :
-        0 < (Rlevel.refined.edgePath e r).1 v := by
-      rw [Rlevel.refined.edge_eq_pair e] at hv
-      simp only [Finset.mem_insert, Finset.mem_singleton] at hv
-      rcases hv with rfl | rfl
-      · rw [Rlevel.refined.edgePath_apply_first]
-        exact sub_pos.mpr hr.2
-      · rw [Rlevel.refined.edgePath_apply_second]
-        exact hr.1
-    rw [hqr] at hpositive
-    linarith
-  have localUsedVertex_mem_face_of_map_eq
-      (t : localSourceComplex.Face)
-      (z : stdSimplex ℝ {v // v ∈ t.1})
-      (u : localSourceComplex.UsedVertex)
-      (hzu :
-        Rlevel.homeo.symm
-            (source₁ (localSourceComplex.faceStandardMap t z)) =
-          localVertexLevelPoint u) :
+    · have hvPos : 0 < x v := lt_of_le_of_ne (x.2.1 v) (Ne.symm hvZero)
+      have hvEdge := hpositive t x e hqEdge v hvPos
+      rw [G.marking.edgeParameterValue_eq e hvEdge,
+        R.refined.edgeParameter_eq_secondCoordinate]
+  exact ⟨⟨hmemParent, hmemMarking, hpositive, hparameter⟩⟩
+
+private structure MixedLocalInterpolationCertificate (M : MixedLocalFanData) where
+  localUsedVertex_mem_face_of_map_eq : ∀ (t : M.localComplex.Face)
+      (z : stdSimplex ℝ {v // v ∈ t.1}) (u : M.localComplex.UsedVertex),
+    M.localFaceMap t z = M.localVertexPoint u → u.1 ∈ t.1
+  exists_localFacePoint_eq_of_edgeParameter_between : ∀
+      (t : M.localComplex.Face) (e : M.ambient.Edge) (a b : {v // v ∈ t.1})
+      (p : M.ambient.realization),
+    M.localVertexPoint ⟨a.1, ⟨t.1, t.2, a.2⟩⟩ ∈ M.ambient.faceCarrier e.1 →
+    M.localVertexPoint ⟨b.1, ⟨t.1, t.2, b.2⟩⟩ ∈ M.ambient.faceCarrier e.1 →
+    p ∈ M.ambient.faceCarrier e.1 →
+    M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨a.1, ⟨t.1, t.2, a.2⟩⟩) ≤
+      M.marking.edgeParameterValue e p →
+    M.marking.edgeParameterValue e p ≤ M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨b.1, ⟨t.1, t.2, b.2⟩⟩) →
+    M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨a.1, ⟨t.1, t.2, a.2⟩⟩) <
+      M.marking.edgeParameterValue e
+        (M.localVertexPoint ⟨b.1, ⟨t.1, t.2, b.2⟩⟩) →
+    ∃ z : stdSimplex ℝ {v // v ∈ t.1}, M.localFaceMap t z = p
+
+private theorem exists_canonicalMixedLocalInterpolationCertificate
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (hT : RadoInvariant T A) :
+    Nonempty (MixedLocalInterpolationCertificate
+      (ChartInductionGeometry.canonical P hT).mixedData) := by
+  classical
+  let G : ChartInductionGeometry S c T A P := ChartInductionGeometry.canonical P hT
+  let R := ChartInductionGeometry.subdivision P
+  let L := ChartInductionGeometry.localComplex P G.anchorLines
+  let source := ChartInductionGeometry.source P G.anchorLines
+  let M := G.mixedData
+  have hsourceEmbedding := ChartInductionGeometry.canonicalSource_isEmbedding P
+  have hlineMap := ChartInductionGeometry.canonicalLocalFaceMap_simplexLineMap P
+  have hvertex := ChartInductionGeometry.canonicalLocalFaceMap_vertex P
+  have hused (t : L.Face) (z : stdSimplex ℝ {v // v ∈ t.1})
+      (u : L.UsedVertex) (hzu : M.localFaceMap t z = G.localVertexPoint u) :
       u.1 ∈ t.1 := by
-    have hsource :
-        source₁ (localSourceComplex.faceStandardMap t z) =
-          source₁ (localSourceComplex.vertexPoint u) := by
-      apply Rlevel.homeo.symm.injective
+    have hsource : source (L.faceStandardMap t z) = source (L.vertexPoint u) := by
+      apply R.homeo.symm.injective
       exact hzu
-    have hlocal :
-        localSourceComplex.faceStandardMap t z =
-          localSourceComplex.vertexPoint u :=
-      hsource₁Embedding.injective hsource
+    have hlocal : L.faceStandardMap t z = L.vertexPoint u :=
+      hsourceEmbedding.injective hsource
     by_contra hut
-    have hcoord := congrArg
-      (fun q : localSourceComplex.realization ↦ q.1 u.1) hlocal
-    rw [localSourceComplex.faceStandardMap_val,
-      extendFaceCoordinates_of_notMem t.1 z hut] at hcoord
-    have hone :
-        (localSourceComplex.vertexPoint u).1 u.1 = (1 : ℝ) := by
+    have hcoord := congrArg (fun q : L.realization ↦ q.1 u.1) hlocal
+    rw [L.faceStandardMap_val, extendFaceCoordinates_of_notMem t.1 z hut] at hcoord
+    have hone : (L.vertexPoint u).1 u.1 = (1 : ℝ) := by
       simp [IntrinsicTwoComplex.vertexPoint]
     rw [hone] at hcoord
     exact zero_ne_one hcoord
-  have exists_localFacePoint_eq_of_edgeParameter_between
-      (t : localSourceComplex.Face)
-      (e : Rlevel.refined.Edge)
-      (a b : {v // v ∈ t.1})
-      (p : Rlevel.refined.realization)
-      (haEdge :
-        localVertexLevelPoint
-            ⟨a.1, ⟨t.1, t.2, a.2⟩⟩ ∈
-          Rlevel.refined.faceCarrier e.1)
-      (hbEdge :
-        localVertexLevelPoint
-            ⟨b.1, ⟨t.1, t.2, b.2⟩⟩ ∈
-          Rlevel.refined.faceCarrier e.1)
-      (hpEdge : p ∈ Rlevel.refined.faceCarrier e.1)
-      (hap :
-        boundaryMarking.edgeParameterValue e
-            (localVertexLevelPoint
-              ⟨a.1, ⟨t.1, t.2, a.2⟩⟩) ≤
-          boundaryMarking.edgeParameterValue e p)
-      (hpb :
-        boundaryMarking.edgeParameterValue e p ≤
-          boundaryMarking.edgeParameterValue e
-            (localVertexLevelPoint
-              ⟨b.1, ⟨t.1, t.2, b.2⟩⟩))
-      (hab :
-        boundaryMarking.edgeParameterValue e
-            (localVertexLevelPoint
-              ⟨a.1, ⟨t.1, t.2, a.2⟩⟩) <
-          boundaryMarking.edgeParameterValue e
-            (localVertexLevelPoint
-              ⟨b.1, ⟨t.1, t.2, b.2⟩⟩)) :
-      ∃ z : stdSimplex ℝ {v // v ∈ t.1},
-        Rlevel.homeo.symm
-            (source₁ (localSourceComplex.faceStandardMap t z)) = p := by
-    apply exists_facePoint_eq_of_edgeParameter_between
-      boundaryMarking localVertexLevelPoint
-      (fun u y ↦ Rlevel.homeo.symm
-        (source₁ (localSourceComplex.faceStandardMap u y)))
+  have hinterpolate (t : L.Face) (e : R.refined.Edge) (a b : {v // v ∈ t.1})
+      (p : R.refined.realization)
+      (haEdge : G.localVertexPoint ⟨a.1, ⟨t.1, t.2, a.2⟩⟩ ∈
+        R.refined.faceCarrier e.1)
+      (hbEdge : G.localVertexPoint ⟨b.1, ⟨t.1, t.2, b.2⟩⟩ ∈
+        R.refined.faceCarrier e.1)
+      (hpEdge : p ∈ R.refined.faceCarrier e.1)
+      (hap : G.marking.edgeParameterValue e
+          (G.localVertexPoint ⟨a.1, ⟨t.1, t.2, a.2⟩⟩) ≤
+        G.marking.edgeParameterValue e p)
+      (hpb : G.marking.edgeParameterValue e p ≤ G.marking.edgeParameterValue e
+          (G.localVertexPoint ⟨b.1, ⟨t.1, t.2, b.2⟩⟩))
+      (hab : G.marking.edgeParameterValue e
+          (G.localVertexPoint ⟨a.1, ⟨t.1, t.2, a.2⟩⟩) <
+        G.marking.edgeParameterValue e
+          (G.localVertexPoint ⟨b.1, ⟨t.1, t.2, b.2⟩⟩)) :
+      ∃ z : stdSimplex ℝ {v // v ∈ t.1}, M.localFaceMap t z = p := by
+    apply exists_facePoint_eq_of_edgeParameter_between G.marking G.localVertexPoint
+      (fun u y ↦ M.localFaceMap u y)
     · intro u x y r
-      exact localFaceLevelMap_simplexLineMap u x y r
+      exact hlineMap u x y r
     · intro u v
-      exact localFaceLevelMap_vertex u v
+      exact hvertex u v
     · exact haEdge
     · exact hbEdge
     · exact hpEdge
     · exact hap
     · exact hpb
     · exact hab
+  exact ⟨⟨hused, hinterpolate⟩⟩
+
+private theorem exists_canonicalMixedLocalFanCertificate
+    {S : Type*} [TopologicalSpace S]
+    [ChartedSpace (EuclideanHalfSpace 2) S]
+    [IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S]
+    {c : MoiseChart S} {T : PartialTriangulation S} {A : Set S}
+    (P : CrossingWeldPatchContext S c T A) (hT : RadoInvariant T A) :
+    Nonempty (MixedLocalFanCertificate
+      (ChartInductionGeometry.canonical P hT).mixedData) := by
+  classical
+  -- Assemble the full certificate from the separately checked map phase.
+  let geometry : ChartInductionGeometry S c T A P :=
+    ChartInductionGeometry.canonical P hT
+  let localFaceLevelFace := geometry.localFaceParent
+  have localVertexLevelPoint_mem_face :=
+    ChartInductionGeometry.canonicalLocalVertexPoint_mem_face P
+  have interfaceEdgeMarks_subset_local :=
+    ChartInductionGeometry.canonicalInterfaceEdgeMarks_subset_local P hT
+  have selectedFace_marking_subset_local :=
+    ChartInductionGeometry.canonicalSelectedFace_marking_subset_local P hT
+  let mixedData : MixedLocalFanData := geometry.mixedData
+  obtain ⟨mapCertificate⟩ := exists_canonicalMixedMapCertificate P hT
+  obtain ⟨barycentricCertificate⟩ :=
+    exists_canonicalMixedLocalBarycentricCertificate P hT
+  obtain ⟨interpolationCertificate⟩ :=
+    exists_canonicalMixedLocalInterpolationCertificate P hT
   obtain ⟨mixedCertificate, -⟩ :=
     exists_sealed_copy (X := MixedLocalFanCertificate mixedData)
     { parentFace := fun t ↦ (localFaceLevelFace t).1
@@ -5671,19 +5569,24 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
         apply f.2
         rw [h]
         exact (localFaceLevelFace t).2
-      mixedOldFaceVertices_card := mixedOldFaceVertices_card
-      continuous_mixedOldFaceMap := continuous_mixedOldFaceMap
-      mixedOldFaceMap_val := mixedOldFaceMap_val
-      localMixedFaceMap_eq_iff := localMixedFaceMap_eq_iff
-      fanMixedFaceMap_eq_iff := fanMixedFaceMap_eq_iff
+      mixedOldFaceVertices_card := mapCertificate.mixedOldFaceVertices_card
+      continuous_mixedOldFaceMap := mapCertificate.continuous_mixedOldFaceMap
+      mixedOldFaceMap_val := mapCertificate.mixedOldFaceMap_val
+      localMixedFaceMap_eq_iff := mapCertificate.localMixedFaceMap_eq_iff
+      fanMixedFaceMap_eq_iff := mapCertificate.fanMixedFaceMap_eq_iff
       mixedOldFaceMap_eq_of_extendedCoordinates :=
-        mixedOldFaceMap_eq_of_extendedCoordinates
-      localMixedFaceMap_mem_parent := localMixedFaceMap_mem_parent
+        mapCertificate.map_eq_of_extendedCoordinates
+      localMixedFaceMap_mem_parent :=
+        barycentricCertificate.localMixedFaceMap_mem_parent
       localVertexPoint_mem_parent := localVertexLevelPoint_mem_face
-      localVertexPoint_mem_marking := localVertexLevelPoint_mem_marking
-      positive_localVertex_mem_edge := positive_localVertex_mem_edge
-      localFace_edgeParameter_eq_sum := localFace_edgeParameter_eq_sum
-      edge_subset_face_of_openPoint := edge_subset_face_of_openPoint
+      localVertexPoint_mem_marking :=
+        barycentricCertificate.localVertexPoint_mem_marking
+      positive_localVertex_mem_edge :=
+        barycentricCertificate.positive_localVertex_mem_edge
+      localFace_edgeParameter_eq_sum :=
+        barycentricCertificate.localFace_edgeParameter_eq_sum
+      edge_subset_face_of_openPoint :=
+        edge_subset_face_of_open_edgePoint mixedData.ambient
       edgeMark_lift := by
         intro t e he p hp
         have hpLocal := interfaceEdgeMarks_subset_local
@@ -5696,17 +5599,69 @@ theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
           (localFaceLevelFace t) p hpMark hpFace
         obtain ⟨u, -, hu⟩ := Finset.mem_image.mp hpLocal
         exact ⟨u, hu⟩
-      localUsedVertex_mem_face_of_map_eq := localUsedVertex_mem_face_of_map_eq
+      localUsedVertex_mem_face_of_map_eq :=
+        interpolationCertificate.localUsedVertex_mem_face_of_map_eq
       exists_localFacePoint_eq_of_edgeParameter_between :=
-        exists_localFacePoint_eq_of_edgeParameter_between
-      mixedOldFaceMap_simplexLineMap := by
-        intro f x y r
-        exact mixedOldFaceMap_simplexLineMap f x y r
-      mixedOldFaceMap_vertex := mixedOldFaceMap_vertex
+        interpolationCertificate.exists_localFacePoint_eq_of_edgeParameter_between
+      mixedOldFaceMap_simplexLineMap := mapCertificate.mixedOldFaceMap_simplexLineMap
+      mixedOldFaceMap_vertex := mapCertificate.mixedOldFaceMap_vertex
       mixedLocalExtended_eq_single_of_map_eq_localVertex :=
-        mixedLocalExtended_eq_single_of_map_eq_localVertex
+        mapCertificate.localExtended_eq_single
       mixedFanExtended_eq_single_of_map_eq_fanVertex :=
-        mixedFanExtended_eq_single_of_map_eq_fanVertex }
+        mapCertificate.fanExtended_eq_single }
+  exact ⟨mixedCertificate⟩
+
+/-- Shared implementation of the Moise crossing weld once the chart straightening is certified
+to preserve the ambient manifold-boundary stratum.
+
+In the genuine crossing case (the chart core is not yet covered, and the absorbed region is not
+inside the chart patch), the adjusted old complex and the chart patch admit a common welded
+presentation: a common vertex type carrying both face families, with embeddings that agree
+exactly on the shared realization, satisfy the combinatorial-surface bound jointly, and whose
+united image contains `A ∪ c.core` in its topological interior.
+
+The proof straightens the old complex over the
+chart overlap by the locally finite controlled polygonal replacement over
+`adaptiveOverlapGraphRealization` with tolerance vanishing at the overlap frontier
+(`replaceOnOpen`/`frontierGlue`), refine the straightened trace and the fixed patch complex to
+a common plane subdivision (`CommonSubdivision`, Moise's conditions (e)-(h)), and read off the
+welded presentation. The finite compact-collar theorem cannot replace this vanishing-tolerance
+construction, because continuity across the overlap frontier depends on the error tending to
+zero there. -/
+theorem MoiseChart.exists_crossing_weld_of_boundaryPreservingStraightening
+    (c : MoiseChart S) (hc : c.BoundaryFaithful)
+    {T : PartialTriangulation S} {A : Set S} (hT : RadoInvariant T A)
+    (hstraight :
+      PartialTriangulation.BoundaryPreservingStraightening S T c) :
+    let _ := (inferInstance : ConnectedSpace S)
+    let _ := (inferInstance : IsManifold (modelWithCornersEuclideanHalfSpace 2) 0 S)
+    ∃ (V : Type) (_ : Fintype V) (_ : DecidableEq V)
+      (F₁ F₂ : Finset (Finset V))
+      (e₁ : GeometricRealization V F₁ → S) (e₂ : GeometricRealization V F₂ → S),
+      (∀ t ∈ F₁ ∪ F₂, t.card = 3) ∧
+      _root_.Topology.IsEmbedding e₁ ∧ _root_.Topology.IsEmbedding e₂ ∧
+      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+        (x : V → ℝ) = (y : V → ℝ) → e₁ x = e₂ y) ∧
+      (∀ (x : GeometricRealization V F₁) (y : GeometricRealization V F₂),
+        e₁ x = e₂ y → (x : V → ℝ) = (y : V → ℝ)) ∧
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₁ e₁ ∧
+      PartialTriangulation.BoundaryFacewiseRegularEmbedding F₂ e₂ ∧
+      A ∪ c.core ⊆ interior (Set.range e₁ ∪ Set.range e₂) := by
+  dsimp
+  classical
+  letI : SecondCountableTopology S := moise_secondCountableTopology S
+  obtain ⟨W⟩ := exists_crossingWeldStraighteningContext S c hT hstraight
+  obtain ⟨P⟩ := exists_crossingWeldPatchContext S c hc W
+  let geometry : ChartInductionGeometry S c T A P :=
+    ChartInductionGeometry.canonical P hT
+  have hboundaryFanSurface :
+      geometry.marking.markedFanLocallyFiniteTriangleComplex.compactIntrinsic
+        |>.HasSurfaceEdgeValence :=
+    geometry.marking.markedFanCompactIntrinsic_hasSurfaceEdgeValence
+      geometry.subdivision_surface
+  obtain ⟨mixedCertificate⟩ := exists_canonicalMixedLocalFanCertificate P hT
+  have selectedFace_of_fanInterval_endpoints_local :=
+    ChartInductionGeometry.canonicalSelectedFace_of_fanInterval_endpoints_local P hT
   let finishContextRaw : ChartInductionFinishContext S c T A P :=
     { geometry := geometry
       chart_boundary := hc
