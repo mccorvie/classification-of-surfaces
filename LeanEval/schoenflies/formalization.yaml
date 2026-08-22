@@ -1,0 +1,187 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+
+version: "v0.4"
+
+project:
+  name: "The planar Schoenflies theorem in Lean"
+  description: >-
+    A Lean 4 formalization of the planar Schoenflies theorem. Given a continuous injective
+    parametrization of the unit circle into the real plane, the formalization
+    constructs a self-homeomorphism of the plane carrying the image Jordan
+    curve onto the unit circle.
+  authors:
+    - "Ryan McCorvie"
+  license: "Apache-2.0"
+  responsible_maintainers:
+    - "Ryan McCorvie"
+
+classification:
+  arxiv:
+    - "math.GN"
+  msc2020:
+    - "57N50"
+    - "54C25"
+
+sources:
+  - title: "Geometric Topology in Dimensions 2 and 3"
+    authors:
+      - "Edwin E. Moise"
+    id: "https://doi.org/10.1007/978-1-4612-9906-6"
+    type: "book"
+    location: >-
+      Chapter 9, "The Schönflies theorem", pp. 65–70.
+    relationship: "formalizes"
+    note: >-
+      Primary proof source. The Lean development follows the planar
+      Schoenflies construction in Moise, adapted to the exact ambient
+      homeomorphism statement used by the Lean Eval challenge.
+
+  - title: "Schoenflies theorem"
+    contributors:
+      - name: "Kim Morrison"
+        role: "Lean Eval problem proposer"
+    id: "https://lean-lang.org/eval/problems/schoenflies/"
+    type: "formalization challenge"
+    relationship: "adapts"
+    note: >-
+      This is the exact Lean Eval theorem statement targeted by the submitted
+      Comparator project. The challenge expresses Schoenflies as ambient
+      setwise straightening of a continuously and injectively parametrized
+      Jordan curve.
+
+
+  - title: "Beiträge zur Theorie der Punktmengen III"
+    authors:
+      - "Arthur Schoenflies"
+    id: "https://doi.org/10.1007/BF01449982"
+    type: "article"
+    location: "Mathematische Annalen 62 (1906), 286–328"
+    relationship: "background"
+    note: >-
+      Historical source for the Schoenflies theorem. The present formal proof
+      does not attempt to formalize Schoenflies's original proof.
+
+related_formalizations:
+  - id: "https://github.com/alonamaloh/schoenflies-lean"
+    relationship: "independent"
+    note: >-
+      Independent Lean 4 formalization by Álvaro Begué. It proves the stronger
+      Jordan–Schoenflies extension theorem: a specified homeomorphism between
+      two Jordan curves extends pointwise to a self-homeomorphism of the plane.
+
+status:
+  scope: >-
+    The project proves the exact `schoenflies` theorem compared by the Lean Eval
+    workspace. For every continuous injective map from the unit circle into the
+    real plane, it constructs a self-homeomorphism of the plane carrying the
+    range of that map onto the unit circle. Thus it proves ambient equivalence
+    of the embedded circle with the standard circle.
+
+    The compared theorem is a setwise ambient-straightening statement. It does
+    not assert that the resulting ambient homeomorphism agrees pointwise on the
+    curve with the inverse of the particular parametrization supplied as input.
+    Such a pointwise extension theorem is a stronger Jordan–Schoenflies
+    formulation.
+
+  sorry_count: 0
+  sorry_in_definitions: 0
+
+  # Verify these against `#print axioms Submission.schoenflies` before submission.
+  axioms:
+    - "propext"
+    - "Classical.choice"
+    - "Quot.sound"
+
+  main_results:
+    - declaration: "Submission.schoenflies"
+      file: "Submission.lean"
+      sorry_count: 0
+      axioms:
+        - "propext"
+        - "Classical.choice"
+        - "Quot.sound"
+      comparator_config: "config.json"
+      literature_dependencies: []
+
+automation:
+  methods:
+    - method: "agent"
+      models:
+        - "GPT-5.6 Sol"
+        - "Claude Fable"
+      framework: "Codex and Claude Code"
+      tool_setup: >-
+        AI coding agents were used to develop, extend, refactor, and check the
+        Lean proof under human mathematical direction. 
+      cost:
+        wall_time: "~20 hrs"
+        spend_usd: "subscription"
+        hardware: "API models, local workstation"
+      prompting_notes: >-
+        Human direction supplied the mathematical objective, source material,
+        and some lean prerequisites.  
+    - method: "manual"
+      models: []
+      framework: "Lean 4, Mathlib, VS Code"
+      tool_setup: >-
+        This work was mostly autonomous, though signifcant prerequisites were 
+        provided which were derived in the course of proving the classification
+        of surfaces. a related theorem in this repo.  
+      cost:
+        wall_time: "~2 hrs"
+        spend_usd: "n/a"
+        hardware: "local development machine"
+      prompting_notes: "n/a"
+
+  spend_usd: "~1 week of a $100/mo subscription"
+  notes: >-
+    The project was produced as a human-directed autoformalization effort.
+    Most Lean implementation was generated or repaired by AI coding agents,
+    with human control of the mathematical target, architecture, source
+    interpretation, and final integration.
+
+fidelity:
+  divergences: >-
+    The formalization proves the exact Lean Eval `schoenflies` statement rather
+    than reproducing the wording of Knill's exposition or Schoenflies's
+    historical formulation. In particular, it proves that the image of an
+    embedded unit circle can be carried setwise to the standard unit circle by
+    an ambient self-homeomorphism of the plane. It does not require the ambient
+    homeomorphism to extend the inverse of the given parametrization pointwise.
+
+    The proof architecture follows Moise's planar Schoenflies development but
+    is reorganized substantially into reusable Lean definitions and lemmas.
+    No mathematical result from Moise is assumed as an axiom: the required
+    topology is formalized in Lean.
+
+review:
+  status: "self-assessed"
+  reviewers: []
+  notes: >-
+    The final result has been checked by Lean in the pinned project environment
+    and is packaged as the exact Lean Eval Comparator challenge. 
+
+alignment:
+  namespace: "Submission"
+  statements:
+    - source: "Lean Eval `schoenflies` challenge"
+      lean: "Submission.schoenflies"
+      module: "Submission"
+      status: "proved"
+      note: >-
+        Exact proof of the theorem whose corresponding trusted declaration is
+        `schoenflies` in Challenge.lean.
+
+    - source: "Moise, Geometric Topology in Dimensions 2 and 3, Chapter 9"
+      lean: "Schoenflies.schoenflies"
+      module: "Schoenflies.Main"
+      status: "proved"
+      note: >-
+        Project-level formulation of the strong planar Schoenflies theorem,
+        from which the Lean Eval submission is proved.
+
+acknowledgements: >-
+  Built on Lean, Mathlib, leanprover/comparator, and their contributor
+  communities. The exact benchmark statement was contributed to Lean Eval by
+  Kim Morrison. The formalization was developed in connection with the
+  SF Lean meetup.

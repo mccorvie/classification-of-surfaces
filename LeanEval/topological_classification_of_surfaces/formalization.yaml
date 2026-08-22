@@ -1,0 +1,242 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+
+version: "v0.4"
+
+project:
+  name: "Classification of compact surfaces in Lean"
+  description: >-
+    A Lean 4 formalization of the classification theorem for compact connected
+    topological 2-manifolds, including surfaces with boundary. The main theorem
+    proves that every compact connected Hausdorff 2-manifold modeled on the
+    Euclidean half-plane is homeomorphic to the sphere, an orientable canonical
+    quotient surface, or a non-orientable canonical quotient surface. The
+    submitted theorem is the exact statement of the Lean Eval
+    `topological_classification_of_surfaces` challenge.
+  authors:
+    - "Ryan McCorvie"
+    - "Jack McCarthy"
+  license: "Apache-2.0"
+  responsible_maintainers:
+    - "Ryan McCorvie"
+
+# This repository contains the substantive proof development, rather than merely
+# wrapping another formalization, so `repository.substantive_formalization` is
+# intentionally omitted.
+
+classification:
+  arxiv:
+    - "math.GT"
+  msc2020:
+    - "57K20"
+
+sources:
+  - title: "Topological classification of surfaces"
+    contributors:
+      - name: "Junyan Xu"
+        role: "Lean Eval problem proposer"
+    id: "https://lean-lang.org/eval/problems/topological_classification_of_surfaces/"
+    type: "formalization challenge"
+    relationship: "formalizes"
+    note: >-
+      The submitted Comparator theorem is the exact theorem statement of this
+      Lean Eval challenge. It classifies compact connected Hausdorff
+      2-manifolds, including manifolds with boundary, into the canonical
+      representatives supplied by the challenge.
+    author_endorsement: "n/a"
+
+  - title: "A Guide to the Classification Theorem for Compact Surfaces"
+    authors:
+      - "Jean Gallier"
+      - "Dianna Xu"
+    id: "https://doi.org/10.1007/978-3-642-34364-3"
+    type: "book"
+    location: >-
+      Chapter 7, "The Classification Theorem for Compact Surfaces",
+      pp. 79–103, together with the preceding development of triangulations.
+    relationship: "adapts"
+    note: >-
+      Principal source for the combinatorial classification and polygonal
+      normal-form stage. The Lean development uses finite cyclic presentations
+      and proves that the normalizing moves preserve their polygonal
+      realizations.
+    author_endorsement: "not-contacted"
+
+  - title: "Geometric Topology in Dimensions 2 and 3"
+    authors:
+      - "Edwin E. Moise"
+    id: "https://doi.org/10.1007/978-1-4612-9906-6"
+    type: "book"
+    location: >-
+      Chapter 8, "The triangulation theorem for 2-manifolds", pp. 58–64,
+      and Chapter 22, "The classification of compact connected
+      2-manifolds", beginning p. 155.
+    relationship: "adapts"
+    note: >-
+      Principal source for the topological and triangulation side of the proof.
+      The formal development follows a Moise–Radó from a topological
+      surface to a faithful finite geometric triangulation before passing to
+      the combinatorial classification.
+    author_endorsement: "n/a"
+
+related_formalizations: []
+
+status:
+  scope: >-
+    The project proves the exact Lean Eval
+    `topological_classification_of_surfaces` theorem. For a compact,
+    connected, Hausdorff topological space equipped with the structure of a
+    2-manifold modeled on `EuclideanHalfSpace 2`, it proves that the surface is
+    homeomorphic either to the 2-sphere, to one of the orientable quotient
+    representatives `Quot (OrientableRel p n)`, or to one of the
+    non-orientable quotient representatives `Quot (NonOrientableRel p n)`,
+    with the nondegeneracy conditions on the parameters appearing in the
+    benchmark statement.
+
+    The proof includes the triangulation and polygonal-normalization machinery
+    needed to obtain these representatives.  The topological realization is related to
+    a finite cyclic presentation, normalization preserves its polygonal
+    realization, and canonical presentations are identified with the exact
+    quotient surfaces used in the Lean Eval challenge.
+
+    The result is an existence theorem. It does not prove uniqueness of the
+    canonical parameters, nor does it formalize the usual corollary that two
+    canonical surfaces are homeomorphic only when their orientability, genus
+    or crosscap number, and number of boundary components agree. It only proves
+    the existence/classification direction required by Lean Eval. There is no 
+    homology or Euler characteristic in this proof.
+
+  sorry_count: 0
+  sorry_in_definitions: 0
+
+  # Verify these once more with `#print axioms` before submission.
+  axioms:
+    - "propext"
+    - "Classical.choice"
+    - "Quot.sound"
+
+  main_results:
+    - declaration: "Submission.classification_of_surfaces"
+      file: "Submission.lean"
+      sorry_count: 0
+      axioms:
+        - "propext"
+        - "Classical.choice"
+        - "Quot.sound"
+      comparator_config: "config.json"
+      literature_dependencies: []
+
+automation:
+  methods:
+    - method: "agent"
+      models:
+        - "ChatGPT 5.6 Sol"
+        - "Claude Fable"
+      framework: "Codex and Claude Code"
+      tool_setup: >-
+        AI agents were used to evaluate variout proof strategies for amenability
+        to formalization.  Once a strategy was decided, AI agents were used 
+        extensively to author, audit, repair and refactor the Lean development.
+        Agents from different vendors were used to cross-check each others work
+        against the source material, theorem statements, and proof plan.
+      cost:
+        wall_time: "~60 hours over the course of 4 weeks of part-time development"
+        spend_usd: "subscription-based. Maxed quotas for a $100 subscription, so ~$100"
+        hardware: "API-hosted models with local Lean builds"
+      prompting_notes: >-        
+        Development was human-directed rather than a single autonomous proof
+        run. Prompts typically specified a mathematical subproblem or desired
+        API, supplied relevant source material and existing Lean context.  Humans provided
+        guidance when agents were having trouble making progress, or when weaknesses in 
+        the proof emerged. Subsequent agents were frequently used to audit definitions, remove
+        placeholders, simplify long proofs, and repair integration issues.
+
+    - method: "manual"
+      models: []
+      framework: "Lean 4, Mathlib, VS Code"
+      tool_setup: >-
+        Human work included choosing the theorem and sources, designing and
+        revising the proof architecture, interpreting the classical topology,
+        reviewing formal definitions for mathematical faithfulness, directing
+        agent work, resolving architectural problems.
+      cost:
+        wall_time: "~10 hours over the course of 4 weeks"
+        spend_usd: ""
+        hardware: "local development workstation"
+      prompting_notes: "n/a"
+
+  spend_usd: "~$100"
+  notes: >-
+    This was a human-directed autoformalization project undertaken through the
+    SF Lean meetup. Most of the Lean implementation was produced with AI coding
+    agents, while the human formalizers selected and interpreted mathematical
+    sources, determined the proof strategy and formal interfaces, reviewed
+    definitions and theorem statements, and directed repeated implementation
+    and audit passes.
+
+fidelity:
+  divergences: >-
+    The formalization targets the exact Lean Eval theorem rather than
+    a single textbook statement verbatim. Its hypotheses and conclusion
+    therefore use Mathlib's `ChartedSpace`, `IsManifold`, and homeomorphism
+    structures and the canonical quotient types supplied by the benchmark.
+
+    The proof combines material from more than one classical presentation.
+    The topological and triangulation stage follows a Moise–Radó approach,
+    while the finite polygonal normalization is organized around the
+    Gallier–Xu approach. The Lean proof is consequently not a
+    line-by-line translation of either source.
+
+    The theorem allows surfaces with boundary through the Euclidean-half-space
+    manifold model, which are treated only cursorily in the source material. 
+    Its canonical representatives are the benchmark's quotient
+    types `OrientableRel` and `NonOrientableRel`, rather than the connected-sum
+    notation often used in textbook statements.
+
+    Most importantly, the compared theorem proves existence of a canonical
+    representative but not uniqueness of the parameters. The development does
+    not claim the converse classification statement that distinct canonical
+    invariants yield non-homeomorphic surfaces.
+
+review:
+  status: "self-assessed"
+  reviewers: []
+  notes: >-
+    The theorem statement has been audited against the trusted Lean Eval
+    challenge and is checked mechanically by Comparator. The complete public
+    classification proof contains no unresolved `sorry`. The development has
+    also undergone repeated human- and agent-directed audits of theorem
+    statements, definitions, proof dependencies, and placeholder assumptions.
+    It has not undergone independent expert peer review or Mathlib review of
+    the entire API.
+
+alignment:
+  namespace: "Submission"
+  statements:
+    - source: >-
+        Lean Eval `topological_classification_of_surfaces` challenge theorem
+        `classification_of_surfaces`
+      lean: "Submission.classification_of_surfaces"
+      module: "Submission"
+      status: "proved"
+      note: >-
+        Exact Comparator-facing proof of the trusted Lean Eval challenge
+        theorem.
+
+    - source: >-
+        Classification of compact connected surfaces via triangulation and
+        polygonal normal forms
+      lean: "LeanEval.Topology.ClassificationOfSurfaces.classification_of_surfaces"
+      module: "Submission.ClassificationOfSurfaces.EvalStatement"
+      status: "proved"
+      note: >-
+        The maintained project theorem copied into the standalone Lean Eval
+        workspace. It is obtained through the faithful chain from geometric
+        triangulations to finite cyclic presentations, normalization to a
+        canonical presentation, and realization by the benchmark quotient
+        surfaces.
+
+acknowledgements: >-
+  Developed as a collaborative project of the SF Lean meetup. Built on Lean 4,
+  Mathlib, Lean Eval, and leanprover/comparator. Thanks to Junyan Xu for
+  proposing the Lean Eval classification-of-surfaces challenge and to the
+  authors of the mathematical sources used to guide the formalization.
