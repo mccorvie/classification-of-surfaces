@@ -55,7 +55,8 @@ theorem sum_take_lt_sum {weights : List ℕ} (h : Positive weights)
   | nil => exact Fin.elim0 i
   | cons w weights ih =>
       refine Fin.cases ?_ (fun j => ?_) i
-      · simp
+      · simp only [List.length_cons, Fin.coe_ofNat_eq_mod, Nat.zero_mod, List.take_zero,
+          List.sum_nil, List.sum_cons, add_pos_iff]
         exact Or.inl h.head
       · simpa [List.take_succ_cons] using Nat.add_lt_add_left (ih h.tail j) w
 
@@ -96,7 +97,8 @@ theorem stretch_length (weights : List ℕ) :
       | cons v weights =>
           have hnot :
               ¬((↑((w :: v :: weights).length) : ℝ) ≤ 1) := by
-            simp
+            simp only [List.length_cons, Nat.cast_add, Nat.cast_one, add_le_iff_nonpos_left,
+              not_le]
             positivity
           calc
             stretch (w :: v :: weights) (w :: v :: weights).length =
@@ -107,7 +109,6 @@ theorem stretch_length (weights : List ℕ) :
             _ = (w : ℝ) +
                   stretch (v :: weights) (v :: weights).length := by
               congr 2
-              push_cast
               simp
             _ = (w : ℝ) + (v :: weights).sum := by rw [ih]
             _ = (w :: v :: weights).sum := by
@@ -414,7 +415,8 @@ theorem intervalHomeomorph_length (weights : List ℕ) (h : Positive weights) :
       (⟨0 + weights.sum, ⟨by positivity, le_rfl⟩⟩ :
         Set.Icc (0 : ℝ) (0 + weights.sum)) := by
   apply Subtype.ext
-  simpa using stretch_length weights
+  rw [intervalHomeomorph_apply_val]
+  simpa only [zero_add] using stretch_length weights
 
 theorem intervalHomeomorph_endpointIdent_iff
     (weights : List ℕ) (h : Positive weights)
@@ -604,7 +606,6 @@ theorem stretch_index_add
             ring
           rw [harg, ih]
           simp [List.take_succ_cons]
-          push_cast
           ring
 
 /-- The weighted circle homeomorphism sends a point of side `i` to the boundary coordinate
@@ -662,7 +663,7 @@ theorem circleHomeomorph_exp_index_add'
       have hlength : (weights.length : ℝ) ≠ 0 := by
         exact_mod_cast (List.length_pos_of_ne_nil hne).ne'
       field_simp [hlength]
-      <;> ring
+      all_goals ring
     have htarget :
         Circle.exp
             (2 * Real.pi / weights.sum * (weights.sum : ℝ)) =
@@ -672,7 +673,7 @@ theorem circleHomeomorph_exp_index_add'
       have hsum : (weights.sum : ℝ) ≠ 0 := by
         exact_mod_cast (List.sum_pos weights h hne).ne'
       field_simp [hsum]
-      <;> ring
+      all_goals ring
     have hzero :
         circleHomeomorph weights h hne (Circle.exp 0) =
           Circle.exp 0 := by

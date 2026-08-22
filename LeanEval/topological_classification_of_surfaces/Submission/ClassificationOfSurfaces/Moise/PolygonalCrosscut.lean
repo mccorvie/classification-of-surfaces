@@ -473,12 +473,9 @@ theorem insertZero_nonadjacent_disjoint (J : PolygonalCircle) {p : Plane}
         rw [ZMod.val_natCast_of_lt hllt, ZMod.val_add, ZMod.val_zero,
           ZMod.val_one, Nat.zero_add, Nat.mod_eq_of_lt (by omega : 1 < J.n)] at hv
         exact hl1 hv
-    apply Set.Subset.antisymm
-    · intro x hx
-      have hxOld : x ∈ J.edgeSegment 0 ∩ J.edgeSegment (l : ZMod J.n) :=
-        ⟨J.insertZero_first_subset_edge_zero hp hx.1, hx.2⟩
-      simp [hOld] at hxOld
-    · exact Set.empty_subset _
+    rw [Set.eq_empty_iff_forall_notMem]; rintro x ⟨hxFirst, hxOld⟩
+    exact Set.eq_empty_iff_forall_notMem.mp hOld x
+      ⟨J.insertZero_first_subset_edge_zero hp hxFirst, hxOld⟩
   by_cases hmn : m = J.n
   · rw [hmn] at hij hprev hnext ⊢
     by_cases hl0 : l = 0
@@ -526,12 +523,9 @@ theorem insertZero_nonadjacent_disjoint (J : PolygonalCircle) {p : Plane}
         rw [ZMod.val_natCast_of_lt hllt, ZMod.val_add, ZMod.val_zero,
           ZMod.val_one, Nat.zero_add, Nat.mod_eq_of_lt (by omega : 1 < J.n)] at hv
         exact hl1 hv
-    apply Set.Subset.antisymm
-    · intro x hx
-      have hxOld : x ∈ J.edgeSegment 0 ∩ J.edgeSegment (l : ZMod J.n) :=
-        ⟨J.insertZero_last_subset_edge_zero hp hx.1, hx.2⟩
-      simp [hOld] at hxOld
-    · exact Set.empty_subset _
+    rw [Set.eq_empty_iff_forall_notMem]; rintro x ⟨hxLast, hxOld⟩
+    exact Set.eq_empty_iff_forall_notMem.mp hOld x
+      ⟨J.insertZero_last_subset_edge_zero hp hxLast, hxOld⟩
   have hmpos : 0 < m := Nat.pos_of_ne_zero hm0
   have hmlt : m < J.n := lt_of_le_of_ne hmle hmn
   rw [J.insertZeroEdgeSegment_middle p hmpos hmlt]
@@ -565,12 +559,9 @@ theorem insertZero_nonadjacent_disjoint (J : PolygonalCircle) {p : Plane}
         have hsum : m + 1 < J.n := by omega
         rw [Nat.mod_eq_of_lt hsum] at hv
         omega
-    apply Set.Subset.antisymm
-    · intro x hx
-      have hxOld : x ∈ J.edgeSegment (m : ZMod J.n) ∩ J.edgeSegment 0 :=
-        ⟨hx.1, J.insertZero_first_subset_edge_zero hp hx.2⟩
-      simp [hOld] at hxOld
-    · exact Set.empty_subset _
+    rw [Set.eq_empty_iff_forall_notMem]; rintro x ⟨hxOld, hxFirst⟩
+    exact Set.eq_empty_iff_forall_notMem.mp hOld x
+      ⟨hxOld, J.insertZero_first_subset_edge_zero hp hxFirst⟩
   by_cases hln : l = J.n
   · rw [hln] at hij hprev hnext ⊢
     rw [J.insertZeroEdgeSegment_last]
@@ -607,12 +598,9 @@ theorem insertZero_nonadjacent_disjoint (J : PolygonalCircle) {p : Plane}
         have hsum : m + 1 < J.n := by omega
         rw [Nat.mod_eq_of_lt hsum] at hv
         omega
-    apply Set.Subset.antisymm
-    · intro x hx
-      have hxOld : x ∈ J.edgeSegment (m : ZMod J.n) ∩ J.edgeSegment 0 :=
-        ⟨hx.1, J.insertZero_last_subset_edge_zero hp hx.2⟩
-      simp [hOld] at hxOld
-    · exact Set.empty_subset _
+    rw [Set.eq_empty_iff_forall_notMem]; rintro x ⟨hxOld, hxLast⟩
+    exact Set.eq_empty_iff_forall_notMem.mp hOld x
+      ⟨hxOld, J.insertZero_last_subset_edge_zero hp hxLast⟩
   have hlpos : 0 < l := Nat.pos_of_ne_zero hl0
   have hllt : l < J.n := lt_of_le_of_ne hlle hln
   rw [J.insertZeroEdgeSegment_middle p hlpos hllt]
@@ -1731,8 +1719,6 @@ theorem forwardArc_inter_backwardArc {k : ℕ} (hk2 : 2 ≤ k) (hk : k + 1 < J.n
       (by omega) (by omega)
     have hlOld : x ∈ J.edgeSegment (b : ZMod J.n) := by
       have hl' : x ∈ (J.rotate (k : ZMod J.n)).edgeSegment (l.val : ZMod J.n) := by
-        change x ∈ (J.rotate (k : ZMod J.n)).edgeSegment
-          ((l.val : ℕ) : ZMod J.n)
         exact hl
       rw [hrot] at hl'
       have hidx : (l.val : ZMod J.n) + (k : ZMod J.n) = (b : ZMod J.n) := by

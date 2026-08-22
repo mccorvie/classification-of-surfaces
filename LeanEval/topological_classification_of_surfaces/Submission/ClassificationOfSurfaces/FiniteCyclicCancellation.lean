@@ -236,12 +236,17 @@ theorem split_source_eq_expand_split_target {n : ℕ}
     P2.split (source X) (sourceCut X) =
       P1.expand (P2.split (target X) (targetCut X))
         (P2.freshEdge (target X)) := by
-  simp [P2.split, P2.faceWord, P1.expand, P1.expandWord,
-    P2.selectedBoundary, P2.rightBoundary,
-    P2.selectedOrientedBoundary, P2.rightOrientedBoundary,
-    P2.storedWord, source, target, sourceCut, targetCut,
-    P2Cut.canonical, Dyck.oneFace, P2.retainWord,
-    P1.freshEdge, P2.freshEdge]
+  simp only [P2.split, source, Dyck.oneFace, P1.freshEdge, P2.retainWord,
+    List.cons_append, List.nil_append, List.length_cons, List.length_nil, zero_add,
+    Nat.reduceAdd, List.ofFn_succ, P2.faceWord, P2.rightBoundary, P2.storedWord,
+    sourceCut, Bool.false_eq_true, ↓reduceIte, P2.rightOrientedBoundary,
+    P2.freshEdge, List.map_cons, P1.castSuccDart_neg, List.map_map,
+    P2.selectedBoundary, P2.selectedOrientedBoundary, P1.castSuccDart_pos,
+    List.map_nil, Dyck.oneFace_boundary, Fin.isValue, Fin.cast_eq_self,
+    Fin.succ_zero_eq_one, List.ofFn_zero, P1.expand, target, targetCut,
+    P2Cut.canonical, Fin.coe_ofNat_eq_mod, Nat.zero_mod, List.take_zero,
+    List.drop_zero, P1.expandWord, mk.injEq, heq_eq_eq,
+    List.cons.injEq, and_true, true_and]
   constructor
   · change
       [SignedDart.pos (Fin.last n).castSucc,
@@ -290,7 +295,7 @@ theorem target_isSurfaceValid {n : ℕ}
     rw [P2.count_retainWord_castSucc] at hmultiplicity
     have hne : e.castSucc ≠ P1.freshEdge n :=
       P1.firstSubedge_ne_freshEdge e
-    simp [hne.symm] at hmultiplicity
+    simp only [beq_iff_eq, hne.symm, ↓reduceIte, add_zero, zero_add] at hmultiplicity
     exact hmultiplicity
 
 /-- Gallier--Xu Step 1 for the base spelling: split the inverse pair, contract the resulting
@@ -615,12 +620,19 @@ def splitSourceSignedIsoExpandSplitTarget {n : ℕ}
               rfl
             rw [hsourceZero, P2.split_boundary_selected,
               htargetZero, P2.split_boundary_selected]
-            simp [sourceCut, source, target,
-              P2.selectedBoundary, P2.selectedOrientedBoundary,
-              P2.storedWord, P2.freshEdge]
-            simp [targetCut, P2Cut.canonical, P1.expandWord,
-              P1.expandDart, P2.retainWord, P1.freshEdge,
-              P1.firstSubedge]
+            simp only [source, List.cons_append, List.nil_append, sourceCut,
+              List.length_cons, Fin.zero_eta, P2.selectedBoundary, P2.storedWord,
+              Bool.false_eq_true, ↓reduceIte, P2.selectedOrientedBoundary,
+              P2.freshEdge, target, P2.split_edgeCount, targetCut_left,
+              P2.retainWord_nil, Dyck.inverseWord_singleton]
+            simp only [P1.freshEdge, P2.retainWord, List.map_cons,
+              P1.castSuccDart_pos, List.map_nil, List.cons_append,
+              List.nil_append, P1.expandWord, targetCut, P2Cut.canonical,
+              List.length_cons, Fin.zero_eta, Fin.coe_ofNat_eq_mod,
+              orientedBoundary_length, Nat.zero_mod, List.take_zero,
+              List.drop_zero, Bool.false_eq_true, ↓reduceIte,
+              List.flatMap_cons, P1.expandDart, P1.firstSubedge,
+              List.flatMap_nil, List.append_nil]
             exact List.IsRotated.refl _
         | succ k =>
             change

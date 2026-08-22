@@ -476,20 +476,36 @@ noncomputable def referenceSplitMesh (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint] <;>
+          simp only [referenceSplitPosition, Fin.isValue, Matrix.cons_val_zero, AffineMap.coe_neg,
+            Pi.neg_apply, referenceVertexAffine_planePoint, mul_zero, add_zero, zero_sub, neg_neg,
+            Matrix.cons_val, sub_self, neg_zero, Std.le_refl, zero_add, neg_sub, sub_nonneg] <;>
           (try field_simp) <;> nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint] <;>
+          simp only [referenceSplitPosition, Fin.isValue, Matrix.cons_val_one,
+            Matrix.cons_val_zero, AffineMap.coe_neg, Pi.neg_apply,
+            referenceVertexAffine_planePoint, mul_zero, add_zero, neg_sub, tsub_le_iff_right,
+            zero_add, Matrix.cons_val, mul_one, sub_self, neg_zero, Std.le_refl] <;>
           (try field_simp) <;> nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint] at hx ⊢ <;>
+          simp only [Fin.isValue, Fin.zero_eta, Finset.mem_insert, Fin.reduceEq,
+            Finset.mem_singleton, or_self, or_false, referenceSplitPosition, Matrix.cons_val_zero,
+            AffineMap.coe_neg, Pi.neg_apply, referenceVertexAffine_planePoint, mul_zero, add_zero,
+            zero_sub, neg_neg, one_ne_zero, not_false_eq_true, Finset.inter_insert_of_notMem,
+            or_true, Finset.inter_singleton_of_mem, iff_false, Fin.mk_one, Fin.reduceFinMk,
+            Matrix.cons_val, sub_self, neg_zero, zero_add, neg_sub] at hx ⊢ <;>
           (try field_simp) <;> nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint] at hx ⊢ <;>
+          simp only [Fin.isValue, Fin.zero_eta, Finset.mem_insert, zero_ne_one, Fin.reduceEq,
+            Finset.mem_singleton, or_self, Fin.mk_one, or_false, referenceSplitPosition,
+            Matrix.cons_val_one, Matrix.cons_val_zero, AffineMap.coe_neg, Pi.neg_apply,
+            referenceVertexAffine_planePoint, mul_zero, add_zero, neg_sub, one_ne_zero,
+            not_false_eq_true, Finset.inter_insert_of_notMem, or_true,
+            Finset.inter_singleton_of_mem, iff_false, Fin.reduceFinMk, Matrix.cons_val, mul_one,
+            zero_add, sub_self, neg_zero] at hx ⊢ <;>
           (try field_simp) <;> nlinarith
     · apply convexHull_image_inter_of_affine_separation _
         (referenceSplitPosition_injective ha0 ha1 hb0 hb1) _ _ (-referenceOuterAffine a b)
@@ -500,7 +516,10 @@ noncomputable def referenceSplitMesh (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceOuterAffine_planePoint, ha0.ne', hb0.ne'];
+          simp only [referenceSplitPosition, Fin.isValue, Matrix.cons_val, AffineMap.coe_neg,
+            Pi.neg_apply, referenceOuterAffine_planePoint, mul_zero, mul_one, zero_add, neg_sub,
+            tsub_le_iff_right, ne_eq, ha0.ne', not_false_eq_true, inv_mul_cancel₀, add_zero,
+            sub_self, neg_zero, Std.le_refl, hb0.ne'];
           (try field_simp); nlinarith
       · intro x hx
         fin_cases x <;> simp [referenceSplitPosition, referenceOuterAffine_planePoint,
@@ -514,20 +533,36 @@ noncomputable def referenceSplitMesh (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint] <;>
+          simp only [referenceSplitPosition, Fin.isValue, Matrix.cons_val_zero, AffineMap.coe_neg,
+            Pi.neg_apply, referenceVertexAffine_planePoint, mul_zero, add_zero, zero_sub, neg_neg,
+            Matrix.cons_val, sub_self, neg_zero, Std.le_refl, zero_add, neg_sub, sub_nonneg] <;>
           (try field_simp) <;> nlinarith
       · intro x hx
         simp only [Finset.mem_insert, Finset.mem_singleton] at hx
         rcases hx with rfl | rfl | rfl <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint] <;>
+          simp only [referenceSplitPosition, Fin.isValue, Matrix.cons_val_one,
+            Matrix.cons_val_zero, AffineMap.coe_neg, Pi.neg_apply,
+            referenceVertexAffine_planePoint, mul_zero, add_zero, neg_sub, tsub_le_iff_right,
+            zero_add, Matrix.cons_val, mul_one, sub_self, neg_zero, Std.le_refl] <;>
           (try field_simp) <;> nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint] at hx ⊢ <;>
+          simp only [Fin.isValue, Fin.zero_eta, Finset.mem_insert, Fin.reduceEq,
+            Finset.mem_singleton, or_self, or_false, referenceSplitPosition, Matrix.cons_val_zero,
+            AffineMap.coe_neg, Pi.neg_apply, referenceVertexAffine_planePoint, mul_zero, add_zero,
+            zero_sub, neg_neg, one_ne_zero, not_false_eq_true, Finset.inter_insert_of_notMem,
+            or_true, Finset.inter_singleton_of_mem, iff_false, Fin.mk_one, Fin.reduceFinMk,
+            Matrix.cons_val, sub_self, neg_zero, zero_add, neg_sub] at hx ⊢ <;>
           (try field_simp) <;> nlinarith
       · intro x hx
         fin_cases x <;>
-          simp [referenceSplitPosition, referenceVertexAffine_planePoint] at hx ⊢ <;>
+          simp only [Fin.isValue, Fin.zero_eta, Finset.mem_insert, zero_ne_one, Fin.reduceEq,
+            Finset.mem_singleton, or_self, Fin.mk_one, or_false, referenceSplitPosition,
+            Matrix.cons_val_one, Matrix.cons_val_zero, AffineMap.coe_neg, Pi.neg_apply,
+            referenceVertexAffine_planePoint, mul_zero, add_zero, neg_sub, one_ne_zero,
+            not_false_eq_true, Finset.inter_insert_of_notMem, or_true,
+            Finset.inter_singleton_of_mem, iff_false, Fin.reduceFinMk, Matrix.cons_val, mul_one,
+            zero_add, sub_self, neg_zero] at hx ⊢ <;>
           (try field_simp) <;> nlinarith
     · simp
     · apply convexHull_image_inter_of_affine_separation _
@@ -684,11 +719,11 @@ theorem referenceSplit_union (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
         ![1 - x 0 / a - x 1 / b, x 0 / a, x 1 / b]
       · intro i
         fin_cases i
-        · simp
+        · simp only [Fin.isValue, Fin.zero_eta, Matrix.cons_val_zero, sub_nonneg]
           linarith
-        · simp
+        · simp only [Fin.isValue, Fin.mk_one, Matrix.cons_val_one, Matrix.cons_val_zero]
           exact div_nonneg hx0 ha0.le
-        · simp
+        · simp only [Fin.isValue, Fin.reduceFinMk, Matrix.cons_val]
           exact div_nonneg hx1 hb0.le
       · simp
         ring
@@ -704,12 +739,13 @@ theorem referenceSplit_union (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
             (1 - x 0 - x 1) / (1 - a)]
         · intro i
           fin_cases i
-          · simp
+          · simp only [Fin.isValue, Fin.zero_eta, Matrix.cons_val_zero]
             exact div_nonneg hdiag (by linarith)
           · simpa using hx1
-          · simp
+          · simp only [Fin.isValue, Fin.reduceFinMk, Matrix.cons_val]
             exact div_nonneg (by linarith) (by linarith)
-        · simp
+        · simp only [Fin.isValue, Matrix.cons_val_zero, Matrix.cons_val_one,
+            Matrix.cons_val]
           field_simp [h1a]
           ring
         · ext i
@@ -732,13 +768,13 @@ theorem referenceSplit_union (a b : ℝ) (ha0 : 0 < a) (ha1 : a < 1)
             (1 - x 1 - x 0 / a) / (1 - b)]
         · intro i
           fin_cases i
-          · simp
+          · simp only [Fin.isValue, Fin.zero_eta, Matrix.cons_val_zero]
             exact div_nonneg hnum0 (by linarith)
-          · simp
+          · simp only [Fin.isValue, Fin.mk_one, Matrix.cons_val_one, Matrix.cons_val_zero]
             exact div_nonneg hx0 ha0.le
-          · simp
+          · simp only [Fin.isValue, Fin.reduceFinMk, Matrix.cons_val]
             exact div_nonneg hnum2 (by linarith)
-        · simp
+        · simp only [Fin.isValue, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val]
           field_simp [h1b, ha0.ne']
           ring
         · ext i
@@ -917,13 +953,13 @@ theorem referenceEdgeSplit_union (c : ℝ) (hc0 : 0 < c) (hc1 : c < 1) :
         ![1 - x 1 - x 0 / c, x 1, x 0 / c]
       · intro i
         fin_cases i
-        · simp
+        · simp only [Fin.isValue, Fin.zero_eta, Matrix.cons_val_zero, sub_nonneg]
           have hxdiv : x 0 / c ≤ 1 - x 1 :=
             (div_le_iff₀ hc0).mpr (by nlinarith [hd])
           have : x 0 / c + x 1 ≤ 1 := by linarith
           linarith
         · simpa using hx1
-        · simp
+        · simp only [Fin.isValue, Fin.reduceFinMk, Matrix.cons_val]
           exact div_nonneg hx0 hc0.le
       · simp
         ring
@@ -938,10 +974,10 @@ theorem referenceEdgeSplit_union (c : ℝ) (hc0 : 0 < c) (hc1 : c < 1) :
           (1 - x 0 - x 1) / (1 - c)]
       · intro i
         fin_cases i
-        · simp
+        · simp only [Fin.isValue, Fin.zero_eta, Matrix.cons_val_zero]
           exact div_nonneg hd' (by linarith)
         · simpa using hx1
-        · simp
+        · simp only [Fin.isValue, Fin.reduceFinMk, Matrix.cons_val]
           exact div_nonneg (by linarith) (by linarith)
       · simp
         field_simp [h1c]
@@ -3128,6 +3164,168 @@ theorem childEdgeTrace_monochromatic (t : M.Triangle) (k : Fin 3)
   · exact Or.inl fun x hx => h x (Finset.mem_filter.mp hx).1
   · exact Or.inr fun x hx => h x (Finset.mem_filter.mp hx).1
 
+private theorem convexHull_inter_of_opposite_three_point_subsets
+    {a b z : M.RefinedVertex f}
+    (ha : 0 < f (a : Plane)) (hb : f (b : Plane) < 0) (hz : f (z : Plane) = 0)
+    {C D : Finset (M.RefinedVertex f)}
+    (hCclass : ∀ x ∈ C, x = a ∨ x = b ∨ x = z)
+    (hDclass : ∀ x ∈ D, x = a ∨ x = b ∨ x = z)
+    (hC : ∀ x ∈ C, 0 ≤ f (x : Plane)) (hD : ∀ x ∈ D, f (x : Plane) ≤ 0) :
+    convexHull ℝ (((↑) : M.RefinedVertex f → Plane) '' (C : Set (M.RefinedVertex f))) ∩
+        convexHull ℝ (((↑) : M.RefinedVertex f → Plane) '' (D : Set (M.RefinedVertex f))) =
+      convexHull ℝ (((↑) : M.RefinedVertex f → Plane) ''
+        ((C ∩ D : Finset (M.RefinedVertex f)) : Set (M.RefinedVertex f))) := by
+  classical
+  let val : M.RefinedVertex f → Plane := (↑)
+  simp only [← Finset.coe_image]
+  have hCsub : C ⊆ {a, z} := by
+    intro x hx
+    rcases hCclass x hx with rfl | rfl | rfl
+    · simp
+    · exfalso; linarith [hC _ hx]
+    · simp
+  have hDsub : D ⊆ {b, z} := by
+    intro x hx
+    rcases hDclass x hx with rfl | rfl | rfl
+    · exfalso; linarith [hD _ hx]
+    · simp
+    · simp
+  by_cases hzC : z ∈ C
+  · by_cases hzD : z ∈ D
+    · have hCzero : (C.image val).filter (fun p ↦ f p = 0) = {(z : Plane)} := by
+        ext p
+        simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_singleton]
+        constructor
+        · rintro ⟨⟨x, hx, rfl⟩, hxzero⟩
+          rcases hCclass x hx with rfl | rfl | rfl
+          · exfalso; linarith
+          · exfalso; linarith
+          · rfl
+        · rintro rfl
+          exact ⟨⟨z, hzC, rfl⟩, hz⟩
+      have hDzero : (D.image val).filter (fun p ↦ f p = 0) = {(z : Plane)} := by
+        ext p
+        simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_singleton]
+        constructor
+        · rintro ⟨⟨x, hx, rfl⟩, hxzero⟩
+          rcases hDclass x hx with rfl | rfl | rfl
+          · exfalso; linarith
+          · exfalso; linarith
+          · rfl
+        · rintro rfl
+          exact ⟨⟨z, hzD, rfl⟩, hz⟩
+      have hinter := convexHull_inter_of_affine_separation
+        (C.image val) (D.image val) ({(z : Plane)} : Finset Plane) f
+        (by
+          intro p hp
+          obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
+          exact hC x hx)
+        (by
+          intro p hp
+          obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
+          exact hD x hx)
+        hCzero hDzero
+      have hCD : C ∩ D = {z} := by
+        ext x
+        simp only [Finset.mem_inter, Finset.mem_singleton]
+        constructor
+        · rintro ⟨hxC, hxD⟩
+          have hxpair := hCsub hxC
+          simp only [Finset.mem_insert, Finset.mem_singleton] at hxpair
+          rcases hxpair with hxa | hxz
+          · subst x
+            exfalso
+            linarith [hD a hxD]
+          · exact hxz
+        · rintro rfl
+          exact ⟨hzC, hzD⟩
+      rw [hCD]
+      simpa [val] using hinter
+    · have hDsingle : D ⊆ {b} := by
+        intro x hx
+        have hxpair := hDsub hx
+        simp only [Finset.mem_insert, Finset.mem_singleton] at hxpair
+        rcases hxpair with hxb | hxz
+        · simp [hxb]
+        · exact False.elim (hzD (hxz ▸ hx))
+      have hDgeom : convexHull ℝ ((D.image val : Finset Plane) : Set Plane) ⊆ {(b : Plane)} :=
+        convexHull_min (by
+          intro p hp
+          obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
+          simpa [val] using hDsingle hx) (convex_singleton _)
+      have hCnonneg : convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ⊆
+          {p | 0 ≤ f p} := convexHull_min (by
+        intro p hp
+        obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
+        exact hC x hx) ((convex_Ici (0 : ℝ)).affine_preimage f)
+      have hleft : convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ∩
+          convexHull ℝ ((D.image val : Finset Plane) : Set Plane) = ∅ := by
+        apply Set.Subset.antisymm
+        · intro p hp
+          have hpb := hDgeom hp.2
+          simp only [Set.mem_singleton_iff] at hpb
+          subst p
+          exfalso
+          have hbnonneg : 0 ≤ f (b : Plane) := hCnonneg hp.1
+          linarith
+        · exact Set.empty_subset _
+      have hCD : C ∩ D = ∅ := by
+        ext x
+        constructor
+        · intro hx
+          have hx' := Finset.mem_inter.mp hx
+          have hxb := hDsingle hx'.2
+          simp only [Finset.mem_singleton] at hxb
+          subst x
+          exfalso
+          linarith [hC b hx'.1]
+        · intro hx
+          simp at hx
+      rw [hleft, hCD]
+      simp
+  · have hCsingle : C ⊆ {a} := by
+      intro x hx
+      have hxpair := hCsub hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hxpair
+      rcases hxpair with hxa | hxz
+      · simp [hxa]
+      · exact False.elim (hzC (hxz ▸ hx))
+    have hCgeom : convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ⊆ {(a : Plane)} :=
+      convexHull_min (by
+        intro p hp
+        obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
+        simpa [val] using hCsingle hx) (convex_singleton _)
+    have hDnonpos : convexHull ℝ ((D.image val : Finset Plane) : Set Plane) ⊆
+        {p | f p ≤ 0} := convexHull_min (by
+      intro p hp
+      obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
+      exact hD x hx) ((convex_Iic (0 : ℝ)).affine_preimage f)
+    have hleft : convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ∩
+        convexHull ℝ ((D.image val : Finset Plane) : Set Plane) = ∅ := by
+      apply Set.Subset.antisymm
+      · intro p hp
+        have hpa := hCgeom hp.1
+        simp only [Set.mem_singleton_iff] at hpa
+        subst p
+        exfalso
+        have hanonpos : f (a : Plane) ≤ 0 := hDnonpos hp.2
+        linarith
+      · exact Set.empty_subset _
+    have hCD : C ∩ D = ∅ := by
+      ext x
+      constructor
+      · intro hx
+        have hx' := Finset.mem_inter.mp hx
+        have hxa := hCsingle hx'.1
+        simp only [Finset.mem_singleton] at hxa
+        subst x
+        exfalso
+        linarith [hD a hx'.2]
+      · intro hx
+        simp at hx
+    rw [hleft, hCD]
+    simp
+
 /-- The finite one-dimensional calculation behind compatibility on a cut edge. -/
 theorem convexHull_inter_of_signed_three_point_subsets
     {a b z : M.RefinedVertex f}
@@ -3223,153 +3421,9 @@ theorem convexHull_inter_of_signed_three_point_subsets
       convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ∩
           convexHull ℝ ((D.image val : Finset Plane) : Set Plane) =
         convexHull ℝ (((C ∩ D).image val : Finset Plane) : Set Plane) := by
-    have hCsub : C ⊆ {a, z} := by
-      intro x hx
-      rcases hCclass x hx with rfl | rfl | rfl
-      · simp
-      · exfalso; linarith [hC _ hx]
-      · simp
-    have hDsub : D ⊆ {b, z} := by
-      intro x hx
-      rcases hDclass x hx with rfl | rfl | rfl
-      · exfalso; linarith [hD _ hx]
-      · simp
-      · simp
-    by_cases hzC : z ∈ C
-    · by_cases hzD : z ∈ D
-      · have hCzero : (C.image val).filter (fun p => f p = 0) = {(z : Plane)} := by
-          ext p
-          simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_singleton]
-          constructor
-          · rintro ⟨⟨x, hx, rfl⟩, hxzero⟩
-            rcases hCclass x hx with rfl | rfl | rfl
-            · exfalso; linarith
-            · exfalso; linarith
-            · rfl
-          · rintro rfl
-            exact ⟨⟨z, hzC, rfl⟩, hz⟩
-        have hDzero : (D.image val).filter (fun p => f p = 0) = {(z : Plane)} := by
-          ext p
-          simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_singleton]
-          constructor
-          · rintro ⟨⟨x, hx, rfl⟩, hxzero⟩
-            rcases hDclass x hx with rfl | rfl | rfl
-            · exfalso; linarith
-            · exfalso; linarith
-            · rfl
-          · rintro rfl
-            exact ⟨⟨z, hzD, rfl⟩, hz⟩
-        have hinter := convexHull_inter_of_affine_separation
-          (C.image val) (D.image val) ({(z : Plane)} : Finset Plane) f
-          (by
-            intro p hp
-            obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
-            exact hC x hx)
-          (by
-            intro p hp
-            obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
-            exact hD x hx)
-          hCzero hDzero
-        have hCD : C ∩ D = {z} := by
-          ext x
-          simp only [Finset.mem_inter, Finset.mem_singleton]
-          constructor
-          · rintro ⟨hxC, hxD⟩
-            have hxpair := hCsub hxC
-            simp only [Finset.mem_insert, Finset.mem_singleton] at hxpair
-            rcases hxpair with hxa | hxz
-            · subst x
-              exfalso
-              linarith [hD a hxD]
-            · exact hxz
-          · rintro rfl
-            exact ⟨hzC, hzD⟩
-        rw [hCD]
-        simpa [val] using hinter
-      · have hDsingle : D ⊆ {b} := by
-          intro x hx
-          have hxpair := hDsub hx
-          simp only [Finset.mem_insert, Finset.mem_singleton] at hxpair
-          rcases hxpair with hxb | hxz
-          · simp [hxb]
-          · exact False.elim (hzD (hxz ▸ hx))
-        have hDgeom : convexHull ℝ ((D.image val : Finset Plane) : Set Plane) ⊆ {(b : Plane)} :=
-          convexHull_min (by
-            intro p hp
-            obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
-            simpa [val] using hDsingle hx) (convex_singleton _)
-        have hCnonneg : convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ⊆
-            {p | 0 ≤ f p} := convexHull_min (by
-          intro p hp
-          obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
-          exact hC x hx) ((convex_Ici (0 : ℝ)).affine_preimage f)
-        have hleft : convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ∩
-            convexHull ℝ ((D.image val : Finset Plane) : Set Plane) = ∅ := by
-          apply Set.Subset.antisymm
-          · intro p hp
-            have hpb := hDgeom hp.2
-            simp only [Set.mem_singleton_iff] at hpb
-            subst p
-            exfalso
-            have hbnonneg : 0 ≤ f (b : Plane) := hCnonneg hp.1
-            linarith
-          · exact Set.empty_subset _
-        have hCD : C ∩ D = ∅ := by
-          ext x
-          constructor
-          · intro hx
-            have hx' := Finset.mem_inter.mp hx
-            have hxb := hDsingle hx'.2
-            simp only [Finset.mem_singleton] at hxb
-            subst x
-            exfalso
-            linarith [hC b hx'.1]
-          · intro hx
-            simp at hx
-        rw [hleft, hCD]
-        simp
-    · have hCsingle : C ⊆ {a} := by
-        intro x hx
-        have hxpair := hCsub hx
-        simp only [Finset.mem_insert, Finset.mem_singleton] at hxpair
-        rcases hxpair with hxa | hxz
-        · simp [hxa]
-        · exact False.elim (hzC (hxz ▸ hx))
-      have hCgeom : convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ⊆ {(a : Plane)} :=
-        convexHull_min (by
-          intro p hp
-          obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
-          simpa [val] using hCsingle hx) (convex_singleton _)
-      have hDnonpos : convexHull ℝ ((D.image val : Finset Plane) : Set Plane) ⊆
-          {p | f p ≤ 0} := convexHull_min (by
-        intro p hp
-        obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hp
-        exact hD x hx) ((convex_Iic (0 : ℝ)).affine_preimage f)
-      have hleft : convexHull ℝ ((C.image val : Finset Plane) : Set Plane) ∩
-          convexHull ℝ ((D.image val : Finset Plane) : Set Plane) = ∅ := by
-        apply Set.Subset.antisymm
-        · intro p hp
-          have hpa := hCgeom hp.1
-          simp only [Set.mem_singleton_iff] at hpa
-          subst p
-          exfalso
-          have hanonpos : f (a : Plane) ≤ 0 := hDnonpos hp.2
-          linarith
-        · exact Set.empty_subset _
-      have hCD : C ∩ D = ∅ := by
-        ext x
-        constructor
-        · intro hx
-          have hx' := Finset.mem_inter.mp hx
-          have hxa := hCsingle hx'.1
-          simp only [Finset.mem_singleton] at hxa
-          subst x
-          exfalso
-          linarith [hD a hx'.2]
-        · intro hx
-          simp at hx
-      rw [hleft, hCD]
-      simp
+    simpa only [← Finset.coe_image] using
+      convexHull_inter_of_opposite_three_point_subsets (M := M) (f := f)
+        ha hb hz hCclass hDclass hC hD
   simp only [← Finset.coe_image]
   change convexHull ℝ (AP : Set Plane) ∩ convexHull ℝ (BP : Set Plane) =
     convexHull ℝ (((A ∩ B).image val : Finset Plane) : Set Plane)
@@ -3592,8 +3646,6 @@ theorem parent_inter_vertexSupportCoord_zero (t : M.Triangle) (i : Fin 3) :
   · have hfilter : (Finset.univ.image p).filter
         (fun x => M.vertexSupportCoord t i x = 0) = {p i} := by
       ext x
-      change x ∈ (Finset.univ.image p).filter
-          (fun x => M.vertexSupportCoord t i x = 0) ↔ x ∈ {p i}
       simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_univ, true_and,
         Finset.mem_singleton]
       constructor

@@ -20,11 +20,12 @@ namespace Topology
 namespace ClassificationOfSurfaces
 namespace Moise
 
-theorem exists_pos_uniform_fintype' {I : Type*} [Fintype I] [Nonempty I]
+theorem exists_pos_uniform_fintype' {I : Type*} [Finite I] [Nonempty I]
     (P : I → ℝ → Prop)
     (hP : ∀ i, ∃ ε : ℝ, 0 < ε ∧ ∀ δ : ℝ, 0 < δ → δ < ε → P i δ) :
     ∃ ε : ℝ, 0 < ε ∧ ∀ i, ∀ δ : ℝ, 0 < δ → δ < ε → P i δ := by
   classical
+  letI := Fintype.ofFinite I
   let values : Finset ℝ := Finset.univ.image fun i => Classical.choose (hP i)
   have hvalues : values.Nonempty := by
     let i : I := Classical.choice inferInstance
@@ -2428,10 +2429,6 @@ theorem edgeReplacementMap_eq_middle {h : Plane → Plane}
       (Path.segment A.exitData.left A.exitData.right
         ⟨2 * (2 * K.edgeParameter i x - 1), hu⟩) = _
   rw [A.parameterization.curve_eq]
-  change A.parameterization.map
-      (planePoint (A.data.resolvedWalk.length *
-        (Path.segment A.exitData.left A.exitData.right
-          ⟨2 * (2 * K.edgeParameter i x - 1), hu⟩)) 0) = _
   congr 2
   simp [Path.segment_apply, AffineMap.lineMap_apply_module]
   ring

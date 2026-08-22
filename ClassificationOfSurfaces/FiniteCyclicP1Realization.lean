@@ -1136,7 +1136,7 @@ theorem preHomeomorph_generator_related
       have hparameter :
           pairing.identification.parameter t = t := by
         simp [BoundaryPairing.identification, PolygonGluing.Identification.parameter,
-          hdirection, PolygonGluing.ParameterDirection.homeomorph_opposite_apply]
+          hdirection]
       rw [hparameter]
       by_cases hselected : pairing.source.edge = a
       · have htargetSelected : pairing.target.edge = a :=

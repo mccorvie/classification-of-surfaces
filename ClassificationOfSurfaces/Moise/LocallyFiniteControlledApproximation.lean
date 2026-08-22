@@ -356,6 +356,7 @@ def PlaneGraphRealization.EdgeCoordZeroTrichotomy
         G.edgeImage e ∩ {x | x 0 = 0} = {G.vertexImage v}) ∨
       G.edgeImage e ∩ {x | x 0 = 0} = ∅
 
+omit [T2Space S] in
 /-- Including an edge simplex in an incident face does not change its endpoint
 coordinates. -/
 private theorem edgeSimplexInFace_apply
@@ -369,6 +370,7 @@ private theorem edgeSimplexInFace_apply
     extendFaceCoordinates_of_mem e.1 z w.2] at hcoords
   exact hcoords
 
+omit [T2Space S] in
 /-- Support on a selected set of face vertices can be checked before including an edge
 simplex into its incident face. -/
 private theorem edgeSimplexInFace_supportedOn_iff
@@ -392,6 +394,7 @@ private theorem edgeSimplexInFace_supportedOn_iff
       exact hw
     · exact K.edgeSimplexInFace_supported f e hef z v hve
 
+omit [T2Space S] in
 /-- A facewise exposed zero locus gives the edgewise full/singleton/empty alternatives. -/
 theorem edgeCoordZeroTrichotomy_of_facewiseCoordZeroExposed
     (G : K.PlaneGraphRealization) (hface : G.FacewiseCoordZeroExposed) :
@@ -707,6 +710,7 @@ theorem graphReplacementPreservesCoordZero_of_edgeCoordZeroTrichotomy
       rw [hempty] at hpZeroMem
       exact hpZeroMem.elim
 
+omit [T2Space S] in
 /-- The facewise exposed-face invariant is the single source-side hypothesis needed for exact
 zero-coordinate preservation by the simultaneous graph replacement. -/
 theorem graphReplacementPreservesCoordZero_of_facewiseCoordZeroExposed

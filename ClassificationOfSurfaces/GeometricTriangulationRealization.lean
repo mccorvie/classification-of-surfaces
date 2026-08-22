@@ -161,7 +161,7 @@ theorem finiteCyclicDartEquiv_cyclicOrientedEdge
       (T.toFiniteSurfaceTriangulation.finiteCyclicOccurrenceEquiv ⟨f, i⟩) =
     (T.triangleBoundary f).get i
   rw [T.triangleBoundary_get]
-  simp [cyclicOrientedEdge, cyclicFace,
+  simp only [cyclicOrientedEdge, cyclicFace,
     FiniteSurfaceTriangulation.finiteCyclicOccurrenceEquiv]
   congr
   exact T.toFiniteSurfaceTriangulation.finiteCyclicFaceEquiv.symm_apply_apply f

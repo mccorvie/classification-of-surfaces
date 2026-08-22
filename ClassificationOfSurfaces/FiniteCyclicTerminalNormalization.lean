@@ -165,7 +165,9 @@ theorem orientableTargetNames_nodup (p n : ℕ) :
       simp
     · rw [List.pairwise_ofFn]
       intro i j hij
-      simp [List.Disjoint]
+      simp only [List.Disjoint, List.mem_cons, List.not_mem_nil, or_false, imp_false, not_or,
+        forall_eq_or_imp, NormalForm.OrientableEdge.a.injEq, reduceCtorEq, not_false_eq_true,
+        and_true, forall_eq, NormalForm.OrientableEdge.b.injEq, true_and, and_self]
       exact Fin.ne_of_lt hij
   · rw [List.nodup_flatten]
     constructor
@@ -175,16 +177,18 @@ theorem orientableTargetNames_nodup (p n : ℕ) :
       simp
     · rw [List.pairwise_ofFn]
       intro i j hij
-      simp [List.Disjoint]
+      simp only [List.Disjoint, List.mem_cons, List.not_mem_nil, or_false, imp_false, not_or,
+        forall_eq_or_imp, NormalForm.OrientableEdge.c.injEq, reduceCtorEq, not_false_eq_true,
+        and_true, forall_eq, NormalForm.OrientableEdge.h.injEq, true_and, and_self]
       exact Fin.ne_of_lt hij
   · intro x hx y hy
     simp only [List.mem_flatten, List.mem_ofFn] at hx hy
     rcases hx with ⟨names, ⟨i, hi⟩, hx⟩
     subst names
-    simp at hx
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
     rcases hy with ⟨names, ⟨j, hj⟩, hy⟩
     subst names
-    simp at hy
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
     rcases hx with rfl | rfl <;>
       rcases hy with rfl | rfl <;>
       simp
@@ -211,7 +215,8 @@ theorem nonOrientableTargetNames_nodup (p n : ℕ) :
       simp
     · rw [List.pairwise_ofFn]
       intro i j hij
-      simp [List.Disjoint]
+      simp only [List.Disjoint, List.mem_cons, List.not_mem_nil, or_false, imp_false, forall_eq,
+        NormalForm.NonOrientableEdge.a.injEq]
       exact Fin.ne_of_lt hij
   · rw [List.nodup_flatten]
     constructor
@@ -221,16 +226,18 @@ theorem nonOrientableTargetNames_nodup (p n : ℕ) :
       simp
     · rw [List.pairwise_ofFn]
       intro i j hij
-      simp [List.Disjoint]
+      simp only [List.Disjoint, List.mem_cons, List.not_mem_nil, or_false, imp_false, not_or,
+        forall_eq_or_imp, NormalForm.NonOrientableEdge.c.injEq, reduceCtorEq, not_false_eq_true,
+        and_true, forall_eq, NormalForm.NonOrientableEdge.h.injEq, true_and, and_self]
       exact Fin.ne_of_lt hij
   · intro x hx y hy
     simp only [List.mem_flatten, List.mem_ofFn] at hx hy
     rcases hx with ⟨names, ⟨i, hi⟩, hx⟩
     subst names
-    simp at hx
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
     rcases hy with ⟨names, ⟨j, hj⟩, hy⟩
     subst names
-    simp at hy
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hy
     subst x
     rcases hy with rfl | rfl <;>
       simp
@@ -287,7 +294,7 @@ theorem crosscapCount_eq_countP {n : ℕ}
   | cons block blocks ih =>
       cases block <;>
         simp [CompletedBlock.crosscapCount,
-          isCrosscap, ih] <;> omega
+          isCrosscap, ih]; omega
 
 /-- The recursive handle count is the corresponding Boolean list count. -/
 theorem handleCount_eq_countP {n : ℕ}
@@ -300,7 +307,7 @@ theorem handleCount_eq_countP {n : ℕ}
   | cons block blocks ih =>
       cases block <;>
         simp [CompletedBlock.handleCount,
-          isHandle, ih] <;> omega
+          isHandle, ih]; omega
 
 /-- The recursive boundary count is the corresponding Boolean list count. -/
 theorem boundaryCount_eq_countP {n : ℕ}
@@ -313,7 +320,7 @@ theorem boundaryCount_eq_countP {n : ℕ}
   | cons block blocks ih =>
       cases block <;>
         simp [CompletedBlock.boundaryCount,
-          isBoundary, ih] <;> omega
+          isBoundary, ih]; omega
 
 /-- The distinct-name spine has one name per crosscap, two per handle, and two per boundary
 loop. -/
@@ -1117,6 +1124,18 @@ noncomputable def orientableOrderedResult
         rw [← htarget]
         exact result.equivalent }
 
+/-- The ordered orientable construction retains the terminal word's computed normal form. -/
+@[simp]
+private theorem orientableOrderedResult_normalForm
+    (terminal : TerminalCompletedWord)
+    (hcrosscap : CompletedBlock.crosscapCount terminal.blocks = 0)
+    (hshape :
+      blockKinds terminal.blocks =
+        List.replicate (CompletedBlock.handleCount terminal.blocks) BlockKind.handle ++
+          List.replicate (CompletedBlock.boundaryCount terminal.blocks) BlockKind.boundary) :
+    (orientableOrderedResult terminal hcrosscap hshape).normalForm = terminal.normalForm :=
+  rfl
+
 /-- An already ordered nonorientable completed word relabels exactly to the existing canonical
 nonorientable finite-cyclic presentation. -/
 noncomputable def nonOrientableOrderedResult
@@ -1891,6 +1910,18 @@ noncomputable def chooseCrosscapDecomposition {n : ℕ}
          after := after
          blocks_eq := hdecomp }⟩)
 
+/-- The selected crosscap decomposition reconstructs the original completed-block sequence. -/
+private theorem chooseCrosscapDecomposition_blocks_eq {n : ℕ}
+    (blocks : List (CompletedBlock n))
+    (hcrosscap : CompletedBlock.crosscapCount blocks ≠ 0) :
+    blocks =
+      (chooseCrosscapDecomposition blocks hcrosscap).before ++
+        CompletedBlock.crosscap
+            (chooseCrosscapDecomposition blocks hcrosscap).anchor
+            (chooseCrosscapDecomposition blocks hcrosscap).negative ::
+          (chooseCrosscapDecomposition blocks hcrosscap).after :=
+  (chooseCrosscapDecomposition blocks hcrosscap).blocks_eq
+
 /-- In the presence of a crosscap, rotate one crosscap to the head, normalize its sign, and
 convert every handle into two additional crosscaps. -/
 noncomputable def convertHandlesOfCrosscap
@@ -2048,6 +2079,15 @@ noncomputable def convertHandlesOfCrosscap
     simpa [rotatedBlocks, tail,
       CompletedBlock.boundaryCount] using
       hboundaryCount.symm
+
+/-- The constructive crosscap conversion eliminates every handle block. -/
+@[simp]
+private theorem convertHandlesOfCrosscap_handleCount_eq_zero
+    (terminal : TerminalCompletedWord)
+    (hcrosscap : CompletedBlock.crosscapCount terminal.blocks ≠ 0) :
+    CompletedBlock.handleCount
+        (convertHandlesOfCrosscap terminal hcrosscap).target.blocks = 0 :=
+  (convertHandlesOfCrosscap terminal hcrosscap).handleCount_eq_zero
 
 /-- A raw one-face context containing one completed boundary loop. -/
 def boundaryContextWord {n : ℕ}
@@ -2896,7 +2936,7 @@ theorem crosscapConversionResult_normalForm_eq
 /-- The completed-block terminal seam: stable-sort boundary blocks, convert all handles when a
 crosscap is present, normalize every edge orientation, and relabel positionally to the single
 canonical finite-cyclic presentation selected by `TerminalCompletedWord.normalForm`. -/
-noncomputable def terminalCompletedNormalizer :
+theorem terminalCompletedNormalizer :
     TerminalCompletedNormalizer where
   equivalent terminal := by
     by_cases hcrosscap :

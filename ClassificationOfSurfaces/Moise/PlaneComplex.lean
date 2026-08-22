@@ -137,7 +137,7 @@ theorem exists_mem_openSegment_inter_ball {a b : Plane} (hab : a ≠ b)
   · rw [openSegment_eq_image_lineMap]
     exact ⟨t, ⟨ht, ht1⟩, rfl⟩
   · rw [Metric.mem_ball, show dist x a = ‖t‖ * d by
-      simpa [x, d] using dist_lineMap_left a b t]
+      simp [x, d]]
     rw [Real.norm_eq_abs, abs_of_pos ht]
     have htle : t ≤ r / (2 * d) := min_le_right _ _
     have hmul := mul_le_mul_of_nonneg_right htle hd.le
@@ -283,8 +283,10 @@ theorem endpoint_secondCoords_eq_zero_of_two_axis_points {a b x y : Plane}
     rw [← hsx, ← hty, h]
   have hsCoord := congrArg (fun p : Plane => p 1) hsx
   have htCoord := congrArg (fun p : Plane => p 1) hty
-  simp [AffineMap.lineMap_apply_module, hx0] at hsCoord
-  simp [AffineMap.lineMap_apply_module, hy0] at htCoord
+  simp only [Fin.isValue, AffineMap.lineMap_apply_module, PiLp.add_apply, PiLp.smul_apply,
+    smul_eq_mul, hx0] at hsCoord
+  simp only [Fin.isValue, AffineMap.lineMap_apply_module, PiLp.add_apply, PiLp.smul_apply,
+    smul_eq_mul, hy0] at htCoord
   have hprod : (s - t) * (b 1 - a 1) = 0 := by
     nlinarith
   have hba : b 1 = a 1 := by

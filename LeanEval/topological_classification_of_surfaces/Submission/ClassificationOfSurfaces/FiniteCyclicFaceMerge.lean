@@ -132,7 +132,7 @@ theorem target_isSurfaceValid {n : ℕ}
     simp only [List.map_append, List.map_cons, List.map_nil,
       edgeOfDart, List.count_append, List.count_cons,
       List.count_nil] at hmultiplicity
-    simp [hne] at hmultiplicity
+    simp only [beq_iff_eq, hne, ↓reduceIte, add_zero, zero_add] at hmultiplicity
     rw [P2.count_retainWord_castSucc,
       P2.count_retainWord_castSucc] at hmultiplicity
     rw [Dyck.oneFace_edgeMultiplicity]
@@ -563,11 +563,13 @@ def expandSourceSignedIsoSplitMarkedTarget {n : ℕ}
           rw [P1.expandWord_append,
             Cancellation.expandWord_retainWord_fresh,
             P1.expandWord_singleton, P1.expandDart_pos_self]
-          simp [P2.retainWord, P1.firstSubedge, P1.freshEdge]
+          simp only [P2.retainWord, List.map_map, P1.firstSubedge, P1.freshEdge, List.map_append,
+            List.map_cons, P1.castSuccDart_pos, List.map_nil, List.append_assoc, List.cons_append,
+            List.nil_append]
           exact List.IsRotated.refl _
       | succ i =>
           let iW : Fin W.length :=
-            ⟨i.val, by simpa [target] using i.isLt⟩
+            ⟨i.val, by simp [target]⟩
           have hsource :
               (source U V W).boundary
                   (P2.oldFace (target U V W) (targetCut U V W)
@@ -586,8 +588,10 @@ def expandSourceSignedIsoSplitMarkedTarget {n : ℕ}
               P2.retainWord (P2.retainWord (W.get iW)) by
             exact Cancellation.expandWord_retainWord_fresh _]
           rw [P2.split_boundary_old_of_ne]
-          · simp [markedTarget, FiniteCyclicPresentation.boundary, iW,
-              P2.retainWord]
+          · simp only [P2.retainWord, Fin.eta, List.get_eq_getElem, List.map_map,
+              markedTarget, FiniteCyclicPresentation.boundary, List.length_cons,
+              Fin.val_succ, List.append_assoc, List.cons_append, List.nil_append,
+              List.getElem_cons_succ, List.getElem_map, iW]
             exact List.IsRotated.refl _
           · intro h
             have hval := congrArg Fin.val h
@@ -601,7 +605,8 @@ def expandSourceSignedIsoSplitMarkedTarget {n : ℕ}
         Bool.false_eq_true, P2.freshEdge]
       rw [P1.expandWord_cons, P1.expandDart_neg_self,
         Cancellation.expandWord_retainWord_fresh]
-      simp [P2.retainWord, P1.firstSubedge, P1.freshEdge]
+      simp only [P1.freshEdge, P1.firstSubedge, P2.retainWord, List.map_map, List.cons_append,
+        List.nil_append, List.map_cons, P1.castSuccDart_neg]
       exact List.IsRotated.refl _
 
 @[simp]

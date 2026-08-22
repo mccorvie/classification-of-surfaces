@@ -212,7 +212,9 @@ theorem no_retraction_of_homeomorph {X Y : Type*} [TopologicalSpace X] [Topologi
   apply Subtype.ext
   have hzB : e.symm z.1 ∈ B := by
     rw [hBpre]
-    simpa using z.2
+    change e (e.symm z.1) ∈ B'
+    rw [e.apply_symm_apply]
+    exact z.2
   have hzA : e.symm z.1 ∈ A := hBA hzB
   change e (r ⟨e.symm z.1, hzA⟩).1 = z.1
   rw [show (r ⟨e.symm z.1, hzA⟩).1 = e.symm z.1 from

@@ -359,16 +359,28 @@ theorem triangleEdges_eq_freeTriangleEdges (T : M.Triangle) (k : Fin 3) :
       {(Equiv.swap 2 k) 0, (Equiv.swap 2 k) 1} := by
     fin_cases k <;> decide
   rw [freeTriangleBaseEdge, hindices]
-  fin_cases k <;>
-    simp [freeTriangleApexEdge0, freeTriangleApexEdge1,
-      Equiv.swap_apply_def, Finset.pair_comm]
-  all_goals
-    ext e
-    simp
-    have hpair : ({M.orderedVertex T 0, M.orderedVertex T 1} : Finset M.Vertex) =
-        {M.orderedVertex T 1, M.orderedVertex T 0} := Finset.pair_comm _ _
-    try rw [hpair]
+  fin_cases k
+  · ext e
+    simp only [Fin.isValue, Finset.pair_comm, Finset.mem_insert,
+      Finset.mem_singleton, Fin.zero_eta, Equiv.swap_apply_right,
+      Equiv.swap_apply_def, Fin.reduceEq, ↓reduceIte, one_ne_zero,
+      Finset.image_insert, Finset.image_singleton, freeTriangleApexEdge0,
+      freeTriangleApexEdge1]
     tauto
+  · ext e
+    simp only [Fin.isValue, Finset.pair_comm, Finset.mem_insert,
+      Finset.mem_singleton, Fin.mk_one, Equiv.swap_apply_def, Fin.reduceEq,
+      ↓reduceIte, zero_ne_one, Finset.image_insert, Finset.image_singleton,
+      freeTriangleApexEdge0, freeTriangleApexEdge1]
+    have h10 : ({M.orderedVertex T 1, M.orderedVertex T 0} : Finset M.Vertex) =
+        {M.orderedVertex T 0, M.orderedVertex T 1} := Finset.pair_comm _ _
+    rw [h10]
+    tauto
+  · ext e
+    simp only [Fin.isValue, Finset.pair_comm, Finset.mem_insert,
+      Finset.mem_singleton, Fin.reduceFinMk, Equiv.swap_self,
+      Equiv.refl_apply, Finset.image_insert, Finset.image_singleton,
+      freeTriangleApexEdge0, freeTriangleApexEdge1]
 
 /-- Every triangle vertex lies on one of the two apex edges. -/
 theorem triangleVertex_mem_freeTriangleApexEdges (T : M.Triangle) (k : Fin 3)
@@ -435,7 +447,8 @@ theorem frontier_triangleCarrier_subset_freeTriangleEdges (T : M.Triangle) (k : 
     have h12 := hsymm (M.position (M.orderedVertex T 1))
       (M.position (M.orderedVertex T 2))
     fin_cases k
-    · simp [freeTriangleOrder, Equiv.swap_apply_def]
+    · simp only [freeTriangleOrder, Fin.isValue, Fin.zero_eta, Equiv.swap_apply_right,
+        Equiv.swap_apply_def, Fin.reduceEq, ↓reduceIte, one_ne_zero]
       constructor
       · rintro (h | h | h)
         · exact Or.inr (Or.inr (h12.mpr h))
@@ -445,7 +458,8 @@ theorem frontier_triangleCarrier_subset_freeTriangleEdges (T : M.Triangle) (k : 
         · exact Or.inr (Or.inr (h01.mp h))
         · exact Or.inr (Or.inl (h02.mp h))
         · exact Or.inl (h12.mp h)
-    · simp [freeTriangleOrder, Equiv.swap_apply_def]
+    · simp only [freeTriangleOrder, Fin.isValue, Fin.mk_one, Equiv.swap_apply_def, Fin.reduceEq,
+        ↓reduceIte, zero_ne_one]
       constructor
       · rintro (h | h | h)
         · exact Or.inr (Or.inl h)
@@ -455,7 +469,7 @@ theorem frontier_triangleCarrier_subset_freeTriangleEdges (T : M.Triangle) (k : 
         · exact Or.inr (Or.inl h)
         · exact Or.inl h
         · exact Or.inr (Or.inr (h12.mp h))
-    · simp [freeTriangleOrder, Equiv.swap_apply_def]
+    · simp [freeTriangleOrder]
   rwa [horder]
 
 theorem freeTriangleBaseSegment_eq_oppositeEdgeCarrier (T : M.Triangle) (k : Fin 3) :
@@ -636,7 +650,7 @@ theorem isGeometricallyFreeTriangle_of_boundaryEdges_card_two (T : M.Triangle)
     rw [hcarrier, hcarrier]
     simp only [freeTriangleOrder]
     simp only [Equiv.swap_apply_def]
-    simp
+    simp only [Fin.isValue, Fin.reduceEq, ↓reduceIte, Fin.mk_one, zero_ne_one]
     rw [segment_symm ℝ (M.position (M.orderedVertex T 0))
       (M.position (M.orderedVertex T 1))]
     rw [segment_symm ℝ (M.position (M.orderedVertex T 1))
@@ -987,10 +1001,11 @@ theorem exists_transportedThinKitePatch_inter_boundaryEdge_subset_baseEndpoints
     rw [hq]
     exact hE1
 
-private theorem exists_pos_uniform_finset {α : Type*} [DecidableEq α]
+private theorem exists_pos_uniform_finset {α : Type*}
     (s : Finset α) (P : α → ℝ → Prop)
     (hP : ∀ x ∈ s, ∃ ε : ℝ, 0 < ε ∧ ∀ δ : ℝ, 0 < δ → δ < ε → P x δ) :
     ∃ ε : ℝ, 0 < ε ∧ ∀ x ∈ s, ∀ δ : ℝ, 0 < δ → δ < ε → P x δ := by
+  classical
   induction s using Finset.induction_on with
   | empty =>
       exact ⟨1, by norm_num, by simp⟩

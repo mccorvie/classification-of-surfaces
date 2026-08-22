@@ -7,8 +7,6 @@ import ClassificationOfSurfaces.Moise.AdaptiveOpenComplex
 import ClassificationOfSurfaces.Moise.IntrinsicFaceModel
 import ClassificationOfSurfaces.Moise.IntrinsicGraphApproximation
 
-open scoped BigOperators
-
 /-!
 # Finite marked-edge fans on intrinsic two-complexes
 
@@ -17,6 +15,8 @@ subcomplex.  They must be ordered once on each global abstract edge: ordering in
 the two incident face charts can introduce incompatible auxiliary points.  This file supplies
 that global finite edge order and its consecutive intervals.
 -/
+
+open scoped BigOperators
 
 namespace LeanEval
 namespace Topology
@@ -2151,11 +2151,11 @@ theorem fanEndpointData_of_center_eq_zero_of_not_base_weights_pos
         rw [M.fanVertex_univ f] at this
         simpa only [Finset.mem_insert, Finset.mem_singleton] using this
       rcases hv with rfl | rfl | rfl
-      · simp [M.fanCenterVertex_ne_second f]
+      · simp only [ne_eq, M.fanCenterVertex_ne_second f, not_false_eq_true, Pi.single_eq_of_ne]
         exact hxCenter'
-      · simp [M.fanFirstVertex_ne_second f]
+      · simp only [ne_eq, M.fanFirstVertex_ne_second f, not_false_eq_true, Pi.single_eq_of_ne]
         exact hxFirst'
-      · simp
+      · simp only [Pi.single_eq_same]
         exact hxSecond'
     constructor
     · rw [hxVertex, M.fanFaceMap_vertex f]
@@ -2186,11 +2186,11 @@ theorem fanEndpointData_of_center_eq_zero_of_not_base_weights_pos
         rw [M.fanVertex_univ f] at this
         simpa only [Finset.mem_insert, Finset.mem_singleton] using this
       rcases hv with rfl | rfl | rfl
-      · simp [M.fanCenterVertex_ne_first f]
+      · simp only [ne_eq, M.fanCenterVertex_ne_first f, not_false_eq_true, Pi.single_eq_of_ne]
         exact hxCenter'
-      · simp
+      · simp only [Pi.single_eq_same]
         exact hxFirstOne'
-      · simp [M.fanFirstVertex_ne_second f]
+      · simp only [ne_eq, M.fanFirstVertex_ne_second f, not_false_eq_true, Pi.single_eq_of_ne']
         exact hxSecond'
     constructor
     · rw [hxVertex, M.fanFaceMap_vertex f]
@@ -2509,16 +2509,17 @@ theorem extendFaceCoordinates_eq_center_add_smul_normalizedBase
         (x (M.fanFirstVertex f)) := by
     funext v
     by_cases hv : (M.fanFirstVertex f).1 = v
-    · simp [hv]
+    · simp only [hv, Pi.smul_apply, Pi.single_eq_same, smul_eq_mul]
       exact mul_div_cancel₀ _ hd
-    · simp [hv]
+    · simp only [Pi.smul_apply, ne_eq, hv, not_false_eq_true, Pi.single_eq_of_ne', smul_eq_mul,
+        mul_zero]
   have hsecond : d • Pi.single (M.fanSecondVertex f).1
         (x (M.fanSecondVertex f) / d) =
       Pi.single (M.fanSecondVertex f).1
         (x (M.fanSecondVertex f)) := by
     funext v
     by_cases hv : (M.fanSecondVertex f).1 = v
-    · simp [hv]
+    · simp only [hv, Pi.smul_apply, Pi.single_eq_same, smul_eq_mul]
       exact mul_div_cancel₀ _ hd
     · simp [hv]
   rw [M.extendFaceCoordinates_fanFace f x,
@@ -2694,7 +2695,8 @@ theorem mem_globalFanFaceVertices_iff (f : M.FanFace) (v : M.FanVertex) :
   · intro hv
     obtain ⟨p, -, hp⟩ := Finset.mem_map.mp hv
     have hval : p.1 = v.1 := congrArg Subtype.val hp
-    simpa [← hval] using p.2
+    rw [← hval]
+    exact p.2
   · intro hv
     let p : {p // p ∈ M.fanFaceVertices f} := ⟨v.1, hv⟩
     apply Finset.mem_map.mpr
@@ -3052,6 +3054,44 @@ noncomputable def markedFanLocallyFiniteTriangleComplex :
     exact M.globalFanFaceMap_eq_iff
   locallyFinite := locallyFinite_of_finite _
 
+private theorem oldFaceEdge_eq_of_globalFanBase_eq (f g : M.FanFace)
+    (hbase : ({M.globalFanFirst f, M.globalFanSecond f} : Finset M.FanVertex) =
+      {M.globalFanFirst g, M.globalFanSecond g}) :
+    K.faceEdge f.1 f.2.1 = K.faceEdge g.1 g.2.1 := by
+  let E := K.faceEdge f.1 f.2.1
+  let D := K.faceEdge g.1 g.2.1
+  let p₀ := (M.globalFanFirst f).1
+  let p₁ := (M.globalFanSecond f).1
+  have hp₀E : p₀ ∈ K.faceCarrier E.1 :=
+    ((M.mem_edgeMarks_iff E _).mp (M.edgeIntervalFirst_mem_edgeMarks E f.2.2)).2
+  have hp₁E : p₁ ∈ K.faceCarrier E.1 :=
+    ((M.mem_edgeMarks_iff E _).mp (M.edgeIntervalSecond_mem_edgeMarks E f.2.2)).2
+  have hp₀Pair : M.globalFanFirst f ∈
+      ({M.globalFanFirst g, M.globalFanSecond g} : Finset M.FanVertex) := by
+    rw [← hbase]
+    simp
+  have hp₁Pair : M.globalFanSecond f ∈
+      ({M.globalFanFirst g, M.globalFanSecond g} : Finset M.FanVertex) := by
+    rw [← hbase]
+    simp
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hp₀Pair hp₁Pair
+  have hp₀D : p₀ ∈ K.faceCarrier D.1 := by
+    change (M.globalFanFirst f).1 ∈ K.faceCarrier D.1
+    rcases hp₀Pair with hp₀Pair | hp₀Pair
+    · rw [congrArg Subtype.val hp₀Pair]
+      exact ((M.mem_edgeMarks_iff D _).mp (M.edgeIntervalFirst_mem_edgeMarks D g.2.2)).2
+    · rw [congrArg Subtype.val hp₀Pair]
+      exact ((M.mem_edgeMarks_iff D _).mp (M.edgeIntervalSecond_mem_edgeMarks D g.2.2)).2
+  have hp₁D : p₁ ∈ K.faceCarrier D.1 := by
+    change (M.globalFanSecond f).1 ∈ K.faceCarrier D.1
+    rcases hp₁Pair with hp₁Pair | hp₁Pair
+    · rw [congrArg Subtype.val hp₁Pair]
+      exact ((M.mem_edgeMarks_iff D _).mp (M.edgeIntervalFirst_mem_edgeMarks D g.2.2)).2
+    · rw [congrArg Subtype.val hp₁Pair]
+      exact ((M.mem_edgeMarks_iff D _).mp (M.edgeIntervalSecond_mem_edgeMarks D g.2.2)).2
+  have hpNe : p₀ ≠ p₁ := M.edgeIntervalFirst_ne_second E f.2.2
+  exact K.edge_eq_of_two_distinct_common_points E D hp₀E hp₀D hp₁E hp₁D hpNe
+
 /-- The maximal global fan-face family inherits surface edge valence from the old intrinsic
 complex. -/
 theorem globalFanFaceFamily_edge_valence
@@ -3151,58 +3191,6 @@ theorem globalFanFaceFamily_edge_valence
         e = {M.globalFanFirst f₂, M.globalFanSecond f₂} :=
       M.eq_globalFanBase_of_card_two_of_subset_of_center_notMem
         f₂ hecard he₂ (center_not_of_incident f₂ he₂)
-    have oldEdge_eq_of_base_eq (g : M.FanFace)
-        (hbase :
-          ({M.globalFanFirst f₀, M.globalFanSecond f₀} :
-              Finset M.FanVertex) =
-            {M.globalFanFirst g, M.globalFanSecond g}) :
-        K.faceEdge f₀.1 f₀.2.1 = K.faceEdge g.1 g.2.1 := by
-      let E := K.faceEdge f₀.1 f₀.2.1
-      let D := K.faceEdge g.1 g.2.1
-      let p₀ := (M.globalFanFirst f₀).1
-      let p₁ := (M.globalFanSecond f₀).1
-      have hp₀E : p₀ ∈ K.faceCarrier E.1 :=
-        ((M.mem_edgeMarks_iff E _).mp
-          (M.edgeIntervalFirst_mem_edgeMarks E f₀.2.2)).2
-      have hp₁E : p₁ ∈ K.faceCarrier E.1 :=
-        ((M.mem_edgeMarks_iff E _).mp
-          (M.edgeIntervalSecond_mem_edgeMarks E f₀.2.2)).2
-      have hp₀Pair :
-          M.globalFanFirst f₀ ∈
-            ({M.globalFanFirst g, M.globalFanSecond g} :
-              Finset M.FanVertex) := by
-        rw [← hbase]
-        simp
-      have hp₁Pair :
-          M.globalFanSecond f₀ ∈
-            ({M.globalFanFirst g, M.globalFanSecond g} :
-              Finset M.FanVertex) := by
-        rw [← hbase]
-        simp
-      simp only [Finset.mem_insert, Finset.mem_singleton] at hp₀Pair
-      simp only [Finset.mem_insert, Finset.mem_singleton] at hp₁Pair
-      have hp₀D : p₀ ∈ K.faceCarrier D.1 := by
-        change (M.globalFanFirst f₀).1 ∈ K.faceCarrier D.1
-        rcases hp₀Pair with hp₀Pair | hp₀Pair
-        · rw [congrArg Subtype.val hp₀Pair]
-          exact ((M.mem_edgeMarks_iff D _).mp
-            (M.edgeIntervalFirst_mem_edgeMarks D g.2.2)).2
-        · rw [congrArg Subtype.val hp₀Pair]
-          exact ((M.mem_edgeMarks_iff D _).mp
-            (M.edgeIntervalSecond_mem_edgeMarks D g.2.2)).2
-      have hp₁D : p₁ ∈ K.faceCarrier D.1 := by
-        change (M.globalFanSecond f₀).1 ∈ K.faceCarrier D.1
-        rcases hp₁Pair with hp₁Pair | hp₁Pair
-        · rw [congrArg Subtype.val hp₁Pair]
-          exact ((M.mem_edgeMarks_iff D _).mp
-            (M.edgeIntervalFirst_mem_edgeMarks D g.2.2)).2
-        · rw [congrArg Subtype.val hp₁Pair]
-          exact ((M.mem_edgeMarks_iff D _).mp
-            (M.edgeIntervalSecond_mem_edgeMarks D g.2.2)).2
-      have hpNe : p₀ ≠ p₁ := by
-        exact M.edgeIntervalFirst_ne_second E f₀.2.2
-      exact K.edge_eq_of_two_distinct_common_points
-        E D hp₀E hp₀D hp₁E hp₁D hpNe
     have hbase₀₁ :
         ({M.globalFanFirst f₀, M.globalFanSecond f₀} :
             Finset M.FanVertex) =
@@ -3213,8 +3201,8 @@ theorem globalFanFaceFamily_edge_valence
             Finset M.FanVertex) =
           {M.globalFanFirst f₂, M.globalFanSecond f₂} :=
       hb₀.symm.trans hb₂
-    have hedge₀₁ := oldEdge_eq_of_base_eq f₁ hbase₀₁
-    have hedge₀₂ := oldEdge_eq_of_base_eq f₂ hbase₀₂
+    have hedge₀₁ := M.oldFaceEdge_eq_of_globalFanBase_eq f₀ f₁ hbase₀₁
+    have hedge₀₂ := M.oldFaceEdge_eq_of_globalFanBase_eq f₀ f₂ hbase₀₂
     have faceVertices_eq_of_parent_eq_of_base_eq
         (g : M.FanFace) (hparent : f₀.1 = g.1)
         (hbase :

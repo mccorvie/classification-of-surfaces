@@ -498,6 +498,29 @@ theorem FinitePLHomeomorphOn.isPLOnSet_polygonal_frontier
     apply F.complex.down_closed t (F.complex.mem_simplexes_of_mem_cells ht) s hst hsne
   exact F.affineOn s hsF
 
+private theorem coordinate_mem_Icc_of_mem_segment {p q r : Plane}
+    (hr : r ∈ segment ℝ p q) : min (p 0) (q 0) ≤ r 0 ∧ r 0 ≤ max (p 0) (q 0) := by
+  rw [segment_eq_image_lineMap] at hr
+  obtain ⟨t, ⟨ht0, ht1⟩, rfl⟩ := hr
+  simp only [AffineMap.lineMap_apply_module, PiLp.add_apply, PiLp.smul_apply, smul_eq_mul]
+  rcases le_total (p 0) (q 0) with hpq | hqp
+  · rw [min_eq_left hpq, max_eq_right hpq]
+    constructor
+    · calc
+        p 0 = (1 - t) * p 0 + t * p 0 := by ring
+        _ ≤ (1 - t) * p 0 + t * q 0 := by gcongr
+    · calc
+        (1 - t) * p 0 + t * q 0 ≤ (1 - t) * q 0 + t * q 0 := by gcongr
+        _ = q 0 := by ring
+  · rw [min_eq_right hqp, max_eq_left hqp]
+    constructor
+    · calc
+        q 0 = (1 - t) * q 0 + t * q 0 := by ring
+        _ ≤ (1 - t) * p 0 + t * q 0 := by gcongr
+    · calc
+        (1 - t) * p 0 + t * q 0 ≤ (1 - t) * p 0 + t * p 0 := by gcongr
+        _ = p 0 := by ring
+
 /-- After the three Figure 3.3 base breakpoints have been made polygon vertices, each polygon
 edge is contained in one base half or avoids the open base altogether. -/
 theorem PolygonalCircle.edgeSegment_subset_normalized_baseHalf_or_disjoint
@@ -532,33 +555,6 @@ theorem PolygonalCircle.edgeSegment_subset_normalized_baseHalf_or_disjoint
     simp [AffineMap.lineMap_apply_module, planePoint]
     constructor <;> linarith
   have hxLine : x ∈ segment ℝ a b := hxEdge
-  have coord_between {p q r : Plane} (hr : r ∈ segment ℝ p q) :
-      min (p 0) (q 0) ≤ r 0 ∧ r 0 ≤ max (p 0) (q 0) := by
-    rw [segment_eq_image_lineMap] at hr
-    obtain ⟨t, ⟨ht0, ht1⟩, rfl⟩ := hr
-    simp only [AffineMap.lineMap_apply_module, PiLp.add_apply, PiLp.smul_apply,
-      smul_eq_mul]
-    rcases le_total (p 0) (q 0) with hpq | hqp
-    · rw [min_eq_left hpq, max_eq_right hpq]
-      constructor
-      · calc
-          p 0 = (1 - t) * p 0 + t * p 0 := by ring
-          _ ≤ (1 - t) * p 0 + t * q 0 := by
-            gcongr
-      · calc
-          (1 - t) * p 0 + t * q 0 ≤ (1 - t) * q 0 + t * q 0 := by
-            gcongr
-          _ = q 0 := by ring
-    · rw [min_eq_right hqp, max_eq_left hqp]
-      constructor
-      · calc
-          q 0 = (1 - t) * q 0 + t * q 0 := by ring
-          _ ≤ (1 - t) * p 0 + t * q 0 := by
-            gcongr
-      · calc
-          (1 - t) * p 0 + t * q 0 ≤ (1 - t) * p 0 + t * p 0 := by
-            gcongr
-          _ = p 0 := by ring
   have special_endpoint {P : Plane} (hP : J.IsVertexPoint P)
       (hPmem : P ∈ segment ℝ a b) : P = a ∨ P = b := by
     simpa [a, b] using (hP.mem_edgeSegment_iff i).mp hPmem
@@ -570,7 +566,7 @@ theorem PolygonalCircle.edgeSegment_subset_normalized_baseHalf_or_disjoint
     · by_contra hz
       have hzlt : z 0 < -1 := lt_of_not_ge hz
       have hwgt : -1 < w 0 := by
-        have hb := coord_between hx
+        have hb := coordinate_mem_Icc_of_mem_segment hx
         by_contra hw
         have hwle : w 0 ≤ -1 := le_of_not_gt hw
         rcases le_total (z 0) (w 0) with hzw' | hwz'
@@ -592,7 +588,7 @@ theorem PolygonalCircle.edgeSegment_subset_normalized_baseHalf_or_disjoint
       · have hwCoord : w 0 = -1 := by
           have := congrArg (fun p : Plane => p 0) hwEq
           simpa [planePoint] using this.symm
-        have hb := coord_between hx
+        have hb := coordinate_mem_Icc_of_mem_segment hx
         rcases le_total (z 0) (w 0) with hzw' | hwz'
         · rw [min_eq_left hzw', max_eq_right hzw', hwCoord] at hb
           linarith
@@ -601,7 +597,7 @@ theorem PolygonalCircle.edgeSegment_subset_normalized_baseHalf_or_disjoint
     · by_contra hz
       have hzgt : 1 < z 0 := lt_of_not_ge hz
       have hwlt : w 0 < 1 := by
-        have hb := coord_between hx
+        have hb := coordinate_mem_Icc_of_mem_segment hx
         by_contra hw
         have hwge : 1 ≤ w 0 := le_of_not_gt hw
         rcases le_total (z 0) (w 0) with hzw' | hwz'
@@ -624,7 +620,7 @@ theorem PolygonalCircle.edgeSegment_subset_normalized_baseHalf_or_disjoint
       · have hwCoord : w 0 = 1 := by
           have := congrArg (fun p : Plane => p 0) hwEq
           simpa [planePoint] using this.symm
-        have hb := coord_between hx
+        have hb := coordinate_mem_Icc_of_mem_segment hx
         rcases le_total (z 0) (w 0) with hzw' | hwz'
         · rw [min_eq_left hzw', max_eq_right hzw', hwCoord] at hb
           linarith
@@ -643,7 +639,7 @@ theorem PolygonalCircle.edgeSegment_subset_normalized_baseHalf_or_disjoint
       obtain ⟨t, ht, rfl⟩ := hp
       simp [AffineMap.lineMap_apply_module, hu0, hv0]
     have hpCoord : -1 ≤ p 0 ∧ p 0 ≤ 0 := by
-      have hpBetween := coord_between hp
+      have hpBetween := coordinate_mem_Icc_of_mem_segment hp
       rw [min_eq_left huv, max_eq_right huv] at hpBetween
       exact ⟨hulo.trans hpBetween.1, hpBetween.2.trans hvhi⟩
     apply mem_segment_of_horizontal
@@ -660,7 +656,7 @@ theorem PolygonalCircle.edgeSegment_subset_normalized_baseHalf_or_disjoint
       obtain ⟨t, ht, rfl⟩ := hp
       simp [AffineMap.lineMap_apply_module, hu0, hv0]
     have hpCoord : 0 ≤ p 0 ∧ p 0 ≤ 1 := by
-      have hpBetween := coord_between hp
+      have hpBetween := coordinate_mem_Icc_of_mem_segment hp
       rw [min_eq_left huv, max_eq_right huv] at hpBetween
       exact ⟨hu0c.trans hpBetween.1, hpBetween.2.trans hvhi⟩
     apply mem_segment_of_horizontal
@@ -783,11 +779,12 @@ theorem PolygonalCircle.exists_thinKite_image
       rfl
   exact ⟨K.mapHomeomorph h hedge, K.mapHomeomorph_carrier h hedge⟩
 
-private theorem exists_pos_uniform_fintype {I : Type*} [Fintype I] [Nonempty I]
+private theorem exists_pos_uniform_fintype {I : Type*} [Finite I] [Nonempty I]
     (P : I → ℝ → Prop)
     (hP : ∀ i, ∃ ε : ℝ, 0 < ε ∧ ∀ δ : ℝ, 0 < δ → δ < ε → P i δ) :
     ∃ ε : ℝ, 0 < ε ∧ ∀ i, ∀ δ : ℝ, 0 < δ → δ < ε → P i δ := by
   classical
+  letI := Fintype.ofFinite I
   let values : Finset ℝ := Finset.univ.image fun i => Classical.choose (hP i)
   have hvalues : values.Nonempty := by
     let i : I := Classical.choice inferInstance

@@ -623,7 +623,6 @@ theorem faceFillingsGraphAvoidInteriors_of_verticesAvoid
         have hzero := hsFace (K.edgeSecond e) hsecond
         rw [K.edgePath_apply_second] at hzero
         have hspos : 0 < s.1 := by
-          change (0 : ℝ) < s.1
           exact_mod_cast hs.1
         exact (ne_of_gt hspos) hzero
       have hz1Exterior : gpath z1 ∈ J.exteriorRegion := by
@@ -661,7 +660,6 @@ theorem faceFillingsGraphAvoidInteriors_of_verticesAvoid
           have hzero := hsFace (K.edgeFirst e) hfirst
           rw [K.edgePath_apply_first] at hzero
           have hslt : s.1 < 1 := by
-            change s.1 < (1 : ℝ)
             exact_mod_cast hs.2
           linarith
         have hz0Exterior : gpath z0 ∈ J.exteriorRegion := by

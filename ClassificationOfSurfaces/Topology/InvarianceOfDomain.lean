@@ -1,6 +1,5 @@
 /-
-Copyright (c) 2025 Steven Sivek. All rights reserved.
-Copyright (c) 2026 Kai Lam. All rights reserved.
+Copyright (c) 2025 Steven Sivek and 2026 Kai Lam. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Steven Sivek, Kai Lam
 -/
@@ -188,6 +187,22 @@ lemma stability_of_zero (f : E → E) (hf_cont : ContinuousOn f (closedBall 0 1)
   have hx_eq : diff_fun (x : E) = (x : E) := congr_arg Subtype.val hx
   grind
 
+omit [FiniteDimensional ℝ E] [BrouwerFixedPoint E] in
+private theorem radialProjection_mem_sep_union_sphere (c : E) {epsilon : ℝ}
+    (hepsilon : 0 < epsilon) {s : Set E} (hc : c ∉ s) {y : E} (hy : y ∈ s) :
+    c + max (epsilon / ‖y - c‖) (1 : ℝ) • (y - c) ∈
+      {z ∈ s | ‖z - c‖ ≥ epsilon} ∪ sphere c epsilon := by
+  by_cases h : epsilon < ‖y - c‖
+  · have hyc : 0 < ‖y - c‖ := hepsilon.trans h
+    grind [max_eq_right_of_lt, one_smul, add_sub_cancel, div_lt_one hyc]
+  · right
+    simp only [not_lt] at h
+    have hy_neq_c : c ≠ y := fun hcy ↦ hc (hcy ▸ hy)
+    have hleft : 1 ≤ epsilon / ‖y - c‖ :=
+      (one_le_div (norm_pos_iff.mpr (sub_ne_zero.mpr hy_neq_c.symm))).mpr h
+    rw [max_eq_left hleft]
+    simp [norm_smul, sub_ne_zero_of_ne hy_neq_c.symm, hepsilon.le]
+
 /-- Let `B^n` be the closed unit ball (closedBall 0 1).
 Let `f : B^n → ℝ^n` be an continuous injective map.
 Then `f(0)` lies in the interior of `f(B^n)`. -/
@@ -200,8 +215,7 @@ theorem invariance_of_domain_interior (f : E → E)
       ext y
       simp only [Set.mem_image, Set.mem_univ, iff_true]
       exact ⟨0, by simp, Subsingleton.elim _ _⟩
-    rw [himage, interior_univ]
-    exact Set.mem_univ _
+    rw [himage, interior_univ]; exact Set.mem_univ _
   -- The equivalence between `B^n` and `f(B^n)`.
   let FEquiv := Equiv.Set.imageOfInjOn f (closedBall 0 1) hf_inj
   -- The inverse map of `f` is continuous.
@@ -264,8 +278,7 @@ theorem invariance_of_domain_interior (f : E → E)
     rw [dist_eq_norm] at hc1
     have hdist : ‖y - f 0‖ < 2 * ε := by
       have hineq := norm_add_le (y - c) (c - f 0)
-      simp only [sub_add_sub_cancel] at hineq
-      linarith
+      simp only [sub_add_sub_cancel] at hineq; linarith
     grind [dist_zero_right, dist_eq_norm]
   -- Let `Σ₁ := {y ∈ f(B^n): ‖y - c‖ ≥ ε}`.
   let sigma1 : Set (E) := {y ∈ f '' closedBall 0 1 | ‖y - c‖ ≥ ε}
@@ -279,8 +292,7 @@ theorem invariance_of_domain_interior (f : E → E)
     rw [isCompact_iff_isClosed_bounded]
     -- `Σ₁` is the complement of the open ball, so it is closed.
     have hcompl : {y | ‖y - c‖ ≥ ε }ᶜ = ball c ε := by
-      ext y
-      simp only [Set.mem_compl_iff, Set.mem_setOf_eq, not_le, mem_ball_iff_norm]
+      ext y; simp only [Set.mem_compl_iff, Set.mem_setOf_eq, not_le, mem_ball_iff_norm]
     have hopen : IsOpen {y | ‖y - c‖ ≥ ε }ᶜ := hcompl ▸ isOpen_ball
     -- `f(B^n)` is compact as it is the image of a compact set under a continuous function
     -- As compact sets are bounded and `Σ₁` is contained in this, `Σ₁` is bounded.
@@ -293,24 +305,8 @@ theorem invariance_of_domain_interior (f : E → E)
   let Phi : (E) → (E) := fun y => c + (max (ε / ‖y - c‖) (1 : ℝ)) • (y - c)
   -- The image of `f(B^n)` under `Φ` is `Σ`.
   have hPhiimg (y : E) (hy : y ∈ f '' closedBall 0 1) : Phi y ∈ sigma := by
-    by_cases h : ε < ‖y - c‖
-    -- If `ε < ‖y - c‖`, then `Φ(y) ∈ Σ₁`.
-    · have hyc : 0 < ‖y - c‖ := by linarith
-      grind [max_eq_right_of_lt, one_smul, add_sub_cancel, div_lt_one hyc]
-    -- If `‖y - c‖ ≤ ε`, then `Φ(y) ∈ Σ₂`.
-    · right
-      simp only [not_lt] at h
-      have hy_neq_c : c ≠ y := by
-        by_contra h
-        rw [← h] at hy
-        exact hc2 hy
-      have hleft : 1 ≤ ε / ‖y - c‖ :=
-      (one_le_div (norm_pos_iff.mpr (sub_ne_zero.mpr (Ne.symm hy_neq_c)))).mpr h
-      have hPhi : Phi y = c + (ε / ‖y - c‖) • (y - c) := by
-        dsimp [Phi]
-        rwa [max_eq_left]
-      rw [hPhi]
-      simp [sigma2, norm_smul, (sub_ne_zero_of_ne (Ne.symm hy_neq_c)), hε1.le]
+    simpa only [Phi, sigma, sigma1, sigma2] using
+      radialProjection_mem_sep_union_sphere c hε1 hc2 hy
   -- `Φ` is continuous.
   have hPhicont : ContinuousOn Phi (f '' closedBall 0 1) := by
     refine ContinuousOn.add continuousOn_const (ContinuousOn.smul ?_
@@ -339,8 +335,7 @@ theorem invariance_of_domain_interior (f : E → E)
       have heq : G y = G (f 0) := SetCoe.ext (Eq.trans hGeq hG0.symm)
       exact hG_inj_on_image hy.1 hf0_image heq
     rw [Set.mem_sep_iff, hyeq] at hy
-    rw [dist_eq_norm, ← norm_neg, neg_sub] at hc1
-    linarith
+    rw [dist_eq_norm, ← norm_neg, neg_sub] at hc1; linarith
   -- The norm of `G` is continuous on `Σ₁`
   let normG : E → ℝ := fun y => ‖(G y : E)‖
   have hGconton : ContinuousOn G (f '' closedBall 0 1) := (ContinuousMap.continuous G).continuousOn

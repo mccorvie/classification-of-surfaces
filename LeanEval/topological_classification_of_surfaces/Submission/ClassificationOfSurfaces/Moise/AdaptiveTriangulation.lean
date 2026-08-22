@@ -58,7 +58,8 @@ theorem mem_adaptiveGlobalFanFaceVertices_iff (hU : IsOpen U)
   · intro hv
     obtain ⟨p, -, hp⟩ := Finset.mem_map.mp hv
     have hval : p.1 = v.1 := congrArg Subtype.val hp
-    simpa [← hval] using p.2
+    rw [← hval]
+    exact p.2
   · intro hv
     let p : {p // p ∈ K.adaptiveFanFaceVertices U hU f} := ⟨v.1, hv⟩
     apply Finset.mem_map.mpr

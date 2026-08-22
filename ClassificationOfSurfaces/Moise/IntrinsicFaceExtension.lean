@@ -848,6 +848,24 @@ theorem faceBoundarySubdivision_middleSource
     subset_convexHull ℝ _ ⟨p, by simp, rfl⟩
   have hq : R.position q ∈ R.cellCarrier ({p, q} : Finset R.Vertex) :=
     subset_convexHull ℝ _ ⟨q, by simp, rfl⟩
+  have zLower {r : Plane} (hr : r ∈ R.cellCarrier ({p, q} : Finset R.Vertex)) :
+      n * A.exitData.left ≤ z r := by
+    change n * A.exitData.left ≤ n *
+      (A.exitData.left + (A.exitData.right - A.exitData.left) *
+        (4 * K.faceEdgeParameterAffine t i r - 2))
+    have hnonneg : 0 ≤ (A.exitData.right - A.exitData.left) *
+        (4 * K.faceEdgeParameterAffine t i r - 2) :=
+      mul_nonneg hdelta (by linarith [hmid0 r hr])
+    apply mul_le_mul_of_nonneg_left _ hn.le
+    linarith
+  have zUpper {r : Plane} (hr : r ∈ R.cellCarrier ({p, q} : Finset R.Vertex)) :
+      z r ≤ n * A.exitData.right := by
+    change n * (A.exitData.left + (A.exitData.right - A.exitData.left) *
+      (4 * K.faceEdgeParameterAffine t i r - 2)) ≤ n * A.exitData.right
+    have hmul := mul_le_mul_of_nonneg_left
+      (show 4 * K.faceEdgeParameterAffine t i r - 2 ≤ 1 by linarith [hmid1 r hr]) hdelta
+    apply mul_le_mul_of_nonneg_left _ hn.le
+    linarith
   let a := min (z (R.position p)) (z (R.position q))
   let b := max (z (R.position p)) (z (R.position q))
   have hab : a ≤ b := min_le_max
@@ -863,27 +881,7 @@ theorem faceBoundarySubdivision_middleSource
       have hcn : c < n * A.exitData.left := by
         rw [div_lt_iff₀ hn] at hv0
         simpa [mul_comm] using hv0
-      have hpLower : n * A.exitData.left ≤ z (R.position p) := by
-        change n * A.exitData.left ≤ n *
-          (A.exitData.left + (A.exitData.right - A.exitData.left) *
-            (4 * K.faceEdgeParameterAffine t i (R.position p) - 2))
-        have hr := hmid0 (R.position p) hp
-        have hnonneg : 0 ≤ (A.exitData.right - A.exitData.left) *
-            (4 * K.faceEdgeParameterAffine t i (R.position p) - 2) :=
-          mul_nonneg hdelta (by linarith)
-        apply mul_le_mul_of_nonneg_left _ hn.le
-        linarith
-      have hqLower : n * A.exitData.left ≤ z (R.position q) := by
-        change n * A.exitData.left ≤ n *
-          (A.exitData.left + (A.exitData.right - A.exitData.left) *
-            (4 * K.faceEdgeParameterAffine t i (R.position q) - 2))
-        have hr := hmid0 (R.position q) hq
-        have hnonneg : 0 ≤ (A.exitData.right - A.exitData.left) *
-            (4 * K.faceEdgeParameterAffine t i (R.position q) - 2) :=
-          mul_nonneg hdelta (by linarith)
-        apply mul_le_mul_of_nonneg_left _ hn.le
-        linarith
-      exact hcn.le.trans (le_min hpLower hqLower)
+      exact hcn.le.trans (le_min (zLower hp) (zLower hq))
     · have hv0' : A.exitData.left ≤ c / n := le_of_not_gt hv0
       by_cases hv1 : c / n ≤ A.exitData.right
       · have hbreak := K.faceBoundarySubdivision_parameter_side t i
@@ -945,27 +943,7 @@ theorem faceBoundarySubdivision_middleSource
           have hc : A.exitData.right < c / n := lt_of_not_ge hv1
           rw [lt_div_iff₀ hn] at hc
           simpa [mul_comm] using hc
-        have hpUpper : z (R.position p) ≤ n * A.exitData.right := by
-          change n * (A.exitData.left + (A.exitData.right - A.exitData.left) *
-            (4 * K.faceEdgeParameterAffine t i (R.position p) - 2)) ≤
-              n * A.exitData.right
-          have hr := hmid1 (R.position p) hp
-          have hmul := mul_le_mul_of_nonneg_left
-            (show 4 * K.faceEdgeParameterAffine t i (R.position p) - 2 ≤ 1 by linarith)
-            hdelta
-          apply mul_le_mul_of_nonneg_left _ hn.le
-          linarith
-        have hqUpper : z (R.position q) ≤ n * A.exitData.right := by
-          change n * (A.exitData.left + (A.exitData.right - A.exitData.left) *
-            (4 * K.faceEdgeParameterAffine t i (R.position q) - 2)) ≤
-              n * A.exitData.right
-          have hr := hmid1 (R.position q) hq
-          have hmul := mul_le_mul_of_nonneg_left
-            (show 4 * K.faceEdgeParameterAffine t i (R.position q) - 2 ≤ 1 by linarith)
-            hdelta
-          apply mul_le_mul_of_nonneg_left _ hn.le
-          linarith
-        exact (max_le hpUpper hqUpper).trans hcn.le
+        exact (max_le (zUpper hp) (zUpper hq)).trans hcn.le
   obtain ⟨s, hs, hssegment⟩ := PlaneComplex.exists_face_containing_axis_segment_of_no_vertex
     A.parameterization.source hn.le hab ha hb A.parameterization.source_support
       A.parameterization.source_card_le_two havoid

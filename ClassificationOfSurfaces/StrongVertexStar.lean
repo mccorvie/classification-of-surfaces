@@ -132,11 +132,14 @@ private theorem approachPoint_mem_openStar
     (hvw : v ≠ w) (n : ℕ) :
     0 < (T.approachPoint v w f hvf hwf n).1 v := by
   have hwv : w ≠ v := Ne.symm hvw
-  simp [approachPoint, AffineMap.lineMap_apply, hwv]
+  simp only [approachPoint, AffineMap.lineMap_apply, vsub_eq_sub, vadd_eq_add, Pi.add_apply,
+    Pi.smul_apply, Pi.sub_apply, ne_eq, hwv, not_false_eq_true, Pi.single_eq_of_ne',
+    Pi.single_eq_same, zero_sub, smul_eq_mul, mul_neg, mul_one, lt_neg_add_iff_add_lt, add_zero,
+    gt_iff_lt]
   exact approachRatio_lt_one n
 
 private theorem exists_other_vertex
-    (v : T.Vertex) (f : T.Triangle) (hvf : v ∈ f.1) :
+    (v : T.Vertex) (f : T.Triangle) (_hvf : v ∈ f.1) :
     ∃ w ∈ f.1, v ≠ w := by
   have hcard : 1 < f.1.card := by
     rw [T.triangle_card f]
@@ -291,7 +294,7 @@ theorem faces_isStrongVertexStarConnected
       apply Subtype.ext
       apply T.homeo.symm.injective
       simpa [p] using hzR
-    exact hzW.2 (by simpa [hzp])
+    exact hzW.2 (by simp [hzp])
   have exists_face_point (q : T.Triangle) (hvq : v ∈ q.1) :
       ∃ z : U, z ∈ W ∧ z ∈ C q := by
     obtain ⟨w, hwq, hvw⟩ := T.exists_other_vertex v q hvq

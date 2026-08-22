@@ -87,8 +87,11 @@ theorem ofOneFaceWord_edgeMultiplicity {Edge : Type} [Fintype Edge]
         (ofOneFaceWordEdgeEquiv word e) =
       (word.map edgeOfDart).count e := by
   classical
-  simp [edgeMultiplicity, faceEdgeMultiplicity, boundary, ofOneFaceWord,
-    ofOneFaceWordEdgeEquiv, List.map_map, Function.comp_def]
+  simp only [edgeMultiplicity, ofOneFaceWord, faceEdgeMultiplicity,
+    ofOneFaceWordEdgeEquiv, id_eq, boundary, List.get_eq_getElem, List.length_cons,
+    List.length_nil, Nat.reduceAdd, Fin.val_eq_zero, List.getElem_cons_zero,
+    List.map_map, Function.comp_def, edgeOfDart_mapEquiv, Finset.sum_const,
+    Finset.card_univ, Fintype.card_fin, zero_add, smul_eq_mul, one_mul]
   have hmap :
       word.map (fun x => Fintype.equivFin Edge (edgeOfDart x)) =
         (word.map edgeOfDart).map (Fintype.equivFin Edge) := by

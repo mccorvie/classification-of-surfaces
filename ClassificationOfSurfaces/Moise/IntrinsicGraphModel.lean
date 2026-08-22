@@ -150,9 +150,9 @@ private theorem exists_replacementGraphBase_face
   · exact hsSegment
   · apply (K.replacementGraphArrangement).arrangementMesh.toPlaneComplex
       |>.card_le_two_of_vertices_mem_segment hs
-    intro v hv
-    apply hsSegment
-    exact subset_convexHull ℝ _ ⟨v, hv, rfl⟩
+    · intro v hv
+      apply hsSegment
+      exact subset_convexHull ℝ _ ⟨v, hv, rfl⟩
 
 theorem replacementGraphBaseComplex_support :
     (K.replacementGraphBaseComplex

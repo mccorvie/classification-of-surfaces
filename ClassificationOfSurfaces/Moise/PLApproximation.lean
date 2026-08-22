@@ -58,8 +58,6 @@ theorem IsTriangle.exists_polygonalCircle {C : Set Plane} (hC : IsTriangle C) :
   rw [show J.carrier = E '' standardTriangleCircle.carrier by
     exact standardTriangleCircle.mapEmbedding_carrier E E.injective.injOn hedge,
     standardTriangleCircle_carrier]
-  change E '' frontier (convexHull ℝ (Set.range standardTriangleVertex)) =
-    frontier (convexHull ℝ (Set.range p))
   change affineEquivHomeomorph E '' frontier
       (convexHull ℝ (Set.range standardTriangleVertex)) = _
   rw [(affineEquivHomeomorph E).image_frontier,
@@ -1101,6 +1099,111 @@ theorem exists_uniform_vertex_cell_separation (K : PlaneComplex)
 
 end PlaneComplex
 
+namespace PlaneComplex
+
+/-- A repositioning map is injective on the support of its source complex. -/
+private theorem repositionMap_injOn_support (P : PlaneComplex)
+    (qpos : P.Vertex → Plane) (qinj : Function.Injective qpos)
+    (qaff : ∀ s ∈ P.simplexes, AffineIndependent ℝ fun v : s => qpos v)
+    (qface : ∀ s ∈ P.simplexes, ∀ t ∈ P.simplexes,
+      convexHull ℝ (qpos '' (s : Set P.Vertex)) ∩
+          convexHull ℝ (qpos '' (t : Set P.Vertex)) =
+        convexHull ℝ (qpos '' ((s ∩ t : Finset P.Vertex) : Set P.Vertex))) :
+    Set.InjOn (P.repositionMap qpos qinj qaff qface) P.support := by
+  intro x hx y hy hxy
+  have hxF : P.repositionMap qpos qinj qaff qface x =
+      (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx⟩).1 := by
+    simp [PlaneComplex.repositionMap, hx]
+  have hyF : P.repositionMap qpos qinj qaff qface y =
+      (P.repositionHomeomorphAll qpos qinj qaff qface ⟨y, hy⟩).1 := by
+    simp [PlaneComplex.repositionMap, hy]
+  have heq : P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx⟩ =
+      P.repositionHomeomorphAll qpos qinj qaff qface ⟨y, hy⟩ := by
+    apply Subtype.ext
+    simpa [← hxF, ← hyF] using hxy
+  exact congrArg Subtype.val
+    ((P.repositionHomeomorphAll qpos qinj qaff qface).injective heq)
+
+/-- A repositioning map carries the source support onto the repositioned support. -/
+private theorem repositionMap_image_support (P : PlaneComplex)
+    (qpos : P.Vertex → Plane) (qinj : Function.Injective qpos)
+    (qaff : ∀ s ∈ P.simplexes, AffineIndependent ℝ fun v : s => qpos v)
+    (qface : ∀ s ∈ P.simplexes, ∀ t ∈ P.simplexes,
+      convexHull ℝ (qpos '' (s : Set P.Vertex)) ∩
+          convexHull ℝ (qpos '' (t : Set P.Vertex)) =
+        convexHull ℝ (qpos '' ((s ∩ t : Finset P.Vertex) : Set P.Vertex))) :
+    P.repositionMap qpos qinj qaff qface '' P.support =
+      (P.reposition qpos qinj qaff qface).support := by
+  ext y
+  constructor
+  · rintro ⟨x, hx, rfl⟩
+    have hx' : x ∈ P.support := hx
+    have hFx : P.repositionMap qpos qinj qaff qface x =
+        (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx'⟩).1 := by
+      simp [PlaneComplex.repositionMap, hx']
+    rw [hFx]
+    exact (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx'⟩).2
+  · intro hy
+    obtain ⟨x, hx⟩ :=
+      (P.repositionHomeomorphAll qpos qinj qaff qface).surjective ⟨y, hy⟩
+    refine ⟨x.1, x.2, ?_⟩
+    rw [show P.repositionMap qpos qinj qaff qface x.1 =
+      (P.repositionHomeomorphAll qpos qinj qaff qface x).1 by
+        simp [PlaneComplex.repositionMap, x.2]]
+    exact congrArg Subtype.val hx
+
+/-- Every face of a graph complex supporting a triangular frontier lies in an edge face. -/
+private theorem exists_edge_face_of_support_eq_triangle (A : PlaneComplex)
+    {C : Set Plane} (hC : IsTriangle C) (hAsupport : A.support = frontier C)
+    (hAgraph : ∀ s ∈ A.simplexes, s.card ≤ 2)
+    (hAvertex : ∀ v, A.position v ∈ A.support) :
+    ∀ s ∈ A.simplexes, ∃ t ∈ A.simplexes, s ⊆ t ∧ t.card = 2 := by
+  obtain ⟨J, hJcarrier⟩ := hC.exists_polygonalCircle
+  have hAJsupport : A.support = J.carrier := hAsupport.trans hJcarrier.symm
+  obtain ⟨R, hRcarrier, hRvertices⟩ :=
+    J.exists_refinement_containing_complex_vertices A hAJsupport hAvertex
+  have hARsupport : A.support = R.carrier := hAJsupport.trans hRcarrier.symm
+  intro s hs
+  have hspos : 0 < s.card := Finset.card_pos.mpr (A.nonempty_of_mem s hs)
+  have hsle := hAgraph s hs
+  rcases (show s.card = 1 ∨ s.card = 2 by omega) with hsone | hstwo
+  · obtain ⟨v, rfl⟩ := Finset.card_eq_one.mp hsone
+    obtain ⟨i, hi⟩ := hRvertices v
+    obtain ⟨t, ht, hit⟩ := A.exists_face_containing_polygon_edge R hAgraph
+      hARsupport (fun w _ => hRvertices w) i
+    have hvIn : v ∈ t := by
+      have hpBoth : A.position v ∈
+          A.cellCarrier ({v} : Finset A.Vertex) ∩ A.cellCarrier t := by
+        refine ⟨by simp [PlaneComplex.cellCarrier], hit ?_⟩
+        rw [← hi]
+        exact left_mem_segment ℝ _ _
+      by_contra hvnot
+      have hinter := A.face_inter ({v} : Finset A.Vertex) hs t ht
+      have hempty : ({v} : Finset A.Vertex) ∩ t = ∅ := by simp [hvnot]
+      rw [hempty] at hinter
+      change A.position v ∈
+        convexHull ℝ (A.position '' (({v} : Finset A.Vertex) : Set A.Vertex)) ∩
+          convexHull ℝ (A.position '' (t : Set A.Vertex)) at hpBoth
+      rw [hinter] at hpBoth
+      simp at hpBoth
+    have htcard : t.card = 2 := by
+      have htpos : 0 < t.card := Finset.card_pos.mpr (A.nonempty_of_mem t ht)
+      have htle := hAgraph t ht
+      rcases (show t.card = 1 ∨ t.card = 2 by omega) with htone | httwo
+      · obtain ⟨w, rfl⟩ := Finset.card_eq_one.mp htone
+        have hleft : R.vertex i = A.position w := by
+          simpa [PlaneComplex.cellCarrier] using
+            hit (left_mem_segment ℝ (R.vertex i) (R.vertex (i + 1)))
+        have hright : R.vertex (i + 1) = A.position w := by
+          simpa [PlaneComplex.cellCarrier] using
+            hit (right_mem_segment ℝ (R.vertex i) (R.vertex (i + 1)))
+        exact (R.adjacent_ne i (hleft.trans hright.symm)).elim
+      · exact httwo
+    exact ⟨t, ht, by simpa using hvIn, htcard⟩
+  · exact ⟨s, hs, Finset.Subset.rfl, hstwo⟩
+
+end PlaneComplex
+
 /-- A polygonal arc extracted from a broken line is the PL image of a straight segment. -/
 theorem brokenLine_has_PL_segment_model {U : Set Plane} (B : BrokenLineData U) :
     ∃ (S : PlaneComplex) (F : Plane → Plane),
@@ -1260,51 +1363,8 @@ theorem pl_extension_of_triangle_boundary {C C' : Set Plane}
     intro s hs
     simpa [A, L.active_cellCarrier] using
       hLaffine (s.map L.activeEmbedding) (L.mem_activeSimplexes.mp hs)
-  have hApure1 : ∀ s ∈ A.simplexes,
-      ∃ t ∈ A.simplexes, s ⊆ t ∧ t.card = 2 := by
-    obtain ⟨J₀, hJ₀carrier⟩ := hC.exists_polygonalCircle
-    have hAJ₀support : A.support = J₀.carrier := hAsupport.trans hJ₀carrier.symm
-    obtain ⟨R₀, hR₀carrier, hR₀vertices⟩ :=
-      J₀.exists_refinement_containing_complex_vertices A hAJ₀support hAvertex
-    have hAR₀support : A.support = R₀.carrier := hAJ₀support.trans hR₀carrier.symm
-    intro s hs
-    have hspos : 0 < s.card := Finset.card_pos.mpr (A.nonempty_of_mem s hs)
-    have hsle := hAgraph s hs
-    rcases (show s.card = 1 ∨ s.card = 2 by omega) with hsone | hstwo
-    · obtain ⟨v, rfl⟩ := Finset.card_eq_one.mp hsone
-      obtain ⟨i, hi⟩ := hR₀vertices v
-      obtain ⟨t, ht, hit⟩ := A.exists_face_containing_polygon_edge R₀ hAgraph
-        hAR₀support (fun w _ => hR₀vertices w) i
-      have hvIn : v ∈ t := by
-        have hpBoth : A.position v ∈
-            A.cellCarrier ({v} : Finset A.Vertex) ∩ A.cellCarrier t := by
-          refine ⟨by simp [PlaneComplex.cellCarrier], hit ?_⟩
-          rw [← hi]
-          exact left_mem_segment ℝ _ _
-        by_contra hvnot
-        have hinter := A.face_inter ({v} : Finset A.Vertex) hs t ht
-        have hempty : ({v} : Finset A.Vertex) ∩ t = ∅ := by simp [hvnot]
-        rw [hempty] at hinter
-        change A.position v ∈
-          convexHull ℝ (A.position '' (({v} : Finset A.Vertex) : Set A.Vertex)) ∩
-            convexHull ℝ (A.position '' (t : Set A.Vertex)) at hpBoth
-        rw [hinter] at hpBoth
-        simp at hpBoth
-      have htcard : t.card = 2 := by
-        have htpos : 0 < t.card := Finset.card_pos.mpr (A.nonempty_of_mem t ht)
-        have htle := hAgraph t ht
-        rcases (show t.card = 1 ∨ t.card = 2 by omega) with htone | httwo
-        · obtain ⟨w, rfl⟩ := Finset.card_eq_one.mp htone
-          have hleft : R₀.vertex i = A.position w := by
-            simpa [PlaneComplex.cellCarrier] using
-              hit (left_mem_segment ℝ (R₀.vertex i) (R₀.vertex (i + 1)))
-          have hright : R₀.vertex (i + 1) = A.position w := by
-            simpa [PlaneComplex.cellCarrier] using
-              hit (right_mem_segment ℝ (R₀.vertex i) (R₀.vertex (i + 1)))
-          exact (R₀.adjacent_ne i (hleft.trans hright.symm)).elim
-        · exact httwo
-      exact ⟨t, ht, by simpa using hvIn, htcard⟩
-    · exact ⟨s, hs, Finset.Subset.rfl, hstwo⟩
+  have hApure1 :=
+    A.exists_edge_face_of_support_eq_triangle hC hAsupport hAgraph hAvertex
   have hinjA : Set.InjOn f A.support := by
     rw [hAsupport]
     exact hinj
@@ -1431,37 +1491,9 @@ theorem pl_extension_of_triangle_boundary {C C' : Set Plane}
     funext z
     simp [Set.restrict, F, PlaneComplex.repositionMap, z.2]
   · rw [← hPsupport]
-    intro x hx y hy hxy
-    have hxF : F x =
-        (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx⟩).1 := by
-      simp [F, PlaneComplex.repositionMap, hx]
-    have hyF : F y =
-        (P.repositionHomeomorphAll qpos qinj qaff qface ⟨y, hy⟩).1 := by
-      simp [F, PlaneComplex.repositionMap, hy]
-    have heq : (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx⟩) =
-        P.repositionHomeomorphAll qpos qinj qaff qface ⟨y, hy⟩ := by
-      apply Subtype.ext
-      simpa [← hxF, ← hyF] using hxy
-    exact congrArg Subtype.val
-      ((P.repositionHomeomorphAll qpos qinj qaff qface).injective heq)
+    exact P.repositionMap_injOn_support qpos qinj qaff qface
   · rw [← hPsupport, ← hRsupport]
-    ext y
-    constructor
-    · rintro ⟨x, hx, rfl⟩
-      have hx' : x ∈ P.support := hx
-      have hFx : F x =
-          (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx'⟩).1 := by
-        simp [F, PlaneComplex.repositionMap, hx']
-      rw [hFx]
-      exact (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx'⟩).2
-    · intro hy
-      obtain ⟨x, hx⟩ :=
-        (P.repositionHomeomorphAll qpos qinj qaff qface).surjective ⟨y, hy⟩
-      refine ⟨x.1, x.2, ?_⟩
-      rw [show F x.1 =
-        (P.repositionHomeomorphAll qpos qinj qaff qface x).1 by
-          simp [F, PlaneComplex.repositionMap, x.2]]
-      exact congrArg Subtype.val hx
+    exact P.repositionMap_image_support qpos qinj qaff qface
   · exact ⟨P, hPsupport, P.repositionMap_isPL qpos qinj qaff qface⟩
   · refine ⟨{
       complex := P
@@ -1485,37 +1517,9 @@ theorem pl_extension_of_triangle_boundary {C C' : Set Plane}
     · intro s hs
       exact P.repositionMap_affineOn_face qpos qinj qaff qface hs
     · rw [← hPsupport]
-      intro x hx y hy hxy
-      have hxF : F x =
-          (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx⟩).1 := by
-        simp [F, PlaneComplex.repositionMap, hx]
-      have hyF : F y =
-          (P.repositionHomeomorphAll qpos qinj qaff qface ⟨y, hy⟩).1 := by
-        simp [F, PlaneComplex.repositionMap, hy]
-      have heq : (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx⟩) =
-          P.repositionHomeomorphAll qpos qinj qaff qface ⟨y, hy⟩ := by
-        apply Subtype.ext
-        simpa [← hxF, ← hyF] using hxy
-      exact congrArg Subtype.val
-        ((P.repositionHomeomorphAll qpos qinj qaff qface).injective heq)
+      exact P.repositionMap_injOn_support qpos qinj qaff qface
     · rw [← hPsupport, ← hRsupport]
-      ext y
-      constructor
-      · rintro ⟨x, hx, rfl⟩
-        have hx' : x ∈ P.support := hx
-        have hFx : F x =
-            (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx'⟩).1 := by
-          simp [F, PlaneComplex.repositionMap, hx']
-        rw [hFx]
-        exact (P.repositionHomeomorphAll qpos qinj qaff qface ⟨x, hx'⟩).2
-      · intro hy
-        obtain ⟨x, hx⟩ :=
-          (P.repositionHomeomorphAll qpos qinj qaff qface).surjective ⟨y, hy⟩
-        refine ⟨x.1, x.2, ?_⟩
-        rw [show F x.1 =
-          (P.repositionHomeomorphAll qpos qinj qaff qface x).1 by
-            simp [F, PlaneComplex.repositionMap, x.2]]
-        exact congrArg Subtype.val hx
+      exact P.repositionMap_image_support qpos qinj qaff qface
 
 /-- A PL embedding of a triangular boundary onto a polygon extends over the polygonal disk.
 

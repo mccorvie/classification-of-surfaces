@@ -92,8 +92,10 @@ variable {ι : Type*} [Fintype ι] (J : ι → PolygonalCircle)
 def closedRegion : Set Plane :=
   ⋃ i, (J i).closedRegion
 
-theorem isCompact_closedRegion : IsCompact (closedRegion J) :=
-  isCompact_iUnion fun i ↦ (J i).isCompact_closedRegion
+omit [Fintype ι] in
+theorem isCompact_closedRegion [Finite ι] : IsCompact (closedRegion J) := by
+  letI := Fintype.ofFinite ι
+  exact isCompact_iUnion fun i ↦ (J i).isCompact_closedRegion
 
 /-- A positive radius of a ball containing every disk in the family. -/
 noncomputable def enclosingRadius : ℝ :=
@@ -632,10 +634,12 @@ theorem synchronizedMeshes_joint_edge_valence (N : TriangleMesh) (p : ι → Pro
   · exact (selectedSynchronizedMesh_triangle_mem J N p).mp htOld |>.1
   · exact (targetSynchronizedMesh_triangle_mem J N).mp htTarget |>.1
 
+omit [Fintype ι] in
 /-- A finite union of polygonal closed disks is a finite pure plane polyhedron. -/
-theorem closedRegion_is_polyhedron :
-    ∃ K : PlaneComplex, K.support = closedRegion J ∧ K.IsPure2 :=
-  ⟨(closedRegionMesh J).toPlaneComplex, closedRegionMesh_support J,
+theorem closedRegion_is_polyhedron [Finite ι] :
+    ∃ K : PlaneComplex, K.support = closedRegion J ∧ K.IsPure2 := by
+  letI := Fintype.ofFinite ι
+  exact ⟨(closedRegionMesh J).toPlaneComplex, closedRegionMesh_support J,
     (closedRegionMesh J).toPlaneComplex_isPure2⟩
 
 end PolygonalFamily

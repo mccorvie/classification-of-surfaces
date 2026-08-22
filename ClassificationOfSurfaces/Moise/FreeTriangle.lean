@@ -274,18 +274,36 @@ theorem oppositeCoord_pos_of_mem_oppositeEdge_of_not_vertex (T : M.Triangle) (k 
     fin_cases k <;> fin_cases j
     · exact (hjk rfl).elim
     · refine ⟨2, eq_vertex_of_two_zero 2 (fun l hl => ?_)⟩
-      fin_cases l <;> simp at hl ⊢ <;> assumption
+      fin_cases l <;>
+        simp only [Fin.zero_eta, Fin.isValue, ne_eq, Fin.reduceEq,
+          not_false_eq_true, Fin.mk_one, Fin.reduceFinMk, not_true_eq_false] at hl ⊢ <;>
+        assumption
     · refine ⟨1, eq_vertex_of_two_zero 1 (fun l hl => ?_)⟩
-      fin_cases l <;> simp at hl ⊢ <;> assumption
+      fin_cases l <;>
+        simp only [Fin.zero_eta, Fin.isValue, ne_eq, zero_ne_one, not_false_eq_true,
+          Fin.mk_one, not_true_eq_false, Fin.reduceFinMk, Fin.reduceEq] at hl ⊢ <;>
+        assumption
     · refine ⟨2, eq_vertex_of_two_zero 2 (fun l hl => ?_)⟩
-      fin_cases l <;> simp at hl ⊢ <;> assumption
+      fin_cases l <;>
+        simp only [Fin.zero_eta, Fin.isValue, ne_eq, Fin.reduceEq,
+          not_false_eq_true, Fin.mk_one, Fin.reduceFinMk, not_true_eq_false] at hl ⊢ <;>
+        assumption
     · exact (hjk rfl).elim
     · refine ⟨0, eq_vertex_of_two_zero 0 (fun l hl => ?_)⟩
-      fin_cases l <;> simp at hl ⊢ <;> assumption
+      fin_cases l <;>
+        simp only [Fin.zero_eta, Fin.isValue, ne_eq, not_true_eq_false, Fin.mk_one,
+          one_ne_zero, not_false_eq_true, Fin.reduceFinMk, Fin.reduceEq] at hl ⊢ <;>
+        assumption
     · refine ⟨1, eq_vertex_of_two_zero 1 (fun l hl => ?_)⟩
-      fin_cases l <;> simp at hl ⊢ <;> assumption
+      fin_cases l <;>
+        simp only [Fin.zero_eta, Fin.isValue, ne_eq, zero_ne_one, not_false_eq_true,
+          Fin.mk_one, not_true_eq_false, Fin.reduceFinMk, Fin.reduceEq] at hl ⊢ <;>
+        assumption
     · refine ⟨0, eq_vertex_of_two_zero 0 (fun l hl => ?_)⟩
-      fin_cases l <;> simp at hl ⊢ <;> assumption
+      fin_cases l <;>
+        simp only [Fin.zero_eta, Fin.isValue, ne_eq, not_true_eq_false, Fin.mk_one,
+          one_ne_zero, not_false_eq_true, Fin.reduceFinMk, Fin.reduceEq] at hl ⊢ <;>
+        assumption
     · exact (hjk rfl).elim
   obtain ⟨r, hr⟩ := hpv'
   exact hpv r hr

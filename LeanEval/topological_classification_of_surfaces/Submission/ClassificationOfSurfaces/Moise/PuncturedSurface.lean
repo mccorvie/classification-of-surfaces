@@ -37,7 +37,7 @@ def foldDiskToHalfDisk :
   fun p => ⟨(foldPlaneToHalfSpace p).1, by
     constructor
     · have hp : (p : Plane) ∈ Metric.ball 0 1 := by
-        simpa [ChartKind.modelRegion] using p.2
+        exact p.2
       simpa only [Metric.mem_ball, dist_zero_right, norm_foldPlaneToHalfSpace] using hp
     · exact (foldPlaneToHalfSpace p).2⟩
 
